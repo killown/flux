@@ -1,0 +1,17 @@
+[package]
+name = "flux"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+relm4 = { version = "0.10.1", features = ["libadwaita"] }
+adw = { package = "libadwaita", version = "0.8.1" }
+gtk = { package = "gtk4", version = "0.10.3" }
+dirs = "6.0"
+rayon = "1.10.0"
+
+# Fix: Correct name is 'tokio', and we need 'rt' and 'rt-multi-thread' for spawn_blocking
+tokio = { version = "1.40", features = ["rt", "rt-multi-thread"] }
+
+# Fix: Added missing futures crate for the StreamExt throttling logic
+futures = "0.3"
