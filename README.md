@@ -1,54 +1,57 @@
-# #Flux
+# 🌊 Flux
 
-Flux is a minimalist, high-performance file manager for Linux, built with Rust, GTK4, and Libadwaita. It is designed for users who want a clean, GNOME-integrated experience without the clutter of traditional toolbars and complex preference menus.
+**Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way. No cluttered toolbars, no hidden mazes of settings—just you and your files.
 
-## The Philosophy
+## Why Flux?
 
-The core goal of Flux is to maintain visual simplicity while providing infinite flexibility. Instead of building heavy widgets for sorting, filtering, and view toggles, Flux relies entirely on its configuration file. If you want to change how files are displayed, sorted, or handled, you do it in the config—not through a maze of buttons.
+Most file managers try to do everything. Flux tries to do _one thing_ perfectly: letting you browse your data at light speed without the visual noise.
 
-- Logic over Clutter: No bulky toolbars or complex sorting menus.
-- Asynchronous Heart: Optimized to handle massive directories (like 3GB wallpaper folders) using a throttled async thumbnail pipeline that never freezes the UI.
-- Native Feel: Built specifically to follow the GNOME Human Interface Guidelines (HIG).
+- **Zero Clutter:** We replaced bulky buttons with a smart, dynamic header that shows you exactly what you need to know.
+- **Asynchronous Heart:** Got a folder with 5,000 high-res wallpapers? Flux won't sweat. It uses a throttled async pipeline to load thumbnails without ever freezing the window.
+- **Shortcut First:** Flux is designed for power users who prefer the keyboard over hunting for tiny icons.
 
-## Planned Features
+## Power User Shortcuts
 
-### Config-Driven Experience
+Flux is built around the "Config-Driven" philosophy. You control the logic, we provide the speed.
 
-Everything from the default sort order to the thumbnail concurrency limits will be managed via a central configuration file. This keeps the UI focused purely on your files.
+Action
 
-### Custom Context Menus
+Shortcut
 
-A powerful right-click menu system is planned that will allow you to define Custom Actions.
+**Cycle Sort Mode** (Name → Date → Size)
 
-- Want a "Set as Wallpaper" button? Define it in the config.
-- Need to "Open in VS Code" or "Optimize Image"? Just add the shell command to your custom actions list.
+`Ctrl + S`
 
-### Smart Previews
+**Toggle Hidden Files**
 
-Fast, non-blocking thumbnail generation for images and high-fidelity file type icons.
+`Ctrl + H`
 
-## Architecture
+**Zoom Icons** (Smooth Scaling)
 
-Flux is built on a modern stack for maximum reliability:
+`Ctrl + Mouse Wheel`
 
-- Language: Rust
-- Framework: Relm4 (Idiomatic GTK4)
-- Concurrency: Tokio & Futures for non-blocking I/O.
-- Styling: Native CSS support for deep customization.
+**Navigate Back/Forward**
+
+`Alt + Left/Right`
+
+## Configuration & Customization
+
+Everything is managed via `~/.config/flux/config.toml`. Want to add a custom folder to your sidebar or change the default sorting? Just edit the text file. It's that simple.
+
+> **Custom Actions:** You can define your own right-click commands. Add "Open in VS Code" or "Optimize Image" by linking a simple shell command in your config.
+
+## Tech Stack
+
+- **Language:** Rust 1.75+ (Memory safe and blazing fast)
+- **UI Framework:** Relm4 & GTK4 (Native GNOME experience)
+- **Runtime:** Tokio & Futures (Non-blocking I/O)
 
 ## Getting Started
 
-### Prerequisites
-
-- Rust (Latest Stable)
-- GTK4 & Libadwaita development headers
-
-### Installation
-
-    git clone https://github.com/yourusername/flux.git
-    cd flux
-    cargo run
+git clone https://github.com/yourusername/flux.git
+cd flux
+cargo run --release
 
 ## License
 
-This project is licensed under the GPLv3 License.
+Flux is free and open-source software licensed under the **GPLv3**.
