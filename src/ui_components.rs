@@ -8,6 +8,7 @@ pub struct FileItem {
     pub name: String,
     pub icon: adw::gio::Icon,
     pub thumbnail: Option<gdk::Texture>,
+    #[allow(dead_code)]
     pub is_dir: bool,
     pub path: PathBuf,
     pub icon_size: i32,
@@ -30,10 +31,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 set_halign: gtk::Align::Center,
                 set_valign: gtk::Align::Center,
                 add_css_class: "flux-card",
-                // Add Right-Click Detection
                 add_controller = gtk::GestureClick {
                     set_button: 3, // Right Click
-                    connect_pressed[root] => move |_, _, x, y| {
+                    connect_pressed => move |_, _, _, _| {
+                        // We handled the logic in app.rs, this just consumes the event if needed
+                        // or can be left empty as the ScrolledWindow controller handles the popup
                     }
                 },
 
