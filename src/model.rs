@@ -15,11 +15,23 @@ pub struct Config {
     pub sidebar: Vec<CustomPlace>,
 }
 
+#[derive(Deserialize, Clone, Debug, Default)]
+pub enum SortBy {
+    #[default]
+    Name,
+    Date,
+    Size,
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct UIConfig {
     pub default_icon_size: i32,
     pub sidebar_width: i32,
     pub show_xdg_dirs: bool,
+    #[serde(default)]
+    pub default_sort: SortBy,
+    #[serde(default)]
+    pub show_hidden_by_default: bool,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -42,6 +54,8 @@ pub struct FluxApp {
     pub active_item_path: Option<PathBuf>,
     pub directory_monitor: Option<gio::FileMonitor>,
     pub action_group: gio::SimpleActionGroup,
+    pub sort_by: SortBy,
+    pub show_hidden: bool,
     pub config: Config,
     pub _volume_monitor: gio::VolumeMonitor,
 }
@@ -57,9 +71,11 @@ pub enum AppMsg {
     Zoom(f64),
     ShowContextMenu(f64, f64, Option<PathBuf>),
     ExecuteCommand(String),
-    ThumbnailReady { 
-        name: String, 
-        texture: gdk::Texture, 
-        load_id: u64 
+    ToggleHidden,
+    CycleSort,
+    ThumbnailReady {
+        name: String,
+        texture: gdk::Texture,
+        load_id: u64
     },
 }

@@ -9,7 +9,7 @@ use futures::StreamExt;
 
 use crate::ui_components::{FileItem, SidebarPlace};
 use crate::utils;
-use crate::model::{FluxApp, AppMsg};
+use crate::model::{FluxApp, AppMsg, SortBy};
 use adw::gdk;
 use gtk::glib;
 use gtk::gio;
@@ -24,6 +24,24 @@ impl SimpleComponent for FluxApp {
         adw::Window {
             set_default_size: (1100, 750),
             set_title: Some("flux"),
+            add_controller = gtk::ShortcutController {
+                // Shortcut: Ctrl + H -> Toggle Hidden Files
+                add_shortcut = gtk::Shortcut {
+                    set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>h").unwrap()),
+                    set_action: Some(gtk::CallbackAction::new(move |_, _| {
+                        let _ = h_sender.input(AppMsg::ToggleHidden);
+                        glib::Propagation::Stop
+                    })),
+                },
+                // Shortcut: Ctrl + S -> Cycle Sort (Name -> Date -> Size)
+                add_shortcut = gtk::Shortcut {
+                    set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>s").unwrap()),
+                    set_action: Some(gtk::CallbackAction::new(move |_, _| {
+                        let _ = s_sender.input(AppMsg::CycleSort);
+                        glib::Propagation::Stop
+                    })),
+                },
+            },
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 #[name = "sidebar_container"]
@@ -52,9 +70,12 @@ impl SimpleComponent for FluxApp {
                             add_css_class: "title-label",
                             #[watch] set_label: &model.current_path.display().to_string(),
                         },
-                        pack_end = &gtk::Button {
-                            set_icon_name: "view-refresh-symbolic",
-                            connect_clicked => AppMsg::Refresh,
+                        // Sort Status Indicator
+                        pack_end = &gtk::Label {
+                            add_css_class: "sort-status-label",
+                            #[watch] set_label: &format!("Sort: {:?}", model.sort_by),
+                            set_margin_end: 12,
+                            set_opacity: 0.7,
                         }
                     },
                     #[name = "grid_scroller"]
@@ -99,6 +120,9 @@ impl SimpleComponent for FluxApp {
 
     fn init(start_path: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
         relm4::set_global_css(include_str!("style.css"));
+ 
+        let h_sender = sender.clone();
+        let s_sender = sender.clone();
 
         let config = utils::load_config();
         let (menu_model, menu_actions_map) = utils::load_menu_config(); 
@@ -151,13 +175,15 @@ impl SimpleComponent for FluxApp {
             active_item_path: None,
             directory_monitor: None,
             action_group,
+            sort_by: config.ui.default_sort.clone(),
+            show_hidden: config.ui.show_hidden_by_default,
             config,
             _volume_monitor: volume_monitor,
         };
 
         model.refresh_sidebar();
         model.load_path(start_path, &sender);
-
+        
         let widgets = view_output!();
         widgets.grid_scroller.set_child(Some(&model.files.view));
         widgets.sidebar_container.set_child(Some(model.sidebar.widget()));
@@ -170,6 +196,18 @@ impl SimpleComponent for FluxApp {
         match message {
             AppMsg::RefreshSidebar => {
                 self.refresh_sidebar();
+            }
+            AppMsg::ToggleHidden => {
+                self.show_hidden = !self.show_hidden;
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::CycleSort => {
+                self.sort_by = match self.sort_by {
+                    SortBy::Name => SortBy::Date,
+                    SortBy::Date => SortBy::Size,
+                    SortBy::Size => SortBy::Name,
+                };
+                sender.input(AppMsg::Refresh);
             }
             AppMsg::ShowContextMenu(x, y, path) => {
                 self.active_item_path = path.clone();
@@ -267,7 +305,6 @@ impl FluxApp {
         let mut guard = self.sidebar.guard();
         guard.clear();
 
-        // 1. Standard user dirs
         if let Some(p) = dirs::home_dir() { guard.push_back(SidebarPlace { name: "Home".to_string(), icon: "user-home-symbolic".to_string(), path: p }); }
         if let Some(p) = dirs::desktop_dir() { guard.push_back(SidebarPlace { name: "Desktop".to_string(), icon: "user-desktop-symbolic".to_string(), path: p }); }
         if let Some(p) = dirs::download_dir() { guard.push_back(SidebarPlace { name: "Downloads".to_string(), icon: "folder-download-symbolic".to_string(), path: p }); }
@@ -275,13 +312,11 @@ impl FluxApp {
         if let Some(p) = dirs::picture_dir() { guard.push_back(SidebarPlace { name: "Pictures".to_string(), icon: "folder-pictures-symbolic".to_string(), path: p }); }
         if let Some(p) = dirs::video_dir() { guard.push_back(SidebarPlace { name: "Videos".to_string(), icon: "folder-videos-symbolic".to_string(), path: p }); }
 
-        // 2. XDG System Dirs (Conditional)
         if self.config.ui.show_xdg_dirs {
             guard.push_back(SidebarPlace { name: "Config".to_string(), icon: "emblem-system-symbolic".to_string(), path: utils::get_xdg_dir("XDG_CONFIG_HOME", "~/.config") });
             guard.push_back(SidebarPlace { name: "Local Data".to_string(), icon: "folder-remote-symbolic".to_string(), path: utils::get_xdg_dir("XDG_DATA_HOME", "~/.local/share") });
         }
 
-        // 3. Custom Sidebar Dirs from TOML
         for custom in &self.config.sidebar {
             let path = if custom.path.starts_with('~') {
                 dirs::home_dir().map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy()))).unwrap_or_else(|| PathBuf::from(&custom.path))
@@ -291,7 +326,6 @@ impl FluxApp {
             guard.push_back(SidebarPlace { name: custom.name.clone(), icon: custom.icon.clone(), path });
         }
 
-        // 4. Dynamic Mounts (External Drives / FUSE)
         for (name, path) in utils::get_system_mounts() {
             let icon = if name.to_lowercase().contains("drive") || name.to_lowercase().contains("cloud") || path.to_string_lossy().contains("Gdrive") {
                 "folder-remote-symbolic".to_string()
@@ -314,15 +348,45 @@ impl FluxApp {
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         let session_arc = self.load_id.clone();
-        let current_size = self.current_icon_size;
-
+        
         if let Ok(entries) = std::fs::read_dir(&path) {
-            let mut items = Vec::new();
+            let mut items_metadata = Vec::new();
+
             for entry in entries.flatten() {
                 let name = entry.file_name().to_string_lossy().to_string();
-                if name.starts_with('.') { continue; }
+                if !self.show_hidden && name.starts_with('.') { continue; }
+
                 let target_path = path.join(&name);
-                let is_dir = target_path.is_dir(); 
+                let metadata = entry.metadata().ok();
+                items_metadata.push((name, target_path, metadata));
+            }
+
+            items_metadata.sort_by(|a, b| {
+                let a_is_dir = a.2.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+                let b_is_dir = b.2.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+
+                if a_is_dir != b_is_dir {
+                    return b_is_dir.cmp(&a_is_dir);
+                }
+
+                match self.sort_by {
+                    SortBy::Name => a.0.to_lowercase().cmp(&b.0.to_lowercase()),
+                    SortBy::Size => {
+                        let a_size = a.2.as_ref().map(|m| m.len()).unwrap_or(0);
+                        let b_size = b.2.as_ref().map(|m| m.len()).unwrap_or(0);
+                        b_size.cmp(&a_size)
+                    }
+                    SortBy::Date => {
+                        let a_time = a.2.as_ref().and_then(|m| m.modified().ok());
+                        let b_time = b.2.as_ref().and_then(|m| m.modified().ok());
+                        b_time.cmp(&a_time)
+                    }
+                }
+            });
+
+            let mut media_tasks = Vec::new();
+            for (name, target_path, metadata) in items_metadata {
+                let is_dir = metadata.map(|m| m.is_dir()).unwrap_or(false);
                 let icon = utils::get_icon_for_path(&target_path, is_dir);
 
                 self.files.append(FileItem { 
@@ -331,13 +395,9 @@ impl FluxApp {
                     thumbnail: None, 
                     is_dir,
                     path: target_path.clone(),
-                    icon_size: current_size,
+                    icon_size: self.current_icon_size,
                 });
-                items.push((name, target_path, is_dir));
-            }
 
-            let mut media_tasks = Vec::new();
-            for (name, target_path, is_dir) in items {
                 if !is_dir {
                     let (is_img, is_vid) = utils::is_visual_media(&target_path);
                     if is_img || is_vid {
@@ -347,6 +407,7 @@ impl FluxApp {
                     }
                 }
             }
+
             self.current_path = path;
             let sender = sender.clone();
             relm4::spawn(async move {
