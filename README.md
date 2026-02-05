@@ -30,10 +30,6 @@ Shortcut
 
 `Ctrl + Mouse Wheel`
 
-**Navigate Back/Forward**
-
-`Alt + Left/Right`
-
 ## Configuration & Customization
 
 Everything is managed via `~/.config/flux/config.toml`. Want to add a custom folder to your sidebar or change the default sorting? Just edit the text file. It's that simple.
