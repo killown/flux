@@ -1,15 +1,16 @@
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
-
 use adw::gdk;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileItem {
     pub name: String,
     pub icon: adw::gio::Icon,
     pub thumbnail: Option<gdk::Texture>,
     pub is_dir: bool,
+    pub path: PathBuf,
+    pub icon_size: i32,
 }
 
 pub struct FileWidgets {
@@ -29,9 +30,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 set_halign: gtk::Align::Center,
                 set_valign: gtk::Align::Center,
                 add_css_class: "flux-card",
+                // Add Right-Click Detection
+                add_controller = gtk::GestureClick {
+                    set_button: 3, // Right Click
+                    connect_pressed[root] => move |_, _, x, y| {
+                    }
+                },
+
                 #[name = "icon_widget"]
                 gtk::Image { 
-                    set_pixel_size: 64,
                     add_css_class: "thumbnail", 
                 },
                 #[name = "label"]
@@ -47,15 +54,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         (root, FileWidgets { icon_widget, label })
     }
 
-    fn bind(&mut self, widgets: &mut Self::Widgets, _root: &mut Self::Root) {
+    fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         widgets.label.set_label(&self.name);
+        widgets.icon_widget.set_pixel_size(self.icon_size);
+
         if let Some(ref texture) = self.thumbnail {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
-            // Clear the paintable first so it doesn't overlap the icon
             widgets.icon_widget.set_paintable(Option::<&gdk::Texture>::None);
             widgets.icon_widget.set_from_gicon(&self.icon);
         }
+        root.set_widget_name(&self.path.to_string_lossy());
     }
 }
 
