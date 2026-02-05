@@ -48,9 +48,9 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 
 ## Getting Started
 
-git clone https://github.com/yourusername/flux.git
-cd flux
-cargo run --release
+    git clone https://github.com/yourusername/flux.git
+    cd flux
+    cargo run --release
 
 ## License
 
