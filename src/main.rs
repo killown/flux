@@ -10,6 +10,8 @@ use std::path::PathBuf;
 fn main() {
     let app = RelmApp::new("sh.flux.FileManager");
 
+    app.allow_multiple_instances(true);
+
     let display = adw::gdk::Display::default().expect("Could not get default display");
     let _theme = gtk::IconTheme::for_display(&display);
 
