@@ -454,13 +454,19 @@ impl FluxApp {
             guard.push_back(SidebarPlace { name: custom.name.clone(), icon: custom.icon.clone(), path });
         }
 
-        for (name, path) in utils::get_system_mounts() {
-            let icon = if name.to_lowercase().contains("drive") || name.to_lowercase().contains("cloud") || path.to_string_lossy().contains("Gdrive") {
-                "folder-remote-symbolic".to_string()
-            } else {
-                "drive-harddisk-symbolic".to_string()
-            };
-            guard.push_back(SidebarPlace { name, icon, path });
+        for (mut name, path) in utils::get_system_mounts() {
+                if let Some(new_name) = self.config.ui.device_renames.get(&name) {
+                    name = new_name.clone();
+                }
+
+                let icon = if name.to_lowercase().contains("drive") || 
+                              name.to_lowercase().contains("cloud") || 
+                              path.to_string_lossy().contains("Gdrive") {
+                    "folder-remote-symbolic".to_string()
+                } else {
+                    "drive-harddisk-symbolic".to_string()
+                };
+                guard.push_back(SidebarPlace { name, icon, path });
         }
     }
 

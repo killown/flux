@@ -34,6 +34,8 @@ pub struct UIConfig {
     pub show_hidden_by_default: bool,
     #[serde(default)]
     pub show_xdg_dirs_by_default: bool,
+    #[serde(default)]
+    pub device_renames: std::collections::HashMap<String, String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
