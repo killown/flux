@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::collections::hash_map::DefaultHasher;
@@ -10,6 +10,8 @@ use gtk::gdk_pixbuf;
 use gtk::gio;
 use std::env;
 
+use crate::model::CustomAction;
+
 pub fn ensure_config_file() -> PathBuf {
     let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/tmp")).join("flux");
     if !config_dir.exists() { let _ = fs::create_dir_all(&config_dir); }
@@ -18,7 +20,8 @@ pub fn ensure_config_file() -> PathBuf {
         let default_config = r#""Open Terminal" => "alacritty --working-directory=%d"
 "Copy Path" => "echo -n %p | wl-copy"
 "Move to Trash" => "gio trash %p"
-"Open in Code" => "code %p""#;
+"Set as Wallpaper" => "image/jpeg", "swww img %p"
+"Open in Code" => "text/all, application/x-wine-extension-ini", "code %p""#;
         if let Ok(mut file) = fs::File::create(&config_path) { let _ = file.write_all(default_config.as_bytes()); }
     }
     config_path
@@ -78,27 +81,60 @@ path = "~/Projects"
         })
 }
 
-pub fn load_menu_config() -> (gio::Menu, Vec<(String, String)>) {
-    let path = ensure_config_file();
-    let menu = gio::Menu::new();
-    let mut actions = Vec::new();
-    if let Ok(content) = fs::read_to_string(&path) {
-        for line in content.lines() {
-            let line = line.trim();
-            if line.starts_with("//") || line.is_empty() { continue; }
-            if let Some((label_part, cmd_part)) = line.split_once("=>") {
-                let label = label_part.trim().trim_matches('"').trim();
-                let cmd = cmd_part.trim().trim_matches(',').trim().trim_matches('"');
-                if !label.is_empty() && !cmd.is_empty() {
-                    let action_name = label.to_lowercase().replace(" ", "_");
-                    let full_action_name = format!("win.{}", action_name);
-                    menu.append(Some(label), Some(&full_action_name));
-                    actions.push((action_name, cmd.to_string()));
+fn split_mime_cmd(input: &str) -> Option<(String, String)> {
+    if input.starts_with('"') {
+        if let Some(first_end) = input[1..].find('"') {
+            let first_end = first_end + 1; 
+            let remainder = &input[first_end+1..].trim();
+            if remainder.starts_with(',') {
+                let second_part = remainder[1..].trim();
+                if second_part.starts_with('"') && second_part.ends_with('"') {
+                    let mime = input[1..first_end].to_string();
+                    let cmd = second_part.trim_matches('"').to_string();
+                    return Some((mime, cmd));
                 }
             }
         }
     }
-    (menu, actions)
+    None
+}
+
+pub fn load_menu_config() -> Vec<CustomAction> {
+    let path = ensure_config_file();
+    let mut actions = Vec::new();
+ 
+    if let Ok(content) = fs::read_to_string(&path) {
+        for line in content.lines() {
+            let line = line.trim();
+            if line.starts_with("//") || line.is_empty() { continue; }
+ 
+            if let Some((label_part, rest)) = line.split_once("=>") {
+                let label = label_part.trim().trim_matches('"').trim();
+                let rest = rest.trim();
+
+                let (mime_str, cmd) = if let Some((mime_part, cmd_part)) = split_mime_cmd(rest) {
+                    (mime_part, cmd_part)
+                } else {
+                    ("*".to_string(), rest.trim_matches('"').to_string())
+                };
+
+                let mime_types: Vec<String> = mime_str.split(',')
+                    .map(|s| s.trim().to_string())
+                    .collect();
+
+                if !label.is_empty() && !cmd.is_empty() {
+                    let action_name = label.to_lowercase().replace(" ", "_").replace("!", "");
+                    actions.push(CustomAction {
+                        label: label.to_string(),
+                        action_name,
+                        command: cmd,
+                        mime_types,
+                    });
+                }
+            }
+        }
+    }
+    actions
 }
 
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
@@ -108,6 +144,24 @@ pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
     adw::gio::content_type_get_icon(&content_type)
+}
+
+pub fn get_mime_type(path: &Path) -> String {
+    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+
+    let mut sniff_buffer = [0u8; 4096];
+    let data_slice = if let Ok(mut file) = fs::File::open(path) {
+        if let Ok(n) = file.read(&mut sniff_buffer) {
+            Some(&sniff_buffer[..n])
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), data_slice);
+    content_type.to_string()
 }
 
 pub fn is_visual_media(path: &Path) -> (bool, bool) {
@@ -134,10 +188,12 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     path.hash(&mut hasher);
     let hash = hasher.finish();
     let cache_path = cache_dir.join(format!("{}.png", hash));
+ 
     if cache_path.exists() {
          let file = adw::gio::File::for_path(&cache_path);
          return gdk::Texture::from_file(&file).ok();
     }
+ 
     let (is_img, is_vid) = is_visual_media(path);
     if is_img {
         match gdk_pixbuf::Pixbuf::from_file_at_scale(path, 256, 256, true) {

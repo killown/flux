@@ -5,9 +5,17 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use adw::gdk;
 use gtk::gio;
-use serde::{Deserialize, Serialize}; // Added Serialize
+use serde::{Deserialize, Serialize};
 
 use crate::ui_components::{FileItem, SidebarPlace};
+
+#[derive(Clone, Debug)]
+pub struct CustomAction {
+    pub label: String,
+    pub action_name: String,
+    pub command: String,
+    pub mime_types: Vec<String>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
@@ -56,7 +64,7 @@ pub struct FluxApp {
     pub load_id: Arc<AtomicU64>,
     pub current_icon_size: i32,
     pub context_menu_popover: gtk::PopoverMenu,
-    pub menu_actions: Vec<(String, String)>,
+    pub menu_actions: Vec<CustomAction>,
     pub active_item_path: Option<PathBuf>,
     pub directory_monitor: Option<gio::FileMonitor>,
     pub action_group: gio::SimpleActionGroup,
@@ -75,14 +83,13 @@ pub enum AppMsg {
     ToggleHidden,
     CycleSort,
     UpdateFilter(String),
-    StartSearch(char),
     SwitchHeader(String),
     ShowContextMenu(f64, f64, Option<PathBuf>),
     ExecuteCommand(String),
     Zoom(f64),
-    ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
-    GoBack,
-    GoForward,
     Refresh,
     Open(u32),
+    GoBack,
+    GoForward,
+    ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
 }
