@@ -33,9 +33,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 set_halign: gtk::Align::Center,
                 set_valign: gtk::Align::Center,
                 add_css_class: "flux-card",
-                
+
                 add_controller = gtk::DragSource {
-                    set_actions: gdk::DragAction::COPY,
+                    set_actions: gdk::DragAction::COPY | gdk::DragAction::MOVE,
                     connect_prepare[item = item.clone()] => move |_, _, _| {
                         item.item()
                             .and_then(|obj| obj.downcast::<glib::BoxedAnyObject>().ok())
@@ -57,6 +57,49 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     }
                 },
 
+                add_controller = gtk::DropTarget {
+                    set_actions: gdk::DragAction::MOVE | gdk::DragAction::COPY,
+                    set_types: &[gio::File::static_type()],
+                    connect_enter => move |target, _, _| {
+                        if let Some(widget) = target.widget() {
+                            widget.add_css_class("drop-hover");
+                        }
+                        gdk::DragAction::MOVE
+                    },
+                    connect_leave => move |target| {
+                        if let Some(widget) = target.widget() {
+                            widget.remove_css_class("drop-hover");
+                        }
+                    },
+                    connect_drop[item = item.clone()] => move |target, value, _, _| {
+                        if let Some(widget) = target.widget() {
+                            widget.remove_css_class("drop-hover");
+                        }
+
+                        let dest_item = item.item()
+                            .and_then(|obj| obj.downcast::<glib::BoxedAnyObject>().ok())
+                            .map(|boxed| boxed.borrow::<FileItem>().clone());
+
+                        if let (Some(dest), Ok(src_file)) = (dest_item, value.get::<gio::File>()) {
+                            if dest.is_dir {
+                                if let Some(src_path) = src_file.path() {
+                                    let dest_path = dest.path.join(src_path.file_name().unwrap());
+                                    if src_path != dest_path {
+                                        let _ = src_file.move_(
+                                            &gio::File::for_path(dest_path),
+                                            gio::FileCopyFlags::NONE,
+                                            gio::Cancellable::NONE,
+                                            None
+                                        );
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                        false
+                    }
+                },
+
                 add_controller = gtk::GestureClick {
                     set_button: 3,
                     connect_pressed => move |_, _, _, _| {}
@@ -66,6 +109,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 gtk::Image { 
                     add_css_class: "thumbnail", 
                 },
+
                 #[name = "label"]
                 gtk::Label { 
                     set_wrap: true,
