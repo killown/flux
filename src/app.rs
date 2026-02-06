@@ -148,8 +148,8 @@ impl SimpleComponent for FluxApp {
                                     }
                                 },
                                 connect_show => |e| { 
-                                    e.grab_focus();
-                                    e.set_position(-1);
+                                    e.grab_focus(); 
+                                    e.set_position(-1); 
                                 }
                             } -> { set_name: "search" },
                         },
@@ -217,16 +217,20 @@ impl SimpleComponent for FluxApp {
         let f_sender = sender.clone();
 
         let config = utils::load_config();
-        let (menu_model, menu_actions_map) = utils::load_menu_config(); 
-        let context_menu_popover = gtk::PopoverMenu::from_model(Some(&menu_model));
-        context_menu_popover.set_has_arrow(false);
+ 
+        let menu_actions_list = utils::load_menu_config();
+ 
+        let context_menu_popover = gtk::PopoverMenu::builder()
+            .has_arrow(false)
+            .build();
 
         let action_group = gio::SimpleActionGroup::new();
         let app_sender = sender.clone();
-        for (name, cmd) in menu_actions_map.iter() {
-            let cmd_clone = cmd.clone();
+
+        for action_def in &menu_actions_list {
+            let cmd_clone = action_def.command.clone();
             let sender_clone = app_sender.clone();
-            let action = gio::SimpleAction::new(name, None);
+            let action = gio::SimpleAction::new(&action_def.action_name, None);
             action.connect_activate(move |_, _| { 
                 sender_clone.input(AppMsg::ExecuteCommand(cmd_clone.clone())); 
             });
@@ -270,7 +274,7 @@ impl SimpleComponent for FluxApp {
             load_id: Arc::new(AtomicU64::new(0)),
             current_icon_size: config.ui.default_icon_size,
             context_menu_popover,
-            menu_actions: menu_actions_map,
+            menu_actions: menu_actions_list,
             active_item_path: None,
             directory_monitor: None,
             action_group,
@@ -295,7 +299,6 @@ impl SimpleComponent for FluxApp {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
-            AppMsg::StartSearch(_) => {}
             AppMsg::RefreshSidebar => {
                 self.refresh_sidebar();
             }
@@ -305,24 +308,24 @@ impl SimpleComponent for FluxApp {
             }
             AppMsg::CycleSort => {
                 // 1. Cycle the logic
-                self.sort_by = match self.sort_by {
-                    SortBy::Name => SortBy::Date,
-                    SortBy::Date => SortBy::Size,
-                    SortBy::Size => SortBy::Name,
-                };
-
+                 self.sort_by = match self.sort_by {
+                     SortBy::Name => SortBy::Date,
+                     SortBy::Date => SortBy::Size,
+                     SortBy::Size => SortBy::Name,
+                 };
+ 
                 // 2. Update the config map for the current folder
-                let path_str = self.current_path.to_string_lossy().to_string();
+                 let path_str = self.current_path.to_string_lossy().to_string();
 
                 // If the new sort matches the global default, we can optionally remove the override
                 // to keep the config clean, or just always insert it:
-                self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
+                 self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
 
                 // 3. Persist to disk
-                utils::save_config(&self.config);
+                 utils::save_config(&self.config);
 
                 // 4. Trigger UI refresh
-                sender.input(AppMsg::Refresh);
+                 sender.input(AppMsg::Refresh);
             }
             AppMsg::UpdateFilter(query) => {
                 self.filter = query;
@@ -337,26 +340,62 @@ impl SimpleComponent for FluxApp {
             }
             AppMsg::ShowContextMenu(x, y, path) => {
                 self.active_item_path = path.clone();
-                let is_bg = path.is_none();
-                if is_bg { self.active_item_path = Some(self.current_path.clone()); }
 
-                for (name, _) in &self.menu_actions {
-                    let action_name: &str = name;
-                    let should_enable = if is_bg {
-                        action_name.contains("terminal") || action_name.contains("paste")
-                    } else { true };
+                let target_mime = if let Some(ref p) = path {
+                    utils::get_mime_type(p)
+                } else {
+                    "inode/directory".to_string()
+                };
 
-                    if let Some(action) = self.action_group.lookup_action(action_name) {
-                        if let Some(simple_action) = action.downcast_ref::<gio::SimpleAction>() {
-                            simple_action.set_enabled(should_enable);
+                println!("Flux detected MIME: {}", target_mime);
+
+                let menu = gio::Menu::new();
+
+                for action in &self.menu_actions {
+                    let mut matches = false;
+
+                    // [UPDATED] Iterate over the list of allowed mimes
+                    for allowed_mime in &action.mime_types {
+                         let is_match = match allowed_mime.as_str() {
+                            "*" => true,
+                            "image/all" | "image/*" => target_mime.starts_with("image/"),
+                            "video/all" | "video/*" => target_mime.starts_with("video/"),
+                            "application/all" | "application/*" => target_mime.starts_with("application/"),
+                            "text/all" | "text/*" => {
+                                target_mime.starts_with("text/") || 
+                                gio::content_type_is_a(&target_mime, "text/plain") ||
+                                target_mime == "inode/x-empty" || 
+                                target_mime == "application/x-ini-file" ||
+                                target_mime == "application/x-wine-extension-ini"
+                            },
+                            t => t == target_mime,
+                        };
+ 
+                        if is_match {
+                            matches = true;
+                            break;
                         }
                     }
+
+                    if matches {
+                         let full_action_name = format!("win.{}", action.action_name);
+                         menu.append(Some(&action.label), Some(&full_action_name));
+
+                         if let Some(g_action) = self.action_group.lookup_action(&action.action_name) {
+                            if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
+                                simple.set_enabled(true);
+                            }
+                         }
+                    }
                 }
+
+                self.context_menu_popover.set_menu_model(Some(&menu));
                 self.context_menu_popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                 self.context_menu_popover.popup();
             }
             AppMsg::ExecuteCommand(cmd_template) => {
-                if let Some(path) = &self.active_item_path { utils::run_custom_command(&cmd_template, path); }
+                let target = self.active_item_path.as_ref().unwrap_or(&self.current_path);
+                utils::run_custom_command(&cmd_template, target);
             }
             AppMsg::Zoom(delta) => {
                 let change = if delta > 0.0 { -16 } else { 16 };
@@ -499,7 +538,6 @@ impl FluxApp {
             monitor.connect_changed(move |_, _, _, _| { sender_clone.input(AppMsg::Refresh); });
             self.directory_monitor = Some(monitor);
         }
-
 
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
