@@ -58,9 +58,9 @@ folders_first = true
 [ui.device_renames]
 
 [[sidebar]]
-name = "Projects"
-icon = "folder-saved-search-symbolic"
-path = "~/Projects"
+name = "Downloads"
+icon = "folder-download-symbolic"
+path = "~/Downloads"
 "#;
         let _ = fs::write(&config_path, default_toml);
     }
