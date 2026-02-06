@@ -25,10 +25,19 @@ impl SimpleComponent for FluxApp {
             set_default_size: (1100, 750),
             set_title: Some("flux"),
             add_controller = gtk::EventControllerKey {
-                connect_key_pressed[sender, header_view = model.header_view.clone()] => move |_, keyval, _, _| {
-                    if keyval == gdk::Key::Escape && header_view != "path" {
-                        sender.input(AppMsg::SwitchHeader("path".to_string()));
-                        return glib::Propagation::Stop;
+                connect_key_pressed[sender, header_view = model.header_view.clone()] => move |_, keyval, _, state| {
+                    if header_view != "path" {
+                        return glib::Propagation::Proceed;
+                    }
+                    if state.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK | gdk::ModifierType::META_MASK) {
+                        return glib::Propagation::Proceed;
+                    }
+                    if let Some(ch) = keyval.to_unicode() {
+                        if ch.is_alphabetic() && !ch.is_control() {
+                            sender.input(AppMsg::UpdateFilter(ch.to_string()));
+                            sender.input(AppMsg::SwitchHeader("search".to_string()));
+                            return glib::Propagation::Stop;
+                        }
                     }
                     glib::Propagation::Proceed
                 }
@@ -146,7 +155,7 @@ impl SimpleComponent for FluxApp {
                         },
                         pack_end = &gtk::Label {
                             add_css_class: "sort-status-label",
-                            #[watch] set_label: &format!("Sort: {:?}", model.sort_by),
+                            #[watch] set_label: &format!("Sort: {:?}", model.sort_status()),
                             set_margin_end: 12,
                             set_opacity: 0.7,
                         }
@@ -163,6 +172,15 @@ impl SimpleComponent for FluxApp {
                                     return glib::Propagation::Stop;
                                 }
                                 glib::Propagation::Proceed
+                            }
+                        },
+                        add_controller = gtk::GestureClick {
+                            connect_pressed[view = model.files.view.clone()] => move |_, _, _, _| {
+                                if let Some(selection_model) = view.model() {
+                                    if let Some(single_selection) = selection_model.downcast_ref::<gtk::SingleSelection>() {
+                                        single_selection.set_selected(gtk::INVALID_LIST_POSITION);
+                                    }
+                                }
                             }
                         },
                         add_controller = gtk::GestureClick {
@@ -217,6 +235,15 @@ impl SimpleComponent for FluxApp {
         root.insert_action_group("win", Some(&action_group));
 
         let files = TypedGridView::<FileItem, gtk::SingleSelection>::new();
+
+        if let Some(selection_model) = files.view.model() {
+            if let Some(single_selection) = selection_model.downcast_ref::<gtk::SingleSelection>() {
+                single_selection.set_autoselect(false);
+                single_selection.set_can_unselect(true);
+                single_selection.set_selected(gtk::INVALID_LIST_POSITION);
+            }
+        }
+
         let grid_view = &files.view;
         grid_view.set_max_columns(12);
         grid_view.set_min_columns(4);
@@ -231,10 +258,8 @@ impl SimpleComponent for FluxApp {
         let volume_monitor = gio::VolumeMonitor::get();
         let s_added = sender.clone();
         volume_monitor.connect_mount_added(move |_, _| s_added.input(AppMsg::RefreshSidebar));
-        let s_removed = sender.clone();
-        volume_monitor.connect_mount_removed(move |_, _| s_removed.input(AppMsg::RefreshSidebar));
-        let s_changed = sender.clone();
-        volume_monitor.connect_drive_connected(move |_, _| s_changed.input(AppMsg::RefreshSidebar));
+        let s_added_bis = sender.clone();
+        volume_monitor.connect_mount_added(move |_, _| s_added_bis.input(AppMsg::RefreshSidebar));
 
         let mut model = FluxApp {
             files,
@@ -389,6 +414,14 @@ impl SimpleComponent for FluxApp {
 }
 
 impl FluxApp {
+    fn sort_status(&self) -> &str {
+        match self.sort_by {
+            SortBy::Name => "Name",
+            SortBy::Date => "Date",
+            SortBy::Size => "Size",
+        }
+    }
+
     pub fn refresh_sidebar(&mut self) {
         let mut guard = self.sidebar.guard();
         guard.clear();
