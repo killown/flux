@@ -24,6 +24,15 @@ pub fn ensure_config_file() -> PathBuf {
     config_path
 }
 
+pub fn save_config(config: &crate::model::Config) {
+    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/tmp")).join("flux");
+    let config_path = config_dir.join("config.toml");
+
+    if let Ok(toml_str) = toml::to_string_pretty(config) {
+        let _ = fs::write(config_path, toml_str);
+    }
+}
+
 pub fn load_config() -> crate::model::Config {
     let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/tmp")).join("flux");
     let config_path = config_dir.join("config.toml");
@@ -34,23 +43,21 @@ pub fn load_config() -> crate::model::Config {
 default_icon_size = 96
 sidebar_width = 200
 show_xdg_dirs = true
-# Valid values: "Name", "Date", "Size" (use shortcut Ctrl + S) to cycle among the sort modes
 default_sort = "Name"
 show_hidden_by_default = false
 show_xdg_dirs_by_default = true
 
+[ui.folder_sort]
+# "/home/neo/Downloads" = "Date"
+
 [ui.device_renames]
-# "device-a" = "New Name"
 
 [[sidebar]]
-# name: Label shown in sidebar
-# icon: GNOME symbolic icon name (e.g., folder-saved-search-symbolic)
-# path: Absolute path or use ~ for home directory
 name = "Projects"
 icon = "folder-saved-search-symbolic"
 path = "~/Projects"
 "#;
-    let _ = fs::write(&config_path, default_toml);
+        let _ = fs::write(&config_path, default_toml);
     }
 
     fs::read_to_string(config_path)
@@ -62,6 +69,7 @@ path = "~/Projects"
                 sidebar_width: 240,
                 show_xdg_dirs: true,
                 default_sort: crate::model::SortBy::Name,
+                folder_sort: std::collections::HashMap::new(),
                 show_hidden_by_default: false,
                 show_xdg_dirs_by_default: true,
                 device_renames: std::collections::HashMap::new(),

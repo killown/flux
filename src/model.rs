@@ -5,17 +5,17 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use adw::gdk;
 use gtk::gio;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize}; // Added Serialize
 
 use crate::ui_components::{FileItem, SidebarPlace};
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Config {
     pub ui: UIConfig,
     pub sidebar: Vec<CustomPlace>,
 }
 
-#[derive(Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub enum SortBy {
     #[default]
     Name,
@@ -23,13 +23,15 @@ pub enum SortBy {
     Size,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UIConfig {
     pub default_icon_size: i32,
     pub sidebar_width: i32,
     pub show_xdg_dirs: bool,
     #[serde(default)]
     pub default_sort: SortBy,
+    #[serde(default)]
+    pub folder_sort: std::collections::HashMap<String, SortBy>,
     #[serde(default)]
     pub show_hidden_by_default: bool,
     #[serde(default)]
@@ -38,7 +40,7 @@ pub struct UIConfig {
     pub device_renames: std::collections::HashMap<String, String>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CustomPlace {
     pub name: String,
     pub icon: String,
