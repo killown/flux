@@ -24,8 +24,16 @@ impl SimpleComponent for FluxApp {
         adw::Window {
             set_default_size: (1100, 750),
             set_title: Some("flux"),
+            add_controller = gtk::EventControllerKey {
+                connect_key_pressed[sender, header_view = model.header_view.clone()] => move |_, keyval, _, _| {
+                    if keyval == gdk::Key::Escape && header_view != "path" {
+                        sender.input(AppMsg::SwitchHeader("path".to_string()));
+                        return glib::Propagation::Stop;
+                    }
+                    glib::Propagation::Proceed
+                }
+            },
             add_controller = gtk::ShortcutController {
-                // Shortcut: Ctrl + H -> Toggle Hidden Files
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>h").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
@@ -33,11 +41,17 @@ impl SimpleComponent for FluxApp {
                         glib::Propagation::Stop
                     })),
                 },
-                // Shortcut: Ctrl + S -> Cycle Sort (Name -> Date -> Size)
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>s").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
                         let _ = s_sender.input(AppMsg::CycleSort);
+                        glib::Propagation::Stop
+                    })),
+                },
+                add_shortcut = gtk::Shortcut {
+                    set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>f").unwrap()),
+                    set_action: Some(gtk::CallbackAction::new(move |_, _| {
+                        let _ = f_sender.input(AppMsg::SwitchHeader("search".to_string()));
                         glib::Propagation::Stop
                     })),
                 },
@@ -66,11 +80,70 @@ impl SimpleComponent for FluxApp {
                             #[watch] set_sensitive: !model.forward_stack.is_empty(),
                         },
                         #[wrap(Some)]
-                        set_title_widget = &gtk::Label {
-                            add_css_class: "title-label",
-                            #[watch] set_label: &model.current_path.display().to_string(),
+                        set_title_widget = &gtk::Stack {
+                            #[watch] set_visible_child_name: &model.header_view,
+                            set_transition_type: gtk::StackTransitionType::Crossfade,
+                            add_child = &gtk::Button {
+                                add_css_class: "flat",
+                                #[watch] set_label: &model.current_path.to_string_lossy(),
+                                connect_clicked => AppMsg::SwitchHeader("entry".to_string()),
+                            } -> { set_name: "path" },
+                            #[name = "path_entry"]
+                            add_child = &gtk::Entry {
+                                set_hexpand: false,
+                                set_halign: gtk::Align::Center,
+                                set_width_request: 450,
+                                #[watch] set_text: &model.current_path.to_string_lossy(),
+                                add_controller = gtk::EventControllerKey {
+                                    connect_key_pressed[sender] => move |_, keyval, _, _| {
+                                        if keyval == gdk::Key::Escape {
+                                            sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                            return glib::Propagation::Stop;
+                                        }
+                                        glib::Propagation::Proceed
+                                    }
+                                },
+                                connect_activate[sender] => move |entry| {
+                                    let path_str = entry.text().to_string();
+                                    if !path_str.is_empty() {
+                                        sender.input(AppMsg::Navigate(PathBuf::from(path_str)));
+                                    }
+                                    sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                },
+                                connect_show => |e| { 
+                                    e.grab_focus(); 
+                                    e.set_position(-1); 
+                                }
+                            } -> { set_name: "entry" },
+                            add_child = &gtk::SearchEntry {
+                                set_hexpand: false,
+                                set_halign: gtk::Align::Center,
+                                set_width_request: 450,
+                                #[track(model.filter.is_empty())] set_text: &model.filter,
+                                add_controller = gtk::EventControllerKey {
+                                    connect_key_pressed[sender] => move |_, keyval, _, _| {
+                                        if keyval == gdk::Key::Escape {
+                                            sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                            return glib::Propagation::Stop;
+                                        }
+                                        glib::Propagation::Proceed
+                                    }
+                                },
+                                connect_search_changed[sender] => move |entry| {
+                                    sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
+                                },
+                                connect_stop_search => AppMsg::SwitchHeader("path".to_string()),
+                                add_controller = gtk::GestureClick {
+                                    connect_pressed[sender] => move |_, _, _, _| {
+                                        sender.input(AppMsg::SwitchHeader("entry".to_string()));
+                                    }
+                                },
+                                connect_show => |e| { 
+                                    e.grab_focus();
+                                    e.set_position(-1);
+                                }
+                            } -> { set_name: "search" },
                         },
-                        // Sort Status Indicator
                         pack_end = &gtk::Label {
                             add_css_class: "sort-status-label",
                             #[watch] set_label: &format!("Sort: {:?}", model.sort_by),
@@ -120,9 +193,10 @@ impl SimpleComponent for FluxApp {
 
     fn init(start_path: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
         relm4::set_global_css(include_str!("style.css"));
- 
+
         let h_sender = sender.clone();
         let s_sender = sender.clone();
+        let f_sender = sender.clone();
 
         let config = utils::load_config();
         let (menu_model, menu_actions_map) = utils::load_menu_config(); 
@@ -179,11 +253,13 @@ impl SimpleComponent for FluxApp {
             show_hidden: config.ui.show_hidden_by_default,
             config,
             _volume_monitor: volume_monitor,
+            filter: String::new(),
+            header_view: "path".to_string(),
         };
 
         model.refresh_sidebar();
         model.load_path(start_path, &sender);
-        
+
         let widgets = view_output!();
         widgets.grid_scroller.set_child(Some(&model.files.view));
         widgets.sidebar_container.set_child(Some(model.sidebar.widget()));
@@ -194,6 +270,7 @@ impl SimpleComponent for FluxApp {
 
     fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
         match message {
+            AppMsg::StartSearch(_) => {}
             AppMsg::RefreshSidebar => {
                 self.refresh_sidebar();
             }
@@ -208,6 +285,17 @@ impl SimpleComponent for FluxApp {
                     SortBy::Size => SortBy::Name,
                 };
                 sender.input(AppMsg::Refresh);
+            }
+            AppMsg::UpdateFilter(query) => {
+                self.filter = query;
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SwitchHeader(view_name) => {
+                self.header_view = view_name;
+                if self.header_view == "path" {
+                    self.filter = String::new();
+                    sender.input(AppMsg::Refresh);
+                }
             }
             AppMsg::ShowContextMenu(x, y, path) => {
                 self.active_item_path = path.clone();
@@ -305,12 +393,19 @@ impl FluxApp {
         let mut guard = self.sidebar.guard();
         guard.clear();
 
-        if let Some(p) = dirs::home_dir() { guard.push_back(SidebarPlace { name: "Home".to_string(), icon: "user-home-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::desktop_dir() { guard.push_back(SidebarPlace { name: "Desktop".to_string(), icon: "user-desktop-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::download_dir() { guard.push_back(SidebarPlace { name: "Downloads".to_string(), icon: "folder-download-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::document_dir() { guard.push_back(SidebarPlace { name: "Documents".to_string(), icon: "folder-documents-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::picture_dir() { guard.push_back(SidebarPlace { name: "Pictures".to_string(), icon: "folder-pictures-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::video_dir() { guard.push_back(SidebarPlace { name: "Videos".to_string(), icon: "folder-videos-symbolic".to_string(), path: p }); }
+        let get_xdg_name = |p: &std::path::PathBuf| {
+            gio::File::for_path(p)
+                .query_info(gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, gio::FileQueryInfoFlags::NONE, gio::Cancellable::NONE)
+                .map(|info| info.display_name().to_string())
+                .unwrap_or_else(|_| p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())
+        };
+
+        if let Some(p) = dirs::home_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "user-home-symbolic".to_string(), path: p }); }
+        if let Some(p) = dirs::desktop_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "user-desktop-symbolic".to_string(), path: p }); }
+        if let Some(p) = dirs::download_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-download-symbolic".to_string(), path: p }); }
+        if let Some(p) = dirs::document_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-documents-symbolic".to_string(), path: p }); }
+        if let Some(p) = dirs::picture_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-pictures-symbolic".to_string(), path: p }); }
+        if let Some(p) = dirs::video_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-videos-symbolic".to_string(), path: p }); }
 
         if self.config.ui.show_xdg_dirs {
             guard.push_back(SidebarPlace { name: "Config".to_string(), icon: "emblem-system-symbolic".to_string(), path: utils::get_xdg_dir("XDG_CONFIG_HOME", "~/.config") });
@@ -348,7 +443,7 @@ impl FluxApp {
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         let session_arc = self.load_id.clone();
-        
+
         if let Ok(entries) = std::fs::read_dir(&path) {
             let mut items_metadata = Vec::new();
 
@@ -357,13 +452,25 @@ impl FluxApp {
                 if !self.show_hidden && name.starts_with('.') { continue; }
 
                 let target_path = path.join(&name);
+                let is_dir = target_path.is_dir(); 
                 let metadata = entry.metadata().ok();
-                items_metadata.push((name, target_path, metadata));
+                items_metadata.push((name, target_path, metadata, is_dir));
+            }
+
+            if !self.filter.is_empty() {
+                let query = self.filter.to_lowercase();
+                let matches: Vec<_> = items_metadata.iter()
+                    .filter(|(name, ..)| name.to_lowercase().contains(&query))
+                    .cloned()
+                    .collect();
+                if !matches.is_empty() {
+                    items_metadata = matches;
+                }
             }
 
             items_metadata.sort_by(|a, b| {
-                let a_is_dir = a.2.as_ref().map(|m| m.is_dir()).unwrap_or(false);
-                let b_is_dir = b.2.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+                let a_is_dir = a.3;
+                let b_is_dir = b.3;
 
                 if a_is_dir != b_is_dir {
                     return b_is_dir.cmp(&a_is_dir);
@@ -384,9 +491,8 @@ impl FluxApp {
                 }
             });
 
-            let mut media_tasks = Vec::new();
-            for (name, target_path, metadata) in items_metadata {
-                let is_dir = metadata.map(|m| m.is_dir()).unwrap_or(false);
+            let mut media_tasks: Vec<(String, PathBuf)> = Vec::new();
+            for (name, target_path, _metadata, is_dir) in items_metadata {
                 let icon = utils::get_icon_for_path(&target_path, is_dir);
 
                 self.files.append(FileItem { 

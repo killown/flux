@@ -9,6 +9,10 @@ use std::path::PathBuf;
 
 fn main() {
     let app = RelmApp::new("sh.flux.FileManager");
+
+    let display = adw::gdk::Display::default().expect("Could not get default display");
+    let _theme = gtk::IconTheme::for_display(&display);
+
     let args: Vec<String> = std::env::args().collect();
     let start_path = if args.len() > 1 {
         PathBuf::from(&args[1])
