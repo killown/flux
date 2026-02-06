@@ -338,6 +338,7 @@ impl SimpleComponent for FluxApp {
                     sender.input(AppMsg::Refresh);
                 }
             }
+
             AppMsg::ShowContextMenu(x, y, path) => {
                 self.active_item_path = path.clone();
 
@@ -347,30 +348,27 @@ impl SimpleComponent for FluxApp {
                     "inode/directory".to_string()
                 };
 
-                println!("Flux detected MIME: {}", target_mime);
-
                 let menu = gio::Menu::new();
 
                 for action in &self.menu_actions {
                     let mut matches = false;
 
-                    // [UPDATED] Iterate over the list of allowed mimes
                     for allowed_mime in &action.mime_types {
-                         let is_match = match allowed_mime.as_str() {
-                            "*" => true,
+                        let is_match = match allowed_mime.as_str() {
+                            "*" | "all" => true,
                             "image/all" | "image/*" => target_mime.starts_with("image/"),
                             "video/all" | "video/*" => target_mime.starts_with("video/"),
                             "application/all" | "application/*" => target_mime.starts_with("application/"),
                             "text/all" | "text/*" => {
                                 target_mime.starts_with("text/") || 
                                 gio::content_type_is_a(&target_mime, "text/plain") ||
-                                target_mime == "inode/x-empty" || 
-                                target_mime == "application/x-ini-file" ||
-                                target_mime == "application/x-wine-extension-ini"
+                                target_mime == "inode/x-empty"
                             },
+                            "folder" | "directory" => target_mime == "inode/directory",
+                            "file" => target_mime != "inode/directory",
                             t => t == target_mime,
                         };
- 
+
                         if is_match {
                             matches = true;
                             break;
@@ -378,14 +376,14 @@ impl SimpleComponent for FluxApp {
                     }
 
                     if matches {
-                         let full_action_name = format!("win.{}", action.action_name);
-                         menu.append(Some(&action.label), Some(&full_action_name));
+                        let full_action_name = format!("win.{}", action.action_name);
+                        menu.append(Some(&action.label), Some(&full_action_name));
 
-                         if let Some(g_action) = self.action_group.lookup_action(&action.action_name) {
+                        if let Some(g_action) = self.action_group.lookup_action(&action.action_name) {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                                 simple.set_enabled(true);
                             }
-                         }
+                        }
                     }
                 }
 
