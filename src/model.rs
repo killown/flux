@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::ui_components::{FileItem, SidebarPlace};
 
+fn default_true() -> bool { true }
+
 #[derive(Clone, Debug)]
 pub struct CustomAction {
     pub label: String,
@@ -54,6 +56,8 @@ pub struct UIConfig {
     pub show_xdg_dirs_by_default: bool,
     #[serde(default)]
     pub device_renames: std::collections::HashMap<String, String>,
+    #[serde(default = "default_true")]
+    pub folders_first: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -90,6 +94,7 @@ pub enum AppMsg {
     RefreshSidebar,
     ToggleHidden,
     CycleSort,
+    CycleFolderPriority,
     UpdateFilter(String),
     SwitchHeader(String),
     ShowContextMenu(f64, f64, Option<PathBuf>),

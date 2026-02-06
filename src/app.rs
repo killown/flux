@@ -64,6 +64,13 @@ impl SimpleComponent for FluxApp {
                         glib::Propagation::Stop
                     })),
                 },
+                add_shortcut = gtk::Shortcut {
+                    set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Shift>s").unwrap()),
+                    set_action: Some(gtk::CallbackAction::new(move |_, _| {
+                        let _ = s_sender_prio.input(AppMsg::CycleFolderPriority);
+                        glib::Propagation::Stop
+                    })),
+                },
             },
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
@@ -214,6 +221,7 @@ impl SimpleComponent for FluxApp {
 
         let h_sender = sender.clone();
         let s_sender = sender.clone();
+        let s_sender_prio = sender.clone();
         let f_sender = sender.clone();
 
         let config = utils::load_config();
@@ -224,8 +232,17 @@ impl SimpleComponent for FluxApp {
             .has_arrow(false)
             .build();
 
+
+
         let action_group = gio::SimpleActionGroup::new();
         let app_sender = sender.clone();
+
+        let prio_action = gio::SimpleAction::new("cycle-priority", None);
+        let prio_sender = sender.clone();
+        prio_action.connect_activate(move |_, _| {
+            prio_sender.input(AppMsg::CycleFolderPriority);
+        });
+        action_group.add_action(&prio_action);
 
         for action_def in &menu_actions_list {
             let cmd_clone = action_def.command.clone();
@@ -326,6 +343,16 @@ impl SimpleComponent for FluxApp {
 
                 // 4. Trigger UI refresh
                  sender.input(AppMsg::Refresh);
+            }
+            AppMsg::CycleFolderPriority => {
+                // Toggle the setting
+                self.config.ui.folders_first = !self.config.ui.folders_first;
+                // Save to disk
+                utils::save_config(&self.config);
+                // Refresh the view using load_path (NOT sort_files)
+                // We clone current_path to reload the exact same directory
+                let path = self.current_path.clone();
+                self.load_path(path, &sender);
             }
             AppMsg::UpdateFilter(query) => {
                 self.filter = query;
@@ -565,12 +592,20 @@ impl FluxApp {
                 }
             }
 
+            // Capture config preference before sorting
+            let folders_first = self.config.ui.folders_first;
+
             items_metadata.sort_by(|a, b| {
                 let a_is_dir = a.3;
                 let b_is_dir = b.3;
 
+                // 1. Primary Sort: Folders First vs Folders Last
                 if a_is_dir != b_is_dir {
-                    return b_is_dir.cmp(&a_is_dir);
+                    return if folders_first {
+                        b_is_dir.cmp(&a_is_dir) // Folders First
+                    } else {
+                        a_is_dir.cmp(&b_is_dir) // Files First (Folders Last)
+                    };
                 }
 
                 match self.sort_by {
