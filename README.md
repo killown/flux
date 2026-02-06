@@ -2,6 +2,12 @@
 
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
 
+
+
+https://github.com/user-attachments/assets/80c04b92-8885-4aac-844e-bfcbbd076eee
+
+
+
 ## Why Flux?
 
 Most file managers try to do everything. Flux tries to do _one thing_ perfectly: letting you browse your data at light speed without the visual noise.
