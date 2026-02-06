@@ -39,6 +39,9 @@ default_sort = "Name"
 show_hidden_by_default = false
 show_xdg_dirs_by_default = true
 
+[ui.device_renames]
+# "device-a" = "New Name"
+
 [[sidebar]]
 # name: Label shown in sidebar
 # icon: GNOME symbolic icon name (e.g., folder-saved-search-symbolic)
@@ -61,6 +64,7 @@ path = "~/Projects"
                 default_sort: crate::model::SortBy::Name,
                 show_hidden_by_default: false,
                 show_xdg_dirs_by_default: true,
+                device_renames: std::collections::HashMap::new(),
             },
             sidebar: vec![],
         })
