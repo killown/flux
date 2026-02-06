@@ -304,11 +304,24 @@ impl SimpleComponent for FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleSort => {
+                // 1. Cycle the logic
                 self.sort_by = match self.sort_by {
                     SortBy::Name => SortBy::Date,
                     SortBy::Date => SortBy::Size,
                     SortBy::Size => SortBy::Name,
                 };
+
+                // 2. Update the config map for the current folder
+                let path_str = self.current_path.to_string_lossy().to_string();
+
+                // If the new sort matches the global default, we can optionally remove the override
+                // to keep the config clean, or just always insert it:
+                self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
+
+                // 3. Persist to disk
+                utils::save_config(&self.config);
+
+                // 4. Trigger UI refresh
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::UpdateFilter(query) => {
@@ -364,6 +377,14 @@ impl SimpleComponent for FluxApp {
                 if path.is_dir() {
                     self.history.push(self.current_path.clone());
                     self.forward_stack.clear();
+
+                    let path_str = path.to_string_lossy().to_string();
+                    if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str) {
+                        self.sort_by = specific_sort.clone();
+                    } else {
+                        self.sort_by = self.config.ui.default_sort.clone();
+                    }
+
                     self.load_path(path, &sender);
                 }
             }
@@ -478,6 +499,7 @@ impl FluxApp {
             monitor.connect_changed(move |_, _, _, _| { sender_clone.input(AppMsg::Refresh); });
             self.directory_monitor = Some(monitor);
         }
+
 
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
