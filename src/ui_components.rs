@@ -2,6 +2,8 @@ use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 use adw::gdk;
+use adw::gio;
+use gtk::glib;
 
 #[derive(Debug, Clone)]
 pub struct FileItem {
@@ -23,7 +25,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     type Root = gtk::Box;
     type Widgets = FileWidgets;
 
-    fn setup(_item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
+    fn setup(item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
         relm4::view! {
             #[root]
             root = gtk::Box {
@@ -31,12 +33,33 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 set_halign: gtk::Align::Center,
                 set_valign: gtk::Align::Center,
                 add_css_class: "flux-card",
-                add_controller = gtk::GestureClick {
-                    set_button: 3, // Right Click
-                    connect_pressed => move |_, _, _, _| {
-                        // We handled the logic in app.rs, this just consumes the event if needed
-                        // or can be left empty as the ScrolledWindow controller handles the popup
+                
+                add_controller = gtk::DragSource {
+                    set_actions: gdk::DragAction::COPY,
+                    connect_prepare[item = item.clone()] => move |_, _, _| {
+                        item.item()
+                            .and_then(|obj| obj.downcast::<glib::BoxedAnyObject>().ok())
+                            .map(|boxed| {
+                                let file_item = boxed.borrow::<FileItem>();
+                                let file = gio::File::for_path(&file_item.path);
+                                gdk::ContentProvider::for_value(&file.to_value())
+                            })
+                    },
+                    connect_drag_begin => move |source, _| {
+                        if let Some(widget) = source.widget() {
+                            widget.add_css_class("dragging");
+                        }
+                    },
+                    connect_drag_end => move |source, _, _| {
+                        if let Some(widget) = source.widget() {
+                            widget.remove_css_class("dragging");
+                        }
                     }
+                },
+
+                add_controller = gtk::GestureClick {
+                    set_button: 3,
+                    connect_pressed => move |_, _, _, _| {}
                 },
 
                 #[name = "icon_widget"]
@@ -82,8 +105,8 @@ impl FactoryComponent for SidebarPlace {
     type Init = SidebarPlace;
     type Input = ();
     type Output = PathBuf;
-    type CommandOutput = ();
     type ParentWidget = gtk::ListBox;
+    type CommandOutput = ();
 
     view! {
         #[root]
@@ -92,7 +115,7 @@ impl FactoryComponent for SidebarPlace {
             set_selectable: false,
             add_controller = gtk::GestureClick {
                 connect_released[sender, path = self.path.clone()] => move |_, _, _, _| {
-                    sender.output(path.clone()).unwrap();
+                    let _ = sender.output(path.clone());
                 }
             },
             gtk::Box {
@@ -103,5 +126,8 @@ impl FactoryComponent for SidebarPlace {
             }
         }
     }
-    fn init_model(init: Self::Init, _: &DynamicIndex, _: FactorySender<Self>) -> Self { init }
+
+    fn init_model(init: Self::Init, _: &DynamicIndex, _: FactorySender<Self>) -> Self {
+        init
+    }
 }
