@@ -21,7 +21,8 @@ pub fn ensure_config_file() -> PathBuf {
 "Copy Path" => "echo -n %p | wl-copy"
 "Move to Trash" => "gio trash %p"
 "Set as Wallpaper" => "image/jpeg", "swww img %p"
-"Open in Code" => "text/all, application/x-wine-extension-ini", "code %p""#;
+"Open in Code" => "text/all, application/all", "code %p"
+"File Properties" => "file", "~/.local/bin/file-props %p""#;
         if let Ok(mut file) = fs::File::create(&config_path) { let _ = file.write_all(default_config.as_bytes()); }
     }
     config_path
@@ -147,17 +148,21 @@ pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
 }
 
 pub fn get_mime_type(path: &Path) -> String {
-    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+    if path.is_dir() {
+        return "inode/directory".to_string();
+    }
 
+    let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let mut sniff_buffer = [0u8; 4096];
+
     let data_slice = if let Ok(mut file) = fs::File::open(path) {
-        if let Ok(n) = file.read(&mut sniff_buffer) {
-            Some(&sniff_buffer[..n])
+        if let Ok(count) = file.read(&mut sniff_buffer) {
+            &sniff_buffer[..count]
         } else {
-            None
+            &[]
         }
     } else {
-        None
+        &[]
     };
 
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), data_slice);

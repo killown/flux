@@ -31,6 +31,14 @@ pub enum SortBy {
     Size,
 }
 
+#[derive(Clone, Debug)]
+pub struct ContextAction {
+    pub label: String,
+    pub action_name: String,
+    pub command: String,
+    pub mime_types: Vec<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UIConfig {
     pub default_icon_size: i32,
