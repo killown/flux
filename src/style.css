@@ -1,43 +1,173 @@
+@keyframes flux-drift {
+  0% {
+    transform: translateY(-8px) rotateX(4deg) rotateY(-2deg);
+  }
+  50% {
+    transform: translateY(-10px) rotateX(5deg) rotateY(2deg);
+  }
+  100% {
+    transform: translateY(-8px) rotateX(4deg) rotateY(-2deg);
+  }
+}
+
+@keyframes flux-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+:root {
+  /* LCH Color Palette */
+  --flux-bg: lch(12% 2 260);
+  --flux-card-bg: lch(18% 3 260 / 0.5);
+  --flux-card-hover: lch(24% 6 270 / 0.7);
+  --flux-accent: lch(72% 45 270);
+  --flux-text-main: lch(98% 1 260);
+  --flux-border: lch(28% 4 260 / 0.4);
+
+  /* Weighted 3D Shadows */
+  --flux-shadow-3d:
+    0 1px 0 lch(40% 10 270 / 0.2) inset, 0 15px 35px lch(2% 40 280 / 0.5),
+    0 25px 55px lch(1% 55 285 / 0.4);
+}
+
+/* --- Main View Cards --- */
 .flux-card {
-    background: alpha(@window_fg_color, 0.05);
-    border-radius: 12px;
-    padding: 16px;
-    margin: 6px;
-    transition: all 200ms ease;
+  background: var(--flux-card-bg);
+  background-image: linear-gradient(
+    115deg,
+    transparent 20%,
+    lch(100% 0 0 / 0.03) 45%,
+    lch(100% 0 0 / 0.08) 50%,
+    lch(100% 0 0 / 0.03) 55%,
+    transparent 80%
+  );
+  background-size: 250% 100%;
+  border: 1px solid var(--flux-border);
+  border-radius: 20px;
+  padding: 22px;
+  margin: 10px;
+  backdrop-filter: blur(25px);
+
+  transform-style: preserve-3d;
+  perspective: 1200px;
+
+  /* Smooth physics for the exit transition */
+  transition:
+    transform 800ms cubic-bezier(0.19, 1, 0.22, 1),
+    background 400ms ease,
+    box-shadow 800ms ease;
 }
+
 .flux-card:hover {
-    background: alpha(@window_fg_color, 0.1);
-    transform: scale(1.02);
+  background-color: var(--flux-card-hover);
+  border-color: lch(50% 30 270 / 0.5);
+  box-shadow: var(--flux-shadow-3d);
+
+  /* The Drift: Elegant, slow momentum movement */
+  animation:
+    flux-drift 4s infinite ease-in-out,
+    flux-shimmer 3s infinite linear;
 }
+
 .flux-card image {
-    margin-bottom: 12px;
+  margin-bottom: 18px;
+  filter: drop-shadow(0 12px 20px lch(2% 60 280 / 0.5));
+  transition: transform 900ms cubic-bezier(0.19, 1, 0.22, 1);
+  transform: translateZ(30px);
 }
+
+.flux-card:hover image {
+  /* Lift the icon to its own plane */
+  transform: translateZ(70px) translateY(-5px);
+}
+
 .flux-label {
-    font-weight: bold;
-    opacity: 0.8;
-    font-size: 13px;
+  color: var(--flux-text-main);
+  font-weight: 800;
+  font-size: 14.5px;
+  text-shadow: 0 4px 10px lch(0% 0 0 / 0.5);
+  transform: translateZ(15px);
+  transition: transform 800ms cubic-bezier(0.19, 1, 0.22, 1);
 }
+
+.flux-card:hover .flux-label {
+  transform: translateZ(35px);
+}
+
+/* --- Sidebar Navigation --- */
 .sidebar {
-    background-color: @view_bg_color;
-    border-right: 1px solid @borders;
+  background-color: lch(10% 1.5 260);
+  border-right: 1px solid var(--flux-border);
+  padding: 16px 0;
 }
+
+/* Kill default ListBox squares */
+listbox > row,
+listbox > row:selected,
+listbox > row:hover {
+  background-color: transparent;
+  outline: none;
+  box-shadow: none;
+}
+
 .sidebar-row {
-    padding: 10px 12px;
-    margin: 4px 8px;
-    border-radius: 6px;
-    transition: background 0.1s;
+  padding: 12px 18px;
+  margin: 4px 14px;
+  border-radius: 14px;
+  color: lch(75% 2 260);
+  transition: all 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-style: preserve-3d;
+  border: 1px solid transparent;
 }
-.sidebar-row:hover {
-    background-color: alpha(@window_fg_color, 0.08);
+
+.sidebar-row:hover:not(:selected) {
+  background-color: lch(28% 12 270 / 0.3);
+  color: var(--flux-text-main);
+  transform: translateX(8px) translateZ(10px);
 }
-.sidebar-row:active {
-    background-color: alpha(@window_fg_color, 0.15);
+
+/* Clean, glowing indicator for selected sidebar item */
+.sidebar-row:selected {
+  background: lch(35% 20 270 / 0.4);
+  color: var(--flux-text-main);
+  transform: translateX(4px) translateZ(15px);
+  box-shadow:
+    -4px 0 0 0 var(--flux-accent),
+    0 10px 20px lch(0% 0 0 / 0.3);
+  border-color: lch(45% 25 270 / 0.4);
 }
+
 .sidebar-label {
-    font-weight: 500;
-    font-size: 14px;
+  font-weight: 700;
+  font-size: 14.5px;
 }
+
 .title-label {
-    font-weight: 800;
-    opacity: 0.6;
+  color: var(--flux-accent);
+  font-weight: 950;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  margin: 24px 0 12px 28px;
+  filter: drop-shadow(0 0 12px lch(72% 45 270 / 0.3));
+}
+
+/* GridView Cleanup */
+gridview > child {
+  background: none;
+  border: none;
+  outline: none;
+  padding: 0;
+}
+
+gridview > child:selected .flux-card {
+  background: lch(30% 15 270 / 0.6);
+  border-color: var(--flux-accent);
+  box-shadow:
+    0 0 0 2px var(--flux-accent),
+    var(--flux-shadow-3d);
 }
