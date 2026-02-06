@@ -17,10 +17,10 @@ pub fn ensure_config_file() -> PathBuf {
     if !config_dir.exists() { let _ = fs::create_dir_all(&config_dir); }
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
-        let default_config = r#""Open Terminal" => "alacritty --working-directory=%d"
+        let default_config = r#""Open Terminal" => "directory", "alacritty --working-directory=%d"
 "Copy Path" => "echo -n %p | wl-copy"
 "Move to Trash" => "gio trash %p"
-"Set as Wallpaper" => "image/jpeg", "swww img %p"
+"Set as Wallpaper" => "image/all", "swww img %p"
 "Open in Code" => "text/all, application/all", "code %p"
 "File Properties" => "file", "~/.local/bin/file-props %p""#;
         if let Ok(mut file) = fs::File::create(&config_path) { let _ = file.write_all(default_config.as_bytes()); }
