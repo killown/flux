@@ -50,7 +50,7 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 
 ## Getting Started
 
-    git clone https://github.com/yourusername/flux.git
+    git clone https://github.com/killown/flux.git
     cd flux
     cargo run --release
 
