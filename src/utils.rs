@@ -31,12 +31,13 @@ pub fn load_config() -> crate::model::Config {
     if !config_path.exists() {
         let _ = fs::create_dir_all(&config_dir);
         let default_toml = r#"[ui]
-default_icon_size = 128
-sidebar_width = 240
+default_icon_size = 96
+sidebar_width = 200
 show_xdg_dirs = true
 # Valid values: "Name", "Date", "Size" (use shortcut Ctrl + S) to cycle among the sort modes
 default_sort = "Name"
 show_hidden_by_default = false
+show_xdg_dirs_by_default = true
 
 [[sidebar]]
 # name: Label shown in sidebar
@@ -59,6 +60,7 @@ path = "~/Projects"
                 show_xdg_dirs: true,
                 default_sort: crate::model::SortBy::Name,
                 show_hidden_by_default: false,
+                show_xdg_dirs_by_default: true,
             },
             sidebar: vec![],
         })
@@ -88,7 +90,9 @@ pub fn load_menu_config() -> (gio::Menu, Vec<(String, String)>) {
 }
 
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
-    if is_dir { return adw::gio::ThemedIcon::new("folder").upcast(); }
+    if is_dir {
+        return gio::Icon::for_string("folder").unwrap(); 
+    }
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
     adw::gio::content_type_get_icon(&content_type)
@@ -180,10 +184,6 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
                 let fs_type = parts[2];
                 let path = PathBuf::from(path_str);
 
-                // Conditions to include a mount in the sidebar:
-                // 1. Standard external mount points (/media, /mnt, /run/media)
-                // 2. FUSE mounts (rclone, sshfs, etc.) even if inside $HOME
-                // 3. Network/Shared mounts
                 let is_external = path_str.starts_with("/run/media/") || 
                                  path_str.starts_with("/media/") || 
                                  path_str.starts_with("/mnt/");
@@ -191,12 +191,10 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
                 let is_user_fuse = fs_type.contains("fuse") && path.starts_with(&home_dir);
 
                 if is_external || is_user_fuse {
-                    // Skip the root of the home dir itself if it appears as a mount
                     if path == home_dir { continue; }
 
                     if let Some(name) = path.file_name() {
                         let display_name = name.to_string_lossy().to_string();
-                        // Avoid duplicates if the same path is mounted multiple times
                         if !mounts.iter().any(|(_, p)| p == &path) {
                             mounts.push((display_name, path));
                         }

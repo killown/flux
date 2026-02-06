@@ -32,6 +32,8 @@ pub struct UIConfig {
     pub default_sort: SortBy,
     #[serde(default)]
     pub show_hidden_by_default: bool,
+    #[serde(default)]
+    pub show_xdg_dirs_by_default: bool,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -58,24 +60,25 @@ pub struct FluxApp {
     pub show_hidden: bool,
     pub config: Config,
     pub _volume_monitor: gio::VolumeMonitor,
+    pub filter: String,
+    pub header_view: String,
 }
 
 #[derive(Debug)]
 pub enum AppMsg {
     Navigate(PathBuf),
     RefreshSidebar,
+    ToggleHidden,
+    CycleSort,
+    UpdateFilter(String),
+    StartSearch(char),
+    SwitchHeader(String),
+    ShowContextMenu(f64, f64, Option<PathBuf>),
+    ExecuteCommand(String),
+    Zoom(f64),
+    ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
     GoBack,
     GoForward,
     Refresh,
     Open(u32),
-    Zoom(f64),
-    ShowContextMenu(f64, f64, Option<PathBuf>),
-    ExecuteCommand(String),
-    ToggleHidden,
-    CycleSort,
-    ThumbnailReady {
-        name: String,
-        texture: gdk::Texture,
-        load_id: u64
-    },
 }
