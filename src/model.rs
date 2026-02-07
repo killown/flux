@@ -51,6 +51,8 @@ pub struct UIConfig {
     #[serde(default)]
     pub folder_sort: std::collections::HashMap<String, SortBy>,
     #[serde(default)]
+    pub folder_icon_size: std::collections::HashMap<String, i32>, // Added for icon size persistence
+    #[serde(default)]
     pub show_hidden_by_default: bool,
     #[serde(default)]
     pub show_xdg_dirs_by_default: bool,
@@ -90,6 +92,7 @@ pub struct FluxApp {
 
 #[derive(Debug)]
 pub enum AppMsg {
+    OpenFileProperties(PathBuf),
     Navigate(PathBuf),
     RefreshSidebar,
     ToggleHidden,
@@ -100,11 +103,11 @@ pub enum AppMsg {
     ShowContextMenu(f64, f64, Option<PathBuf>),
     ExecuteCommand(String),
     Zoom(f64),
-    Refresh,
-    Open(u32),
+    ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
     GoBack,
     GoForward,
+    Refresh,
+    Open(u32),
     EmptyTrash,
     RestoreItem(PathBuf),
-    ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
 }
