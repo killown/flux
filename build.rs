@@ -2,22 +2,28 @@ use std::process::Command;
 use std::env;
 
 fn main() {
-    // Only run on release builds
-    if env::var("PROFILE").unwrap() == "release" {
-        println!("cargo:warning=Attempting to sync file-props to .local/bin...");
-        
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
+
+    if profile == "release" {
+        println!("cargo:warning=>>> Release build detected. Syncing assets via Makefile...");
         let status = Command::new("make")
             .arg("install")
             .status();
 
-        if let Ok(s) = status {
-            if s.success() {
-                println!("cargo:warning=file-props installed successfully via Makefile.");
+        match status {
+            Ok(s) if s.success() => {
+                println!("cargo:warning=>>> Assets synced successfully.");
+            }
+            Ok(s) => {
+                println!("cargo:warning=>>> Makefile failed with status: {}", s);
+            }
+            Err(e) => {
+                println!("cargo:warning=>>> Failed to run Makefile: {}", e);
             }
         }
     }
 
-    // Optimization: only rerun if these files actually change
     println!("cargo:rerun-if-changed=Makefile");
     println!("cargo:rerun-if-changed=scripts/properties.py");
+    println!("cargo:rerun-if-changed=flux.desktop");
 }
