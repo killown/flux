@@ -160,15 +160,49 @@ impl SimpleComponent for FluxApp {
                                 }
                             } -> { set_name: "search" },
                         },
-                        pack_end = &gtk::Label {
-                            add_css_class: "sort-status-label",
-                            #[watch] set_label: &format!("Sort: {:?}", model.sort_status()),
+                        pack_end = &gtk::Button {
+                            #[watch]
+                            set_visible: model.current_path.to_string_lossy() == "trash:///",
+                            connect_clicked => AppMsg::EmptyTrash,
+                            set_tooltip_text: Some("Empty Trash"),
+                            add_css_class: "destructive-action",
+
+                            gtk::Box {
+                                set_orientation: gtk::Orientation::Horizontal,
+                                set_spacing: 6,
+
+                                gtk::Image {
+                                    set_icon_name: Some("user-trash-full-symbolic"),
+                                },
+
+                                gtk::Label {
+                                    set_label: "Empty Trash",
+                                }
+                            }
+                        },
+                        pack_end = &gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+                            set_spacing: 8,
                             set_margin_end: 12,
-                            set_opacity: 0.7,
+                            set_valign: gtk::Align::Center,
+                            add_css_class: "sort-container",
+
+                            gtk::Image {
+                                set_icon_name: Some("view-sort-ascending-symbolic"),
+                                set_pixel_size: 16,
+                                set_opacity: 0.6,
+                            },
+
+                            gtk::Label {
+                                add_css_class: "sort-status-label",
+                                set_opacity: 0.8,
+                                #[watch]
+                                set_label: model.sort_status(),
+                            }
                         }
                     },
                     #[name = "grid_scroller"]
-                    gtk::ScrolledWindow { 
+                    gtk::ScrolledWindow {
                         set_vexpand: true,
                         add_controller = gtk::EventControllerScroll {
                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -182,15 +216,6 @@ impl SimpleComponent for FluxApp {
                             }
                         },
                         add_controller = gtk::GestureClick {
-                            connect_pressed[view = model.files.view.clone()] => move |_, _, _, _| {
-                                if let Some(selection_model) = view.model() {
-                                    if let Some(single_selection) = selection_model.downcast_ref::<gtk::SingleSelection>() {
-                                        single_selection.set_selected(gtk::INVALID_LIST_POSITION);
-                                    }
-                                }
-                            }
-                        },
-                        add_controller = gtk::GestureClick {
                             set_button: 3, 
                             connect_pressed[sender] => move |gesture, _, x, y| {
                                 if let Some(widget) = gesture.widget() {
@@ -199,7 +224,7 @@ impl SimpleComponent for FluxApp {
                                         let mut current: Option<gtk::Widget> = Some(picked);
                                         while let Some(w) = current {
                                             let name = w.widget_name().to_string();
-                                            if name.starts_with("/") {
+                                            if name.starts_with("/") || name.starts_with("trash://") {
                                                 picked_path = Some(PathBuf::from(name));
                                                 break;
                                             }
@@ -232,8 +257,6 @@ impl SimpleComponent for FluxApp {
             .has_arrow(false)
             .build();
 
-
-
         let action_group = gio::SimpleActionGroup::new();
         let app_sender = sender.clone();
 
@@ -255,19 +278,10 @@ impl SimpleComponent for FluxApp {
         }
         root.insert_action_group("win", Some(&action_group));
 
-        let files = TypedGridView::<FileItem, gtk::SingleSelection>::new();
-
-        if let Some(selection_model) = files.view.model() {
-            if let Some(single_selection) = selection_model.downcast_ref::<gtk::SingleSelection>() {
-                single_selection.set_autoselect(false);
-                single_selection.set_can_unselect(true);
-                single_selection.set_selected(gtk::INVALID_LIST_POSITION);
-            }
-        }
+        let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
+        files.view.set_enable_rubberband(true);
 
         let grid_view = &files.view;
-        grid_view.set_max_columns(12);
-        grid_view.set_min_columns(4);
         let sender_clone = sender.clone();
         grid_view.connect_activate(move |_, pos| sender_clone.input(AppMsg::Open(pos)));
 
@@ -324,33 +338,20 @@ impl SimpleComponent for FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleSort => {
-                // 1. Cycle the logic
                  self.sort_by = match self.sort_by {
                      SortBy::Name => SortBy::Date,
                      SortBy::Date => SortBy::Size,
                      SortBy::Size => SortBy::Name,
                  };
  
-                // 2. Update the config map for the current folder
                  let path_str = self.current_path.to_string_lossy().to_string();
-
-                // If the new sort matches the global default, we can optionally remove the override
-                // to keep the config clean, or just always insert it:
                  self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
-
-                // 3. Persist to disk
                  utils::save_config(&self.config);
-
-                // 4. Trigger UI refresh
                  sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleFolderPriority => {
-                // Toggle the setting
                 self.config.ui.folders_first = !self.config.ui.folders_first;
-                // Save to disk
                 utils::save_config(&self.config);
-                // Refresh the view using load_path (NOT sort_files)
-                // We clone current_path to reload the exact same directory
                 let path = self.current_path.clone();
                 self.load_path(path, &sender);
             }
@@ -368,6 +369,7 @@ impl SimpleComponent for FluxApp {
 
             AppMsg::ShowContextMenu(x, y, path) => {
                 self.active_item_path = path.clone();
+                let is_in_trash = self.current_path.to_string_lossy().starts_with("trash://");
 
                 let target_mime = if let Some(ref p) = path {
                     utils::get_mime_type(p)
@@ -380,32 +382,38 @@ impl SimpleComponent for FluxApp {
                 for action in &self.menu_actions {
                     let mut matches = false;
 
-                    for allowed_mime in &action.mime_types {
-                        let is_match = match allowed_mime.as_str() {
-                            "*" | "all" => true,
-                            "image/all" | "image/*" => target_mime.starts_with("image/"),
-                            "video/all" | "video/*" => target_mime.starts_with("video/"),
-                            "application/all" | "application/*" => target_mime.starts_with("application/"),
-                            "text/all" | "text/*" => {
-                                target_mime.starts_with("text/") || 
-                                gio::content_type_is_a(&target_mime, "text/plain") ||
-                                target_mime == "inode/x-empty"
-                            },
-                            "folder" | "directory" => target_mime == "inode/directory",
-                            "file" => target_mime != "inode/directory",
-                            t => t == target_mime,
-                        };
-
-                        if is_match {
+                    if is_in_trash {
+                        // ONLY allow actions specifically marked for 'trash'
+                        if action.mime_types.contains(&"trash".to_string()) {
                             matches = true;
-                            break;
+                        }
+                    } else {
+                        // ONLY allow standard actions if NOT in trash
+                        for allowed_mime in &action.mime_types {
+                            // Skip the trash-specific actions when browsing normal folders
+                            if allowed_mime == "trash" { continue; }
+
+                            matches = match allowed_mime.as_str() {
+                                "*" | "all" => true,
+                                "image/all" | "image/*" => target_mime.starts_with("image/"),
+                                "video/all" | "video/*" => target_mime.starts_with("video/"),
+                                "application/all" | "application/*" => target_mime.starts_with("application/"),
+                                "text/all" | "text/*" => {
+                                    target_mime.starts_with("text/") || 
+                                    gio::content_type_is_a(&target_mime, "text/plain") ||
+                                    target_mime == "inode/x-empty"
+                                },
+                                "folder" | "directory" => target_mime == "inode/directory",
+                                "file" => target_mime != "inode/directory",
+                                t => t == target_mime,
+                            };
+                            if matches { break; }
                         }
                     }
 
                     if matches {
                         let full_action_name = format!("win.{}", action.action_name);
                         menu.append(Some(&action.label), Some(&full_action_name));
-
                         if let Some(g_action) = self.action_group.lookup_action(&action.action_name) {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                                 simple.set_enabled(true);
@@ -419,8 +427,47 @@ impl SimpleComponent for FluxApp {
                 self.context_menu_popover.popup();
             }
             AppMsg::ExecuteCommand(cmd_template) => {
-                let target = self.active_item_path.as_ref().unwrap_or(&self.current_path);
-                utils::run_custom_command(&cmd_template, target);
+                let mut targets = Vec::new();
+
+                if let Some(model) = self.files.view.model().and_then(|m| m.downcast::<gtk::MultiSelection>().ok()) {
+                    let bitset = model.selection();
+                    let n = bitset.size();
+                    for i in 0..n {
+                        let pos = bitset.nth(i as u32);
+                        if let Some(wrapper) = self.files.get(pos) {
+                            targets.push(wrapper.borrow().path.clone());
+                        }
+                    }
+                }
+
+                let final_targets = if let Some(active) = &self.active_item_path {
+                    if targets.contains(active) {
+                        targets
+                    } else {
+                        vec![active.clone()]
+                    }
+                } else {
+                    vec![self.current_path.clone()]
+                };
+
+                if final_targets.len() == 1 {
+                    utils::run_custom_command(&cmd_template, &final_targets[0]);
+                } else if !final_targets.is_empty() {
+                    let paths_arg = final_targets.iter()
+                        .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
+                        .collect::<Vec<_>>()
+                        .join(" ");
+
+                    let mut cmd = cmd_template.replace("%p", &paths_arg);
+                    if cmd.contains("%d") {
+                         cmd = cmd.replace("%d", &format!("'{}'", self.current_path.to_string_lossy().replace("'", "'\\''")));
+                    }
+
+                    let _ = std::process::Command::new("sh")
+                        .arg("-c")
+                        .arg(cmd)
+                        .spawn();
+                }
             }
             AppMsg::Zoom(delta) => {
                 let change = if delta > 0.0 { -16 } else { 16 };
@@ -438,12 +485,12 @@ impl SimpleComponent for FluxApp {
                 }
             }
             AppMsg::Navigate(path) => {
-                if path.is_dir() {
+                let path_str = path.to_string_lossy();
+                if path.is_dir() || path_str.starts_with("trash://") {
                     self.history.push(self.current_path.clone());
                     self.forward_stack.clear();
 
-                    let path_str = path.to_string_lossy().to_string();
-                    if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str) {
+                    if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str.to_string()) {
                         self.sort_by = specific_sort.clone();
                     } else {
                         self.sort_by = self.config.ui.default_sort.clone();
@@ -486,13 +533,29 @@ impl SimpleComponent for FluxApp {
             AppMsg::Open(index) => {
                 if let Some(item_wrapper) = self.files.get(index) {
                     let item = item_wrapper.borrow();
-                    let target = self.current_path.join(&item.name);
+                    let target = if self.current_path.to_string_lossy().starts_with("trash://") {
+                        item.path.clone()
+                    } else {
+                        self.current_path.join(&item.name)
+                    };
                     if target.is_dir() {
                         sender.input(AppMsg::Navigate(target));
                     } else {
                         utils::open_file(target);
                     }
                 }
+            }
+            AppMsg::EmptyTrash => {
+                let root = gio::File::for_uri("trash:///");
+                if let Ok(enumerator) = root.enumerate_children("standard::name", gio::FileQueryInfoFlags::NONE, gio::Cancellable::NONE) {
+                    for info in enumerator.flatten() {
+                        let _ = root.child(info.name()).delete(gio::Cancellable::NONE);
+                    }
+                }
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::RestoreItem(_) => {
+                sender.input(AppMsg::Refresh);
             }
         }
     }
@@ -530,6 +593,8 @@ impl FluxApp {
             guard.push_back(SidebarPlace { name: "Local Data".to_string(), icon: "folder-remote-symbolic".to_string(), path: utils::get_xdg_dir("XDG_DATA_HOME", "~/.local/share") });
         }
 
+        guard.push_back(SidebarPlace { name: "Trash".to_string(), icon: "user-trash-symbolic".to_string(), path: PathBuf::from("trash:///") });
+
         for custom in &self.config.sidebar {
             let path = if custom.path.starts_with('~') {
                 dirs::home_dir().map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy()))).unwrap_or_else(|| PathBuf::from(&custom.path))
@@ -557,6 +622,40 @@ impl FluxApp {
 
     pub fn load_path(&mut self, path: PathBuf, sender: &ComponentSender<Self>) {
         self.directory_monitor = None;
+        let path_str = path.to_string_lossy();
+
+        if path_str.starts_with("trash://") {
+            self.files.clear();
+            let root = gio::File::for_uri(&path_str);
+
+            if let Ok(monitor) = root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE) {
+               let sender_clone = sender.clone();
+                monitor.connect_changed(move |_, _, _, _| { 
+                    sender_clone.input(AppMsg::Refresh); 
+                });
+                self.directory_monitor = Some(monitor);
+            }
+
+            if let Ok(enumerator) = root.enumerate_children("standard::*", gio::FileQueryInfoFlags::NONE, gio::Cancellable::NONE) {
+                for info in enumerator.flatten() {
+                    let name = info.display_name().to_string();
+                    let is_dir = info.file_type() == gio::FileType::Directory;
+                    let child = root.child(info.name());
+                    let child_path = PathBuf::from(child.uri());
+                    self.files.append(FileItem {
+                        name,
+                        icon: info.icon().unwrap_or_else(|| gio::Icon::for_string("file").unwrap()),
+                        thumbnail: None,
+                        is_dir,
+                        path: child_path,
+                        icon_size: self.current_icon_size,
+                    });
+                }
+            }
+            self.current_path = path;
+            return;
+        }
+
         let file_obj = gio::File::for_path(&path);
         if let Ok(monitor) = file_obj.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE) {
             let sender_clone = sender.clone();
@@ -592,19 +691,17 @@ impl FluxApp {
                 }
             }
 
-            // Capture config preference before sorting
             let folders_first = self.config.ui.folders_first;
 
             items_metadata.sort_by(|a, b| {
                 let a_is_dir = a.3;
                 let b_is_dir = b.3;
 
-                // 1. Primary Sort: Folders First vs Folders Last
                 if a_is_dir != b_is_dir {
                     return if folders_first {
-                        b_is_dir.cmp(&a_is_dir) // Folders First
+                        b_is_dir.cmp(&a_is_dir)
                     } else {
-                        a_is_dir.cmp(&b_is_dir) // Files First (Folders Last)
+                        a_is_dir.cmp(&b_is_dir)
                     };
                 }
 

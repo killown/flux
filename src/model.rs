@@ -68,7 +68,7 @@ pub struct CustomPlace {
 }
 
 pub struct FluxApp {
-    pub files: TypedGridView<FileItem, gtk::SingleSelection>,
+    pub files: TypedGridView<FileItem, gtk::MultiSelection>,
     pub sidebar: FactoryVecDeque<SidebarPlace>,
     pub current_path: PathBuf,
     pub history: Vec<PathBuf>,
@@ -104,5 +104,7 @@ pub enum AppMsg {
     Open(u32),
     GoBack,
     GoForward,
+    EmptyTrash,
+    RestoreItem(PathBuf),
     ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
 }

@@ -6,10 +6,27 @@ mod model;
 use relm4::prelude::*;
 use crate::model::FluxApp;
 use std::path::PathBuf;
+use adw::prelude::*;
+use adw::gio;
 
 fn main() {
-    let app = RelmApp::new("sh.flux.FileManager");
+    // 1. Check if we've already set the theme
+    if std::env::var("GTK_THEME").is_err() {
+        let settings = gio::Settings::new("org.gnome.desktop.interface");
+        let theme_name: String = settings.string("gtk-theme").into();
 
+        // 2. Re-spawn the process with the variable set
+        let status = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(std::env::args().skip(1))
+            .env("GTK_THEME", &theme_name)
+            .status()
+            .expect("Failed to restart Flux with GTK_THEME");
+
+        // 3. Exit the initial "themeless" process
+        std::process::exit(status.code().unwrap_or(0));
+    }
+
+    let app = RelmApp::new("sh.flux.FileManager");
     app.allow_multiple_instances(true);
 
     let display = adw::gdk::Display::default().expect("Could not get default display");
