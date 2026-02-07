@@ -6,20 +6,11 @@ import subprocess
 import sys
 import datetime
 import struct
+import gi
 
-try:
-    import magic
-    import gi
-
-    gi.require_version("Gtk", "4.0")
-    gi.require_version("Adw", "1")
-    from gi.repository import Adw, Gtk, Gio
-except ImportError:
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "python-magic", "PyGObject"]
-    )
-    import magic
-    from gi.repository import Adw, Gtk, Gio
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+from gi.repository import Adw, Gtk, Gio
 
 
 def format_size(size_bytes):
@@ -76,17 +67,27 @@ def get_all_metadata(file_input):
     if not path.exists():
         return None
     stats = path.stat()
+
+    # Fixed: Use Gio for consistent MIME detection
+    gfile = Gio.File.new_for_path(str(path))
+    try:
+        info = gfile.query_info(
+            "standard::content-type", Gio.FileQueryInfoFlags.NONE, None
+        )
+        mime_type = info.get_content_type()
+    except:
+        mime_type = "application/octet-stream"
+
     with open(path, "rb") as f:
         raw = f.read(1024 * 1024)
-    mime_type = magic.from_buffer(raw, mime=True)
+
     data = {
         "File Identity": {
             "Filename": path.name,
             "Extension": path.suffix or "None",
             "MIME Type": mime_type,
-            "Description": magic.from_buffer(raw),
         },
-        "System &amp; Disk": {
+        "System & Disk": {
             "Full Path": str(path),
             "Size": f"{format_size(stats.st_size)} ({stats.st_size} B)",
             "Disk Usage": f"{format_size(stats.st_blocks * 512)}",
@@ -111,20 +112,15 @@ def get_all_metadata(file_input):
             "SHA256": hashlib.sha256(raw).hexdigest(),
         },
     }
+
     if "executable" in mime_type or "sharedlib" in mime_type:
         elf = get_elf_info(path)
         if elf:
             data["Executable Analysis"] = elf
-    if "text" in mime_type or path.suffix in [
-        ".py",
-        ".rs",
-        ".toml",
-        ".yaml",
-        ".json",
-        ".sh",
-        ".md",
-        ".txt",
-    ]:
+
+    # Fixed: More robust check for text-based files
+    is_text = any(x in mime_type for x in ["text", "javascript", "json", "xml"])
+    if is_text or path.suffix in [".py", ".rs", ".toml", ".yaml", ".sh", ".md", ".txt"]:
         try:
             content = raw.decode(errors="ignore")
             lines = content.splitlines()
@@ -138,6 +134,7 @@ def get_all_metadata(file_input):
             }
         except:
             pass
+
     git = get_git_info(path)
     if git:
         data["Git History"] = git
@@ -153,6 +150,7 @@ class MetadataWindow(Adw.ApplicationWindow):
         self.set_default_size(540, 850)
         self.metadata = metadata
         self.mime_type = metadata["File Identity"]["MIME Type"]
+
         header = Adw.HeaderBar()
         header.set_decoration_layout(":close")
         self.toast_overlay = Adw.ToastOverlay()
@@ -160,9 +158,12 @@ class MetadataWindow(Adw.ApplicationWindow):
         view.add_top_bar(header)
         view.set_content(self.toast_overlay)
         self.set_content(view)
+
         page = Adw.PreferencesPage()
         self.toast_overlay.set_child(page)
+
         self.create_association_group(page)
+
         for section, items in metadata.items():
             group = Adw.PreferencesGroup(title=section)
             page.add(group)
@@ -172,6 +173,7 @@ class MetadataWindow(Adw.ApplicationWindow):
                 row.add_suffix(Gtk.Image.new_from_icon_name("edit-copy-symbolic"))
                 row.connect("activated", lambda r, v=val: self.copy_to_clipboard(v))
                 group.add(row)
+
         esc = Gtk.ShortcutController()
         esc.add_shortcut(
             Gtk.Shortcut.new(
@@ -187,9 +189,11 @@ class MetadataWindow(Adw.ApplicationWindow):
             description=f"Default application for {self.mime_type}",
         )
         page.add(group)
+
         apps = sorted(Gio.AppInfo.get_all(), key=lambda x: (x.get_name() or "").lower())
         self.app_list = apps
         default = Gio.AppInfo.get_default_for_type(self.mime_type, False)
+
         self.model = Gtk.StringList()
         selected_idx = Gtk.INVALID_LIST_POSITION
         for i, app in enumerate(apps):
@@ -197,6 +201,7 @@ class MetadataWindow(Adw.ApplicationWindow):
             self.model.append(name)
             if default and app.equal(default):
                 selected_idx = i
+
         expression = Gtk.PropertyExpression.new(Gtk.StringObject, None, "string")
         self.combo = Adw.ComboRow(
             title="Open With",
@@ -213,7 +218,6 @@ class MetadataWindow(Adw.ApplicationWindow):
         if idx == Gtk.INVALID_LIST_POSITION:
             return
         app = self.app_list[idx]
-        app_name = app.get_name()
         try:
             app.set_as_default_for_type(self.mime_type)
             desktop_id = app.get_id()
@@ -221,7 +225,9 @@ class MetadataWindow(Adw.ApplicationWindow):
                 subprocess.run(
                     ["xdg-mime", "default", desktop_id, self.mime_type], check=False
                 )
-            self.toast_overlay.add_toast(Adw.Toast(title=f"Set {app_name} as default"))
+            self.toast_overlay.add_toast(
+                Adw.Toast(title=f"Set {app.get_name()} as default")
+            )
         except Exception as e:
             self.toast_overlay.add_toast(Adw.Toast(title=f"Error: {str(e)}"))
 
