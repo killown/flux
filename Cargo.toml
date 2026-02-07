@@ -2,6 +2,7 @@
 name = "flux"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 relm4 = { version = "0.10.1", features = ["libadwaita"] }

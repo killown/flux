@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Flux
+Comment=Modern and simple file manager written in Rust with Libadwaita
+Exec=@BIN_PATH@ %u
+Icon=flux
+Terminal=false
+Categories=System;FileTools;FileManager;Utility;
+MimeType=inode/directory;
+Keywords=files;explorer;manager;rust;
+StartupNotify=true
