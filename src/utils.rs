@@ -206,7 +206,7 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
  
     let (is_img, is_vid) = is_visual_media(path);
     if is_img {
-        match gdk_pixbuf::Pixbuf::from_file_at_scale(path, 256, 256, true) {
+        match gdk_pixbuf::Pixbuf::from_file_at_scale(path, 512, 512, true) {
             Ok(pixbuf) => {
                 if let Some(path_str) = cache_path.to_str() { let _ = pixbuf.savev(path_str, "png", &[]); }
                 return Some(gdk::Texture::for_pixbuf(&pixbuf));
@@ -215,7 +215,7 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         }
     } else if is_vid {
         let status = Command::new("ffmpeg").arg("-y").arg("-loglevel").arg("panic").arg("-i").arg(path)
-            .arg("-ss").arg("00:00:01.000").arg("-vframes").arg("1").arg("-vf").arg("scale=256:-1").arg(&cache_path).status();
+            .arg("-ss").arg("00:00:01.000").arg("-vframes").arg("1").arg("-vf").arg("scale=512:-1").arg(&cache_path).status();
         if let Ok(s) = status {
             if s.success() && cache_path.exists() {
                  let file = adw::gio::File::for_path(&cache_path);

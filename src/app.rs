@@ -480,7 +480,7 @@ impl SimpleComponent for FluxApp {
             }
             AppMsg::Zoom(delta) => {
                 let change = if delta > 0.0 { -16 } else { 16 };
-                let new_size = (self.current_icon_size + change).clamp(32, 256);
+                let new_size = (self.current_icon_size + change).clamp(32, 512);
                 if new_size != self.current_icon_size {
                     self.current_icon_size = new_size;
 
