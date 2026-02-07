@@ -150,7 +150,6 @@ class MetadataWindow(Adw.ApplicationWindow):
         self.mime_type = metadata["File Identity"]["MIME Type"]
 
         header = Adw.HeaderBar()
-        header.set_decoration_layout(":close")
         self.toast_overlay = Adw.ToastOverlay()
         view = Adw.ToolbarView()
         view.add_top_bar(header)
