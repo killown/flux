@@ -2,6 +2,7 @@ PREFIX ?= $(HOME)/.local
 BINDIR = $(PREFIX)/bin
 APPDIR = $(PREFIX)/share/applications
 ICONDIR = $(PREFIX)/share/icons/hicolor/scalable/apps
+CONFDIR = $(HOME)/.config/flux
 
 .PHONY: install
 
@@ -23,8 +24,11 @@ install:
 	
 	# 4. Install Icon (with DESTDIR)
 	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/flux.svg
+
+	# 5. Install default theme as style.css
+	@install -m 644 themes/default.css $(DESTDIR)$(CONFDIR)/style.css
 	
-	# 5. Refresh (Only if not in a fakeroot/DESTDIR environment)
+	# 6. Refresh (Only if not in a fakeroot/DESTDIR environment)
 	@if [ -z "$(DESTDIR)" ]; then \
 		update-desktop-database $(APPDIR); \
 		echo "Successfully installed to $(APPDIR)/flux.desktop"; \

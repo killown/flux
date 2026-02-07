@@ -93,8 +93,8 @@ headerbar {
 }
 
 .drop-hover {
-  background-color: alpha(@accent_color, 0.2) !important;
-  border: 2px dashed @accent_color !important;
+  background-color: alpha(@accent_color, 0.2);
+  border: 2px dashed @accent_color;
   transform: scale(1.05);
 }
 
