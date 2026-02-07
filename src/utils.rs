@@ -17,12 +17,14 @@ pub fn ensure_config_file() -> PathBuf {
     if !config_dir.exists() { let _ = fs::create_dir_all(&config_dir); }
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
+        //FIXME: file properties not working without full path
         let default_config = r#""Open Terminal" => "directory", "alacritty --working-directory=%d"
 "Copy Path" => "echo -n %p | wl-copy"
 "Move to Trash" => "gio trash %p"
+"Restore File" => "trash", "gio trash --restore %p"
 "Set as Wallpaper" => "image/all", "swww img %p"
 "Open in Code" => "text/all, application/all", "code %p"
-"File Properties" => "file", "~/.local/bin/file-props %p""#;
+"File Properties" => "file", "~/.local/bin/flux --file-properties %p""#;
         if let Ok(mut file) = fs::File::create(&config_path) { let _ = file.write_all(default_config.as_bytes()); }
     }
     config_path
@@ -75,6 +77,7 @@ path = "~/Downloads"
                 show_xdg_dirs: true,
                 default_sort: crate::model::SortBy::Name,
                 folder_sort: std::collections::HashMap::new(),
+                folder_icon_size: std::collections::HashMap::new(),
                 show_hidden_by_default: false,
                 show_xdg_dirs_by_default: true,
                 device_renames: std::collections::HashMap::new(),
@@ -227,11 +230,29 @@ pub fn run_custom_command(command_template: &str, file_path: &Path) {
     let path_str = file_path.to_string_lossy();
     let parent = file_path.parent().unwrap_or(file_path).to_string_lossy();
     let filename = file_path.file_name().unwrap_or_default().to_string_lossy();
-    let final_cmd = command_template
-        .replace("%p", &format!("\"{}\"", path_str))
-        .replace("%d", &format!("\"{}\"", parent))
-        .replace("%f", &format!("\"{}\"", filename));
-    let _ = Command::new("sh").arg("-c").arg(final_cmd).spawn();
+
+    // Escape variables to prevent shell injection
+    let p_arg = format!("'{}'", path_str.replace("'", "'\\''"));
+    let d_arg = format!("'{}'", parent.replace("'", "'\\''"));
+    let f_arg = format!("'{}'", filename.replace("'", "'\\''"));
+
+    let mut final_cmd = command_template
+        .replace("%p", &p_arg)
+        .replace("%d", &d_arg)
+        .replace("%f", &f_arg);
+
+    // MANUALLY EXPAND ~ and $HOME: 
+    // This ensures that even if the Desktop environment has a limited PATH,
+    // we resolve the user's local bin folder correctly.
+    if let Some(home) = dirs::home_dir() {
+        let home_str = home.to_string_lossy();
+        final_cmd = final_cmd.replace("~", &home_str).replace("$HOME", &home_str);
+    }
+
+    let _ = Command::new("sh")
+        .arg("-c")
+        .arg(final_cmd)
+        .spawn();
 }
 
 pub fn get_xdg_dir(env_var: &str, fallback: &str) -> PathBuf {

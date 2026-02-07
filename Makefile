@@ -11,7 +11,6 @@ install:
 	
 	# 1. Install Binary (with DESTDIR)
 	@install -m 755 target/release/flux $(DESTDIR)$(BINDIR)/flux
-	@install -m 755 scripts/properties.py $(DESTDIR)$(BINDIR)/file-props
 	
 	# 2. Generate the desktop file
 	# Note: We keep @BIN_PATH@ pointing to $(BINDIR) (the final path), 

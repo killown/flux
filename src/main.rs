@@ -2,9 +2,11 @@ mod app;
 mod ui_components;
 mod utils;
 mod model;
+mod file_properties;
 
 use relm4::prelude::*;
 use crate::model::FluxApp;
+use crate::file_properties::FileProperties;
 use std::path::PathBuf;
 use adw::prelude::*;
 use adw::gio;
@@ -26,13 +28,27 @@ fn main() {
         std::process::exit(status.code().unwrap_or(0));
     }
 
+    let args: Vec<String> = std::env::args().collect();
+
+    // --- CLI HANDLER: FILE PROPERTIES ---
+    // Usage: flux --file-properties /path/to/file
+    if args.len() > 2 && args[1] == "--file-properties" {
+        let path = PathBuf::from(&args[2]);
+        let app = RelmApp::new("flux.PropertiesViewer");
+        app.allow_multiple_instances(true);
+
+        app.with_args(vec![])
+           .run::<FileProperties>(path);
+        return;
+    }
+
+    // --- MAIN APP HANDLER ---
     let app = RelmApp::new("flux.FileManager");
     app.allow_multiple_instances(true);
 
     let display = adw::gdk::Display::default().expect("Could not get default display");
     let _theme = gtk::IconTheme::for_display(&display);
 
-    let args: Vec<String> = std::env::args().collect();
     let start_path = if args.len() > 1 {
         PathBuf::from(&args[1])
     } else {

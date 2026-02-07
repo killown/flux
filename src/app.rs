@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use futures::StreamExt;
+use crate::file_properties::FileProperties;
 
 use crate::ui_components::{FileItem, SidebarPlace};
 use crate::utils;
@@ -126,9 +127,9 @@ impl SimpleComponent for FluxApp {
                                     }
                                     sender.input(AppMsg::SwitchHeader("path".to_string()));
                                 },
-                                connect_show => |e| { 
-                                    e.grab_focus(); 
-                                    e.set_position(-1); 
+                                connect_show => |e| {
+                                    e.grab_focus();
+                                    e.set_position(-1);
                                 }
                             } -> { set_name: "entry" },
                             add_child = &gtk::SearchEntry {
@@ -154,9 +155,9 @@ impl SimpleComponent for FluxApp {
                                         sender.input(AppMsg::SwitchHeader("entry".to_string()));
                                     }
                                 },
-                                connect_show => |e| { 
-                                    e.grab_focus(); 
-                                    e.set_position(-1); 
+                                connect_show => |e| {
+                                    e.grab_focus();
+                                    e.set_position(-1);
                                 }
                             } -> { set_name: "search" },
                         },
@@ -202,7 +203,7 @@ impl SimpleComponent for FluxApp {
                         }
                     },
                     #[name = "grid_scroller"]
-                    gtk::ScrolledWindow {
+                    gtk::ScrolledWindow { 
                         set_vexpand: true,
                         add_controller = gtk::EventControllerScroll {
                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -333,8 +334,16 @@ impl SimpleComponent for FluxApp {
             AppMsg::RefreshSidebar => {
                 self.refresh_sidebar();
             }
+            AppMsg::OpenFileProperties(path) => {
+               let properties_win = FileProperties::builder()
+                    .launch(path)
+                    .detach();
+                properties_win.widget().present();
+            }
             AppMsg::ToggleHidden => {
                 self.show_hidden = !self.show_hidden;
+                self.config.ui.show_hidden_by_default = self.show_hidden;
+                utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleSort => {
@@ -474,6 +483,12 @@ impl SimpleComponent for FluxApp {
                 let new_size = (self.current_icon_size + change).clamp(32, 256);
                 if new_size != self.current_icon_size {
                     self.current_icon_size = new_size;
+
+                    // SAVE CONFIGURATION FOR THIS FOLDER
+                    let path_str = self.current_path.to_string_lossy().to_string();
+                    self.config.ui.folder_icon_size.insert(path_str, new_size);
+                    utils::save_config(&self.config);
+
                     for i in 0..self.files.len() {
                         if let Some(item_wrapper) = self.files.get(i as u32) {
                             let mut item = item_wrapper.borrow().clone();
@@ -489,12 +504,6 @@ impl SimpleComponent for FluxApp {
                 if path.is_dir() || path_str.starts_with("trash://") {
                     self.history.push(self.current_path.clone());
                     self.forward_stack.clear();
-
-                    if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str.to_string()) {
-                        self.sort_by = specific_sort.clone();
-                    } else {
-                        self.sort_by = self.config.ui.default_sort.clone();
-                    }
 
                     self.load_path(path, &sender);
                 }
@@ -622,17 +631,31 @@ impl FluxApp {
 
     pub fn load_path(&mut self, path: PathBuf, sender: &ComponentSender<Self>) {
         self.directory_monitor = None;
-        let path_str = path.to_string_lossy();
+        let path_str = path.to_string_lossy().to_string();
+
+        // 1. Sort Order
+        if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str) {
+            self.sort_by = specific_sort.clone();
+        } else {
+            self.sort_by = self.config.ui.default_sort.clone();
+        }
+
+        // 2. Icon Size
+        if let Some(&size) = self.config.ui.folder_icon_size.get(&path_str) {
+            self.current_icon_size = size;
+        } else {
+            self.current_icon_size = self.config.ui.default_icon_size;
+        }
+
+        // ----------------------------------------
 
         if path_str.starts_with("trash://") {
             self.files.clear();
             let root = gio::File::for_uri(&path_str);
 
             if let Ok(monitor) = root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE) {
-               let sender_clone = sender.clone();
-                monitor.connect_changed(move |_, _, _, _| { 
-                    sender_clone.input(AppMsg::Refresh); 
-                });
+                let sender_clone = sender.clone();
+                monitor.connect_changed(move |_, _, _, _| { sender_clone.input(AppMsg::Refresh); });
                 self.directory_monitor = Some(monitor);
             }
 
