@@ -68,7 +68,6 @@ def get_all_metadata(file_input):
         return None
     stats = path.stat()
 
-    # Fixed: Use Gio for consistent MIME detection
     gfile = Gio.File.new_for_path(str(path))
     try:
         info = gfile.query_info(
@@ -118,7 +117,6 @@ def get_all_metadata(file_input):
         if elf:
             data["Executable Analysis"] = elf
 
-    # Fixed: More robust check for text-based files
     is_text = any(x in mime_type for x in ["text", "javascript", "json", "xml"])
     if is_text or path.suffix in [".py", ".rs", ".toml", ".yaml", ".sh", ".md", ".txt"]:
         try:
