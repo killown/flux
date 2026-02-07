@@ -26,7 +26,7 @@ fn main() {
         std::process::exit(status.code().unwrap_or(0));
     }
 
-    let app = RelmApp::new("sh.flux.FileManager");
+    let app = RelmApp::new("flux.FileManager");
     app.allow_multiple_instances(true);
 
     let display = adw::gdk::Display::default().expect("Could not get default display");
