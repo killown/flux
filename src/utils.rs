@@ -1,20 +1,24 @@
+use adw::gdk;
+use adw::prelude::*;
+use gtk::gdk_pixbuf;
+use gtk::gio;
+use std::collections::hash_map::DefaultHasher;
+use std::env;
 use std::fs;
+use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use adw::prelude::*;
-use adw::gdk;
-use gtk::gdk_pixbuf;
-use gtk::gio;
-use std::env;
 
 use crate::model::CustomAction;
 
 pub fn ensure_config_file() -> PathBuf {
-    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/tmp")).join("flux");
-    if !config_dir.exists() { let _ = fs::create_dir_all(&config_dir); }
+    let config_dir = dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("flux");
+    if !config_dir.exists() {
+        let _ = fs::create_dir_all(&config_dir);
+    }
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
         //FIXME: file properties not working without full path
@@ -25,13 +29,17 @@ pub fn ensure_config_file() -> PathBuf {
 "Set as Wallpaper" => "image/all", "swww img %p"
 "Open in Code" => "text/all, application/all", "code %p"
 "File Properties" => "file", "~/.local/bin/flux --file-properties %p""#;
-        if let Ok(mut file) = fs::File::create(&config_path) { let _ = file.write_all(default_config.as_bytes()); }
+        if let Ok(mut file) = fs::File::create(&config_path) {
+            let _ = file.write_all(default_config.as_bytes());
+        }
     }
     config_path
 }
 
 pub fn save_config(config: &crate::model::Config) {
-    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/tmp")).join("flux");
+    let config_dir = dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("flux");
     let config_path = config_dir.join("config.toml");
 
     if let Ok(toml_str) = toml::to_string_pretty(config) {
@@ -39,8 +47,25 @@ pub fn save_config(config: &crate::model::Config) {
     }
 }
 
+pub fn rename_path(old_path: &Path, new_name: &str) -> std::io::Result<PathBuf> {
+    let mut new_path = old_path.to_path_buf();
+    new_path.set_file_name(new_name);
+
+    if new_path.exists() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            "A file with this name already exists",
+        ));
+    }
+
+    fs::rename(old_path, &new_path)?;
+    Ok(new_path)
+}
+
 pub fn load_config() -> crate::model::Config {
-    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("/tmp")).join("flux");
+    let config_dir = dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("flux");
     let config_path = config_dir.join("config.toml");
 
     if !config_path.exists() {
@@ -100,7 +125,9 @@ path = "~/Downloads"
         };
 
         let exists = path.exists();
-        if !exists { changed = true; }
+        if !exists {
+            changed = true;
+        }
         exists
     });
 
@@ -115,7 +142,9 @@ path = "~/Downloads"
         };
 
         let exists = path.exists();
-        if !exists { changed = true; }
+        if !exists {
+            changed = true;
+        }
         exists
     });
 
@@ -130,8 +159,8 @@ path = "~/Downloads"
 fn split_mime_cmd(input: &str) -> Option<(String, String)> {
     if input.starts_with('"') {
         if let Some(first_end) = input[1..].find('"') {
-            let first_end = first_end + 1; 
-            let remainder = &input[first_end+1..].trim();
+            let first_end = first_end + 1;
+            let remainder = &input[first_end + 1..].trim();
             if remainder.starts_with(',') {
                 let second_part = remainder[1..].trim();
                 if second_part.starts_with('"') && second_part.ends_with('"') {
@@ -148,12 +177,14 @@ fn split_mime_cmd(input: &str) -> Option<(String, String)> {
 pub fn load_menu_config() -> Vec<CustomAction> {
     let path = ensure_config_file();
     let mut actions = Vec::new();
- 
+
     if let Ok(content) = fs::read_to_string(&path) {
         for line in content.lines() {
             let line = line.trim();
-            if line.starts_with("//") || line.is_empty() { continue; }
- 
+            if line.starts_with("//") || line.is_empty() {
+                continue;
+            }
+
             if let Some((label_part, rest)) = line.split_once("=>") {
                 let label = label_part.trim().trim_matches('"').trim();
                 let rest = rest.trim();
@@ -164,9 +195,8 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     ("*".to_string(), rest.trim_matches('"').to_string())
                 };
 
-                let mime_types: Vec<String> = mime_str.split(',')
-                    .map(|s| s.trim().to_string())
-                    .collect();
+                let mime_types: Vec<String> =
+                    mime_str.split(',').map(|s| s.trim().to_string()).collect();
 
                 if !label.is_empty() && !cmd.is_empty() {
                     let action_name = label.to_lowercase().replace(" ", "_").replace("!", "");
@@ -185,7 +215,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
 
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
     if is_dir {
-        return gio::Icon::for_string("folder").unwrap(); 
+        return gio::Icon::for_string("folder").unwrap();
     }
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
@@ -217,7 +247,10 @@ pub fn get_mime_type(path: &Path) -> String {
 pub fn is_visual_media(path: &Path) -> (bool, bool) {
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
-    (content_type.starts_with("image/"), content_type.starts_with("video/"))
+    (
+        content_type.starts_with("image/"),
+        content_type.starts_with("video/"),
+    )
 }
 
 pub fn open_file(path: PathBuf) {
@@ -233,33 +266,49 @@ pub fn open_file(path: PathBuf) {
 
 pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let cache_dir = dirs::cache_dir()?.join("flux").join("thumbnails");
-    if let Err(_) = fs::create_dir_all(&cache_dir) { return None; }
+    if let Err(_) = fs::create_dir_all(&cache_dir) {
+        return None;
+    }
     let mut hasher = DefaultHasher::new();
     path.hash(&mut hasher);
     let hash = hasher.finish();
     let cache_path = cache_dir.join(format!("{}.png", hash));
- 
+
     if cache_path.exists() {
-         let file = adw::gio::File::for_path(&cache_path);
-         return gdk::Texture::from_file(&file).ok();
+        let file = adw::gio::File::for_path(&cache_path);
+        return gdk::Texture::from_file(&file).ok();
     }
- 
+
     let (is_img, is_vid) = is_visual_media(path);
     if is_img {
         match gdk_pixbuf::Pixbuf::from_file_at_scale(path, 512, 512, true) {
             Ok(pixbuf) => {
-                if let Some(path_str) = cache_path.to_str() { let _ = pixbuf.savev(path_str, "png", &[]); }
+                if let Some(path_str) = cache_path.to_str() {
+                    let _ = pixbuf.savev(path_str, "png", &[]);
+                }
                 return Some(gdk::Texture::for_pixbuf(&pixbuf));
-            },
-            Err(_) => return None
+            }
+            Err(_) => return None,
         }
     } else if is_vid {
-        let status = Command::new("ffmpeg").arg("-y").arg("-loglevel").arg("panic").arg("-i").arg(path)
-            .arg("-ss").arg("00:00:01.000").arg("-vframes").arg("1").arg("-vf").arg("scale=512:-1").arg(&cache_path).status();
+        let status = Command::new("ffmpeg")
+            .arg("-y")
+            .arg("-loglevel")
+            .arg("panic")
+            .arg("-i")
+            .arg(path)
+            .arg("-ss")
+            .arg("00:00:01.000")
+            .arg("-vframes")
+            .arg("1")
+            .arg("-vf")
+            .arg("scale=512:-1")
+            .arg(&cache_path)
+            .status();
         if let Ok(s) = status {
             if s.success() && cache_path.exists() {
-                 let file = adw::gio::File::for_path(&cache_path);
-                 return gdk::Texture::from_file(&file).ok();
+                let file = adw::gio::File::for_path(&cache_path);
+                return gdk::Texture::from_file(&file).ok();
             }
         }
     }
@@ -281,18 +330,17 @@ pub fn run_custom_command(command_template: &str, file_path: &Path) {
         .replace("%d", &d_arg)
         .replace("%f", &f_arg);
 
-    // MANUALLY EXPAND ~ and $HOME: 
+    // MANUALLY EXPAND ~ and $HOME:
     // This ensures that even if the Desktop environment has a limited PATH,
     // we resolve the user's local bin folder correctly.
     if let Some(home) = dirs::home_dir() {
         let home_str = home.to_string_lossy();
-        final_cmd = final_cmd.replace("~", &home_str).replace("$HOME", &home_str);
+        final_cmd = final_cmd
+            .replace("~", &home_str)
+            .replace("$HOME", &home_str);
     }
 
-    let _ = Command::new("sh")
-        .arg("-c")
-        .arg(final_cmd)
-        .spawn();
+    let _ = Command::new("sh").arg("-c").arg(final_cmd).spawn();
 }
 
 pub fn get_xdg_dir(env_var: &str, fallback: &str) -> PathBuf {
@@ -320,14 +368,16 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
                 let fs_type = parts[2];
                 let path = PathBuf::from(path_str);
 
-                let is_external = path_str.starts_with("/run/media/") || 
-                                 path_str.starts_with("/media/") || 
-                                 path_str.starts_with("/mnt/");
+                let is_external = path_str.starts_with("/run/media/")
+                    || path_str.starts_with("/media/")
+                    || path_str.starts_with("/mnt/");
 
                 let is_user_fuse = fs_type.contains("fuse") && path.starts_with(&home_dir);
 
                 if is_external || is_user_fuse {
-                    if path == home_dir { continue; }
+                    if path == home_dir {
+                        continue;
+                    }
 
                     if let Some(name) = path.file_name() {
                         let display_name = name.to_string_lossy().to_string();

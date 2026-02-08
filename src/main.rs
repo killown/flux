@@ -1,16 +1,17 @@
 mod app;
+mod file_properties;
+mod help;
+mod model;
 mod ui_components;
 mod utils;
-mod model;
-mod file_properties;
 
-use relm4::prelude::*;
-use crate::model::{FluxApp, Config};
 use crate::file_properties::FileProperties;
-use std::path::PathBuf;
-use adw::prelude::*;
+use crate::model::{Config, FluxApp};
 use adw::gio;
+use adw::prelude::*;
+use relm4::prelude::*;
 use std::fs;
+use std::path::PathBuf;
 
 // Thread-local provider allows load_from_data to overwrite previous styles on the same object
 thread_local! {
@@ -46,15 +47,28 @@ fn load_custom_css() {
             .ok();
     }
 
-    // Fallback to style.css in config dir if no theme found or loaded
+    // Fallback chain: default.css (local then system) -> style.css (config)
     if css_data.is_none() {
-        css_data = fs::read_to_string(config_dir.join("style.css")).ok();
+        let local_default = dirs::data_dir()
+            .unwrap_or_default()
+            .join("flux")
+            .join("default.css");
+        let system_default = PathBuf::from("/usr/share/flux/default.css");
+
+        css_data = fs::read_to_string(local_default)
+            .or_else(|_| fs::read_to_string(system_default))
+            .or_else(|_| fs::read_to_string(config_dir.join("style.css")))
+            .ok();
     }
 
     if let Some(data) = css_data {
         CSS_PROVIDER.with(|provider| {
-            provider.load_from_data(&data);
             if let Some(display) = adw::gdk::Display::default() {
+                // FORCE REFRESH: Detach provider before loading new data to invalidate cache
+                gtk::style_context_remove_provider_for_display(&display, provider);
+
+                provider.load_from_data(&data);
+
                 gtk::style_context_add_provider_for_display(
                     &display,
                     provider,
@@ -68,23 +82,57 @@ fn load_custom_css() {
 /// Sets up a GIO directory monitor to watch for config or style changes
 fn setup_css_watcher() {
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
-    let file = gio::File::for_path(&config_dir);
+    let local_share = dirs::data_dir().unwrap_or_default().join("flux");
+    let local_themes = local_share.join("themes");
+    let system_share = PathBuf::from("/usr/share/flux");
+    let system_themes = system_share.join("themes");
 
-    if let Ok(monitor) = file.monitor_directory(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE) {
-        monitor.connect_changed(|_, file, _, event_type| {
-            if let Some(name) = file.basename() {
-                let n = name.to_string_lossy();
-                if n == "style.css" || n == "config.toml" {
-                    match event_type {
-                        gio::FileMonitorEvent::Changed | gio::FileMonitorEvent::ChangesDoneHint => {
-                            load_custom_css();
+    let watch_paths = vec![
+        config_dir,
+        local_share,
+        local_themes,
+        system_share,
+        system_themes,
+    ];
+
+    for path in watch_paths {
+        if !path.exists() {
+            continue;
+        }
+
+        let file = gio::File::for_path(&path);
+
+        // WATCH_MOUNTS + SEND_MOVED catches atomic saves (temp file swaps) used by Neovim
+        if let Ok(monitor) = file.monitor_directory(
+            gio::FileMonitorFlags::WATCH_MOUNTS | gio::FileMonitorFlags::SEND_MOVED,
+            gio::Cancellable::NONE,
+        ) {
+            monitor.connect_changed(|_, file, _, event_type| {
+                if let Some(name) = file.basename() {
+                    let n = name.to_string_lossy();
+                    if n == "style.css"
+                        || n == "config.toml"
+                        || n == "default.css"
+                        || n.ends_with(".css")
+                    {
+                        match event_type {
+                            gio::FileMonitorEvent::Changed
+                            | gio::FileMonitorEvent::ChangesDoneHint
+                            | gio::FileMonitorEvent::Created
+                            | gio::FileMonitorEvent::MovedIn => {
+                                println!(
+                                    "[FLUX] RELOAD TRIGGERED: {:?}",
+                                    file.path().unwrap_or_default()
+                                );
+                                load_custom_css();
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
                 }
-            }
-        });
-        Box::leak(Box::new(monitor));
+            });
+            std::mem::forget(monitor);
+        }
     }
 }
 
@@ -97,13 +145,15 @@ fn main() {
         let settings = gio::Settings::new("org.gnome.desktop.interface");
         let theme_name: String = settings.string("gtk-theme").into();
 
-        let status = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(std::env::args().skip(1))
-            .env("GTK_THEME", &theme_name)
-            .status()
-            .expect("Failed to restart Flux with GTK_THEME");
+        if !theme_name.is_empty() {
+            let status = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(std::env::args().skip(1))
+                .env("GTK_THEME", &theme_name)
+                .status()
+                .expect("Failed to restart Flux with GTK_THEME");
 
-        std::process::exit(status.code().unwrap_or(0));
+            std::process::exit(status.code().unwrap_or(0));
+        }
     }
 
     let args: Vec<String> = std::env::args().collect();
@@ -116,17 +166,17 @@ fn main() {
     if args.len() > 2 && args[1] == "--file-properties" {
         let path = PathBuf::from(&args[2]);
         let app = RelmApp::new("flux.PropertiesViewer");
-        app.allow_multiple_instances(true);
-        app.with_args(vec![]).run::<FileProperties>(path);
+        app.run::<FileProperties>(path);
         return;
     }
 
     // --- MAIN APP HANDLER ---
-    let app = RelmApp::new("flux.FileManager");
-    app.allow_multiple_instances(true);
+    let base_app = adw::Application::builder()
+        .application_id("flux.FileManager")
+        .flags(gio::ApplicationFlags::FLAGS_NONE)
+        .build();
 
-    let display = adw::gdk::Display::default().expect("Could not get default display");
-    let _theme = gtk::IconTheme::for_display(&display);
+    let app = RelmApp::from_app(base_app);
 
     let start_path = if args.len() > 1 {
         PathBuf::from(&args[1])
@@ -134,5 +184,5 @@ fn main() {
         dirs::home_dir().unwrap_or(PathBuf::from("."))
     };
 
-    app.with_args(vec![]).run::<FluxApp>(start_path);
+    app.run::<FluxApp>(start_path);
 }
