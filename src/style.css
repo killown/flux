@@ -1,18 +1,9 @@
-/* --- Flux Adaptive UI (Theme-Independent) --- */
-
-/* Window & Background */
-window {
-  background-color: @window_bg_color;
-  color: @window_fg_color;
-}
-
 headerbar {
-  background-color: mix(@headerbar_bg_color, @window_bg_color, 0.5);
+  background-color: alpha(@window_bg_color, 0.8);
   border-bottom: 1px solid alpha(@window_fg_color, 0.1);
   padding: 8px;
 }
 
-/* --- Flux Cards (Grid Items) --- */
 .flux-card {
   background-color: alpha(@window_fg_color, 0.05);
   border: 1px solid alpha(@window_fg_color, 0.1);
@@ -40,10 +31,9 @@ headerbar {
   transform: scale(1.04);
 }
 
-/* Grid Labels */
 .flux-label {
   margin-top: 10px;
-  color: mix(@window_fg_color, @window_bg_color, 0.3);
+  color: alpha(@window_fg_color, 0.7);
   font-weight: 600;
   font-size: 13px;
   text-shadow: 0 1px 3px alpha(black, 0.3);
@@ -54,19 +44,17 @@ headerbar {
   color: @accent_color;
 }
 
-/* --- Sidebar (Refined Typography) --- */
 .sidebar-row {
-  padding: 12px 16px; /* Increased vertical padding for larger text */
+  padding: 12px 16px;
   margin: 2px 12px;
   border-radius: 10px;
-  color: mix(@window_fg_color, @window_bg_color, 0.4);
+  color: alpha(@window_fg_color, 0.6);
   font-weight: 500;
   transition: all 200ms ease;
 }
 
 .sidebar-label {
   margin-left: 10px;
-  /* Using pt ensures consistent scaling with system font settings */
   font-size: 10pt;
   font-weight: 600;
 }
@@ -78,15 +66,13 @@ headerbar {
 
 .sidebar-row:selected {
   background-color: @accent_color;
-  /* @accent_fg_color switches to black or white for contrast */
   color: @accent_fg_color;
 }
 
 .sidebar-row:selected .sidebar-label {
-  font-weight: 800; /* Extra emphasis on selection */
+  font-weight: 800;
 }
 
-/* --- Interaction States --- */
 .dragging {
   opacity: 0.4;
   filter: grayscale(1);
@@ -98,7 +84,6 @@ headerbar {
   transform: scale(1.05);
 }
 
-/* --- Scrollbars --- */
 scrollbar.vertical slider {
   background-color: alpha(@window_fg_color, 0.1);
   border-radius: 20px;
@@ -109,43 +94,32 @@ scrollbar.vertical slider:hover {
   background-color: alpha(@accent_color, 0.5);
 }
 
-/* --- Sort Indicator & Header Badges (Square 3D) --- */
-
 .sort-label {
   background-color: alpha(@window_fg_color, 0.05);
-  /* Brighter top border for "edge lighting" */
   border-top: 1px solid alpha(@window_fg_color, 0.15);
   border-left: 1px solid alpha(@window_fg_color, 0.1);
   border-right: 1px solid alpha(@window_fg_color, 0.05);
   border-bottom: 1px solid alpha(black, 0.4);
-
-  border-radius: 4px; /* Square with slight rounding */
+  border-radius: 4px;
   padding: 4px 10px;
   margin: 0 8px;
-
-  /* Typography */
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: mix(@window_fg_color, @window_bg_color, 0.5);
-
-  /* Layered shadow for 3D depth */
+  color: alpha(@window_fg_color, 0.5);
   box-shadow: 0 2px 0 alpha(black, 0.3);
-
   transition: all 150ms ease-out;
 }
 
 .sort-label:hover {
   background-color: alpha(@accent_color, 0.1);
   color: @accent_color;
-  /* Lift effect */
   transform: translateY(-1px);
   box-shadow: 0 3px 0 alpha(black, 0.4);
 }
 
 .sort-label:active {
-  /* "Pressed" effect: Move down and hide the shadow */
   transform: translateY(2px);
   box-shadow: 0 0 0 transparent;
   background-color: @accent_color;

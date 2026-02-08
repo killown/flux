@@ -1,19 +1,21 @@
-use relm4::factory::FactoryVecDeque;
-use relm4::typed_view::grid::TypedGridView;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::atomic::AtomicU64;
-use std::sync::OnceLock;
 use adw::gdk;
 use gtk::gio;
+use relm4::factory::FactoryVecDeque;
+use relm4::typed_view::grid::TypedGridView;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
+use std::sync::OnceLock;
 
 use crate::ui_components::{FileItem, SidebarPlace};
 
 pub static SENDER: OnceLock<relm4::Sender<AppMsg>> = OnceLock::new();
 
-fn default_true() -> bool { true }
+fn default_true() -> bool {
+    true
+}
 
 #[derive(Clone, Debug)]
 pub struct CustomAction {
@@ -104,7 +106,13 @@ pub enum AppMsg {
     #[allow(dead_code)]
     OpenFileProperties(PathBuf),
     Navigate(PathBuf),
+    PerformRename(PathBuf, String),
+    SearchInput(char),
+    SearchBackspace,
+    StartRename(PathBuf),
+    TriggerRenameSelection,
     RefreshSidebar,
+    ShowHelp,
     ToggleHidden,
     CycleSort,
     CycleFolderPriority,

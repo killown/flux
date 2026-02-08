@@ -1,19 +1,20 @@
+use crate::file_properties::FileProperties;
 use adw::prelude::*;
-use relm4::prelude::*;
+use futures::StreamExt;
 use relm4::factory::FactoryVecDeque;
+use relm4::prelude::*;
 use relm4::typed_view::grid::TypedGridView;
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use futures::StreamExt;
-use crate::file_properties::FileProperties;
+use std::sync::Arc;
 
+use crate::help::HelpWindow;
+use crate::model::{AppMsg, FluxApp, SortBy};
 use crate::ui_components::{FileItem, SidebarPlace};
 use crate::utils;
-use crate::model::{FluxApp, AppMsg, SortBy};
 use adw::gdk;
-use gtk::glib;
 use gtk::gio;
+use gtk::glib;
 
 #[relm4::component(pub)]
 impl SimpleComponent for FluxApp {
@@ -26,28 +27,100 @@ impl SimpleComponent for FluxApp {
             set_default_size: (1100, 750),
             set_title: Some("flux"),
             add_controller = gtk::EventControllerKey {
-                connect_key_pressed[sender, header_view = model.header_view.clone()] => move |_, keyval, _, state| {
-                    if header_view != "path" {
+                connect_key_pressed[sender] => move |_, keyval, _, state| {
+
+                    // 1. Priority: System Function Keys
+                    if keyval == gdk::Key::F1 {
+                        sender.input(AppMsg::ShowHelp);
+                        return glib::Propagation::Stop;
+                    }
+
+                    if keyval == gdk::Key::F2 {
+                        sender.input(AppMsg::TriggerRenameSelection);
+                        return glib::Propagation::Stop;
+                    }
+
+                    // 2. Search Logic
+                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
+                    if !modifiers.is_empty() {
                         return glib::Propagation::Proceed;
                     }
-                    if state.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK | gdk::ModifierType::META_MASK) {
-                        return glib::Propagation::Proceed;
-                    }
-                    if let Some(ch) = keyval.to_unicode() {
-                        if ch.is_alphabetic() && !ch.is_control() {
-                            sender.input(AppMsg::UpdateFilter(ch.to_string()));
-                            sender.input(AppMsg::SwitchHeader("search".to_string()));
+
+                    match keyval {
+                        // Clear filter on Escape
+                        gdk::Key::Escape => {
+                            sender.input(AppMsg::UpdateFilter(String::new()));
+                            // Also switch back to path view if desired
+                            sender.input(AppMsg::SwitchHeader("path".to_string()));
                             return glib::Propagation::Stop;
                         }
+                        // Handle Backspace
+                        gdk::Key::BackSpace => {
+                            sender.input(AppMsg::SearchBackspace);
+                            return glib::Propagation::Stop;
+                        }
+                        // Handle Typing
+                        _ => {
+                            if let Some(c) = keyval.to_unicode() {
+                                if !c.is_control() {
+                                    // 1. Switch header FIRST so the widget becomes visible
+                                    sender.input(AppMsg::SwitchHeader("search".to_string()));
+
+                                    // 2. Send the input.
+                                    // Because the widget is now becoming visible, its 'connect_show'
+                                    // handler (e.grab_focus()) will trigger automatically.
+                                    sender.input(AppMsg::SearchInput(c));
+
+                                    return glib::Propagation::Stop;
+                                }
+                            }
+                        }
                     }
+
                     glib::Propagation::Proceed
                 }
             },
-            add_controller = gtk::ShortcutController {
+            add_controller = gtk::EventControllerKey {
+                    connect_key_pressed[sender, header_view = model.header_view.clone()] => move |ctrl, keyval, _, state| {
+                        if header_view == "search" || header_view == "entry" {
+                            return glib::Propagation::Proceed;
+                        }
+
+                        if let Some(root) = ctrl.widget().and_then(|w| w.root()) {
+                            if let Some(focus) = root.focus() {
+                                // If focus is in an Entry or any editable, don't trigger search
+                                if focus.type_().is_a(gtk::Editable::static_type()) {
+                                    return glib::Propagation::Proceed;
+                                }
+                            }
+                        }
+
+                        if state.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK | gdk::ModifierType::META_MASK) {
+                            return glib::Propagation::Proceed;
+                        }
+
+                        if let Some(ch) = keyval.to_unicode() {
+                            if ch.is_alphabetic() && !ch.is_control() {
+                                sender.input(AppMsg::UpdateFilter(ch.to_string()));
+                                sender.input(AppMsg::SwitchHeader("search".to_string()));
+                                return glib::Propagation::Stop;
+                            }
+                        }
+                        glib::Propagation::Proceed
+                    }
+                },
+                add_controller = gtk::ShortcutController {
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>h").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
                         let _ = h_sender.input(AppMsg::ToggleHidden);
+                        glib::Propagation::Stop
+                    })),
+                },
+                add_shortcut = gtk::Shortcut {
+                    set_trigger: Some(gtk::ShortcutTrigger::parse_string("F1").unwrap()),
+                    set_action: Some(gtk::CallbackAction::new(move |_, _| {
+                        let _ = help_sender.input(AppMsg::ShowHelp);
                         glib::Propagation::Stop
                     })),
                 },
@@ -58,6 +131,7 @@ impl SimpleComponent for FluxApp {
                         glib::Propagation::Stop
                     })),
                 },
+
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>f").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
@@ -136,7 +210,10 @@ impl SimpleComponent for FluxApp {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
                                 set_width_request: 450,
-                                #[track(model.filter.is_empty())] set_text: &model.filter,
+
+                                #[track = "model.filter.is_empty()"]
+                                set_text: &model.filter,
+
                                 add_controller = gtk::EventControllerKey {
                                     connect_key_pressed[sender] => move |_, keyval, _, _| {
                                         if keyval == gdk::Key::Escape {
@@ -146,19 +223,22 @@ impl SimpleComponent for FluxApp {
                                         glib::Propagation::Proceed
                                     }
                                 },
+
                                 connect_search_changed[sender] => move |entry| {
                                     sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
                                 },
+
+                                connect_show => |e| {
+                                    e.grab_focus();
+                                    e.set_position(-1);
+                                },
+
                                 connect_stop_search => AppMsg::SwitchHeader("path".to_string()),
                                 add_controller = gtk::GestureClick {
                                     connect_pressed[sender] => move |_, _, _, _| {
                                         sender.input(AppMsg::SwitchHeader("entry".to_string()));
                                     }
                                 },
-                                connect_show => |e| {
-                                    e.grab_focus();
-                                    e.set_position(-1);
-                                }
                             } -> { set_name: "search" },
                         },
                         pack_end = &gtk::Button {
@@ -203,7 +283,7 @@ impl SimpleComponent for FluxApp {
                         }
                     },
                     #[name = "grid_scroller"]
-                    gtk::ScrolledWindow { 
+                    gtk::ScrolledWindow {
                         set_vexpand: true,
                         add_controller = gtk::EventControllerScroll {
                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -232,12 +312,7 @@ impl SimpleComponent for FluxApp {
                                             current = w.parent();
                                         }
                                     }
-                                    sender.input(AppMsg::ShowContextMenu {
-                                        x,
-                                        y,
-                                        path: picked_path,
-                                        mime: "application/octet-stream".to_string()
-                                    });
+                                 sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
                                 }
                             }
                         },
@@ -247,7 +322,11 @@ impl SimpleComponent for FluxApp {
         }
     }
 
-    fn init(start_path: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+    fn init(
+        start_path: Self::Init,
+        root: Self::Root,
+        sender: ComponentSender<Self>,
+    ) -> ComponentParts<Self> {
         let _ = crate::model::SENDER.set(sender.input_sender().clone());
         relm4::set_global_css(include_str!("style.css"));
 
@@ -256,13 +335,14 @@ impl SimpleComponent for FluxApp {
         let s_sender_prio = sender.clone();
         let f_sender = sender.clone();
 
+        let rename_sender = sender.clone();
+        let help_sender = sender.clone();
+
         let config = utils::load_config();
- 
+
         let menu_actions_list = utils::load_menu_config();
- 
-        let context_menu_popover = gtk::PopoverMenu::builder()
-            .has_arrow(false)
-            .build();
+
+        let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
 
         let action_group = gio::SimpleActionGroup::new();
         let app_sender = sender.clone();
@@ -278,8 +358,8 @@ impl SimpleComponent for FluxApp {
             let cmd_clone = action_def.command.clone();
             let sender_clone = app_sender.clone();
             let action = gio::SimpleAction::new(&action_def.action_name, None);
-            action.connect_activate(move |_, _| { 
-                sender_clone.input(AppMsg::ExecuteCommand(cmd_clone.clone())); 
+            action.connect_activate(move |_, _| {
+                sender_clone.input(AppMsg::ExecuteCommand(cmd_clone.clone()));
             });
             action_group.add_action(&action);
         }
@@ -329,8 +409,12 @@ impl SimpleComponent for FluxApp {
 
         let widgets = view_output!();
         widgets.grid_scroller.set_child(Some(&model.files.view));
-        widgets.sidebar_container.set_child(Some(model.sidebar.widget()));
-        model.context_menu_popover.set_parent(&widgets.grid_scroller);
+        widgets
+            .sidebar_container
+            .set_child(Some(model.sidebar.widget()));
+        model
+            .context_menu_popover
+            .set_parent(&widgets.grid_scroller);
 
         ComponentParts { model, widgets }
     }
@@ -340,10 +424,40 @@ impl SimpleComponent for FluxApp {
             AppMsg::RefreshSidebar => {
                 self.refresh_sidebar();
             }
+            AppMsg::PerformRename(old_path, new_name) => {
+                match utils::rename_path(&old_path, &new_name) {
+                    Ok(new_path) => {
+                        let old_key = old_path.to_string_lossy().into_owned();
+                        let new_key = new_path.to_string_lossy().into_owned();
+
+                        let mut changed = false;
+
+                        // Migrate folder_sort settings to the new path
+                        if let Some(sort_val) = self.config.ui.folder_sort.remove(&old_key) {
+                            self.config.ui.folder_sort.insert(new_key.clone(), sort_val);
+                            changed = true;
+                        }
+
+                        // Migrate folder_icon_size settings to the new path
+                        if let Some(size_val) = self.config.ui.folder_icon_size.remove(&old_key) {
+                            self.config.ui.folder_icon_size.insert(new_key, size_val);
+                            changed = true;
+                        }
+
+                        if changed {
+                            utils::save_config(&self.config);
+                        }
+
+                        // Refresh the current directory to show the updated name
+                        sender.input(AppMsg::Navigate(self.current_path.clone()));
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to rename: {}", e);
+                    }
+                }
+            }
             AppMsg::OpenFileProperties(path) => {
-                let properties_win = FileProperties::builder()
-                    .launch(path)
-                    .detach();
+                let properties_win = FileProperties::builder().launch(path).detach();
                 properties_win.widget().present();
             }
             AppMsg::ToggleHidden => {
@@ -360,7 +474,10 @@ impl SimpleComponent for FluxApp {
                 };
 
                 let path_str = self.current_path.to_string_lossy().to_string();
-                self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
+                self.config
+                    .ui
+                    .folder_sort
+                    .insert(path_str, self.sort_by.clone());
                 utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
@@ -371,8 +488,56 @@ impl SimpleComponent for FluxApp {
                 self.load_path(path, &sender);
             }
             AppMsg::UpdateFilter(query) => {
-                self.filter = query;
-                sender.input(AppMsg::Refresh);
+                if self.filter == query {
+                    return;
+                }
+                if self.filter.is_empty() && query.len() == 1 {
+                    sender.input(AppMsg::SwitchHeader("search".to_string()));
+                }
+
+                self.filter = query.clone();
+                let query = query.to_lowercase();
+
+                self.files.clear_filters();
+                if !query.is_empty() {
+                    self.files
+                        .add_filter(move |item| item.name.to_lowercase().contains(&query));
+                }
+            }
+            AppMsg::SearchInput(c) => {
+                self.filter.push(c);
+                sender.input(AppMsg::UpdateFilter(self.filter.clone()));
+            }
+
+            AppMsg::SearchBackspace => {
+                if !self.filter.is_empty() {
+                    // Remove the last char from the FRESH state
+                    self.filter.pop();
+
+                    // Trigger the filter update
+                    sender.input(AppMsg::UpdateFilter(self.filter.clone()));
+                }
+            }
+            AppMsg::StartRename(path) => {
+                let target_idx = (0..self.files.len()).find(|&i| {
+                    self.files
+                        .get(i as u32)
+                        .map_or(false, |r| r.borrow().path == path)
+                });
+
+                if let Some(idx) = target_idx {
+                    if let Some(item_wrapper) = self.files.get(idx as u32) {
+                        let mut item = item_wrapper.borrow().clone();
+                        item.is_editing = true;
+                        self.files.remove(idx as u32);
+                        self.files.insert(idx as u32, item);
+                    }
+                }
+            }
+            AppMsg::TriggerRenameSelection => {
+                if let Some(path) = self.get_selected_path() {
+                    sender.input(AppMsg::StartRename(path));
+                }
             }
             AppMsg::SwitchHeader(view_name) => {
                 self.header_view = view_name;
@@ -382,18 +547,19 @@ impl SimpleComponent for FluxApp {
                 }
             }
 
+            AppMsg::ShowHelp => {
+                let help_win = crate::help::HelpWindow::builder().launch(()).detach();
+                help_win.widget().present();
+            }
+
             AppMsg::PrepareContextMenu(x, y, path) => {
                 let sender = sender.clone();
                 relm4::spawn_blocking(move || {
-                    let mime = path.as_ref()
+                    let mime = path
+                        .as_ref()
                         .map(|p| utils::get_mime_type(p))
                         .unwrap_or_else(|| "inode/directory".to_string());
-                        sender.input(AppMsg::ShowContextMenu {
-                            x,
-                            y,
-                            path,
-                            mime
-                        });
+                    sender.input(AppMsg::ShowContextMenu { x, y, path, mime });
                 });
             }
 
@@ -412,30 +578,37 @@ impl SimpleComponent for FluxApp {
                         }
                     } else {
                         for allowed_mime in &action.mime_types {
-                            if allowed_mime == "trash" { continue; }
+                            if allowed_mime == "trash" {
+                                continue;
+                            }
 
                             matches = match allowed_mime.as_str() {
                                 "*" | "all" => true,
                                 "image/all" | "image/*" => mime.starts_with("image/"),
                                 "video/all" | "video/*" => mime.starts_with("video/"),
-                                "application/all" | "application/*" => mime.starts_with("application/"),
+                                "application/all" | "application/*" => {
+                                    mime.starts_with("application/")
+                                }
                                 "text/all" | "text/*" => {
-                                    mime.starts_with("text/") || 
-                                    gio::content_type_is_a(&mime, "text/plain") ||
-                                    mime == "inode/x-empty"
-                                },
+                                    mime.starts_with("text/")
+                                        || gio::content_type_is_a(&mime, "text/plain")
+                                        || mime == "inode/x-empty"
+                                }
                                 "folder" | "directory" => mime == "inode/directory",
                                 "file" => mime != "inode/directory",
                                 t => t == mime,
                             };
-                            if matches { break; }
+                            if matches {
+                                break;
+                            }
                         }
                     }
 
                     if matches {
                         let full_action_name = format!("win.{}", action.action_name);
                         menu.append(Some(&action.label), Some(&full_action_name));
-                        if let Some(g_action) = self.action_group.lookup_action(&action.action_name) {
+                        if let Some(g_action) = self.action_group.lookup_action(&action.action_name)
+                        {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                                 simple.set_enabled(true);
                             }
@@ -444,14 +617,20 @@ impl SimpleComponent for FluxApp {
                 }
 
                 self.context_menu_popover.set_menu_model(Some(&menu));
-                self.context_menu_popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
+                self.context_menu_popover
+                    .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                 self.context_menu_popover.popup();
             }
 
             AppMsg::ExecuteCommand(cmd_template) => {
                 let mut targets = Vec::new();
 
-                if let Some(model) = self.files.view.model().and_then(|m| m.downcast::<gtk::MultiSelection>().ok()) {
+                if let Some(model) = self
+                    .files
+                    .view
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                {
                     let bitset = model.selection();
                     let n = bitset.size();
                     for i in 0..n {
@@ -475,20 +654,24 @@ impl SimpleComponent for FluxApp {
                 if final_targets.len() == 1 {
                     utils::run_custom_command(&cmd_template, &final_targets[0]);
                 } else if !final_targets.is_empty() {
-                    let paths_arg = final_targets.iter()
+                    let paths_arg = final_targets
+                        .iter()
                         .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
                         .collect::<Vec<_>>()
                         .join(" ");
 
                     let mut cmd = cmd_template.replace("%p", &paths_arg);
                     if cmd.contains("%d") {
-                         cmd = cmd.replace("%d", &format!("'{}'", self.current_path.to_string_lossy().replace("'", "'\\''")));
+                        cmd = cmd.replace(
+                            "%d",
+                            &format!(
+                                "'{}'",
+                                self.current_path.to_string_lossy().replace("'", "'\\''")
+                            ),
+                        );
                     }
 
-                    let _ = std::process::Command::new("sh")
-                        .arg("-c")
-                        .arg(cmd)
-                        .spawn();
+                    let _ = std::process::Command::new("sh").arg("-c").arg(cmd).spawn();
                 }
             }
             AppMsg::Zoom(delta) => {
@@ -520,10 +703,16 @@ impl SimpleComponent for FluxApp {
                     self.load_path(path, &sender);
                 }
             }
-            AppMsg::ThumbnailReady { name, texture, load_id } => {
+            AppMsg::ThumbnailReady {
+                name,
+                texture,
+                load_id,
+            } => {
                 if load_id == self.load_id.load(Ordering::SeqCst) {
                     let target_idx = (0..self.files.len()).find(|&i| {
-                        self.files.get(i as u32).map_or(false, |r| r.borrow().name == name)
+                        self.files
+                            .get(i as u32)
+                            .map_or(false, |r| r.borrow().name == name)
                     });
                     if let Some(idx) = target_idx {
                         if let Some(item_wrapper) = self.files.get(idx as u32) {
@@ -568,7 +757,11 @@ impl SimpleComponent for FluxApp {
             }
             AppMsg::EmptyTrash => {
                 let root = gio::File::for_uri("trash:///");
-                if let Ok(enumerator) = root.enumerate_children("standard::name", gio::FileQueryInfoFlags::NONE, gio::Cancellable::NONE) {
+                if let Ok(enumerator) = root.enumerate_children(
+                    "standard::name",
+                    gio::FileQueryInfoFlags::NONE,
+                    gio::Cancellable::NONE,
+                ) {
                     for info in enumerator.flatten() {
                         let _ = root.child(info.name()).delete(gio::Cancellable::NONE);
                     }
@@ -591,53 +784,134 @@ impl FluxApp {
         }
     }
 
+    fn get_selected_path(&self) -> Option<PathBuf> {
+        self.files
+            .view
+            .model()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+            .and_then(|selection_model| {
+                let selection = selection_model.selection();
+                if selection.is_empty() {
+                    return None;
+                }
+                // Get the first selected index
+                let first_index = selection.nth(0);
+                self.files
+                    .get(first_index)
+                    .map(|wrapper| wrapper.borrow().path.clone())
+            })
+    }
+
     pub fn refresh_sidebar(&mut self) {
         let mut guard = self.sidebar.guard();
         guard.clear();
 
         let get_xdg_name = |p: &std::path::PathBuf| {
             gio::File::for_path(p)
-                .query_info(gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME, gio::FileQueryInfoFlags::NONE, gio::Cancellable::NONE)
+                .query_info(
+                    gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
+                    gio::FileQueryInfoFlags::NONE,
+                    gio::Cancellable::NONE,
+                )
                 .map(|info| info.display_name().to_string())
-                .unwrap_or_else(|_| p.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())
+                .unwrap_or_else(|_| {
+                    p.file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_default()
+                })
         };
 
-        if let Some(p) = dirs::home_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "user-home-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::desktop_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "user-desktop-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::download_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-download-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::document_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-documents-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::picture_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-pictures-symbolic".to_string(), path: p }); }
-        if let Some(p) = dirs::video_dir() { guard.push_back(SidebarPlace { name: get_xdg_name(&p), icon: "folder-videos-symbolic".to_string(), path: p }); }
-
-        if self.config.ui.show_xdg_dirs {
-            guard.push_back(SidebarPlace { name: "Config".to_string(), icon: "emblem-system-symbolic".to_string(), path: utils::get_xdg_dir("XDG_CONFIG_HOME", "~/.config") });
-            guard.push_back(SidebarPlace { name: "Local Data".to_string(), icon: "folder-remote-symbolic".to_string(), path: utils::get_xdg_dir("XDG_DATA_HOME", "~/.local/share") });
+        if let Some(p) = dirs::home_dir() {
+            guard.push_back(SidebarPlace {
+                name: get_xdg_name(&p),
+                icon: "user-home-symbolic".to_string(),
+                path: p,
+            });
+        }
+        if let Some(p) = dirs::desktop_dir() {
+            guard.push_back(SidebarPlace {
+                name: get_xdg_name(&p),
+                icon: "user-desktop-symbolic".to_string(),
+                path: p,
+            });
+        }
+        if let Some(p) = dirs::download_dir() {
+            guard.push_back(SidebarPlace {
+                name: get_xdg_name(&p),
+                icon: "folder-download-symbolic".to_string(),
+                path: p,
+            });
+        }
+        if let Some(p) = dirs::document_dir() {
+            guard.push_back(SidebarPlace {
+                name: get_xdg_name(&p),
+                icon: "folder-documents-symbolic".to_string(),
+                path: p,
+            });
+        }
+        if let Some(p) = dirs::picture_dir() {
+            guard.push_back(SidebarPlace {
+                name: get_xdg_name(&p),
+                icon: "folder-pictures-symbolic".to_string(),
+                path: p,
+            });
+        }
+        if let Some(p) = dirs::video_dir() {
+            guard.push_back(SidebarPlace {
+                name: get_xdg_name(&p),
+                icon: "folder-videos-symbolic".to_string(),
+                path: p,
+            });
         }
 
-        guard.push_back(SidebarPlace { name: "Trash".to_string(), icon: "user-trash-symbolic".to_string(), path: PathBuf::from("trash:///") });
+        if self.config.ui.show_xdg_dirs {
+            guard.push_back(SidebarPlace {
+                name: "Config".to_string(),
+                icon: "emblem-system-symbolic".to_string(),
+                path: utils::get_xdg_dir("XDG_CONFIG_HOME", "~/.config"),
+            });
+            guard.push_back(SidebarPlace {
+                name: "Local Data".to_string(),
+                icon: "folder-remote-symbolic".to_string(),
+                path: utils::get_xdg_dir("XDG_DATA_HOME", "~/.local/share"),
+            });
+        }
+
+        guard.push_back(SidebarPlace {
+            name: "Trash".to_string(),
+            icon: "user-trash-symbolic".to_string(),
+            path: PathBuf::from("trash:///"),
+        });
 
         for custom in &self.config.sidebar {
             let path = if custom.path.starts_with('~') {
-                dirs::home_dir().map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy()))).unwrap_or_else(|| PathBuf::from(&custom.path))
+                dirs::home_dir()
+                    .map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy())))
+                    .unwrap_or_else(|| PathBuf::from(&custom.path))
             } else {
                 PathBuf::from(&custom.path)
             };
-            guard.push_back(SidebarPlace { name: custom.name.clone(), icon: custom.icon.clone(), path });
+            guard.push_back(SidebarPlace {
+                name: custom.name.clone(),
+                icon: custom.icon.clone(),
+                path,
+            });
         }
 
         for (mut name, path) in utils::get_system_mounts() {
-                if let Some(new_name) = self.config.ui.device_renames.get(&name) {
-                    name = new_name.clone();
-                }
+            if let Some(new_name) = self.config.ui.device_renames.get(&name) {
+                name = new_name.clone();
+            }
 
-                let icon = if name.to_lowercase().contains("drive") || 
-                              name.to_lowercase().contains("cloud") || 
-                              path.to_string_lossy().contains("Gdrive") {
-                    "folder-remote-symbolic".to_string()
-                } else {
-                    "drive-harddisk-symbolic".to_string()
-                };
-                guard.push_back(SidebarPlace { name, icon, path });
+            let icon = if name.to_lowercase().contains("drive")
+                || name.to_lowercase().contains("cloud")
+                || path.to_string_lossy().contains("Gdrive")
+            {
+                "folder-remote-symbolic".to_string()
+            } else {
+                "drive-harddisk-symbolic".to_string()
+            };
+            guard.push_back(SidebarPlace { name, icon, path });
         }
     }
 
@@ -665,13 +939,21 @@ impl FluxApp {
             self.files.clear();
             let root = gio::File::for_uri(&path_str);
 
-            if let Ok(monitor) = root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE) {
+            if let Ok(monitor) =
+                root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
+            {
                 let sender_clone = sender.clone();
-                monitor.connect_changed(move |_, _, _, _| { sender_clone.input(AppMsg::Refresh); });
+                monitor.connect_changed(move |_, _, _, _| {
+                    sender_clone.input(AppMsg::Refresh);
+                });
                 self.directory_monitor = Some(monitor);
             }
 
-            if let Ok(enumerator) = root.enumerate_children("standard::*", gio::FileQueryInfoFlags::NONE, gio::Cancellable::NONE) {
+            if let Ok(enumerator) = root.enumerate_children(
+                "standard::*",
+                gio::FileQueryInfoFlags::NONE,
+                gio::Cancellable::NONE,
+            ) {
                 for info in enumerator.flatten() {
                     let name = info.display_name().to_string();
                     let is_dir = info.file_type() == gio::FileType::Directory;
@@ -679,11 +961,14 @@ impl FluxApp {
                     let child_path = PathBuf::from(child.uri());
                     self.files.append(FileItem {
                         name,
-                        icon: info.icon().unwrap_or_else(|| gio::Icon::for_string("file").unwrap()),
+                        icon: info
+                            .icon()
+                            .unwrap_or_else(|| gio::Icon::for_string("file").unwrap()),
                         thumbnail: None,
                         is_dir,
                         path: child_path,
                         icon_size: self.current_icon_size,
+                        is_editing: false,
                     });
                 }
             }
@@ -692,9 +977,13 @@ impl FluxApp {
         }
 
         let file_obj = gio::File::for_path(&path);
-        if let Ok(monitor) = file_obj.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE) {
+        if let Ok(monitor) =
+            file_obj.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
+        {
             let sender_clone = sender.clone();
-            monitor.connect_changed(move |_, _, _, _| { sender_clone.input(AppMsg::Refresh); });
+            monitor.connect_changed(move |_, _, _, _| {
+                sender_clone.input(AppMsg::Refresh);
+            });
             self.directory_monitor = Some(monitor);
         }
 
@@ -707,17 +996,20 @@ impl FluxApp {
 
             for entry in entries.flatten() {
                 let name = entry.file_name().to_string_lossy().to_string();
-                if !self.show_hidden && name.starts_with('.') { continue; }
+                if !self.show_hidden && name.starts_with('.') {
+                    continue;
+                }
 
                 let target_path = path.join(&name);
-                let is_dir = target_path.is_dir(); 
+                let is_dir = target_path.is_dir();
                 let metadata = entry.metadata().ok();
                 items_metadata.push((name, target_path, metadata, is_dir));
             }
 
             if !self.filter.is_empty() {
                 let query = self.filter.to_lowercase();
-                let matches: Vec<_> = items_metadata.iter()
+                let matches: Vec<_> = items_metadata
+                    .iter()
                     .filter(|(name, ..)| name.to_lowercase().contains(&query))
                     .cloned()
                     .collect();
@@ -759,13 +1051,14 @@ impl FluxApp {
             for (name, target_path, _metadata, is_dir) in items_metadata {
                 let icon = utils::get_icon_for_path(&target_path, is_dir);
 
-                self.files.append(FileItem { 
-                    name: name.clone(), 
-                    icon, 
-                    thumbnail: None, 
+                self.files.append(FileItem {
+                    name: name.clone(),
+                    icon,
+                    thumbnail: None,
                     is_dir,
                     path: target_path.clone(),
                     icon_size: self.current_icon_size,
+                    is_editing: false,
                 });
 
                 if !is_dir {
@@ -781,21 +1074,34 @@ impl FluxApp {
             self.current_path = path;
             let sender = sender.clone();
             relm4::spawn(async move {
-                let mut stream = futures::stream::iter(media_tasks).map(|(name, media_path)| {
-                    let inner_sender = sender.clone();
-                    let inner_session = session_arc.clone();
-                    async move {
-                        if inner_session.load(Ordering::SeqCst) != current_session { return; }
-                        let res = tokio::task::spawn_blocking(move || { utils::get_or_create_thumbnail(&media_path) }).await;
-                        if let Ok(Some(texture)) = res {
-                            if inner_session.load(Ordering::SeqCst) == current_session {
-                                inner_sender.input(AppMsg::ThumbnailReady { name, texture, load_id: current_session });
+                let mut stream = futures::stream::iter(media_tasks)
+                    .map(|(name, media_path)| {
+                        let inner_sender = sender.clone();
+                        let inner_session = session_arc.clone();
+                        async move {
+                            if inner_session.load(Ordering::SeqCst) != current_session {
+                                return;
+                            }
+                            let res = tokio::task::spawn_blocking(move || {
+                                utils::get_or_create_thumbnail(&media_path)
+                            })
+                            .await;
+                            if let Ok(Some(texture)) = res {
+                                if inner_session.load(Ordering::SeqCst) == current_session {
+                                    inner_sender.input(AppMsg::ThumbnailReady {
+                                        name,
+                                        texture,
+                                        load_id: current_session,
+                                    });
+                                }
                             }
                         }
+                    })
+                    .buffer_unordered(4);
+                while let Some(_) = stream.next().await {
+                    if session_arc.load(Ordering::SeqCst) != current_session {
+                        break;
                     }
-                }).buffer_unordered(4);
-                while let Some(_) = stream.next().await { 
-                    if session_arc.load(Ordering::SeqCst) != current_session { break; } 
                 }
             });
         }
