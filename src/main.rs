@@ -5,7 +5,7 @@ mod model;
 mod file_properties;
 
 use relm4::prelude::*;
-use crate::model::FluxApp;
+use crate::model::{FluxApp, Config};
 use crate::file_properties::FileProperties;
 use std::path::PathBuf;
 use adw::prelude::*;
@@ -17,99 +17,113 @@ thread_local! {
     static CSS_PROVIDER: gtk::CssProvider = gtk::CssProvider::new();
 }
 
-/// Loads CSS and reports source. Uses higher priority for external files to replace !important.
+/// Loads CSS based on config.toml theme selection with local and internal fallbacks.
 fn load_custom_css() {
-    let css_path = dirs::config_dir().unwrap_or_default().join("flux/style.css");
+    let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
+    let config_path = config_dir.join("config.toml");
 
-    let (css_data, source, priority) = match fs::read_to_string(&css_path) {
-        Ok(data) => (
-            data, 
-            css_path.to_string_lossy().to_string(),
-            gtk::STYLE_PROVIDER_PRIORITY_USER
-        ),
-        Err(_) => (
-            include_str!("style.css").to_string(),
-            "internal fallback".to_string(),
-            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION
-        ),
-    };
+    let config: Option<Config> = fs::read_to_string(&config_path)
+        .ok()
+        .and_then(|content| toml::from_str(&content).ok());
 
-    println!("[flux] CSS LOADING: {}", source);
+    let mut css_data = None;
 
-    CSS_PROVIDER.with(|provider| {
-        provider.load_from_data(&css_data);
+    if let Some(theme_name) = config.and_then(|c| c.ui.theme) {
+        let theme_filename = format!("{}.css", theme_name);
 
-        if let Some(display) = adw::gdk::Display::default() {
-            gtk::style_context_add_provider_for_display(
-                &display,
-                provider,
-                priority,
-            );
-        }
-    });
-}
+        // 1. Try local user path: ~/.local/share/flux/themes/
+        let local_theme = dirs::data_dir()
+            .unwrap_or_default()
+            .join("flux")
+            .join("themes")
+            .join(&theme_filename);
 
-/// Sets up a GIO file monitor for live CSS reloading
-fn setup_css_watcher() {
-    let css_path = dirs::config_dir().unwrap_or_default().join("flux/style.css");
-    let file = gio::File::for_path(&css_path);
+        // 2. Try system path: /usr/share/flux/themes/
+        let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
 
-    if let Ok(monitor) = file.monitor(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE) {
-        monitor.connect_changed(|_, _, _, event_type| {
-            match event_type {
-                gio::FileMonitorEvent::Changed | gio::FileMonitorEvent::ChangesDoneHint => {
-                    load_custom_css();
-                }
-                _ => {}
+        css_data = fs::read_to_string(&local_theme)
+            .or_else(|_| fs::read_to_string(&system_theme))
+            .ok();
+    }
+
+    // Fallback to style.css in config dir if no theme found or loaded
+    if css_data.is_none() {
+        css_data = fs::read_to_string(config_dir.join("style.css")).ok();
+    }
+
+    if let Some(data) = css_data {
+        CSS_PROVIDER.with(|provider| {
+            provider.load_from_data(&data);
+            if let Some(display) = adw::gdk::Display::default() {
+                gtk::style_context_add_provider_for_display(
+                    &display,
+                    provider,
+                    gtk::STYLE_PROVIDER_PRIORITY_USER,
+                );
             }
         });
-        // Leak the monitor to keep the subscription active for the life of the process
+    }
+}
+
+/// Sets up a GIO directory monitor to watch for config or style changes
+fn setup_css_watcher() {
+    let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
+    let file = gio::File::for_path(&config_dir);
+
+    if let Ok(monitor) = file.monitor_directory(gio::FileMonitorFlags::NONE, gio::Cancellable::NONE) {
+        monitor.connect_changed(|_, file, _, event_type| {
+            if let Some(name) = file.basename() {
+                let n = name.to_string_lossy();
+                if n == "style.css" || n == "config.toml" {
+                    match event_type {
+                        gio::FileMonitorEvent::Changed | gio::FileMonitorEvent::ChangesDoneHint => {
+                            load_custom_css();
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        });
         Box::leak(Box::new(monitor));
     }
 }
 
 fn main() {
+    // 1. Initialize Adw/Gtk before ANY other logic
+    adw::init().expect("Failed to initialize Libadwaita");
+
     // --- GTK THEME RE-SPAWN HACK ---
-    // If GTK_THEME is not set, the app won't inherit the system-level Adwaita styling correctly.
     if std::env::var("GTK_THEME").is_err() {
-        // 1. Get the current theme from GSettings
         let settings = gio::Settings::new("org.gnome.desktop.interface");
         let theme_name: String = settings.string("gtk-theme").into();
 
-        // 2. Re-spawn the process with the variable set
         let status = std::process::Command::new(std::env::current_exe().unwrap())
             .args(std::env::args().skip(1))
             .env("GTK_THEME", &theme_name)
             .status()
             .expect("Failed to restart Flux with GTK_THEME");
 
-        // 3. Exit the initial "themeless" process
         std::process::exit(status.code().unwrap_or(0));
     }
 
     let args: Vec<String> = std::env::args().collect();
 
+    // 2. Now safe to call functions using Gtk objects
+    load_custom_css();
+    setup_css_watcher();
+
     // --- CLI HANDLER: FILE PROPERTIES ---
     if args.len() > 2 && args[1] == "--file-properties" {
         let path = PathBuf::from(&args[2]);
-        // Separate RelmApp instances to satisfy different Component::Input types
         let app = RelmApp::new("flux.PropertiesViewer");
         app.allow_multiple_instances(true);
-
-        load_custom_css();
-        setup_css_watcher();
-
-        app.with_args(vec![])
-           .run::<FileProperties>(path);
+        app.with_args(vec![]).run::<FileProperties>(path);
         return;
     }
 
     // --- MAIN APP HANDLER ---
     let app = RelmApp::new("flux.FileManager");
     app.allow_multiple_instances(true);
-
-    load_custom_css();
-    setup_css_watcher();
 
     let display = adw::gdk::Display::default().expect("Could not get default display");
     let _theme = gtk::IconTheme::for_display(&display);
@@ -120,6 +134,5 @@ fn main() {
         dirs::home_dir().unwrap_or(PathBuf::from("."))
     };
 
-    app.with_args(vec![])
-       .run::<FluxApp>(start_path);
+    app.with_args(vec![]).run::<FluxApp>(start_path);
 }

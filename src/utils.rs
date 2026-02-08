@@ -53,6 +53,7 @@ default_sort = "Name"
 show_hidden_by_default = false
 show_xdg_dirs_by_default = true
 folders_first = true
+theme = "default"
 
 [ui.folder_sort]
 # "/home/neo/Downloads" = "Date"
@@ -82,6 +83,7 @@ path = "~/Downloads"
                 show_xdg_dirs_by_default: true,
                 device_renames: std::collections::HashMap::new(),
                 folders_first: true,
+                theme: Some("default".to_string()),
             },
             sidebar: vec![],
         })
