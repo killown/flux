@@ -363,6 +363,7 @@ impl SimpleComponent for FluxApp {
             });
             action_group.add_action(&action);
         }
+
         root.insert_action_group("win", Some(&action_group));
 
         let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
@@ -380,8 +381,6 @@ impl SimpleComponent for FluxApp {
         let volume_monitor = gio::VolumeMonitor::get();
         let s_added = sender.clone();
         volume_monitor.connect_mount_added(move |_, _| s_added.input(AppMsg::RefreshSidebar));
-        let s_added_bis = sender.clone();
-        volume_monitor.connect_mount_added(move |_, _| s_added_bis.input(AppMsg::RefreshSidebar));
 
         let mut model = FluxApp {
             files,
@@ -398,11 +397,19 @@ impl SimpleComponent for FluxApp {
             action_group,
             sort_by: config.ui.default_sort.clone(),
             show_hidden: config.ui.show_hidden_by_default,
-            config,
+            config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),
             header_view: "path".to_string(),
         };
+
+        for place in &config.sidebar {
+            model.sidebar.guard().push_back(SidebarPlace {
+                name: place.name.clone(),
+                icon: place.icon.clone(),
+                path: utils::expand_path(&place.path), // Use the expander here
+            });
+        }
 
         model.refresh_sidebar();
         model.load_path(start_path, &sender);
@@ -821,6 +828,7 @@ impl FluxApp {
                 })
         };
 
+        // 1. Core XDG Directories
         if let Some(p) = dirs::home_dir() {
             guard.push_back(SidebarPlace {
                 name: get_xdg_name(&p),
@@ -864,32 +872,16 @@ impl FluxApp {
             });
         }
 
-        if self.config.ui.show_xdg_dirs {
-            guard.push_back(SidebarPlace {
-                name: "Config".to_string(),
-                icon: "emblem-system-symbolic".to_string(),
-                path: utils::get_xdg_dir("XDG_CONFIG_HOME", "~/.config"),
-            });
-            guard.push_back(SidebarPlace {
-                name: "Local Data".to_string(),
-                icon: "folder-remote-symbolic".to_string(),
-                path: utils::get_xdg_dir("XDG_DATA_HOME", "~/.local/share"),
-            });
-        }
-
-        guard.push_back(SidebarPlace {
-            name: "Trash".to_string(),
-            icon: "user-trash-symbolic".to_string(),
-            path: PathBuf::from("trash:///"),
-        });
-
+        // 3. Custom Sidebar logic
         for custom in &self.config.sidebar {
             let path = if custom.path.starts_with('~') {
                 dirs::home_dir()
-                    .map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy())))
-                    .unwrap_or_else(|| PathBuf::from(&custom.path))
+                    .map(|h| {
+                        std::path::PathBuf::from(custom.path.replace('~', &h.to_string_lossy()))
+                    })
+                    .unwrap_or_else(|| std::path::PathBuf::from(&custom.path))
             } else {
-                PathBuf::from(&custom.path)
+                std::path::PathBuf::from(&custom.path)
             };
             guard.push_back(SidebarPlace {
                 name: custom.name.clone(),
@@ -898,6 +890,7 @@ impl FluxApp {
             });
         }
 
+        // 4. Mounts with Rename support
         for (mut name, path) in utils::get_system_mounts() {
             if let Some(new_name) = self.config.ui.device_renames.get(&name) {
                 name = new_name.clone();
@@ -911,6 +904,7 @@ impl FluxApp {
             } else {
                 "drive-harddisk-symbolic".to_string()
             };
+
             guard.push_back(SidebarPlace { name, icon, path });
         }
     }
