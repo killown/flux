@@ -1,181 +1,159 @@
-/* --- Flux: Heavy 3D Holographic Cyber-Glass --- */
+/* --- Flux: Default Theme --- */
 
-/* 1. Global Typography & Base */
+/* 1. Global Setup */
 * {
-  font-family:
-    "Oxanium", "Tektur", "Geist Mono", "Google Sans Code", "Orbitron",
-    "MesloLGS Nerd Font Mono", "Motiva Sans", "Inter", "Segoe UI", monospace;
+  font-family: "Motiva Sans", "Inter Variable", "Outfit", sans-serif;
+  /* Uses the system's defined accent color */
+  -gtk-secondary-caret-color: @accent_color;
 }
 
 window {
-  background-color: @window_bg_color;
+  /* Blends system window background with a subtle radial lift */
+  background-image: radial-gradient(
+    circle at 50% -50%,
+    alpha(@accent_color, 0.15) 0%,
+    @window_bg_color 80%
+  );
   color: @window_fg_color;
 }
 
-/* 2. Floating Frosted Header */
+/* 2. Header: Ion-Plated System Bar */
 headerbar {
-  background-color: alpha(@headerbar_bg_color, 0.85);
-  border-top: 1px solid alpha(@window_fg_color, 0.2);
-  border-bottom: 2px solid alpha(black, 0.5);
-  padding: 10px;
-  box-shadow: 0 4px 30px alpha(black, 0.4);
+  background-color: alpha(@window_bg_color, 0.5);
+  border-bottom: 1px solid alpha(@accent_color, 0.3);
+  padding: 14px;
+  box-shadow: inset 0 1px 0 0 alpha(white, 0.05);
 }
 
 headerbar label {
   font-weight: 800;
-  letter-spacing: 1px;
   text-transform: uppercase;
+  letter-spacing: 2px;
+  filter: drop-shadow(0 0 12px alpha(@accent_color, 0.4));
+  color: @window_fg_color;
 }
 
-/* 3. The 3D Modular Sidebar (Shards) */
+/* 3. Sidebar: Clean Navigation */
+scrolledwindow.sidebar {
+  background-color: alpha(black, 0.15);
+}
+
 .sidebar-row {
-  margin: 8px 14px;
-  padding: 12px 18px;
-  background-color: alpha(@window_fg_color, 0.05);
-  border-radius: 8px;
-
-  /* 3D Bezel Construction */
-  border-top: 1px solid alpha(@window_fg_color, 0.2);
-  border-left: 1px solid alpha(@window_fg_color, 0.1);
-  border-right: 2px solid alpha(black, 0.3);
-  border-bottom: 3px solid alpha(black, 0.5);
-
-  transition: all 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  color: alpha(@window_fg_color, 0.8);
-}
-
-.sidebar-row label {
-  font-size: 11pt;
-  font-weight: 600;
+  margin: 4px 12px;
+  padding: 10px 10px;
+  min-height: 36px;
+  background-color: alpha(@window_fg_color, 0.02);
+  border: 1px solid alpha(@window_fg_color, 0.04);
+  border-radius: 10px;
+  color: alpha(@window_fg_color, 0.6);
+  transition: all 200ms ease-out;
 }
 
 .sidebar-row:hover:not(:selected) {
-  background-color: alpha(@window_fg_color, 0.12);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 25px alpha(black, 0.5);
-  border-top-color: alpha(@window_fg_color, 0.4);
+  background-color: alpha(@accent_color, 0.1);
+  color: @window_fg_color;
+  transform: translateX(4px);
 }
 
-/* Selected State: "Powered Neural Link" */
 .sidebar-row:selected {
-  background-color: alpha(@accent_color, 0.9);
-  color: @accent_fg_color;
-
-  /* Physical "Pressed" Depth */
-  box-shadow:
-    inset 0 4px 10px alpha(black, 0.4),
-    0 0 15px alpha(@accent_color, 0.3);
-
-  /* High-Intensity Power Indicator */
-  border-left: 6px solid @window_fg_color;
-  border-top: 1px solid alpha(black, 0.3);
-  border-bottom: 1px solid alpha(white, 0.2);
-
-  font-weight: 800;
-  transform: scale(1.02) translateX(4px);
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+  font-weight: 700;
+  border-color: @accent_color;
+  box-shadow: 0 0 20px alpha(@accent_color, 0.1);
+  transform: translateX(6px);
 }
 
-/* 4. Glass Cards (Grid Items) */
+/* 4. Grid View: Volumetric System Cards */
 .flux-card {
-  background-color: alpha(@window_fg_color, 0.08);
+  /* Uses the system's view/base background for the card body */
+  background-color: alpha(@view_bg_color, 0.85);
+  border: 1px solid alpha(@window_fg_color, 0.08);
   border-radius: 12px;
-  border: 1px solid alpha(@window_fg_color, 0.15);
-  margin: 10px;
-  padding: 15px;
-
-  box-shadow:
-    0 6px 20px alpha(black, 0.2),
-    inset 0 0 0 1px alpha(@window_fg_color, 0.05);
-
-  transition: all 400ms cubic-bezier(0.165, 0.84, 0.44, 1);
+  padding: 20px;
+  margin: 12px;
+  box-shadow: 0 10px 30px alpha(black, 0.3);
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease,
+    border-color 250ms ease;
 }
 
 .flux-card:hover {
-  background-color: alpha(@window_fg_color, 0.15);
+  background-color: @view_bg_color;
+  border-color: alpha(@accent_color, 0.4);
+  transform: translateY(-8px);
   box-shadow:
-    0 25px 50px alpha(black, 0.5),
-    0 0 20px alpha(@accent_color, 0.2);
-  transform: translateY(-10px) rotateX(4deg);
-  border-color: alpha(@accent_color, 0.5);
+    0 20px 45px alpha(black, 0.4),
+    0 0 20px alpha(@accent_color, 0.1);
 }
 
 .flux-card label {
-  font-family: "Geist Mono", "Google Sans Code", monospace;
   font-size: 10.5pt;
   font-weight: 700;
-  text-shadow: 0 2px 5px alpha(black, 0.6);
-}
-
-/* 5. The Enlarged Context Menu */
-popover.menu contents {
-  background-color: alpha(@window_bg_color, 0.95);
-  border-radius: 12px;
-  padding: 10px;
-  border: 1px solid alpha(@window_fg_color, 0.2);
-  box-shadow: 0 15px 45px alpha(black, 0.6);
-}
-
-popover.menu modelbutton label {
-  font-family: "Oxanium", "Tektur", sans-serif;
-  font-size: 13pt; /* Enlarged font as requested */
-  font-weight: 700;
-  margin: 4px 8px;
   color: @window_fg_color;
+  margin-top: 12px;
 }
 
-popover.menu image {
-  min-width: 22px;
-  min-height: 22px;
-  margin-right: 12px;
-  filter: drop-shadow(0 0 5px alpha(@accent_color, 0.3));
+/* 5. Destructive Action: System-Matched Warning */
+.destructive-action {
+  /* Uses GTK's built-in error/destructive colors */
+  background-color: alpha(@error_bg_color, 0.1);
+  color: @error_bg_color;
+  border: 1px solid alpha(@error_bg_color, 0.4);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  transition: all 200ms ease;
+}
+
+.destructive-action:hover {
+  background-color: @error_bg_color;
+  color: @error_fg_color;
+  transform: translateY(1px);
+}
+
+/* 6. Context Menu: Bento Modal */
+popover.menu contents {
+  background-color: alpha(@window_bg_color, 0.98);
+  border: 1px solid alpha(@accent_color, 0.3);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 30px 80px alpha(black, 0.5);
 }
 
 popover.menu modelbutton:hover {
-  background-color: alpha(@accent_color, 0.25);
-  transform: scale(1.02);
+  background-color: @accent_color;
+  color: @accent_fg_color;
 }
 
-popover.menu modelbutton:hover label {
-  color: @accent_color;
-  text-shadow: 0 0 10px alpha(@accent_color, 0.4);
-}
-
-/* 6. High-Visibility Inputs */
+/* 7. Inputs */
 entry {
-  font-family: "Geist Mono", monospace;
-  background-color: alpha(black, 0.4);
-  border: 1px solid alpha(@window_fg_color, 0.2);
-  border-radius: 10px;
+  background-color: alpha(black, 0.2);
+  border: 1px solid alpha(@window_fg_color, 0.1);
+  border-radius: 20px;
+  padding: 8px 16px;
   color: @window_fg_color;
-  box-shadow: inset 0 3px 12px alpha(black, 0.6);
 }
 
 entry:focus {
   border-color: @accent_color;
-  box-shadow:
-    inset 0 3px 12px alpha(black, 0.6),
-    0 0 15px alpha(@accent_color, 0.3);
+  box-shadow: 0 0 10px alpha(@accent_color, 0.2);
 }
 
-/* 7. Interaction States */
-.drop-hover {
-  background-color: alpha(@accent_color, 0.2);
-  border: 2px dashed @accent_color;
-  transform: scale(1.02);
-}
-
-/* 8. Functional Elements */
+/* 8. Utility */
 scrollbar slider {
-  background-color: alpha(@window_fg_color, 0.2);
-  border-radius: 20px;
-  border: 1px solid alpha(black, 0.2);
-}
-
-scrollbar slider:hover {
-  background-color: alpha(@accent_color, 0.5);
-}
-
-popover.menu separator {
-  margin: 10px 4px;
   background-color: alpha(@window_fg_color, 0.1);
+  border-radius: 20px;
+}
+
+.sort-label {
+  background-color: alpha(@accent_color, 0.15);
+  color: @accent_color;
+  border: 1px solid alpha(@accent_color, 0.3);
+  border-radius: 4px;
+  font-size: 8pt;
+  padding: 4px 12px;
+  font-weight: 900;
 }

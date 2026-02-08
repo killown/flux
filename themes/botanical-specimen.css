@@ -1,0 +1,175 @@
+/* --- Flux: Botanical Specimen (Naturalist's Journal Protocol) --- */
+
+@define-color journal_paper #fdfbf4; /* Aged Parchment */
+@define-color journal_ink #3b3a32; /* Sepia/Iron Gall Ink */
+@define-color journal_moss #6d7a5f; /* Desaturated Leaf Green */
+@define-color journal_petal #d48e8e; /* Pressed Rose Pink */
+@define-color journal_grid #e8e4d8; /* Faint Guideline */
+
+/* 1. Global Setup: The Journal Page */
+* {
+  font-family: "Cormorant Garamond", "EB Garamond", "Serif";
+  letter-spacing: 0.2px;
+}
+
+window {
+  background-color: @journal_paper;
+  color: @journal_ink;
+  /* Faint horizontal lines like a lined notebook */
+  background-image: linear-gradient(
+    to bottom,
+    @journal_grid 1px,
+    transparent 1px
+  );
+  background-size: 100% 28px;
+  background-attachment: local;
+}
+
+/* 2. Header: The Manuscript Title */
+headerbar {
+  background-color: transparent;
+  border-bottom: 1px double @journal_ink; /* Double-line formal border */
+  padding: 20px;
+}
+
+headerbar label {
+  font-weight: 300;
+  font-style: italic;
+  font-size: 18pt;
+  color: @journal_ink;
+  text-shadow: 1px 1px 0px white; /* Paper-etching effect */
+}
+
+/* 3. Sidebar: Table of Contents */
+scrolledwindow.sidebar {
+  background-color: alpha(@journal_grid, 0.3);
+  border-right: 1px solid @journal_ink;
+}
+
+.sidebar-row {
+  margin: 0;
+  padding: 10px 24px;
+  min-height: 40px;
+  background-color: transparent;
+  color: alpha(@journal_ink, 0.7);
+  transition: all 300ms ease;
+}
+
+.sidebar-row:hover:not(:selected) {
+  color: @journal_ink;
+  /* Hand-drawn underline */
+  background-image: linear-gradient(to right, @journal_moss, @journal_moss);
+  background-size: 60% 1px;
+  background-repeat: no-repeat;
+  background-position: bottom left 24px;
+}
+
+/* Selection: The Bookmark */
+.sidebar-row:selected {
+  background-color: @journal_moss;
+  color: @journal_paper;
+  font-weight: 700;
+  /* Simulates a ribbon bookmark */
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 90%, 0 100%);
+  margin-top: 4px;
+}
+
+/* 4. Grid View: The Specimen Plates */
+.flux-card {
+  background-color: transparent;
+  border: 1px solid alpha(@journal_ink, 0.2);
+  border-radius: 0px;
+  padding: 15px;
+  margin: 15px;
+
+  /* Corner photo-tabs (mounting effect) */
+  background-image:
+    linear-gradient(45deg, @journal_grid 10px, transparent 10px),
+    linear-gradient(-45deg, @journal_grid 10px, transparent 10px);
+  background-position:
+    top left,
+    top right;
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+
+  transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.flux-card:hover {
+  background-color: white;
+  border-color: @journal_ink;
+  /* Pressed flower shadow: very soft and wide */
+  box-shadow: 0 15px 35px alpha(@journal_ink, 0.1);
+  transform: translateY(-5px) rotate(1deg); /* Slight paper-skew */
+}
+
+.flux-card label {
+  font-size: 11pt;
+  font-weight: 400;
+  color: @journal_ink;
+  margin-top: 10px;
+  border-top: 1px solid alpha(@journal_ink, 0.1);
+  padding-top: 8px;
+}
+
+/* 5. Destructive Action: The Ink Blot */
+.destructive-action {
+  background-color: @journal_ink;
+  color: @journal_paper;
+  border: none;
+  border-radius: 50% 40% 60% 45%; /* Irregular ink-splat shape */
+  padding: 12px 24px;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.destructive-action:hover {
+  background-color: #000;
+  transform: scale(1.1);
+}
+
+/* 6. Context Menu: Technical Annotations */
+popover.menu contents {
+  background-color: #fffef9;
+  border: 1px solid @journal_ink;
+  border-radius: 0px;
+  box-shadow: 8px 8px 0px alpha(@journal_ink, 0.05);
+}
+
+popover.menu modelbutton:hover {
+  background-color: alpha(@journal_petal, 0.2);
+  color: @journal_ink;
+}
+
+/* 7. Search & Inputs: Pen Field */
+entry {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid @journal_ink;
+  padding: 8px 0px;
+  color: @journal_ink;
+  font-style: italic;
+}
+
+entry:focus {
+  border-bottom-width: 2px;
+  /* Ink-bleed glow */
+  box-shadow: 0 4px 10px alpha(@journal_moss, 0.1);
+}
+
+/* 8. Functional UI: Twine Scroller */
+scrollbar slider {
+  background-color: @journal_grid;
+  border: 1px solid @journal_ink;
+  border-radius: 20px;
+  min-width: 6px;
+}
+
+.sort-label {
+  background-color: alpha(@journal_petal, 0.15);
+  color: #8c5a5a;
+  font-size: 9pt;
+  padding: 2px 12px;
+  border: 1px solid alpha(@journal_petal, 0.3);
+  font-style: italic;
+}

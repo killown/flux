@@ -1,0 +1,192 @@
+/* --- Flux: Heavy 3D Holographic Cyber-Glass (Full Protocol) --- */
+
+/* 1. Global Typography & Base */
+* {
+  font-family:
+    "Oxanium", "Tektur", "Geist Mono", "Google Sans Code", "Orbitron",
+    "MesloLGS Nerd Font Mono", "Motiva Sans", "Inter", "Segoe UI", monospace;
+}
+
+window {
+  background-color: @window_bg_color;
+  color: @window_fg_color;
+}
+
+/* 2. Floating Frosted Header */
+headerbar {
+  background-color: alpha(@headerbar_bg_color, 0.85);
+  border-top: 1px solid alpha(@window_fg_color, 0.2);
+  border-bottom: 2px solid alpha(black, 0.5);
+  padding: 10px;
+  box-shadow: 0 4px 30px alpha(black, 0.4);
+}
+
+headerbar label {
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* 3. The 3D Modular Sidebar (Shards) */
+.sidebar-row {
+  margin: 4px 12px;
+  padding: 10px 16px;
+  background-color: alpha(@window_fg_color, 0.05);
+  border-radius: 4px;
+
+  /* 3D Bezel Construction */
+  border-top: 1px solid alpha(@window_fg_color, 0.2);
+  border-left: 1px solid alpha(@window_fg_color, 0.1);
+  border-right: 2px solid alpha(black, 0.3);
+  border-bottom: 3px solid alpha(black, 0.5);
+
+  transition: all 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  color: alpha(@window_fg_color, 0.6);
+}
+
+.sidebar-row label {
+  font-size: 10pt;
+  font-weight: 600;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@window_fg_color, 0.1);
+  transform: translateX(4px);
+  box-shadow: 8px 8px 20px alpha(black, 0.4);
+  border-top-color: alpha(@window_fg_color, 0.4);
+  color: @window_fg_color;
+}
+
+.sidebar-row:selected {
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+
+  /* Physical "Pressed" Depth */
+  box-shadow:
+    inset 0 2px 8px alpha(black, 0.5),
+    0 0 15px alpha(@accent_color, 0.2);
+
+  /* High-Intensity Power Indicator */
+  border-left: 4px solid @accent_color;
+  border-top: 1px solid alpha(black, 0.3);
+  border-bottom: 1px solid alpha(white, 0.1);
+
+  font-weight: 800;
+  transform: scale(1.02) translateX(8px);
+}
+
+/* 4. Glass Cards (Grid Items) */
+.flux-card {
+  background-color: alpha(@window_fg_color, 0.08);
+  border-radius: 8px;
+  border: 1px solid alpha(@window_fg_color, 0.15);
+  margin: 10px;
+  padding: 15px;
+
+  box-shadow:
+    0 6px 20px alpha(black, 0.2),
+    inset 0 0 0 1px alpha(@window_fg_color, 0.05);
+
+  transition: all 400ms cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.flux-card:hover {
+  background-color: alpha(@window_fg_color, 0.15);
+  box-shadow:
+    0 25px 50px alpha(black, 0.5),
+    0 0 20px alpha(@accent_color, 0.2);
+  transform: translateY(-10px) perspective(1000px) rotateX(4deg);
+  border-color: alpha(@accent_color, 0.5);
+}
+
+/* 5. Destructive Action (Empty Trash - System Colors) */
+.destructive-action {
+  /* Dynamic system colors for a professional, integrated warning */
+  background-color: alpha(@error_bg_color, 0.15);
+  border: 1px solid alpha(@error_bg_color, 0.4);
+  color: @error_bg_color;
+
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  transition: all 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.destructive-action:hover {
+  background-color: @error_bg_color;
+  color: @error_fg_color;
+
+  /* Sinks into UI (Kinetic Physics) */
+  transform: translateY(2px);
+  box-shadow: 0 4px 15px alpha(@error_bg_color, 0.4);
+}
+
+.destructive-action:active {
+  background-color: shade(@error_bg_color, 0.8);
+  transform: translateY(4px) scale(0.95);
+}
+
+/* 6. The Enlarged Context Menu */
+popover.menu contents {
+  background-color: alpha(@window_bg_color, 0.98);
+  border-radius: 4px;
+  padding: 8px;
+  border: 1px solid alpha(@window_fg_color, 0.2);
+  box-shadow: 0 15px 45px alpha(black, 0.8);
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt;
+  font-weight: 700;
+  margin: 4px 8px;
+  color: @window_fg_color;
+}
+
+popover.menu modelbutton:hover {
+  background-color: alpha(@accent_color, 0.8);
+  color: @accent_fg_color;
+  transform: scale(1.02);
+}
+
+/* 7. High-Visibility Inputs */
+entry {
+  background-color: alpha(black, 0.4);
+  border: 1px solid alpha(@window_fg_color, 0.2);
+  border-radius: 4px;
+  color: @window_fg_color;
+}
+
+entry:focus {
+  border-color: @accent_color;
+  box-shadow: 0 0 15px alpha(@accent_color, 0.3);
+}
+
+/* 8. Utility Badges (Sort Labels) */
+.sort-label {
+  background-color: alpha(@accent_color, 0.1);
+  color: @accent_color;
+  border: 1px solid alpha(@accent_color, 0.3);
+  border-radius: 2px;
+  font-size: 8pt;
+  font-weight: 800;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+/* 9. Scrollbars */
+scrollbar slider {
+  background-color: alpha(@window_fg_color, 0.1);
+  border-radius: 0px;
+  min-width: 6px;
+}
+
+scrollbar slider:hover {
+  background-color: @accent_color;
+}
+
+.drop-hover {
+  background-color: alpha(@accent_color, 0.2);
+  border: 2px dashed @accent_color;
+}

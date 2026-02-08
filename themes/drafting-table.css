@@ -1,0 +1,160 @@
+/* --- Flux: Drafting Table (Refined Ruler Protocol) --- */
+
+@define-color draft_paper #f2f0e9;
+@define-color draft_ink #24292e;
+@define-color draft_lead #5c6370;
+@define-color draft_highlighter #fbff00;
+@define-color draft_blueprint #0047ab;
+
+/* 1. Global Setup */
+* {
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  -gtk-secondary-caret-color: @draft_blueprint;
+}
+
+window {
+  background-color: @draft_paper;
+  color: @draft_ink;
+  background-image:
+    linear-gradient(to right, alpha(@draft_ink, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, alpha(@draft_ink, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* 2. Header: The Precision Ruler (FIXED) */
+headerbar {
+  background-color: #e8e6dc; /* Slightly more metallic paper tone */
+  border-bottom: 2px solid @draft_ink;
+  padding: 14px;
+
+  /* Precision Ruler Ticks: 5px and 10px intervals */
+  background-image:
+    linear-gradient(to right, @draft_ink 1px, transparent 1px),
+    linear-gradient(to right, @draft_ink 1px, transparent 1px);
+  background-size:
+    10px 8px,
+    40px 14px; /* Minor and Major ticks */
+  background-repeat: repeat-x;
+  background-position: bottom;
+
+  box-shadow: inset 0 -1px 0 0 alpha(@draft_ink, 0.1);
+}
+
+headerbar label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 11pt;
+  color: @draft_ink;
+  /* Shift text up to clear the ruler ticks */
+  margin-bottom: 4px;
+}
+
+/* 3. Sidebar: Technical Index */
+scrolledwindow.sidebar {
+  background-color: alpha(@draft_lead, 0.05);
+  border-right: 1px solid @draft_ink;
+}
+
+.sidebar-row {
+  margin: 0;
+  padding: 12px 20px;
+  min-height: 44px;
+  border-bottom: 1px solid alpha(@draft_ink, 0.1);
+  transition: all 150ms ease;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@draft_ink, 0.03);
+  color: @draft_ink;
+  text-decoration: underline;
+}
+
+.sidebar-row:selected {
+  background-color: @draft_blueprint;
+  color: white;
+  font-weight: 800;
+  box-shadow: 4px 4px 0px @draft_ink;
+}
+
+/* 4. Grid View: The Blueprint Components */
+.flux-card {
+  background-color: white;
+  border: 1px solid @draft_ink;
+  border-radius: 0px;
+  padding: 16px;
+  margin: 12px;
+  box-shadow: 6px 6px 0px alpha(@draft_ink, 0.1);
+  transition: all 200ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.flux-card:hover {
+  background-color: @draft_highlighter;
+  transform: translate(-4px, -4px);
+  box-shadow: 10px 10px 0px @draft_ink;
+}
+
+/* 5. Destructive Action: Red Pen Correction */
+.destructive-action {
+  background-color: transparent;
+  color: #d73a49;
+  border: 2px solid #d73a49;
+  border-radius: 0px;
+  padding: 8px 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-decoration: line-through;
+}
+
+.destructive-action:hover {
+  background-color: #d73a49;
+  color: white;
+  text-decoration: none;
+  box-shadow: 4px 4px 0px @draft_ink;
+}
+
+/* 6. Context Menu: Technical Overlay */
+popover.menu contents {
+  background-color: @draft_paper;
+  border: 2px solid @draft_ink;
+  border-radius: 0px;
+  padding: 0px;
+  box-shadow: 12px 12px 0px alpha(@draft_ink, 0.2);
+}
+
+popover.menu modelbutton:hover {
+  background-color: @draft_blueprint;
+  color: white;
+}
+
+/* 7. Search & Inputs: Annotated Field */
+entry {
+  background-color: white;
+  border: 1px solid @draft_ink;
+  border-radius: 0px;
+  padding: 10px;
+  color: @draft_ink;
+  background-image: radial-gradient(@draft_ink 1px, transparent 1px);
+  background-size: 10px 10px;
+}
+
+entry:focus {
+  background-image: none;
+  background-color: white;
+  outline: 2px solid @draft_blueprint;
+}
+
+/* 8. Functional UI: Ruler Scrollbar */
+scrollbar slider {
+  background-color: @draft_ink;
+  border-radius: 0px;
+  min-width: 10px;
+}
+
+.sort-label {
+  background-color: @draft_ink;
+  color: @draft_paper;
+  font-size: 8pt;
+  padding: 2px 12px;
+  font-weight: 900;
+}

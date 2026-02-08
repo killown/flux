@@ -1,0 +1,225 @@
+/* --- Flux: Exo-Shell (Biomechanical Interface) --- */
+
+@define-color shell_core #05070a;
+@define-color shell_plate #0d1117;
+@define-color shell_fiber #21262d;
+@define-color shell_nerve #58a6ff;
+
+/* 1. Global Setup */
+* {
+  font-family: "Tektur", "Geist Mono", "Orbitron", sans-serif;
+}
+
+window {
+  background-color: @shell_core;
+  color: alpha(white, 0.85);
+}
+
+/* 2. Header: The Neural Link */
+headerbar {
+  background-color: @shell_core;
+  border-bottom: 2px solid @shell_fiber;
+  padding: 15px;
+}
+
+headerbar label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: @shell_nerve;
+  text-shadow: 0 0 12px alpha(@shell_nerve, 0.4);
+}
+
+/* 3. Sidebar: Muscle Contraction */
+.sidebar-row {
+  margin: 6px 14px;
+  padding: 12px 18px;
+  min-height: 32px;
+
+  background-color: alpha(white, 0.02);
+  border-radius: 2px 15px 2px 15px; /* Organic asymmetric corners */
+  border: 1px solid alpha(white, 0.05);
+
+  /* Elastic timing for 'organic' feel */
+  transition: all 500ms cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@shell_nerve, 0.1);
+  border-color: alpha(@shell_nerve, 0.3);
+  /* Contraction effect: gets wider but slightly shorter */
+  transform: scaleX(1.05) scaleY(0.98);
+}
+
+.sidebar-row:selected {
+  background-color: @shell_nerve;
+  color: @shell_core;
+  font-weight: 900;
+  border-radius: 15px 2px 15px 2px;
+  box-shadow: 0 0 25px alpha(@shell_nerve, 0.5);
+  transform: translateX(10px) scale(1.05);
+}
+
+/* 4. Grid View: Hydraulic Pressure */
+.flux-card {
+  background-color: @shell_plate;
+  border: 2px solid @shell_fiber;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px;
+
+  /* Natural shadow */
+  box-shadow: 8px 8px 0px alpha(black, 0.4);
+
+  /* Heavy physics */
+  transition: all 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.flux-card:hover {
+  /* INVERSE HOVER: Sinks into the 'shell' instead of floating */
+  background-color: @shell_core;
+  border-color: @shell_nerve;
+  transform: translateY(4px) translateX(4px);
+  box-shadow: 0px 0px 0px transparent;
+}
+
+.flux-card label {
+  font-size: 10pt;
+  font-weight: 700;
+  color: alpha(white, 0.6);
+}
+
+.flux-card:hover label {
+  color: @shell_nerve;
+}
+
+/* 5. Context Menu: The Organoid */
+popover.menu contents {
+  background-color: #0d1117;
+  border: 2px solid @shell_fiber;
+  border-radius: 20px 0 20px 0;
+  padding: 10px;
+  box-shadow: 20px 20px 60px alpha(black, 0.8);
+}
+
+popover.menu modelbutton {
+  transition: all 300ms ease;
+  min-height: 44px;
+}
+
+popover.menu modelbutton:hover {
+  background-color: alpha(@shell_nerve, 0.15);
+  /* Liquid expand effect */
+  border-left: 8px solid @shell_nerve;
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt; /* Your preferred sizing */
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* 6. Functional Elements */
+entry {
+  background-color: @shell_core;
+  border: 1px solid @shell_fiber;
+  border-radius: 4px 12px;
+  padding: 10px;
+  color: @shell_nerve;
+}
+
+entry:focus {
+  border-color: @shell_nerve;
+  /* Neural pulse glow */
+  box-shadow: 0 0 15px alpha(@shell_nerve, 0.2);
+}
+
+scrollbar slider {
+  background-color: @shell_fiber;
+  border-radius: 0px;
+  min-width: 6px;
+}
+
+scrollbar slider:hover {
+  background-color: @shell_nerve;
+}
+
+/* 7. Special Interaction */
+.drop-hover {
+  background-color: alpha(@shell_nerve, 0.2);
+  outline: 2px dashed @shell_nerve;
+  transform: scale(0.95); /* Shrinks like it's grabbing the file */
+}
+
+.sort-label {
+  background-color: @shell_fiber;
+  color: @shell_nerve;
+  border: 1px solid alpha(@shell_nerve, 0.3);
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 12px;
+  clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+}
+
+.destructive-action {
+  /* Deep, desaturated wine-red background - feels heavy and premium */
+  background-color: #1a080a;
+
+  /* Sharp, high-contrast border only on the action edge */
+  border: 1px solid alpha(#ff3e3e, 0.2);
+  border-bottom: 2px solid alpha(#ff3e3e, 0.4);
+
+  /* High-contrast white/silver text for legibility */
+  color: #efefef;
+
+  /* Asymmetric organic corners (matches the shell theme) */
+  border-radius: 2px 12px 2px 12px;
+
+  padding: 8px 18px;
+  font-weight: 800;
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+
+  /* Snappy, physical transition */
+  transition: all 300ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.destructive-action:hover {
+  /* Brightens to a vivid, but solid crimson */
+  background-color: #880808;
+  border-color: #ff3e3e;
+  color: white;
+
+  /* Physical shadow instead of a soft glow */
+  box-shadow: 4px 4px 0px alpha(black, 0.6);
+
+  /* Hydraulic Squeeze: Sinks into the UI */
+  transform: translateY(2px) translateX(2px);
+}
+
+.destructive-action:active {
+  background-color: #ff0000;
+  /* Extreme compression on click */
+  transform: translateY(4px) translateX(4px) scale(0.95);
+  box-shadow: none;
+}
+
+/* Icon styling: subtle until engaged */
+.destructive-action image {
+  margin-right: 10px;
+  opacity: 0.6;
+  transition: all 200ms ease;
+}
+
+.destructive-action:hover image {
+  opacity: 1;
+  filter: drop-shadow(0 0 5px white);
+}
+
+/* --- Added Spacing fix for Sidebar (Compact but Airy) --- */
+.sidebar-row {
+  margin: 2px 12px;
+  padding: 8px 14px;
+  min-height: 36px; /* Tightened height */
+}

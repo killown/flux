@@ -1,0 +1,187 @@
+/* --- Flux: Isotope Laboratory (Radiological Containment Protocol) --- */
+
+@define-color lab_lead #1a1a1c; /* Heavy Shielding Gray */
+@define-color lab_isotope #ffee00; /* Uranium Yellow */
+@define-color lab_cobalt #2e5bff; /* Cerenkov Radiation Blue */
+@define-color lab_glass #d1d9e0; /* Reinforced Observation Glass */
+@define-color lab_text #ffffff;
+
+/* 1. Global Setup: The Containment Floor */
+* {
+  font-family: "JetBrains Mono", "Input Mono", monospace;
+  -gtk-secondary-caret-color: @lab_isotope;
+}
+
+window {
+  background-color: @lab_lead;
+  /* Hazardous floor texture: Non-slip industrial diamond plate */
+  background-image:
+    linear-gradient(45deg, alpha(white, 0.02) 25%, transparent 25%),
+    linear-gradient(-45deg, alpha(white, 0.02) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, alpha(white, 0.02) 75%),
+    linear-gradient(-45deg, transparent 75%, alpha(white, 0.02) 75%);
+  background-size: 20px 20px;
+  color: @lab_text;
+}
+
+/* 2. Header: The Control Deck */
+headerbar {
+  background-color: #242428;
+  border-bottom: 4px solid @lab_isotope;
+  padding: 15px;
+  /* Warning stripe pattern across the top */
+  background-image: repeating-linear-gradient(
+    45deg,
+    @lab_isotope,
+    @lab_isotope 10px,
+    #000000 10px,
+    #000000 20px
+  );
+  background-size: 100% 4px;
+  background-repeat: no-repeat;
+  background-position: bottom;
+}
+
+headerbar label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: @lab_isotope;
+  /* Glowing warning effect */
+  text-shadow: 0 0 10px alpha(@lab_isotope, 0.5);
+}
+
+/* 3. Sidebar: Inventory Ledger */
+scrolledwindow.sidebar {
+  background-color: #121214;
+  border-right: 2px solid #2a2a2e;
+}
+
+.sidebar-row {
+  margin: 2px 0;
+  padding: 12px 20px;
+  background-color: transparent;
+  color: alpha(@lab_text, 0.5);
+  border-left: 0px solid @lab_isotope;
+  transition: all 100ms step-end;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@lab_isotope, 0.05);
+  color: white;
+}
+
+/* Selection: Active Isotope (Cobalt) */
+.sidebar-row:selected {
+  background-color: alpha(@lab_cobalt, 0.15);
+  color: @lab_cobalt;
+  font-weight: 800;
+  border-left: 6px solid @lab_cobalt;
+  /* Cerenkov glow */
+  box-shadow: inset 10px 0 20px alpha(@lab_cobalt, 0.2);
+}
+
+/* 4. Grid View: Lead-Encased Storage Cards */
+.flux-card {
+  background-color: #242428; /* Lead casing */
+  border: 2px solid #3a3a40;
+  border-radius: 0px; /* Industrial sharp edges */
+  padding: 20px;
+  margin: 15px;
+
+  /* Reinforced corner rivets effect */
+  background-image:
+    radial-gradient(circle, #3a3a40 2px, transparent 2px),
+    radial-gradient(circle, #3a3a40 2px, transparent 2px);
+  background-size: 90% 90%;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  box-shadow: 6px 6px 0px black;
+  transition: all 150ms ease-in-out;
+}
+
+.flux-card:hover {
+  background-color: @lab_isotope;
+  border-color: #000000;
+  transform: scale(1.05);
+  box-shadow: 12px 12px 0px black;
+}
+
+.flux-card label {
+  font-size: 9pt;
+  font-weight: 800;
+  color: alpha(@lab_text, 0.8);
+  text-transform: uppercase;
+  margin-top: 15px;
+}
+
+.flux-card:hover label {
+  color: #000000;
+}
+
+/* 5. Destructive Action: Emergency Vent */
+.destructive-action {
+  background-color: #ff0000;
+  color: white;
+  border: 4px solid #880000;
+  border-radius: 0px;
+  font-weight: 900;
+  text-transform: uppercase;
+  padding: 10px 25px;
+}
+
+.destructive-action:hover {
+  background-color: white;
+  color: #ff0000;
+  box-shadow: 0 0 20px #ff0000;
+}
+
+/* 6. Context Menu: Lab Protocol Overlay */
+popover.menu contents {
+  background-color: #d1d9e0; /* Reinforced Glass */
+  color: #1a1a1c;
+  border: 3px solid #1a1a1c;
+  border-radius: 0px;
+  padding: 0px;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @lab_cobalt;
+  color: white;
+}
+
+/* 7. Search & Inputs: Geiger Readout */
+entry {
+  background-color: #0a0a0b;
+  border: 2px solid #3a3a40;
+  border-radius: 0px;
+  padding: 10px;
+  color: @lab_isotope;
+}
+
+entry:focus {
+  border-color: @lab_isotope;
+  box-shadow: inset 0 0 10px alpha(@lab_isotope, 0.3);
+}
+
+/* 8. Functional UI: Lead Rail Scrollbar */
+scrollbar slider {
+  background-color: @lab_isotope;
+  border-radius: 0px;
+  min-width: 12px;
+}
+
+.sort-label {
+  background-color: @lab_cobalt;
+  color: white;
+  font-size: 8pt;
+  padding: 4px 12px;
+  font-weight: 900;
+  clip-path: polygon(
+    10% 0,
+    100% 0,
+    90% 100%,
+    0 100%
+  ); /* Angled industrial shape */
+}

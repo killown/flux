@@ -1,0 +1,175 @@
+/* --- Flux: Analog Console (Vintage Hi-Fi Protocol) --- */
+
+@define-color vintage_paper #e6e2d3;
+@define-color vintage_ink #2b2b2b;
+@define-color vintage_accent #d45d31; /* Burnt Orange */
+@define-color vintage_phosphor #4caf50; /* CRT Green */
+
+/* 1. Global Setup */
+* {
+  font-family: "IBM Plex Mono", "Courier Prime", "Special Elite", monospace;
+  -gtk-secondary-caret-color: @vintage_accent;
+}
+
+window {
+  background-color: @vintage_paper;
+  color: @vintage_ink;
+}
+
+/* 2. Header: Machined Aluminum */
+headerbar {
+  background-color: #d1cdbc;
+  border-bottom: 3px solid #b1ad9c;
+  padding: 12px;
+  /* Simulates a brushed metal texture */
+  background-image: linear-gradient(
+    to right,
+    alpha(white, 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 3px 100%;
+}
+
+headerbar label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: @vintage_ink;
+}
+
+/* 3. Sidebar: Bakelite Switchboard */
+scrolledwindow.sidebar {
+  background-color: #c4c0ae;
+  border-right: 2px solid #b1ad9c;
+}
+
+.sidebar-row {
+  margin: 4px 10px;
+  padding: 8px 14px;
+  min-height: 40px;
+
+  background-color: #b1ad9c;
+  border-radius: 4px;
+  border-bottom: 3px solid #8e8a7a; /* Physical depth */
+  color: @vintage_ink;
+
+  transition: all 100ms ease-in;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: #bcbaaa;
+  transform: translateY(-1px);
+}
+
+/* Selection: Pressed Button State */
+.sidebar-row:selected {
+  background-color: #a09c8c;
+  color: white;
+  border-bottom: 1px solid #7a7668;
+  /* Sinks the button into the panel */
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 5px alpha(black, 0.3);
+}
+
+.sidebar-row image {
+  margin-right: 10px;
+  filter: sepia(1) saturate(2);
+}
+
+/* 4. Grid View: Catalog Cards */
+.flux-card {
+  background-color: #f0eee4;
+  border: 1px solid #c4c0ae;
+  border-radius: 2px;
+  padding: 16px;
+  margin: 10px;
+
+  /* Hard-edge industrial shadow */
+  box-shadow: 6px 6px 0px #b1ad9c;
+
+  transition: all 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.flux-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 10px 10px 0px #8e8a7a;
+  border-color: @vintage_accent;
+}
+
+.flux-card label {
+  font-size: 10pt;
+  font-weight: 700;
+  color: #4a4a4a;
+}
+
+/* 5. Destructive Action: Emergency Cut-off */
+.destructive-action {
+  background-color: #8b2c2c;
+  color: #f0eee4;
+  border-radius: 50px; /* Round plunger button */
+  border: 4px solid #5a1d1d;
+  padding: 10px 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 0 4px 0px #4a1515;
+}
+
+.destructive-action:hover {
+  background-color: #a63636;
+  transform: translateY(2px);
+  box-shadow: 0 2px 0px #4a1515;
+}
+
+/* 6. Context Menu: Technical Manual */
+popover.menu contents {
+  background-color: #fdfcf7;
+  border: 2px solid @vintage_ink;
+  border-radius: 0px;
+  padding: 0px;
+}
+
+popover.menu modelbutton {
+  border-bottom: 1px solid alpha(@vintage_ink, 0.1);
+  min-height: 48px;
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt;
+  font-weight: 700;
+  color: @vintage_ink;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @vintage_accent;
+  color: white;
+}
+
+/* 7. Inputs: The Logbook */
+entry {
+  background-color: #e0ddd0;
+  border: 1px solid #b1ad9c;
+  border-radius: 0px;
+  color: @vintage_ink;
+  font-style: italic;
+}
+
+entry:focus {
+  border-color: @vintage_accent;
+  background-color: white;
+  box-shadow: inset 0 2px 4px alpha(black, 0.1);
+}
+
+/* 8. Functional UI */
+scrollbar slider {
+  background-color: #b1ad9c;
+  border-radius: 4px;
+  min-width: 8px;
+}
+
+.sort-label {
+  background-color: @vintage_ink;
+  color: @vintage_paper;
+  font-size: 9px;
+  padding: 3px 10px;
+  font-weight: 800;
+}
