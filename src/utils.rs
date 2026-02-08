@@ -56,7 +56,6 @@ folders_first = true
 theme = "default"
 
 [ui.folder_sort]
-# "/home/neo/Downloads" = "Date"
 
 [ui.device_renames]
 
@@ -68,7 +67,7 @@ path = "~/Downloads"
         let _ = fs::write(&config_path, default_toml);
     }
 
-    fs::read_to_string(config_path)
+    let mut config: crate::model::Config = fs::read_to_string(&config_path)
         .ok()
         .and_then(|content| toml::from_str(&content).ok())
         .unwrap_or_else(|| crate::model::Config {
@@ -86,7 +85,46 @@ path = "~/Downloads"
                 theme: Some("default".to_string()),
             },
             sidebar: vec![],
-        })
+        });
+
+    let mut changed = false;
+
+    // Pruning logic for folder_sort
+    config.ui.folder_sort.retain(|path_str, _| {
+        let path = if path_str.starts_with('~') {
+            dirs::home_dir()
+                .map(|h| h.join(path_str.trim_start_matches("~/")))
+                .unwrap_or_else(|| PathBuf::from(path_str))
+        } else {
+            PathBuf::from(path_str)
+        };
+
+        let exists = path.exists();
+        if !exists { changed = true; }
+        exists
+    });
+
+    // Pruning logic for folder_icon_size
+    config.ui.folder_icon_size.retain(|path_str, _| {
+        let path = if path_str.starts_with('~') {
+            dirs::home_dir()
+                .map(|h| h.join(path_str.trim_start_matches("~/")))
+                .unwrap_or_else(|| PathBuf::from(path_str))
+        } else {
+            PathBuf::from(path_str)
+        };
+
+        let exists = path.exists();
+        if !exists { changed = true; }
+        exists
+    });
+
+    // Only write to disk if something was actually removed
+    if changed {
+        crate::utils::save_config(&config);
+    }
+
+    config
 }
 
 fn split_mime_cmd(input: &str) -> Option<(String, String)> {
