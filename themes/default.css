@@ -41,7 +41,7 @@ scrolledwindow.sidebar {
 .sidebar-row {
   margin: 4px 12px;
   padding: 10px 10px;
-  min-height: 36px;
+  min-height: 20px;
   background-color: alpha(@window_fg_color, 0.02);
   border: 1px solid alpha(@window_fg_color, 0.04);
   border-radius: 10px;
