@@ -253,6 +253,19 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
     )
 }
 
+pub fn expand_path(path: &str) -> PathBuf {
+    let path = if path.starts_with('~') {
+        if let Some(home) = dirs::home_dir() {
+            path.replacen('~', &home.to_string_lossy(), 1)
+        } else {
+            path.to_string()
+        }
+    } else {
+        path.to_string()
+    };
+    PathBuf::from(path)
+}
+
 pub fn open_file(path: PathBuf) {
     let file = adw::gio::File::for_path(&path);
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
