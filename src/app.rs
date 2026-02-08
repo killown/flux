@@ -178,8 +178,30 @@ impl SimpleComponent for FluxApp {
                                 add_css_class: "flat",
                                 #[watch] set_label: &model.current_path.to_string_lossy(),
                                 connect_clicked => AppMsg::SwitchHeader("entry".to_string()),
-                            } -> { set_name: "path" },
+                            } -> { set_name: "path_old" },
                             #[name = "path_entry"]
+                            add_child = &gtk::ScrolledWindow {
+                                    set_hscrollbar_policy: gtk::PolicyType::External,
+                                    set_vscrollbar_policy: gtk::PolicyType::Never,
+                                    set_halign: gtk::Align::Center,
+                                    set_min_content_width: 450,
+
+                                    gtk::Box {
+                                        add_css_class: "linked",
+                                        set_spacing: 0,
+                                        set_halign: gtk::Align::Center,
+                                        set_valign: gtk::Align::Center,
+                                        #[local_ref]
+                                        breadcrumb_box -> gtk::Box {
+                                            set_orientation: gtk::Orientation::Horizontal,
+                                        },
+                                        add_controller = gtk::GestureClick {
+                                            connect_released[sender] => move |_, _, _, _| {
+                                                sender.input(AppMsg::SwitchHeader("entry".to_string()));
+                                            }
+                                        }
+                                    }
+                                } -> { set_name: "path" },
                             add_child = &gtk::Entry {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
@@ -391,9 +413,15 @@ impl SimpleComponent for FluxApp {
             s.input(AppMsg::RefreshSidebar);
         });
 
+        let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let breadcrumbs = FactoryVecDeque::builder()
+            .launch(breadcrumb_box.clone())
+            .forward(sender.input_sender(), |path| AppMsg::Navigate(path));
+
         let mut model = FluxApp {
             files,
             sidebar,
+            breadcrumbs,
             current_path: start_path.clone(),
             history: Vec::new(),
             forward_stack: Vec::new(),
@@ -412,11 +440,13 @@ impl SimpleComponent for FluxApp {
             header_view: "path".to_string(),
         };
 
+        model.update_breadcrumbs();
+
         for place in &config.sidebar {
             model.sidebar.guard().push_back(SidebarPlace {
                 name: place.name.clone(),
                 icon: place.icon.clone(),
-                path: utils::expand_path(&place.path), // Use the expander here
+                path: utils::expand_path(&place.path),
             });
         }
 
@@ -424,6 +454,7 @@ impl SimpleComponent for FluxApp {
         model.load_path(start_path, &sender);
 
         let widgets = view_output!();
+
         widgets.grid_scroller.set_child(Some(&model.files.view));
         widgets
             .sidebar_container

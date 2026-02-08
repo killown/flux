@@ -278,6 +278,7 @@ impl FluxApp {
                     self.history.push(self.current_path.clone());
                     self.forward_stack.clear();
                     self.load_path(path, &sender);
+                    self.update_breadcrumbs();
                 }
             }
             AppMsg::ThumbnailReady {

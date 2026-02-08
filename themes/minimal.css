@@ -76,3 +76,44 @@ scrollbar slider {
 scrollbar slider:hover {
   background-color: alpha(@theme_fg_color, 0.4);
 }
+
+.linked {
+  background-color: alpha(@theme_fg_color, 0.03);
+  border-radius: 20px;
+  padding: 2px;
+  box-shadow: inset 0 1px 2px alpha(black, 0.1);
+  margin: 4px;
+  border: none;
+}
+
+.breadcrumb-btn {
+  background-color: alpha(@theme_fg_color, 0.05);
+  border: 1px solid alpha(@theme_fg_color, 0.1);
+  border-radius: 0;
+  margin: 0 -1px 0 0;
+  padding: 4px 14px;
+  color: alpha(@theme_fg_color, 0.8);
+  transition: all 150ms ease;
+  box-shadow: none;
+}
+
+.breadcrumb-btn:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+}
+
+.breadcrumb-btn:last-child {
+  background-color: @theme_base_color;
+  color: @theme_selected_bg_color;
+  font-weight: bold;
+  margin-right: 0;
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+  box-shadow: 0 2px 4px alpha(black, 0.1);
+}
+
+.breadcrumb-btn:hover:not(:last-child) {
+  background-color: alpha(@theme_fg_color, 0.12);
+  z-index: 1;
+  border-color: alpha(@theme_selected_bg_color, 0.3);
+}
