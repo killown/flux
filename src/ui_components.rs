@@ -1,3 +1,4 @@
+use crate::model::PathSegment;
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -143,6 +144,31 @@ pub struct SidebarPlace {
     pub name: String,
     pub icon: String,
     pub path: PathBuf,
+}
+
+#[relm4::factory(pub)]
+impl FactoryComponent for PathSegment {
+    type Init = PathSegment;
+    type Input = ();
+    type Output = PathBuf;
+    type ParentWidget = gtk::Box;
+    type CommandOutput = ();
+
+    fn init_model(init: Self::Init, _index: &DynamicIndex, _sender: FactorySender<Self>) -> Self {
+        init
+    }
+
+    view! {
+        #[root]
+        gtk::Button {
+            set_label: &self.name,
+            add_css_class: "breadcrumb-btn",
+            // Clicking a segment tells the app to navigate there
+            connect_clicked[sender, path = self.path.clone()] => move |_| {
+                let _ = sender.output(path.clone());
+            }
+        }
+    }
 }
 
 #[relm4::factory(pub)]

@@ -17,6 +17,12 @@ fn default_true() -> bool {
     true
 }
 
+#[derive(Debug, Clone)]
+pub struct PathSegment {
+    pub name: String,
+    pub path: PathBuf,
+}
+
 #[derive(Clone, Debug)]
 pub struct CustomAction {
     pub label: String,
@@ -81,6 +87,7 @@ pub struct FluxApp {
     pub forward_stack: Vec<PathBuf>,
     pub load_id: Arc<AtomicU64>,
     pub current_icon_size: i32,
+    pub breadcrumbs: FactoryVecDeque<PathSegment>,
     pub context_menu_popover: gtk::PopoverMenu,
     pub menu_actions: Vec<CustomAction>,
     pub active_item_path: Option<PathBuf>,
