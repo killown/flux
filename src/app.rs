@@ -217,7 +217,7 @@ impl SimpleComponent for FluxApp {
                             }
                         },
                         add_controller = gtk::GestureClick {
-                            set_button: 3, 
+                            set_button: 3,
                             connect_pressed[sender] => move |gesture, _, x, y| {
                                 if let Some(widget) = gesture.widget() {
                                     let mut picked_path = None;
@@ -232,7 +232,12 @@ impl SimpleComponent for FluxApp {
                                             current = w.parent();
                                         }
                                     }
-                                    sender.input(AppMsg::ShowContextMenu(x, y, picked_path));
+                                    sender.input(AppMsg::ShowContextMenu {
+                                        x,
+                                        y,
+                                        path: picked_path,
+                                        mime: "application/octet-stream".to_string()
+                                    });
                                 }
                             }
                         },
@@ -243,6 +248,7 @@ impl SimpleComponent for FluxApp {
     }
 
     fn init(start_path: Self::Init, root: Self::Root, sender: ComponentSender<Self>) -> ComponentParts<Self> {
+        let _ = crate::model::SENDER.set(sender.input_sender().clone());
         relm4::set_global_css(include_str!("style.css"));
 
         let h_sender = sender.clone();
@@ -335,7 +341,7 @@ impl SimpleComponent for FluxApp {
                 self.refresh_sidebar();
             }
             AppMsg::OpenFileProperties(path) => {
-               let properties_win = FileProperties::builder()
+                let properties_win = FileProperties::builder()
                     .launch(path)
                     .detach();
                 properties_win.widget().present();
@@ -347,16 +353,16 @@ impl SimpleComponent for FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleSort => {
-                 self.sort_by = match self.sort_by {
-                     SortBy::Name => SortBy::Date,
-                     SortBy::Date => SortBy::Size,
-                     SortBy::Size => SortBy::Name,
-                 };
- 
-                 let path_str = self.current_path.to_string_lossy().to_string();
-                 self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
-                 utils::save_config(&self.config);
-                 sender.input(AppMsg::Refresh);
+                self.sort_by = match self.sort_by {
+                    SortBy::Name => SortBy::Date,
+                    SortBy::Date => SortBy::Size,
+                    SortBy::Size => SortBy::Name,
+                };
+
+                let path_str = self.current_path.to_string_lossy().to_string();
+                self.config.ui.folder_sort.insert(path_str, self.sort_by.clone());
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleFolderPriority => {
                 self.config.ui.folders_first = !self.config.ui.folders_first;
@@ -376,15 +382,24 @@ impl SimpleComponent for FluxApp {
                 }
             }
 
-            AppMsg::ShowContextMenu(x, y, path) => {
+            AppMsg::PrepareContextMenu(x, y, path) => {
+                let sender = sender.clone();
+                relm4::spawn_blocking(move || {
+                    let mime = path.as_ref()
+                        .map(|p| utils::get_mime_type(p))
+                        .unwrap_or_else(|| "inode/directory".to_string());
+                        sender.input(AppMsg::ShowContextMenu {
+                            x,
+                            y,
+                            path,
+                            mime
+                        });
+                });
+            }
+
+            AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();
                 let is_in_trash = self.current_path.to_string_lossy().starts_with("trash://");
-
-                let target_mime = if let Some(ref p) = path {
-                    utils::get_mime_type(p)
-                } else {
-                    "inode/directory".to_string()
-                };
 
                 let menu = gio::Menu::new();
 
@@ -392,29 +407,26 @@ impl SimpleComponent for FluxApp {
                     let mut matches = false;
 
                     if is_in_trash {
-                        // ONLY allow actions specifically marked for 'trash'
                         if action.mime_types.contains(&"trash".to_string()) {
                             matches = true;
                         }
                     } else {
-                        // ONLY allow standard actions if NOT in trash
                         for allowed_mime in &action.mime_types {
-                            // Skip the trash-specific actions when browsing normal folders
                             if allowed_mime == "trash" { continue; }
 
                             matches = match allowed_mime.as_str() {
                                 "*" | "all" => true,
-                                "image/all" | "image/*" => target_mime.starts_with("image/"),
-                                "video/all" | "video/*" => target_mime.starts_with("video/"),
-                                "application/all" | "application/*" => target_mime.starts_with("application/"),
+                                "image/all" | "image/*" => mime.starts_with("image/"),
+                                "video/all" | "video/*" => mime.starts_with("video/"),
+                                "application/all" | "application/*" => mime.starts_with("application/"),
                                 "text/all" | "text/*" => {
-                                    target_mime.starts_with("text/") || 
-                                    gio::content_type_is_a(&target_mime, "text/plain") ||
-                                    target_mime == "inode/x-empty"
+                                    mime.starts_with("text/") || 
+                                    gio::content_type_is_a(&mime, "text/plain") ||
+                                    mime == "inode/x-empty"
                                 },
-                                "folder" | "directory" => target_mime == "inode/directory",
-                                "file" => target_mime != "inode/directory",
-                                t => t == target_mime,
+                                "folder" | "directory" => mime == "inode/directory",
+                                "file" => mime != "inode/directory",
+                                t => t == mime,
                             };
                             if matches { break; }
                         }
@@ -435,6 +447,7 @@ impl SimpleComponent for FluxApp {
                 self.context_menu_popover.set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                 self.context_menu_popover.popup();
             }
+
             AppMsg::ExecuteCommand(cmd_template) => {
                 let mut targets = Vec::new();
 
@@ -484,7 +497,6 @@ impl SimpleComponent for FluxApp {
                 if new_size != self.current_icon_size {
                     self.current_icon_size = new_size;
 
-                    // SAVE CONFIGURATION FOR THIS FOLDER
                     let path_str = self.current_path.to_string_lossy().to_string();
                     self.config.ui.folder_icon_size.insert(path_str, new_size);
                     utils::save_config(&self.config);
