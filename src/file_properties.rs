@@ -262,19 +262,57 @@ impl SimpleComponent for FileProperties {
             ("MIME Type".to_string(), mime_type.clone()),
         ]));
 
+        if path.is_symlink() {
+            if let Ok(target) = fs::read_link(&path) {
+                sections_data.push(("Symlink Info".to_string(), vec![
+                    ("Target".to_string(), target.to_string_lossy().to_string()),
+                    ("Broken".to_string(), (!target.exists()).to_string()),
+                    ("Canonical".to_string(), path.canonicalize().unwrap_or_default().to_string_lossy().to_string()),
+                ]));
+            }
+        }
+
+        if let Ok(attrs) = xattr::list(&path) {
+            let mut xattrs_list = Vec::new();
+            for attr in attrs {
+                if let Ok(Some(val)) = xattr::get(&path, &attr) {
+                    xattrs_list.push((
+                        attr.to_string_lossy().to_string(), 
+                        String::from_utf8_lossy(&val).to_string()
+                    ));
+                }
+            }
+            if !xattrs_list.is_empty() {
+                sections_data.push(("Extended Attributes".to_string(), xattrs_list));
+            }
+        }
+
         if let Ok(meta) = path.metadata() {
-            sections_data.push(("System & Disk".to_string(), vec![
+            let mut system_disk = vec![
                 ("Full Path".to_string(), path.to_string_lossy().to_string()),
                 ("Size".to_string(), format!("{} ({} B)", format_size(meta.len()), meta.len())),
                 ("Disk Usage".to_string(), format_size(meta.blocks() * 512)),
                 ("Inode".to_string(), meta.ino().to_string()),
                 ("Device ID".to_string(), meta.dev().to_string()),
-            ]));
+            ];
+
+            if let Ok(mounts) = fs::read_to_string("/proc/self/mounts") {
+                let mount_info = mounts.lines()
+                    .filter(|l| path.starts_with(l.split_whitespace().nth(1).unwrap_or("")))
+                    .last();
+                if let Some(line) = mount_info {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    system_disk.push(("Mount Source".to_string(), parts[0].to_string()));
+                    system_disk.push(("FS Type".to_string(), parts[2].to_string()));
+                }
+            }
+            sections_data.push(("System & Disk".to_string(), system_disk));
 
             let fmt_time = |t: std::time::SystemTime| -> String {
                 let dt: DateTime<Local> = t.into();
                 dt.format("%Y-%m-%d %H:%M:%S").to_string()
             };
+
             sections_data.push(("Temporal".to_string(), vec![
                 ("Created".to_string(), meta.created().map(fmt_time).unwrap_or_default()),
                 ("Modified".to_string(), meta.modified().map(fmt_time).unwrap_or_default()),
@@ -284,8 +322,7 @@ impl SimpleComponent for FileProperties {
             let mut security = vec![
                 ("Permissions".to_string(), format!("{:03o}", meta.mode() & 0o777)),
                 ("UID/GID".to_string(), format!("{}:{}", meta.uid(), meta.gid())),
-            ];
-            if !file_content.is_empty() {
+            ];            if !file_content.is_empty() {
                 security.push(("Entropy".to_string(), format!("{:.4}", get_shannon_entropy(&file_content))));
                 security.push(("SHA256".to_string(), format!("{:x}", Sha256::digest(&file_content))));
             }
@@ -304,6 +341,15 @@ impl SimpleComponent for FileProperties {
         if (is_text || has_text_ext) && !file_content.is_empty() {
             if let Some(metrics) = get_text_metrics(&file_content) {
                 sections_data.push(("Content Metrics".to_string(), metrics));
+            }
+        }
+
+        if mime_type.starts_with("image/") {
+            if let Ok(dim) = imagesize::size(&path) {
+                sections_data.push(("Visual Media".to_string(), vec![
+                    ("Dimensions".to_string(), format!("{}x{}", dim.width, dim.height)),
+                    ("Aspect Ratio".to_string(), format!("{:.2}:1", dim.width as f64 / dim.height as f64)),
+                ]));
             }
         }
 
