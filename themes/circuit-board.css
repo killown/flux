@@ -1,0 +1,126 @@
+/* --- Flux: Circuit Board (Hardware Logic Protocol) --- */
+
+@define-color pcb_green #0a2e1f;
+@define-color pcb_trace #b8860b; /* Dull Copper */
+@define-color pcb_solder #e0e0e0; /* Silver/Lead */
+@define-color pcb_active #32cd32; /* Power Green */
+
+/* 1. Global Setup */
+* {
+  font-family: "JetBrains Mono", "IBM Plex Mono", monospace;
+}
+
+window {
+  background-color: @pcb_green;
+  /* Substrate Texture: Silk-screened grid and circular "via" holes */
+  background-image:
+    radial-gradient(circle, alpha(white, 0.05) 1px, transparent 1px),
+    linear-gradient(to right, alpha(white, 0.02) 1px, transparent 1px);
+  background-size:
+    40px 40px,
+    20px 20px;
+  color: @pcb_solder;
+}
+
+/* 2. Header: The Power Rail */
+headerbar {
+  background-color: #061a12;
+  border-bottom: 4px solid @pcb_trace;
+  padding: 10px;
+}
+
+headerbar label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: @pcb_trace;
+}
+
+/* 3. Sidebar: Component Bus */
+.sidebar-row {
+  margin: 0;
+  padding: 12px;
+  border-left: 4px solid transparent;
+  transition: all 150ms step-end; /* Snappy, digital transition */
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(white, 0.05);
+  color: white;
+}
+
+.sidebar-row:selected {
+  background-color: alpha(@pcb_active, 0.1);
+  color: @pcb_active;
+  border-left: 4px solid @pcb_active;
+  /* Glow from the "active" trace */
+  box-shadow: inset 5px 0 15px alpha(@pcb_active, 0.2);
+}
+
+/* 4. Grid View: Integrated Circuit (IC) Cards */
+.flux-card {
+  background-color: #121212; /* Ceramic chip body */
+  border: 2px solid #2a2a2a;
+  border-radius: 2px;
+  padding: 18px;
+  margin: 15px;
+
+  /* Pins: Simulating metallic connectors on the sides */
+  background-image:
+    linear-gradient(to bottom, @pcb_solder 4px, transparent 4px),
+    linear-gradient(to bottom, @pcb_solder 4px, transparent 4px);
+  background-size: 8px 12px;
+  background-position:
+    left center,
+    right center;
+  background-repeat: repeat-y;
+
+  box-shadow: 4px 4px 0px black;
+  transition: all 100ms ease-out;
+}
+
+.flux-card:hover {
+  border-color: @pcb_trace;
+  transform: scale(1.02);
+  /* "Powering up" the chip */
+  box-shadow: 0 0 20px alpha(@pcb_active, 0.3);
+}
+
+.flux-card label {
+  font-size: 9pt;
+  font-weight: 700;
+  color: @pcb_solder;
+  /* Center the label to look like IC laser-etching */
+  text-align: center;
+}
+
+/* 5. Destructive Action: The Kill-Switch */
+.destructive-action {
+  background-color: #4a0000;
+  color: #ff4d4d;
+  border: 2px solid #ff4d4d;
+  border-radius: 0;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.destructive-action:hover {
+  background-color: #ff4d4d;
+  color: white;
+  box-shadow: 0 0 15px #ff4d4d;
+}
+
+/* 6. Functional UI: Solder Points */
+scrollbar slider {
+  background-color: @pcb_trace;
+  border-radius: 0;
+  min-width: 8px;
+}
+
+.sort-label {
+  background-color: @pcb_solder;
+  color: @pcb_green;
+  font-size: 8pt;
+  padding: 2px 8px;
+  font-weight: 900;
+}

@@ -1,0 +1,174 @@
+/* --- Flux: Pure Binary (Zero Grayscale) --- */
+
+@define-color ink_black #000000;
+@define-color ink_white #ffffff;
+
+/* 1. Global Setup */
+* {
+  font-family: "Geist Mono", "Input Mono", monospace;
+  -gtk-secondary-caret-color: @ink_white;
+}
+
+window {
+  background-color: @ink_black;
+  color: @ink_white;
+}
+
+/* 2. Header: Structural Line */
+headerbar {
+  background-color: @ink_black;
+  border-bottom: 2px solid @ink_white;
+  padding: 12px;
+}
+
+headerbar label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* 3. Sidebar: Absolute Navigation */
+scrolledwindow.sidebar {
+  background-color: @ink_black;
+  border-right: 2px solid @ink_white;
+}
+
+.sidebar-row {
+  margin: 0; /* No gaps for a solid block look */
+  padding: 10px 16px;
+  min-height: 40px;
+  background-color: @ink_black;
+  color: @ink_white;
+  transition: none; /* Instant switching, no fade */
+}
+
+/* Hover: Outlined state */
+.sidebar-row:hover:not(:selected) {
+  outline: 2px solid @ink_white;
+  outline-offset: -4px;
+}
+
+/* Selection: Total Inversion */
+.sidebar-row:selected {
+  background-color: @ink_white;
+  color: @ink_black;
+}
+
+.sidebar-row image {
+  margin-right: 12px;
+}
+
+.sidebar-row:selected image {
+  filter: invert(1);
+}
+
+/* 4. Grid View: Binary Cells */
+.flux-card {
+  background-color: @ink_black;
+  border: 1px solid @ink_white;
+  border-radius: 0px;
+  padding: 16px;
+  margin: 8px;
+}
+
+.flux-card:hover {
+  /* High-contrast swap */
+  background-color: @ink_white;
+  color: @ink_black;
+}
+
+.flux-card label {
+  font-size: 10pt;
+  font-weight: 800;
+}
+
+.flux-card:hover label {
+  color: @ink_black;
+}
+
+.flux-card:hover image {
+  filter: invert(1);
+}
+
+/* 5. Destructive Action: Pure Alert */
+.destructive-action {
+  background-color: @ink_black;
+  color: @ink_white;
+  border: 4px solid @ink_white;
+  border-radius: 0px;
+  padding: 8px 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.destructive-action:hover {
+  background-color: @ink_white;
+  color: @ink_black;
+}
+
+/* 6. Context Menu: Monolith */
+popover.menu contents {
+  background-color: @ink_black;
+  border: 3px solid @ink_white;
+  padding: 0px;
+}
+
+popover.menu modelbutton {
+  min-height: 44px;
+  border-bottom: 1px solid @ink_white;
+}
+
+popover.menu modelbutton:last-child {
+  border-bottom: none;
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt;
+  font-weight: 900;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @ink_white;
+}
+
+popover.menu modelbutton:hover label {
+  color: @ink_black;
+}
+
+/* 7. Inputs: The Light-Box */
+entry {
+  background-color: @ink_black;
+  border: 2px solid @ink_white;
+  border-radius: 0px;
+  color: @ink_white;
+}
+
+entry:focus {
+  background-color: @ink_white;
+  color: @ink_black;
+  caret-color: @ink_black;
+}
+
+/* 8. Functional Elements */
+scrollbar slider {
+  background-color: @ink_white;
+  border: 2px solid @ink_black;
+  border-radius: 0px;
+  min-width: 12px;
+}
+
+.sort-label {
+  border: 2px solid @ink_white;
+  color: @ink_white;
+  background-color: @ink_black;
+  font-size: 9px;
+  padding: 2px 8px;
+  font-weight: 900;
+}
+
+/* No Gray Separators */
+popover.menu separator {
+  background-color: @ink_white;
+  margin: 0;
+  min-height: 2px;
+}

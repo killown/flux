@@ -1,0 +1,139 @@
+/* --- Flux: Cyberpunk --- */
+
+@define-color cp_yellow #fcee0a;
+@define-color cp_blue #00f0ff;
+@define-color cp_black #050a0e;
+@define-color cp_red #ff003c;
+
+* {
+  font-family: "Oxanium", "Orbitron", "Tektur", "Geist Mono", monospace;
+  selection-background-color: alpha(@cp_blue, 0.3);
+  selection-color: white;
+}
+
+window {
+  background-color: @cp_black;
+  color: white;
+}
+
+/* 1. Header: Glitch-Industrial */
+headerbar {
+  background-color: @cp_black;
+  border-bottom: 3px solid @cp_yellow;
+  padding: 10px;
+  box-shadow: 0 4px 20px alpha(@cp_yellow, 0.15);
+}
+
+headerbar label {
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 2px;
+  color: @cp_yellow;
+  text-shadow: 2px 2px 0px @cp_red;
+}
+
+/* 2. Sidebar: Modular Shards */
+.sidebar-row {
+  margin: 4px 10px;
+  padding: 10px;
+  background-color: alpha(white, 0.03);
+  border-left: 2px solid alpha(white, 0.1);
+  clip-path: polygon(0% 0%, 100% 0%, 95% 100%, 0% 100%);
+  transition: all 200ms ease-out;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@cp_blue, 0.1);
+  border-left-color: @cp_blue;
+  transform: translateX(5px);
+}
+
+.sidebar-row:selected {
+  background-color: @cp_yellow;
+  color: black;
+  font-weight: 800;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 5% 100%);
+  box-shadow: -5px 0 15px alpha(@cp_yellow, 0.4);
+}
+
+/* 3. Grid Cards: Neural-Port Interface */
+.flux-card {
+  background-color: alpha(white, 0.05);
+  border: 1px solid alpha(white, 0.1);
+  border-left: 4px solid alpha(white, 0.2);
+  border-radius: 0px; /* Sharp industrial edges */
+  padding: 15px;
+  margin: 8px;
+  transition: all 300ms cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.flux-card:hover {
+  background-color: alpha(@cp_blue, 0.05);
+  border-color: @cp_blue;
+  border-left-color: @cp_blue;
+  box-shadow:
+    0 0 20px alpha(@cp_blue, 0.2),
+    inset 0 0 10px alpha(@cp_blue, 0.1);
+  transform: skewX(-2deg) scale(1.05);
+}
+
+.flux-card label {
+  font-size: 10pt;
+  font-weight: 700;
+  color: alpha(white, 0.9);
+  text-transform: uppercase;
+}
+
+/* 4. Context Menu: Braindance Overlay */
+popover.menu contents {
+  background-color: alpha(@cp_black, 0.98);
+  border: 1px solid @cp_blue;
+  border-top: 4px solid @cp_blue;
+  padding: 8px;
+  box-shadow: 0 0 30px alpha(@cp_blue, 0.3);
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt;
+  font-weight: 800;
+  color: @cp_blue;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @cp_blue;
+}
+
+popover.menu modelbutton:hover label {
+  color: black;
+}
+
+/* 5. Functional UI */
+entry {
+  background-color: alpha(black, 0.6);
+  border: 1px solid alpha(@cp_blue, 0.3);
+  border-radius: 0px;
+  color: @cp_blue;
+  font-family: "Geist Mono", monospace;
+}
+
+entry:focus {
+  border-color: @cp_yellow;
+  box-shadow: 0 0 10px alpha(@cp_yellow, 0.2);
+}
+
+scrollbar slider {
+  background-color: alpha(@cp_yellow, 0.3);
+  border-radius: 0px;
+  min-width: 6px;
+}
+
+scrollbar slider:hover {
+  background-color: @cp_yellow;
+}
+
+.drop-hover {
+  border: 2px dashed @cp_red;
+  background-color: alpha(@cp_red, 0.1);
+}

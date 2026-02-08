@@ -1,0 +1,138 @@
+/* --- Flux: Digital Rain (Matrix Interface) --- */
+
+@define-color matrix_green #00ff41;
+@define-color matrix_dark #003b00;
+@define-color matrix_black #0d0208;
+
+* {
+  font-family: "Geist Mono", "JetBrains Mono", "MS Gothic", monospace;
+  selection-background-color: alpha(@matrix_green, 0.3);
+  selection-color: @matrix_green;
+}
+
+window {
+  background-color: @matrix_black;
+  color: @matrix_green;
+}
+
+/* 1. Header: Command Terminal Style */
+headerbar {
+  background-color: @matrix_black;
+  border-bottom: 1px solid @matrix_green;
+  padding: 6px;
+  box-shadow: 0 0 15px alpha(@matrix_green, 0.2);
+}
+
+headerbar label {
+  font-weight: 800;
+  text-transform: lowercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px @matrix_green;
+}
+
+/* 2. Sidebar: Matrix Data Streams */
+.sidebar-row {
+  margin: 2px 8px;
+  padding: 8px 12px;
+  background-color: transparent;
+  border: 1px solid transparent;
+  transition: all 150ms ease-in-out;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@matrix_green, 0.05);
+  border: 1px solid alpha(@matrix_green, 0.2);
+}
+
+.sidebar-row:selected {
+  background-color: alpha(@matrix_green, 0.15);
+  color: #ffffff;
+  border: 1px solid @matrix_green;
+  box-shadow: inset 0 0 10px alpha(@matrix_green, 0.4);
+  font-weight: 800;
+}
+
+/* 3. Grid Cards: Buffer Allocations */
+.flux-card {
+  background-color: alpha(@matrix_black, 0.8);
+  border: 1px solid @matrix_dark;
+  border-radius: 2px; /* Brutalist sharp edges */
+  padding: 10px;
+  margin: 4px;
+  transition: all 250ms ease;
+}
+
+.flux-card:hover {
+  border-color: @matrix_green;
+  background-color: alpha(@matrix_dark, 0.2);
+  box-shadow: 0 0 20px alpha(@matrix_green, 0.3);
+  transform: scale(1.02);
+}
+
+.flux-card label {
+  font-size: 9.5pt;
+  color: @matrix_green;
+  text-shadow: 0 0 4px alpha(@matrix_green, 0.5);
+}
+
+/* 4. Context Menu: System Interrupt */
+popover.menu contents {
+  background-color: @matrix_black;
+  border: 2px solid @matrix_green;
+  padding: 5px;
+  box-shadow: 0 0 40px alpha(@matrix_green, 0.4);
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt;
+  font-weight: 600;
+  color: @matrix_green;
+  text-transform: uppercase;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @matrix_green;
+}
+
+popover.menu modelbutton:hover label {
+  color: @matrix_black;
+}
+
+/* 5. Inputs & Scrollbars */
+entry {
+  background-color: @matrix_black;
+  border: 1px solid @matrix_dark;
+  border-radius: 0px;
+  color: @matrix_green;
+  caret-color: @matrix_green;
+}
+
+entry:focus {
+  border-color: @matrix_green;
+  box-shadow: 0 0 10px alpha(@matrix_green, 0.5);
+}
+
+scrollbar slider {
+  background-color: @matrix_dark;
+  border: 1px solid @matrix_green;
+  border-radius: 0px;
+  min-width: 8px;
+}
+
+scrollbar slider:hover {
+  background-color: @matrix_green;
+}
+
+/* 6. Utility Elements */
+.sort-label {
+  border: 1px solid @matrix_green;
+  color: @matrix_green;
+  background-color: @matrix_black;
+  padding: 2px 6px;
+  font-size: 9px;
+}
+
+popover.menu separator {
+  background-color: @matrix_green;
+  margin: 8px 2px;
+}

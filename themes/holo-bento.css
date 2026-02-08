@@ -1,0 +1,214 @@
+/* --- Flux: Holographic Bento (2026 Volumetric Protocol) --- */
+
+@define-color bento_void #020204;
+@define-color bento_glass alpha(#121420, 0.8);
+@define-color bento_accent #00f3ff;
+@define-color bento_glow #7000ff;
+@define-color bento_text #ffffff;
+
+/* 1. Global Setup */
+* {
+  font-family: "Geist", "Inter Variable", "Outfit", sans-serif;
+  -gtk-secondary-caret-color: @bento_accent;
+}
+
+window {
+  /* Deep space background with a subtle "Nebula" top-glow */
+  background-image: radial-gradient(
+    circle at 50% -50%,
+    @bento_glow 0%,
+    @bento_void 70%
+  );
+  color: @bento_text;
+}
+
+/* 2. Header: Ion-Plated Glass */
+headerbar {
+  background-color: alpha(@bento_void, 0.4);
+  border-bottom: 1px solid alpha(@bento_accent, 0.2);
+  padding: 14px;
+  /* Internal specular highlight */
+  box-shadow: inset 0 1px 0 0 alpha(white, 0.1);
+}
+
+headerbar label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  filter: drop-shadow(0 0 10px alpha(@bento_accent, 0.3));
+}
+
+/* 3. Sidebar: Neural Link Shards */
+scrolledwindow.sidebar {
+  background-color: alpha(black, 0.3);
+}
+
+.sidebar-row {
+  margin: 8px 16px;
+  padding: 12px 20px;
+  min-height: 32px;
+
+  background-color: alpha(white, 0.03);
+  border: 1px solid alpha(white, 0.05);
+  border-radius: 12px;
+
+  color: alpha(@bento_text, 0.6);
+
+  /* High-end spring physics */
+  transition: all 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@bento_accent, 0.05);
+  color: @bento_accent;
+  transform: scale(1.05) translateX(5px);
+  box-shadow: 0 10px 20px alpha(black, 0.4);
+}
+
+/* Selection: Powered Link */
+.sidebar-row:selected {
+  background-color: alpha(@bento_accent, 0.1);
+  color: white;
+  font-weight: 700;
+  border-color: @bento_accent;
+
+  /* Internal Glow */
+  box-shadow:
+    0 0 20px alpha(@bento_accent, 0.2),
+    inset 0 0 15px alpha(@bento_accent, 0.1);
+
+  /* Magnetic "Locked" state */
+  transform: translateX(12px) scale(1.02);
+}
+
+.sidebar-row image {
+  margin-right: 15px;
+  transition: transform 300ms ease;
+}
+
+.sidebar-row:selected image {
+  transform: rotate(-10deg) scale(1.2);
+  filter: drop-shadow(0 0 8px @bento_accent);
+}
+
+/* 4. Grid View: Volumetric Bento Cards */
+.flux-card {
+  background-color: @bento_glass;
+  border: 1px solid alpha(white, 0.08);
+  border-radius: 20px;
+  padding: 24px;
+  margin: 12px;
+
+  /* Volumetric Depth (Layered Shadow) */
+  box-shadow:
+    0 15px 35px alpha(black, 0.5),
+    0 0 0 1px alpha(white, 0.05),
+    inset 0 0 20px alpha(white, 0.02);
+
+  transition: all 500ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.flux-card:hover {
+  background-color: alpha(white, 0.05);
+  border-color: alpha(@bento_accent, 0.4);
+
+  /* 3D "Tilt-Zoom" */
+  transform: translateY(-15px) perspective(1000px) rotateX(5deg);
+  box-shadow:
+    0 40px 70px alpha(black, 0.7),
+    0 0 40px alpha(@bento_glow, 0.3);
+}
+
+.flux-card label {
+  font-size: 11pt;
+  font-weight: 700;
+  color: alpha(@bento_text, 0.8);
+  margin-top: 15px;
+}
+
+/* 5. Destructive Action: The Purge Prism */
+.destructive-action {
+  background-color: #0d0005;
+  color: #ff2d55;
+  border: 1px solid alpha(#ff2d55, 0.4);
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+
+  transition: all 300ms cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+.destructive-action:hover {
+  background-color: #ff2d55;
+  color: white;
+  box-shadow: 0 0 30px alpha(#ff2d55, 0.6);
+  /* Kinetic Shake Effect simulation */
+  transform: translateY(2px) rotate(1deg);
+}
+
+/* 6. Context Menu: Bento Modal */
+popover.menu contents {
+  background-color: alpha(#050608, 0.95);
+  border: 1px solid alpha(white, 0.15);
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: 0 40px 100px alpha(black, 0.9);
+  /* Prism rim glow */
+  outline: 1px solid alpha(@bento_accent, 0.1);
+}
+
+popover.menu modelbutton {
+  border-radius: 14px;
+  margin: 3px;
+  min-height: 44px;
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt; /* Keeping your sizing */
+  font-weight: 600;
+}
+
+popover.menu modelbutton:hover {
+  background-color: alpha(@bento_accent, 0.15);
+  color: @bento_accent;
+}
+
+/* 7. Search & Inputs: Neon Trace */
+entry {
+  background-color: alpha(black, 0.5);
+  border: 1px solid alpha(white, 0.1);
+  border-radius: 16px;
+  padding: 12px 20px;
+  color: white;
+  transition: all 300ms ease;
+}
+
+entry:focus {
+  border-color: @bento_accent;
+  box-shadow: 0 0 25px alpha(@bento_accent, 0.2);
+}
+
+/* 8. Functional UI: Liquid Neon Scroll */
+scrollbar slider {
+  background-color: alpha(white, 0.07);
+  border-radius: 30px;
+  min-width: 5px;
+  margin: 5px;
+}
+
+scrollbar slider:hover {
+  background-color: @bento_accent;
+  box-shadow: 0 0 10px @bento_accent;
+}
+
+.sort-label {
+  background-color: alpha(@bento_glow, 0.2);
+  color: #d1b3ff;
+  border: 1px solid alpha(@bento_glow, 0.4);
+  border-radius: 30px;
+  font-size: 8pt;
+  padding: 4px 14px;
+  font-weight: 900;
+}

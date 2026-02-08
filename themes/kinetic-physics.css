@@ -1,0 +1,120 @@
+/* --- Flux: Kinetic Physics (Full File) --- */
+
+@define-color base_dark #080808;
+@define-color surface #141414;
+@define-color edge_light alpha(white, 0.1);
+
+* {
+  font-family: "Geist Mono", "Inter", sans-serif;
+}
+
+window {
+  background-color: @base_dark;
+  color: white;
+}
+
+/* --- 1. SIDEBAR: The "Heavy Slide" --- */
+/* Uses a 'Decelerate' curve to feel like it has weight */
+.sidebar-row {
+  margin: 4px 12px;
+  padding: 10px 16px;
+  min-height: 40px;
+  border-radius: 4px;
+  color: alpha(white, 0.5);
+  transition: all 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(white, 0.05);
+  color: white;
+  /* Moves slightly but feels 'grounded' */
+  transform: translateX(8px);
+}
+
+.sidebar-row:selected {
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+  font-weight: 800;
+  /* The selection 'locks' in place with a slight bounce */
+  transform: translateX(12px);
+  border-left: 3px solid @accent_color;
+}
+
+/* --- 2. GRID CARDS: The "3D Tilt" --- */
+/* Instead of just moving up, these rotate toward the viewer */
+.flux-card {
+  background-color: @surface;
+  border: 1px solid @edge_light;
+  border-radius: 2px;
+  padding: 16px;
+  margin: 10px;
+  /* Faster transition for high-frequency interaction */
+  transition:
+    transform 500ms cubic-bezier(0.075, 0.82, 0.165, 1),
+    box-shadow 500ms ease,
+    background-color 200ms ease;
+  box-shadow: 0 4px 10px alpha(black, 0.5);
+}
+
+.flux-card:hover {
+  background-color: #1c1c1c;
+  /* 3D rotation makes it pop out from the screen */
+  transform: perspective(1000px) translateZ(30px) rotateX(4deg) rotateY(-2deg);
+  box-shadow:
+    20px 20px 40px alpha(black, 0.8),
+    0 0 15px alpha(@accent_color, 0.1);
+  border-color: alpha(@accent_color, 0.4);
+}
+
+/* --- 3. CONTEXT MENU: The "Instant Scale" --- */
+/* Menus should feel snappy and 'pop' into existence */
+popover.menu contents {
+  background-color: #181818;
+  border: 1px solid alpha(white, 0.1);
+  padding: 8px;
+  box-shadow: 0 10px 40px alpha(black, 0.6);
+  border-radius: 0;
+}
+
+popover.menu modelbutton {
+  transition: all 150ms ease-out;
+  min-height: 40px;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @accent_color;
+  /* Magnetic grow effect */
+  transform: scale(1.02);
+}
+
+popover.menu modelbutton:hover label {
+  color: @accent_fg_color;
+  font-size: 13pt; /* Your preferred size */
+}
+
+/* --- 4. INPUTS: The "Focus Glow" --- */
+entry {
+  background-color: black;
+  border: 1px solid @edge_light;
+  transition: all 300ms ease;
+}
+
+entry:focus {
+  border-color: @accent_color;
+  /* Glow expansion rather than movement */
+  box-shadow: 0 0 20px alpha(@accent_color, 0.2);
+}
+
+/* --- Functional UI --- */
+headerbar {
+  background-color: @base_dark;
+  border-bottom: 1px solid @edge_light;
+}
+
+.sort-label {
+  background-color: alpha(white, 0.05);
+  border: 1px solid @edge_light;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 10px;
+}

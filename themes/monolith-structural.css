@@ -1,0 +1,170 @@
+/* --- Flux: Monolith Structural (Tectonic Protocol) --- */
+
+@define-color monolith_slate #2d2d2d; /* Cast Slate */
+@define-color monolith_alloy #4a4a4a; /* Machined Alloy */
+@define-color monolith_active #00ff00; /* System Ready Green */
+@define-color monolith_signal #ff6b00; /* High-Vis Signal Orange */
+@define-color monolith_text #e0e0e0;
+
+/* 1. Global Setup: The Foundation */
+* {
+  font-family: "Geist Mono", "Roboto Mono", "Consolas", monospace;
+  -gtk-secondary-caret-color: @monolith_signal;
+}
+
+window {
+  background-color: @monolith_slate;
+  color: @monolith_text;
+  /* Vertical formwork textures simulating cast stone */
+  background-image: linear-gradient(
+    to right,
+    alpha(black, 0.1) 1px,
+    transparent 1px
+  );
+  background-size: 60px 100%;
+}
+
+/* 2. Header: The Alloy Girder */
+headerbar {
+  background-color: #1a1a1a;
+  border-bottom: 5px solid @monolith_alloy;
+  padding: 16px;
+  /* Structural rivet pattern */
+  background-image: radial-gradient(circle, #333 2px, transparent 2px);
+  background-size: 100% 30px;
+  background-position: left 10px center;
+  background-repeat: no-repeat;
+}
+
+headerbar label {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: white;
+  -gtk-icon-shadow: 2px 2px black;
+}
+
+/* 3. Sidebar: Structural Hub */
+scrolledwindow.sidebar {
+  background-color: #222222;
+  border-right: 3px solid #1a1a1a;
+}
+
+.sidebar-row {
+  margin: 0;
+  padding: 14px 24px;
+  background-color: transparent;
+  color: alpha(@monolith_text, 0.4);
+  border-bottom: 1px solid alpha(black, 0.2);
+  transition: all 150ms ease-out;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(white, 0.03);
+  color: white;
+}
+
+/* Selection: Active Circuit */
+.sidebar-row:selected {
+  background-color: alpha(@monolith_active, 0.1);
+  color: @monolith_active;
+  font-weight: 800;
+  border-left: 8px solid @monolith_active;
+  box-shadow: inset 10px 0 20px alpha(@monolith_active, 0.05);
+}
+
+/* 4. Grid View: Recessed Component Slots */
+.flux-card {
+  background-color: #333333;
+  border: 2px solid #1a1a1a;
+  border-radius: 0px;
+  padding: 24px;
+  margin: 15px;
+
+  /* Inset shadow makes cards look built-in rather than floating */
+  box-shadow:
+    inset 4px 4px 10px alpha(black, 0.5),
+    6px 6px 0px #1a1a1a;
+
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flux-card:hover {
+  background-color: @monolith_alloy;
+  /* Card "engages" toward the user */
+  transform: translate(-4px, -4px);
+  box-shadow: 12px 12px 0px #111;
+  border-color: @monolith_signal;
+}
+
+.flux-card label {
+  font-size: 10pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: alpha(white, 0.7);
+  margin-top: 15px;
+}
+
+/* 5. Destructive Action: Safety Interlock */
+.destructive-action {
+  background-color: #800000;
+  color: white;
+  border: 4px solid #400000;
+  border-radius: 0px;
+  padding: 10px 30px;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 0 6px 0px #400000;
+}
+
+.destructive-action:hover {
+  background-color: #a00000;
+  transform: translateY(2px);
+  box-shadow: 0 4px 0px #400000;
+}
+
+/* 6. Context Menu: Slab Overlay */
+popover.menu contents {
+  background-color: #1a1a1a;
+  color: white;
+  border: 3px solid @monolith_alloy;
+  border-radius: 0px;
+  padding: 0px;
+  box-shadow: 20px 20px 40px alpha(black, 0.6);
+}
+
+popover.menu modelbutton:hover {
+  background-color: @monolith_signal;
+  color: black;
+}
+
+/* 7. Search & Inputs: Alloy Casing */
+entry {
+  background-color: #111111;
+  border: 2px solid @monolith_alloy;
+  border-radius: 0px;
+  padding: 12px;
+  color: @monolith_active;
+}
+
+entry:focus {
+  border-color: @monolith_signal;
+  outline: none;
+}
+
+/* 8. Functional UI: Heavy Rail Scroller */
+scrollbar slider {
+  background-color: @monolith_alloy;
+  border: 2px solid black;
+  border-radius: 0px;
+  min-width: 14px;
+}
+
+.sort-label {
+  background-color: @monolith_signal;
+  color: black;
+  font-size: 8pt;
+  padding: 3px 12px;
+  font-weight: 900;
+  clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}

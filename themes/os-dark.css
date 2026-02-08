@@ -1,0 +1,192 @@
+/* --- Flux: OS Dark --- */
+
+@define-color mac_bg #1e1e1e;
+@define-color mac_sidebar alpha(#282828, 0.7);
+@define-color mac_accent #007aff;
+@define-color mac_border alpha(white, 0.1);
+@define-color mac_text #ffffff;
+@define-color mac_secondary_text #a1a1a1;
+
+/* 1. Global Setup */
+* {
+  font-family: "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
+  -gtk-secondary-caret-color: @mac_accent;
+}
+
+window {
+  background-color: @mac_bg;
+  color: @mac_text;
+}
+
+/* 2. Header: Dark Unified Bar */
+headerbar {
+  background-color: alpha(@mac_bg, 0.9);
+  border-bottom: 1px solid @mac_border;
+  padding: 10px 14px;
+  box-shadow: inset 0 -1px 0 0 alpha(white, 0.05);
+}
+
+headerbar label {
+  font-weight: 600;
+  font-size: 11pt;
+  color: @mac_text;
+}
+
+/* 3. Sidebar: Dark Transparency & Refined Spacing */
+scrolledwindow.sidebar {
+  background-color: @mac_sidebar;
+  border-right: 1px solid @mac_border;
+}
+
+scrolledwindow.sidebar list {
+  padding: 8px 0;
+}
+
+.sidebar-row {
+  /* Balanced margins: 3px keeps them tight but clearly individual pills */
+  margin: 3px 10px;
+  /* Standard macOS vertical padding */
+  padding: 6px 12px;
+  /* Fixed height for a consistent look */
+  min-height: 36px;
+
+  background-color: transparent;
+  border-radius: 6px;
+  color: alpha(@mac_text, 0.85);
+  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-row label {
+  font-size: 10pt;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(white, 0.06);
+  color: @mac_text;
+}
+
+/* Selection: Dark Blue Vibrant Pill */
+.sidebar-row:selected {
+  background-color: @mac_accent;
+  color: #ffffff;
+  font-weight: 500;
+  box-shadow: 0 1px 4px alpha(black, 0.3);
+}
+
+.sidebar-row image {
+  margin-right: 8px;
+  min-width: 18px;
+  min-height: 18px;
+  opacity: 0.7;
+}
+
+.sidebar-row:selected image {
+  color: white;
+  opacity: 1;
+  -gtk-icon-palette:
+    success white,
+    warning white,
+    error white;
+}
+
+/* 4. Grid View: Finder Dark Aesthetic */
+.flux-card {
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 8px;
+  transition: background-color 200ms ease;
+}
+
+.flux-card:hover {
+  background-color: alpha(white, 0.05);
+}
+
+.flux-card:selected {
+  background-color: alpha(@mac_accent, 0.25);
+  border-color: alpha(@mac_accent, 0.4);
+}
+
+.flux-card label {
+  font-size: 10pt;
+  font-weight: 400;
+  color: alpha(@mac_text, 0.9);
+  margin-top: 6px;
+  text-shadow: 0 1px 2px alpha(black, 0.5);
+}
+
+/* 5. Context Menu: Dark Frosted Glass Overlay */
+popover.menu contents {
+  background-color: alpha(#2c2c2c, 0.98);
+  border: 1px solid alpha(white, 0.1);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 12px 40px alpha(black, 0.6);
+  outline: 1px solid alpha(white, 0.05);
+}
+
+popover.menu modelbutton {
+  border-radius: 6px;
+  margin: 1px 4px;
+  min-height: 32px;
+}
+
+popover.menu modelbutton label {
+  font-size: 13pt; /* Keeping your preferred large font */
+  font-weight: 400;
+  color: @mac_text;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @mac_accent;
+}
+
+popover.menu modelbutton:hover label {
+  color: #ffffff;
+}
+
+/* 6. Inputs & Search */
+entry {
+  background-color: alpha(white, 0.06);
+  border: 1px solid alpha(white, 0.06);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: @mac_text;
+}
+
+entry:focus {
+  background-color: #000000;
+  border-color: @mac_accent;
+  box-shadow: 0 0 0 3px alpha(@mac_accent, 0.3);
+}
+
+/* 7. Scrollbars (iOS Dark Style) */
+scrollbar slider {
+  background-color: alpha(white, 0.15);
+  border-radius: 20px;
+  min-width: 4px;
+  min-height: 4px;
+}
+
+scrollbar slider:hover {
+  background-color: alpha(white, 0.3);
+}
+
+/* 8. Utility Badges */
+.sort-label {
+  background-color: alpha(white, 0.08);
+  color: @mac_secondary_text;
+  border: 1px solid alpha(white, 0.05);
+  border-radius: 6px;
+  font-size: 9px;
+  padding: 2px 8px;
+  font-weight: 600;
+}
+
+popover.menu separator {
+  margin: 6px 2px;
+  background-color: alpha(white, 0.08);
+}
