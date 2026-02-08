@@ -47,24 +47,15 @@ fn load_custom_css() {
             .ok();
     }
 
-    // Fallback chain: default.css (local then system) -> style.css (config)
+    // Fallback to style.css in config dir if no theme found or loaded
     if css_data.is_none() {
-        let local_default = dirs::data_dir()
-            .unwrap_or_default()
-            .join("flux")
-            .join("default.css");
-        let system_default = PathBuf::from("/usr/share/flux/default.css");
-
-        css_data = fs::read_to_string(local_default)
-            .or_else(|_| fs::read_to_string(system_default))
-            .or_else(|_| fs::read_to_string(config_dir.join("style.css")))
-            .ok();
+        css_data = fs::read_to_string(config_dir.join("style.css")).ok();
     }
 
     if let Some(data) = css_data {
         CSS_PROVIDER.with(|provider| {
             if let Some(display) = adw::gdk::Display::default() {
-                // FORCE REFRESH: Detach provider before loading new data to invalidate cache
+                // Detach provider before loading new data to invalidate cache
                 gtk::style_context_remove_provider_for_display(&display, provider);
 
                 provider.load_from_data(&data);
@@ -82,57 +73,30 @@ fn load_custom_css() {
 /// Sets up a GIO directory monitor to watch for config or style changes
 fn setup_css_watcher() {
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
-    let local_share = dirs::data_dir().unwrap_or_default().join("flux");
-    let local_themes = local_share.join("themes");
-    let system_share = PathBuf::from("/usr/share/flux");
-    let system_themes = system_share.join("themes");
+    let file = gio::File::for_path(&config_dir);
 
-    let watch_paths = vec![
-        config_dir,
-        local_share,
-        local_themes,
-        system_share,
-        system_themes,
-    ];
-
-    for path in watch_paths {
-        if !path.exists() {
-            continue;
-        }
-
-        let file = gio::File::for_path(&path);
-
-        // WATCH_MOUNTS + SEND_MOVED catches atomic saves (temp file swaps) used by Neovim
-        if let Ok(monitor) = file.monitor_directory(
-            gio::FileMonitorFlags::WATCH_MOUNTS | gio::FileMonitorFlags::SEND_MOVED,
-            gio::Cancellable::NONE,
-        ) {
-            monitor.connect_changed(|_, file, _, event_type| {
-                if let Some(name) = file.basename() {
-                    let n = name.to_string_lossy();
-                    if n == "style.css"
-                        || n == "config.toml"
-                        || n == "default.css"
-                        || n.ends_with(".css")
-                    {
-                        match event_type {
-                            gio::FileMonitorEvent::Changed
-                            | gio::FileMonitorEvent::ChangesDoneHint
-                            | gio::FileMonitorEvent::Created
-                            | gio::FileMonitorEvent::MovedIn => {
-                                println!(
-                                    "[FLUX] RELOAD TRIGGERED: {:?}",
-                                    file.path().unwrap_or_default()
-                                );
-                                load_custom_css();
-                            }
-                            _ => {}
+    // WATCH_MOUNTS + SEND_MOVED catches atomic saves (temp file swaps) used by Neovim
+    if let Ok(monitor) = file.monitor_directory(
+        gio::FileMonitorFlags::WATCH_MOUNTS | gio::FileMonitorFlags::SEND_MOVED,
+        gio::Cancellable::NONE,
+    ) {
+        monitor.connect_changed(|_, file, _, event_type| {
+            if let Some(name) = file.basename() {
+                let n = name.to_string_lossy();
+                if n == "style.css" || n == "config.toml" {
+                    match event_type {
+                        gio::FileMonitorEvent::Changed
+                        | gio::FileMonitorEvent::ChangesDoneHint
+                        | gio::FileMonitorEvent::Created
+                        | gio::FileMonitorEvent::MovedIn => {
+                            load_custom_css();
                         }
+                        _ => {}
                     }
                 }
-            });
-            std::mem::forget(monitor);
-        }
+            }
+        });
+        Box::leak(Box::new(monitor));
     }
 }
 
@@ -166,7 +130,8 @@ fn main() {
     if args.len() > 2 && args[1] == "--file-properties" {
         let path = PathBuf::from(&args[2]);
         let app = RelmApp::new("flux.PropertiesViewer");
-        app.run::<FileProperties>(path);
+        app.allow_multiple_instances(true);
+        app.with_args(vec![]).run::<FileProperties>(path);
         return;
     }
 
@@ -177,6 +142,10 @@ fn main() {
         .build();
 
     let app = RelmApp::from_app(base_app);
+    app.allow_multiple_instances(true);
+
+    let display = adw::gdk::Display::default().expect("Could not get default display");
+    let _theme = gtk::IconTheme::for_display(&display);
 
     let start_path = if args.len() > 1 {
         PathBuf::from(&args[1])
@@ -184,5 +153,5 @@ fn main() {
         dirs::home_dir().unwrap_or(PathBuf::from("."))
     };
 
-    app.run::<FluxApp>(start_path);
+    app.with_args(vec![]).run::<FluxApp>(start_path);
 }
