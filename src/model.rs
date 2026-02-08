@@ -3,11 +3,15 @@ use relm4::typed_view::grid::TypedGridView;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::sync::OnceLock;
 use adw::gdk;
 use gtk::gio;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::ui_components::{FileItem, SidebarPlace};
+
+pub static SENDER: OnceLock<relm4::Sender<AppMsg>> = OnceLock::new();
 
 fn default_true() -> bool { true }
 
@@ -33,6 +37,7 @@ pub enum SortBy {
     Size,
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct ContextAction {
     pub label: String,
@@ -48,18 +53,13 @@ pub struct UIConfig {
     pub show_xdg_dirs: bool,
     #[serde(default)]
     pub default_sort: SortBy,
-    #[serde(default)]
-    pub folder_sort: std::collections::HashMap<String, SortBy>,
-    #[serde(default)]
-    pub folder_icon_size: std::collections::HashMap<String, i32>, // Added for icon size persistence
-    #[serde(default)]
-    pub show_hidden_by_default: bool,
-    #[serde(default)]
-    pub show_xdg_dirs_by_default: bool,
-    #[serde(default)]
-    pub device_renames: std::collections::HashMap<String, String>,
     #[serde(default = "default_true")]
     pub folders_first: bool,
+    pub show_hidden_by_default: bool,
+    pub show_xdg_dirs_by_default: bool,
+    pub folder_sort: HashMap<String, SortBy>,
+    pub folder_icon_size: HashMap<String, i32>,
+    pub device_renames: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -69,6 +69,7 @@ pub struct CustomPlace {
     pub path: String,
 }
 
+#[derive(Debug)]
 pub struct FluxApp {
     pub files: TypedGridView<FileItem, gtk::MultiSelection>,
     pub sidebar: FactoryVecDeque<SidebarPlace>,
@@ -92,6 +93,14 @@ pub struct FluxApp {
 
 #[derive(Debug)]
 pub enum AppMsg {
+    PrepareContextMenu(f64, f64, Option<PathBuf>),
+    ShowContextMenu {
+        x: f64,
+        y: f64,
+        path: Option<PathBuf>,
+        mime: String,
+    },
+    #[allow(dead_code)]
     OpenFileProperties(PathBuf),
     Navigate(PathBuf),
     RefreshSidebar,
@@ -99,15 +108,19 @@ pub enum AppMsg {
     CycleSort,
     CycleFolderPriority,
     UpdateFilter(String),
+    ThumbnailReady {
+        name: String,
+        texture: gdk::Texture,
+        load_id: u64,
+    },
     SwitchHeader(String),
-    ShowContextMenu(f64, f64, Option<PathBuf>),
     ExecuteCommand(String),
     Zoom(f64),
-    ThumbnailReady { name: String, texture: gdk::Texture, load_id: u64 },
     GoBack,
     GoForward,
     Refresh,
     Open(u32),
     EmptyTrash,
+    #[allow(dead_code)]
     RestoreItem(PathBuf),
 }

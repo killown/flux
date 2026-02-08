@@ -5,8 +5,8 @@ mod model;
 mod file_properties;
 
 use relm4::prelude::*;
-use crate::model::{FluxApp, AppMsg};
-use crate::file_properties::{FileProperties, PropertiesMsg};
+use crate::model::FluxApp;
+use crate::file_properties::FileProperties;
 use std::path::PathBuf;
 use adw::prelude::*;
 use adw::gio;
@@ -69,8 +69,10 @@ fn setup_css_watcher() {
 }
 
 fn main() {
-    // 1. Check if we've already set the theme
+    // --- GTK THEME RE-SPAWN HACK ---
+    // If GTK_THEME is not set, the app won't inherit the system-level Adwaita styling correctly.
     if std::env::var("GTK_THEME").is_err() {
+        // 1. Get the current theme from GSettings
         let settings = gio::Settings::new("org.gnome.desktop.interface");
         let theme_name: String = settings.string("gtk-theme").into();
 

@@ -2,8 +2,6 @@ use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 use adw::gdk;
-use adw::gio;
-use gtk::glib;
 
 #[derive(Debug, Clone)]
 pub struct FileItem {
@@ -25,7 +23,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     type Root = gtk::Box;
     type Widgets = FileWidgets;
 
-    fn setup(item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
+    fn setup(_item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
         relm4::view! {
             #[root]
             root = gtk::Box {
@@ -34,80 +32,30 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 set_valign: gtk::Align::Center,
                 add_css_class: "flux-card",
 
-                add_controller = gtk::DragSource {
-                    set_actions: gdk::DragAction::COPY | gdk::DragAction::MOVE,
-                    connect_prepare[item = item.clone()] => move |_, _, _| {
-                        item.item()
-                            .and_then(|obj| obj.downcast::<glib::BoxedAnyObject>().ok())
-                            .map(|boxed| {
-                                let file_item = boxed.borrow::<FileItem>();
-                                let file = gio::File::for_path(&file_item.path);
-                                gdk::ContentProvider::for_value(&file.to_value())
-                            })
-                    },
-                    connect_drag_begin => move |source, _| {
-                        if let Some(widget) = source.widget() {
-                            widget.add_css_class("dragging");
-                        }
-                    },
-                    connect_drag_end => move |source, _, _| {
-                        if let Some(widget) = source.widget() {
-                            widget.remove_css_class("dragging");
-                        }
-                    }
-                },
+                add_controller = gtk::GestureClick {
+                    set_button: 3,
+                    connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
+                        if let Some(sender) = sender.get() {
+                            if let Some(widget) = gesture.widget() {
+                                let path_str = widget.widget_name();
+                                let path = PathBuf::from(path_str.to_string());
 
-                add_controller = gtk::DropTarget {
-                    set_actions: gdk::DragAction::MOVE | gdk::DragAction::COPY,
-                    set_types: &[gio::File::static_type()],
-                    connect_enter => move |target, _, _| {
-                        if let Some(widget) = target.widget() {
-                            widget.add_css_class("drop-hover");
-                        }
-                        gdk::DragAction::MOVE
-                    },
-                    connect_leave => move |target| {
-                        if let Some(widget) = target.widget() {
-                            widget.remove_css_class("drop-hover");
-                        }
-                    },
-                    connect_drop[item = item.clone()] => move |target, value, _, _| {
-                        if let Some(widget) = target.widget() {
-                            widget.remove_css_class("drop-hover");
-                        }
-
-                        let dest_item = item.item()
-                            .and_then(|obj| obj.downcast::<glib::BoxedAnyObject>().ok())
-                            .map(|boxed| boxed.borrow::<FileItem>().clone());
-
-                        if let (Some(dest), Ok(src_file)) = (dest_item, value.get::<gio::File>()) {
-                            if dest.is_dir {
-                                if let Some(src_path) = src_file.path() {
-                                    let dest_path = dest.path.join(src_path.file_name().unwrap());
-                                    if src_path != dest_path {
-                                        let _ = src_file.move_(
-                                            &gio::File::for_path(dest_path),
-                                            gio::FileCopyFlags::NONE,
-                                            gio::Cancellable::NONE,
-                                            None
-                                        );
-                                        return true;
-                                    }
+                                if let Some(root_widget) = widget.root() {
+                                    let (root_x, root_y) = widget.translate_coordinates(&root_widget, x, y).unwrap_or((x, y));
+                                    sender.send(crate::model::AppMsg::PrepareContextMenu(
+                                        root_x, 
+                                        root_y, 
+                                        Some(path)
+                                    )).ok();
                                 }
                             }
                         }
-                        false
                     }
                 },
 
-                add_controller = gtk::GestureClick {
-                    set_button: 3,
-                    connect_pressed => move |_, _, _, _| {}
-                },
-
                 #[name = "icon_widget"]
-                gtk::Image { 
-                    add_css_class: "thumbnail", 
+                gtk::Image {
+                    add_css_class: "thumbnail",
                 },
 
                 #[name = "label"]
@@ -123,7 +71,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         (root, FileWidgets { icon_widget, label })
     }
 
-    fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
+    fn bind(&mut self, widgets: &mut Self::Widgets, _root: &mut Self::Root) {
         widgets.label.set_label(&self.name);
         widgets.icon_widget.set_pixel_size(self.icon_size);
 
@@ -133,7 +81,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_paintable(Option::<&gdk::Texture>::None);
             widgets.icon_widget.set_from_gicon(&self.icon);
         }
-        root.set_widget_name(&self.path.to_string_lossy());
+        _root.set_widget_name(&self.path.to_string_lossy());
     }
 }
 
