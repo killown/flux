@@ -1,12 +1,16 @@
 mod app;
 mod file_properties;
 mod help;
+mod helpers;
+mod loader;
 mod model;
+mod thumbnails;
 mod ui_components;
+mod update;
 mod utils;
 
 use crate::file_properties::FileProperties;
-use crate::model::{Config, FluxApp};
+use crate::model::{AppMsg, Config, FluxApp};
 use adw::gio;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -141,7 +145,7 @@ fn main() {
         .flags(gio::ApplicationFlags::FLAGS_NONE)
         .build();
 
-    let app = RelmApp::from_app(base_app);
+    let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);
 
     let display = adw::gdk::Display::default().expect("Could not get default display");

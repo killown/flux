@@ -322,6 +322,10 @@ impl SimpleComponent for FluxApp {
         }
     }
 
+    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+        self.handle_update(message, sender);
+    }
+
     fn init(
         start_path: Self::Init,
         root: Self::Root,
@@ -382,6 +386,11 @@ impl SimpleComponent for FluxApp {
         let s_added = sender.clone();
         volume_monitor.connect_mount_added(move |_, _| s_added.input(AppMsg::RefreshSidebar));
 
+        let s = sender.clone();
+        volume_monitor.connect_mount_removed(move |_, _| {
+            s.input(AppMsg::RefreshSidebar);
+        });
+
         let mut model = FluxApp {
             files,
             sidebar,
@@ -425,395 +434,14 @@ impl SimpleComponent for FluxApp {
 
         ComponentParts { model, widgets }
     }
-
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
-        match message {
-            AppMsg::RefreshSidebar => {
-                self.refresh_sidebar();
-            }
-            AppMsg::PerformRename(old_path, new_name) => {
-                match utils::rename_path(&old_path, &new_name) {
-                    Ok(new_path) => {
-                        let old_key = old_path.to_string_lossy().into_owned();
-                        let new_key = new_path.to_string_lossy().into_owned();
-
-                        let mut changed = false;
-
-                        // Migrate folder_sort settings to the new path
-                        if let Some(sort_val) = self.config.ui.folder_sort.remove(&old_key) {
-                            self.config.ui.folder_sort.insert(new_key.clone(), sort_val);
-                            changed = true;
-                        }
-
-                        // Migrate folder_icon_size settings to the new path
-                        if let Some(size_val) = self.config.ui.folder_icon_size.remove(&old_key) {
-                            self.config.ui.folder_icon_size.insert(new_key, size_val);
-                            changed = true;
-                        }
-
-                        if changed {
-                            utils::save_config(&self.config);
-                        }
-
-                        // Refresh the current directory to show the updated name
-                        sender.input(AppMsg::Navigate(self.current_path.clone()));
-                    }
-                    Err(e) => {
-                        eprintln!("Failed to rename: {}", e);
-                    }
-                }
-            }
-            AppMsg::OpenFileProperties(path) => {
-                let properties_win = FileProperties::builder().launch(path).detach();
-                properties_win.widget().present();
-            }
-            AppMsg::ToggleHidden => {
-                self.show_hidden = !self.show_hidden;
-                self.config.ui.show_hidden_by_default = self.show_hidden;
-                utils::save_config(&self.config);
-                sender.input(AppMsg::Refresh);
-            }
-            AppMsg::CycleSort => {
-                self.sort_by = match self.sort_by {
-                    SortBy::Name => SortBy::Date,
-                    SortBy::Date => SortBy::Size,
-                    SortBy::Size => SortBy::Name,
-                };
-
-                let path_str = self.current_path.to_string_lossy().to_string();
-                self.config
-                    .ui
-                    .folder_sort
-                    .insert(path_str, self.sort_by.clone());
-                utils::save_config(&self.config);
-                sender.input(AppMsg::Refresh);
-            }
-            AppMsg::CycleFolderPriority => {
-                self.config.ui.folders_first = !self.config.ui.folders_first;
-                utils::save_config(&self.config);
-                let path = self.current_path.clone();
-                self.load_path(path, &sender);
-            }
-            AppMsg::UpdateFilter(query) => {
-                if self.filter == query {
-                    return;
-                }
-                if self.filter.is_empty() && query.len() == 1 {
-                    sender.input(AppMsg::SwitchHeader("search".to_string()));
-                }
-
-                self.filter = query.clone();
-                let query = query.to_lowercase();
-
-                self.files.clear_filters();
-                if !query.is_empty() {
-                    self.files
-                        .add_filter(move |item| item.name.to_lowercase().contains(&query));
-                }
-            }
-            AppMsg::SearchInput(c) => {
-                self.filter.push(c);
-                sender.input(AppMsg::UpdateFilter(self.filter.clone()));
-            }
-
-            AppMsg::SearchBackspace => {
-                if !self.filter.is_empty() {
-                    // Remove the last char from the FRESH state
-                    self.filter.pop();
-
-                    // Trigger the filter update
-                    sender.input(AppMsg::UpdateFilter(self.filter.clone()));
-                }
-            }
-            AppMsg::StartRename(path) => {
-                let target_idx = (0..self.files.len()).find(|&i| {
-                    self.files
-                        .get(i as u32)
-                        .map_or(false, |r| r.borrow().path == path)
-                });
-
-                if let Some(idx) = target_idx {
-                    if let Some(item_wrapper) = self.files.get(idx as u32) {
-                        let mut item = item_wrapper.borrow().clone();
-                        item.is_editing = true;
-                        self.files.remove(idx as u32);
-                        self.files.insert(idx as u32, item);
-                    }
-                }
-            }
-            AppMsg::TriggerRenameSelection => {
-                if let Some(path) = self.get_selected_path() {
-                    sender.input(AppMsg::StartRename(path));
-                }
-            }
-            AppMsg::SwitchHeader(view_name) => {
-                self.header_view = view_name;
-                if self.header_view == "path" {
-                    self.filter = String::new();
-                    sender.input(AppMsg::Refresh);
-                }
-            }
-
-            AppMsg::ShowHelp => {
-                let help_win = crate::help::HelpWindow::builder().launch(()).detach();
-                help_win.widget().present();
-            }
-
-            AppMsg::PrepareContextMenu(x, y, path) => {
-                let sender = sender.clone();
-                relm4::spawn_blocking(move || {
-                    let mime = path
-                        .as_ref()
-                        .map(|p| utils::get_mime_type(p))
-                        .unwrap_or_else(|| "inode/directory".to_string());
-                    sender.input(AppMsg::ShowContextMenu { x, y, path, mime });
-                });
-            }
-
-            AppMsg::ShowContextMenu { x, y, path, mime } => {
-                self.active_item_path = path.clone();
-                let is_in_trash = self.current_path.to_string_lossy().starts_with("trash://");
-
-                let menu = gio::Menu::new();
-
-                for action in &self.menu_actions {
-                    let mut matches = false;
-
-                    if is_in_trash {
-                        if action.mime_types.contains(&"trash".to_string()) {
-                            matches = true;
-                        }
-                    } else {
-                        for allowed_mime in &action.mime_types {
-                            if allowed_mime == "trash" {
-                                continue;
-                            }
-
-                            matches = match allowed_mime.as_str() {
-                                "*" | "all" => true,
-                                "image/all" | "image/*" => mime.starts_with("image/"),
-                                "video/all" | "video/*" => mime.starts_with("video/"),
-                                "application/all" | "application/*" => {
-                                    mime.starts_with("application/")
-                                }
-                                "text/all" | "text/*" => {
-                                    mime.starts_with("text/")
-                                        || gio::content_type_is_a(&mime, "text/plain")
-                                        || mime == "inode/x-empty"
-                                }
-                                "folder" | "directory" => mime == "inode/directory",
-                                "file" => mime != "inode/directory",
-                                t => t == mime,
-                            };
-                            if matches {
-                                break;
-                            }
-                        }
-                    }
-
-                    if matches {
-                        let full_action_name = format!("win.{}", action.action_name);
-                        menu.append(Some(&action.label), Some(&full_action_name));
-                        if let Some(g_action) = self.action_group.lookup_action(&action.action_name)
-                        {
-                            if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
-                                simple.set_enabled(true);
-                            }
-                        }
-                    }
-                }
-
-                self.context_menu_popover.set_menu_model(Some(&menu));
-                self.context_menu_popover
-                    .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
-                self.context_menu_popover.popup();
-            }
-
-            AppMsg::ExecuteCommand(cmd_template) => {
-                let mut targets = Vec::new();
-
-                if let Some(model) = self
-                    .files
-                    .view
-                    .model()
-                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                {
-                    let bitset = model.selection();
-                    let n = bitset.size();
-                    for i in 0..n {
-                        let pos = bitset.nth(i as u32);
-                        if let Some(wrapper) = self.files.get(pos) {
-                            targets.push(wrapper.borrow().path.clone());
-                        }
-                    }
-                }
-
-                let final_targets = if let Some(active) = &self.active_item_path {
-                    if targets.contains(active) {
-                        targets
-                    } else {
-                        vec![active.clone()]
-                    }
-                } else {
-                    vec![self.current_path.clone()]
-                };
-
-                if final_targets.len() == 1 {
-                    utils::run_custom_command(&cmd_template, &final_targets[0]);
-                } else if !final_targets.is_empty() {
-                    let paths_arg = final_targets
-                        .iter()
-                        .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
-                        .collect::<Vec<_>>()
-                        .join(" ");
-
-                    let mut cmd = cmd_template.replace("%p", &paths_arg);
-                    if cmd.contains("%d") {
-                        cmd = cmd.replace(
-                            "%d",
-                            &format!(
-                                "'{}'",
-                                self.current_path.to_string_lossy().replace("'", "'\\''")
-                            ),
-                        );
-                    }
-
-                    let _ = std::process::Command::new("sh").arg("-c").arg(cmd).spawn();
-                }
-            }
-            AppMsg::Zoom(delta) => {
-                let change = if delta > 0.0 { -16 } else { 16 };
-                let new_size = (self.current_icon_size + change).clamp(32, 512);
-                if new_size != self.current_icon_size {
-                    self.current_icon_size = new_size;
-
-                    let path_str = self.current_path.to_string_lossy().to_string();
-                    self.config.ui.folder_icon_size.insert(path_str, new_size);
-                    utils::save_config(&self.config);
-
-                    for i in 0..self.files.len() {
-                        if let Some(item_wrapper) = self.files.get(i as u32) {
-                            let mut item = item_wrapper.borrow().clone();
-                            item.icon_size = new_size;
-                            self.files.remove(i as u32);
-                            self.files.insert(i as u32, item);
-                        }
-                    }
-                }
-            }
-            AppMsg::Navigate(path) => {
-                let path_str = path.to_string_lossy();
-                if path.is_dir() || path_str.starts_with("trash://") {
-                    self.history.push(self.current_path.clone());
-                    self.forward_stack.clear();
-
-                    self.load_path(path, &sender);
-                }
-            }
-            AppMsg::ThumbnailReady {
-                name,
-                texture,
-                load_id,
-            } => {
-                if load_id == self.load_id.load(Ordering::SeqCst) {
-                    let target_idx = (0..self.files.len()).find(|&i| {
-                        self.files
-                            .get(i as u32)
-                            .map_or(false, |r| r.borrow().name == name)
-                    });
-                    if let Some(idx) = target_idx {
-                        if let Some(item_wrapper) = self.files.get(idx as u32) {
-                            let mut item = item_wrapper.borrow().clone();
-                            item.thumbnail = Some(texture);
-                            self.files.remove(idx as u32);
-                            self.files.insert(idx as u32, item);
-                        }
-                    }
-                }
-            }
-            AppMsg::GoBack => {
-                if let Some(prev) = self.history.pop() {
-                    self.forward_stack.push(self.current_path.clone());
-                    self.load_path(prev, &sender);
-                }
-            }
-            AppMsg::GoForward => {
-                if let Some(next) = self.forward_stack.pop() {
-                    self.history.push(self.current_path.clone());
-                    self.load_path(next, &sender);
-                }
-            }
-            AppMsg::Refresh => {
-                let p = self.current_path.clone();
-                self.load_path(p, &sender);
-            }
-            AppMsg::Open(index) => {
-                if let Some(item_wrapper) = self.files.get(index) {
-                    let item = item_wrapper.borrow();
-                    let target = if self.current_path.to_string_lossy().starts_with("trash://") {
-                        item.path.clone()
-                    } else {
-                        self.current_path.join(&item.name)
-                    };
-                    if target.is_dir() {
-                        sender.input(AppMsg::Navigate(target));
-                    } else {
-                        utils::open_file(target);
-                    }
-                }
-            }
-            AppMsg::EmptyTrash => {
-                let root = gio::File::for_uri("trash:///");
-                if let Ok(enumerator) = root.enumerate_children(
-                    "standard::name",
-                    gio::FileQueryInfoFlags::NONE,
-                    gio::Cancellable::NONE,
-                ) {
-                    for info in enumerator.flatten() {
-                        let _ = root.child(info.name()).delete(gio::Cancellable::NONE);
-                    }
-                }
-                sender.input(AppMsg::Refresh);
-            }
-            AppMsg::RestoreItem(_) => {
-                sender.input(AppMsg::Refresh);
-            }
-        }
-    }
 }
 
 impl FluxApp {
-    fn sort_status(&self) -> &str {
-        match self.sort_by {
-            SortBy::Name => "Name",
-            SortBy::Date => "Date",
-            SortBy::Size => "Size",
-        }
-    }
-
-    fn get_selected_path(&self) -> Option<PathBuf> {
-        self.files
-            .view
-            .model()
-            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-            .and_then(|selection_model| {
-                let selection = selection_model.selection();
-                if selection.is_empty() {
-                    return None;
-                }
-                // Get the first selected index
-                let first_index = selection.nth(0);
-                self.files
-                    .get(first_index)
-                    .map(|wrapper| wrapper.borrow().path.clone())
-            })
-    }
-
     pub fn refresh_sidebar(&mut self) {
         let mut guard = self.sidebar.guard();
         guard.clear();
 
-        let get_xdg_name = |p: &std::path::PathBuf| {
+        let get_xdg_name = |p: &PathBuf| {
             gio::File::for_path(p)
                 .query_info(
                     gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
@@ -872,16 +500,21 @@ impl FluxApp {
             });
         }
 
+        // 2. Trash (Placed below XDG directories)
+        guard.push_back(SidebarPlace {
+            name: "Trash".to_string(),
+            icon: "user-trash-symbolic".to_string(),
+            path: PathBuf::from("trash:///"),
+        });
+
         // 3. Custom Sidebar logic
         for custom in &self.config.sidebar {
             let path = if custom.path.starts_with('~') {
                 dirs::home_dir()
-                    .map(|h| {
-                        std::path::PathBuf::from(custom.path.replace('~', &h.to_string_lossy()))
-                    })
-                    .unwrap_or_else(|| std::path::PathBuf::from(&custom.path))
+                    .map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy())))
+                    .unwrap_or_else(|| PathBuf::from(&custom.path))
             } else {
-                std::path::PathBuf::from(&custom.path)
+                PathBuf::from(&custom.path)
             };
             guard.push_back(SidebarPlace {
                 name: custom.name.clone(),
@@ -906,198 +539,6 @@ impl FluxApp {
             };
 
             guard.push_back(SidebarPlace { name, icon, path });
-        }
-    }
-
-    pub fn load_path(&mut self, path: PathBuf, sender: &ComponentSender<Self>) {
-        self.directory_monitor = None;
-        let path_str = path.to_string_lossy().to_string();
-
-        // 1. Sort Order
-        if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str) {
-            self.sort_by = specific_sort.clone();
-        } else {
-            self.sort_by = self.config.ui.default_sort.clone();
-        }
-
-        // 2. Icon Size
-        if let Some(&size) = self.config.ui.folder_icon_size.get(&path_str) {
-            self.current_icon_size = size;
-        } else {
-            self.current_icon_size = self.config.ui.default_icon_size;
-        }
-
-        // ----------------------------------------
-
-        if path_str.starts_with("trash://") {
-            self.files.clear();
-            let root = gio::File::for_uri(&path_str);
-
-            if let Ok(monitor) =
-                root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
-            {
-                let sender_clone = sender.clone();
-                monitor.connect_changed(move |_, _, _, _| {
-                    sender_clone.input(AppMsg::Refresh);
-                });
-                self.directory_monitor = Some(monitor);
-            }
-
-            if let Ok(enumerator) = root.enumerate_children(
-                "standard::*",
-                gio::FileQueryInfoFlags::NONE,
-                gio::Cancellable::NONE,
-            ) {
-                for info in enumerator.flatten() {
-                    let name = info.display_name().to_string();
-                    let is_dir = info.file_type() == gio::FileType::Directory;
-                    let child = root.child(info.name());
-                    let child_path = PathBuf::from(child.uri());
-                    self.files.append(FileItem {
-                        name,
-                        icon: info
-                            .icon()
-                            .unwrap_or_else(|| gio::Icon::for_string("file").unwrap()),
-                        thumbnail: None,
-                        is_dir,
-                        path: child_path,
-                        icon_size: self.current_icon_size,
-                        is_editing: false,
-                    });
-                }
-            }
-            self.current_path = path;
-            return;
-        }
-
-        let file_obj = gio::File::for_path(&path);
-        if let Ok(monitor) =
-            file_obj.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
-        {
-            let sender_clone = sender.clone();
-            monitor.connect_changed(move |_, _, _, _| {
-                sender_clone.input(AppMsg::Refresh);
-            });
-            self.directory_monitor = Some(monitor);
-        }
-
-        self.files.clear();
-        let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
-        let session_arc = self.load_id.clone();
-
-        if let Ok(entries) = std::fs::read_dir(&path) {
-            let mut items_metadata = Vec::new();
-
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().to_string();
-                if !self.show_hidden && name.starts_with('.') {
-                    continue;
-                }
-
-                let target_path = path.join(&name);
-                let is_dir = target_path.is_dir();
-                let metadata = entry.metadata().ok();
-                items_metadata.push((name, target_path, metadata, is_dir));
-            }
-
-            if !self.filter.is_empty() {
-                let query = self.filter.to_lowercase();
-                let matches: Vec<_> = items_metadata
-                    .iter()
-                    .filter(|(name, ..)| name.to_lowercase().contains(&query))
-                    .cloned()
-                    .collect();
-                if !matches.is_empty() {
-                    items_metadata = matches;
-                }
-            }
-
-            let folders_first = self.config.ui.folders_first;
-
-            items_metadata.sort_by(|a, b| {
-                let a_is_dir = a.3;
-                let b_is_dir = b.3;
-
-                if a_is_dir != b_is_dir {
-                    return if folders_first {
-                        b_is_dir.cmp(&a_is_dir)
-                    } else {
-                        a_is_dir.cmp(&b_is_dir)
-                    };
-                }
-
-                match self.sort_by {
-                    SortBy::Name => a.0.to_lowercase().cmp(&b.0.to_lowercase()),
-                    SortBy::Size => {
-                        let a_size = a.2.as_ref().map(|m| m.len()).unwrap_or(0);
-                        let b_size = b.2.as_ref().map(|m| m.len()).unwrap_or(0);
-                        b_size.cmp(&a_size)
-                    }
-                    SortBy::Date => {
-                        let a_time = a.2.as_ref().and_then(|m| m.modified().ok());
-                        let b_time = b.2.as_ref().and_then(|m| m.modified().ok());
-                        b_time.cmp(&a_time)
-                    }
-                }
-            });
-
-            let mut media_tasks: Vec<(String, PathBuf)> = Vec::new();
-            for (name, target_path, _metadata, is_dir) in items_metadata {
-                let icon = utils::get_icon_for_path(&target_path, is_dir);
-
-                self.files.append(FileItem {
-                    name: name.clone(),
-                    icon,
-                    thumbnail: None,
-                    is_dir,
-                    path: target_path.clone(),
-                    icon_size: self.current_icon_size,
-                    is_editing: false,
-                });
-
-                if !is_dir {
-                    let (is_img, is_vid) = utils::is_visual_media(&target_path);
-                    if is_img || is_vid {
-                        if let Ok(abs_path) = target_path.canonicalize() {
-                            media_tasks.push((name, abs_path));
-                        }
-                    }
-                }
-            }
-
-            self.current_path = path;
-            let sender = sender.clone();
-            relm4::spawn(async move {
-                let mut stream = futures::stream::iter(media_tasks)
-                    .map(|(name, media_path)| {
-                        let inner_sender = sender.clone();
-                        let inner_session = session_arc.clone();
-                        async move {
-                            if inner_session.load(Ordering::SeqCst) != current_session {
-                                return;
-                            }
-                            let res = tokio::task::spawn_blocking(move || {
-                                utils::get_or_create_thumbnail(&media_path)
-                            })
-                            .await;
-                            if let Ok(Some(texture)) = res {
-                                if inner_session.load(Ordering::SeqCst) == current_session {
-                                    inner_sender.input(AppMsg::ThumbnailReady {
-                                        name,
-                                        texture,
-                                        load_id: current_session,
-                                    });
-                                }
-                            }
-                        }
-                    })
-                    .buffer_unordered(4);
-                while let Some(_) = stream.next().await {
-                    if session_arc.load(Ordering::SeqCst) != current_session {
-                        break;
-                    }
-                }
-            });
         }
     }
 }
