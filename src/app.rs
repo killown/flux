@@ -376,6 +376,10 @@ impl SimpleComponent for FluxApp {
                                     }
                                 },
 
+                                connect_activate[sender] => move |_| {
+                                    sender.input(AppMsg::Activate(0));
+                                },
+
                                 connect_search_changed[sender] => move |entry| {
                                     sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
                                 },
@@ -718,6 +722,17 @@ impl FluxApp {
             };
 
             guard.push_back(SidebarPlace { name, icon, path });
+        }
+
+        // 5. Append new item from exclusive list in the sidebar
+        for path in &self.exclusive_list {
+            if let Some(name) = path.file_name() {
+                guard.push_back(SidebarPlace {
+                    name: format!("#{}", name.to_string_lossy()),
+                    icon: "go-next-symbolic".to_string(),
+                    path: path.clone(),
+                });
+            }
         }
     }
 }
