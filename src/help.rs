@@ -35,11 +35,11 @@ impl SimpleComponent for HelpWindow {
                         adw::PreferencesGroup {
                             set_title: "Navigation",
                             adw::ActionRow {
-                                set_title: "F3",
+                                set_title: "Ctrl + ]",
                                 set_subtitle: "Navigate to previous folder in parent directory"
                             },
                             adw::ActionRow {
-                                set_title: "F4",
+                                set_title: "Ctrl + [",
                                 set_subtitle: "Navigate to next folder in parent directory"
                             },
                             adw::ActionRow {
