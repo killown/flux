@@ -43,6 +43,52 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::Activate(_visual_index) => {
+                // Reuse the exact same filter-matching logic as Open
+                // so Enter key selects the correct file (C instead of A)
+                let selection_model = self
+                    .files
+                    .view
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok());
+
+                if let Some(model) = selection_model {
+                    let selection = model.selection();
+                    if selection.size() > 0 {
+                        let visual_index = selection.nth(0);
+                        let mut target_path = None;
+
+                        if !self.filter.is_empty() {
+                            let query_lc = self.filter.to_lowercase();
+                            let mut match_count = 0;
+
+                            for i in 0..self.files.len() {
+                                if let Some(wrapper) = self.files.get(i as u32) {
+                                    if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
+                                        if match_count == visual_index {
+                                            target_path = Some(wrapper.borrow().path.clone());
+                                            break;
+                                        }
+                                        match_count += 1;
+                                    }
+                                }
+                            }
+                        } else {
+                            if let Some(wrapper) = self.files.get(visual_index) {
+                                target_path = Some(wrapper.borrow().path.clone());
+                            }
+                        }
+
+                        if let Some(target) = target_path {
+                            if target.is_dir() {
+                                sender.input(AppMsg::Navigate(target));
+                            } else {
+                                utils::open_file(target);
+                            }
+                        }
+                    }
+                }
+            }
             AppMsg::OpenFileProperties(path) => {
                 let properties_win = FileProperties::builder().launch(path).detach();
                 properties_win.widget().present();
@@ -82,7 +128,6 @@ impl FluxApp {
                     return;
                 }
 
-                // UI State: Automatically switch to search header when user starts typing
                 if self.header_view != "search" && !query.is_empty() {
                     self.header_view = "search".to_string();
                 }
@@ -90,11 +135,24 @@ impl FluxApp {
                 self.filter = query.clone();
                 let query_lc = query.to_lowercase();
 
-                // GtkFilter logic: Clear previous filters before applying the new substring search
                 self.files.clear_filters();
                 if !query_lc.is_empty() {
+                    let filter_str = query_lc.clone();
                     self.files
-                        .add_filter(move |item| item.name.to_lowercase().contains(&query_lc));
+                        .add_filter(move |item| item.name.to_lowercase().contains(&filter_str));
+                }
+
+                if !query_lc.is_empty() {
+                    if let Some(model) = self
+                        .files
+                        .view
+                        .model()
+                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                    {
+                        if model.n_items() > 0 {
+                            model.select_item(0, true);
+                        }
+                    }
                 }
             }
             AppMsg::SearchInput(c) => {
@@ -305,11 +363,17 @@ impl FluxApp {
             }
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
+
+                // Validate path existence (except for virtual trash URI)
+                if !path.exists() && !path_str.starts_with("trash://") {
+                    return;
+                }
+
                 if path.is_dir() || path_str.starts_with("trash://") {
                     if path != self.current_path {
                         let old_path = self.current_path.clone();
 
-                        // LRU Logic: Move the path we are leaving to the top of the 'Recent' stack
+                        // 1. Update the recent navigation stack
                         self.recent_stack.retain(|p| p != &path);
                         self.recent_stack.retain(|p| p != &old_path);
                         self.recent_stack.push_front(old_path);
@@ -318,9 +382,22 @@ impl FluxApp {
                             self.recent_stack.pop_back();
                         }
 
+                        // 2. ABSOLUTE RESET: Clear search state before loading new dir
+                        // This prevents the "empty folder" bug where old filters hide new files
+                        self.filter.clear();
+                        self.files.clear_filters();
+
+                        // 3. Reset UI state: Close search view and show breadcrumbs
+                        if self.header_view == "search" {
+                            self.header_view = "path".to_string();
+                        }
+
+                        // 4. Update internal state and history
                         self.history.push(self.current_path.clone());
                         self.forward_stack.clear();
                         self.current_path = path.clone();
+
+                        // 5. Trigger the physical load of the new directory
                         self.load_path(path, &sender);
                         self.update_breadcrumbs();
                     }
@@ -373,11 +450,13 @@ impl FluxApp {
                     if self.exclusive_index.is_none() {
                         self.exclusive_index = Some(self.exclusive_list.len() - 1);
                     }
+                    self.refresh_sidebar();
                 }
             }
             AppMsg::ClearExclusive => {
                 self.exclusive_list.clear();
                 self.exclusive_index = None;
+                self.refresh_sidebar();
             }
             AppMsg::NextExclusive => {
                 if !self.exclusive_list.is_empty() {
@@ -439,18 +518,52 @@ impl FluxApp {
                 let p = self.current_path.clone();
                 self.load_path(p, &sender);
             }
-            AppMsg::Open(index) => {
-                if let Some(item_wrapper) = self.files.get(index) {
-                    let item = item_wrapper.borrow();
-                    let target = if self.current_path.to_string_lossy().starts_with("trash://") {
-                        item.path.clone()
-                    } else {
-                        self.current_path.join(&item.name)
-                    };
-                    if target.is_dir() {
-                        sender.input(AppMsg::Navigate(target));
-                    } else {
-                        utils::open_file(target);
+            AppMsg::Open(_index) => {
+                let selection_model = self
+                    .files
+                    .view
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok());
+
+                if let Some(model) = selection_model {
+                    let selection = model.selection();
+                    if selection.size() > 0 {
+                        // This is the index in the FILTERED list (e.g., 0)
+                        let visual_index = selection.nth(0);
+
+                        let mut target_path = None;
+
+                        if !self.filter.is_empty() {
+                            let query_lc = self.filter.to_lowercase();
+                            let mut match_count = 0;
+
+                            for i in 0..self.files.len() {
+                                if let Some(wrapper) = self.files.get(i as u32) {
+                                    // Must match the exact logic used in UpdateFilter
+                                    if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
+                                        if match_count == visual_index {
+                                            target_path = Some(wrapper.borrow().path.clone());
+                                            break;
+                                        }
+                                        match_count += 1;
+                                    }
+                                }
+                            }
+                        } else {
+                            // No filter active: safe to use direct index
+                            // (Assuming currently unsorted, or sort matches insertion order)
+                            if let Some(wrapper) = self.files.get(visual_index) {
+                                target_path = Some(wrapper.borrow().path.clone());
+                            }
+                        }
+
+                        if let Some(target) = target_path {
+                            if target.is_dir() {
+                                sender.input(AppMsg::Navigate(target));
+                            } else {
+                                utils::open_file(target);
+                            }
+                        }
                     }
                 }
             }

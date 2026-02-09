@@ -130,6 +130,7 @@ pub enum AppMsg {
     PrevExclusive,
     JumpToExclusive(usize),
     StartRename(PathBuf),
+    Activate(usize),
     TriggerRenameSelection,
     RefreshSidebar,
     ShowHelp,
