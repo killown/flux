@@ -21,6 +21,8 @@ pub struct FileWidgets {
     pub label: gtk::Label,
     pub entry: gtk::Entry,
     pub stack: gtk::Stack,
+    pub drag_source: gtk::DragSource,
+    pub drop_target: gtk::DropTarget,
 }
 
 impl relm4::typed_view::grid::RelmGridItem for FileItem {
@@ -28,6 +30,52 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     type Widgets = FileWidgets;
 
     fn setup(_item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
+        let drag_source = gtk::DragSource::builder()
+            .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
+            .build();
+
+        drag_source.connect_drag_begin(|src, _| {
+            if let Some(widget) = src.widget() {
+                let paintable = gtk::WidgetPaintable::new(Some(&widget));
+                src.set_icon(Some(&paintable), 0, 0);
+            }
+        });
+
+        let drop_target = gtk::DropTarget::new(
+            gtk::gio::File::static_type(),
+            gdk::DragAction::COPY | gdk::DragAction::MOVE,
+        );
+
+        drop_target.connect_drop(|target, value, _, _| {
+            let widget = if let Some(w) = target.widget() {
+                w
+            } else {
+                return false;
+            };
+            let sender = crate::model::SENDER.get();
+
+            let dest_path_opt: Option<PathBuf> = unsafe {
+                widget
+                    .data::<PathBuf>("file_path")
+                    .map(|p| p.as_ref().clone())
+            };
+
+            let source_file_opt = value.get::<gtk::gio::File>().ok();
+
+            if let (Some(dest), Some(src_file), Some(s)) = (dest_path_opt, source_file_opt, sender)
+            {
+                if let Some(src_path) = src_file.path() {
+                    let msg = crate::model::AppMsg::HandleDrop {
+                        source_path: src_path,
+                        dest_path: dest,
+                    };
+                    s.send(msg).ok();
+                    return true;
+                }
+            }
+            false
+        });
+
         relm4::view! {
             #[root]
             root = gtk::Box {
@@ -37,21 +85,30 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 set_valign: gtk::Align::Center,
                 add_css_class: "flux-card",
 
+                add_controller: drag_source.clone(),
+                add_controller: drop_target.clone(),
+
                 add_controller = gtk::GestureClick {
-                    set_button: 3,
+                    set_button: 0, // Listen to all buttons
+                    connect_pressed => |gesture, _, _, _| {
+                        let button = gesture.current_button();
+                        // ONLY claim if it's a Right-Click
+                        // If it's Button 1 (Left Click), do NOT claim so opening works
+                        if button == 3 {
+                            gesture.set_state(gtk::EventSequenceState::Claimed);
+                        }
+                    },
                     connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
-                        if let Some(sender) = sender.get() {
-                            if let Some(widget) = gesture.widget() {
-                                let path_str = widget.widget_name();
-                                let path = PathBuf::from(path_str.to_string());
+                        if gesture.current_button() == 3 {
+                            if let Some(s) = sender.get() {
+                                let widget = gesture.widget().unwrap();
+                                let path_opt: Option<PathBuf> = unsafe {
+                                    widget.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
+                                };
 
                                 if let Some(root_widget) = widget.root() {
                                     let (root_x, root_y) = widget.translate_coordinates(&root_widget, x, y).unwrap_or((x, y));
-                                    sender.send(crate::model::AppMsg::PrepareContextMenu(
-                                        root_x,
-                                        root_y,
-                                        Some(path)
-                                    )).ok();
+                                    s.send(crate::model::AppMsg::PrepareContextMenu(root_x, root_y, path_opt)).ok();
                                 }
                             }
                         }
@@ -60,8 +117,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
                 #[name = "icon_widget"]
                 gtk::Image {
-                    add_css_class: "thumbnail",
                     set_halign: gtk::Align::Center,
+                    add_css_class: "thumbnail",
                 },
 
                 #[name = "stack"]
@@ -82,20 +139,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     add_child = &gtk::Entry {
                         set_halign: gtk::Align::Center,
                         add_css_class: "flux-rename-entry",
-
                         connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
                             if let Some(s) = sender.get() {
-                                let old_path = PathBuf::from(root.widget_name().to_string());
-                                let new_name = entry.text().to_string();
-                                s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
+                                let old_path_opt: Option<PathBuf> = unsafe {
+                                    root.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
+                                };
+                                if let Some(old_path) = old_path_opt {
+                                    let new_name = entry.text().to_string();
+                                    s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
+                                }
                             }
                         },
-
-                        add_controller = gtk::EventControllerFocus {
-                            connect_leave[stack] => move |_| {
-                                stack.set_visible_child_name("label");
-                            }
-                        }
                     } -> { set_name: "entry" }
                 }
             }
@@ -108,11 +162,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 label,
                 entry,
                 stack,
+                drag_source,
+                drop_target,
             },
         )
     }
 
-    fn bind(&mut self, widgets: &mut Self::Widgets, _root: &mut Self::Root) {
+    fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         widgets.label.set_label(&self.name);
         widgets.icon_widget.set_pixel_size(self.icon_size);
 
@@ -120,7 +176,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.stack.set_visible_child_name("entry");
             widgets.entry.set_text(&self.name);
             widgets.entry.grab_focus();
-
             let dot_pos = self.name.rfind('.').unwrap_or(self.name.len());
             widgets.entry.select_region(0, dot_pos as i32);
         } else {
@@ -130,12 +185,23 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         if let Some(ref texture) = self.thumbnail {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
-            widgets
-                .icon_widget
-                .set_paintable(Option::<&gdk::Texture>::None);
             widgets.icon_widget.set_from_gicon(&self.icon);
         }
-        _root.set_widget_name(&self.path.to_string_lossy());
+
+        // --- Bind Persistent Data ---
+        let file = gtk::gio::File::for_path(&self.path);
+        let content = gdk::ContentProvider::for_value(&file.to_value());
+        widgets.drag_source.set_content(Some(&content));
+
+        widgets.drop_target.set_actions(if self.is_dir {
+            gdk::DragAction::COPY | gdk::DragAction::MOVE
+        } else {
+            gdk::DragAction::empty()
+        });
+
+        unsafe {
+            root.set_data("file_path", self.path.clone());
+        }
     }
 }
 
