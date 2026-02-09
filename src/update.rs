@@ -1,5 +1,5 @@
 use crate::file_properties::FileProperties;
-use crate::model::{AppMsg, FluxApp, SortBy};
+use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
 use crate::utils;
 use adw::gdk;
 use adw::prelude::*;
@@ -21,6 +21,7 @@ impl FluxApp {
 
                         let mut changed = false;
 
+                        // Migration: Transfer persistent folder-specific settings to the new path key
                         if let Some(sort_val) = self.config.ui.folder_sort.remove(&old_key) {
                             self.config.ui.folder_sort.insert(new_key.clone(), sort_val);
                             changed = true;
@@ -81,8 +82,7 @@ impl FluxApp {
                     return;
                 }
 
-                // Only switch the header if we aren't already in search mode.
-                // This prevents the SearchEntry from re-mapping on every keystroke.
+                // UI State: Automatically switch to search header when user starts typing
                 if self.header_view != "search" && !query.is_empty() {
                     self.header_view = "search".to_string();
                 }
@@ -90,6 +90,7 @@ impl FluxApp {
                 self.filter = query.clone();
                 let query_lc = query.to_lowercase();
 
+                // GtkFilter logic: Clear previous filters before applying the new substring search
                 self.files.clear_filters();
                 if !query_lc.is_empty() {
                     self.files
@@ -102,13 +103,14 @@ impl FluxApp {
                 self.header_view = "search".to_string();
             }
             AppMsg::SearchBackspace => {
-                let mut new_query = self.filter.clone();
                 if !self.filter.is_empty() {
                     self.filter.pop();
-                    sender.input(AppMsg::UpdateFilter(self.filter.clone()));
+                    let query = self.filter.clone();
+                    sender.input(AppMsg::UpdateFilter(query));
                 }
             }
             AppMsg::StartRename(path) => {
+                // Locate the item in the model to trigger the 'is_editing' UI state change
                 let target_idx = (0..self.files.len()).find(|&i| {
                     self.files
                         .get(i as u32)
@@ -144,6 +146,7 @@ impl FluxApp {
             }
             AppMsg::PrepareContextMenu(x, y, path) => {
                 let sender_ctx = sender.clone();
+                // Performance: MIME detection is a blocking I/O operation; offload to a thread
                 relm4::spawn_blocking(move || {
                     let mime = path
                         .as_ref()
@@ -161,6 +164,7 @@ impl FluxApp {
                 for action in &self.menu_actions {
                     let mut matches = false;
 
+                    // Filtering: Determine which context menu actions are valid for the current file type/location
                     if is_in_trash {
                         if action.mime_types.contains(&"trash".to_string()) {
                             matches = true;
@@ -213,6 +217,7 @@ impl FluxApp {
             AppMsg::ExecuteCommand(cmd_template) => {
                 let mut targets = Vec::new();
 
+                // Multi-selection: Extract all selected paths from the GtkSelectionModel
                 if let Some(model) = self
                     .files
                     .view
@@ -239,6 +244,7 @@ impl FluxApp {
                     vec![self.current_path.clone()]
                 };
 
+                // Shell expansion: Replace templates (%p for paths, %d for current directory)
                 if final_targets.len() == 1 {
                     utils::run_custom_command(&cmd_template, &final_targets[0]);
                 } else if !final_targets.is_empty() {
@@ -272,6 +278,7 @@ impl FluxApp {
                     self.config.ui.folder_icon_size.insert(path_str, new_size);
                     utils::save_config(&self.config);
 
+                    // Refresh existing widgets to reflect the new icon scale immediately
                     for i in 0..self.files.len() {
                         if let Some(item_wrapper) = self.files.get(i as u32) {
                             let mut item = item_wrapper.borrow().clone();
@@ -282,13 +289,116 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::HandleDrop {
+                source_path,
+                dest_path,
+            } => {
+                let file_name = source_path.file_name().unwrap();
+                let final_dest = dest_path.join(file_name);
+
+                if source_path != final_dest {
+                    if let Err(e) = std::fs::rename(&source_path, &final_dest) {
+                        eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
+                    }
+                }
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
                 if path.is_dir() || path_str.starts_with("trash://") {
-                    self.history.push(self.current_path.clone());
-                    self.forward_stack.clear();
-                    self.load_path(path, &sender);
+                    if path != self.current_path {
+                        let old_path = self.current_path.clone();
+
+                        // LRU Logic: Move the path we are leaving to the top of the 'Recent' stack
+                        self.recent_stack.retain(|p| p != &path);
+                        self.recent_stack.retain(|p| p != &old_path);
+                        self.recent_stack.push_front(old_path);
+
+                        if self.recent_stack.len() > 9 {
+                            self.recent_stack.pop_back();
+                        }
+
+                        self.history.push(self.current_path.clone());
+                        self.forward_stack.clear();
+                        self.current_path = path.clone();
+                        self.load_path(path, &sender);
+                        self.update_breadcrumbs();
+                    }
+                }
+            }
+            AppMsg::JumpToRecent(rank) => {
+                let target_index = if rank == 0 { 0 } else { rank - 1 };
+
+                if let Some(target_path) = self.recent_stack.get(target_index).cloned() {
+                    if rank != 0 && target_path == self.current_path {
+                        return;
+                    }
+                    sender.input(AppMsg::Navigate(target_path));
+                }
+            }
+            AppMsg::JumpToExclusive(index) => {
+                // Quick Navigation: Direct jump to user-added 'Exclusive' folder list
+                if let Some(path) = self.exclusive_list.get(index) {
+                    let target = path.clone();
+                    self.exclusive_index = Some(index);
+                    sender.input(AppMsg::Navigate(target));
+                }
+            }
+            AppMsg::CycleRecent(delta) => {
+                if self.recent_stack.len() < 2 {
+                    return;
+                }
+
+                let current_pos = self
+                    .recent_stack
+                    .iter()
+                    .position(|p| p == &self.current_path)
+                    .unwrap_or(0);
+
+                let len = self.recent_stack.len() as i32;
+                let next_idx = (current_pos as i32 + delta).rem_euclid(len) as usize;
+
+                if let Some(target) = self.recent_stack.get(next_idx).cloned() {
+                    self.load_path(target, &sender);
                     self.update_breadcrumbs();
+                }
+            }
+            AppMsg::AddExclusive => {
+                let path_to_add = self
+                    .get_selected_path()
+                    .unwrap_or_else(|| self.current_path.clone());
+
+                if !self.exclusive_list.contains(&path_to_add) {
+                    self.exclusive_list.push(path_to_add);
+                    if self.exclusive_index.is_none() {
+                        self.exclusive_index = Some(self.exclusive_list.len() - 1);
+                    }
+                }
+            }
+            AppMsg::ClearExclusive => {
+                self.exclusive_list.clear();
+                self.exclusive_index = None;
+            }
+            AppMsg::NextExclusive => {
+                if !self.exclusive_list.is_empty() {
+                    let new_idx = match self.exclusive_index {
+                        Some(i) => (i + 1) % self.exclusive_list.len(),
+                        None => 0,
+                    };
+                    self.exclusive_index = Some(new_idx);
+                    let target = self.exclusive_list[new_idx].clone();
+                    sender.input(AppMsg::Navigate(target));
+                }
+            }
+            AppMsg::PrevExclusive => {
+                if !self.exclusive_list.is_empty() {
+                    let new_idx = match self.exclusive_index {
+                        Some(i) if i > 0 => i - 1,
+                        _ => self.exclusive_list.len() - 1,
+                    };
+                    self.exclusive_index = Some(new_idx);
+                    let target = self.exclusive_list[new_idx].clone();
+                    sender.input(AppMsg::Navigate(target));
                 }
             }
             AppMsg::ThumbnailReady {
@@ -296,6 +406,7 @@ impl FluxApp {
                 texture,
                 load_id,
             } => {
+                // Consistency check: Ignore thumbnails if the user has navigated to a new folder (load_id mismatch)
                 if load_id == self.load_id.load(Ordering::SeqCst) {
                     let target_idx = (0..self.files.len()).find(|&i| {
                         self.files

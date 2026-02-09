@@ -40,6 +40,27 @@ impl SimpleComponent for FluxApp {
                         return glib::Propagation::Stop;
                     }
 
+                    if modifiers == gdk::ModifierType::CONTROL_MASK {
+                        if keyval == gdk::Key::Page_Up {
+                            sender.input(AppMsg::PrevExclusive);
+                            return glib::Propagation::Stop;
+                        }
+                        if keyval == gdk::Key::Page_Down {
+                            sender.input(AppMsg::NextExclusive);
+                            return glib::Propagation::Stop;
+                        }
+                        if keyval == gdk::Key::Delete {
+                            sender.input(AppMsg::ClearExclusive);
+                            return glib::Propagation::Stop;
+                        }
+                    }
+
+                    // Add to Exclusive List
+                    if keyval == gdk::Key::Insert {
+                        sender.input(AppMsg::AddExclusive);
+                        return glib::Propagation::Stop;
+                    }
+
                     // 2. Focus Bypass Check
                     if let Some(root) = ctrl.widget().and_then(|w| w.root()) {
                         if let Some(focus) = root.focus() {
@@ -81,6 +102,145 @@ impl SimpleComponent for FluxApp {
                         }
                         _ => glib::Propagation::Proceed,
                     }
+                }
+            },
+
+            add_controller = gtk::EventControllerKey {
+                // Set propagation to Capture to catch keys before children
+                set_propagation_phase: gtk::PropagationPhase::Capture,
+
+                connect_key_pressed[sender] => move |_ctrl, keyval, _keycode, state| {
+                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
+                    let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
+
+                    match keyval {
+                        gdk::Key::Insert => {
+                            sender.input(AppMsg::AddExclusive);
+                            glib::Propagation::Stop
+                        }
+                        gdk::Key::End if is_ctrl => {
+                            sender.input(AppMsg::ClearExclusive);
+                            glib::Propagation::Stop
+                        }
+                        gdk::Key::Page_Up if is_ctrl => {
+                            sender.input(AppMsg::PrevExclusive);
+                            glib::Propagation::Stop
+                        }
+                        gdk::Key::Page_Down if is_ctrl => {
+                            sender.input(AppMsg::NextExclusive);
+                            glib::Propagation::Stop
+                        }
+                        gdk::Key::Tab => {
+                            sender.input(AppMsg::NextExclusive);
+                            glib::Propagation::Stop
+                        }
+                        _ => glib::Propagation::Proceed,
+                    }
+                }
+            },
+
+            add_controller = gtk::EventControllerKey {
+                set_propagation_phase: gtk::PropagationPhase::Capture,
+                connect_key_pressed[sender] => move |_ctrl, keyval, _keycode, state| {
+                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
+                    let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
+
+                    // Exclusive List Indexed Navigation (Ctrl + 1-9)
+                    if is_ctrl {
+                        match keyval {
+                            gdk::Key::_1 => { sender.input(AppMsg::JumpToExclusive(0)); return glib::Propagation::Stop; }
+                            gdk::Key::_2 => { sender.input(AppMsg::JumpToExclusive(1)); return glib::Propagation::Stop; }
+                            gdk::Key::_3 => { sender.input(AppMsg::JumpToExclusive(2)); return glib::Propagation::Stop; }
+                            gdk::Key::_4 => { sender.input(AppMsg::JumpToExclusive(3)); return glib::Propagation::Stop; }
+                            gdk::Key::_5 => { sender.input(AppMsg::JumpToExclusive(4)); return glib::Propagation::Stop; }
+                            gdk::Key::_6 => { sender.input(AppMsg::JumpToExclusive(5)); return glib::Propagation::Stop; }
+                            gdk::Key::_7 => { sender.input(AppMsg::JumpToExclusive(6)); return glib::Propagation::Stop; }
+                            gdk::Key::_8 => { sender.input(AppMsg::JumpToExclusive(7)); return glib::Propagation::Stop; }
+                            gdk::Key::_9 => { sender.input(AppMsg::JumpToExclusive(8)); return glib::Propagation::Stop; }
+                            _ => {}
+                        }
+                    }
+
+                    match keyval {
+                        gdk::Key::Insert => {
+                            sender.input(AppMsg::AddExclusive);
+                            glib::Propagation::Stop
+                        }
+                        _ => glib::Propagation::Proceed,
+                    }
+                }
+            },
+            add_controller = gtk::EventControllerKey {
+                connect_key_pressed[sender] => move |_, keyval, _, state| {
+                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
+                    match keyval {
+                        gdk::Key::F3 => {
+                            sender.input(AppMsg::CycleRecent(1));
+                            return glib::Propagation::Stop;
+                        }
+                        gdk::Key::F4 => {
+                            sender.input(AppMsg::CycleRecent(-1));
+                            return glib::Propagation::Stop;
+                        }
+                        _ => {}
+                    }
+
+                    glib::Propagation::Proceed
+                }
+            },
+            add_controller = gtk::GestureClick {
+                    set_button: 0, // Listen to all buttons
+                    // 1. Intercept the press to "claim" the button
+                    connect_pressed => |gesture, _, _, _| {
+                        let button = gesture.current_button();
+                        if button == 8 || button == 9 {
+                            // Claiming prevents other widgets from seeing this click
+                            gesture.set_state(gtk::EventSequenceState::Claimed);
+                        }
+                    },
+                    // 2. Handle the specific logic on release
+                    connect_released[sender] => move |gesture, _, _, _| {
+                        let button = gesture.current_button();
+                        let state = gesture.current_event_state();
+                        let modifiers = state & gtk::accelerator_get_default_mod_mask();
+
+                        if button == 8 {
+                            if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                                // Ctrl + Side Button: Swap current and last
+                                sender.input(AppMsg::JumpToRecent(0));
+                            }
+                            // Note: Standard click (without Ctrl) does nothing now because we claimed it.
+                        }
+                    }
+                },
+
+            add_controller = gtk::EventControllerKey {
+                connect_key_pressed[sender] => move |_, keyval, _, state| {
+                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
+
+                    if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                        if let Some(digit) = keyval.to_unicode().and_then(|c| c.to_digit(10)) {
+                            if digit > 0 {
+                                sender.input(AppMsg::JumpToRecent(digit as usize - 1));
+                                return glib::Propagation::Stop;
+                            }
+                        }
+                    }
+
+                    // 2. Cycling: F3 (Older) / F4 (Newer)
+                    match keyval {
+                        gdk::Key::F3 => {
+                            sender.input(AppMsg::CycleRecent(1));
+                            return glib::Propagation::Stop;
+                        }
+                        gdk::Key::F4 => {
+                            sender.input(AppMsg::CycleRecent(-1));
+                            return glib::Propagation::Stop;
+                        }
+                        _ => {}
+                    }
+
+                    glib::Propagation::Proceed
                 }
             },
             add_controller = gtk::ShortcutController {
@@ -413,6 +573,8 @@ impl SimpleComponent for FluxApp {
             active_item_path: None,
             directory_monitor: None,
             action_group,
+            exclusive_list: Vec::new(),
+            exclusive_index: None,
             search_just_opened: false,
             sort_by: config.ui.default_sort.clone(),
             show_hidden: config.ui.show_hidden_by_default,
@@ -420,7 +582,11 @@ impl SimpleComponent for FluxApp {
             _volume_monitor: volume_monitor,
             filter: String::new(),
             header_view: "path".to_string(),
+            recent_stack: std::collections::VecDeque::with_capacity(10),
         };
+
+        // Seed the stack with the starting path
+        model.recent_stack.push_front(start_path.clone());
 
         model.update_breadcrumbs();
 

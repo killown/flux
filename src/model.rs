@@ -4,6 +4,7 @@ use relm4::factory::FactoryVecDeque;
 use relm4::typed_view::grid::TypedGridView;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
@@ -80,6 +81,7 @@ pub struct CustomPlace {
 
 #[derive(Debug)]
 pub struct FluxApp {
+    pub recent_stack: VecDeque<PathBuf>,
     pub files: TypedGridView<FileItem, gtk::MultiSelection>,
     pub sidebar: FactoryVecDeque<SidebarPlace>,
     pub current_path: PathBuf,
@@ -89,6 +91,8 @@ pub struct FluxApp {
     pub search_just_opened: bool,
     pub current_icon_size: i32,
     pub breadcrumbs: FactoryVecDeque<PathSegment>,
+    pub exclusive_list: Vec<PathBuf>,
+    pub exclusive_index: Option<usize>,
     pub context_menu_popover: gtk::PopoverMenu,
     pub menu_actions: Vec<CustomAction>,
     pub active_item_path: Option<PathBuf>,
@@ -115,13 +119,24 @@ pub enum AppMsg {
     OpenFileProperties(PathBuf),
     Navigate(PathBuf),
     PerformRename(PathBuf, String),
+    JumpToRecent(usize),
+    CycleRecent(i32),
     SearchInput(char),
     SearchBackspace,
     CloseSearchSync,
+    AddExclusive,
+    ClearExclusive,
+    NextExclusive,
+    PrevExclusive,
+    JumpToExclusive(usize),
     StartRename(PathBuf),
     TriggerRenameSelection,
     RefreshSidebar,
     ShowHelp,
+    HandleDrop {
+        source_path: PathBuf,
+        dest_path: PathBuf,
+    },
     ToggleHidden,
     CycleSort,
     CycleFolderPriority,
