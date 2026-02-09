@@ -361,6 +361,13 @@ impl FluxApp {
                 }
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::ToggleSingleClick => {
+                self.config.ui.single_click = !self.config.ui.single_click;
+                self.files
+                    .view
+                    .set_single_click_activate(self.config.ui.single_click);
+                utils::save_config(&self.config);
+            }
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
 

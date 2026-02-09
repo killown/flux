@@ -73,6 +73,7 @@ pub fn load_config() -> crate::model::Config {
         let default_toml = r#"[ui]
 default_icon_size = 96
 sidebar_width = 200
+single_click = false
 show_xdg_dirs = true
 default_sort = "Name"
 show_hidden_by_default = false
@@ -98,6 +99,7 @@ path = "~/Downloads"
         .unwrap_or_else(|| crate::model::Config {
             ui: crate::model::UIConfig {
                 default_icon_size: 128,
+                single_click: false,
                 sidebar_width: 240,
                 show_xdg_dirs: true,
                 default_sort: crate::model::SortBy::Name,
