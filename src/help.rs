@@ -56,6 +56,10 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Add selection or current folder to list"
                             },
                             adw::ActionRow {
+                                set_title: "Tab",
+                                set_subtitle: "Cycle to the next folder in the list"
+                            },
+                            adw::ActionRow {
                                 set_title: "Ctrl + 1-9",
                                 set_subtitle: "Jump to specific list index"
                             },
