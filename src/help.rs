@@ -4,9 +4,7 @@ use relm4::prelude::*;
 pub struct HelpWindow;
 
 #[derive(Debug)]
-pub enum HelpMsg {
-    Close,
-}
+pub enum HelpMsg {}
 
 #[relm4::component(pub)]
 impl SimpleComponent for HelpWindow {
