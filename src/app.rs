@@ -170,6 +170,7 @@ impl SimpleComponent for FluxApp {
                     }
                 }
             },
+
             add_controller = gtk::EventControllerKey {
                 connect_key_pressed[sender] => move |_, keyval, _, state| {
                     let modifiers = state & gtk::accelerator_get_default_mod_mask();
@@ -333,12 +334,16 @@ impl SimpleComponent for FluxApp {
                                             set_orientation: gtk::Orientation::Horizontal,
                                         },
                                         add_controller = gtk::GestureClick {
-                                            connect_released[sender] => move |_, _, _, _| {
+                                            set_propagation_phase: gtk::PropagationPhase::Capture,
+                                            connect_pressed[sender] => move |_, n_press, _, _| {
+                                            // If double-click (2 presses), switch to entry mode
+                                            if n_press == 2 {
                                                 sender.input(AppMsg::SwitchHeader("entry".to_string()));
                                             }
                                         }
-                                    }
-                                } -> { set_name: "path" },
+                                    },
+                                }
+                            } -> { set_name: "path" },
                             add_child = &gtk::Entry {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
