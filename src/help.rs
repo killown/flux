@@ -16,24 +16,65 @@ impl SimpleComponent for HelpWindow {
 
     view! {
         adw::Window {
-            set_default_size: (500, 620),
+            set_default_size: (550, 720),
             set_title: Some("flux - Shortcuts"),
             set_modal: true,
+            set_resizable: false,
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
-                set_spacing: 0,
 
                 adw::HeaderBar {},
 
                 gtk::ScrolledWindow {
                     set_vexpand: true,
+                    set_propagate_natural_height: true,
+
                     adw::PreferencesPage {
+                        // --- NAVIGATION ---
                         adw::PreferencesGroup {
                             set_title: "Navigation",
                             adw::ActionRow {
+                                set_title: "F3",
+                                set_subtitle: "Navigate to previous folder in parent directory"
+                            },
+                            adw::ActionRow {
+                                set_title: "F4",
+                                set_subtitle: "Navigate to next folder in parent directory"
+                            },
+                            adw::ActionRow {
+                                set_title: "Backspace",
+                                set_subtitle: "Go to parent directory"
+                            },
+                        },
+
+                        // --- QUICK LIST ---
+                        adw::PreferencesGroup {
+                            set_title: "Quick List (Exclusive List)",
+                            adw::ActionRow {
+                                set_title: "Insert",
+                                set_subtitle: "Add selection or current folder to list"
+                            },
+                            adw::ActionRow {
+                                set_title: "Ctrl + 1-9",
+                                set_subtitle: "Jump to specific list index"
+                            },
+                            adw::ActionRow {
+                                set_title: "Ctrl + End",
+                                set_subtitle: "Clear the entire list"
+                            },
+                        },
+
+                        // --- SYSTEM & VIEW ---
+                        adw::PreferencesGroup {
+                            set_title: "System & View",
+                            adw::ActionRow {
                                 set_title: "F1",
                                 set_subtitle: "Show this help"
+                            },
+                            adw::ActionRow {
+                                set_title: "F2",
+                                set_subtitle: "Rename selected item"
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + F",
@@ -41,25 +82,11 @@ impl SimpleComponent for HelpWindow {
                             },
                             adw::ActionRow {
                                 set_title: "Esc",
-                                set_subtitle: "Return to path view / Close entries"
-                            },
-                        },
-                        adw::PreferencesGroup {
-                            set_title: "File Operations",
-                            adw::ActionRow {
-                                set_title: "F2",
-                                set_subtitle: "Rename selected item"
+                                set_subtitle: "Back to path / Close search"
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + H",
                                 set_subtitle: "Toggle hidden files"
-                            },
-                        },
-                        adw::PreferencesGroup {
-                            set_title: "View",
-                            adw::ActionRow {
-                                set_title: "Ctrl + Scroll",
-                                set_subtitle: "Zoom icons"
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + S",
@@ -74,7 +101,7 @@ impl SimpleComponent for HelpWindow {
 
     fn init(
         _: Self::Init,
-        root: Self::Root,
+        _root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let model = HelpWindow;
