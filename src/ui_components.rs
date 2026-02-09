@@ -106,9 +106,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                     widget.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
                                 };
 
-                                if let Some(root_widget) = widget.root() {
-                                    let (root_x, root_y) = widget.translate_coordinates(&root_widget, x, y).unwrap_or((x, y));
-                                    s.send(crate::model::AppMsg::PrepareContextMenu(root_x, root_y, path_opt)).ok();
+                                if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                    let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                 }
                             }
                         }
