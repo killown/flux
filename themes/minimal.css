@@ -114,6 +114,5 @@ scrollbar slider:hover {
 
 .breadcrumb-btn:hover:not(:last-child) {
   background-color: alpha(@theme_fg_color, 0.12);
-  z-index: 1;
   border-color: alpha(@theme_selected_bg_color, 0.3);
 }
