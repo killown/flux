@@ -173,13 +173,16 @@ impl SimpleComponent for FluxApp {
             add_controller = gtk::EventControllerKey {
                 connect_key_pressed[sender] => move |_, keyval, _, state| {
                     let modifiers = state & gtk::accelerator_get_default_mod_mask();
+                    let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
                     match keyval {
-                        gdk::Key::F3 => {
-                            sender.input(AppMsg::CycleRecent(1));
+                        gdk::Key::bracketleft if is_ctrl => {
+                            // Ctrl + [ : Go to Previous Recent Folder
+                            sender.input(AppMsg::CycleRecent(-1));
                             return glib::Propagation::Stop;
                         }
-                        gdk::Key::F4 => {
-                            sender.input(AppMsg::CycleRecent(-1));
+                        gdk::Key::bracketright if is_ctrl => {
+                            // Ctrl + ] : Go to Next Recent Folder
+                            sender.input(AppMsg::CycleRecent(1));
                             return glib::Propagation::Stop;
                         }
                         _ => {}
