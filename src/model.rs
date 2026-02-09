@@ -133,6 +133,7 @@ pub enum AppMsg {
     StartRename(PathBuf),
     Activate(usize),
     TriggerRenameSelection,
+    #[allow(dead_code)]
     ToggleSingleClick,
     RefreshSidebar,
     ShowHelp,

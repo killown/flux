@@ -1,5 +1,5 @@
 use crate::file_properties::FileProperties;
-use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
+use crate::model::{AppMsg, FluxApp, SortBy};
 use crate::utils;
 use adw::gdk;
 use adw::prelude::*;
@@ -376,51 +376,45 @@ impl FluxApp {
                     return;
                 }
 
-                if path.is_dir() || path_str.starts_with("trash://") {
-                    if path != self.current_path {
-                        let old_path = self.current_path.clone();
+                if (path.is_dir() || path_str.starts_with("trash://")) && path != self.current_path
+                {
+                    let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
-                        // 1. Update the recent navigation stack
-                        self.recent_stack.retain(|p| p != &path);
-                        self.recent_stack.retain(|p| p != &old_path);
-                        self.recent_stack.push_front(old_path);
+                    // 1. Update the recent navigation stack
+                    self.recent_stack.retain(|p| p != &path && p != &old_path);
+                    self.recent_stack.push_front(old_path.clone());
+                    self.recent_stack.truncate(9);
 
-                        if self.recent_stack.len() > 9 {
-                            self.recent_stack.pop_back();
-                        }
+                    // 2. ABSOLUTE RESET: Clear search state before loading new dir
+                    self.filter.clear();
+                    self.files.clear_filters();
 
-                        // 2. ABSOLUTE RESET: Clear search state before loading new dir
-                        self.filter.clear();
-                        self.files.clear_filters();
-
-                        // 3. Reset UI state: Close search view and show breadcrumbs
-                        if self.header_view == "search" {
-                            self.header_view = "path".to_string();
-                        }
-
-                        // 4. Update internal state and history
-                        self.history.push(self.current_path.clone());
-                        self.forward_stack.clear();
-                        self.current_path = path.clone();
-
-                        // 5. Trigger the physical load of the new directory
-                        self.load_path(path, &sender);
-                        self.update_breadcrumbs();
-
-                        // 6. NEW: Auto-select first item and grab focus for keyboard navigation
-                        let view = self.files.view.clone();
-                        glib::idle_add_local_once(move || {
-                            view.grab_focus();
-                            if let Some(model) = view
-                                .model()
-                                .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                            {
-                                if model.n_items() > 0 {
-                                    model.select_item(0, true);
-                                }
-                            }
-                        });
+                    // 3. Reset UI state: Close search view and show breadcrumbs
+                    if self.header_view == "search" {
+                        self.header_view = "path".to_string();
                     }
+
+                    // 4. Update internal state and history
+                    self.history.push(old_path);
+                    self.forward_stack.clear();
+
+                    // 5. Trigger the physical load of the new directory
+                    self.load_path(path, &sender);
+                    self.update_breadcrumbs();
+
+                    // 6. NEW: Auto-select first item and grab focus for keyboard navigation
+                    let view = self.files.view.clone();
+                    glib::idle_add_local_once(move || {
+                        view.grab_focus();
+                        if let Some(model) = view
+                            .model()
+                            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                        {
+                            if model.n_items() > 0 {
+                                model.select_item(0, true);
+                            }
+                        }
+                    });
                 }
             }
             AppMsg::JumpToRecent(rank) => {
@@ -507,17 +501,14 @@ impl FluxApp {
             } => {
                 // Consistency check: Ignore thumbnails if the user has navigated to a new folder (load_id mismatch)
                 if load_id == self.load_id.load(Ordering::SeqCst) {
-                    let target_idx = (0..self.files.len()).find(|&i| {
-                        self.files
-                            .get(i as u32)
-                            .map_or(false, |r| r.borrow().name == name)
-                    });
+                    let target_idx = (0..self.files.len())
+                        .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
                     if let Some(idx) = target_idx {
-                        if let Some(item_wrapper) = self.files.get(idx as u32) {
+                        if let Some(item_wrapper) = self.files.get(idx) {
                             let mut item = item_wrapper.borrow().clone();
                             item.thumbnail = Some(texture);
-                            self.files.remove(idx as u32);
-                            self.files.insert(idx as u32, item);
+                            self.files.remove(idx);
+                            self.files.insert(idx, item);
                         }
                     }
                 }

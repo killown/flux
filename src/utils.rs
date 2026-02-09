@@ -3,7 +3,6 @@ use adw::prelude::*;
 use gtk::gdk_pixbuf;
 use gtk::gio;
 use std::collections::hash_map::DefaultHasher;
-use std::env;
 use std::fs;
 use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
@@ -159,21 +158,17 @@ path = "~/Downloads"
 }
 
 fn split_mime_cmd(input: &str) -> Option<(String, String)> {
-    if input.starts_with('"') {
-        if let Some(first_end) = input[1..].find('"') {
-            let first_end = first_end + 1;
-            let remainder = &input[first_end + 1..].trim();
-            if remainder.starts_with(',') {
-                let second_part = remainder[1..].trim();
-                if second_part.starts_with('"') && second_part.ends_with('"') {
-                    let mime = input[1..first_end].to_string();
-                    let cmd = second_part.trim_matches('"').to_string();
-                    return Some((mime, cmd));
-                }
-            }
-        }
-    }
-    None
+    let input = input.trim();
+
+    // Extract first quoted part
+    let remainder = input.strip_prefix('"')?;
+    let (mime, rest) = remainder.split_once('"')?;
+
+    // Extract second quoted part after the comma
+    let second_part = rest.trim().strip_prefix(',')?.trim();
+    let cmd = second_part.strip_prefix('"')?.strip_suffix('"')?;
+
+    Some((mime.to_string(), cmd.to_string()))
 }
 
 pub fn load_menu_config() -> Vec<CustomAction> {
@@ -281,7 +276,7 @@ pub fn open_file(path: PathBuf) {
 
 pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let cache_dir = dirs::cache_dir()?.join("flux").join("thumbnails");
-    if let Err(_) = fs::create_dir_all(&cache_dir) {
+    if fs::create_dir_all(&cache_dir).is_err() {
         return None;
     }
     let mut hasher = DefaultHasher::new();
@@ -356,19 +351,6 @@ pub fn run_custom_command(command_template: &str, file_path: &Path) {
     }
 
     let _ = Command::new("sh").arg("-c").arg(final_cmd).spawn();
-}
-
-pub fn get_xdg_dir(env_var: &str, fallback: &str) -> PathBuf {
-    match env::var(env_var) {
-        Ok(dir) => PathBuf::from(dir),
-        Err(_) => {
-            if let Some(home) = dirs::home_dir() {
-                PathBuf::from(fallback.replace("~", &home.to_string_lossy()))
-            } else {
-                PathBuf::from(fallback)
-            }
-        }
-    }
 }
 
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {

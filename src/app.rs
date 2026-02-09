@@ -1,15 +1,12 @@
-use crate::file_properties::FileProperties;
 use adw::prelude::*;
-use futures::StreamExt;
 use relm4::factory::FactoryVecDeque;
 use relm4::prelude::*;
 use relm4::typed_view::grid::TypedGridView;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
-use crate::help::HelpWindow;
-use crate::model::{AppMsg, FluxApp, SortBy};
+use crate::model::{AppMsg, FluxApp};
 use crate::ui_components::{FileItem, SidebarPlace};
 use crate::utils;
 use adw::gdk;
@@ -208,12 +205,9 @@ impl SimpleComponent for FluxApp {
                         let state = gesture.current_event_state();
                         let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
-                        if button == 8 {
-                            if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
-                                // Ctrl + Side Button: Swap current and last
-                                sender.input(AppMsg::JumpToRecent(0));
-                            }
-                            // Note: Standard click (without Ctrl) does nothing now because we claimed it.
+                        if button == 8 && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                            // Ctrl + Side Button: Swap current and last
+                            sender.input(AppMsg::JumpToRecent(0));
                         }
                     }
                 },
@@ -251,36 +245,35 @@ impl SimpleComponent for FluxApp {
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>h").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
-                        let _ = h_sender.input(AppMsg::ToggleHidden);
+                        h_sender.input(AppMsg::ToggleHidden);
                         glib::Propagation::Stop
                     })),
                 },
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("F1").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
-                        let _ = help_sender.input(AppMsg::ShowHelp);
+                        help_sender.input(AppMsg::ShowHelp);
                         glib::Propagation::Stop
                     })),
                 },
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>s").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
-                        let _ = s_sender.input(AppMsg::CycleSort);
+                        s_sender.input(AppMsg::CycleSort);
                         glib::Propagation::Stop
                     })),
                 },
-
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>f").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
-                        let _ = f_sender.input(AppMsg::SwitchHeader("search".to_string()));
+                        f_sender.input(AppMsg::SwitchHeader("search".to_string()));
                         glib::Propagation::Stop
                     })),
                 },
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Shift>s").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
-                        let _ = s_sender_prio.input(AppMsg::CycleFolderPriority);
+                        s_sender_prio.input(AppMsg::CycleFolderPriority);
                         glib::Propagation::Stop
                     })),
                 },
@@ -514,7 +507,6 @@ impl SimpleComponent for FluxApp {
         let s_sender_prio = sender.clone();
         let f_sender = sender.clone();
 
-        let rename_sender = sender.clone();
         let help_sender = sender.clone();
 
         let config = utils::load_config();
@@ -557,7 +549,7 @@ impl SimpleComponent for FluxApp {
         let listbox = gtk::ListBox::default();
         let sidebar = FactoryVecDeque::builder()
             .launch(listbox)
-            .forward(sender.input_sender(), |path| AppMsg::Navigate(path));
+            .forward(sender.input_sender(), AppMsg::Navigate);
 
         let volume_monitor = gio::VolumeMonitor::get();
         let s_added = sender.clone();
@@ -571,7 +563,7 @@ impl SimpleComponent for FluxApp {
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let breadcrumbs = FactoryVecDeque::builder()
             .launch(breadcrumb_box.clone())
-            .forward(sender.input_sender(), |path| AppMsg::Navigate(path));
+            .forward(sender.input_sender(), AppMsg::Navigate);
 
         let mut model = FluxApp {
             files,
