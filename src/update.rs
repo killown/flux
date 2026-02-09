@@ -383,7 +383,6 @@ impl FluxApp {
                         }
 
                         // 2. ABSOLUTE RESET: Clear search state before loading new dir
-                        // This prevents the "empty folder" bug where old filters hide new files
                         self.filter.clear();
                         self.files.clear_filters();
 
@@ -400,6 +399,20 @@ impl FluxApp {
                         // 5. Trigger the physical load of the new directory
                         self.load_path(path, &sender);
                         self.update_breadcrumbs();
+
+                        // 6. NEW: Auto-select first item and grab focus for keyboard navigation
+                        let view = self.files.view.clone();
+                        glib::idle_add_local_once(move || {
+                            view.grab_focus();
+                            if let Some(model) = view
+                                .model()
+                                .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                            {
+                                if model.n_items() > 0 {
+                                    model.select_item(0, true);
+                                }
+                            }
+                        });
                     }
                 }
             }
