@@ -73,12 +73,18 @@ impl FluxApp {
                 let path = self.current_path.clone();
                 self.load_path(path, &sender);
             }
+            AppMsg::CloseSearchSync => {
+                self.search_just_opened = false;
+            }
             AppMsg::UpdateFilter(query) => {
-                if self.filter == query {
+                if self.filter == query && !self.search_just_opened {
                     return;
                 }
-                if self.filter.is_empty() && query.len() == 1 {
-                    sender.input(AppMsg::SwitchHeader("search".to_string()));
+
+                // Only switch the header if we aren't already in search mode.
+                // This prevents the SearchEntry from re-mapping on every keystroke.
+                if self.header_view != "search" && !query.is_empty() {
+                    self.header_view = "search".to_string();
                 }
 
                 self.filter = query.clone();
@@ -91,10 +97,12 @@ impl FluxApp {
                 }
             }
             AppMsg::SearchInput(c) => {
+                self.search_just_opened = true;
                 self.filter.push(c);
-                sender.input(AppMsg::UpdateFilter(self.filter.clone()));
+                self.header_view = "search".to_string();
             }
             AppMsg::SearchBackspace => {
+                let mut new_query = self.filter.clone();
                 if !self.filter.is_empty() {
                     self.filter.pop();
                     sender.input(AppMsg::UpdateFilter(self.filter.clone()));
@@ -123,9 +131,11 @@ impl FluxApp {
             }
             AppMsg::SwitchHeader(view_name) => {
                 self.header_view = view_name;
-                if self.header_view == "path" {
+                if self.header_view != "search" {
                     self.filter = String::new();
-                    sender.input(AppMsg::Refresh);
+                    self.search_just_opened = true;
+                    self.files.clear_filters();
+                    sender.input(AppMsg::UpdateFilter(String::new()));
                 }
             }
             AppMsg::ShowHelp => {

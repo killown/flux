@@ -27,89 +27,63 @@ impl SimpleComponent for FluxApp {
             set_default_size: (1100, 750),
             set_title: Some("flux"),
             add_controller = gtk::EventControllerKey {
-                connect_key_pressed[sender] => move |_, keyval, _, state| {
+                connect_key_pressed[sender, header_view = model.header_view.clone()] => move |ctrl, keyval, _, state| {
+                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
-                    // 1. Priority: System Function Keys
+                    // 1. System Keys
                     if keyval == gdk::Key::F1 {
                         sender.input(AppMsg::ShowHelp);
                         return glib::Propagation::Stop;
                     }
-
                     if keyval == gdk::Key::F2 {
                         sender.input(AppMsg::TriggerRenameSelection);
                         return glib::Propagation::Stop;
                     }
 
-                    // 2. Search Logic
-                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
-                    if !modifiers.is_empty() {
-                        return glib::Propagation::Proceed;
-                    }
-
-                    match keyval {
-                        // Clear filter on Escape
-                        gdk::Key::Escape => {
-                            sender.input(AppMsg::UpdateFilter(String::new()));
-                            // Also switch back to path view if desired
-                            sender.input(AppMsg::SwitchHeader("path".to_string()));
-                            return glib::Propagation::Stop;
-                        }
-                        // Handle Backspace
-                        gdk::Key::BackSpace => {
-                            sender.input(AppMsg::SearchBackspace);
-                            return glib::Propagation::Stop;
-                        }
-                        // Handle Typing
-                        _ => {
-                            if let Some(c) = keyval.to_unicode() {
-                                if !c.is_control() {
-                                    // 1. Switch header FIRST so the widget becomes visible
-                                    sender.input(AppMsg::SwitchHeader("search".to_string()));
-
-                                    // 2. Send the input.
-                                    // Because the widget is now becoming visible, its 'connect_show'
-                                    // handler (e.grab_focus()) will trigger automatically.
-                                    sender.input(AppMsg::SearchInput(c));
-
-                                    return glib::Propagation::Stop;
-                                }
-                            }
-                        }
-                    }
-
-                    glib::Propagation::Proceed
-                }
-            },
-            add_controller = gtk::EventControllerKey {
-                    connect_key_pressed[sender, header_view = model.header_view.clone()] => move |ctrl, keyval, _, state| {
-                        if header_view == "search" || header_view == "entry" {
-                            return glib::Propagation::Proceed;
-                        }
-
-                        if let Some(root) = ctrl.widget().and_then(|w| w.root()) {
-                            if let Some(focus) = root.focus() {
-                                // If focus is in an Entry or any editable, don't trigger search
-                                if focus.type_().is_a(gtk::Editable::static_type()) {
+                    // 2. Focus Bypass Check
+                    if let Some(root) = ctrl.widget().and_then(|w| w.root()) {
+                        if let Some(focus) = root.focus() {
+                            if focus.type_().is_a(gtk::Editable::static_type()) {
+                                // Only let the widget handle input if we are already in search/entry mode
+                                if header_view == "search" || header_view == "entry" {
+                                    if keyval == gdk::Key::Escape {
+                                        sender.input(AppMsg::UpdateFilter(String::new()));
+                                        sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                        return glib::Propagation::Stop;
+                                    }
                                     return glib::Propagation::Proceed;
                                 }
                             }
                         }
+                    }
 
-                        if state.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::ALT_MASK | gdk::ModifierType::META_MASK) {
-                            return glib::Propagation::Proceed;
-                        }
-
-                        if let Some(ch) = keyval.to_unicode() {
-                            if ch.is_alphabetic() && !ch.is_control() {
-                                sender.input(AppMsg::UpdateFilter(ch.to_string()));
+                    // 3. Global Capture (Runs only if header_view is "path")
+                    if modifiers.is_empty() {
+                        if let Some(c) = keyval.to_unicode() {
+                            if !c.is_control() {
+                                // These will now definitely fire
                                 sender.input(AppMsg::SwitchHeader("search".to_string()));
+                                sender.input(AppMsg::SearchInput(c));
                                 return glib::Propagation::Stop;
                             }
                         }
-                        glib::Propagation::Proceed
                     }
-                },
-                add_controller = gtk::ShortcutController {
+
+                    match keyval {
+                        gdk::Key::Escape => {
+                            sender.input(AppMsg::UpdateFilter(String::new()));
+                            sender.input(AppMsg::SwitchHeader("path".to_string()));
+                            glib::Propagation::Stop
+                        }
+                        gdk::Key::BackSpace => {
+                            sender.input(AppMsg::SearchBackspace);
+                            glib::Propagation::Stop
+                        }
+                        _ => glib::Propagation::Proceed,
+                    }
+                }
+            },
+            add_controller = gtk::ShortcutController {
                 add_shortcut = gtk::Shortcut {
                     set_trigger: Some(gtk::ShortcutTrigger::parse_string("<Control>h").unwrap()),
                     set_action: Some(gtk::CallbackAction::new(move |_, _| {
@@ -223,17 +197,13 @@ impl SimpleComponent for FluxApp {
                                     }
                                     sender.input(AppMsg::SwitchHeader("path".to_string()));
                                 },
-                                connect_show => |e| {
-                                    e.grab_focus();
-                                    e.set_position(-1);
-                                }
                             } -> { set_name: "entry" },
                             add_child = &gtk::SearchEntry {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
                                 set_width_request: 450,
 
-                                #[track = "model.filter.is_empty()"]
+                                #[track = "model.search_just_opened"]
                                 set_text: &model.filter,
 
                                 add_controller = gtk::EventControllerKey {
@@ -250,12 +220,23 @@ impl SimpleComponent for FluxApp {
                                     sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
                                 },
 
-                                connect_show => |e| {
+                                connect_map[sender] => move |e| {
                                     e.grab_focus();
-                                    e.set_position(-1);
-                                },
+                                    let e_ptr = e.clone();
+                                    let s_clone = sender.clone();
 
-                                connect_stop_search => AppMsg::SwitchHeader("path".to_string()),
+                                    glib::idle_add_local_once(move || {
+                                        let pos = e_ptr.text().chars().count() as i32;
+                                        e_ptr.set_position(pos);
+                                        e_ptr.select_region(pos, pos);
+
+                                        // FLIP THE SWITCH: This kills the tracking condition
+                                        s_clone.input(AppMsg::CloseSearchSync);
+                                    });
+                                },
+                                connect_stop_search[sender] => move |_| {
+                                    sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                },
                                 add_controller = gtk::GestureClick {
                                     connect_pressed[sender] => move |_, _, _, _| {
                                         sender.input(AppMsg::SwitchHeader("entry".to_string()));
@@ -432,6 +413,7 @@ impl SimpleComponent for FluxApp {
             active_item_path: None,
             directory_monitor: None,
             action_group,
+            search_just_opened: false,
             sort_by: config.ui.default_sort.clone(),
             show_hidden: config.ui.show_hidden_by_default,
             config: config.clone(),
