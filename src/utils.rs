@@ -22,7 +22,7 @@ pub fn ensure_config_file() -> PathBuf {
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
         //FIXME: file properties not working without full path
-        let default_config = r#""Open Terminal" => "directory", "alacritty --working-directory=%d"
+        let default_config = r#""Open Terminal" => "directory", "alacritty --working-directory=%p"
 "Copy Path" => "echo -n %p | wl-copy"
 "Move to Trash" => "gio trash %p"
 "Restore File" => "trash", "gio trash --restore %p"
