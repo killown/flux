@@ -60,6 +60,7 @@ pub struct UIConfig {
     pub default_icon_size: i32,
     pub sidebar_width: i32,
     pub show_xdg_dirs: bool,
+    pub single_click: bool,
     pub theme: Option<String>,
     #[serde(default)]
     pub default_sort: SortBy,
@@ -132,6 +133,7 @@ pub enum AppMsg {
     StartRename(PathBuf),
     Activate(usize),
     TriggerRenameSelection,
+    ToggleSingleClick,
     RefreshSidebar,
     ShowHelp,
     HandleDrop {

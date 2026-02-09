@@ -548,6 +548,8 @@ impl SimpleComponent for FluxApp {
         let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
         files.view.set_enable_rubberband(true);
 
+        files.view.set_single_click_activate(config.ui.single_click);
+
         let grid_view = &files.view;
         let sender_clone = sender.clone();
         grid_view.connect_activate(move |_, pos| sender_clone.input(AppMsg::Open(pos)));
