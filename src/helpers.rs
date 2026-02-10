@@ -40,27 +40,17 @@ impl FluxApp {
             sender.input(AppMsg::ShowHelp);
             return glib::Propagation::Stop;
         }
+
         if keyval == gdk::Key::F2 {
             sender.input(AppMsg::TriggerRenameSelection);
             return glib::Propagation::Stop;
         }
 
-        if modifiers == gdk::ModifierType::CONTROL_MASK {
-            if keyval == gdk::Key::Page_Up {
-                sender.input(AppMsg::PrevExclusive);
-                return glib::Propagation::Stop;
-            }
-            if keyval == gdk::Key::Page_Down {
-                sender.input(AppMsg::NextExclusive);
-                return glib::Propagation::Stop;
-            }
-            if keyval == gdk::Key::Delete {
-                sender.input(AppMsg::ClearExclusive);
-                return glib::Propagation::Stop;
-            }
+        if modifiers == gdk::ModifierType::CONTROL_MASK && keyval == gdk::Key::Delete {
+            sender.input(AppMsg::ClearExclusive);
+            return glib::Propagation::Stop;
         }
 
-        // Add to Exclusive List
         if keyval == gdk::Key::Insert {
             sender.input(AppMsg::AddExclusive);
             return glib::Propagation::Stop;
@@ -83,7 +73,9 @@ impl FluxApp {
             return glib::Propagation::Proceed;
         }
 
-        // 3. Global Capture
+        // 3. Global Capture (Type-to-search)
+        // Only triggers when no modifiers (like Ctrl or Shift) are held,
+        // allowing modifiers to be used for native multi-selection expansion.
         if modifiers.is_empty() {
             if let Some(c) = keyval.to_unicode() {
                 if !c.is_control() {
@@ -94,8 +86,13 @@ impl FluxApp {
             }
         }
 
-        // 4. Context Keys
+        // 4. Context Keys & Batch Execution
         match keyval {
+            // Triggers batch activation for the current selection
+            gdk::Key::Return | gdk::Key::KP_Enter => {
+                sender.input(AppMsg::Activate);
+                glib::Propagation::Stop
+            }
             gdk::Key::Escape => {
                 sender.input(AppMsg::UpdateFilter(String::new()));
                 sender.input(AppMsg::SwitchHeader("path".to_string()));
@@ -256,22 +253,63 @@ impl FluxApp {
         }
     }
 
-    /// Returns the filesystem path of the first currently selected item in the file grid.
-    pub(crate) fn get_selected_path(&self) -> Option<PathBuf> {
-        self.files
+    /// Returns a vector of PathBufs representing what the user actually sees as selected.
+    ///
+    /// If a filter is active, it maps the visual selection indices back to the
+    /// matching files. If no filter is active, it maps them directly.
+    pub(crate) fn get_selection(&self) -> Vec<PathBuf> {
+        let selection_model = match self
+            .files
             .view
             .model()
             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-            .and_then(|selection_model| {
-                let selection = selection_model.selection();
-                if selection.is_empty() {
-                    return None;
+        {
+            Some(m) => m,
+            None => return Vec::new(),
+        };
+
+        let bitset = selection_model.selection();
+        let mut selected_paths = Vec::new();
+
+        if let Some((mut iter, first_idx)) = gtk::BitsetIter::init_first(&bitset) {
+            let mut visual_indices = Vec::new();
+            let mut current = Some(first_idx);
+            while let Some(idx) = current {
+                visual_indices.push(idx);
+                current = iter.next();
+            }
+
+            if self.filter.is_empty() {
+                // Scenario A: No filter. Map indices directly to the file list.
+                for idx in visual_indices {
+                    if let Some(wrapper) = self.files.get(idx) {
+                        selected_paths.push(wrapper.borrow().path.clone());
+                    }
                 }
-                let first_index = selection.nth(0);
-                self.files
-                    .get(first_index)
-                    .map(|wrapper| wrapper.borrow().path.clone())
-            })
+            } else {
+                // Scenario B: Filter is active. We must find which actual items
+                // correspond to the visual indices (e.g., visual index 0 is the 1st match).
+                let query_lc = self.filter.to_lowercase();
+                let mut match_count = 0;
+
+                for i in 0..self.files.len() {
+                    if let Some(wrapper) = self.files.get(i) {
+                        if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
+                            if visual_indices.contains(&(match_count as u32)) {
+                                selected_paths.push(wrapper.borrow().path.clone());
+                            }
+                            match_count += 1;
+                        }
+                    }
+                }
+            }
+        }
+        selected_paths
+    }
+
+    /// Returns the filesystem path of the first currently selected item.
+    pub(crate) fn get_selected_path(&self) -> Option<PathBuf> {
+        self.get_selection().into_iter().next()
     }
 
     /// Registers application-wide keyboard shortcuts with a ShortcutController.

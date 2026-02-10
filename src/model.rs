@@ -166,8 +166,8 @@ pub enum AppMsg {
     PrevExclusive,
     /// Enter inline rename mode for the specified file.
     StartRename(PathBuf),
-    /// Execute the primary action for an item at the given index.
-    Activate(usize),
+    /// Execute the primary action for all currently selected items.
+    Activate,
     /// Trigger the rename state for the currently selected item.
     TriggerRenameSelection,
     #[allow(dead_code)]
@@ -176,9 +176,9 @@ pub enum AppMsg {
     RefreshSidebar,
     /// Open the keyboard shortcuts and help overlay.
     ShowHelp,
-    /// Handle a Drag-and-Drop move/copy operation.
+    /// Handle a Drag-and-Drop move/copy operation for multiple items.
     HandleDrop {
-        source_path: PathBuf,
+        source_paths: Vec<PathBuf>,
         dest_path: PathBuf,
     },
     /// Toggle visibility of dotfiles and hidden items.
@@ -207,8 +207,8 @@ pub enum AppMsg {
     GoForward,
     /// Reload the current directory from disk.
     Refresh,
-    /// Open the file at the specified index.
-    Open(u32),
+    /// Open all currently selected files or navigate to the selected directory.
+    Open,
     /// Delete all files within the system trash location.
     EmptyTrash,
     #[allow(dead_code)]

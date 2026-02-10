@@ -221,7 +221,7 @@ impl SimpleComponent for FluxApp {
                                     }
                                 },
                                 connect_activate[sender] => move |_| {
-                                    sender.input(AppMsg::Activate(0));
+                                  sender.input(AppMsg::Activate);
                                 },
                                 connect_search_changed[sender] => move |entry| {
                                     sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
@@ -375,7 +375,7 @@ impl SimpleComponent for FluxApp {
 
         let grid_view = &files.view;
         let sender_clone = sender.clone();
-        grid_view.connect_activate(move |_, pos| sender_clone.input(AppMsg::Open(pos)));
+        grid_view.connect_activate(move |_, _| sender_clone.input(AppMsg::Open));
 
         // Setup the sidebar list with navigation forwarding
         let listbox = gtk::ListBox::default();

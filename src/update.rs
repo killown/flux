@@ -43,53 +43,6 @@ impl FluxApp {
                     }
                 }
             }
-            AppMsg::Activate(_visual_index) => {
-                // Reuse the exact same filter-matching logic as Open
-                // so Enter key selects the correct file (C instead of A)
-                let selection_model = self
-                    .files
-                    .view
-                    .model()
-                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok());
-
-                if let Some(model) = selection_model {
-                    let selection = model.selection();
-                    if selection.size() > 0 {
-                        let visual_index = selection.nth(0);
-                        let mut target_path = None;
-
-                        if !self.filter.is_empty() {
-                            let query_lc = self.filter.to_lowercase();
-                            let mut match_count = 0;
-
-                            for i in 0..self.files.len() {
-                                if let Some(wrapper) = self.files.get(i) {
-                                    if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
-                                        if match_count == visual_index {
-                                            target_path = Some(wrapper.borrow().path.clone());
-                                            break;
-                                        }
-                                        match_count += 1;
-                                    }
-                                }
-                            }
-                        } else {
-                            target_path = self
-                                .files
-                                .get(visual_index)
-                                .map(|w| w.borrow().path.clone());
-                        }
-
-                        if let Some(target) = target_path {
-                            if target.is_dir() {
-                                sender.input(AppMsg::Navigate(target));
-                            } else {
-                                utils::open_file(target);
-                            }
-                        }
-                    }
-                }
-            }
             AppMsg::OpenFileProperties(path) => {
                 let properties_win = FileProperties::builder().launch(path).detach();
                 properties_win.widget().present();
@@ -345,20 +298,6 @@ impl FluxApp {
                     }
                 }
             }
-            AppMsg::HandleDrop {
-                source_path,
-                dest_path,
-            } => {
-                let file_name = source_path.file_name().unwrap();
-                let final_dest = dest_path.join(file_name);
-
-                if source_path != final_dest {
-                    if let Err(e) = std::fs::rename(&source_path, &final_dest) {
-                        eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
-                    }
-                }
-                sender.input(AppMsg::Refresh);
-            }
             AppMsg::ToggleSingleClick => {
                 self.config.ui.single_click = !self.config.ui.single_click;
                 self.files
@@ -519,54 +458,41 @@ impl FluxApp {
                 let p = self.current_path.clone();
                 self.load_path(p, &sender);
             }
-            AppMsg::Open(_index) => {
-                let selection_model = self
-                    .files
-                    .view
-                    .model()
-                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok());
+            AppMsg::Open | AppMsg::Activate => {
+                let selection = self.get_selection();
 
-                if let Some(model) = selection_model {
-                    let selection = model.selection();
-                    if selection.size() > 0 {
-                        // This is the index in the FILTERED list (e.g., 0)
-                        let visual_index = selection.nth(0);
+                // If empty (rare but possible with weird click timings), do nothing
+                if selection.is_empty() {
+                    return;
+                }
 
-                        let mut target_path = None;
+                for path in selection {
+                    if path.is_dir() {
+                        sender.input(AppMsg::Navigate(path));
+                        break; // Navigate to first directory only
+                    } else {
+                        utils::open_file(path);
+                    }
+                }
+            }
+            AppMsg::HandleDrop {
+                source_paths,
+                dest_path,
+            } => {
+                for source_path in source_paths {
+                    if let Some(file_name) = source_path.file_name() {
+                        let final_dest = dest_path.join(file_name);
 
-                        if !self.filter.is_empty() {
-                            let query_lc = self.filter.to_lowercase();
-                            let mut match_count = 0;
-
-                            for i in 0..self.files.len() {
-                                if let Some(wrapper) = self.files.get(i as u32) {
-                                    // Must match the exact logic used in UpdateFilter
-                                    if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
-                                        if match_count == visual_index {
-                                            target_path = Some(wrapper.borrow().path.clone());
-                                            break;
-                                        }
-                                        match_count += 1;
-                                    }
-                                }
-                            }
-                        } else {
-                            // No filter active: safe to use direct index
-                            // (Assuming currently unsorted, or sort matches insertion order)
-                            if let Some(wrapper) = self.files.get(visual_index) {
-                                target_path = Some(wrapper.borrow().path.clone());
-                            }
-                        }
-
-                        if let Some(target) = target_path {
-                            if target.is_dir() {
-                                sender.input(AppMsg::Navigate(target));
-                            } else {
-                                utils::open_file(target);
+                        if source_path != final_dest {
+                            // Standard move logic
+                            if let Err(e) = std::fs::rename(&source_path, &final_dest) {
+                                eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
                             }
                         }
                     }
                 }
+                // Refresh once after the batch operation
+                sender.input(AppMsg::Refresh);
             }
             AppMsg::EmptyTrash => {
                 let root = gio::File::for_uri("trash:///");
