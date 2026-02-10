@@ -45,8 +45,8 @@ pub mod constants {
     pub const SEARCH_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const RECENT_STACK_CAPACITY: usize = 10;
     pub const MAX_RECENT_ITEMS: usize = 9; // Truncation limit for navigation
-    pub const GRID_SPACING: u32 = 8;
-    pub const SIDEBAR_SPACING: i32 = 12;
+    pub const GRID_SPACING: u32 = 16;
+    pub const SIDEBAR_SPACING: i32 = 18;
     pub const HEADER_BTN_SPACING: i32 = 6;
     pub const STATUS_ICON_SPACING: i32 = 8;
     pub const HEADER_MARGIN_END: i32 = 12;
@@ -61,7 +61,7 @@ pub mod constants {
 
     // Zoom Limits
     pub const ZOOM_STEP: i32 = 16;
-    pub const ZOOM_MIN: i32 = 32;
+    pub const ZOOM_MIN: i32 = 48;
     pub const ZOOM_MAX: i32 = 512;
 
     // MIME Types

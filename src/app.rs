@@ -86,6 +86,16 @@ impl SimpleComponent for FluxApp {
                 }
             },
 
+            add_controller = gtk::GestureSwipe {
+                connect_swipe[sender] => move |_, velocity_x, _| {
+                    if velocity_x > 500.0 {
+                        sender.input(AppMsg::GoBack);
+                    } else if velocity_x < -500.0 {
+                        sender.input(AppMsg::GoForward);
+                    }
+                }
+            },
+
             /// Mouse button handler for auxiliary navigation controls (Buttons 8/9).
             add_controller = gtk::GestureClick {
                 set_button: 0,
