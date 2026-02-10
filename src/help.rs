@@ -40,10 +40,6 @@ impl SimpleComponent for HelpWindow {
                                 set_title: "Ctrl + [",
                                 set_subtitle: "Navigate to next folder in parent directory"
                             },
-                            adw::ActionRow {
-                                set_title: "Backspace",
-                                set_subtitle: "Go to parent directory"
-                            },
                         },
 
                         // --- QUICK LIST ---
@@ -56,10 +52,6 @@ impl SimpleComponent for HelpWindow {
                             adw::ActionRow {
                                 set_title: "Tab",
                                 set_subtitle: "Cycle to the next folder in the list"
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + 1-9",
-                                set_subtitle: "Jump to specific list index"
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + End",

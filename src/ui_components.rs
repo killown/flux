@@ -4,6 +4,7 @@ use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
+/// Data model representing a file or directory entry in the application grid.
 #[derive(Debug, Clone)]
 pub struct FileItem {
     pub name: String,
@@ -16,6 +17,7 @@ pub struct FileItem {
     pub is_editing: bool,
 }
 
+/// Collection of GTK widgets utilized by a [FileItem] within the grid view.
 pub struct FileWidgets {
     pub icon_widget: gtk::Image,
     pub label: gtk::Label,
@@ -29,6 +31,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     type Root = gtk::Box;
     type Widgets = FileWidgets;
 
+    /// Initializes the widget hierarchy and event controllers for a grid item.
+    ///
+    /// Sets up drag-and-drop functionality and mouse gesture listeners for
+    /// context menu interaction.
     fn setup(_item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
         let drag_source = gtk::DragSource::builder()
             .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
@@ -89,11 +95,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 add_controller: drop_target.clone(),
 
                 add_controller = gtk::GestureClick {
-                    set_button: 0, // Listen to all buttons
+                    set_button: 0,
                     connect_pressed => |gesture, _, _, _| {
                         let button = gesture.current_button();
-                        // ONLY claim if it's a Right-Click
-                        // If it's Button 1 (Left Click), do NOT claim so opening works
                         if button == 3 {
                             gesture.set_state(gtk::EventSequenceState::Claimed);
                         }
@@ -168,6 +172,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         )
     }
 
+    /// Updates the item's widgets with current data from the [FileItem] model.
+    ///
+    /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         widgets.label.set_label(&self.name);
         widgets.icon_widget.set_pixel_size(self.icon_size);
@@ -188,7 +195,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_from_gicon(&self.icon);
         }
 
-        // --- Bind Persistent Data ---
         let file = gtk::gio::File::for_path(&self.path);
         let content = gdk::ContentProvider::for_value(&file.to_value());
         widgets.drag_source.set_content(Some(&content));
@@ -205,6 +211,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     }
 }
 
+/// Simple model for a pinned sidebar location.
 #[derive(Debug)]
 pub struct SidebarPlace {
     pub name: String,
@@ -229,7 +236,6 @@ impl FactoryComponent for PathSegment {
         gtk::Button {
             set_label: &self.name,
             add_css_class: "breadcrumb-btn",
-            // Clicking a segment tells the app to navigate there
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
             }
