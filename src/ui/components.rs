@@ -104,6 +104,23 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         add_controller: drag_source.clone(),
                         add_controller: drop_target.clone(),
 
+                        add_controller = gtk::GestureLongPress {
+                            // Standard delay for touch menus
+                            connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
+                                if let Some(s) = sender.get() {
+                                    let widget = gesture.widget().unwrap();
+                                    let path_opt: Option<PathBuf> = unsafe {
+                                        widget.data::<PathBuf>("file_path").map(|p| p.as_ref().expand_tilde())
+                                    };
+
+                                    if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                        let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                        s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                    }
+                                }
+                            }
+                        },
+
                         add_controller = gtk::GestureClick {
                             set_button: 0,
                             connect_pressed => |gesture, _, _, _| {
