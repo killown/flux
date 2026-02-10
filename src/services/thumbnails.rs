@@ -1,4 +1,5 @@
 use crate::model::{AppMsg, FluxApp};
+use crate::services::constants;
 use crate::utils;
 use futures::StreamExt;
 use relm4::prelude::*;
@@ -39,9 +40,9 @@ impl FluxApp {
                         }
                     }
                 })
-                .buffer_unordered(4);
+                .buffer_unordered(constants::MAX_THUMBNAIL_THREADS);
 
-            while let Some(_) = stream.next().await {
+            while stream.next().await.is_some() {
                 if session_arc.load(Ordering::SeqCst) != current_session {
                     break;
                 }

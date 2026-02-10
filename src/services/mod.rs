@@ -11,6 +11,4 @@ pub mod thumbnails;
 pub mod constants {
     /// Maximum number of concurrent thumbnail generation tasks.
     pub const MAX_THUMBNAIL_THREADS: usize = 4;
-    /// Path to the local thumbnail cache directory.
-    pub const CACHE_DIR: &str = ".cache/flux/thumbnails";
 }

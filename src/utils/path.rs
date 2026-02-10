@@ -35,8 +35,3 @@ impl PathExt for PathBuf {
         self.as_path().expand_tilde()
     }
 }
-
-/// Standalone resolve utility.
-pub fn resolve<P: AsRef<Path>>(path: P) -> PathBuf {
-    path.as_ref().expand_tilde()
-}
