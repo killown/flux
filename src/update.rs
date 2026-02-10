@@ -63,7 +63,7 @@ impl FluxApp {
                             let mut match_count = 0;
 
                             for i in 0..self.files.len() {
-                                if let Some(wrapper) = self.files.get(i as u32) {
+                                if let Some(wrapper) = self.files.get(i) {
                                     if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
                                         if match_count == visual_index {
                                             target_path = Some(wrapper.borrow().path.clone());
@@ -74,9 +74,10 @@ impl FluxApp {
                                 }
                             }
                         } else {
-                            if let Some(wrapper) = self.files.get(visual_index) {
-                                target_path = Some(wrapper.borrow().path.clone());
-                            }
+                            target_path = self
+                                .files
+                                .get(visual_index)
+                                .map(|w| w.borrow().path.clone());
                         }
 
                         if let Some(target) = target_path {
@@ -169,18 +170,15 @@ impl FluxApp {
             }
             AppMsg::StartRename(path) => {
                 // Locate the item in the model to trigger the 'is_editing' UI state change
-                let target_idx = (0..self.files.len()).find(|&i| {
-                    self.files
-                        .get(i as u32)
-                        .map_or(false, |r| r.borrow().path == path)
-                });
+                let target_idx = (0..self.files.len())
+                    .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().path == path));
 
                 if let Some(idx) = target_idx {
-                    if let Some(item_wrapper) = self.files.get(idx as u32) {
+                    if let Some(item_wrapper) = self.files.get(idx) {
                         let mut item = item_wrapper.borrow().clone();
                         item.is_editing = true;
-                        self.files.remove(idx as u32);
-                        self.files.insert(idx as u32, item);
+                        self.files.remove(idx);
+                        self.files.insert(idx, item);
                     }
                 }
             }
@@ -425,14 +423,6 @@ impl FluxApp {
                         return;
                     }
                     sender.input(AppMsg::Navigate(target_path));
-                }
-            }
-            AppMsg::JumpToExclusive(index) => {
-                // Quick Navigation: Direct jump to user-added 'Exclusive' folder list
-                if let Some(path) = self.exclusive_list.get(index) {
-                    let target = path.clone();
-                    self.exclusive_index = Some(index);
-                    sender.input(AppMsg::Navigate(target));
                 }
             }
             AppMsg::CycleRecent(delta) => {
