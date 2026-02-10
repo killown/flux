@@ -4,6 +4,7 @@ mod help;
 mod helpers;
 mod loader;
 mod model;
+pub mod path;
 mod thumbnails;
 mod ui_components;
 mod update;

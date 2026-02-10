@@ -1,3 +1,4 @@
+use crate::path::PathExt;
 use adw::gdk;
 use adw::prelude::*;
 use gtk::gdk_pixbuf;
@@ -251,16 +252,9 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
 }
 
 pub fn expand_path(path: &str) -> PathBuf {
-    let path = if path.starts_with('~') {
-        if let Some(home) = dirs::home_dir() {
-            path.replacen('~', &home.to_string_lossy(), 1)
-        } else {
-            path.to_string()
-        }
-    } else {
-        path.to_string()
-    };
-    PathBuf::from(path)
+    // We delegate the logic to our PathExt trait which handles
+    // component stripping and home directory joining safely.
+    PathBuf::from(path).expand_tilde()
 }
 
 pub fn open_file(path: PathBuf) {
@@ -343,11 +337,12 @@ pub fn run_custom_command(command_template: &str, file_path: &Path) {
     // MANUALLY EXPAND ~ and $HOME:
     // This ensures that even if the Desktop environment has a limited PATH,
     // we resolve the user's local bin folder correctly.
-    if let Some(home) = dirs::home_dir() {
-        let home_str = home.to_string_lossy();
-        final_cmd = final_cmd
-            .replace("~", &home_str)
-            .replace("$HOME", &home_str);
+    //Resolve tildes in the command template ONLY,
+    // or better yet, rely on the shell to handle standard shortcuts.
+    if final_cmd.starts_with("~/") {
+        if let Ok(home) = std::env::var("HOME") {
+            final_cmd = final_cmd.replacen("~", &home, 1);
+        }
     }
 
     let _ = Command::new("sh").arg("-c").arg(final_cmd).spawn();
