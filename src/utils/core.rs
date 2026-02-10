@@ -1,4 +1,4 @@
-use crate::path::PathExt;
+use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
 use gtk::gdk_pixbuf;
