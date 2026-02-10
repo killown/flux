@@ -53,11 +53,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         );
 
         drop_target.connect_drop(|target, value, _, _| {
-            let widget = if let Some(w) = target.widget() {
-                w
-            } else {
-                return false;
-            };
+            let widget = target.widget().unwrap();
             let sender = crate::model::SENDER.get();
 
             let dest_path_opt: Option<PathBuf> = unsafe {
@@ -66,16 +62,27 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     .map(|p| p.as_ref().clone())
             };
 
-            let source_file_opt = value.get::<gtk::gio::File>().ok();
+            let mut source_paths = Vec::new();
 
-            if let (Some(dest), Some(src_file), Some(s)) = (dest_path_opt, source_file_opt, sender)
-            {
-                if let Some(src_path) = src_file.path() {
-                    let msg = crate::model::AppMsg::HandleDrop {
-                        source_path: src_path,
+            if let Ok(file_list) = value.get::<gdk::FileList>() {
+                source_paths = file_list
+                    .files()
+                    .into_iter()
+                    .filter_map(|f| f.path())
+                    .collect();
+            } else if let Ok(file) = value.get::<gtk::gio::File>() {
+                if let Some(path) = file.path() {
+                    source_paths.push(path);
+                }
+            }
+
+            if let (Some(dest), Some(s)) = (dest_path_opt, sender) {
+                if !source_paths.is_empty() {
+                    s.send(crate::model::AppMsg::HandleDrop {
+                        source_paths,
                         dest_path: dest,
-                    };
-                    s.send(msg).ok();
+                    })
+                    .ok();
                     return true;
                 }
             }
