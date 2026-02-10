@@ -1,4 +1,5 @@
 use crate::model::PathSegment;
+use crate::path::PathExt;
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -90,81 +91,85 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         });
 
         relm4::view! {
-            #[root]
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
-                set_spacing: 8,
-                set_halign: gtk::Align::Center,
-                set_valign: gtk::Align::Center,
-                add_css_class: "flux-card",
+                    #[root]
+                    root = gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_spacing: 8,
+                        set_halign: gtk::Align::Center,
+                        set_valign: gtk::Align::Center,
+                        add_css_class: "flux-card",
 
-                add_controller: drag_source.clone(),
-                add_controller: drop_target.clone(),
+                        add_controller: drag_source.clone(),
+                        add_controller: drop_target.clone(),
 
-                add_controller = gtk::GestureClick {
-                    set_button: 0,
-                    connect_pressed => |gesture, _, _, _| {
-                        let button = gesture.current_button();
-                        if button == 3 {
-                            gesture.set_state(gtk::EventSequenceState::Claimed);
-                        }
-                    },
-                    connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
-                        if gesture.current_button() == 3 {
-                            if let Some(s) = sender.get() {
-                                let widget = gesture.widget().unwrap();
-                                let path_opt: Option<PathBuf> = unsafe {
-                                    widget.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
-                                };
-
-                                if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                    let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                        add_controller = gtk::GestureClick {
+                            set_button: 0,
+                            connect_pressed => |gesture, _, _, _| {
+                                let button = gesture.current_button();
+                                if button == 3 {
+                                    gesture.set_state(gtk::EventSequenceState::Claimed);
                                 }
-                            }
+                            },
+                            connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
+                                if gesture.current_button() == 3 {
+                                    if let Some(s) = sender.get() {
+                                        let widget = gesture.widget().unwrap();
+
+                                        // Extract and resolve the path immediately to prevent double-expansion bugs
+                                        let path_opt: Option<PathBuf> = unsafe {
+                                            widget.data::<PathBuf>("file_path").map(|p| {
+                                                p.as_ref().expand_tilde()
+                                            })
+                                        };
+
+                                        if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                            let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                            s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                        }
+                                    }
+                                }
+        }
+                        },
+
+                        #[name = "icon_widget"]
+                        gtk::Image {
+                            set_halign: gtk::Align::Center,
+                            add_css_class: "thumbnail",
+                        },
+
+                        #[name = "stack"]
+                        gtk::Stack {
+                            set_transition_type: gtk::StackTransitionType::Crossfade,
+                            set_halign: gtk::Align::Center,
+
+                            #[name = "label"]
+                            add_child = &gtk::Label {
+                                set_wrap: true,
+                                set_justify: gtk::Justification::Center,
+                                set_max_width_chars: 14,
+                                set_ellipsize: gtk::pango::EllipsizeMode::End,
+                                add_css_class: "flux-label",
+                            } -> { set_name: "label" },
+
+                            #[name = "entry"]
+                            add_child = &gtk::Entry {
+                                set_halign: gtk::Align::Center,
+                                add_css_class: "flux-rename-entry",
+                                connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
+                                    if let Some(s) = sender.get() {
+                                        let old_path_opt: Option<PathBuf> = unsafe {
+                                            root.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
+                                        };
+                                        if let Some(old_path) = old_path_opt {
+                                            let new_name = entry.text().to_string();
+                                            s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
+                                        }
+                                    }
+                                },
+                            } -> { set_name: "entry" }
                         }
                     }
-                },
-
-                #[name = "icon_widget"]
-                gtk::Image {
-                    set_halign: gtk::Align::Center,
-                    add_css_class: "thumbnail",
-                },
-
-                #[name = "stack"]
-                gtk::Stack {
-                    set_transition_type: gtk::StackTransitionType::Crossfade,
-                    set_halign: gtk::Align::Center,
-
-                    #[name = "label"]
-                    add_child = &gtk::Label {
-                        set_wrap: true,
-                        set_justify: gtk::Justification::Center,
-                        set_max_width_chars: 14,
-                        set_ellipsize: gtk::pango::EllipsizeMode::End,
-                        add_css_class: "flux-label",
-                    } -> { set_name: "label" },
-
-                    #[name = "entry"]
-                    add_child = &gtk::Entry {
-                        set_halign: gtk::Align::Center,
-                        add_css_class: "flux-rename-entry",
-                        connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
-                            if let Some(s) = sender.get() {
-                                let old_path_opt: Option<PathBuf> = unsafe {
-                                    root.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
-                                };
-                                if let Some(old_path) = old_path_opt {
-                                    let new_name = entry.text().to_string();
-                                    s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
-                                }
-                            }
-                        },
-                    } -> { set_name: "entry" }
                 }
-            }
-        }
 
         (
             root,
