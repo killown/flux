@@ -10,7 +10,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::sync::OnceLock;
 
-use crate::ui_components::{FileItem, SidebarPlace};
+use crate::ui::{FileItem, SidebarPlace};
 
 /// Global communication channel for sending messages to the main application loop from background threads.
 pub static SENDER: OnceLock<relm4::Sender<AppMsg>> = OnceLock::new();

@@ -1,24 +1,21 @@
 mod app;
-mod file_properties;
-mod help;
-mod helpers;
 mod loader;
 mod model;
-pub mod path;
-mod thumbnails;
-mod ui_components;
 mod update;
+
+mod services;
+mod ui;
 mod utils;
 
-use crate::file_properties::FileProperties;
 use crate::model::{AppMsg, Config, FluxApp};
+use crate::ui::FileProperties;
 use adw::gio;
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 
-// Thread-local provider allows load_from_data to overwrite previous styles on the same object
+// Thread-local provider remains in main.rs as it manages global display styles
 thread_local! {
     static CSS_PROVIDER: gtk::CssProvider = gtk::CssProvider::new();
 }
@@ -37,14 +34,12 @@ fn load_custom_css() {
     if let Some(theme_name) = config.and_then(|c| c.ui.theme) {
         let theme_filename = format!("{}.css", theme_name);
 
-        // 1. Try local user path: ~/.local/share/flux/themes/
         let local_theme = dirs::data_dir()
             .unwrap_or_default()
             .join("flux")
             .join("themes")
             .join(&theme_filename);
 
-        // 2. Try system path: /usr/share/flux/themes/
         let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
 
         css_data = fs::read_to_string(&local_theme)
@@ -52,7 +47,6 @@ fn load_custom_css() {
             .ok();
     }
 
-    // Fallback to style.css in config dir if no theme found or loaded
     if css_data.is_none() {
         css_data = fs::read_to_string(config_dir.join("style.css")).ok();
     }
@@ -60,11 +54,8 @@ fn load_custom_css() {
     if let Some(data) = css_data {
         CSS_PROVIDER.with(|provider| {
             if let Some(display) = adw::gdk::Display::default() {
-                // Detach provider before loading new data to invalidate cache
                 gtk::style_context_remove_provider_for_display(&display, provider);
-
                 provider.load_from_data(&data);
-
                 gtk::style_context_add_provider_for_display(
                     &display,
                     provider,
@@ -80,7 +71,6 @@ fn setup_css_watcher() {
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
     let file = gio::File::for_path(&config_dir);
 
-    // WATCH_MOUNTS + SEND_MOVED catches atomic saves (temp file swaps) used by Neovim
     if let Ok(monitor) = file.monitor_directory(
         gio::FileMonitorFlags::WATCH_MOUNTS | gio::FileMonitorFlags::SEND_MOVED,
         gio::Cancellable::NONE,
@@ -106,7 +96,6 @@ fn setup_css_watcher() {
 }
 
 fn main() {
-    // 1. Initialize Adw/Gtk before ANY other logic
     adw::init().expect("Failed to initialize Libadwaita");
 
     // --- GTK THEME RE-SPAWN HACK ---
@@ -127,12 +116,12 @@ fn main() {
 
     let args: Vec<String> = std::env::args().collect();
 
-    // 2. Now safe to call functions using Gtk objects
     load_custom_css();
     setup_css_watcher();
 
     // --- CLI HANDLER: FILE PROPERTIES ---
     if args.len() > 2 && args[1] == "--file-properties" {
+        // We use the new ui:: path here
         let path = PathBuf::from(&args[2]);
         let app = RelmApp::new("flux.PropertiesViewer");
         app.allow_multiple_instances(true);

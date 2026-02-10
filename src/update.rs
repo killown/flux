@@ -1,5 +1,6 @@
-use crate::file_properties::FileProperties;
 use crate::model::{AppMsg, FluxApp, SortBy};
+use crate::ui::constants;
+use crate::ui::FileProperties;
 use crate::utils;
 use adw::gdk;
 use adw::prelude::*;
@@ -82,8 +83,8 @@ impl FluxApp {
                     return;
                 }
 
-                if self.header_view != "search" && !query.is_empty() {
-                    self.header_view = "search".to_string();
+                if self.header_view != constants::VIEW_SEARCH && !query.is_empty() {
+                    self.header_view = constants::VIEW_SEARCH.to_string();
                 }
 
                 self.filter = query.clone();
@@ -112,7 +113,7 @@ impl FluxApp {
             AppMsg::SearchInput(c) => {
                 self.search_just_opened = true;
                 self.filter.push(c);
-                self.header_view = "search".to_string();
+                self.header_view = constants::VIEW_SEARCH.to_string();
             }
             AppMsg::SearchBackspace => {
                 if !self.filter.is_empty() {
@@ -142,7 +143,7 @@ impl FluxApp {
             }
             AppMsg::SwitchHeader(view_name) => {
                 self.header_view = view_name;
-                if self.header_view != "search" {
+                if self.header_view != constants::VIEW_SEARCH {
                     self.filter = String::new();
                     self.search_just_opened = true;
                     self.files.clear_filters();
@@ -150,7 +151,7 @@ impl FluxApp {
                 }
             }
             AppMsg::ShowHelp => {
-                let help_win = crate::help::HelpWindow::builder().launch(()).detach();
+                let help_win = crate::ui::HelpWindow::builder().launch(()).detach();
                 help_win.widget().present();
             }
             AppMsg::PrepareContextMenu(x, y, path) => {
@@ -160,13 +161,16 @@ impl FluxApp {
                     let mime = path
                         .as_ref()
                         .map(|p| utils::get_mime_type(p))
-                        .unwrap_or_else(|| "inode/directory".to_string());
+                        .unwrap_or_else(|| constants::MIME_DIR.to_string());
                     sender_ctx.input(AppMsg::ShowContextMenu { x, y, path, mime });
                 });
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();
-                let is_in_trash = self.current_path.to_string_lossy().starts_with("trash://");
+                let is_in_trash = self
+                    .current_path
+                    .to_string_lossy()
+                    .starts_with(constants::TRASH_URI);
 
                 let menu = gio::Menu::new();
 
@@ -175,17 +179,20 @@ impl FluxApp {
 
                     // Filtering: Determine which context menu actions are valid for the current file type/location
                     if is_in_trash {
-                        if action.mime_types.contains(&"trash".to_string()) {
+                        if action
+                            .mime_types
+                            .contains(&constants::FILTER_TRASH.to_string())
+                        {
                             matches = true;
                         }
                     } else {
                         for allowed_mime in &action.mime_types {
-                            if allowed_mime == "trash" {
+                            if allowed_mime == constants::FILTER_TRASH {
                                 continue;
                             }
 
                             matches = match allowed_mime.as_str() {
-                                "*" | "all" => true,
+                                constants::FILTER_ALL | "all" => true,
                                 "image/all" | "image/*" => mime.starts_with("image/"),
                                 "video/all" | "video/*" => mime.starts_with("video/"),
                                 "application/all" | "application/*" => {
@@ -193,11 +200,13 @@ impl FluxApp {
                                 }
                                 "text/all" | "text/*" => {
                                     mime.starts_with("text/")
-                                        || gio::content_type_is_a(&mime, "text/plain")
-                                        || mime == "inode/x-empty"
+                                        || gio::content_type_is_a(&mime, constants::MIME_TEXT)
+                                        || mime == constants::MIME_EMPTY
                                 }
-                                "folder" | "directory" => mime == "inode/directory",
-                                "file" => mime != "inode/directory",
+                                constants::FILTER_FOLDER | "directory" => {
+                                    mime == constants::MIME_DIR
+                                }
+                                constants::FILTER_FILE => mime != constants::MIME_DIR,
                                 t => t == mime,
                             };
                             if matches {
@@ -263,10 +272,10 @@ impl FluxApp {
                         .collect::<Vec<_>>()
                         .join(" ");
 
-                    let mut cmd = cmd_template.replace("%p", &paths_arg);
-                    if cmd.contains("%d") {
+                    let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
+                    if cmd.contains(constants::TEMPLATE_CWD) {
                         cmd = cmd.replace(
-                            "%d",
+                            constants::TEMPLATE_CWD,
                             &format!(
                                 "'{}'",
                                 self.current_path.to_string_lossy().replace("'", "'\\''")
@@ -274,26 +283,39 @@ impl FluxApp {
                         );
                     }
 
-                    let _ = std::process::Command::new("sh").arg("-c").arg(cmd).spawn();
+                    let _ = std::process::Command::new(constants::SHELL_BIN)
+                        .arg("-c")
+                        .arg(cmd)
+                        .spawn();
                 }
             }
             AppMsg::Zoom(delta) => {
-                let change = if delta > 0.0 { -16 } else { 16 };
-                let new_size = (self.current_icon_size + change).clamp(32, 512);
+                // Determine if we are zooming in or out using the STEP constant
+                let change = if delta > 0.0 {
+                    -constants::ZOOM_STEP
+                } else {
+                    constants::ZOOM_STEP
+                };
+
+                // Use the MIN and MAX constants to prevent the icons from becoming too small or too large
+                let new_size = (self.current_icon_size + change)
+                    .clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
+
                 if new_size != self.current_icon_size {
                     self.current_icon_size = new_size;
 
+                    // Save the new size to config so it persists for this folder
                     let path_str = self.current_path.to_string_lossy().to_string();
                     self.config.ui.folder_icon_size.insert(path_str, new_size);
                     utils::save_config(&self.config);
 
-                    // Refresh existing widgets to reflect the new icon scale immediately
+                    // Update all visible items in the grid
                     for i in 0..self.files.len() {
-                        if let Some(item_wrapper) = self.files.get(i as u32) {
+                        if let Some(item_wrapper) = self.files.get(i) {
                             let mut item = item_wrapper.borrow().clone();
                             item.icon_size = new_size;
-                            self.files.remove(i as u32);
-                            self.files.insert(i as u32, item);
+                            self.files.remove(i);
+                            self.files.insert(i, item);
                         }
                     }
                 }
@@ -309,25 +331,26 @@ impl FluxApp {
                 let path_str = path.to_string_lossy();
 
                 // Validate path existence (except for virtual trash URI)
-                if !path.exists() && !path_str.starts_with("trash://") {
+                if !path.exists() && !path_str.starts_with(constants::TRASH_URI) {
                     return;
                 }
 
-                if (path.is_dir() || path_str.starts_with("trash://")) && path != self.current_path
+                if (path.is_dir() || path_str.starts_with(constants::TRASH_URI))
+                    && path != self.current_path
                 {
                     let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
                     // 1. Update the recent navigation stack
                     self.recent_stack.retain(|p| p != &path && p != &old_path);
                     self.recent_stack.push_front(old_path.clone());
-                    self.recent_stack.truncate(9);
+                    self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
 
                     // 2. ABSOLUTE RESET: Clear search state before loading new dir
                     self.filter.clear();
                     self.files.clear_filters();
 
                     // 3. Reset UI state: Close search view and show breadcrumbs
-                    if self.header_view == "search" {
+                    if self.header_view == constants::VIEW_SEARCH {
                         self.header_view = "path".to_string();
                     }
 
@@ -495,16 +518,19 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::EmptyTrash => {
-                let root = gio::File::for_uri("trash:///");
+                let root = gio::File::for_uri(constants::TRASH_URI);
+
                 if let Ok(enumerator) = root.enumerate_children(
                     "standard::name",
                     gio::FileQueryInfoFlags::NONE,
                     gio::Cancellable::NONE,
                 ) {
                     for info in enumerator.flatten() {
+                        // Delete each item in the trash virtual directory
                         let _ = root.child(info.name()).delete(gio::Cancellable::NONE);
                     }
                 }
+                // Refresh the view to show the now-empty trash
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::RestoreItem(_) => {

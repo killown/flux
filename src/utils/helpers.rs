@@ -1,5 +1,5 @@
 use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
-use crate::ui_components::SidebarPlace;
+use crate::ui::SidebarPlace;
 use crate::utils;
 use adw::prelude::*;
 use gtk::gdk;

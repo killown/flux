@@ -1,5 +1,7 @@
 use crate::model::PathSegment;
-use crate::path::PathExt;
+use crate::ui::constants;
+use crate::ui::constants::MOUSE_RIGHT_CLICK;
+use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -94,10 +96,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     #[root]
                     root = gtk::Box {
                         set_orientation: gtk::Orientation::Vertical,
-                        set_spacing: 8,
+                        set_spacing: constants::GRID_SPACING as i32,
                         set_halign: gtk::Align::Center,
                         set_valign: gtk::Align::Center,
-                        add_css_class: "flux-card",
+                        add_css_class: constants::CARD_CSS_CLASS,
 
                         add_controller: drag_source.clone(),
                         add_controller: drop_target.clone(),
@@ -106,12 +108,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             set_button: 0,
                             connect_pressed => |gesture, _, _, _| {
                                 let button = gesture.current_button();
-                                if button == 3 {
+                                if button == constants::MOUSE_RIGHT_CLICK {
                                     gesture.set_state(gtk::EventSequenceState::Claimed);
                                 }
                             },
                             connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
-                                if gesture.current_button() == 3 {
+                                if gesture.current_button() == MOUSE_RIGHT_CLICK {
                                     if let Some(s) = sender.get() {
                                         let widget = gesture.widget().unwrap();
 
@@ -134,7 +136,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         #[name = "icon_widget"]
                         gtk::Image {
                             set_halign: gtk::Align::Center,
-                            add_css_class: "thumbnail",
+                            add_css_class: constants::THUMBNAIL_CLASS,
                         },
 
                         #[name = "stack"]
@@ -146,15 +148,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             add_child = &gtk::Label {
                                 set_wrap: true,
                                 set_justify: gtk::Justification::Center,
-                                set_max_width_chars: 14,
+                                set_max_width_chars: constants::MAX_LABEL_CHARS,
                                 set_ellipsize: gtk::pango::EllipsizeMode::End,
-                                add_css_class: "flux-label",
-                            } -> { set_name: "label" },
+                                add_css_class: constants::FLUX_LABEL_CLASS,
+                            } -> { set_name: constants::VIEW_LABEL },
 
                             #[name = "entry"]
                             add_child = &gtk::Entry {
                                 set_halign: gtk::Align::Center,
-                                add_css_class: "flux-rename-entry",
+                                add_css_class: constants::RENAME_ENTRY_CLASS,
                                 connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
                                     if let Some(s) = sender.get() {
                                         let old_path_opt: Option<PathBuf> = unsafe {
@@ -166,7 +168,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                         }
                                     }
                                 },
-                            } -> { set_name: "entry" }
+                            } -> { set_name: constants::VIEW_ENTRY }
                         }
                     }
                 }
@@ -192,13 +194,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         widgets.icon_widget.set_pixel_size(self.icon_size);
 
         if self.is_editing {
-            widgets.stack.set_visible_child_name("entry");
+            widgets.stack.set_visible_child_name(constants::VIEW_ENTRY);
             widgets.entry.set_text(&self.name);
             widgets.entry.grab_focus();
             let dot_pos = self.name.rfind('.').unwrap_or(self.name.len());
             widgets.entry.select_region(0, dot_pos as i32);
         } else {
-            widgets.stack.set_visible_child_name("label");
+            widgets.stack.set_visible_child_name(constants::VIEW_LABEL);
         }
 
         if let Some(ref texture) = self.thumbnail {
@@ -247,7 +249,7 @@ impl FactoryComponent for PathSegment {
         #[root]
         gtk::Button {
             set_label: &self.name,
-            add_css_class: "breadcrumb-btn",
+            add_css_class: constants::BREADCRUMB_BTN_CLASS,
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
             }
@@ -266,7 +268,7 @@ impl FactoryComponent for SidebarPlace {
     view! {
         #[root]
         gtk::ListBoxRow {
-            add_css_class: "sidebar-row",
+            add_css_class: constants::SIDEBAR_ROW_CLASS,
             set_selectable: false,
             add_controller = gtk::GestureClick {
                 connect_released[sender, path = self.path.clone()] => move |_, _, _, _| {
@@ -275,9 +277,9 @@ impl FactoryComponent for SidebarPlace {
             },
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: 12,
+                set_spacing: constants::SIDEBAR_SPACING,
                 gtk::Image { set_icon_name: Some(&self.icon) },
-                gtk::Label { set_label: &self.name, add_css_class: "sidebar-label" }
+                gtk::Label { set_label: &self.name, add_css_class: constants::SIDEBAR_LABEL_CLASS }
             }
         }
     }

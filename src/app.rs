@@ -7,7 +7,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
 use crate::model::{AppMsg, FluxApp};
-use crate::ui_components::{FileItem, SidebarPlace};
+use crate::ui::{constants, FileItem, SidebarPlace};
 use crate::utils;
 use adw::gdk;
 use gtk::gio;
@@ -22,8 +22,8 @@ impl SimpleComponent for FluxApp {
     view! {
         /// Main application window for the Flux file manager.
         adw::Window {
-            set_default_size: (1100, 750),
-            set_title: Some("flux"),
+            set_default_size: (constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT),
+            set_title: Some(constants::APP_TITLE),
 
             // --- INPUT CONTROLLERS ---
 
@@ -91,7 +91,7 @@ impl SimpleComponent for FluxApp {
                 set_button: 0,
                 connect_pressed => |gesture, _, _, _| {
                     let button = gesture.current_button();
-                    if button == 8 || button == 9 {
+                    if button == constants::MOUSE_BACK || button == constants::MOUSE_FORWARD {
                         gesture.set_state(gtk::EventSequenceState::Claimed);
                     }
                 },
@@ -100,7 +100,7 @@ impl SimpleComponent for FluxApp {
                     let state = gesture.current_event_state();
                     let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
-                    if button == 8 && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                    if button == constants::MOUSE_BACK && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
                         sender.input(AppMsg::JumpToRecent(0));
                     }
                 }
@@ -115,7 +115,7 @@ impl SimpleComponent for FluxApp {
                 #[name = "sidebar_container"]
                 gtk::ScrolledWindow {
                     set_width_request: model.config.ui.sidebar_width,
-                    add_css_class: "sidebar",
+                    add_css_class: constants::SIDEBAR_CSS_CLASS,
                 },
 
                 /// Main content container for the header and file browser.
@@ -129,12 +129,12 @@ impl SimpleComponent for FluxApp {
                         set_show_end_title_buttons: false,
 
                         pack_start = &gtk::Button {
-                            set_icon_name: "go-previous-symbolic",
+                            set_icon_name: constants::ICON_BACK,
                             connect_clicked => AppMsg::GoBack,
                             #[watch] set_sensitive: !model.history.is_empty(),
                         },
                         pack_start = &gtk::Button {
-                            set_icon_name: "go-next-symbolic",
+                            set_icon_name: constants::ICON_FORWARD,
                             connect_clicked => AppMsg::GoForward,
                             #[watch] set_sensitive: !model.forward_stack.is_empty(),
                         },
@@ -149,7 +149,7 @@ impl SimpleComponent for FluxApp {
                             add_child = &gtk::Button {
                                 add_css_class: "flat",
                                 #[watch] set_label: &model.current_path.to_string_lossy(),
-                                connect_clicked => AppMsg::SwitchHeader("entry".to_string()),
+                                connect_clicked => AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()),
                             } -> { set_name: "path_old" },
 
                             /// Interactive breadcrumb container for directory parent navigation.
@@ -158,7 +158,7 @@ impl SimpleComponent for FluxApp {
                                 set_hscrollbar_policy: gtk::PolicyType::External,
                                 set_vscrollbar_policy: gtk::PolicyType::Never,
                                 set_halign: gtk::Align::Center,
-                                set_min_content_width: 450,
+                                set_min_content_width: constants::SCROLLED_WINDOW_MIN_WIDTH,
 
                                 gtk::Box {
                                     add_css_class: "linked",
@@ -173,23 +173,23 @@ impl SimpleComponent for FluxApp {
                                         set_propagation_phase: gtk::PropagationPhase::Capture,
                                         connect_pressed[sender] => move |_, n_press, _, _| {
                                             if n_press == 2 {
-                                                sender.input(AppMsg::SwitchHeader("entry".to_string()));
+                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
                                             }
                                         }
                                     },
                                 }
-                            } -> { set_name: "path" },
+                            } -> { set_name: constants::VIEW_PATH },
 
                             /// Direct path entry field for manual location input.
                             add_child = &gtk::Entry {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
-                                set_width_request: 450,
+                                set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                                 #[watch] set_text: &model.current_path.to_string_lossy(),
                                 add_controller = gtk::EventControllerKey {
                                     connect_key_pressed[sender] => move |_, keyval, _, _| {
                                         if keyval == gdk::Key::Escape {
-                                            sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                             return glib::Propagation::Stop;
                                         }
                                         glib::Propagation::Proceed
@@ -200,21 +200,21 @@ impl SimpleComponent for FluxApp {
                                     if !path_str.is_empty() {
                                         sender.input(AppMsg::Navigate(PathBuf::from(path_str)));
                                     }
-                                    sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                 },
-                            } -> { set_name: "entry" },
+                            } -> { set_name: constants::VIEW_ENTRY },
 
                             /// Filtering and search input field.
                             add_child = &gtk::SearchEntry {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
-                                set_width_request: 450,
+                                set_width_request: constants::SEARCH_ENTRY_WIDTH_REQUEST,
                                 #[track = "model.search_just_opened"]
                                 set_text: &model.filter,
                                 add_controller = gtk::EventControllerKey {
                                     connect_key_pressed[sender] => move |_, keyval, _, _| {
                                         if keyval == gdk::Key::Escape {
-                                            sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                             return glib::Propagation::Stop;
                                         }
                                         glib::Propagation::Proceed
@@ -238,50 +238,52 @@ impl SimpleComponent for FluxApp {
                                     });
                                 },
                                 connect_stop_search[sender] => move |_| {
-                                    sender.input(AppMsg::SwitchHeader("path".to_string()));
+                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                 },
                                 add_controller = gtk::GestureClick {
                                     connect_pressed[sender] => move |_, _, _, _| {
-                                        sender.input(AppMsg::SwitchHeader("entry".to_string()));
+                                        sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
                                     }
                                 },
-                            } -> { set_name: "search" },
+                            } -> { set_name: constants::VIEW_SEARCH },
                         },
 
                         /// Destructive action button to purge the Trash directory.
                         pack_end = &gtk::Button {
                             #[watch]
-                            set_visible: model.current_path.to_string_lossy() == "trash:///",
+                            set_visible: model.current_path.to_string_lossy() == constants::TRASH_URI,
                             connect_clicked => AppMsg::EmptyTrash,
-                            set_tooltip_text: Some("Empty Trash"),
-                            add_css_class: "destructive-action",
+                            set_tooltip_text: Some(constants::LABEL_EMPTY_TRASH),
+                            add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
+
                             gtk::Box {
                                 set_orientation: gtk::Orientation::Horizontal,
-                                set_spacing: 6,
+                                set_spacing: constants::HEADER_BTN_SPACING,
+
                                 gtk::Image {
-                                    set_icon_name: Some("user-trash-full-symbolic"),
+                                    set_icon_name: Some(constants::ICON_TRASH),
                                 },
                                 gtk::Label {
-                                    set_label: "Empty Trash",
+                                    set_label: constants::LABEL_EMPTY_TRASH,
                                 }
                             }
                         },
-
                         /// Visual indicator of the current active sorting mode.
                         pack_end = &gtk::Box {
                             set_orientation: gtk::Orientation::Horizontal,
-                            set_spacing: 8,
-                            set_margin_end: 12,
+                            set_spacing: constants::STATUS_ICON_SPACING,
+                            set_margin_end: constants::HEADER_MARGIN_END,
                             set_valign: gtk::Align::Center,
-                            add_css_class: "sort-container",
+                            add_css_class: constants::SORT_CONTAINER_CLASS,
+
                             gtk::Image {
-                                set_icon_name: Some("view-sort-ascending-symbolic"),
-                                set_pixel_size: 16,
-                                set_opacity: 0.6,
+                                set_icon_name: Some(constants::ICON_SORT_INDICATOR),
+                                set_pixel_size: constants::STATUS_ICON_SIZE,
+                                set_opacity: constants::OPACITY_ICON,
                             },
                             gtk::Label {
-                                add_css_class: "sort-status-label",
-                                set_opacity: 0.8,
+                                add_css_class: constants::SORT_LABEL_CLASS,
+                                set_opacity: constants::OPACITY_LABEL,
                                 #[watch]
                                 set_label: model.sort_status(),
                             }
@@ -421,8 +423,10 @@ impl SimpleComponent for FluxApp {
             config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),
-            header_view: "path".to_string(),
-            recent_stack: std::collections::VecDeque::with_capacity(10),
+            header_view: constants::VIEW_PATH.to_string(),
+            recent_stack: std::collections::VecDeque::with_capacity(
+                constants::RECENT_STACK_CAPACITY,
+            ),
         };
 
         model.setup_actions(&sender);
