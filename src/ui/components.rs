@@ -105,7 +105,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         add_controller: drop_target.clone(),
 
                         add_controller = gtk::GestureLongPress {
-                            // Standard delay for touch menus
                             connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
                                 if let Some(s) = sender.get() {
                                     let widget = gesture.widget().unwrap();
