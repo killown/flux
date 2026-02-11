@@ -1,5 +1,5 @@
 use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
-use crate::ui::SidebarPlace;
+use crate::ui::{constants, SidebarPlace};
 use crate::utils;
 use adw::prelude::*;
 use gtk::gdk;
@@ -228,27 +228,28 @@ impl FluxApp {
         let mut guard = self.breadcrumbs.guard();
         guard.clear();
 
-        let mut components = Vec::new();
-        let mut current_p = self.current_path.clone();
+        let mut path_acc = PathBuf::from("/");
+        let mut segments = Vec::new();
 
-        // Walk up parents
-        loop {
-            let name = current_p
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| "/".to_string());
-
-            components.push(PathSegment {
-                name,
-                path: current_p.clone(),
-            });
-
-            if !current_p.pop() {
-                break;
+        // Always add Root/Home
+        for component in self.current_path.components() {
+            let name = component.as_os_str().to_string_lossy().to_string();
+            if name == "/" || name.is_empty() {
+                continue;
             }
+
+            path_acc.push(&name);
+            segments.push(PathSegment {
+                name,
+                path: path_acc.clone(),
+            });
         }
 
-        for segment in components.into_iter().rev() {
+        // Slice to N latest (e.g., 4 or 5)
+        let max_visible = constants::MAX_BREADCRUMBS;
+        let skip = segments.len().saturating_sub(max_visible);
+
+        for segment in segments.into_iter().skip(skip) {
             guard.push_back(segment);
         }
     }

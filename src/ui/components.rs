@@ -166,6 +166,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                 set_justify: gtk::Justification::Center,
                                 set_max_width_chars: constants::MAX_LABEL_CHARS,
                                 set_ellipsize: gtk::pango::EllipsizeMode::End,
+                                set_max_width_chars: 20,
                                 add_css_class: constants::FLUX_LABEL_CLASS,
                             } -> { set_name: constants::VIEW_LABEL },
 
@@ -266,6 +267,13 @@ impl FactoryComponent for PathSegment {
         gtk::Button {
             set_label: &self.name,
             add_css_class: constants::BREADCRUMB_BTN_CLASS,
+            #[wrap(Some)]
+            set_child = &gtk::Label {
+                #[watch]
+                set_label: &self.name,
+                set_ellipsize: gtk::pango::EllipsizeMode::End,
+                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
+            },
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
             }

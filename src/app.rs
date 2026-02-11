@@ -152,10 +152,11 @@ impl SimpleComponent for FluxApp {
                         /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
                         #[wrap(Some)]
                         set_title_widget = &gtk::Stack {
+                            set_halign: gtk::Align::Center,
+                            set_hexpand: false,
+                            set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                             #[watch] set_visible_child_name: &model.header_view,
-                            set_transition_type: gtk::StackTransitionType::Crossfade,
-
-                            /// Current path display; triggers editable entry mode on click.
+                            set_transition_type: gtk::StackTransitionType::Crossfade,                            /// Current path display; triggers editable entry mode on click.
                             add_child = &gtk::Button {
                                 add_css_class: "flat",
                                 #[watch] set_label: &model.current_path.to_string_lossy(),
@@ -165,10 +166,11 @@ impl SimpleComponent for FluxApp {
                             /// Interactive breadcrumb container for directory parent navigation.
                             #[name = "path_entry"]
                             add_child = &gtk::ScrolledWindow {
+                                set_propagate_natural_width: false,
+                                set_min_content_width: constants::SCROLLED_WINDOW_MIN_WIDTH,
                                 set_hscrollbar_policy: gtk::PolicyType::External,
                                 set_vscrollbar_policy: gtk::PolicyType::Never,
                                 set_halign: gtk::Align::Center,
-                                set_min_content_width: constants::SCROLLED_WINDOW_MIN_WIDTH,
 
                                 gtk::Box {
                                     add_css_class: "linked",
@@ -195,6 +197,8 @@ impl SimpleComponent for FluxApp {
                                 set_hexpand: false,
                                 set_halign: gtk::Align::Center,
                                 set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
+                                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
+                                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
                                 #[watch] set_text: &model.current_path.to_string_lossy(),
                                 add_controller = gtk::EventControllerKey {
                                     connect_key_pressed[sender] => move |_, keyval, _, _| {

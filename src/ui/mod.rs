@@ -40,7 +40,7 @@ pub mod constants {
     pub const VIEW_LABEL: &str = "label";
 
     // Layout Constraints
-    pub const SCROLLED_WINDOW_MIN_WIDTH: i32 = 450;
+    pub const SCROLLED_WINDOW_MIN_WIDTH: i32 = 480;
     pub const LOCATION_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const SEARCH_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const RECENT_STACK_CAPACITY: usize = 10;
@@ -50,6 +50,7 @@ pub mod constants {
     pub const HEADER_BTN_SPACING: i32 = 6;
     pub const STATUS_ICON_SPACING: i32 = 8;
     pub const HEADER_MARGIN_END: i32 = 12;
+    pub const MAX_BREADCRUMBS: usize = 5;
 
     // Widget Specifics
     pub const MAX_LABEL_CHARS: i32 = 14;
@@ -99,4 +100,5 @@ pub mod constants {
 
     // Text Labels & Tooltips
     pub const LABEL_EMPTY_TRASH: &str = "Empty Trash";
+    pub const BREADCRUMB_MAX_WIDTH_CHARS: u32 = 20;
 }
