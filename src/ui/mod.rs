@@ -65,7 +65,7 @@ pub mod constants {
 
     // Zoom Limits
     pub const ZOOM_STEP: i32 = 32;
-    pub const ZOOM_MIN: i32 = 160;
+    pub const ZOOM_MIN: i32 = 16;
     pub const ZOOM_MAX: i32 = 480;
 
     // MIME Types
