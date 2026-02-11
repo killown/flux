@@ -39,6 +39,9 @@ pub mod constants {
     pub const VIEW_SEARCH: &str = "search";
     pub const VIEW_LABEL: &str = "label";
 
+    // Thumbnails
+    pub const CACHED_THUMBNAIL_SIZE: i32 = 512;
+
     // Layout Constraints
     pub const SCROLLED_WINDOW_MIN_WIDTH: i32 = 480;
     pub const LOCATION_ENTRY_WIDTH_REQUEST: i32 = 450;
@@ -61,9 +64,9 @@ pub mod constants {
     pub const OPACITY_LABEL: f64 = 0.8;
 
     // Zoom Limits
-    pub const ZOOM_STEP: i32 = 16;
-    pub const ZOOM_MIN: i32 = 48;
-    pub const ZOOM_MAX: i32 = 512;
+    pub const ZOOM_STEP: i32 = 32;
+    pub const ZOOM_MIN: i32 = 160;
+    pub const ZOOM_MAX: i32 = 480;
 
     // MIME Types
     pub const MIME_DIR: &str = "inode/directory";
