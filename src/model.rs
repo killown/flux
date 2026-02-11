@@ -19,6 +19,18 @@ fn default_true() -> bool {
     true
 }
 
+/// Internal metadata container for parallel directory processing.
+#[derive(Debug, Clone)]
+pub struct FileLoadContext {
+    pub display_name: String,
+    pub target_path: PathBuf,
+    pub size: u64,
+    pub mtime: i64,
+    pub is_dir: bool,
+    pub sort_name: String,
+    pub thumbnail_path: Option<PathBuf>,
+}
+
 /// Represents a single component of a filesystem path for breadcrumb navigation.
 #[derive(Debug, Clone)]
 pub struct PathSegment {
@@ -43,7 +55,7 @@ pub struct Config {
 }
 
 /// Available sorting criteria for the file view.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SortBy {
     #[default]
     Name,

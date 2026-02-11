@@ -1,90 +1,60 @@
-use crate::model::{AppMsg, FluxApp, SortBy};
+use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
 use crate::ui::FileItem;
 use crate::utils;
 use adw::prelude::*;
 use gtk::gio;
+use rayon::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
-    /// Loads the contents of a directory into the application view.
+    /// Synchronizes the application view with the filesystem state at the provided path.
     ///
-    /// This method handles directory monitoring, persistent UI settings (sort/icon size),
-    /// specialized virtual URI schemes (e.g., `trash://`), and standard filesystem enumeration.
+    /// This method orchestrates a multi-phase pipeline designed to saturate available
+    /// CPU cores while minimizing blocking I/O on the main event loop. It leverages
+    /// GIO's batch attribute enumeration to reduce context switching and Rayon
+    /// for parallel data transformation and sorting.
+    ///
+    /// # Architecture
+    /// 1. **Batch Acquisition**: Retrieves all necessary file attributes in a single kernel request.
+    /// 2. **Context Bridging**: Converts non-thread-safe GObjects into a parallelizable domain model.
+    /// 3. **Parallel Computation**: Offloads path resolution, canonicalization, and sort-key
+    ///    memoization to a background thread pool.
+    /// 4. **Tiered Reconciliation**: Updates the UI grid and initiates a prioritized thumbnail
+    ///    loading sequence to optimize perceived latency.
     ///
     /// # Arguments
-    /// * `path` - The `PathBuf` representing the directory to load.
-    /// * `sender` - Component sender for dispatching asynchronous updates or refresh signals.
+    /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
+    /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &ComponentSender<Self>) {
         self.directory_monitor = None;
         let path_str = path.to_string_lossy().to_string();
 
-        // 1. Sort Order: Prioritize folder-specific overrides before falling back to defaults
-        if let Some(specific_sort) = self.config.ui.folder_sort.get(&path_str) {
-            self.sort_by = specific_sort.clone();
+        self.sort_by = self
+            .config
+            .ui
+            .folder_sort
+            .get(&path_str)
+            .copied()
+            .unwrap_or(self.config.ui.default_sort);
+
+        self.current_icon_size = self
+            .config
+            .ui
+            .folder_icon_size
+            .get(&path_str)
+            .copied()
+            .unwrap_or(self.config.ui.default_icon_size);
+
+        let root = if path_str.starts_with("trash://") {
+            gio::File::for_uri(&path_str)
         } else {
-            self.sort_by = self.config.ui.default_sort.clone();
-        }
+            gio::File::for_path(&path)
+        };
 
-        // 2. Icon Size: Prioritize folder-specific overrides before falling back to defaults
-        if let Some(&size) = self.config.ui.folder_icon_size.get(&path_str) {
-            self.current_icon_size = size;
-        } else {
-            self.current_icon_size = self.config.ui.default_icon_size;
-        }
-
-        // --- TRASH HANDLING ---
-        // Specialized logic for GIO virtual trash location
-        if path_str.starts_with("trash://") {
-            self.files.clear();
-            let root = gio::File::for_uri(&path_str);
-
-            // Set up directory monitoring for the trash bin
-            if let Ok(monitor) =
-                root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
-            {
-                let sender_clone = sender.clone();
-                monitor.connect_changed(move |_, _, _, _| {
-                    sender_clone.input(AppMsg::Refresh);
-                });
-                self.directory_monitor = Some(monitor);
-            }
-
-            // Enumerate virtual trash children using GIO
-            if let Ok(enumerator) = root.enumerate_children(
-                "standard::*",
-                gio::FileQueryInfoFlags::NONE,
-                gio::Cancellable::NONE,
-            ) {
-                for info in enumerator.flatten() {
-                    let name = info.display_name().to_string();
-                    let is_dir = info.file_type() == gio::FileType::Directory;
-                    let child = root.child(info.name());
-                    let child_path = PathBuf::from(child.uri());
-                    self.files.append(FileItem {
-                        name,
-                        icon: info
-                            .icon()
-                            .unwrap_or_else(|| gio::Icon::for_string("file").unwrap()),
-                        thumbnail: None,
-                        is_dir,
-                        path: child_path,
-                        icon_size: self.current_icon_size,
-                        is_editing: false,
-                    });
-                }
-            }
-            self.current_path = path;
-            return;
-        }
-
-        // --- STANDARD DIRECTORY HANDLING ---
-        let file_obj = gio::File::for_path(&path);
-
-        // Watch for file changes, moves, or deletions in the current directory
         if let Ok(monitor) =
-            file_obj.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
+            root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
         {
             let sender_clone = sender.clone();
             monitor.connect_changed(move |_, _, _, _| {
@@ -94,87 +64,120 @@ impl FluxApp {
         }
 
         self.files.clear();
-
-        // Incremental load ID ensures that stale thumbnail/metadata tasks from
-        // previous directories do not overwrite current view data.
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
-        if let Ok(entries) = std::fs::read_dir(&path) {
-            let mut items_metadata = Vec::new();
+        let attributes =
+            "standard::name,standard::display-name,standard::type,standard::size,time::modified";
 
-            // Initial pass: Filter hidden files and gather basic metadata
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().to_string();
-                if !self.show_hidden && name.starts_with('.') {
-                    continue;
-                }
+        if let Ok(enumerator) = root.enumerate_children(
+            attributes,
+            gio::FileQueryInfoFlags::NONE,
+            gio::Cancellable::NONE,
+        ) {
+            // Extract immutable state from GObjects on the main thread to enable parallel processing.
+            let raw_data: Vec<(String, String, bool, u64, i64)> = enumerator
+                .flatten()
+                .map(|info| {
+                    (
+                        info.name().to_string_lossy().to_string(),
+                        info.display_name().to_string(),
+                        info.file_type() == gio::FileType::Directory,
+                        info.size() as u64,
+                        info.modification_date_time()
+                            .map(|dt| dt.to_unix())
+                            .unwrap_or(0),
+                    )
+                })
+                .collect();
 
-                let target_path = path.join(&name);
-                let is_dir = target_path.is_dir();
-                let metadata = entry.metadata().ok();
-                items_metadata.push((name, target_path, metadata, is_dir));
-            }
+            let show_hidden = self.show_hidden;
+            let sort_strategy = self.sort_by;
+            let folders_first = self.config.ui.folders_first;
 
-            // Apply active UI search/filter string
+            // Offload intensive path resolution and sort-key generation to the thread pool.
+            let mut items: Vec<FileLoadContext> = raw_data
+                .into_par_iter()
+                .filter_map(|(name, display_name, is_dir, size, mtime)| {
+                    if !show_hidden && name.starts_with('.') {
+                        return None;
+                    }
+
+                    let target_path = if path_str.starts_with("trash://") {
+                        PathBuf::from(root.child(&name).uri())
+                    } else {
+                        path.join(&name)
+                    };
+
+                    let mut thumbnail_path = None;
+                    if !is_dir {
+                        let (is_img, is_vid) = utils::is_visual_media(&target_path);
+                        if is_img || is_vid {
+                            thumbnail_path = target_path.canonicalize().ok();
+                        }
+                    }
+
+                    Some(FileLoadContext {
+                        sort_name: display_name.to_lowercase(),
+                        display_name,
+                        target_path,
+                        size,
+                        mtime,
+                        is_dir,
+                        thumbnail_path,
+                    })
+                })
+                .collect();
+
             if !self.filter.is_empty() {
                 let query = self.filter.to_lowercase();
-                items_metadata.retain(|(name, ..)| name.to_lowercase().contains(&query));
+                items.retain(|item| item.sort_name.contains(&query));
             }
 
-            // Primary Sorting: Directory vs File priority followed by specific SortBy criteria
-            let folders_first = self.config.ui.folders_first;
-            items_metadata.sort_by(|a, b| {
-                if a.3 != b.3 {
+            items.par_sort_unstable_by(move |a, b| {
+                if a.is_dir != b.is_dir {
                     return if folders_first {
-                        b.3.cmp(&a.3)
+                        b.is_dir.cmp(&a.is_dir)
                     } else {
-                        a.3.cmp(&b.3)
+                        a.is_dir.cmp(&b.is_dir)
                     };
                 }
-                match self.sort_by {
-                    SortBy::Name => a.0.to_lowercase().cmp(&b.0.to_lowercase()),
-                    SortBy::Size => {
-                        let a_size = a.2.as_ref().map(|m| m.len()).unwrap_or(0);
-                        let b_size = b.2.as_ref().map(|m| m.len()).unwrap_or(0);
-                        b_size.cmp(&a_size)
-                    }
-                    SortBy::Date => {
-                        let a_time = a.2.as_ref().and_then(|m| m.modified().ok());
-                        let b_time = b.2.as_ref().and_then(|m| m.modified().ok());
-                        b_time.cmp(&a_time)
-                    }
+                match sort_strategy {
+                    SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                    SortBy::Size => b.size.cmp(&a.size),
+                    SortBy::Date => b.mtime.cmp(&a.mtime),
                 }
             });
 
-            let mut media_tasks: Vec<(String, PathBuf)> = Vec::new();
+            let mut media_tasks = Vec::new();
+            for item in items {
+                let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
 
-            // Build the UI models and identify files requiring background thumbnail generation
-            for (name, target_path, _metadata, is_dir) in items_metadata {
-                let icon = utils::get_icon_for_path(&target_path, is_dir);
                 self.files.append(FileItem {
-                    name: name.clone(),
+                    name: item.display_name.clone(),
                     icon,
                     thumbnail: None,
-                    is_dir,
-                    path: target_path.clone(),
+                    is_dir: item.is_dir,
+                    path: item.target_path,
                     icon_size: self.current_icon_size,
                     is_editing: false,
                 });
 
-                if !is_dir {
-                    let (is_img, is_vid) = utils::is_visual_media(&target_path);
-                    if is_img || is_vid {
-                        if let Ok(abs_path) = target_path.canonicalize() {
-                            media_tasks.push((name, abs_path));
-                        }
-                    }
+                if let Some(abs_path) = item.thumbnail_path {
+                    media_tasks.push((item.display_name, abs_path));
                 }
             }
 
             self.current_path = path;
 
-            // Offload resource-intensive thumbnail generation to background threads
-            self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+            // Prioritize initial thumbnail generation to improve perceived UI readiness.
+            let priority_limit = 15;
+            if media_tasks.len() > priority_limit {
+                let background_tasks = media_tasks.split_off(priority_limit);
+                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+                self.spawn_thumbnail_loader(background_tasks, current_session, sender.clone());
+            } else {
+                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+            }
         }
     }
 }
