@@ -65,7 +65,7 @@ headerbar {
 }
 
 .sidebar-label {
-  font-size: 10.5pt;
+  font-size: 11.5pt;
   margin-left: 8px;
 }
 
@@ -81,7 +81,7 @@ gridview > child:selected {
 .flux-card {
   background-color: @view_bg_color;
   border-radius: 18px;
-  padding: 22px;
+  padding: 8px;
   box-shadow: 0 4px 10px alpha(black, 0.3);
   border: 1px solid alpha(@window_fg_color, 0.03);
 }
