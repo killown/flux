@@ -1,155 +1,190 @@
+window {
+  background-color: @window_bg_color;
+  color: @window_fg_color;
+}
+
 headerbar {
-  box-shadow: 0 1px 0 0 alpha(@theme_fg_color, 0.1);
+  background-color: alpha(@headerbar_bg_color, 0.85);
+  backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid alpha(@window_fg_color, 0.1);
+  padding: 10px 18px;
+  box-shadow: 0 1px 2px alpha(black, 0.2);
+}
+
+.sidebar {
+  background-color: alpha(@window_bg_color, 0.4);
+  border-right: 1px solid alpha(@window_fg_color, 0.05);
 }
 
 .sidebar-row {
-  margin: 4px 12px;
-  padding: 10px 10px;
-  border-radius: 10px;
-  border: none;
-  transition: all 200ms ease-out;
-  box-shadow: inset 0 1px 0 0 alpha(@theme_fg_color, 0.05);
+  margin: 8px 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background-color: alpha(@window_fg_color, 0.02);
+  border: 1px solid alpha(@window_fg_color, 0.05);
+  box-shadow:
+    0 2px 4px alpha(black, 0.1),
+    inset 0 1px 0 0 alpha(@window_fg_color, 0.02);
+  transition: all 300ms cubic-bezier(0.25, 1, 0.5, 1);
+  color: alpha(@window_fg_color, 0.7);
 }
 
 .sidebar-row:hover:not(:selected) {
-  background-color: alpha(@theme_fg_color, 0.05);
-  transform: translateX(4px);
+  background-color: alpha(@window_fg_color, 0.06);
+  border-color: alpha(@window_fg_color, 0.1);
+  color: @window_fg_color;
+  box-shadow: 0 4px 12px alpha(black, 0.2);
+  transform: translateY(-1px);
 }
 
 .sidebar-row:selected {
-  background-color: @theme_selected_bg_color;
-  color: @theme_selected_fg_color;
-  transform: translateX(6px);
-  box-shadow: 0 4px 12px alpha(black, 0.3);
-}
-
-.flux-card {
-  background-color: @theme_base_color;
-  border: none;
-  border-radius: 16px;
-  padding: 20px;
-  margin: 12px;
-  box-shadow:
-    inset 0 1px 0 0 alpha(@theme_fg_color, 0.05),
-    0 8px 20px alpha(black, 0.2),
-    0 2px 4px alpha(black, 0.1);
-  transition:
-    transform 250ms ease,
-    box-shadow 250ms ease;
-}
-
-.flux-card:hover {
-  transform: translateY(-8px);
-  box-shadow:
-    0 20px 40px alpha(black, 0.4),
-    0 0 0 1px alpha(@theme_selected_bg_color, 0.3);
-}
-
-popover.menu contents {
-  background-color: @theme_bg_color;
-  border: 1px solid alpha(@theme_fg_color, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 15px 45px alpha(black, 0.5);
-}
-
-popover.menu modelbutton:hover {
-  background-color: @theme_selected_bg_color;
-  color: @theme_selected_fg_color;
-}
-
-entry {
-  background-color: alpha(@theme_fg_color, 0.05);
-  border: none;
-  border-radius: 20px;
-  box-shadow: inset 0 2px 4px alpha(black, 0.2);
-}
-
-entry:focus {
-  box-shadow: inset 0 0 0 2px @theme_selected_bg_color;
-}
-
-scrollbar slider {
-  background-color: alpha(@theme_fg_color, 0.2);
-  border-radius: 20px;
-}
-
-scrollbar slider:hover {
-  background-color: alpha(@theme_fg_color, 0.4);
-}
-
-.linked {
-  background-color: alpha(@theme_fg_color, 0.03);
-  border-radius: 20px;
-  padding: 2px;
-  box-shadow: inset 0 1px 2px alpha(black, 0.1);
-  margin: 4px;
-  border: none;
-}
-
-.breadcrumb-btn {
-  background-color: alpha(@theme_fg_color, 0.05);
-  border: 1px solid alpha(@theme_fg_color, 0.1);
-  border-radius: 0;
-  margin: 0 -1px 0 0;
-  padding: 4px 14px;
-  transition: all 150ms ease;
-}
-
-.breadcrumb-btn:first-child {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-}
-
-.breadcrumb-btn:last-child {
+  background: linear-gradient(
+    135deg,
+    alpha(@accent_bg_color, 0.25) 0%,
+    alpha(@accent_bg_color, 0.05) 100%
+  );
+  color: @accent_color;
   font-weight: bold;
-  margin-right: 0;
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
-  box-shadow: 0 2px 4px alpha(black, 0.1);
-  border-color: alpha(@theme_fg_color, 0.15);
+  border: 1px solid alpha(@accent_color, 0.5);
+  border-left: 4px solid @accent_color;
+  box-shadow:
+    0 8px 20px -6px alpha(@accent_color, 0.4),
+    inset 0 1px 0 0 alpha(white, 0.05);
 }
 
-.breadcrumb-btn:hover:not(:last-child) {
-  background-color: alpha(@theme_fg_color, 0.12);
-  border-color: alpha(@theme_fg_color, 0.2);
-  color: @theme_fg_color;
+.sidebar-row:selected:hover {
+  background: linear-gradient(
+    135deg,
+    alpha(@accent_bg_color, 0.35) 0%,
+    alpha(@accent_bg_color, 0.1) 100%
+  );
+  box-shadow:
+    0 12px 28px -6px alpha(@accent_color, 0.5),
+    inset 0 1px 0 0 alpha(white, 0.1);
+  transform: translateX(4px) translateY(-1px);
+}
+
+.sidebar-label {
+  font-size: 10.5pt;
+  margin-left: 8px;
 }
 
 gridview > child {
-  transition: all 200ms ease-out;
+  padding: 8px;
+  border-radius: 20px;
+}
+
+gridview > child:selected {
+  background-color: alpha(@accent_bg_color, 0.05);
+}
+
+.flux-card {
+  background-color: @view_bg_color;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 10px alpha(black, 0.3);
+  border: 1px solid alpha(@window_fg_color, 0.03);
+}
+
+.flux-card image,
+.flux-card .thumbnail {
+  transition: transform 400ms cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.flux-card:hover image,
+.flux-card:hover .thumbnail {
+  transform: translateY(-8px) scale(1.08);
+  -gtk-icon-shadow: 0 10px 15px alpha(black, 0.4);
+}
+
+.flux-label {
+  color: @view_fg_color;
+  font-size: 10pt;
+  transition: all 300ms ease;
+}
+
+.flux-card:hover .flux-label {
+  transform: translateY(-2px);
 }
 
 gridview > child:selected .flux-card {
-  background-color: @theme_selected_bg_color;
-  animation: select-glow-pulse 2s infinite;
-  transform: scale(1.02);
+  background-color: @accent_bg_color;
+  animation: material-elevation-pulse 3s infinite ease-in-out;
+  border: 1px solid alpha(@accent_color, 0.5);
 }
 
 gridview > child:selected .flux-card .flux-label {
-  color: @theme_selected_fg_color;
+  color: @accent_fg_color;
   font-weight: bold;
-  text-shadow: 0 1px 2px alpha(black, 0.4);
+  text-shadow: 0 1px 4px alpha(black, 0.5);
 }
 
 gridview > child:selected .flux-card image {
-  color: @theme_selected_fg_color;
-  opacity: 1;
+  color: @accent_fg_color;
+  -gtk-icon-shadow: 0 2px 6px alpha(black, 0.5);
 }
 
-@keyframes select-glow-pulse {
+@keyframes material-elevation-pulse {
   0% {
-    box-shadow:
-      0 0 0 0px alpha(@theme_selected_bg_color, 0.6),
-      0 8px 20px alpha(black, 0.3);
+    box-shadow: 0 6px 15px alpha(black, 0.4);
+    opacity: 1;
   }
   50% {
-    box-shadow:
-      0 0 0 8px alpha(@theme_selected_bg_color, 0),
-      0 12px 30px alpha(black, 0.5);
+    box-shadow: 0 14px 35px alpha(black, 0.6);
+    opacity: 0.92;
   }
   100% {
-    box-shadow:
-      0 0 0 0px alpha(@theme_selected_bg_color, 0),
-      0 8px 20px alpha(black, 0.3);
+    box-shadow: 0 6px 15px alpha(black, 0.4);
+    opacity: 1;
   }
+}
+
+popover.menu contents {
+  background-color: alpha(@window_bg_color, 0.96);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid alpha(@window_fg_color, 0.1);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 20px 50px alpha(black, 0.6);
+}
+
+popover.menu modelbutton {
+  border-radius: 10px;
+  margin: 3px 0;
+  padding: 10px 14px;
+  transition: all 200ms ease;
+  color: @window_fg_color;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+}
+
+.breadcrumb-btn {
+  background-color: alpha(@window_fg_color, 0.05);
+  border: 1px solid alpha(@window_fg_color, 0.1);
+  padding: 4px 16px;
+  color: alpha(@window_fg_color, 0.6);
+}
+
+.breadcrumb-btn:last-child {
+  background-color: alpha(@accent_bg_color, 0.1);
+  color: @accent_color;
+  font-weight: bold;
+  border: 1px solid alpha(@accent_color, 0.3);
+  text-shadow: 0 0 10px alpha(@accent_color, 0.3);
+}
+
+entry {
+  background-color: alpha(@view_bg_color, 0.6);
+  border: 1px solid alpha(@window_fg_color, 0.1);
+  border-radius: 22px;
+  padding: 8px 16px;
+  box-shadow: inset 0 2px 6px alpha(black, 0.4);
+}
+
+entry:focus {
+  border-color: @accent_color;
+  box-shadow: 0 0 0 3px alpha(@accent_color, 0.2);
 }
