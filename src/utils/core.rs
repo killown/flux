@@ -23,13 +23,18 @@ pub fn ensure_config_file() -> PathBuf {
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
         //FIXME: file properties not working without full path
-        let default_config = r#""Open Terminal" => "directory", "alacritty --working-directory=%p"
-"Copy Path" => "echo -n %p | wl-copy"
-"Move to Trash" => "gio trash %p"
-"Restore File" => "trash", "gio trash --restore %p"
-"Set as Wallpaper" => "image/all", "swww img %p"
-"Open in Code" => "text/all, application/all", "code %p"
-"File Properties" => "file", "~/.local/bin/flux --file-properties %p""#;
+        let default_config = r#""
+"      Open Terminal" => "directory", "alacritty --working-directory=%p"
+"󰆏      Copy File" => "all", "cat file.txt | wl-copy"
+"󰩹      Move to Trash" => "all", "gio trash %p"
+"󰦬      Restore File" => "trash", "gio trash --restore %p"
+"󰸉      Set as Wallpaper" => "image/all", "swww img %p"
+"󰨞      Open in Code" => "text/all, application/all", "code %p"
+"󰋽      File Properties" => "file", "~/.local/bin/flux --file-properties %p"
+"󰋊      Folder Info" => "directory", "flatpak run org.gnome.baobab %p"
+"🛠     Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy"
+"🛠     Tools > 󰊢   Git Gui" => "directory", "git gui"
+"      Images > 󰸉   Set Wallpaper" => "image/all", "swww img %p""#;
         if let Ok(mut file) = fs::File::create(&config_path) {
             let _ = file.write_all(default_config.as_bytes());
         }
@@ -174,38 +179,45 @@ fn split_mime_cmd(input: &str) -> Option<(String, String)> {
 }
 
 pub fn load_menu_config() -> Vec<CustomAction> {
-    let path = ensure_config_file();
+    // 1. USE ensure_config_file() to get the correct path
+    let config_path = ensure_config_file();
+
+    let content = std::fs::read_to_string(config_path).unwrap_or_default();
     let mut actions = Vec::new();
 
-    if let Ok(content) = fs::read_to_string(&path) {
-        for line in content.lines() {
-            let line = line.trim();
-            if line.starts_with("//") || line.is_empty() {
-                continue;
-            }
+    for (i, line) in content.lines().enumerate() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with("//") {
+            continue;
+        }
 
-            if let Some((label_part, rest)) = line.split_once("=>") {
-                let label = label_part.trim().trim_matches('"').trim();
-                let rest = rest.trim();
+        // Parse: "Label" => "mimes", "command"
+        if let Some((left, right)) = line.split_once("=>") {
+            let full_label = left.trim().trim_matches('"');
 
-                let (mime_str, cmd) = if let Some((mime_part, cmd_part)) = split_mime_cmd(rest) {
-                    (mime_part, cmd_part)
-                } else {
-                    ("*".to_string(), rest.trim_matches('"').to_string())
-                };
+            // --- Submenu Parsing ---
+            // Detect "Group > Item" syntax
+            let (submenu, label) = if full_label.contains(" > ") {
+                let parts: Vec<&str> = full_label.splitn(2, " > ").collect();
+                (Some(parts[0].to_string()), parts[1].to_string())
+            } else {
+                (None, full_label.to_string())
+            };
 
-                let mime_types: Vec<String> =
-                    mime_str.split(',').map(|s| s.trim().to_string()).collect();
+            // 2. USE split_mime_cmd() to correctly parse the right side
+            if let Some((mimes_part, cmd_part)) = split_mime_cmd(right) {
+                let mime_types: Vec<String> = mimes_part
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .collect();
 
-                if !label.is_empty() && !cmd.is_empty() {
-                    let action_name = label.to_lowercase().replace(" ", "_").replace("!", "");
-                    actions.push(CustomAction {
-                        label: label.to_string(),
-                        action_name,
-                        command: cmd,
-                        mime_types,
-                    });
-                }
+                actions.push(CustomAction {
+                    label,
+                    submenu, // Field added to CustomAction in model.rs
+                    action_name: format!("custom_{}", i),
+                    command: cmd_part,
+                    mime_types,
+                });
             }
         }
     }

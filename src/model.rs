@@ -42,6 +42,7 @@ pub struct PathSegment {
 #[derive(Clone, Debug)]
 pub struct CustomAction {
     pub label: String,
+    pub submenu: Option<String>,
     pub action_name: String,
     pub command: String,
     pub mime_types: Vec<String>,
