@@ -98,6 +98,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         set_orientation: gtk::Orientation::Vertical,
                         set_spacing: constants::GRID_SPACING as i32,
                         set_halign: gtk::Align::Center,
+                        set_spacing: 0,
                         set_valign: gtk::Align::Center,
                         add_css_class: constants::CARD_CSS_CLASS,
 
@@ -152,6 +153,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         #[name = "icon_widget"]
                         gtk::Image {
                             set_halign: gtk::Align::Center,
+                            set_valign: gtk::Align::End, // Pull icon toward the bottom of its area
+                            set_vexpand: false,
                             add_css_class: constants::THUMBNAIL_CLASS,
                         },
 
@@ -159,6 +162,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         gtk::Stack {
                             set_transition_type: gtk::StackTransitionType::Crossfade,
                             set_halign: gtk::Align::Center,
+                            set_vexpand: false,
 
                             #[name = "label"]
                             add_child = &gtk::Label {
