@@ -1,3 +1,4 @@
+use crate::ui::constants;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
@@ -285,7 +286,12 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     let (is_img, is_vid) = is_visual_media(path);
     if is_img {
-        match gdk_pixbuf::Pixbuf::from_file_at_scale(path, 512, 512, true) {
+        match gdk_pixbuf::Pixbuf::from_file_at_scale(
+            path,
+            constants::CACHED_THUMBNAIL_SIZE,
+            constants::CACHED_THUMBNAIL_SIZE,
+            true,
+        ) {
             Ok(pixbuf) => {
                 if let Some(path_str) = cache_path.to_str() {
                     let _ = pixbuf.savev(path_str, "png", &[]);
