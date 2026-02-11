@@ -167,17 +167,23 @@ impl FluxApp {
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();
+
                 let is_in_trash = self
                     .current_path
                     .to_string_lossy()
                     .starts_with(constants::TRASH_URI);
 
-                let menu = gio::Menu::new();
+                let root_menu = gio::Menu::new();
+                let main_section = gio::Menu::new();
+
+                // Registry for dynamic submenus: Map<SubmenuName, MenuModel>
+                let mut submenu_map: std::collections::HashMap<String, gio::Menu> =
+                    std::collections::HashMap::new();
 
                 for action in &self.menu_actions {
                     let mut matches = false;
 
-                    // Filtering: Determine which context menu actions are valid for the current file type/location
+                    // --- FILTERING LOGIC ---
                     if is_in_trash {
                         if action
                             .mime_types
@@ -215,19 +221,41 @@ impl FluxApp {
                         }
                     }
 
+                    // --- MENU ASSEMBLY ---
                     if matches {
                         let full_action_name = format!("win.{}", action.action_name);
-                        menu.append(Some(&action.label), Some(&full_action_name));
+
+                        // Enable the action
                         if let Some(g_action) = self.action_group.lookup_action(&action.action_name)
                         {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                                 simple.set_enabled(true);
                             }
                         }
+
+                        // Route to Submenu or Main Section
+                        if let Some(group_name) = &action.submenu {
+                            // Get or create the specific submenu
+                            let menu = submenu_map
+                                .entry(group_name.clone())
+                                .or_insert_with(gio::Menu::new);
+
+                            menu.append(Some(&action.label), Some(&full_action_name));
+                        } else {
+                            main_section.append(Some(&action.label), Some(&full_action_name));
+                        }
                     }
                 }
 
-                self.context_menu_popover.set_menu_model(Some(&menu));
+                // Assemble the UI
+                root_menu.append_section(None, &main_section);
+
+                // Append all generated submenus to the root
+                for (name, menu) in submenu_map {
+                    root_menu.append_submenu(Some(&name), &menu);
+                }
+
+                self.context_menu_popover.set_menu_model(Some(&root_menu));
                 self.context_menu_popover
                     .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                 self.context_menu_popover.popup();
