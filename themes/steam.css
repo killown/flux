@@ -1,14 +1,21 @@
-/* --- Flux: Steam Bento Protocol (Simplified Physics) --- */
+/* --- Flux: Steam Bento Protocol (Valve V3 Final - Dense Tiles) --- */
 
-@define-color steam_void #0b0d12;
-@define-color steam_glass alpha(#1b2838, 0.85);
+@define-color steam_void #171a21;
+@define-color steam_glass alpha(#1b2838, 0.9);
 @define-color steam_accent #1a9fff;
 @define-color steam_glow #2a475e;
 @define-color steam_text #dbe2e6;
+@define-color steam_card_bg #1b2838;
+@define-color steam_hover #2d3846;
+
+:root {
+  --font-main: "Motiva Sans", "Inter Variable", "Outfit", sans-serif;
+  --font-mono: "Geist Mono", monospace;
+}
 
 /* 1. Global Setup */
 * {
-  font-family: "Motiva Sans", "Inter Variable", "Outfit", sans-serif;
+  font-family: var(--font-main);
   -gtk-secondary-caret-color: @steam_accent;
 }
 
@@ -21,124 +28,128 @@ window {
   color: @steam_text;
 }
 
-/* 2. Header: Ion-Plated Steam Bar */
+/* 2. Header Bar */
 headerbar {
-  background-color: alpha(@steam_void, 0.5);
-  border-bottom: 1px solid alpha(@steam_accent, 0.3);
-  padding: 14px;
-  box-shadow: inset 0 1px 0 0 alpha(white, 0.05);
+  background-color: alpha(@steam_void, 0.6);
+  border-bottom: 1px solid alpha(@steam_accent, 0.2);
+  padding: 4px 12px;
+  min-height: 38px;
 }
 
-headerbar label {
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  filter: drop-shadow(0 0 12px alpha(@steam_accent, 0.4));
+/* 3. Breadcrumbs */
+.breadcrumb-btn {
+  background-color: #3d4450;
+  border: 1px solid alpha(white, 0.05);
+  border-radius: 4px;
+  padding: 4px 12px;
+  margin-right: 6px;
+  color: @steam_text;
+  font-family: var(--font-mono);
+  font-size: 9pt;
 }
 
-/* 3. Sidebar: Clean Navigation */
-scrolledwindow.sidebar {
-  background-color: alpha(black, 0.25);
+.breadcrumb-btn:last-child {
+  background-color: alpha(@steam_accent, 0.15);
+  color: @steam_accent;
+  border: 1px solid @steam_accent;
+}
+
+/* 4. Sidebar: Dense Bento Tiles (Touch-ready but Compact) */
+.sidebar {
+  background-color: alpha(black, 0.35);
+  border: none;
 }
 
 .sidebar-row {
-  margin: 4px 12px;
-  padding: 10px 10px;
-  min-height: 36px;
-  background-color: alpha(white, 0.02);
+  margin: 3px 10px; /* Thinner spacing */
+  padding: 8px 12px; /* Tightened internal padding */
+  min-height: 34px; /* Reduced height for professional density */
+  border-radius: 6px; /* Slightly sharper capsule */
+  background-color: alpha(white, 0.03);
   border: 1px solid alpha(white, 0.04);
-  border-radius: 10px;
-  color: alpha(@steam_text, 0.6);
-  /* Standard ease-out for a snappy feel */
-  transition: all 200ms ease-out;
+  color: alpha(@steam_text, 0.8);
+  transition: all 120ms ease-out;
 }
 
 .sidebar-row:hover:not(:selected) {
   background-color: alpha(@steam_accent, 0.1);
+  border-color: alpha(@steam_accent, 0.2);
   color: white;
-  transform: translateX(4px); /* Simple slide */
 }
 
 .sidebar-row:selected {
-  background-color: alpha(@steam_accent, 0.2);
-  color: @steam_accent;
+  background: linear-gradient(
+    135deg,
+    alpha(@steam_accent, 0.3) 0%,
+    alpha(@steam_accent, 0.05) 100%
+  );
+  color: white;
   font-weight: 700;
-  border-color: @steam_accent;
-  box-shadow: 0 0 20px alpha(@steam_accent, 0.1);
-  transform: translateX(6px);
+  border: 1px solid @steam_accent;
+  box-shadow: 0 4px 12px alpha(black, 0.4);
+}
+
+.sidebar-label {
+  font-size: 9.5pt; /* Smaller, cleaner text */
+  font-weight: 600;
+  margin-left: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
 }
 
 .sidebar-row image {
-  margin-right: 14px;
+  -gtk-icon-size: 14px; /* Smaller icon footprint */
+  opacity: 0.7;
 }
 
-/* 4. Grid View: Volumetric Cards (Simplified Hover) */
+.sidebar-row:selected image {
+  opacity: 1;
+  filter: drop-shadow(0 0 4px @steam_accent);
+}
+
+/* 5. Grid View: Bento Cards */
 .flux-card {
-  background-color: @steam_glass;
+  background-color: @steam_card_bg;
   border: 1px solid alpha(white, 0.08);
-  border-radius: 12px;
-  padding: 20px;
-  margin: 12px;
-  box-shadow: 0 10px 30px alpha(black, 0.5);
-  /* Clean linear transition */
-  transition:
-    transform 250ms ease,
-    box-shadow 250ms ease,
-    border-color 250ms ease;
+  border-radius: 8px;
+  padding: 8px;
+  margin: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  transition: all 180ms ease;
 }
 
 .flux-card:hover {
-  background-color: alpha(#2d3846, 0.9);
-  border-color: alpha(@steam_accent, 0.4);
-  /* Pure vertical lift - no perspective or rotation */
-  transform: translateY(-8px);
-  box-shadow:
-    0 20px 45px alpha(black, 0.7),
-    0 0 20px alpha(@steam_accent, 0.1);
+  background-color: @steam_hover;
+  border-color: @steam_accent;
+  transform: translateY(-3px);
 }
 
-.flux-card label {
-  font-size: 10.5pt;
+.flux-label {
+  font-size: 9.5pt;
   font-weight: 700;
   color: white;
-  margin-top: 12px;
+  margin-top: 2px;
 }
 
-/* 5. Destructive Action: Simple Warning */
-.destructive-action {
-  background-color: #1a1b1f;
-  color: #ff4c4c;
-  border: 1px solid alpha(#ff4c4c, 0.4);
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-weight: 900;
-  text-transform: uppercase;
-  transition: all 200ms ease;
+/* 6. Context Menu Cleanup */
+popover.menu {
+  padding: 0;
+  background-color: transparent;
 }
 
-.destructive-action:hover {
-  background-color: #ff4c4c;
-  color: white;
-  transform: translateY(1px); /* Sinks slightly to feel mechanical */
-}
-
-/* 6. Context Menu: Bento Modal */
 popover.menu contents {
-  background-color: alpha(@steam_void, 0.98);
-  border: 1px solid alpha(@steam_accent, 0.3);
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 30px 80px alpha(black, 0.9);
+  background-color: @steam_void;
+  border: 1px solid #3d4450;
+  border-radius: 4px;
+  padding: 3px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
 
 popover.menu modelbutton {
-  border-radius: 8px;
-  min-height: 42px;
-}
-
-popover.menu modelbutton label {
-  font-size: 13pt;
-  font-weight: 600;
+  border-radius: 2px;
+  min-height: 28px;
+  padding: 4px 10px;
+  color: @steam_text;
 }
 
 popover.menu modelbutton:hover {
@@ -146,32 +157,17 @@ popover.menu modelbutton:hover {
   color: white;
 }
 
-/* 7. Inputs */
+/* 7. Utility */
 entry {
-  background-color: alpha(black, 0.4);
-  border: 1px solid alpha(white, 0.1);
-  border-radius: 20px;
-  padding: 8px 16px;
-  color: white;
-}
-
-entry:focus {
-  border-color: @steam_accent;
-}
-
-/* 8. Utility */
-scrollbar slider {
-  background-color: alpha(white, 0.08);
-  border-radius: 20px;
-  min-width: 5px;
-}
-
-.sort-label {
-  background-color: alpha(@steam_accent, 0.2);
-  color: @steam_accent;
-  border: 1px solid alpha(@steam_accent, 0.4);
+  background-color: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
-  font-size: 8pt;
-  padding: 4px 12px;
-  font-weight: 900;
+  padding: 4px 10px;
+  color: white;
+  font-family: var(--font-mono);
+}
+
+scrollbar slider {
+  background-color: alpha(white, 0.1);
+  border-radius: 10px;
 }
