@@ -131,24 +131,24 @@ gridview > child:selected .flux-label {
 
 popover.menu,
 popover.menu contents {
-  background-color: @window_bg_color !important;
-  color: @window_fg_color !important;
+  background-color: @window_bg_color;
+  color: @window_fg_color;
   border-radius: 14px;
   padding: 4px;
-  box-shadow: 0 8px 16px var(--hue-bleed) !important;
+  box-shadow: 0 8px 16px var(--hue-bleed);
 }
 
 popover.menu modelbutton {
   border-radius: 8px;
   padding: 8px 12px;
-  color: @window_fg_color !important;
+  color: @window_fg_color;
   font-family: var(--font-main);
 }
 
 popover.menu modelbutton:hover,
 popover.menu modelbutton:selected {
-  background-color: alpha(@accent_bg_color, 0.2) !important;
-  color: @accent_color !important;
+  background-color: alpha(@accent_bg_color, 0.2);
+  color: @accent_color;
 }
 
 .breadcrumb-btn {
@@ -177,7 +177,7 @@ popover.menu modelbutton:selected {
 }
 
 entry {
-  background-color: mix(@window_bg_color, black, 0.15);
+  background-color: color-mix(in srgb, @window_bg_color, black 15%);
   border: none;
   border-radius: 22px;
   padding: 4px 12px;
@@ -196,10 +196,10 @@ entry:focus {
 }
 
 adwactionrow {
-  background-color: @card_bg_color !important;
-  color: @window_fg_color !important;
+  background-color: @card_bg_color;
+  color: @window_fg_color;
   border-radius: 10px;
-  border: none !important;
+  border: none;
   min-height: 50px;
   padding: 0 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -207,10 +207,10 @@ adwactionrow {
 
 dropdown {
   border-radius: 8px;
-  background-color: @card_bg_color !important;
+  background-color: @card_bg_color;
   padding: 2px 8px;
   border: 1px solid color-mix(in srgb, @window_fg_color, transparent 90%);
-  color: @window_fg_color !important;
+  color: @window_fg_color;
 }
 
 toast {
@@ -218,5 +218,5 @@ toast {
   border-radius: 10px;
   font-family: "Geist", "Open Sans", sans-serif;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  color: @window_fg_color !important;
+  color: @window_fg_color;
 }
