@@ -31,6 +31,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰸉      Set as Wallpaper" => "image/all", "swww img %p"
 "󰨞      Open in Code" => "text/all, application/all", "code %p"
 "󰋽      File Properties" => "file", "~/.local/bin/flux --file-properties %p"
+"󰱝      Open With..." => "file", "builtin::open_with"
 "󰋊      Folder Info" => "directory", "flatpak run org.gnome.baobab %p"
 "🛠     Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy"
 "🛠     Tools > 󰊢   Git Gui" => "directory", "git gui"
