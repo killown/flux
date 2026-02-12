@@ -1,7 +1,7 @@
-/* --- Flux: Steam Bento Protocol (Valve V3 Final - Dense Tiles) --- */
+/* --- Flux: Steam Bento Protocol (Valve V3 Final - Absolute Color Sync) --- */
 
-@define-color steam_void #171a21;
-@define-color steam_glass alpha(#1b2838, 0.9);
+@define-color steam_void #151821;
+@define-color steam_glass #1b2838;
 @define-color steam_accent #1a9fff;
 @define-color steam_glow #2a475e;
 @define-color steam_text #dbe2e6;
@@ -13,7 +13,6 @@
   --font-mono: "Geist Mono", monospace;
 }
 
-/* 1. Global Setup */
 * {
   font-family: var(--font-main);
   -gtk-secondary-caret-color: @steam_accent;
@@ -23,151 +22,192 @@ window {
   background-image: radial-gradient(
     circle at 50% -50%,
     @steam_glow 0%,
-    @steam_void 80%
+    #0b0d12 80%
   );
   color: @steam_text;
 }
 
-/* 2. Header Bar */
-headerbar {
-  background-color: alpha(@steam_void, 0.6);
-  border-bottom: 1px solid alpha(@steam_accent, 0.2);
-  padding: 4px 12px;
-  min-height: 38px;
+headerbar,
+.breadcrumb-btn,
+headerbar entry,
+headerbar searchentry,
+headerbar entry text {
+  background-color: @steam_void;
+  background-image: none;
+  box-shadow: none;
+  border: none;
 }
 
-/* 3. Breadcrumbs */
+headerbar {
+  border-bottom: 1px solid alpha(@steam_accent, 0.3);
+  padding: 2px 10px;
+  min-height: 24px;
+}
+
 .breadcrumb-btn {
-  background-color: #3d4450;
-  border: 1px solid alpha(white, 0.05);
+  border: 1px solid alpha(white, 0.1);
   border-radius: 4px;
-  padding: 4px 12px;
-  margin-right: 6px;
+  padding: 2px 12px;
+  margin: 0 4px;
   color: @steam_text;
-  font-family: var(--font-mono);
-  font-size: 9pt;
+  font-weight: 600;
+}
+
+.breadcrumb-btn:hover {
+  background-color: alpha(white, 0.05);
+  border-color: alpha(white, 0.2);
 }
 
 .breadcrumb-btn:last-child {
   background-color: alpha(@steam_accent, 0.15);
-  color: @steam_accent;
+  color: white;
   border: 1px solid @steam_accent;
 }
 
-/* 4. Sidebar: Dense Bento Tiles (Touch-ready but Compact) */
-.sidebar {
-  background-color: alpha(black, 0.35);
-  border: none;
+headerbar entry,
+headerbar searchentry {
+  border: 1px solid alpha(white, 0.1);
+  border-radius: 4px;
+  padding: 2px 12px;
+  margin: 2px 0;
+  color: white;
+  font-family: var(--font-mono);
+}
+
+headerbar entry:focus,
+headerbar searchentry:focus {
+  border-color: @steam_accent;
+  background-color: alpha(black, 0.2);
+}
+
+scrolledwindow.sidebar {
+  background-color: alpha(black, 0.25);
 }
 
 .sidebar-row {
-  margin: 3px 10px; /* Thinner spacing */
-  padding: 8px 12px; /* Tightened internal padding */
-  min-height: 34px; /* Reduced height for professional density */
-  border-radius: 6px; /* Slightly sharper capsule */
-  background-color: alpha(white, 0.03);
+  margin: 4px 12px;
+  padding: 10px 10px;
+  min-height: 36px;
+  background-color: alpha(white, 0.02);
   border: 1px solid alpha(white, 0.04);
-  color: alpha(@steam_text, 0.8);
-  transition: all 120ms ease-out;
+  border-radius: 10px;
+  color: alpha(@steam_text, 0.6);
+  transition: all 200ms ease-out;
 }
 
 .sidebar-row:hover:not(:selected) {
   background-color: alpha(@steam_accent, 0.1);
-  border-color: alpha(@steam_accent, 0.2);
   color: white;
+  transform: translateX(4px);
 }
 
 .sidebar-row:selected {
-  background: linear-gradient(
-    135deg,
-    alpha(@steam_accent, 0.3) 0%,
-    alpha(@steam_accent, 0.05) 100%
-  );
-  color: white;
+  background-color: alpha(@steam_accent, 0.2);
+  color: @steam_accent;
   font-weight: 700;
-  border: 1px solid @steam_accent;
-  box-shadow: 0 4px 12px alpha(black, 0.4);
+  border-color: @steam_accent;
+  box-shadow: 0 0 20px alpha(@steam_accent, 0.1);
+  transform: translateX(6px);
 }
 
 .sidebar-label {
-  font-size: 9.5pt; /* Smaller, cleaner text */
-  font-weight: 600;
-  margin-left: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.sidebar-row image {
-  -gtk-icon-size: 14px; /* Smaller icon footprint */
-  opacity: 0.7;
-}
-
-.sidebar-row:selected image {
+  color: @steam_text;
+  font-weight: 800;
   opacity: 1;
-  filter: drop-shadow(0 0 4px @steam_accent);
 }
 
-/* 5. Grid View: Bento Cards */
+.destructive-action {
+  background-color: alpha(#ff4c4c, 0.1);
+  border: 1px solid alpha(#ff4c4c, 0.4);
+  color: #ff4c4c;
+}
+
+.destructive-action:hover {
+  background-color: alpha(#ff4c4c, 0.2);
+  border-color: #ff4c4c;
+}
+
+.destructive-action label {
+  color: #ff4c4c;
+}
+
+scrolledwindow {
+  background-color: @grid_area_bg;
+}
+
+gridview,
+listview {
+  background-color: transparent;
+}
+
 .flux-card {
   background-color: @steam_card_bg;
   border: 1px solid alpha(white, 0.08);
-  border-radius: 8px;
-  padding: 8px;
-  margin: 6px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  transition: all 180ms ease;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 12px;
+  box-shadow: 0 10px 30px alpha(black, 0.5);
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease,
+    border-color 250ms ease;
 }
 
 .flux-card:hover {
   background-color: @steam_hover;
   border-color: @steam_accent;
-  transform: translateY(-3px);
+  transform: translateY(-8px);
+  box-shadow:
+    0 20px 45px alpha(black, 0.7),
+    0 0 20px alpha(@steam_accent, 0.1);
 }
 
 .flux-label {
-  font-size: 9.5pt;
+  font-size: 10.5pt;
   font-weight: 700;
   color: white;
-  margin-top: 2px;
+  margin-top: 12px;
 }
 
-/* 6. Context Menu Cleanup */
 popover.menu {
   padding: 0;
-  background-color: transparent;
+  background: none;
 }
 
 popover.menu contents {
-  background-color: @steam_void;
+  background-color: @steam_card_bg;
+  border-radius: 3px;
   border: 1px solid #3d4450;
-  border-radius: 4px;
-  padding: 3px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
+  padding: 4px 0;
 }
 
 popover.menu modelbutton {
-  border-radius: 2px;
-  min-height: 28px;
-  padding: 4px 10px;
-  color: @steam_text;
+  min-height: 30px;
+  padding: 4px 15px;
+  border-radius: 0;
+  margin: 0;
+  color: #c5c3c0;
+  transition: none;
 }
 
 popover.menu modelbutton:hover {
+  background-color: @steam_hover;
+  color: white;
+}
+
+popover.menu modelbutton:selected {
   background-color: @steam_accent;
   color: white;
 }
 
-/* 7. Utility */
-entry {
-  background-color: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 4px 10px;
-  color: white;
-  font-family: var(--font-mono);
+popover.menu separator {
+  background-color: #3d4450;
+  margin: 4px 0;
 }
 
 scrollbar slider {
-  background-color: alpha(white, 0.1);
-  border-radius: 10px;
+  background-color: alpha(white, 0.08);
+  border-radius: 20px;
+  min-width: 5px;
 }
