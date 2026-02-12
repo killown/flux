@@ -113,7 +113,6 @@ path = "~/Downloads"
                 folder_sort: std::collections::HashMap::new(),
                 folder_icon_size: std::collections::HashMap::new(),
                 show_hidden_by_default: false,
-                show_xdg_dirs_by_default: true,
                 device_renames: std::collections::HashMap::new(),
                 folders_first: true,
                 theme: Some("default".to_string()),

@@ -66,8 +66,8 @@ fn load_custom_css() {
     }
 }
 
-/// Sets up a GIO directory monitor to watch for config or style changes
-fn setup_css_watcher() {
+/// Sets up a GIO directory monitor to watch for config or style changes and refreshes UI components.
+fn setup_config_watcher() {
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
     let file = gio::File::for_path(&config_dir);
 
@@ -85,6 +85,12 @@ fn setup_css_watcher() {
                         | gio::FileMonitorEvent::Created
                         | gio::FileMonitorEvent::MovedIn => {
                             load_custom_css();
+                            // Signal the application to reload the sidebar if the config file was modified
+                            if n == "config.toml" {
+                                if let Some(app) = gio::Application::default() {
+                                    app.activate_action("reload-sidebar", None);
+                                }
+                            }
                         }
                         _ => {}
                     }
@@ -117,7 +123,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     load_custom_css();
-    setup_css_watcher();
+    setup_config_watcher();
 
     // --- CLI HANDLER: FILE PROPERTIES ---
     if args.len() > 2 && args[1] == "--file-properties" {
