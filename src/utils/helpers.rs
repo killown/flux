@@ -126,48 +126,50 @@ impl FluxApp {
                 })
         };
 
-        // 1. Core XDG Directories
-        if let Some(p) = dirs::home_dir() {
-            guard.push_back(SidebarPlace {
-                name: get_xdg_name(&p),
-                icon: "user-home-symbolic".to_string(),
-                path: p,
-            });
-        }
-        if let Some(p) = dirs::desktop_dir() {
-            guard.push_back(SidebarPlace {
-                name: get_xdg_name(&p),
-                icon: "user-desktop-symbolic".to_string(),
-                path: p,
-            });
-        }
-        if let Some(p) = dirs::download_dir() {
-            guard.push_back(SidebarPlace {
-                name: get_xdg_name(&p),
-                icon: "folder-download-symbolic".to_string(),
-                path: p,
-            });
-        }
-        if let Some(p) = dirs::document_dir() {
-            guard.push_back(SidebarPlace {
-                name: get_xdg_name(&p),
-                icon: "folder-documents-symbolic".to_string(),
-                path: p,
-            });
-        }
-        if let Some(p) = dirs::picture_dir() {
-            guard.push_back(SidebarPlace {
-                name: get_xdg_name(&p),
-                icon: "folder-pictures-symbolic".to_string(),
-                path: p,
-            });
-        }
-        if let Some(p) = dirs::video_dir() {
-            guard.push_back(SidebarPlace {
-                name: get_xdg_name(&p),
-                icon: "folder-videos-symbolic".to_string(),
-                path: p,
-            });
+        // 1. Core XDG Directories - Conditioned on show_xdg_dirs config
+        if self.config.ui.show_xdg_dirs {
+            if let Some(p) = dirs::home_dir() {
+                guard.push_back(SidebarPlace {
+                    name: get_xdg_name(&p),
+                    icon: "user-home-symbolic".to_string(),
+                    path: p,
+                });
+            }
+            if let Some(p) = dirs::desktop_dir() {
+                guard.push_back(SidebarPlace {
+                    name: get_xdg_name(&p),
+                    icon: "user-desktop-symbolic".to_string(),
+                    path: p,
+                });
+            }
+            if let Some(p) = dirs::download_dir() {
+                guard.push_back(SidebarPlace {
+                    name: get_xdg_name(&p),
+                    icon: "folder-download-symbolic".to_string(),
+                    path: p,
+                });
+            }
+            if let Some(p) = dirs::document_dir() {
+                guard.push_back(SidebarPlace {
+                    name: get_xdg_name(&p),
+                    icon: "folder-documents-symbolic".to_string(),
+                    path: p,
+                });
+            }
+            if let Some(p) = dirs::picture_dir() {
+                guard.push_back(SidebarPlace {
+                    name: get_xdg_name(&p),
+                    icon: "folder-pictures-symbolic".to_string(),
+                    path: p,
+                });
+            }
+            if let Some(p) = dirs::video_dir() {
+                guard.push_back(SidebarPlace {
+                    name: get_xdg_name(&p),
+                    icon: "folder-videos-symbolic".to_string(),
+                    path: p,
+                });
+            }
         }
 
         // 2. Trash

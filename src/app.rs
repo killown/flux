@@ -459,6 +459,16 @@ impl SimpleComponent for FluxApp {
         model.refresh_sidebar();
         model.load_path(start_path, &sender);
 
+        // --- CONFIG WATCHER ACTION ---
+        // Link the global "reload-sidebar" action to our internal RefreshSidebar message
+        let app = relm4::main_adw_application();
+        let sender_clone = sender.clone();
+        let reload_action = gio::SimpleAction::new("reload-sidebar", None);
+        reload_action.connect_activate(move |_, _| {
+            sender_clone.input(AppMsg::RefreshSidebar);
+        });
+        app.add_action(&reload_action);
+
         let widgets = view_output!();
 
         // Final widget-to-layout assembly

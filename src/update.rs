@@ -12,6 +12,22 @@ impl FluxApp {
     pub fn handle_update(&mut self, message: AppMsg, sender: ComponentSender<Self>) {
         match message {
             AppMsg::RefreshSidebar => {
+                // Reload the configuration from disk to capture external changes
+                self.config = utils::load_config();
+
+                // Clear the current sidebar factory items
+                self.sidebar.guard().clear();
+
+                // Repopulate with the new entries from the config file
+                for place in &self.config.sidebar {
+                    self.sidebar.guard().push_back(crate::ui::SidebarPlace {
+                        name: place.name.clone(),
+                        icon: place.icon.clone(),
+                        path: utils::expand_path(&place.path),
+                    });
+                }
+
+                // Re-run the standard refresh to append system drives/mounts
                 self.refresh_sidebar();
             }
             AppMsg::PerformRename(old_path, new_name) => {

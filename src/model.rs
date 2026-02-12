@@ -87,7 +87,6 @@ pub struct UIConfig {
     #[serde(default = "default_true")]
     pub folders_first: bool,
     pub show_hidden_by_default: bool,
-    pub show_xdg_dirs_by_default: bool,
     pub folder_sort: HashMap<String, SortBy>,
     pub folder_icon_size: HashMap<String, i32>,
     pub device_renames: HashMap<String, String>,
