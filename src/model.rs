@@ -144,6 +144,13 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Launches the currently selected file(s) using a specific application.
+    ///
+    /// This variant bypasses thread-safety restrictions of `gio::AppInfo` by passing
+    /// the application's Desktop ID (e.g., "org.gnome.gedit.desktop") as a `String`.
+    /// The actual `GAppInfo` is resolved on the main thread within the update loop
+    /// using `gio::DesktopAppInfo::new()`.
+    LaunchWithApp(String),
     /// Calculate coordinates and determine target for a context menu.
     PrepareContextMenu(f64, f64, Option<PathBuf>),
     /// Display the context menu popover with relevant actions for the given mime type.

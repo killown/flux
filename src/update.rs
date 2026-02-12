@@ -165,6 +165,29 @@ impl FluxApp {
                     sender_ctx.input(AppMsg::ShowContextMenu { x, y, path, mime });
                 });
             }
+            AppMsg::LaunchWithApp(app_id) => {
+                if let Some(app_info) = gio::DesktopAppInfo::new(&app_id) {
+                    let selection = self.get_selection();
+
+                    // Ensure we actually have files to open
+                    if selection.is_empty() {
+                        return;
+                    }
+
+                    let files: Vec<gio::File> =
+                        selection.into_iter().map(gio::File::for_path).collect();
+
+                    // Create a valid launch context
+                    let context =
+                        gdk::Display::default().map(|display| display.app_launch_context());
+
+                    let launch_result = app_info.launch(&files, context.as_ref());
+
+                    if let Err(e) = launch_result {
+                        eprintln!("[Launch Error] {:?}: {}", app_info.display_name(), e);
+                    }
+                }
+            }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();
 
@@ -175,6 +198,7 @@ impl FluxApp {
 
                 let root_menu = gio::Menu::new();
                 let main_section = gio::Menu::new();
+                let mut open_with_item: Option<gio::MenuItem> = None;
 
                 // Registry for dynamic submenus: Map<SubmenuName, MenuModel>
                 let mut submenu_map: std::collections::HashMap<String, gio::Menu> =
@@ -223,6 +247,40 @@ impl FluxApp {
 
                     // --- MENU ASSEMBLY ---
                     if matches {
+                        if action.command == "builtin::open_with" {
+                            let open_with_menu = gio::Menu::new();
+                            let apps = gio::AppInfo::all_for_type(&mime);
+
+                            for app in apps {
+                                let label = app.display_name();
+                                // Fallback to name if ID is missing (common for some local desktop files)
+                                let app_id = app
+                                    .id()
+                                    .map(|id| id.to_string())
+                                    .unwrap_or_else(|| app.name().to_string());
+
+                                // ACTION NAME MUST MATCH helpers.rs: "launch-with"
+                                // PREFIX MUST MATCH group registration: "win."
+                                let item =
+                                    gio::MenuItem::new(Some(&label), Some("win.launch-with"));
+                                item.set_action_and_target_value(
+                                    Some("win.launch-with"),
+                                    Some(&app_id.to_variant()),
+                                );
+                                open_with_menu.append_item(&item);
+                            }
+
+                            // Explicitly create the item and set the label to preserve spacing
+                            let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
+
+                            // Using \u{a0} (Non-breaking space) to prevent GTK from collapsing the gap
+                            let spaced_label = format!("󰱝\u{a0} \u{a0} \u{a0} Open With...");
+                            menu_item.set_label(Some(&spaced_label));
+
+                            open_with_item = Some(menu_item);
+                            continue;
+                        }
+
                         let full_action_name = format!("win.{}", action.action_name);
 
                         // Enable the action
@@ -235,7 +293,6 @@ impl FluxApp {
 
                         // Route to Submenu or Main Section
                         if let Some(group_name) = &action.submenu {
-                            // Get or create the specific submenu
                             let menu = submenu_map
                                 .entry(group_name.clone())
                                 .or_insert_with(gio::Menu::new);
@@ -249,6 +306,10 @@ impl FluxApp {
 
                 // Assemble the UI
                 root_menu.append_section(None, &main_section);
+
+                if let Some(item) = open_with_item {
+                    root_menu.append_item(&item);
+                }
 
                 // Append all generated submenus to the root
                 for (name, menu) in submenu_map {
@@ -289,6 +350,28 @@ impl FluxApp {
                 } else {
                     vec![self.current_path.clone()]
                 };
+
+                // --- GIO / Native "Open With" Handling ---
+                if cmd_template == "builtin::open_with" {
+                    if let Some(path) = final_targets.first() {
+                        let file = gio::File::for_path(path);
+                        if let Ok(info) = file.query_info(
+                            "standard::content-type",
+                            gio::FileQueryInfoFlags::NONE,
+                            gio::Cancellable::NONE,
+                        ) {
+                            if let Some(mime) = info.content_type() {
+                                let apps = gio::AppInfo::all_for_type(&mime);
+                                if let Some(app) = apps.first() {
+                                    let files: Vec<gio::File> =
+                                        final_targets.iter().map(gio::File::for_path).collect();
+                                    let _ = app.launch(&files, None::<&gio::AppLaunchContext>);
+                                }
+                            }
+                        }
+                    }
+                    return;
+                }
 
                 // Shell expansion: Replace templates (%p for paths, %d for current directory)
                 if final_targets.len() == 1 {

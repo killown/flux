@@ -353,6 +353,17 @@ impl FluxApp {
         });
         self.action_group.add_action(&prio_action);
 
+        // Register the parameterized action for the "Open With..." submenu
+        let launch_action =
+            gio::SimpleAction::new("launch-with", Some(glib::VariantTy::new("s").unwrap()));
+        let launch_sender = sender.clone();
+        launch_action.connect_activate(move |_, parameter| {
+            if let Some(app_id) = parameter.and_then(|p| p.get::<String>()) {
+                launch_sender.input(AppMsg::LaunchWithApp(app_id));
+            }
+        });
+        self.action_group.add_action(&launch_action);
+
         for action_def in &self.menu_actions {
             let cmd_clone = action_def.command.clone();
             let sender_clone = sender.clone();
