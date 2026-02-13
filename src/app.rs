@@ -388,6 +388,10 @@ impl SimpleComponent for FluxApp {
         let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
         files.view.set_enable_rubberband(true);
         files.view.set_single_click_activate(config.ui.single_click);
+        files.view.set_enable_rubberband(true);
+        files.view.set_single_click_activate(config.ui.single_click);
+        files.view.set_max_columns(20); // Allow many icons per row
+        files.view.set_min_columns(1);
 
         let grid_view = &files.view;
         let sender_clone = sender.clone();
