@@ -166,6 +166,7 @@ theme = "default"
                 single_click: false,
                 sidebar_width: 240,
                 show_xdg_dirs: false,
+                current_folders_first: std::collections::HashMap::new(),
                 default_sort: crate::model::SortBy::Name,
                 folder_sort: std::collections::HashMap::new(),
                 folder_icon_size: std::collections::HashMap::new(),

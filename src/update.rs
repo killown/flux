@@ -86,8 +86,26 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleFolderPriority => {
-                self.config.ui.folders_first = !self.config.ui.folders_first;
+                let path_str = self.current_path.to_string_lossy().to_string();
+
+                // Determine current state: check folder-specific map first, then global default
+                let current_state = self
+                    .config
+                    .ui
+                    .current_folders_first
+                    .get(&path_str)
+                    .copied()
+                    .unwrap_or(self.config.ui.folders_first);
+
+                // Toggle and insert into the map
+                self.config
+                    .ui
+                    .current_folders_first
+                    .insert(path_str, !current_state);
+
                 utils::save_config(&self.config);
+
+                // Reload the current path to apply the new sorting
                 let path = self.current_path.clone();
                 self.load_path(path, &sender);
             }

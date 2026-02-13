@@ -86,6 +86,8 @@ pub struct UIConfig {
     pub default_sort: SortBy,
     #[serde(default = "default_true")]
     pub folders_first: bool,
+    #[serde(default)]
+    pub current_folders_first: std::collections::HashMap<String, bool>,
     pub show_hidden_by_default: bool,
     pub folder_sort: HashMap<String, SortBy>,
     pub folder_icon_size: HashMap<String, i32>,

@@ -33,6 +33,14 @@ impl FluxApp {
         self.directory_monitor = None;
         let path_str = path.to_string_lossy().to_string();
 
+        let folders_first = self
+            .config
+            .ui
+            .current_folders_first
+            .get(&path_str)
+            .copied()
+            .unwrap_or(self.config.ui.folders_first);
+
         self.sort_by = self
             .config
             .ui
@@ -94,7 +102,6 @@ impl FluxApp {
 
             let show_hidden = self.show_hidden;
             let sort_strategy = self.sort_by;
-            let folders_first = self.config.ui.folders_first;
 
             // Resolve the cache directory for the specific size defined in constants.
             let cache_base = dirs::cache_dir().unwrap_or_default().join("thumbnails");
@@ -156,9 +163,9 @@ impl FluxApp {
             items.par_sort_unstable_by(move |a, b| {
                 if a.is_dir != b.is_dir {
                     return if folders_first {
-                        b.is_dir.cmp(&a.is_dir)
+                        b.is_dir.cmp(&a.is_dir) // Directories first
                     } else {
-                        a.is_dir.cmp(&b.is_dir)
+                        a.is_dir.cmp(&b.is_dir) // Files first or mixed (depending on strategy)
                     };
                 }
                 match sort_strategy {
