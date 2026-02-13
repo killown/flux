@@ -3,6 +3,7 @@ mod loader;
 mod model;
 mod update;
 
+mod db;
 mod services;
 mod ui;
 mod utils;

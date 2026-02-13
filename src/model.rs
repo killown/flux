@@ -94,10 +94,12 @@ pub struct UIConfig {
     pub folders_first: bool,
     #[serde(default)]
     pub current_folders_first: std::collections::HashMap<String, bool>,
+    #[serde(default)]
     pub show_hidden_by_default: bool,
+    #[serde(default)]
     pub folder_sort: HashMap<String, SortBy>,
+    #[serde(default)]
     pub folder_icon_size: HashMap<String, i32>,
-    // Custom icons/names for mounts (e.g., Google Drive)
     #[serde(default)]
     pub device_renames: HashMap<String, DeviceRename>,
 }
@@ -113,6 +115,7 @@ pub struct CustomPlace {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    pub state_db: Arc<crate::db::StateManager>,
     /// Circular buffer of recently visited locations.
     pub recent_stack: VecDeque<PathBuf>,
     /// The primary grid view component displaying file items.

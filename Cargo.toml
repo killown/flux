@@ -13,9 +13,10 @@ rayon = "1.10.0"
 tokio = { version = "1.40", features = ["rt", "rt-multi-thread"] }
 futures = "0.3"
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.9"
+toml = "1.0"
 chrono = "0.4.43"
 sha2 = "0.10.9"
 xattr = "1.6.1"
 imagesize = "0.14.0"
 md5 = "0.8.0"
+rusqlite = { version = "0.38", features = ["bundled"] }

@@ -33,29 +33,21 @@ impl FluxApp {
         self.directory_monitor = None;
         let path_str = path.to_string_lossy().to_string();
 
-        let folders_first = self
-            .config
-            .ui
-            .current_folders_first
-            .get(&path_str)
-            .copied()
-            .unwrap_or(self.config.ui.folders_first);
+        let mut folders_first = self.config.ui.folders_first;
 
-        self.sort_by = self
-            .config
-            .ui
-            .folder_sort
-            .get(&path_str)
-            .copied()
-            .unwrap_or(self.config.ui.default_sort);
-
-        self.current_icon_size = self
-            .config
-            .ui
-            .folder_icon_size
-            .get(&path_str)
-            .copied()
-            .unwrap_or(self.config.ui.default_icon_size);
+        // Load persistent folder state from SQLite before scanning
+        if let Ok(Some((sort, _rev, size, ff))) = self.state_db.get_view(&path) {
+            self.sort_by = match sort.as_str() {
+                "Date" => SortBy::Date,
+                "Size" => SortBy::Size,
+                _ => SortBy::Name,
+            };
+            self.current_icon_size = size as i32;
+            folders_first = ff;
+        } else {
+            self.sort_by = self.config.ui.default_sort;
+            self.current_icon_size = self.config.ui.default_icon_size;
+        }
 
         let root = if path_str.starts_with("trash://") {
             gio::File::for_uri(&path_str)
