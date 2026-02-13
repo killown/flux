@@ -77,14 +77,15 @@ pub fn load_config() -> crate::model::Config {
 
     if !config_path.exists() {
         let _ = fs::create_dir_all(&config_dir);
-        let default_toml = r#"[ui]
+
+        let mut default_toml = String::from(
+            r#"[ui]
 default_icon_size = 96
 sidebar_width = 200
 single_click = false
-show_xdg_dirs = true
+show_xdg_dirs = false
 default_sort = "Name"
 show_hidden_by_default = false
-show_xdg_dirs_by_default = true
 folders_first = true
 theme = "default"
 
@@ -92,11 +93,67 @@ theme = "default"
 
 [ui.device_renames]
 
-[[sidebar]]
-name = "Downloads"
-icon = "folder-download-symbolic"
-path = "~/Downloads"
-"#;
+[ui.folder_icon_size]
+
+"#,
+        );
+
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+
+        let mut add_entry = |path: PathBuf, icon: &str, custom_name: Option<&str>| {
+            if path.exists() || icon == "user-trash-symbolic" {
+                let name = custom_name.map(|s| s.to_string()).unwrap_or_else(|| {
+                    path.file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| "Unknown".into())
+                });
+
+                let path_str = if path == home {
+                    "~".to_string()
+                } else if icon == "user-trash-symbolic" {
+                    "trash:///".to_string()
+                } else if let Ok(stripped) = path.strip_prefix(&home) {
+                    format!("~/{}", stripped.to_string_lossy())
+                } else {
+                    path.to_string_lossy().into_owned()
+                };
+
+                use std::fmt::Write;
+                let _ = write!(
+                    default_toml,
+                    "[[sidebar]]\nname = {:?}\nicon = {:?}\npath = {:?}\n\n",
+                    name, icon, path_str
+                );
+            }
+        };
+
+        // 1. Home
+        add_entry(home.clone(), "user-home-symbolic", Some("Home"));
+
+        // 2. Localized XDG Folders with correct icons
+        if let Some(p) = dirs::download_dir() {
+            add_entry(p, "folder-download-symbolic", None);
+        }
+        if let Some(p) = dirs::document_dir() {
+            add_entry(p, "folder-documents-symbolic", None);
+        }
+        if let Some(p) = dirs::picture_dir() {
+            add_entry(p, "folder-pictures-symbolic", None);
+        }
+        if let Some(p) = dirs::video_dir() {
+            add_entry(p, "folder-videos-symbolic", None);
+        }
+        if let Some(p) = dirs::audio_dir() {
+            add_entry(p, "folder-music-symbolic", None);
+        }
+
+        // 3. Trash
+        add_entry(
+            PathBuf::from("trash:///"),
+            "user-trash-symbolic",
+            Some("Trash"),
+        );
+
         let _ = fs::write(&config_path, default_toml);
     }
 
@@ -108,7 +165,7 @@ path = "~/Downloads"
                 default_icon_size: 128,
                 single_click: false,
                 sidebar_width: 240,
-                show_xdg_dirs: true,
+                show_xdg_dirs: false,
                 default_sort: crate::model::SortBy::Name,
                 folder_sort: std::collections::HashMap::new(),
                 folder_icon_size: std::collections::HashMap::new(),
@@ -122,7 +179,6 @@ path = "~/Downloads"
 
     let mut changed = false;
 
-    // Pruning logic for folder_sort
     config.ui.folder_sort.retain(|path_str, _| {
         let path = if path_str.starts_with('~') {
             dirs::home_dir()
@@ -131,15 +187,13 @@ path = "~/Downloads"
         } else {
             PathBuf::from(path_str)
         };
-
-        let exists = path.exists();
+        let exists = path.exists() || path_str == "trash:///";
         if !exists {
             changed = true;
         }
         exists
     });
 
-    // Pruning logic for folder_icon_size
     config.ui.folder_icon_size.retain(|path_str, _| {
         let path = if path_str.starts_with('~') {
             dirs::home_dir()
@@ -148,15 +202,13 @@ path = "~/Downloads"
         } else {
             PathBuf::from(path_str)
         };
-
-        let exists = path.exists();
+        let exists = path.exists() || path_str == "trash:///";
         if !exists {
             changed = true;
         }
         exists
     });
 
-    // Only write to disk if something was actually removed
     if changed {
         crate::utils::save_config(&config);
     }

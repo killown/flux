@@ -172,14 +172,7 @@ impl FluxApp {
             }
         }
 
-        // 2. Trash
-        guard.push_back(SidebarPlace {
-            name: "Trash".to_string(),
-            icon: "user-trash-symbolic".to_string(),
-            path: PathBuf::from("trash:///"),
-        });
-
-        // 3. Custom Sidebar logic
+        // 2. Custom Sidebar logic
         for custom in &self.config.sidebar {
             let path = if custom.path.starts_with('~') {
                 dirs::home_dir()
@@ -195,7 +188,7 @@ impl FluxApp {
             });
         }
 
-        // 4. Mounts
+        // 3. Mounts
         for (mut name, path) in utils::get_system_mounts() {
             if let Some(new_name) = self.config.ui.device_renames.get(&name) {
                 name = new_name.clone();
@@ -213,7 +206,7 @@ impl FluxApp {
             guard.push_back(SidebarPlace { name, icon, path });
         }
 
-        // 5. Exclusive List
+        // 4. Exclusive List
         for path in &self.exclusive_list {
             if let Some(name) = path.file_name() {
                 guard.push_back(SidebarPlace {
