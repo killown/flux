@@ -33,25 +33,8 @@ impl FluxApp {
             AppMsg::PerformRename(old_path, new_name) => {
                 match utils::rename_path(&old_path, &new_name) {
                     Ok(new_path) => {
-                        let old_key = old_path.to_string_lossy().into_owned();
-                        let new_key = new_path.to_string_lossy().into_owned();
-
-                        let mut changed = false;
-
-                        // Migration: Transfer persistent folder-specific settings to the new path key
-                        if let Some(sort_val) = self.config.ui.folder_sort.remove(&old_key) {
-                            self.config.ui.folder_sort.insert(new_key.clone(), sort_val);
-                            changed = true;
-                        }
-
-                        if let Some(size_val) = self.config.ui.folder_icon_size.remove(&old_key) {
-                            self.config.ui.folder_icon_size.insert(new_key, size_val);
-                            changed = true;
-                        }
-
-                        if changed {
-                            utils::save_config(&self.config);
-                        }
+                        // Migration: Transfer persistent folder-specific settings to the new path key in SQLite
+                        let _ = self.state_db.rename_path(&old_path, &new_path);
 
                         sender.input(AppMsg::Navigate(self.current_path.clone()));
                     }
@@ -77,36 +60,39 @@ impl FluxApp {
                     SortBy::Size => SortBy::Name,
                 };
 
-                let path_str = self.current_path.to_string_lossy().to_string();
-                self.config
-                    .ui
-                    .folder_sort
-                    .insert(path_str, self.sort_by.clone());
-                utils::save_config(&self.config);
+                // Persist state to database
+                let _ = self.state_db.save_view(
+                    &self.current_path,
+                    &format!("{:?}", self.sort_by),
+                    false,
+                    self.current_icon_size as u32,
+                    self.config.ui.folders_first,
+                );
+
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleFolderPriority => {
-                let path_str = self.current_path.to_string_lossy().to_string();
+                let path = self.current_path.clone();
 
-                // Determine current state: check folder-specific map first, then global default
-                let current_state = self
-                    .config
-                    .ui
-                    .current_folders_first
-                    .get(&path_str)
-                    .copied()
-                    .unwrap_or(self.config.ui.folders_first);
+                // Toggle logic: If we have a DB entry, use it, otherwise fallback to config default
+                let current_state = if let Ok(Some((_, _, _, ff))) = self.state_db.get_view(&path) {
+                    ff
+                } else {
+                    self.config.ui.folders_first
+                };
 
-                // Toggle and insert into the map
-                self.config
-                    .ui
-                    .current_folders_first
-                    .insert(path_str, !current_state);
+                let new_state = !current_state;
 
-                utils::save_config(&self.config);
+                // Save toggle to DB
+                let _ = self.state_db.save_view(
+                    &path,
+                    &format!("{:?}", self.sort_by),
+                    false,
+                    self.current_icon_size as u32,
+                    new_state,
+                );
 
                 // Reload the current path to apply the new sorting
-                let path = self.current_path.clone();
                 self.load_path(path, &sender);
             }
             AppMsg::CloseSearchSync => {
@@ -449,10 +435,14 @@ impl FluxApp {
                 if new_size != self.current_icon_size {
                     self.current_icon_size = new_size;
 
-                    // Save the new size to config so it persists for this folder
-                    let path_str = self.current_path.to_string_lossy().to_string();
-                    self.config.ui.folder_icon_size.insert(path_str, new_size);
-                    utils::save_config(&self.config);
+                    // Save the new size to SQLite DB so it persists for this folder
+                    let _ = self.state_db.save_view(
+                        &self.current_path,
+                        &format!("{:?}", self.sort_by),
+                        false,
+                        new_size as u32,
+                        self.config.ui.folders_first,
+                    );
 
                     // Update all visible items in the grid
                     for i in 0..self.files.len() {

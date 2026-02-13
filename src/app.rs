@@ -387,6 +387,16 @@ impl SimpleComponent for FluxApp {
         let menu_actions_list = utils::load_menu_config();
         let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
 
+        let state_db = Arc::new(crate::db::StateManager::new().expect("DB Init Failed"));
+
+        // Run cleanup in the background to avoid blocking the UI during startup
+        let scrub_db = state_db.clone();
+        std::thread::spawn(move || {
+            if let Err(e) = scrub_db.scrub_orphans() {
+                eprintln!("[DB] Scrub failed: {}", e);
+            }
+        });
+
         // Initialize and register the GAction group for window-scoped actions
         let action_group = gio::SimpleActionGroup::new();
         root.insert_action_group("win", Some(&action_group));
@@ -452,6 +462,7 @@ impl SimpleComponent for FluxApp {
             recent_stack: std::collections::VecDeque::with_capacity(
                 constants::RECENT_STACK_CAPACITY,
             ),
+            state_db,
         };
 
         model.setup_actions(&sender);
@@ -468,7 +479,11 @@ impl SimpleComponent for FluxApp {
         }
 
         model.refresh_sidebar();
-        model.load_path(start_path, &sender);
+
+        let s_init = sender.clone();
+        glib::idle_add_local_once(move || {
+            s_init.input(AppMsg::Refresh);
+        });
 
         // --- CONFIG WATCHER ACTION ---
         // Link the global "reload-sidebar" action to our internal RefreshSidebar message
