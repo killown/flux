@@ -1,6 +1,8 @@
+use crate::model::FluxApp;
 use crate::model::PathSegment;
 use crate::ui::constants;
 use crate::ui::constants::MOUSE_RIGHT_CLICK;
+use crate::utils;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
@@ -42,6 +44,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         let drag_source = gtk::DragSource::builder()
             .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
             .build();
+        let config = utils::load_config();
 
         drag_source.connect_drag_begin(|src, _| {
             if let Some(widget) = src.widget() {
@@ -101,6 +104,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         set_spacing: 0,
                         set_valign: gtk::Align::Center,
                         add_css_class: constants::CARD_CSS_CLASS,
+
+                        // only if single_click is enabled
+                        connect_realize => move |w| {
+                                FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
+                        },
 
                         add_controller: drag_source.clone(),
                         add_controller: drop_target.clone(),
@@ -298,6 +306,8 @@ impl FactoryComponent for SidebarPlace {
         gtk::ListBoxRow {
             add_css_class: constants::SIDEBAR_ROW_CLASS,
             set_selectable: false,
+            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+
             add_controller = gtk::GestureClick {
                 connect_released[sender, path = self.path.clone()] => move |_, _, _, _| {
                     let _ = sender.output(path.clone());

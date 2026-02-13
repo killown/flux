@@ -126,7 +126,6 @@ impl SimpleComponent for FluxApp {
                 gtk::ScrolledWindow {
                     set_width_request: model.config.ui.sidebar_width,
                     add_css_class: constants::SIDEBAR_CSS_CLASS,
-                    connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                 },
 
                 /// Main content container for the header and file browser.
@@ -160,7 +159,6 @@ impl SimpleComponent for FluxApp {
                             set_hexpand: false,
                             set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                             #[watch] set_visible_child_name: &model.header_view,
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                             set_transition_type: gtk::StackTransitionType::Crossfade,                            /// Current path display; triggers editable entry mode on click.
                             add_child = &gtk::Button {
                                 add_css_class: "flat",
@@ -185,6 +183,8 @@ impl SimpleComponent for FluxApp {
                                     #[local_ref]
                                     breadcrumb_box -> gtk::Box {
                                         set_orientation: gtk::Orientation::Horizontal,
+                                        connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+
                                     },
                                     add_controller = gtk::GestureClick {
                                         set_propagation_phase: gtk::PropagationPhase::Capture,
@@ -204,6 +204,7 @@ impl SimpleComponent for FluxApp {
                                 set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                                 set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
                                 set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
+
                                 #[watch] set_text: &model.current_path.to_string_lossy(),
                                 add_controller = gtk::EventControllerKey {
                                     connect_key_pressed[sender] => move |_, keyval, _, _| {
@@ -314,10 +315,6 @@ impl SimpleComponent for FluxApp {
                     #[name = "grid_scroller"]
                     gtk::ScrolledWindow {
                         set_vexpand: true,
-                        // only if single_click is enabled
-                        connect_realize => move |w| {
-                            FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
-                        },
 
                         /// Scroll event controller for UI zooming (Ctrl + Scroll).
                         add_controller = gtk::EventControllerScroll {
