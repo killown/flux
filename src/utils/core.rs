@@ -92,6 +92,7 @@ theme = "default"
 [ui.folder_sort]
 
 [ui.device_renames]
+"/path/to/device/" = { name = "Storage", icon = "drive-harddisk-solid-symbolic" }
 
 [ui.folder_icon_size]
 
