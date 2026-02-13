@@ -224,6 +224,30 @@ impl FluxApp {
         }
     }
 
+    /// Attaches a motion controller to change the cursor to a pointer on hover.
+    /// We use concrete &gtk::Widget here to bypass trait resolution conflicts.
+    pub fn set_cursor_pointer(widget: &gtk::Widget, enabled: bool) {
+        if !enabled {
+            return;
+        }
+
+        let controller = gtk::EventControllerMotion::new();
+
+        controller.connect_enter(|ctrl, _, _| {
+            if let Some(widget) = ctrl.widget() {
+                widget.set_cursor_from_name(Some("pointer"));
+            }
+        });
+
+        controller.connect_leave(|ctrl| {
+            if let Some(widget) = ctrl.widget() {
+                widget.set_cursor(None);
+            }
+        });
+
+        widget.add_controller(controller);
+    }
+
     /// Updates the collection of path segments for breadcrumb navigation display.
     pub fn update_breadcrumbs(&mut self) {
         let mut guard = self.breadcrumbs.guard();
