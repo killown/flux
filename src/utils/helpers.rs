@@ -190,18 +190,24 @@ impl FluxApp {
 
         // 3. Mounts
         for (mut name, path) in utils::get_system_mounts() {
-            if let Some(new_name) = self.config.ui.device_renames.get(&name) {
-                name = new_name.clone();
-            }
+            let path_str = path.to_string_lossy().to_string();
+            let mut icon = "drive-harddisk-symbolic".to_string();
 
-            let icon = if name.to_lowercase().contains("drive")
-                || name.to_lowercase().contains("cloud")
-                || path.to_string_lossy().contains("Gdrive")
-            {
-                "folder-remote-symbolic".to_string()
+            // Intercept device renames to apply custom Name and Icon
+            if let Some(rename) = self.config.ui.device_renames.get(&path_str) {
+                name = rename.name.clone();
+                if let Some(custom_icon) = &rename.icon {
+                    icon = custom_icon.clone();
+                }
             } else {
-                "drive-harddisk-symbolic".to_string()
-            };
+                // Fallback icon logic if no specific rename exists
+                if name.to_lowercase().contains("drive")
+                    || name.to_lowercase().contains("cloud")
+                    || path_str.contains("Gdrive")
+                {
+                    icon = "folder-remote-symbolic".to_string();
+                }
+            }
 
             guard.push_back(SidebarPlace { name, icon, path });
         }

@@ -74,6 +74,12 @@ pub struct ContextAction {
     pub mime_types: Vec<String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct DeviceRename {
+    pub name: String,
+    pub icon: Option<String>,
+}
+
 /// Visual and behavioral settings for the User Interface.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UIConfig {
@@ -91,7 +97,9 @@ pub struct UIConfig {
     pub show_hidden_by_default: bool,
     pub folder_sort: HashMap<String, SortBy>,
     pub folder_icon_size: HashMap<String, i32>,
-    pub device_renames: HashMap<String, String>,
+    // Custom icons/names for mounts (e.g., Google Drive)
+    #[serde(default)]
+    pub device_renames: HashMap<String, DeviceRename>,
 }
 
 /// A user-defined location entry for the sidebar bookmarks.
