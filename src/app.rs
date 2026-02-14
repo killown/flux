@@ -453,7 +453,7 @@ impl SimpleComponent for FluxApp {
             exclusive_list: Vec::new(),
             exclusive_index: None,
             search_just_opened: false,
-            sort_by: config.ui.default_sort.clone(),
+            sort_by: config.ui.default_sort,
             show_hidden: config.ui.show_hidden_by_default,
             config: config.clone(),
             _volume_monitor: volume_monitor,
