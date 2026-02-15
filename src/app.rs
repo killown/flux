@@ -362,6 +362,47 @@ impl SimpleComponent for FluxApp {
                             }
                         },
 
+                        /// Global drop handler for cross-instance and external file transfers.
+                        ///
+                        /// Listens for `text/uri-list` data (via `gdk::FileList`) to bridge independent
+                        /// application processes that do not share a memory space.
+                        add_controller = gtk::DropTarget {
+                            set_types: &[gdk::FileList::static_type()],
+                            set_actions: gdk::DragAction::MOVE | gdk::DragAction::COPY,
+
+                            connect_drop[sender, current_path = model.current_path.clone()] => move |gesture, value, x, y| {
+                                // 1. Force extraction of the file list
+                                if let Ok(file_list) = value.get::<gdk::FileList>() {
+                                    let source_paths: Vec<PathBuf> = file_list.files()
+                                        .iter()
+                                        .map(|f| f.path().unwrap_or_default())
+                                        .collect();
+
+                                    // 2. Logic to determine destination
+                                    let mut dest_path = current_path.clone();
+                                    if let Some(widget) = gesture.widget() {
+                                        if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
+                                            let mut curr: Option<gtk::Widget> = Some(picked);
+                                            while let Some(w) = curr {
+                                                let name = w.widget_name().to_string();
+                                                if name.starts_with('/') {
+                                                    let p = PathBuf::from(name);
+                                                    if p.is_dir() { dest_path = p; }
+                                                    break;
+                                                }
+                                                curr = w.parent();
+                                            }
+                                        }
+                                    }
+
+                                    // 3. Trigger the external drop handler
+                                    sender.input(AppMsg::HandleExternalDrop { source_paths, dest_path });
+                                    return true;
+                                }
+                                false
+                            }
+                        },
+
                         /// Secondary click controller for context menu spawning.
                         add_controller = gtk::GestureClick {
                             set_button: 3,
