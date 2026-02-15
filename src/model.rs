@@ -162,6 +162,8 @@ pub enum AppMsg {
     Cut,
     /// Request data from the clipboard and trigger a Move or Copy.
     Paste,
+    /// Triggers the process to move selected files to the system trash.
+    Delete,
     /// Internal message to execute the file operations after clipboard data is retrieved.
     PerformPaste(Vec<gio::File>),
     /// Launches the currently selected file(s) using a specific application.

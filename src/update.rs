@@ -646,6 +646,36 @@ impl FluxApp {
                 let p = self.current_path.clone();
                 self.load_path(p, &sender);
             }
+            AppMsg::Delete => {
+                let selection = self.get_selection();
+                if selection.is_empty() {
+                    return;
+                }
+
+                let sender_clone = sender.clone();
+
+                for path in selection {
+                    let file = gio::File::for_path(path);
+                    let s = sender_clone.clone();
+
+                    // GIO Move to Trash logic
+                    file.trash_async(
+                        glib::Priority::DEFAULT,
+                        gio::Cancellable::NONE,
+                        move |res| {
+                            match res {
+                                Ok(_) => {
+                                    // Refresh the view to remove deleted items from UI
+                                    s.input(AppMsg::Refresh);
+                                }
+                                Err(e) => {
+                                    eprintln!("[Trash Error] Failed to move file: {}", e);
+                                }
+                            }
+                        },
+                    );
+                }
+            }
             AppMsg::Open | AppMsg::Activate => {
                 // Determine hardware state of the keyboard
                 let modifiers = gdk::Display::default()

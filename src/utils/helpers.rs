@@ -348,6 +348,7 @@ impl FluxApp {
             ("<Control>c", AppMsg::Copy),
             ("<Control>x", AppMsg::Cut),
             ("<Control>v", AppMsg::Paste),
+            ("Delete", AppMsg::Delete),
         ];
 
         for (trigger_str, msg) in shortcuts {

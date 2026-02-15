@@ -71,7 +71,7 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Cycle to the next folder in the list"
                             },
                             adw::ActionRow {
-                                set_title: "Ctrl + Delete",
+                                set_title: "Ctrl + End",
                                 set_subtitle: "Clear the entire list"
                             },
                         },
@@ -86,6 +86,10 @@ impl SimpleComponent for HelpWindow {
                             adw::ActionRow {
                                 set_title: "F2",
                                 set_subtitle: "Rename selected item"
+                            },
+                            adw::ActionRow {
+                                set_title: "Delete",
+                                set_subtitle: "Move selected items to trash"
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + F",
