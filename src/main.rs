@@ -124,15 +124,21 @@ fn main() {
 
     // --- MAIN APP HANDLER ---
     let base_app = adw::Application::builder()
-        .application_id("flux.FileManager")
         .flags(gio::ApplicationFlags::FLAGS_NONE)
         .build();
 
+    // --- DEFERRED APP ID ---
+    // Setting application_id in the builder triggers a synchronous D-Bus handshake
+    // and Wayland compositor lookup that blocks the main thread for ~160ms.
+    // This must be deferred to an idle closure to allow the window to map
+    // instantly as a generic process, claiming identity only after the first paint.
+    glib::idle_add_local_once(move || {
+        let app = relm4::main_adw_application();
+        app.set_application_id(Some("flux.FileManager"));
+    });
+
     let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);
-
-    let display = adw::gdk::Display::default().expect("Could not get default display");
-    let _theme = gtk::IconTheme::for_display(&display);
 
     let start_path = if args.len() > 1 {
         PathBuf::from(&args[1])
