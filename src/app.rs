@@ -34,6 +34,41 @@ impl SimpleComponent for FluxApp {
                 }
             },
 
+            /// Controller to handle middle-click events for opening new application instances.
+            add_controller = gtk::GestureClick {
+                set_button: 0,
+                connect_pressed[sender] => move |gesture, _, x, y| {
+                    let _ = &sender;
+                    let button = gesture.current_button();
+
+                    if button == constants::MOUSE_MIDDLE {
+                        if let Some(widget) = gesture.widget() {
+                            if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
+                                let mut current: Option<gtk::Widget> = Some(picked);
+                                while let Some(w) = current {
+                                    let name = w.widget_name().to_string();
+                                    println!("widget name {}", name);
+
+
+                                    if name.starts_with("/") || name.starts_with("trash://") {
+                                        let path = std::path::PathBuf::from(name);
+                                        println!("asdfasdf asdf asdf asd {}", path.to_string_lossy());
+
+                                        let _ = std::process::Command::new("/home/neo/.local/bin/flux")
+                                            .arg(path)
+                                            .spawn();
+
+                                        gesture.set_state(gtk::EventSequenceState::Claimed);
+                                        break;
+                                    }
+                                    current = w.parent();
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+
             /// Capture-phase controller for exclusive mode management and specialized list navigation.
             add_controller = gtk::EventControllerKey {
                 set_propagation_phase: gtk::PropagationPhase::Capture,

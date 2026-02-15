@@ -95,6 +95,7 @@ pub mod constants {
     pub const MOUSE_BACK: u32 = 8;
     pub const MOUSE_FORWARD: u32 = 9;
     pub const MOUSE_RIGHT_CLICK: u32 = 3;
+    pub const MOUSE_MIDDLE: u32 = 2;
 
     // Gesture Thresholds
 
