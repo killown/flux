@@ -223,6 +223,11 @@ pub enum AppMsg {
         source_paths: Vec<PathBuf>,
         dest_path: PathBuf,
     },
+    /// Handles cross-instance file moves via `text/uri-list` serialization.
+    HandleExternalDrop {
+        source_paths: Vec<PathBuf>,
+        dest_path: PathBuf,
+    },
     /// Toggle visibility of dotfiles and hidden items.
     ToggleHidden,
     /// Rotate through available sorting methods.

@@ -726,6 +726,29 @@ impl FluxApp {
                 // Refresh once after the batch operation
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::HandleExternalDrop {
+                source_paths,
+                dest_path,
+            } => {
+                for source in source_paths {
+                    if let Some(file_name) = source.file_name() {
+                        let dest = dest_path.join(file_name);
+
+                        let src_file = gio::File::for_path(&source);
+                        let dst_file = gio::File::for_path(&dest);
+
+                        if let Err(e) = src_file.move_(
+                            &dst_file,
+                            gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                            gio::Cancellable::NONE,
+                            None,
+                        ) {
+                            eprintln!("[File Error] External move failed: {}", e);
+                        }
+                    }
+                }
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::EmptyTrash => {
                 let root = gio::File::for_uri(constants::TRASH_URI);
 

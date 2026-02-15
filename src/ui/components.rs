@@ -6,6 +6,7 @@ use crate::utils;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
+use gtk::glib;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
@@ -242,7 +243,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         let file = gtk::gio::File::for_path(&self.path);
-        let content = gdk::ContentProvider::for_value(&file.to_value());
+        let uri = file.uri();
+        let uri_list = format!("{}\r\n", uri);
+        let content = gdk::ContentProvider::for_bytes(
+            "text/uri-list",
+            &glib::Bytes::from(uri_list.as_bytes()),
+        );
         widgets.drag_source.set_content(Some(&content));
 
         widgets.drop_target.set_actions(if self.is_dir {
