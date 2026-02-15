@@ -647,9 +647,23 @@ impl FluxApp {
                 self.load_path(p, &sender);
             }
             AppMsg::Open | AppMsg::Activate => {
-                let selection = self.get_selection();
+                // Determine hardware state of the keyboard
+                let modifiers = gdk::Display::default()
+                    .and_then(|d| d.default_seat())
+                    .and_then(|s| s.keyboard())
+                    .map(|k| k.modifier_state())
+                    .unwrap_or(gdk::ModifierType::empty());
 
-                // If empty (rare but possible with weird click timings), do nothing
+                let is_selecting = modifiers
+                    .intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK);
+
+                // If holding Ctrl/Shift, we stop the "Open" action.
+                // This prevents the app from navigating away during multi-selection.
+                if is_selecting {
+                    return;
+                }
+
+                let selection = self.get_selection();
                 if selection.is_empty() {
                     return;
                 }
@@ -657,7 +671,7 @@ impl FluxApp {
                 for path in selection {
                     if path.is_dir() {
                         sender.input(AppMsg::Navigate(path));
-                        break; // Navigate to first directory only
+                        break;
                     } else {
                         utils::open_file(path);
                     }
