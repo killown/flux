@@ -222,6 +222,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         widgets.label.set_label(&self.name);
         widgets.icon_widget.set_pixel_size(self.icon_size);
 
+        // Set the widget name to the absolute path so the app.rs controller can find it
+        root.set_widget_name(&self.path.to_string_lossy());
+
         if self.is_editing {
             widgets.stack.set_visible_child_name(constants::VIEW_ENTRY);
             widgets.entry.set_text(&self.name);
