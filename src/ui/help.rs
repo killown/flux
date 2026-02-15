@@ -14,7 +14,7 @@ impl SimpleComponent for HelpWindow {
 
     view! {
         adw::Window {
-            set_default_size: (550, 720),
+            set_default_size: (550, 750),
             set_title: Some("flux - Shortcuts"),
             set_modal: true,
             set_resizable: false,
@@ -42,6 +42,23 @@ impl SimpleComponent for HelpWindow {
                             },
                         },
 
+                        // --- CLIPBOARD ---
+                        adw::PreferencesGroup {
+                            set_title: "Clipboard Operations",
+                            adw::ActionRow {
+                                set_title: "Ctrl + C",
+                                set_subtitle: "Copy selection to clipboard"
+                            },
+                            adw::ActionRow {
+                                set_title: "Ctrl + X",
+                                set_subtitle: "Cut selection (Move intent)"
+                            },
+                            adw::ActionRow {
+                                set_title: "Ctrl + V",
+                                set_subtitle: "Paste files from clipboard"
+                            },
+                        },
+
                         // --- QUICK LIST ---
                         adw::PreferencesGroup {
                             set_title: "Quick List (Exclusive List)",
@@ -54,7 +71,7 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Cycle to the next folder in the list"
                             },
                             adw::ActionRow {
-                                set_title: "Ctrl + End",
+                                set_title: "Ctrl + Delete",
                                 set_subtitle: "Clear the entire list"
                             },
                         },
@@ -85,6 +102,10 @@ impl SimpleComponent for HelpWindow {
                             adw::ActionRow {
                                 set_title: "Ctrl + S",
                                 set_subtitle: "Cycle sort mode"
+                            },
+                            adw::ActionRow {
+                                set_title: "Shift + S",
+                                set_subtitle: "Toggle folders-first priority"
                             },
                         }
                     }

@@ -345,6 +345,9 @@ impl FluxApp {
             ("F1", AppMsg::ShowHelp),
             ("<Control>s", AppMsg::CycleSort),
             ("<Shift>s", AppMsg::CycleFolderPriority),
+            ("<Control>c", AppMsg::Copy),
+            ("<Control>x", AppMsg::Cut),
+            ("<Control>v", AppMsg::Paste),
         ];
 
         for (trigger_str, msg) in shortcuts {
@@ -371,6 +374,7 @@ impl FluxApp {
 
     /// Registers GIO actions to the application's internal action group.
     pub fn setup_actions(&self, sender: &ComponentSender<Self>) {
+        // 1. Folder Priority Action
         let prio_action = gio::SimpleAction::new("cycle-priority", None);
         let prio_sender = sender.clone();
         prio_action.connect_activate(move |_, _| {
@@ -378,7 +382,31 @@ impl FluxApp {
         });
         self.action_group.add_action(&prio_action);
 
-        // Register the parameterized action for the "Open With..." submenu
+        // 2. Clipboard: Copy Action
+        let copy_action = gio::SimpleAction::new("copy", None);
+        let c_sender = sender.clone();
+        copy_action.connect_activate(move |_, _| {
+            c_sender.input(AppMsg::Copy);
+        });
+        self.action_group.add_action(&copy_action);
+
+        // 3. Clipboard: Cut Action
+        let cut_action = gio::SimpleAction::new("cut", None);
+        let x_sender = sender.clone();
+        cut_action.connect_activate(move |_, _| {
+            x_sender.input(AppMsg::Cut);
+        });
+        self.action_group.add_action(&cut_action);
+
+        // 4. Clipboard: Paste Action
+        let paste_action = gio::SimpleAction::new("paste", None);
+        let v_sender = sender.clone();
+        paste_action.connect_activate(move |_, _| {
+            v_sender.input(AppMsg::Paste);
+        });
+        self.action_group.add_action(&paste_action);
+
+        // 5. Parameterized "Open With..." Action
         let launch_action =
             gio::SimpleAction::new("launch-with", Some(glib::VariantTy::new("s").unwrap()));
         let launch_sender = sender.clone();
@@ -389,7 +417,13 @@ impl FluxApp {
         });
         self.action_group.add_action(&launch_action);
 
+        // 6. Dynamic Context Menu Actions (Shell Commands)
         for action_def in &self.menu_actions {
+            // Skip builtins as they are handled by the explicit actions above
+            if action_def.command.starts_with("builtin::") {
+                continue;
+            }
+
             let cmd_clone = action_def.command.clone();
             let sender_clone = sender.clone();
             let action = gio::SimpleAction::new(&action_def.action_name, None);
@@ -398,5 +432,95 @@ impl FluxApp {
             });
             self.action_group.add_action(&action);
         }
+    }
+
+    pub fn perform_paste(&self, files: Vec<gio::File>) {
+        // 1. Clone the path so the closure owns it
+        let target_dir = self.current_path.clone();
+        let clipboard = gdk::Display::default().unwrap().clipboard();
+
+        // 2. Use 'move' to transfer target_dir and files into the first closure
+        clipboard.read_text_async(gio::Cancellable::NONE, move |res| {
+            let is_cut = res
+                .map(|s| s.map(|t| t.starts_with("cut")).unwrap_or(false))
+                .unwrap_or(false);
+
+            for file in files {
+                // 3. Compute destination using the owned target_dir
+                let dest = target_dir.join(file.basename().expect("File must have a name"));
+                let dest_file = gio::File::for_path(dest);
+
+                if is_cut {
+                    file.move_async(
+                        &dest_file,
+                        gio::FileCopyFlags::OVERWRITE,
+                        glib::Priority::DEFAULT,
+                        gio::Cancellable::NONE,
+                        None,
+                        move |res| {
+                            if let Err(e) = res {
+                                eprintln!("Move error: {}", e);
+                            }
+                        },
+                    );
+                } else {
+                    file.copy_async(
+                        &dest_file,
+                        gio::FileCopyFlags::OVERWRITE,
+                        glib::Priority::DEFAULT,
+                        gio::Cancellable::NONE,
+                        None,
+                        move |res| {
+                            if let Err(e) = res {
+                                eprintln!("Copy error: {}", e);
+                            }
+                        },
+                    );
+                }
+            }
+        });
+    }
+    /// Internal helper to populate the clipboard with the current selection.
+    ///
+    /// Args:
+    ///     is_cut: If true, prefixes the text metadata with "cut" to signal a move operation.
+    /// Internal helper to populate the clipboard with the current selection.
+    pub fn handle_clipboard_action(&self, is_cut: bool) {
+        let selection = self.get_selection();
+        if selection.is_empty() {
+            return;
+        }
+
+        let clipboard = gdk::Display::default().expect("No Display").clipboard();
+
+        // 1. Build the standard URI list (text/uri-list)
+        // This is what other applications (Nautilus, Thunar) actually read.
+        let mut uri_list = String::new();
+        for path in &selection {
+            let uri = gio::File::for_path(path).uri();
+            uri_list.push_str(&uri);
+            uri_list.push_str("\r\n");
+        }
+
+        // 2. Build the Flux-internal metadata protocol
+        let prefix = if is_cut { "cut" } else { "copy" };
+        let mut text_rep = String::from(prefix);
+        text_rep.push('\n');
+        text_rep.push_str(&uri_list);
+
+        // 3. Create providers using raw bytes/strings
+        // text/uri-list is the industry standard for file transfers
+        let uri_provider = gdk::ContentProvider::for_bytes(
+            "text/uri-list",
+            &glib::Bytes::from(uri_list.as_bytes()),
+        );
+
+        // text/plain for our internal "cut" vs "copy" detection
+        let text_provider = gdk::ContentProvider::for_value(&text_rep.to_value());
+
+        // 4. Combine in a Union
+        let content = gdk::ContentProvider::new_union(&[uri_provider, text_provider]);
+
+        clipboard.set_content(Some(&content)).unwrap();
     }
 }

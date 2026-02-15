@@ -156,6 +156,14 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Copy the current selection to the clipboard with a "copy" intent.
+    Copy,
+    /// Copy the current selection to the clipboard with a "cut" intent.
+    Cut,
+    /// Request data from the clipboard and trigger a Move or Copy.
+    Paste,
+    /// Internal message to execute the file operations after clipboard data is retrieved.
+    PerformPaste(Vec<gio::File>),
     /// Launches the currently selected file(s) using a specific application.
     ///
     /// This variant bypasses thread-safety restrictions of `gio::AppInfo` by passing
