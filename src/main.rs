@@ -10,8 +10,8 @@ mod utils;
 
 use crate::model::{AppMsg, Config, FluxApp};
 use crate::ui::FileProperties;
-use adw::gio;
 use adw::prelude::*;
+use adw::{gio, glib};
 use relm4::prelude::*;
 use std::fs;
 use std::path::PathBuf;
@@ -105,26 +105,12 @@ fn setup_config_watcher() {
 fn main() {
     adw::init().expect("Failed to initialize Libadwaita");
 
-    // --- GTK THEME RE-SPAWN HACK ---
-    if std::env::var("GTK_THEME").is_err() {
-        let settings = gio::Settings::new("org.gnome.desktop.interface");
-        let theme_name: String = settings.string("gtk-theme").into();
-
-        if !theme_name.is_empty() {
-            let status = std::process::Command::new(std::env::current_exe().unwrap())
-                .args(std::env::args().skip(1))
-                .env("GTK_THEME", &theme_name)
-                .status()
-                .expect("Failed to restart Flux with GTK_THEME");
-
-            std::process::exit(status.code().unwrap_or(0));
-        }
-    }
-
     let args: Vec<String> = std::env::args().collect();
 
-    load_custom_css();
-    setup_config_watcher();
+    glib::idle_add_local_once(|| {
+        load_custom_css();
+        setup_config_watcher();
+    });
 
     // --- CLI HANDLER: FILE PROPERTIES ---
     if args.len() > 2 && args[1] == "--file-properties" {
