@@ -25,9 +25,9 @@ pub fn ensure_config_file() -> PathBuf {
         //FIXME: file properties not working without full path
         let default_config = r#"
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
-"󰆏      Copy File" => "all", "builtin::copy"
-"󰆐      Cut File" => "all", "builtin::cut"
-"󰏊      Paste File" => "all", "builtin::paste"
+"󰆏      Copy" => "all", "builtin::copy"
+"󰆐      Cut" => "all", "builtin::cut"
+"󰏊      Paste" => "all", "builtin::paste"
 "󰩹      Move to Trash" => "all", "gio trash %p"
 "󰦬      Restore File" => "trash", "gio trash --restore %p"
 "󰸉      Set as Wallpaper" => "image/all", "swww img %p"
