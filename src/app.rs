@@ -52,9 +52,7 @@ impl SimpleComponent for FluxApp {
 
                                     if name.starts_with("/") || name.starts_with("trash://") {
                                         let path = std::path::PathBuf::from(name);
-                                        println!("asdfasdf asdf asdf asd {}", path.to_string_lossy());
-
-                                        let _ = std::process::Command::new("/home/neo/.local/bin/flux")
+                                        let _ = std::process::Command::new("flux")
                                             .arg(path)
                                             .spawn();
 
