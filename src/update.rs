@@ -30,6 +30,32 @@ impl FluxApp {
                 // Re-run the standard refresh to append system drives/mounts
                 self.refresh_sidebar();
             }
+            AppMsg::PerformPaste(files) => {
+                self.perform_paste(files);
+            }
+            AppMsg::Copy => {
+                self.handle_clipboard_action(false);
+            }
+            AppMsg::Cut => {
+                self.handle_clipboard_action(true);
+            }
+            AppMsg::Paste => {
+                let clipboard = gdk::Display::default().unwrap().clipboard();
+                let sender = sender.clone(); // Capture sender for the callback
+
+                clipboard.read_value_async(
+                    gdk::FileList::static_type(),
+                    glib::Priority::DEFAULT,
+                    None::<&gio::Cancellable>,
+                    move |res| {
+                        if let Ok(value) = res {
+                            let file_list: gdk::FileList = value.get().unwrap();
+                            // Send the files back to the main loop via PerformPaste
+                            sender.input(AppMsg::PerformPaste(file_list.files()));
+                        }
+                    },
+                );
+            }
             AppMsg::PerformRename(old_path, new_name) => {
                 match utils::rename_path(&old_path, &new_name) {
                     Ok(new_path) => {
@@ -267,45 +293,49 @@ impl FluxApp {
 
                     // --- MENU ASSEMBLY ---
                     if matches {
-                        if action.command == "builtin::open_with" {
-                            let open_with_menu = gio::Menu::new();
-                            let apps = gio::AppInfo::all_for_type(&mime);
+                        // --- MINIMAL BUILTIN MAPPING ---
+                        let (full_action_name, lookup_name) = match action.command.as_str() {
+                            "builtin::copy" => ("win.copy".to_string(), "copy"),
+                            "builtin::cut" => ("win.cut".to_string(), "cut"),
+                            "builtin::paste" => ("win.paste".to_string(), "paste"),
+                            "builtin::open_with" => {
+                                let open_with_menu = gio::Menu::new();
+                                let apps = gio::AppInfo::all_for_type(&mime);
 
-                            for app in apps {
-                                let label = app.display_name();
-                                // Fallback to name if ID is missing (common for some local desktop files)
-                                let app_id = app
-                                    .id()
-                                    .map(|id| id.to_string())
-                                    .unwrap_or_else(|| app.name().to_string());
+                                for app in apps {
+                                    let label = app.display_name();
+                                    let app_id = app
+                                        .id()
+                                        .map(|id| id.to_string())
+                                        .unwrap_or_else(|| app.name().to_string());
 
-                                // ACTION NAME MUST MATCH helpers.rs: "launch-with"
-                                // PREFIX MUST MATCH group registration: "win."
-                                let item =
-                                    gio::MenuItem::new(Some(&label), Some("win.launch-with"));
-                                item.set_action_and_target_value(
-                                    Some("win.launch-with"),
-                                    Some(&app_id.to_variant()),
-                                );
-                                open_with_menu.append_item(&item);
+                                    let item =
+                                        gio::MenuItem::new(Some(&label), Some("win.launch-with"));
+                                    item.set_action_and_target_value(
+                                        Some("win.launch-with"),
+                                        Some(&app_id.to_variant()),
+                                    );
+                                    open_with_menu.append_item(&item);
+                                }
+
+                                // Explicitly create the item and set the label to preserve spacing
+                                let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
+
+                                // Using \u{a0} (Non-breaking space) to prevent GTK from collapsing the gap
+                                let spaced_label = format!("󰱝\u{a0} \u{a0} \u{a0} Open With...");
+                                menu_item.set_label(Some(&spaced_label));
+
+                                open_with_item = Some(menu_item);
+                                continue;
                             }
+                            _ => (
+                                format!("win.{}", action.action_name),
+                                action.action_name.as_str(),
+                            ),
+                        };
 
-                            // Explicitly create the item and set the label to preserve spacing
-                            let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
-
-                            // Using \u{a0} (Non-breaking space) to prevent GTK from collapsing the gap
-                            let spaced_label = format!("󰱝\u{a0} \u{a0} \u{a0} Open With...");
-                            menu_item.set_label(Some(&spaced_label));
-
-                            open_with_item = Some(menu_item);
-                            continue;
-                        }
-
-                        let full_action_name = format!("win.{}", action.action_name);
-
-                        // Enable the action
-                        if let Some(g_action) = self.action_group.lookup_action(&action.action_name)
-                        {
+                        // --- ENABLE ACTION ---
+                        if let Some(g_action) = self.action_group.lookup_action(lookup_name) {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                                 simple.set_enabled(true);
                             }

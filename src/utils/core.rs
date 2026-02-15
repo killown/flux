@@ -23,9 +23,11 @@ pub fn ensure_config_file() -> PathBuf {
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
         //FIXME: file properties not working without full path
-        let default_config = r#""
+        let default_config = r#"
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
-"󰆏      Copy File" => "all", "echo -n file://%p | wl-copy -t text/uri-list"
+"󰆏      Copy File" => "all", "builtin::copy"
+"󰆐      Cut File" => "all", "builtin::cut"
+"󰏊      Paste File" => "all", "builtin::paste"
 "󰩹      Move to Trash" => "all", "gio trash %p"
 "󰦬      Restore File" => "trash", "gio trash --restore %p"
 "󰸉      Set as Wallpaper" => "image/all", "swww img %p"
@@ -33,8 +35,8 @@ pub fn ensure_config_file() -> PathBuf {
 "󰋽      File Properties" => "file", "~/.local/bin/flux --file-properties %p"
 "󰱝      Open With..." => "file", "builtin::open_with"
 "󰋊      Folder Info" => "directory", "flatpak run org.gnome.baobab %p"
-"🛠     Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy"
-"🛠     Tools > 󰊢   Git Gui" => "directory", "git gui"
+"🛠      Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy"
+"🛠      Tools > 󰊢   Git Gui" => "directory", "git gui"
 "      Images > 󰸉   Set Wallpaper" => "image/all", "swww img %p""#;
         if let Ok(mut file) = fs::File::create(&config_path) {
             let _ = file.write_all(default_config.as_bytes());
