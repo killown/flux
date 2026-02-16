@@ -34,6 +34,23 @@ impl SimpleComponent for FluxApp {
                 }
             },
 
+            /// Temporary Single-Click Disable:
+            /// When Single Click is enabled, holding Control temporarily reverts
+            /// to Double Click behavior to allow simpler selection handling.
+            add_controller = gtk::EventControllerKey {
+                connect_key_pressed[view = model.files.view.clone(), enabled = model.config.ui.single_click] => move |_, keyval, _, _| {
+                    if enabled && (keyval == gdk::Key::Control_L || keyval == gdk::Key::Control_R) {
+                        view.set_single_click_activate(false);
+                    }
+                    glib::Propagation::Proceed
+                },
+                connect_key_released[view = model.files.view.clone(), enabled = model.config.ui.single_click] => move |_, keyval, _, _| {
+                    if enabled && (keyval == gdk::Key::Control_L || keyval == gdk::Key::Control_R) {
+                        view.set_single_click_activate(true);
+                    }
+                }
+            },
+
             /// Controller to handle middle-click events for opening new application instances.
             add_controller = gtk::GestureClick {
                 set_button: 0,
