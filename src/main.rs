@@ -4,6 +4,7 @@ mod model;
 mod update;
 
 mod db;
+mod inputs;
 mod services;
 mod ui;
 mod utils;
