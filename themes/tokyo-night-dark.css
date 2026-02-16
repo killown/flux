@@ -1,0 +1,205 @@
+:root {
+  /* ================================================= */
+  /* ==== CORE PALETTE - TOKYO NIGHT (PERFECTED) ==== */
+  /* ================================================= */
+  --color-bg-base: #24283b;
+  --color-bg-surface: #292e42;
+  --color-bg-raised: #414868;
+  --color-bg-deep: #1f2335;
+  --color-bg-popover: #414868;
+
+  --color-fg-primary: #eaeeff;
+  --color-fg-secondary: #a9b1d6;
+  --color-fg-muted: #b8c3e5;
+
+  --color-accent-blue: #7aa2f7;
+  --color-accessible-accent: #b0c3ff;
+  --color-accent-secondary: #bb9af7;
+
+  --color-separator-line: #414868;
+  --color-shadow-hue-bleed: rgba(176, 195, 255, 0.2);
+
+  --font-main: "Geist", "Open Sans", sans-serif;
+  --font-mono: "Geist Mono", monospace;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-xl: 18px;
+}
+
+window,
+window > box {
+  background-color: var(--color-bg-base);
+}
+
+headerbar {
+  background-color: var(--color-bg-deep);
+  padding: 4px 12px;
+  min-height: 38px;
+  border: none;
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.3);
+  font-family: var(--font-main);
+}
+
+headerbar label {
+  color: var(--color-fg-primary);
+}
+
+headerbar button {
+  background-color: transparent;
+  color: var(--color-fg-primary);
+  border: none;
+  box-shadow: none;
+}
+
+headerbar button:hover {
+  background-color: alpha(var(--color-fg-primary), 0.08);
+}
+
+.sidebar {
+  background-color: var(--color-bg-deep);
+  border: none;
+  box-shadow: inset -1px 0 0 0 rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-row {
+  margin: 8px 14px;
+  padding: 10px 16px;
+  border-radius: var(--radius-m);
+  background-color: alpha(var(--color-fg-primary), 0.04);
+  border: none;
+}
+
+.sidebar-row label {
+  color: var(--color-fg-secondary);
+  font-family: var(--font-main);
+  font-size: 10.5pt;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(var(--color-fg-primary), 0.1);
+}
+
+.sidebar-row:selected {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent-blue), transparent 75%) 0%,
+    color-mix(in srgb, var(--color-accent-secondary), transparent 90%) 100%
+  );
+  box-shadow:
+    inset 4px 0 0 0 var(--color-accent-blue),
+    0 4px 12px var(--color-shadow-hue-bleed);
+}
+
+.sidebar-row:selected label {
+  color: var(--color-accent-blue);
+  font-weight: bold;
+}
+
+gridview,
+listview {
+  background-color: transparent;
+  padding: 16px 24px;
+}
+
+gridview child {
+  padding: 2px;
+  margin: 0;
+}
+
+.flux-card {
+  background-color: var(--color-bg-surface);
+  border-radius: var(--radius-xl);
+  padding: 12px;
+  margin: 6px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: all 400ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.flux-card:hover {
+  background-color: var(--color-bg-raised);
+  box-shadow:
+    0 0 0 1px alpha(var(--color-accent-blue), 0.3),
+    0 12px 24px var(--color-shadow-hue-bleed);
+  transform: translateY(-4px);
+}
+
+.flux-label {
+  color: var(--color-fg-primary);
+  font-family: var(--font-main);
+  font-size: 10pt;
+}
+
+gridview > child:selected .flux-label {
+  color: var(--color-fg-primary);
+  font-weight: bold;
+}
+
+button.breadcrumb-btn {
+  background-color: var(--color-bg-surface);
+  border: none;
+  padding: 4px 12px;
+  margin-right: 4px;
+  min-height: 28px;
+  border-radius: var(--radius-s);
+}
+
+button.breadcrumb-btn label {
+  color: var(--color-fg-muted);
+  font-family: var(--font-mono);
+}
+
+button.breadcrumb-btn:hover {
+  background-color: var(--color-bg-raised);
+}
+
+button.breadcrumb-btn:last-child {
+  background-color: alpha(var(--color-accent-blue), 0.15);
+  box-shadow: 0 0 0 1px alpha(var(--color-accent-blue), 0.4);
+}
+
+button.breadcrumb-btn:last-child label {
+  color: var(--color-accent-blue);
+  font-weight: bold;
+}
+
+popover.menu contents,
+popover contents {
+  background-color: var(--color-bg-popover);
+  background-image: none;
+  border: 1px solid var(--color-separator-line);
+  border-radius: var(--radius-m);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  opacity: 1;
+}
+
+popover.menu modelbutton label {
+  color: var(--color-fg-primary);
+}
+
+entry {
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-separator-line);
+  border-radius: 22px;
+  padding: 4px 12px;
+  color: var(--color-fg-primary);
+}
+
+entry:focus {
+  border-color: var(--color-accessible-accent);
+  box-shadow: 0 0 0 1px var(--color-accessible-accent);
+}
+
+adwactionrow label {
+  color: var(--color-fg-primary);
+}
+
+dropdown {
+  background-color: var(--color-bg-surface);
+  color: var(--color-fg-primary);
+}
+
+toast label {
+  color: var(--color-fg-primary);
+}
