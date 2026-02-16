@@ -25,155 +25,7 @@ impl SimpleComponent for FluxApp {
             set_default_size: (constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT),
             set_title: Some(constants::APP_TITLE),
 
-            // --- INPUT CONTROLLERS ---
-
-            /// Primary key handler for standard navigation and system shortcuts.
-            add_controller = gtk::EventControllerKey {
-                connect_key_pressed[sender, header_view = model.header_view.clone()] => move |ctrl, keyval, _, state| {
-                     FluxApp::handle_key_event(ctrl, keyval, state, &sender, &header_view)
-                }
-            },
-
-            /// Temporary Single-Click Disable:
-            /// When Single Click is enabled, holding Control or Shift temporarily reverts
-            /// to Double Click behavior to allow simpler selection handling.
-            add_controller = gtk::EventControllerKey {
-                connect_key_pressed[view = model.files.view.clone(), enabled = model.config.ui.single_click] => move |_, keyval, _, _| {
-                    if enabled && (
-                        keyval == gdk::Key::Control_L || keyval == gdk::Key::Control_R ||
-                        keyval == gdk::Key::Shift_L || keyval == gdk::Key::Shift_R
-                    ) {
-                        view.set_single_click_activate(false);
-                    }
-                    glib::Propagation::Proceed
-                },
-                connect_key_released[view = model.files.view.clone(), enabled = model.config.ui.single_click] => move |_, keyval, _, _| {
-                    if enabled && (
-                        keyval == gdk::Key::Control_L || keyval == gdk::Key::Control_R ||
-                        keyval == gdk::Key::Shift_L || keyval == gdk::Key::Shift_R
-                    ) {
-                        view.set_single_click_activate(true);
-                    }
-                }
-            },
-
-            /// Controller to handle middle-click events for opening new application instances.
-            add_controller = gtk::GestureClick {
-                set_button: 0,
-                connect_pressed[sender] => move |gesture, _, x, y| {
-                    let _ = &sender;
-                    let button = gesture.current_button();
-
-                    if button == constants::MOUSE_MIDDLE {
-                        if let Some(widget) = gesture.widget() {
-                            if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
-                                let mut current: Option<gtk::Widget> = Some(picked);
-                                while let Some(w) = current {
-                                    let name = w.widget_name().to_string();
-                                    println!("widget name {}", name);
-
-
-                                    if name.starts_with("/") || name.starts_with("trash://") {
-                                        let path = std::path::PathBuf::from(name);
-                                        let _ = std::process::Command::new("flux")
-                                            .arg(path)
-                                            .spawn();
-
-                                        gesture.set_state(gtk::EventSequenceState::Claimed);
-                                        break;
-                                    }
-                                    current = w.parent();
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-
-            /// Capture-phase controller for exclusive mode management and specialized list navigation.
-            add_controller = gtk::EventControllerKey {
-                set_propagation_phase: gtk::PropagationPhase::Capture,
-                connect_key_pressed[sender] => move |_ctrl, keyval, _keycode, state| {
-                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
-                    let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
-
-                    match keyval {
-                        gdk::Key::Insert => {
-                            sender.input(AppMsg::AddExclusive);
-                            glib::Propagation::Stop
-                        }
-                        gdk::Key::End if is_ctrl => {
-                            sender.input(AppMsg::ClearExclusive);
-                            glib::Propagation::Stop
-                        }
-                        gdk::Key::Page_Up if is_ctrl => {
-                            sender.input(AppMsg::PrevExclusive);
-                            glib::Propagation::Stop
-                        }
-                        gdk::Key::Page_Down if is_ctrl => {
-                            sender.input(AppMsg::NextExclusive);
-                            glib::Propagation::Stop
-                        }
-                        gdk::Key::Tab => {
-                            sender.input(AppMsg::NextExclusive);
-                            glib::Propagation::Stop
-                        }
-                        _ => glib::Propagation::Proceed,
-                    }
-                }
-            },
-
-            /// dedicated history navigation controller for bracket-based folder movement.
-            add_controller = gtk::EventControllerKey {
-                connect_key_pressed[sender] => move |_, keyval, _, state| {
-                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
-                    let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
-                    match keyval {
-                        gdk::Key::bracketleft if is_ctrl => {
-                            sender.input(AppMsg::CycleRecent(-1));
-                            glib::Propagation::Stop
-                        }
-                        gdk::Key::bracketright if is_ctrl => {
-                            sender.input(AppMsg::CycleRecent(1));
-                            glib::Propagation::Stop
-                        }
-                        _ => glib::Propagation::Proceed
-                    }
-                }
-            },
-
-            add_controller = gtk::GestureSwipe {
-                connect_swipe[sender] => move |_, velocity_x, _| {
-                    if velocity_x > constants::SWIPE_VELOCITY_THRESHOLD {
-                        sender.input(AppMsg::GoBack);
-                    } else if velocity_x < -constants::SWIPE_VELOCITY_THRESHOLD {
-                        sender.input(AppMsg::GoForward);
-                    }
-                }
-            },
-
-            /// Mouse button handler for auxiliary navigation controls (Buttons 8/9).
-            add_controller = gtk::GestureClick {
-                set_button: 0,
-                connect_pressed => |gesture, _, _, _| {
-                    let button = gesture.current_button();
-                    if button == constants::MOUSE_BACK || button == constants::MOUSE_FORWARD {
-                        gesture.set_state(gtk::EventSequenceState::Claimed);
-                    }
-                },
-                connect_released[sender] => move |gesture, _, _, _| {
-                    let button = gesture.current_button();
-                    let state = gesture.current_event_state();
-                    let modifiers = state & gtk::accelerator_get_default_mod_mask();
-
-                    if button == constants::MOUSE_BACK && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
-                        sender.input(AppMsg::JumpToRecent(0));
-                    }
-                }
-            },
-
             // --- UI LAYOUT ---
-
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
 
@@ -210,7 +62,7 @@ impl SimpleComponent for FluxApp {
 
                         /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
                         #[wrap(Some)]
-                        set_title_widget = &gtk::Stack {
+                        set_title_widget: header_stack = &gtk::Stack {
                             set_halign: gtk::Align::Center,
                             set_hexpand: false,
                             set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
@@ -600,6 +452,14 @@ impl SimpleComponent for FluxApp {
         model
             .context_menu_popover
             .set_parent(&widgets.grid_scroller);
+
+        crate::inputs::setup_controllers(
+            &root,                        // 1. window
+            &model.files.view,            // 2. grid_view
+            sender.clone(),               // 3. sender
+            &widgets.header_stack,        // 4. header
+            model.config.ui.single_click, // 5. config
+        );
 
         ComponentParts { model, widgets }
     }
