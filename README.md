@@ -2,11 +2,7 @@
 
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
 
-
-
 https://github.com/user-attachments/assets/80c04b92-8885-4aac-844e-bfcbbd076eee
-
-
 
 ## Why Flux?
 
@@ -49,6 +45,13 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 - **Runtime:** Tokio & Futures (Non-blocking I/O)
 
 ## Getting Started
+
+    # required:
+    -ladwaita-1 → libadwaita
+    -lgtk-4 → GTK 4
+    -lgdk_pixbuf-2.0 → GdkPixbuf
+    -lcairo-gobject → Cairo
+    -lgraphene-1.0 → Graphene
 
     git clone https://github.com/killown/flux.git
     cd flux
