@@ -115,7 +115,8 @@ pub struct CustomPlace {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
-    pub state_db: Arc<crate::db::StateManager>,
+    /// Persistent SQLite-backed manager for application state and metadata.
+    pub state_db: Arc<crate::services::db::StateManager>,
     /// Circular buffer of recently visited locations.
     pub recent_stack: VecDeque<PathBuf>,
     /// The primary grid view component displaying file items.

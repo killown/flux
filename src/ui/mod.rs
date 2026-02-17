@@ -3,15 +3,21 @@
 //! This module groups all GTK/Relm4 widget definitions and view-related
 //! logic to separate the presentation layer from the core application state.
 
-// 1. Declare the submodules (internal files)
+// --- 1. Submodule Declarations ---
+pub mod init;
+pub mod inputs;
+pub mod update;
+pub mod view;
+
+// --- 2. Existing Submodules ---
 mod components;
 mod help;
 mod properties;
-pub use help::HelpWindow;
 
-// 2. Publicly re-export specific types for convenience.
-// This allows you to call `ui::FileItem` instead of `ui::components::FileItem`.
+// --- 3. Public Re-exports ---
+// This allows main.rs to call `ui::FluxApp`
 pub use components::{FileItem, SidebarPlace};
+pub use help::HelpWindow;
 pub use properties::FileProperties;
 
 /// Groups UI-specific constants such as default window dimensions or CSS class names.
@@ -47,7 +53,7 @@ pub mod constants {
     pub const LOCATION_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const SEARCH_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const RECENT_STACK_CAPACITY: usize = 10;
-    pub const MAX_RECENT_ITEMS: usize = 9; // Truncation limit for navigation
+    pub const MAX_RECENT_ITEMS: usize = 9;
     pub const GRID_SPACING: u32 = 16;
     pub const SIDEBAR_SPACING: i32 = 18;
     pub const HEADER_BTN_SPACING: i32 = 6;
@@ -97,12 +103,8 @@ pub mod constants {
     pub const MOUSE_RIGHT_CLICK: u32 = 3;
     pub const MOUSE_MIDDLE: u32 = 2;
 
-    // Gesture Thresholds
-
-    /// Minimum velocity (pixels/sec) to trigger a back/forward swipe.
-    pub const SWIPE_VELOCITY_THRESHOLD: f64 = 500.0;
-
     // Text Labels & Tooltips
     pub const LABEL_EMPTY_TRASH: &str = "Empty Trash";
     pub const BREADCRUMB_MAX_WIDTH_CHARS: u32 = 20;
+    pub const SWIPE_VELOCITY_THRESHOLD: f64 = 500.0;
 }
