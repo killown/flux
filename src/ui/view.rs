@@ -1,17 +1,10 @@
-use adw::prelude::*;
-use relm4::factory::FactoryVecDeque;
-use relm4::prelude::*;
-use relm4::typed_view::grid::TypedGridView;
-use std::path::PathBuf;
-use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
-
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::{constants, FileItem, SidebarPlace};
-use crate::utils;
+use crate::ui::constants;
 use adw::gdk;
-use gtk::gio;
+use adw::prelude::*;
 use gtk::glib;
+use relm4::prelude::*;
+use std::path::PathBuf;
 
 #[relm4::component(pub)]
 impl SimpleComponent for FluxApp {
@@ -67,7 +60,7 @@ impl SimpleComponent for FluxApp {
                             set_hexpand: false,
                             set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                             #[watch] set_visible_child_name: &model.header_view,
-                            set_transition_type: gtk::StackTransitionType::Crossfade,                            /// Current path display; triggers editable entry mode on click.
+                            set_transition_type: gtk::StackTransitionType::Crossfade,
                             add_child = &gtk::Button {
                                 add_css_class: "flat",
                                 #[watch] set_label: &model.current_path.to_string_lossy(),
@@ -323,128 +316,10 @@ impl SimpleComponent for FluxApp {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        // Global static access for background thread communication
-        let _ = crate::model::SENDER.set(sender.input_sender().clone());
-        relm4::set_global_css(include_str!("style.css"));
-
-        // Setup window-level shortcut controllers
-        let shortcut_controller = gtk::ShortcutController::new();
-        Self::setup_shortcuts(&shortcut_controller, &sender);
-        root.add_controller(shortcut_controller);
-
-        let config = utils::load_config();
-        let menu_actions_list = utils::load_menu_config();
-        let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
-
-        let state_db = Arc::new(crate::db::StateManager::new().expect("DB Init Failed"));
-
-        // Run cleanup in the background to avoid blocking the UI during startup
-        let scrub_db = state_db.clone();
-        std::thread::spawn(move || {
-            if let Err(e) = scrub_db.scrub_orphans() {
-                eprintln!("[DB] Scrub failed: {}", e);
-            }
-        });
-
-        // Initialize and register the GAction group for window-scoped actions
-        let action_group = gio::SimpleActionGroup::new();
-        root.insert_action_group("win", Some(&action_group));
-
-        // Configure the main file grid view
-        let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
-        files.view.set_enable_rubberband(true);
-        files.view.set_single_click_activate(config.ui.single_click);
-        files.view.set_max_columns(20); // Allow many icons per row
-        files.view.set_min_columns(1);
-
-        let grid_view = &files.view;
-        let sender_clone = sender.clone();
-        grid_view.connect_activate(move |_, _| sender_clone.input(AppMsg::Open));
-
-        // Setup the sidebar list with navigation forwarding
-        let listbox = gtk::ListBox::default();
-        let sidebar = FactoryVecDeque::builder()
-            .launch(listbox)
-            .forward(sender.input_sender(), AppMsg::Navigate);
-
-        // Monitor external volume changes to keep sidebar drive list in sync
-        let volume_monitor = gio::VolumeMonitor::get();
-        let s_added = sender.clone();
-        volume_monitor.connect_mount_added(move |_, _| s_added.input(AppMsg::RefreshSidebar));
-
-        let s = sender.clone();
-        volume_monitor.connect_mount_removed(move |_, _| {
-            s.input(AppMsg::RefreshSidebar);
-        });
-
-        // Setup breadcrumb navigation bar
-        let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        let breadcrumbs = FactoryVecDeque::builder()
-            .launch(breadcrumb_box.clone())
-            .forward(sender.input_sender(), AppMsg::Navigate);
-
-        let mut model = FluxApp {
-            files,
-            sidebar,
-            breadcrumbs,
-            current_path: start_path.clone(),
-            history: Vec::new(),
-            forward_stack: Vec::new(),
-            load_id: Arc::new(AtomicU64::new(0)),
-            current_icon_size: config.ui.default_icon_size,
-            context_menu_popover,
-            menu_actions: menu_actions_list,
-            active_item_path: None,
-            directory_monitor: None,
-            action_group,
-            exclusive_list: Vec::new(),
-            exclusive_index: None,
-            search_just_opened: false,
-            sort_by: config.ui.default_sort,
-            show_hidden: config.ui.show_hidden_by_default,
-            config: config.clone(),
-            _volume_monitor: volume_monitor,
-            filter: String::new(),
-            header_view: constants::VIEW_PATH.to_string(),
-            recent_stack: std::collections::VecDeque::with_capacity(
-                constants::RECENT_STACK_CAPACITY,
-            ),
-            state_db,
-        };
-
-        model.setup_actions(&sender);
-        model.recent_stack.push_front(start_path.clone());
-        model.update_breadcrumbs();
-
-        // Populate sidebar from persistent configuration
-        for place in &config.sidebar {
-            model.sidebar.guard().push_back(SidebarPlace {
-                name: place.name.clone(),
-                icon: place.icon.clone(),
-                path: utils::expand_path(&place.path),
-            });
-        }
-
-        model.refresh_sidebar();
-
-        let s_init = sender.clone();
-        glib::idle_add_local_once(move || {
-            s_init.input(AppMsg::Refresh);
-        });
-
-        // --- CONFIG WATCHER ACTION ---
-        // Link the global "reload-sidebar" action to our internal RefreshSidebar message
-        let app = relm4::main_adw_application();
-        let sender_clone = sender.clone();
-        let reload_action = gio::SimpleAction::new("reload-sidebar", None);
-        reload_action.connect_activate(move |_, _| {
-            sender_clone.input(AppMsg::RefreshSidebar);
-        });
-        app.add_action(&reload_action);
-
+        let (model, breadcrumb_box) = Self::init_components(start_path, &root, sender.clone());
         let widgets = view_output!();
 
-        // Final widget-to-layout assembly
+        // Map widgets that were not part of the view macro directly
         widgets.grid_scroller.set_child(Some(&model.files.view));
         widgets
             .sidebar_container
@@ -453,12 +328,12 @@ impl SimpleComponent for FluxApp {
             .context_menu_popover
             .set_parent(&widgets.grid_scroller);
 
-        crate::inputs::setup_controllers(
-            &root,                        // 1. window
-            &model.files.view,            // 2. grid_view
-            sender.clone(),               // 3. sender
-            &widgets.header_stack,        // 4. header
-            model.config.ui.single_click, // 5. config
+        crate::ui::inputs::setup_controllers(
+            &root,
+            &model.files.view,
+            sender.clone(),
+            &widgets.header_stack,
+            model.config.ui.single_click,
         );
 
         ComponentParts { model, widgets }

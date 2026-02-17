@@ -5,6 +5,8 @@
 //! generation and metadata extraction.
 
 // 1. Declare the background service modules
+pub mod db;
+pub mod loader;
 pub mod thumbnails;
 
 /// Service-level constants, such as cache limits or thread counts.
