@@ -1,5 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
+use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::glib;
 use gtk::prelude::*;
@@ -12,6 +13,7 @@ pub fn setup_controllers(
     sender: ComponentSender<FluxApp>,
     header_stack: &gtk::Stack,
     config_single_click: bool,
+    keymap: &KeyMap,
 ) {
     // 1. Primary Navigation
     let nav_controller = gtk::EventControllerKey::new();
@@ -116,27 +118,94 @@ pub fn setup_controllers(
     window.add_controller(capture);
 
     // 5. History Navigation
-    let history = gtk::EventControllerKey::new();
-    let sender_hist = sender.clone();
+    let history = gtk::ShortcutController::new();
 
-    history.connect_key_pressed(move |_, keyval, _, state| {
-        let modifiers = state & gtk::accelerator_get_default_mod_mask();
-        let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
-        match keyval {
-            gdk::Key::bracketleft if is_ctrl => {
-                sender_hist.input(AppMsg::CycleRecent(-1));
-                glib::Propagation::Stop
-            }
-            gdk::Key::bracketright if is_ctrl => {
-                sender_hist.input(AppMsg::CycleRecent(1));
-                glib::Propagation::Stop
-            }
-            _ => glib::Propagation::Proceed,
-        }
-    });
+    let sender_hist_back = sender.clone();
+    let shortcut_back = gtk::Shortcut::new(
+        Some(keymap.back.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            // Standard back behavior: returns to previous folder in history
+            sender_hist_back.input(AppMsg::GoBack);
+            glib::Propagation::Stop
+        })),
+    );
+
+    let sender_hist_forward = sender.clone();
+    let shortcut_forward = gtk::Shortcut::new(
+        Some(keymap.forward.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            // Standard forward behavior
+            sender_hist_forward.input(AppMsg::GoForward);
+            glib::Propagation::Stop
+        })),
+    );
+
+    history.add_shortcut(shortcut_back);
+    history.add_shortcut(shortcut_forward);
     window.add_controller(history);
 
-    // 6. Swipe Gestures
+    // 6. Global KeyMap Bindings
+    let global_shortcuts = gtk::ShortcutController::new();
+    global_shortcuts.set_scope(gtk::ShortcutScope::Global);
+
+    let s_refresh = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.refresh.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_refresh.input(AppMsg::Refresh);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_search = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.search.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_search.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_hidden = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.toggle_hidden.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_hidden.input(AppMsg::ToggleHidden);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_delete = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.delete.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_delete.input(AppMsg::Delete);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_prop = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.properties.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            // Placeholder: emit message to request properties overlay
+            s_prop.input(AppMsg::TriggerRenameSelection);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_open = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.open.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_open.input(AppMsg::Open);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    window.add_controller(global_shortcuts);
+
+    // 7. Swipe Gestures
     let swipe = gtk::GestureSwipe::new();
     let sender_swipe = sender.clone();
 
@@ -149,7 +218,7 @@ pub fn setup_controllers(
     });
     window.add_controller(swipe);
 
-    // 7. Mouse Back/Forward
+    // 8. Mouse Back/Forward
     let mouse_nav = gtk::GestureClick::new();
     mouse_nav.set_button(0);
 
