@@ -1,3 +1,4 @@
+use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::gio;
 use relm4::factory::FactoryVecDeque;
@@ -48,11 +49,28 @@ pub struct CustomAction {
     pub mime_types: Vec<String>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq, Eq)]
+pub struct ShortcutsConfig {
+    pub quit: Option<String>,
+    pub open: Option<String>,
+    pub delete: Option<String>,
+    pub back: Option<String>,
+    pub forward: Option<String>,
+    pub refresh: Option<String>,
+    pub search: Option<String>,
+    pub open_properties: Option<String>,
+    pub toggle_hidden: Option<String>,
+}
+
 /// Top-level configuration structure for persistent application settings.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(default)]
 pub struct Config {
     pub ui: UIConfig,
+    #[serde(default)]
     pub sidebar: Vec<CustomPlace>,
+    #[serde(default)]
+    pub shortcuts: ShortcutsConfig,
 }
 
 /// Available sorting criteria for the file view.
@@ -74,14 +92,8 @@ pub struct ContextAction {
     pub mime_types: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct DeviceRename {
-    pub name: String,
-    pub icon: Option<String>,
-}
-
 /// Visual and behavioral settings for the User Interface.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct UIConfig {
     pub default_icon_size: i32,
     pub sidebar_width: i32,
@@ -104,8 +116,14 @@ pub struct UIConfig {
     pub device_renames: HashMap<String, DeviceRename>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
+pub struct DeviceRename {
+    pub name: String,
+    pub icon: Option<String>,
+}
+
 /// A user-defined location entry for the sidebar bookmarks.
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct CustomPlace {
     pub name: String,
     pub icon: String,
@@ -147,6 +165,7 @@ pub struct FluxApp {
     pub sort_by: SortBy,
     pub show_hidden: bool,
     pub config: Config,
+    pub keymap: KeyMap,
     pub _volume_monitor: gio::VolumeMonitor,
     /// Current search/filter string.
     pub filter: String,
@@ -191,8 +210,6 @@ pub enum AppMsg {
     PerformRename(PathBuf, String),
     /// Navigate to a specific index in the recent folders stack.
     JumpToRecent(usize),
-    /// Move forward or backward through the recent stack.
-    CycleRecent(i32),
     /// Append a character to the active search filter.
     SearchInput(char),
     /// Remove the last character from the active search filter.

@@ -6,6 +6,7 @@
 // --- 1. Submodule Declarations ---
 pub mod init;
 pub mod inputs;
+pub mod keymap;
 pub mod update;
 pub mod view;
 

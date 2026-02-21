@@ -334,6 +334,7 @@ impl SimpleComponent for FluxApp {
             sender.clone(),
             &widgets.header_stack,
             model.config.ui.single_click,
+            &model.keymap,
         );
 
         ComponentParts { model, widgets }

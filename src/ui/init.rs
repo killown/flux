@@ -99,6 +99,7 @@ impl FluxApp {
             search_just_opened: false,
             sort_by: config.ui.default_sort,
             show_hidden: config.ui.show_hidden_by_default,
+            keymap: crate::ui::keymap::KeyMap::new(&config.shortcuts),
             config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),

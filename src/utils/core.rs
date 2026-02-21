@@ -98,6 +98,38 @@ theme = "default"
 
 [ui.folder_icon_size]
 
+[shortcuts]
+# -- Navigation --
+
+# Returns to the previous folder in the linear history stack.
+back = "BackSpace"
+
+# Moves forward in the history stack.
+forward = "<Alt>Right"
+
+# Activates the selected file or enters the selected directory.
+open = "Return"
+
+# -- File Operations --
+
+# Moves selected items to the trash.
+delete = "Delete"
+
+# -- View & Application --
+
+# Triggers a reload of the current directory.
+refresh = "F5"
+
+# Focuses the search/filter entry bar.
+search = "<Primary>f"
+
+# Toggles the visibility of hidden files (dotfiles).
+toggle_hidden = "<Primary>h"
+
+[[sidebar]]
+name = "Home"
+icon = "user-home-symbolic"
+path = "~"
 "#,
         );
 
@@ -179,6 +211,7 @@ theme = "default"
                 theme: Some("default".to_string()),
             },
             sidebar: vec![],
+            shortcuts: crate::model::ShortcutsConfig::default(),
         });
 
     let mut changed = false;

@@ -552,25 +552,6 @@ impl FluxApp {
                     sender.input(AppMsg::Navigate(target_path));
                 }
             }
-            AppMsg::CycleRecent(delta) => {
-                if self.recent_stack.len() < 2 {
-                    return;
-                }
-
-                let current_pos = self
-                    .recent_stack
-                    .iter()
-                    .position(|p| p == &self.current_path)
-                    .unwrap_or(0);
-
-                let len = self.recent_stack.len() as i32;
-                let next_idx = (current_pos as i32 + delta).rem_euclid(len) as usize;
-
-                if let Some(target) = self.recent_stack.get(next_idx).cloned() {
-                    self.load_path(target, &sender);
-                    self.update_breadcrumbs();
-                }
-            }
             AppMsg::AddExclusive => {
                 let path_to_add = self
                     .get_selected_path()
