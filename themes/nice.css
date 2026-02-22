@@ -1,158 +1,203 @@
-/* --- Flux: Default Theme --- */
+/* --- Flux: Default Theme (Refined System Protocol) --- */
 
 /* 1. Global Setup */
 * {
   font-family: "Motiva Sans", "Inter Variable", "Outfit", sans-serif;
-  /* Uses the system's defined accent color */
   -gtk-secondary-caret-color: @accent_color;
+  letter-spacing: 0.5px !important;
 }
 
 window {
-  /* Blends system window background with a subtle radial lift */
   background-image: radial-gradient(
     circle at 50% -50%,
-    alpha(@accent_color, 0.15) 0%,
-    @window_bg_color 80%
+    color-mix(in srgb, @accent_bg_color, transparent 85%) 0%,
+    @window_bg_color 70%
   );
   color: @window_fg_color;
 }
 
 /* 2. Header: Ion-Plated System Bar */
 headerbar {
-  background-color: alpha(@window_bg_color, 0.5);
-  border-bottom: 1px solid alpha(@accent_color, 0.3);
+  background-color: alpha(@headerbar_bg_color, 0.8);
+  border-bottom: 1px solid alpha(@accent_color, 0.2);
+  padding: 14px;
   box-shadow: inset 0 1px 0 0 alpha(white, 0.05);
 }
 
-headerbar label {
+headerbar label,
+.settings-window headerbar label {
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  filter: drop-shadow(0 0 12px alpha(@accent_color, 0.4));
-  color: @window_fg_color;
+  letter-spacing: 2.5px !important;
+  color: @headerbar_fg_color;
+  filter: drop-shadow(0 0 10px alpha(@accent_color, 0.3));
 }
 
 /* 3. Sidebar: Clean Navigation */
 scrolledwindow.sidebar {
-  background-color: alpha(black, 0.15);
+  background-color: alpha(@window_bg_color, 0.4);
+  border-right: 1px solid alpha(@window_fg_color, 0.05);
 }
 
 .sidebar-row {
   margin: 4px 12px;
-  padding: 10px 10px;
-  min-height: 20px;
-  background-color: alpha(@window_fg_color, 0.02);
-  border: 1px solid alpha(@window_fg_color, 0.04);
+  padding: 10px 14px;
+  min-height: 24px;
+  background-color: transparent;
+  border: 1px solid transparent;
   border-radius: 10px;
-  color: alpha(@window_fg_color, 0.6);
-  transition: all 200ms ease-out;
+  color: alpha(@window_fg_color, 0.7);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    transform 200ms cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.sidebar-row label {
+  letter-spacing: 0.4px !important;
 }
 
 .sidebar-row:hover:not(:selected) {
-  background-color: alpha(@accent_color, 0.1);
+  background-color: alpha(@accent_color, 0.08);
   color: @window_fg_color;
   transform: translateX(4px);
 }
 
 .sidebar-row:selected {
-  background-color: alpha(@accent_color, 0.2);
-  color: @accent_color;
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
   font-weight: 700;
-  border-color: @accent_color;
-  box-shadow: 0 0 20px alpha(@accent_color, 0.1);
+  box-shadow: 0 4px 12px alpha(black, 0.2);
   transform: translateX(6px);
 }
 
 /* 4. Grid View: Volumetric System Cards */
 .flux-card {
-  /* Uses the system's view/base background for the card body */
-  background-color: alpha(@view_bg_color, 0.85);
-  border: 1px solid alpha(@window_fg_color, 0.08);
-  border-radius: 12px;
+  background-color: @card_bg_color;
+  border: 1px solid alpha(@window_fg_color, 0.06);
+  border-radius: 16px;
   padding: 20px;
   margin: 12px;
-  box-shadow: 0 10px 30px alpha(black, 0.3);
+  box-shadow:
+    0 4px 12px alpha(black, 0.1),
+    0 0 0 1px alpha(white, 0.02);
   transition:
-    transform 250ms ease,
+    transform 250ms cubic-bezier(0.175, 0.885, 0.32, 1.275),
     box-shadow 250ms ease,
     border-color 250ms ease;
+  backface-visibility: hidden;
 }
 
 .flux-card:hover {
   background-color: @view_bg_color;
-  border-color: alpha(@accent_color, 0.4);
-  transform: translateY(-8px);
+  border-color: alpha(@accent_color, 0.5);
+  transform: translateY(-6px) scale(1.02);
   box-shadow:
-    0 20px 45px alpha(black, 0.4),
-    0 0 20px alpha(@accent_color, 0.1);
+    0 20px 40px alpha(black, 0.2),
+    0 0 15px alpha(@accent_color, 0.15);
 }
 
-.flux-card label {
+.flux-label {
   font-size: 10.5pt;
   font-weight: 700;
   color: @window_fg_color;
   margin-top: 12px;
+  letter-spacing: 0.3px !important;
 }
 
 /* 5. Destructive Action: System-Matched Warning */
 .destructive-action {
-  /* Uses GTK's built-in error/destructive colors */
-  background-color: alpha(@error_bg_color, 0.1);
+  background-color: alpha(@error_bg_color, 0.15);
   color: @error_bg_color;
-  border: 1px solid alpha(@error_bg_color, 0.4);
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-weight: 900;
+  border: 1px solid alpha(@error_bg_color, 0.3);
+  border-radius: 10px;
+  padding: 8px 24px;
+  font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 1.5px !important;
   transition: all 200ms ease;
 }
 
 .destructive-action:hover {
   background-color: @error_bg_color;
   color: @error_fg_color;
-  transform: translateY(1px);
+  box-shadow: 0 4px 12px alpha(@error_bg_color, 0.4);
 }
 
 /* 6. Context Menu: Bento Modal */
 popover.menu contents {
-  background-color: alpha(@window_bg_color, 0.98);
-  border: 1px solid alpha(@accent_color, 0.3);
-  border-radius: 16px;
-  padding: 10px;
-  box-shadow: 0 30px 80px alpha(black, 0.5);
+  background-color: @window_bg_color;
+  border: 1px solid alpha(@window_fg_color, 0.1);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 12px 35px alpha(black, 0.3);
+}
+
+popover.menu modelbutton label {
+  letter-spacing: 0.4px !important;
 }
 
 popover.menu modelbutton:hover {
-  background-color: @accent_color;
+  background-color: @accent_bg_color;
   color: @accent_fg_color;
+  border-radius: 8px;
 }
 
-/* 7. Inputs */
+/* 7. Search & Inputs */
 entry {
-  background-color: alpha(black, 0.2);
+  background-color: color-mix(in srgb, @window_bg_color, @window_fg_color 5%);
   border: 1px solid alpha(@window_fg_color, 0.1);
-  border-radius: 20px;
-  padding: 8px 16px;
+  border-radius: 12px;
+  padding: 10px 16px;
   color: @window_fg_color;
+  letter-spacing: 0.6px !important;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 entry:focus {
   border-color: @accent_color;
-  box-shadow: 0 0 10px alpha(@accent_color, 0.2);
+  box-shadow: 0 0 0 3px alpha(@accent_color, 0.2);
 }
 
-/* 8. Utility */
+/* 8. Utility & Adw Specifics */
 scrollbar slider {
-  background-color: alpha(@window_fg_color, 0.1);
+  background-color: alpha(@window_fg_color, 0.2);
   border-radius: 20px;
 }
 
+scrollbar slider:hover {
+  background-color: alpha(@window_fg_color, 0.3);
+}
+
 .sort-label {
-  background-color: alpha(@accent_color, 0.15);
+  background-color: alpha(@accent_color, 0.1);
   color: @accent_color;
-  border: 1px solid alpha(@accent_color, 0.3);
-  border-radius: 4px;
-  font-size: 8pt;
-  padding: 4px 12px;
-  font-weight: 900;
+  border: 1px solid alpha(@accent_color, 0.2);
+  border-radius: 20px;
+  font-size: 8.5pt;
+  padding: 4px 14px;
+  font-weight: 800;
+  letter-spacing: 1px !important;
+}
+
+adwpreferencesgroup > box > label {
+  letter-spacing: 1.8px !important;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: alpha(@window_fg_color, 0.5);
+  margin-bottom: 6px;
+}
+
+adwactionrow label.title {
+  letter-spacing: 0.3px !important;
+}
+
+dropdown label {
+  letter-spacing: 0.5px !important;
+}
+
+toast label {
+  letter-spacing: 0.5px !important;
 }

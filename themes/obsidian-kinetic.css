@@ -10,6 +10,7 @@
 * {
   font-family: "Geist Mono", "JetBrains Mono", "Input Mono", monospace;
   -gtk-secondary-caret-color: @kinetic_accent;
+  letter-spacing: 0.8px !important;
 }
 
 window {
@@ -22,20 +23,19 @@ headerbar {
   background-color: @obsidian_base;
   border-bottom: 1px solid alpha(white, 0.05);
   padding: 14px;
-  /* Subtle letter spacing for a premium technical look */
 }
 
-headerbar label {
+headerbar label,
+.settings-window headerbar label {
   font-weight: 300;
   text-transform: lowercase;
-  letter-spacing: 3px;
+  letter-spacing: 4px !important;
   color: alpha(white, 0.5);
 }
 
 /* 3. Sidebar: The Carved Channel */
 scrolledwindow.sidebar {
   background-color: @obsidian_base;
-  /* Inner shadow gives the "carved into stone" look */
   box-shadow: inset -10px 0 20px alpha(black, 0.4);
 }
 
@@ -43,36 +43,34 @@ scrolledwindow.sidebar {
   margin: 2px 12px;
   padding: 8px 16px;
   min-height: 40px;
-
   background-color: transparent;
-  border-radius: 4px; /* Brutalist sharp corners */
+  border-radius: 4px;
   color: alpha(white, 0.4);
+  /* Fixed Animation: Clean linear-to-glide transition */
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
 
-  /* Initial state is recessed */
-  transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
+.sidebar-row label {
+  letter-spacing: 1px !important;
 }
 
 .sidebar-row:hover:not(:selected) {
   color: @kinetic_accent;
   background-color: alpha(white, 0.03);
-  /* Slight forward tilt */
   transform: translateX(4px);
 }
 
-/* Selection: The Kinetic Pulse */
 .sidebar-row:selected {
   background-color: alpha(white, 0.07);
   color: @kinetic_accent;
   font-weight: 800;
-
-  /* Asymmetric indicator */
   border-left: 2px solid @kinetic_accent;
-
-  /* Kinetic Glow */
   box-shadow:
-    15px 0 30px alpha(@obsidian_glow, 0.2),
+    15px 0 30px alpha(@obsidian_glow, 0.15),
     inset 0 0 10px alpha(white, 0.05);
-
   transform: translateX(8px);
 }
 
@@ -90,43 +88,41 @@ scrolledwindow.sidebar {
 /* 4. Grid View: High-Specular Tectonic Plates */
 .flux-card {
   background-color: @obsidian_plate;
-
-  /* Bezel Lighting Technique */
   border-top: 1px solid alpha(white, 0.12);
   border-left: 1px solid alpha(white, 0.08);
   border-right: 1px solid alpha(black, 0.5);
   border-bottom: 1px solid alpha(black, 0.7);
-
   border-radius: 2px;
   padding: 18px;
   margin: 12px;
-
-  /* Physical Shadow */
   box-shadow: 10px 10px 20px alpha(black, 0.4);
-
-  transition: all 500ms cubic-bezier(0.075, 0.82, 0.165, 1);
+  /* Fixed Animation: Removed spring for rigid tectonic feel */
+  transition:
+    background-color 300ms ease,
+    border-color 300ms ease,
+    transform 300ms ease-out,
+    box-shadow 300ms ease-out;
+  backface-visibility: hidden;
 }
 
 .flux-card:hover {
   background-color: #1a1d22;
-  /* Increase edge lighting on hover */
   border-top-color: alpha(white, 0.3);
   border-left-color: alpha(white, 0.15);
-
-  /* "Lift" off the surface */
-  transform: translateY(-10px) scale(1.02);
-  box-shadow: 20px 25px 50px alpha(black, 0.6);
+  transform: translateY(-6px);
+  box-shadow: 15px 20px 40px alpha(black, 0.6);
 }
 
-.flux-card label {
+.flux-label {
   font-size: 9pt;
   font-weight: 600;
   color: alpha(white, 0.6);
   margin-top: 12px;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase;
 }
 
-.flux-card:hover label {
+.flux-card:hover .flux-label {
   color: white;
 }
 
@@ -135,20 +131,14 @@ popover.menu contents {
   background-color: #0c0d0f;
   border: 1px solid alpha(white, 0.1);
   border-radius: 0px;
-  padding: 10px;
+  padding: 8px;
   box-shadow: 0 30px 60px alpha(black, 0.8);
-}
-
-popover.menu modelbutton {
-  border-radius: 0px;
-  margin: 2px 0;
-  min-height: 40px;
 }
 
 popover.menu modelbutton label {
   font-size: 13pt;
   font-weight: 300;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px !important;
   color: alpha(white, 0.7);
 }
 
@@ -168,6 +158,7 @@ entry {
   border-radius: 0px;
   color: white;
   padding: 10px;
+  letter-spacing: 1px !important;
 }
 
 entry:focus {
@@ -185,11 +176,34 @@ scrollbar slider:hover {
   background-color: alpha(white, 0.2);
 }
 
-/* 7. Interaction States */
-.drop-hover {
-  outline: 1px solid @kinetic_accent;
-  background-color: alpha(white, 0.05);
-  transform: scale(1.05);
+/* 7. Destructive Action: Thermal Breach */
+.destructive-action {
+  background-color: transparent;
+  color: @kinetic_warn;
+  border: 1px solid alpha(@kinetic_warn, 0.4);
+  border-radius: 0px;
+  padding: 8px 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 2px !important;
+}
+
+.destructive-action:hover {
+  background-color: @kinetic_warn;
+  color: white;
+  box-shadow: 0 0 20px alpha(@kinetic_warn, 0.3);
+}
+
+/* 8. Adw/Settings Overrides */
+adwpreferencesgroup > box > label {
+  letter-spacing: 2.5px !important;
+  text-transform: uppercase;
+  font-weight: 300;
+  color: alpha(white, 0.4);
+}
+
+adwactionrow label.title {
+  letter-spacing: 0.5px !important;
 }
 
 .sort-label {
@@ -201,9 +215,13 @@ scrollbar slider:hover {
   padding: 2px 10px;
   font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 1.5px !important;
 }
 
-popover.menu separator {
-  background-color: alpha(white, 0.05);
-  margin: 10px 0;
+dropdown label {
+  letter-spacing: 1px !important;
+}
+
+toast label {
+  letter-spacing: 1px !important;
 }

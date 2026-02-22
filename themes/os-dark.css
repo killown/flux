@@ -1,4 +1,4 @@
-/* --- Flux: OS Dark --- */
+/* --- Flux: OS Dark (macOS Ventura Protocol) --- */
 
 @define-color mac_bg #1e1e1e;
 @define-color mac_sidebar alpha(#282828, 0.7);
@@ -11,6 +11,7 @@
 * {
   font-family: "SF Pro Display", "Inter", "Helvetica Neue", sans-serif;
   -gtk-secondary-caret-color: @mac_accent;
+  letter-spacing: 0.2px !important;
 }
 
 window {
@@ -26,10 +27,18 @@ headerbar {
   box-shadow: inset 0 -1px 0 0 alpha(white, 0.05);
 }
 
-headerbar label {
+headerbar label,
+.settings-window headerbar label,
+adwpreferenceswindow headerbar label {
   font-weight: 600;
   font-size: 11pt;
   color: @mac_text;
+  letter-spacing: 0.5px !important;
+}
+
+headerbar button {
+  border-radius: 6px;
+  transition: background-color 200ms ease;
 }
 
 /* 3. Sidebar: Dark Transparency & Refined Spacing */
@@ -38,28 +47,24 @@ scrolledwindow.sidebar {
   border-right: 1px solid @mac_border;
 }
 
-scrolledwindow.sidebar list {
-  padding: 8px 0;
-}
-
 .sidebar-row {
-  /* Balanced margins: 3px keeps them tight but clearly individual pills */
   margin: 3px 10px;
-  /* Standard macOS vertical padding */
   padding: 6px 12px;
-  /* Fixed height for a consistent look */
   min-height: 36px;
-
   background-color: transparent;
   border-radius: 6px;
   color: alpha(@mac_text, 0.85);
-  transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Fixed Animation: macOS glide */
+  transition:
+    background-color 150ms ease-out,
+    transform 150ms ease-out;
 }
 
 .sidebar-row label {
   font-size: 10pt;
   font-weight: 400;
   margin-left: 6px;
+  letter-spacing: 0.3px !important;
 }
 
 .sidebar-row:hover:not(:selected) {
@@ -67,7 +72,6 @@ scrolledwindow.sidebar list {
   color: @mac_text;
 }
 
-/* Selection: Dark Blue Vibrant Pill */
 .sidebar-row:selected {
   background-color: @mac_accent;
   color: #ffffff;
@@ -85,10 +89,6 @@ scrolledwindow.sidebar list {
 .sidebar-row:selected image {
   color: white;
   opacity: 1;
-  -gtk-icon-palette:
-    success white,
-    warning white,
-    error white;
 }
 
 /* 4. Grid View: Finder Dark Aesthetic */
@@ -98,11 +98,16 @@ scrolledwindow.sidebar list {
   border-radius: 10px;
   padding: 12px;
   margin: 8px;
-  transition: background-color 200ms ease;
+  /* Fixed Animation: Smoother fade-in scaling */
+  transition:
+    background-color 250ms ease,
+    transform 250ms ease-out;
+  backface-visibility: hidden;
 }
 
 .flux-card:hover {
   background-color: alpha(white, 0.05);
+  transform: scale(1.02);
 }
 
 .flux-card:selected {
@@ -110,12 +115,13 @@ scrolledwindow.sidebar list {
   border-color: alpha(@mac_accent, 0.4);
 }
 
-.flux-card label {
+.flux-label {
   font-size: 10pt;
   font-weight: 400;
   color: alpha(@mac_text, 0.9);
   margin-top: 6px;
   text-shadow: 0 1px 2px alpha(black, 0.5);
+  letter-spacing: 0.3px !important;
 }
 
 /* 5. Context Menu: Dark Frosted Glass Overlay */
@@ -128,24 +134,16 @@ popover.menu contents {
   outline: 1px solid alpha(white, 0.05);
 }
 
-popover.menu modelbutton {
-  border-radius: 6px;
-  margin: 1px 4px;
-  min-height: 32px;
-}
-
 popover.menu modelbutton label {
-  font-size: 13pt; /* Keeping your preferred large font */
+  font-size: 13pt;
   font-weight: 400;
   color: @mac_text;
+  letter-spacing: 0.4px !important;
 }
 
 popover.menu modelbutton:hover {
   background-color: @mac_accent;
-}
-
-popover.menu modelbutton:hover label {
-  color: #ffffff;
+  border-radius: 6px;
 }
 
 /* 6. Inputs & Search */
@@ -155,6 +153,8 @@ entry {
   border-radius: 6px;
   padding: 6px 12px;
   color: @mac_text;
+  letter-spacing: 0.4px !important;
+  transition: all 200ms ease;
 }
 
 entry:focus {
@@ -163,19 +163,50 @@ entry:focus {
   box-shadow: 0 0 0 3px alpha(@mac_accent, 0.3);
 }
 
-/* 7. Scrollbars (iOS Dark Style) */
+/* 7. Destructive Action: macOS Red */
+.destructive-action {
+  background-color: alpha(#ff3b30, 0.1);
+  color: #ff3b30;
+  border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.5px !important;
+  padding: 6px 16px;
+}
+
+.destructive-action:hover {
+  background-color: #ff3b30;
+  color: white;
+}
+
+/* 8. Scrollbars (iOS Dark Style) */
 scrollbar slider {
   background-color: alpha(white, 0.15);
   border-radius: 20px;
   min-width: 4px;
-  min-height: 4px;
 }
 
 scrollbar slider:hover {
   background-color: alpha(white, 0.3);
 }
 
-/* 8. Utility Badges */
+/* 9. Adw & Settings Overrides */
+adwpreferencesgroup > box > label {
+  letter-spacing: 0.8px !important;
+  color: @mac_secondary_text;
+  font-weight: 600;
+  text-transform: none;
+  font-size: 9.5pt;
+  margin-bottom: 8px;
+}
+
+adwactionrow label.title {
+  letter-spacing: 0.2px !important;
+}
+
+dropdown label {
+  letter-spacing: 0.3px !important;
+}
+
 .sort-label {
   background-color: alpha(white, 0.08);
   color: @mac_secondary_text;
@@ -184,9 +215,5 @@ scrollbar slider:hover {
   font-size: 9px;
   padding: 2px 8px;
   font-weight: 600;
-}
-
-popover.menu separator {
-  margin: 6px 2px;
-  background-color: alpha(white, 0.08);
+  letter-spacing: 0.6px !important;
 }
