@@ -11,6 +11,7 @@ pub mod constants {
     pub const SEARCH: &str = "<Control>f";
     pub const PROPERTIES: &str = "<Control>i";
     pub const TOGGLE_HIDDEN: &str = "<Control>h";
+    pub const SETTINGS: &str = "F10";
 }
 
 /// A collection of resolved GTK ShortcutTriggers.
@@ -26,6 +27,7 @@ pub struct KeyMap {
     pub search: gtk::ShortcutTrigger,
     pub properties: gtk::ShortcutTrigger,
     pub toggle_hidden: gtk::ShortcutTrigger,
+    pub settings: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -42,6 +44,7 @@ impl KeyMap {
             search: parse_trigger(&config.search, constants::SEARCH),
             properties: parse_trigger(&config.open_properties, constants::PROPERTIES),
             toggle_hidden: parse_trigger(&config.toggle_hidden, constants::TOGGLE_HIDDEN),
+            settings: parse_trigger(&None, constants::SETTINGS),
         }
     }
 }
