@@ -91,6 +91,7 @@ show_hidden_by_default = false
 folders_first = true
 theme = "default"
 show_csd = false
+start_maximized = true
 
 [ui.folder_sort]
 
@@ -211,6 +212,7 @@ path = "~"
                 device_renames: std::collections::HashMap::new(),
                 folders_first: true,
                 theme: Some("default".to_string()),
+                start_maximized: true,
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),

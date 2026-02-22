@@ -116,6 +116,7 @@ pub struct UIConfig {
     #[serde(default)]
     pub device_renames: HashMap<String, DeviceRename>,
     pub show_csd: bool,
+    pub start_maximized: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -300,4 +301,6 @@ pub enum AppMsg {
     EmptyTrash,
     #[allow(dead_code)]
     RestoreItem(PathBuf),
+    /// Updates the configuration to reflect whether the window is currently maximized.
+    SetMaximized(bool),
 }

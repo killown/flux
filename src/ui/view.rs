@@ -2,7 +2,7 @@ use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
 use adw::prelude::*;
-use gtk::glib;
+use gtk::glib::{self};
 use relm4::prelude::*;
 use std::path::PathBuf;
 
@@ -15,7 +15,6 @@ impl SimpleComponent for FluxApp {
     view! {
         /// Main application window for the Flux file manager.
         adw::Window {
-            set_default_size: (constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT),
             set_title: Some(constants::APP_TITLE),
 
             #[watch]
@@ -341,6 +340,16 @@ impl SimpleComponent for FluxApp {
             model.config.ui.single_click,
             &model.keymap,
         );
+
+        if model.config.ui.start_maximized {
+            root.maximize();
+        } else {
+            root.set_default_size(constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT);
+        }
+
+        root.connect_maximized_notify(move |window| {
+            sender.input(AppMsg::SetMaximized(window.is_maximized()));
+        });
 
         ComponentParts { model, widgets }
     }

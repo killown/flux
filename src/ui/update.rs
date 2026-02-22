@@ -88,6 +88,10 @@ impl FluxApp {
                 }
                 crate::utils::save_config(&self.config);
             }
+            AppMsg::SetMaximized(maximized) => {
+                self.config.ui.start_maximized = maximized;
+                utils::save_config(&self.config);
+            }
             AppMsg::PerformPaste(files) => {
                 self.perform_paste(files);
             }
