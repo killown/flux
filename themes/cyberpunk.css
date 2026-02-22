@@ -5,8 +5,15 @@
 @define-color cp_black #050a0e;
 @define-color cp_red #ff003c;
 
+:root {
+  --hue-bleed: alpha(@cp_blue, 0.15);
+  --hue-bleed-hover: alpha(@cp_blue, 0.3);
+  --font-main: "Oxanium", "Orbitron", "Tektur", "Geist Mono", monospace;
+  --font-mono: "Geist Mono", monospace;
+}
+
 * {
-  font-family: "Oxanium", "Orbitron", "Tektur", "Geist Mono", monospace;
+  font-family: var(--font-main);
   selection-background-color: alpha(@cp_blue, 0.3);
   selection-color: white;
 }
@@ -16,11 +23,12 @@ window {
   color: white;
 }
 
-/* 1. Header: Glitch-Industrial */
 headerbar {
   background-color: @cp_black;
+  padding: 10px 12px;
+  min-height: 48px;
+  border: none;
   border-bottom: 3px solid @cp_yellow;
-  padding: 10px;
   box-shadow: 0 4px 20px alpha(@cp_yellow, 0.15);
 }
 
@@ -32,20 +40,48 @@ headerbar label {
   text-shadow: 2px 2px 0px @cp_red;
 }
 
-/* 2. Sidebar: Modular Shards */
+headerbar button {
+  background-color: transparent;
+  color: @cp_yellow;
+  border: none;
+  box-shadow: none;
+}
+
+headerbar button:hover {
+  background-color: alpha(@cp_yellow, 0.1);
+  color: white;
+}
+
+.sidebar {
+  background-color: @cp_black;
+  border: none;
+  border-right: 1px solid alpha(white, 0.05);
+}
+
+listview.sidebar-list {
+  background-color: transparent;
+}
+
 .sidebar-row {
   margin: 4px 10px;
   padding: 10px;
   background-color: alpha(white, 0.03);
+  border: none;
   border-left: 2px solid alpha(white, 0.1);
   clip-path: polygon(0% 0%, 100% 0%, 95% 100%, 0% 100%);
   transition: all 200ms ease-out;
+  color: alpha(white, 0.8);
+}
+
+.sidebar-row label {
+  ellipsize: none;
 }
 
 .sidebar-row:hover:not(:selected) {
   background-color: alpha(@cp_blue, 0.1);
-  border-left-color: @cp_blue;
+  border-left: 2px solid @cp_blue;
   transform: translateX(5px);
+  color: @cp_blue;
 }
 
 .sidebar-row:selected {
@@ -54,14 +90,18 @@ headerbar label {
   font-weight: 800;
   clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 5% 100%);
   box-shadow: -5px 0 15px alpha(@cp_yellow, 0.4);
+  border-left: none;
 }
 
-/* 3. Grid Cards: Neural-Port Interface */
+gridview {
+  background-color: @cp_black;
+}
+
 .flux-card {
   background-color: alpha(white, 0.05);
   border: 1px solid alpha(white, 0.1);
   border-left: 4px solid alpha(white, 0.2);
-  border-radius: 0px; /* Sharp industrial edges */
+  border-radius: 0px;
   padding: 15px;
   margin: 8px;
   transition: all 300ms cubic-bezier(0.165, 0.84, 0.44, 1);
@@ -77,24 +117,69 @@ headerbar label {
   transform: skewX(-2deg) scale(1.05);
 }
 
-.flux-card label {
+.flux-label {
+  color: alpha(white, 0.9);
+  font-family: var(--font-main);
   font-size: 10pt;
   font-weight: 700;
-  color: alpha(white, 0.9);
   text-transform: uppercase;
 }
 
-/* 4. Context Menu: Braindance Overlay */
+gridview > child:selected .flux-card {
+  background-color: alpha(@cp_blue, 0.2);
+  border-color: @cp_blue;
+  box-shadow: 0 0 15px @cp_blue;
+}
+
+gridview > child:selected .flux-label {
+  color: @cp_blue;
+  font-weight: 900;
+}
+
+button.breadcrumb-btn {
+  background-color: alpha(white, 0.05);
+  border: 1px solid alpha(@cp_blue, 0.2);
+  border-radius: 0px;
+  padding: 4px 12px;
+  margin-right: 4px;
+  min-height: 28px;
+  clip-path: polygon(5% 0%, 100% 0%, 95% 100%, 0% 100%);
+}
+
+button.breadcrumb-btn label {
+  color: @cp_blue;
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0px;
+  ellipsize: none;
+}
+
+button.breadcrumb-btn:hover {
+  background-color: alpha(@cp_blue, 0.2);
+}
+
+button.breadcrumb-btn:last-child {
+  background-color: @cp_yellow;
+}
+
+button.breadcrumb-btn:last-child label {
+  color: black;
+  font-weight: 900;
+}
+
 popover.menu contents {
   background-color: alpha(@cp_black, 0.98);
   border: 1px solid @cp_blue;
   border-top: 4px solid @cp_blue;
   padding: 8px;
   box-shadow: 0 0 30px alpha(@cp_blue, 0.3);
+  border-radius: 0px;
 }
 
 popover.menu modelbutton label {
-  font-size: 13pt;
+  font-size: 11pt;
   font-weight: 800;
   color: @cp_blue;
   text-transform: uppercase;
@@ -109,13 +194,13 @@ popover.menu modelbutton:hover label {
   color: black;
 }
 
-/* 5. Functional UI */
 entry {
   background-color: alpha(black, 0.6);
   border: 1px solid alpha(@cp_blue, 0.3);
   border-radius: 0px;
   color: @cp_blue;
-  font-family: "Geist Mono", monospace;
+  font-family: var(--font-mono);
+  padding: 6px;
 }
 
 entry:focus {
@@ -131,9 +216,4 @@ scrollbar slider {
 
 scrollbar slider:hover {
   background-color: @cp_yellow;
-}
-
-.drop-hover {
-  border: 2px dashed @cp_red;
-  background-color: alpha(@cp_red, 0.1);
 }

@@ -3,11 +3,15 @@
 @define-color matrix_green #00ff41;
 @define-color matrix_dark #003b00;
 @define-color matrix_black #0d0208;
+@define-color matrix_glow alpha(#00ff41, 0.4);
 
+/* 1. Global Setup */
 * {
   font-family: "Geist Mono", "JetBrains Mono", "MS Gothic", monospace;
-  selection-background-color: alpha(@matrix_green, 0.3);
-  selection-color: @matrix_green;
+  selection-background-color: @matrix_green;
+  selection-color: @matrix_black;
+  letter-spacing: 0.8px !important;
+  -gtk-secondary-caret-color: @matrix_green;
 }
 
 window {
@@ -15,124 +19,178 @@ window {
   color: @matrix_green;
 }
 
-/* 1. Header: Command Terminal Style */
+/* 2. Header: Command Terminal Style */
 headerbar {
   background-color: @matrix_black;
-  border-bottom: 1px solid @matrix_green;
+  border-bottom: 2px solid @matrix_green;
   padding: 6px;
-  box-shadow: 0 0 15px alpha(@matrix_green, 0.2);
 }
 
-headerbar label {
+headerbar label,
+.settings-window headerbar label {
   font-weight: 800;
-  text-transform: lowercase;
-  letter-spacing: 2px;
-  text-shadow: 0 0 8px @matrix_green;
+  text-transform: uppercase;
+  letter-spacing: 4px !important;
+  color: @matrix_green;
+  text-shadow: 0 0 12px @matrix_green;
 }
 
-/* 2. Sidebar: Matrix Data Streams */
-.sidebar-row {
-  margin: 2px 8px;
-  padding: 8px 12px;
-  background-color: transparent;
+headerbar button {
+  color: @matrix_green;
   border: 1px solid transparent;
-  transition: all 150ms ease-in-out;
+}
+
+headerbar button:hover {
+  border-color: @matrix_green;
+  background-color: alpha(@matrix_green, 0.1);
+}
+
+/* 3. Sidebar: Data Stream Shunting */
+.sidebar {
+  background-color: @matrix_black;
+  border-right: 1px solid @matrix_dark;
+}
+
+.sidebar-row {
+  margin: 0;
+  padding: 10px 16px;
+  background-color: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  /* Fixed Animation: Snap-to-grid mechanical transition */
+  transition: all 150ms steps(4, end);
+}
+
+.sidebar-row label {
+  letter-spacing: 1.2px !important;
+  text-transform: lowercase;
 }
 
 .sidebar-row:hover:not(:selected) {
   background-color: alpha(@matrix_green, 0.05);
-  border: 1px solid alpha(@matrix_green, 0.2);
+  color: @matrix_green;
+  border-left-color: @matrix_dark;
 }
 
 .sidebar-row:selected {
-  background-color: alpha(@matrix_green, 0.15);
+  background-color: alpha(@matrix_green, 0.1);
   color: #ffffff;
-  border: 1px solid @matrix_green;
-  box-shadow: inset 0 0 10px alpha(@matrix_green, 0.4);
-  font-weight: 800;
+  border-left: 3px solid @matrix_green;
+  text-shadow: 0 0 8px @matrix_green;
 }
 
-/* 3. Grid Cards: Buffer Allocations */
+/* 4. Grid Cards: Buffer Allocation Blocks */
 .flux-card {
-  background-color: alpha(@matrix_black, 0.8);
+  background-color: @matrix_black;
   border: 1px solid @matrix_dark;
-  border-radius: 2px; /* Brutalist sharp edges */
-  padding: 10px;
+  border-radius: 0;
+  padding: 12px;
   margin: 4px;
-  transition: all 250ms ease;
+  /* Fixed Animation: Using step-timing to mimic terminal refresh */
+  transition:
+    border-color 200ms steps(3),
+    box-shadow 200ms steps(3),
+    transform 150ms ease-out;
 }
 
 .flux-card:hover {
   border-color: @matrix_green;
-  background-color: alpha(@matrix_dark, 0.2);
-  box-shadow: 0 0 20px alpha(@matrix_green, 0.3);
-  transform: scale(1.02);
+  background-color: alpha(@matrix_dark, 0.1);
+  box-shadow: 0 0 15px @matrix_glow;
+  transform: translateY(-2px);
 }
 
-.flux-card label {
-  font-size: 9.5pt;
+.flux-label {
+  font-size: 10pt;
   color: @matrix_green;
-  text-shadow: 0 0 4px alpha(@matrix_green, 0.5);
+  letter-spacing: 1px !important;
 }
 
-/* 4. Context Menu: System Interrupt */
+/* 5. Context Menu: System Interrupt */
 popover.menu contents {
   background-color: @matrix_black;
-  border: 2px solid @matrix_green;
-  padding: 5px;
-  box-shadow: 0 0 40px alpha(@matrix_green, 0.4);
+  border: 1px solid @matrix_green;
+  border-radius: 0;
+  padding: 4px;
+  box-shadow: 8px 8px 0px @matrix_dark;
+}
+
+popover.menu modelbutton {
+  border-radius: 0;
+  color: @matrix_green;
 }
 
 popover.menu modelbutton label {
-  font-size: 13pt;
-  font-weight: 600;
-  color: @matrix_green;
-  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 1.5px !important;
 }
 
 popover.menu modelbutton:hover {
   background-color: @matrix_green;
-}
-
-popover.menu modelbutton:hover label {
   color: @matrix_black;
 }
 
-/* 5. Inputs & Scrollbars */
+/* 6. Inputs & Terminal Entry */
 entry {
   background-color: @matrix_black;
   border: 1px solid @matrix_dark;
-  border-radius: 0px;
+  border-radius: 0;
   color: @matrix_green;
-  caret-color: @matrix_green;
+  padding: 8px;
+  letter-spacing: 1.5px !important;
 }
 
 entry:focus {
   border-color: @matrix_green;
-  box-shadow: 0 0 10px alpha(@matrix_green, 0.5);
+  box-shadow: inset 0 0 5px @matrix_glow;
 }
 
+/* 7. Destructive Action: System Purge */
+.destructive-action {
+  background-color: @matrix_black;
+  color: #ff0000;
+  border: 1px solid #ff0000;
+  border-radius: 0;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px !important;
+}
+
+.destructive-action:hover {
+  background-color: #ff0000;
+  color: @matrix_black;
+  box-shadow: 0 0 20px alpha(#ff0000, 0.5);
+}
+
+/* 8. Scrollbar: Green Phosphor Slider */
 scrollbar slider {
   background-color: @matrix_dark;
-  border: 1px solid @matrix_green;
-  border-radius: 0px;
-  min-width: 8px;
+  border-radius: 0;
+  min-width: 6px;
+  border: 1px solid transparent;
 }
 
 scrollbar slider:hover {
   background-color: @matrix_green;
+  box-shadow: 0 0 10px @matrix_green;
 }
 
-/* 6. Utility Elements */
+/* 9. Adw & Settings Overrides */
+adwpreferencesgroup > box > label {
+  letter-spacing: 2px !important;
+  color: @matrix_green;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+adwactionrow label.title {
+  letter-spacing: 0.8px !important;
+}
+
 .sort-label {
   border: 1px solid @matrix_green;
-  color: @matrix_green;
-  background-color: @matrix_black;
-  padding: 2px 6px;
-  font-size: 9px;
-}
-
-popover.menu separator {
+  color: @matrix_black;
   background-color: @matrix_green;
-  margin: 8px 2px;
+  font-weight: 800;
+  letter-spacing: 1px !important;
 }

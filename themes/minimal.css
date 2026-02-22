@@ -1,10 +1,9 @@
-/* --- Flux: Bento Protocol (Absolute Color Sync) --- */
-
 :root {
   --hue-bleed: rgba(26, 27, 38, 0.6);
   --hue-bleed-hover: rgba(36, 40, 59, 0.7);
   --font-main: "Geist", "Open Sans", sans-serif;
   --font-mono: "Geist Mono", monospace;
+  letter-spacing: 0.5px !important;
 }
 
 @media (prefers-color-scheme: light) {
@@ -25,6 +24,9 @@ headerbar {
 
 headerbar label {
   color: @headerbar_fg_color;
+  letter-spacing: 1.5px !important;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 headerbar button {
@@ -45,21 +47,26 @@ headerbar button:hover {
 }
 
 .sidebar-row {
-  margin: 8px 14px;
+  margin: 6px 14px;
   padding: 10px 16px;
   border-radius: 12px;
   background-color: alpha(@theme_fg_color, 0.05);
   border: none;
+  transition:
+    background-color 200ms linear,
+    transform 200ms cubic-bezier(0.1, 0.7, 0.1, 1);
 }
 
 .sidebar-row label {
   color: @theme_fg_color;
   font-family: var(--font-main);
   font-size: 10.5pt;
+  letter-spacing: 0.6px !important;
 }
 
 .sidebar-row:hover:not(:selected) {
-  background-color: alpha(@theme_fg_color, 0.8);
+  background-color: alpha(@theme_fg_color, 0.12);
+  transform: translateX(4px);
 }
 
 .sidebar-row:selected {
@@ -96,14 +103,18 @@ gridview child {
   margin: 6px;
   border: none;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-  transition: all 400ms cubic-bezier(0.25, 1, 0.5, 1);
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
 }
 
 .flux-card:hover {
   background-color: alpha(@theme_fg_color, 0.06);
   box-shadow:
     0 0 0 1px alpha(@accent_color, 0.3),
-    0 12px 24px var(--hue-bleed-hover);
+    0 8px 16px var(--hue-bleed-hover);
   transform: translateY(-4px);
 }
 
@@ -111,6 +122,7 @@ gridview child {
   color: @theme_fg_color;
   font-family: var(--font-main);
   font-size: 10pt;
+  letter-spacing: 0.4px !important;
 }
 
 gridview > child:selected .flux-label {
@@ -130,6 +142,7 @@ button.breadcrumb-btn {
 button.breadcrumb-btn label {
   color: alpha(@theme_fg_color, 0.8);
   font-family: var(--font-mono);
+  letter-spacing: 0.8px !important;
 }
 
 button.breadcrumb-btn:hover {
@@ -152,10 +165,13 @@ button.breadcrumb-btn:last-child label {
 
 popover.menu contents {
   background-color: @window_bg_color;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--hue-bleed);
 }
 
 popover.menu modelbutton label {
   color: @theme_fg_color;
+  letter-spacing: 0.4px !important;
 }
 
 entry {
@@ -165,17 +181,62 @@ entry {
   padding: 4px 12px;
   color: @theme_fg_color;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.5px !important;
+}
+
+/* Settings & Preferences Integration */
+window.settings-window headerbar label,
+adwpreferenceswindow headerbar label {
+  letter-spacing: 2px !important;
+  font-weight: 800;
+}
+
+.settings-row label {
+  letter-spacing: 0.3px !important;
+}
+
+adwpreferencesgroup > box > label {
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.7;
 }
 
 adwactionrow label {
   color: @theme_fg_color;
+  letter-spacing: 0.3px !important;
 }
 
 dropdown {
   background-color: @card_bg_color;
   color: @theme_fg_color;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+dropdown label {
+  letter-spacing: 0.5px !important;
 }
 
 toast label {
   color: @theme_fg_color;
+  letter-spacing: 0.6px !important;
+}
+
+.destructive-action {
+  background-color: alpha(#e01b24, 0.1);
+  color: #e01b24;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: bold;
+  letter-spacing: 1.2px !important;
+}
+
+scrollbar slider {
+  background-color: alpha(@theme_fg_color, 0.2);
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: alpha(@theme_fg_color, 0.4);
 }

@@ -10,12 +10,12 @@
 * {
   font-family: "Geist Mono", "Roboto Mono", "Consolas", monospace;
   -gtk-secondary-caret-color: @monolith_signal;
+  letter-spacing: 0.8px !important;
 }
 
 window {
   background-color: @monolith_slate;
   color: @monolith_text;
-  /* Vertical formwork textures simulating cast stone */
   background-image: linear-gradient(
     to right,
     alpha(black, 0.1) 1px,
@@ -29,17 +29,17 @@ headerbar {
   background-color: #1a1a1a;
   border-bottom: 5px solid @monolith_alloy;
   padding: 16px;
-  /* Structural rivet pattern */
   background-image: radial-gradient(circle, #333 2px, transparent 2px);
   background-size: 100% 30px;
   background-position: left 10px center;
   background-repeat: no-repeat;
 }
 
-headerbar label {
+headerbar label,
+.settings-window headerbar label {
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 4px !important;
   color: white;
   -gtk-icon-shadow: 2px 2px black;
 }
@@ -56,7 +56,13 @@ scrolledwindow.sidebar {
   background-color: transparent;
   color: alpha(@monolith_text, 0.4);
   border-bottom: 1px solid alpha(black, 0.2);
-  transition: all 150ms ease-out;
+  /* Fixed Animation: Rigid mechanical snap */
+  transition: all 150ms steps(3, end);
+}
+
+.sidebar-row label {
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase;
 }
 
 .sidebar-row:hover:not(:selected) {
@@ -64,7 +70,6 @@ scrolledwindow.sidebar {
   color: white;
 }
 
-/* Selection: Active Circuit */
 .sidebar-row:selected {
   background-color: alpha(@monolith_active, 0.1);
   color: @monolith_active;
@@ -80,29 +85,30 @@ scrolledwindow.sidebar {
   border-radius: 0px;
   padding: 24px;
   margin: 15px;
-
-  /* Inset shadow makes cards look built-in rather than floating */
   box-shadow:
     inset 4px 4px 10px alpha(black, 0.5),
     6px 6px 0px #1a1a1a;
-
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smoothed mechanical transition */
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    transform 150ms cubic-bezier(0.4, 0, 1, 1);
 }
 
 .flux-card:hover {
   background-color: @monolith_alloy;
-  /* Card "engages" toward the user */
-  transform: translate(-4px, -4px);
+  transform: translate(-6px, -6px);
   box-shadow: 12px 12px 0px #111;
   border-color: @monolith_signal;
 }
 
-.flux-card label {
+.flux-label {
   font-size: 10pt;
   font-weight: 700;
   text-transform: uppercase;
   color: alpha(white, 0.7);
   margin-top: 15px;
+  letter-spacing: 1px !important;
 }
 
 /* 5. Destructive Action: Safety Interlock */
@@ -114,7 +120,11 @@ scrolledwindow.sidebar {
   padding: 10px 30px;
   font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 3px !important;
   box-shadow: 0 6px 0px #400000;
+  transition:
+    transform 100ms steps(2),
+    box-shadow 100ms steps(2);
 }
 
 .destructive-action:hover {
@@ -133,6 +143,11 @@ popover.menu contents {
   box-shadow: 20px 20px 40px alpha(black, 0.6);
 }
 
+popover.menu modelbutton label {
+  letter-spacing: 1px !important;
+  text-transform: uppercase;
+}
+
 popover.menu modelbutton:hover {
   background-color: @monolith_signal;
   color: black;
@@ -145,11 +160,12 @@ entry {
   border-radius: 0px;
   padding: 12px;
   color: @monolith_active;
+  letter-spacing: 1.5px !important;
 }
 
 entry:focus {
   border-color: @monolith_signal;
-  outline: none;
+  box-shadow: inset 0 0 10px alpha(@monolith_active, 0.1);
 }
 
 /* 8. Functional UI: Heavy Rail Scroller */
@@ -166,5 +182,27 @@ scrollbar slider {
   font-size: 8pt;
   padding: 3px 12px;
   font-weight: 900;
+  letter-spacing: 1.5px !important;
   clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+}
+
+/* Adw/Settings Matrix Overrides */
+adwpreferencesgroup > box > label {
+  letter-spacing: 2px !important;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: @monolith_alloy;
+}
+
+adwactionrow label.title {
+  letter-spacing: 0.6px !important;
+}
+
+dropdown label {
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase;
+}
+
+toast label {
+  letter-spacing: 1px !important;
 }
