@@ -94,6 +94,7 @@ pub struct ContextAction {
 
 /// Visual and behavioral settings for the User Interface.
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[serde(default)]
 pub struct UIConfig {
     pub default_icon_size: i32,
     pub sidebar_width: i32,
@@ -114,6 +115,7 @@ pub struct UIConfig {
     pub folder_icon_size: HashMap<String, i32>,
     #[serde(default)]
     pub device_renames: HashMap<String, DeviceRename>,
+    pub show_csd: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

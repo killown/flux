@@ -90,6 +90,7 @@ default_sort = "Name"
 show_hidden_by_default = false
 folders_first = true
 theme = "default"
+show_csd = false
 
 [ui.folder_sort]
 
@@ -199,6 +200,7 @@ path = "~"
             ui: crate::model::UIConfig {
                 default_icon_size: 128,
                 single_click: false,
+                show_csd: true,
                 sidebar_width: 240,
                 show_xdg_dirs: false,
                 current_folders_first: std::collections::HashMap::new(),
