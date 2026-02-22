@@ -7,8 +7,10 @@
 pub mod init;
 pub mod inputs;
 pub mod keymap;
+pub mod settings;
 pub mod update;
 pub mod view;
+pub use settings::SettingsWindow;
 
 // --- 2. Existing Submodules ---
 mod components;

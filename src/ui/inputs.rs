@@ -240,4 +240,21 @@ pub fn setup_controllers(
         }
     });
     window.add_controller(mouse_nav);
+
+    // 9. Settings window
+    let parent_window = window.root().and_downcast::<gtk::Window>();
+    let settings_shortcut = gtk::ShortcutController::new();
+    settings_shortcut.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.settings.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            let controller = crate::ui::SettingsWindow::builder().launch(());
+            if let Some(parent) = &parent_window {
+                controller.widget().set_transient_for(Some(parent));
+            }
+            controller.widget().present();
+            controller.detach();
+            gtk::glib::Propagation::Stop
+        })),
+    ));
+    window.add_controller(settings_shortcut);
 }

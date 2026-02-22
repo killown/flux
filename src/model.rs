@@ -178,6 +178,26 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Updates the single-click activation setting.
+    SetSingleClick(bool),
+    /// Updates the global hidden files visibility.
+    SetShowHidden(bool),
+    /// Updates the folders-first sorting priority.
+    SetFoldersFirst(bool),
+    /// Updates the default icon size.
+    SetIconSize(i32),
+    /// Updates the preferred sidebar width.
+    SetSidebarWidth(i32),
+    /// Toggles Client-Side Decorations (CSD).
+    SetShowCsd(bool),
+    /// Toggles visibility of standard XDG directories in the sidebar.
+    SetShowXdgDirs(bool),
+    /// Updates the active UI theme name.
+    SetTheme(Option<String>),
+    /// Updates the default sorting method.
+    SetDefaultSort(SortBy),
+    /// Updates a specific keyboard shortcut.
+    SetShortcut(String, Option<String>),
     /// Copy the current selection to the clipboard with a "copy" intent.
     Copy,
     /// Copy the current selection to the clipboard with a "cut" intent.

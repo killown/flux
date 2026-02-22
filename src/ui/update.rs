@@ -30,6 +30,64 @@ impl FluxApp {
                 // Re-run the standard refresh to append system drives/mounts
                 self.refresh_sidebar();
             }
+            AppMsg::SetSingleClick(val) => {
+                self.config.ui.single_click = val;
+                self.files.view.set_single_click_activate(val);
+                utils::save_config(&self.config);
+            }
+            AppMsg::SetShowHidden(val) => {
+                self.show_hidden = val;
+                self.config.ui.show_hidden_by_default = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetFoldersFirst(val) => {
+                self.config.ui.folders_first = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetIconSize(val) => {
+                self.config.ui.default_icon_size = val;
+                self.current_icon_size = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetSidebarWidth(val) => {
+                self.config.ui.sidebar_width = val;
+                utils::save_config(&self.config);
+            }
+            AppMsg::SetShowCsd(val) => {
+                self.config.ui.show_csd = val;
+                utils::save_config(&self.config);
+            }
+            AppMsg::SetShowXdgDirs(val) => {
+                self.config.ui.show_xdg_dirs = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::RefreshSidebar);
+            }
+            AppMsg::SetTheme(theme) => {
+                self.config.ui.theme = theme;
+                utils::save_config(&self.config);
+            }
+            AppMsg::SetDefaultSort(sort) => {
+                self.config.ui.default_sort = sort;
+                self.sort_by = sort;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetShortcut(key, val) => {
+                match key.as_str() {
+                    "back" => self.config.shortcuts.back = val,
+                    "forward" => self.config.shortcuts.forward = val,
+                    "open" => self.config.shortcuts.open = val,
+                    "delete" => self.config.shortcuts.delete = val,
+                    "refresh" => self.config.shortcuts.refresh = val,
+                    "search" => self.config.shortcuts.search = val,
+                    "toggle_hidden" => self.config.shortcuts.toggle_hidden = val,
+                    _ => {}
+                }
+                crate::utils::save_config(&self.config);
+            }
             AppMsg::PerformPaste(files) => {
                 self.perform_paste(files);
             }
