@@ -18,6 +18,9 @@ impl SimpleComponent for FluxApp {
             set_default_size: (constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT),
             set_title: Some(constants::APP_TITLE),
 
+            #[watch]
+            set_decorated: model.config.ui.show_csd,
+
             // --- UI LAYOUT ---
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
@@ -36,8 +39,10 @@ impl SimpleComponent for FluxApp {
 
                     /// Top-level navigation and state toolbar.
                     adw::HeaderBar {
-                        set_show_start_title_buttons: false,
-                        set_show_end_title_buttons: false,
+                        #[watch]
+                        set_show_start_title_buttons: model.config.ui.show_csd,
+                        #[watch]
+                        set_show_end_title_buttons: model.config.ui.show_csd,
 
                         pack_start = &gtk::Button {
                             set_icon_name: constants::ICON_BACK,
