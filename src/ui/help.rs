@@ -1,10 +1,31 @@
+use crate::model::Config;
 use adw::prelude::*;
 use relm4::prelude::*;
 
-pub struct HelpWindow;
+pub struct HelpWindow {
+    config: Config,
+}
 
 #[derive(Debug)]
 pub enum HelpMsg {}
+
+impl HelpWindow {
+    fn format_shortcut(&self, shortcut: Option<String>, default: &str) -> String {
+        let raw = shortcut.unwrap_or_else(|| default.to_string());
+
+        if raw.trim().is_empty() {
+            return default.to_string();
+        }
+
+        raw.replace("<Primary>", "Ctrl + ")
+            .replace("<Control>", "Ctrl + ")
+            .replace("<control>", "Ctrl + ")
+            .replace("<Alt>", "Alt + ")
+            .replace("<Shift>", "Shift + ")
+            .replace("Return", "Enter")
+            .replace("BackSpace", "Backspace")
+    }
+}
 
 #[relm4::component(pub)]
 impl SimpleComponent for HelpWindow {
@@ -29,37 +50,22 @@ impl SimpleComponent for HelpWindow {
                     set_propagate_natural_height: true,
 
                     adw::PreferencesPage {
-                        // --- NAVIGATION ---
                         adw::PreferencesGroup {
                             set_title: "Navigation",
                             adw::ActionRow {
-                                set_title: "Ctrl + ]",
-                                set_subtitle: "Navigate to previous folder in parent directory"
+                                set_title: &model.format_shortcut(model.config.shortcuts.back.clone(), "Backspace"),
+                                set_subtitle: "Go back in history"
                             },
                             adw::ActionRow {
-                                set_title: "Ctrl + [",
-                                set_subtitle: "Navigate to next folder in parent directory"
+                                set_title: &model.format_shortcut(model.config.shortcuts.forward.clone(), "Alt + Right"),
+                                set_subtitle: "Go forward in history"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
+                                set_subtitle: "Open selected file or directory"
                             },
                         },
 
-                        // --- CLIPBOARD ---
-                        adw::PreferencesGroup {
-                            set_title: "Clipboard Operations",
-                            adw::ActionRow {
-                                set_title: "Ctrl + C",
-                                set_subtitle: "Copy selection to clipboard"
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + X",
-                                set_subtitle: "Cut selection (Move intent)"
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + V",
-                                set_subtitle: "Paste files from clipboard"
-                            },
-                        },
-
-                        // --- QUICK LIST ---
                         adw::PreferencesGroup {
                             set_title: "Quick List (Exclusive List)",
                             adw::ActionRow {
@@ -76,40 +82,27 @@ impl SimpleComponent for HelpWindow {
                             },
                         },
 
-                        // --- SYSTEM & VIEW ---
                         adw::PreferencesGroup {
                             set_title: "System & View",
                             adw::ActionRow {
-                                set_title: "F1",
-                                set_subtitle: "Show this help"
+                                set_title: "F10",
+                                set_subtitle: "Open preferences"
                             },
                             adw::ActionRow {
-                                set_title: "F2",
-                                set_subtitle: "Rename selected item"
+                                set_title: &model.format_shortcut(model.config.shortcuts.refresh.clone(), "F5"),
+                                set_subtitle: "Refresh current directory"
                             },
                             adw::ActionRow {
-                                set_title: "Delete",
-                                set_subtitle: "Move selected items to trash"
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + F",
+                                set_title: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
                                 set_subtitle: "Search files"
                             },
                             adw::ActionRow {
-                                set_title: "Esc",
-                                set_subtitle: "Back to path / Close search"
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + H",
+                                set_title: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
                                 set_subtitle: "Toggle hidden files"
                             },
                             adw::ActionRow {
-                                set_title: "Ctrl + S",
-                                set_subtitle: "Cycle sort mode"
-                            },
-                            adw::ActionRow {
-                                set_title: "Shift + S",
-                                set_subtitle: "Toggle folders-first priority"
+                                set_title: &model.format_shortcut(model.config.shortcuts.delete.clone(), "Delete"),
+                                set_subtitle: "Move selected items to trash"
                             },
                         }
                     }
@@ -123,10 +116,10 @@ impl SimpleComponent for HelpWindow {
         _root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let model = HelpWindow;
+        let model = HelpWindow {
+            config: crate::utils::load_config(),
+        };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
-
-    fn update(&mut self, _msg: Self::Input, _sender: ComponentSender<Self>) {}
 }
