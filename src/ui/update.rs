@@ -88,9 +88,18 @@ impl FluxApp {
                 }
                 crate::utils::save_config(&self.config);
             }
-            AppMsg::SetMaximized(maximized) => {
-                self.config.ui.start_maximized = maximized;
-                utils::save_config(&self.config);
+            AppMsg::SetMaximized(max) => {
+                self.config.ui.start_maximized = max;
+                crate::utils::save_config(&self.config);
+
+                let app = gtk::Application::default();
+                if let Some(window) = app.active_window() {
+                    if max {
+                        window.maximize();
+                    } else {
+                        window.unmaximize();
+                    }
+                }
             }
             AppMsg::PerformPaste(files) => {
                 self.perform_paste(files);
