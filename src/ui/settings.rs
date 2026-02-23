@@ -30,21 +30,6 @@ impl SimpleComponent for SettingsWindow {
                     add_css_class: "layout-group",
 
                     add = &adw::ActionRow {
-                        set_title: "Start Maximized",
-                        set_subtitle: "Open the application in maximized state",
-                        add_css_class: "settings-row",
-                        add_suffix = &gtk::Switch {
-                            set_active: model.config.ui.start_maximized,
-                            set_valign: gtk::Align::Center,
-                            connect_active_notify => move |switch| {
-                                if let Some(s) = crate::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetMaximized(switch.is_active()));
-                                }
-                            }
-                        }
-                    },
-
-                    add = &adw::ActionRow {
                         set_title: "Default Icon Size",
                         set_subtitle: "Base size of icons in the grid view",
                         add_css_class: "settings-row",
@@ -83,6 +68,20 @@ impl SimpleComponent for SettingsWindow {
                             connect_active_notify => move |switch| {
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetShowCsd(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: "Start Maximized",
+                        set_subtitle: "Open the application in maximized state",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.start_maximized,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetMaximized(switch.is_active()));
                                 }
                             }
                         }

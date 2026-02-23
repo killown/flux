@@ -15,10 +15,7 @@ impl SimpleComponent for FluxApp {
     view! {
         /// Main application window for the Flux file manager.
         adw::Window {
-            set_default_width: constants::DEFAULT_WIDTH,
-            set_default_height: constants::DEFAULT_HEIGHT,
             set_title: Some(constants::APP_TITLE),
-
 
             #[watch]
             set_decorated: model.config.ui.show_csd,
@@ -346,13 +343,11 @@ impl SimpleComponent for FluxApp {
             &model.keymap,
         );
 
+        root.set_default_size(constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT);
+
         if model.config.ui.start_maximized {
             root.maximize();
         }
-
-        root.connect_maximized_notify(move |window| {
-            sender.input(AppMsg::SetMaximized(window.is_maximized()));
-        });
 
         ComponentParts { model, widgets }
     }
