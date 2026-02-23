@@ -686,6 +686,7 @@ impl FluxApp {
                 if let Some(prev) = self.history.pop() {
                     self.forward_stack.push(self.current_path.clone());
                     self.load_path(prev, &sender);
+                    self.update_breadcrumbs();
                 }
             }
             AppMsg::GoForward => {
