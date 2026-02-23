@@ -687,12 +687,18 @@ impl FluxApp {
                     self.forward_stack.push(self.current_path.clone());
                     self.load_path(prev, &sender);
                     self.update_breadcrumbs();
+                } else if let Some(parent) = self.current_path.parent() {
+                    let parent_path = parent.to_path_buf();
+                    self.forward_stack.push(self.current_path.clone());
+                    self.load_path(parent_path, &sender);
+                    self.update_breadcrumbs();
                 }
             }
             AppMsg::GoForward => {
                 if let Some(next) = self.forward_stack.pop() {
                     self.history.push(self.current_path.clone());
                     self.load_path(next, &sender);
+                    self.update_breadcrumbs();
                 }
             }
             AppMsg::Refresh => {
