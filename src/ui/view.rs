@@ -343,7 +343,10 @@ impl SimpleComponent for FluxApp {
             &model.keymap,
         );
 
-        root.set_default_size(constants::DEFAULT_WIDTH, constants::DEFAULT_HEIGHT);
+        root.set_default_size(
+            model.config.ui.startup_window_width,
+            model.config.ui.startup_window_height,
+        );
 
         if model.config.ui.start_maximized {
             root.maximize();

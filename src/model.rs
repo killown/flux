@@ -117,6 +117,8 @@ pub struct UIConfig {
     pub device_renames: HashMap<String, DeviceRename>,
     pub show_csd: bool,
     pub start_maximized: bool,
+    pub startup_window_width: i32,
+    pub startup_window_height: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]

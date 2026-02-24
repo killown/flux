@@ -83,6 +83,8 @@ pub fn load_config() -> crate::model::Config {
         let mut default_toml = String::from(
             r#"[ui]
 default_icon_size = 96
+startup_window_width = 1280
+startup_window_height = 800
 sidebar_width = 200
 single_click = false
 show_xdg_dirs = false
@@ -200,6 +202,8 @@ path = "~"
         .unwrap_or_else(|| crate::model::Config {
             ui: crate::model::UIConfig {
                 default_icon_size: 128,
+                startup_window_width: crate::ui::constants::DEFAULT_WIDTH,
+                startup_window_height: crate::ui::constants::DEFAULT_HEIGHT,
                 single_click: false,
                 show_csd: true,
                 sidebar_width: 240,
