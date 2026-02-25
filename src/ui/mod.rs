@@ -25,7 +25,6 @@ pub use properties::FileProperties;
 
 /// Groups UI-specific constants such as default window dimensions or CSS class names.
 pub mod constants {
-    pub const APP_TITLE: &str = "flux";
     pub const DEFAULT_WIDTH: i32 = 1100;
     pub const DEFAULT_HEIGHT: i32 = 750;
 

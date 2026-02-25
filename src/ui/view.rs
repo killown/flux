@@ -15,7 +15,15 @@ impl SimpleAsyncComponent for FluxApp {
     view! {
         /// Main application window for the Flux file manager.
         adw::Window {
-            set_title: Some(constants::APP_TITLE),
+            #[watch]
+            set_title: Some(&if model.current_path.to_string_lossy().starts_with(constants::TRASH_URI) {
+                "Trash".to_string()
+            } else {
+                model.current_path.file_name()
+                    .unwrap_or_else(|| std::ffi::OsStr::new("/"))
+                    .to_string_lossy()
+                    .into_owned()
+            }),
 
             #[watch]
             set_decorated: model.config.ui.show_csd,
