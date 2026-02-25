@@ -30,7 +30,7 @@ impl FluxApp {
         ctrl: &gtk::EventControllerKey,
         keyval: gdk::Key,
         state: gdk::ModifierType,
-        sender: &ComponentSender<Self>,
+        sender: &AsyncComponentSender<Self>,
         header_view: &str,
     ) -> glib::Propagation {
         let modifiers = state & gtk::accelerator_get_default_mod_mask();
@@ -339,7 +339,10 @@ impl FluxApp {
     }
 
     /// Registers application-wide keyboard shortcuts with a ShortcutController.
-    pub fn setup_shortcuts(controller: &gtk::ShortcutController, sender: &ComponentSender<Self>) {
+    pub fn setup_shortcuts(
+        controller: &gtk::ShortcutController,
+        sender: &AsyncComponentSender<Self>,
+    ) {
         let shortcuts = [
             ("<Control>h", AppMsg::ToggleHidden),
             ("F1", AppMsg::ShowHelp),
@@ -374,7 +377,7 @@ impl FluxApp {
     }
 
     /// Registers GIO actions to the application's internal action group.
-    pub fn setup_actions(&self, sender: &ComponentSender<Self>) {
+    pub fn setup_actions(&self, sender: &AsyncComponentSender<Self>) {
         // 1. Folder Priority Action
         let prio_action = gio::SimpleAction::new("cycle-priority", None);
         let prio_sender = sender.clone();

@@ -134,5 +134,5 @@ fn main() {
         dirs::home_dir().unwrap_or(PathBuf::from("."))
     };
 
-    app.with_args(vec![]).run::<FluxApp>(start_path);
+    app.with_args(vec![]).run_async::<FluxApp>(start_path);
 }

@@ -6,8 +6,8 @@ use gtk::glib::{self};
 use relm4::prelude::*;
 use std::path::PathBuf;
 
-#[relm4::component(pub)]
-impl SimpleComponent for FluxApp {
+#[relm4::component(pub, async)]
+impl SimpleAsyncComponent for FluxApp {
     type Init = PathBuf;
     type Input = AppMsg;
     type Output = ();
@@ -304,7 +304,7 @@ impl SimpleComponent for FluxApp {
         }
     }
 
-    fn update(&mut self, message: Self::Input, sender: ComponentSender<Self>) {
+    async fn update(&mut self, message: Self::Input, sender: AsyncComponentSender<Self>) {
         self.handle_update(message, sender);
     }
 
@@ -317,12 +317,13 @@ impl SimpleComponent for FluxApp {
     ///
     /// Returns:
     ///     The initialized model and widgets encapsulated in `ComponentParts`.
-    fn init(
+    async fn init(
         start_path: Self::Init,
         root: Self::Root,
-        sender: ComponentSender<Self>,
-    ) -> ComponentParts<Self> {
-        let (model, breadcrumb_box) = Self::init_components(start_path, &root, sender.clone());
+        sender: AsyncComponentSender<Self>,
+    ) -> AsyncComponentParts<Self> {
+        // Initialize an empty model here instead of synchronously loading `start_path`.
+        let (model, breadcrumb_box) = Self::init_components(PathBuf::new(), &root, sender.clone());
         let widgets = view_output!();
 
         // Map widgets that were not part of the view macro directly
@@ -352,6 +353,11 @@ impl SimpleComponent for FluxApp {
             root.maximize();
         }
 
-        ComponentParts { model, widgets }
+        let startup_sender = sender.clone();
+        gtk::glib::idle_add_local_once(move || {
+            startup_sender.input(AppMsg::Navigate(start_path));
+        });
+
+        AsyncComponentParts { model, widgets }
     }
 }

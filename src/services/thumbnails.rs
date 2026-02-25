@@ -11,7 +11,7 @@ impl FluxApp {
         &self,
         media_tasks: Vec<(String, PathBuf)>,
         current_session: u64,
-        sender: ComponentSender<Self>,
+        sender: AsyncComponentSender<Self>,
     ) {
         let session_arc = self.load_id.clone();
 

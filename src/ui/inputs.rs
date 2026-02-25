@@ -10,7 +10,7 @@ use relm4::prelude::*;
 pub fn setup_controllers(
     window: &impl IsA<gtk::Widget>,
     grid_view: &gtk::GridView,
-    sender: ComponentSender<FluxApp>,
+    sender: relm4::AsyncComponentSender<FluxApp>,
     header_stack: &gtk::Stack,
     config_single_click: bool,
     keymap: &KeyMap,

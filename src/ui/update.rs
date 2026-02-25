@@ -9,7 +9,7 @@ use relm4::prelude::*;
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
-    pub fn handle_update(&mut self, message: AppMsg, sender: ComponentSender<Self>) {
+    pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
             AppMsg::RefreshSidebar => {
                 // Reload the configuration from disk to capture external changes

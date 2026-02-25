@@ -20,7 +20,7 @@ impl FluxApp {
     pub(crate) fn init_components(
         start_path: PathBuf,
         root: &adw::Window,
-        sender: ComponentSender<Self>,
+        sender: AsyncComponentSender<Self>,
     ) -> (Self, gtk::Box) {
         // 1. Static and Global Configuration
         let _ = crate::model::SENDER.set(sender.input_sender().clone());

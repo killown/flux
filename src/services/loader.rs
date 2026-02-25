@@ -29,7 +29,7 @@ impl FluxApp {
     /// # Arguments
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
-    pub fn load_path(&mut self, path: PathBuf, sender: &ComponentSender<Self>) {
+    pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         self.directory_monitor = None;
         let path_str = path.to_string_lossy().to_string();
 
