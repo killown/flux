@@ -563,6 +563,10 @@ impl FluxApp {
                     .set_single_click_activate(self.config.ui.single_click);
                 utils::save_config(&self.config);
             }
+            //WARN: Change this logic with caution. If the process working directory
+            // (CWD) is not synchronized, operations like drag-and-drop or shell commands
+            // may resolve relative paths incorrectly, moving files to previous locations
+            // instead of the directory currently displayed to the user.
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
 
@@ -571,34 +575,41 @@ impl FluxApp {
                     return;
                 }
 
+                // Only proceed if the target is a directory/trash and different from current location
                 if (path.is_dir() || path_str.starts_with(constants::TRASH_URI))
                     && path != self.current_path
                 {
                     let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
-                    // 1. Update the recent navigation stack
+                    // Synchronize the physical process working directory with the application state.
+                    // This ensures std::fs operations and spawned child processes resolve
+                    // relative paths against the folder currently visible in the UI.
+                    if path.is_absolute() {
+                        let _ = std::env::set_current_dir(&path);
+                    }
+
+                    // Manage navigation history and recent items stack
                     self.recent_stack.retain(|p| p != &path && p != &old_path);
                     self.recent_stack.push_front(old_path.clone());
                     self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
 
-                    // 2. ABSOLUTE RESET: Clear search state before loading new dir
+                    // Reset search and filter state before entering new directory
                     self.filter.clear();
                     self.files.clear_filters();
 
-                    // 3. Reset UI state: Close search view and show breadcrumbs
+                    // Revert header UI from search mode back to path/breadcrumb view
                     if self.header_view == constants::VIEW_SEARCH {
                         self.header_view = "path".to_string();
                     }
 
-                    // 4. Update internal state and history
                     self.history.push(old_path);
                     self.forward_stack.clear();
 
-                    // 5. Trigger the physical load of the new directory
+                    // Perform the actual I/O to populate the file model for the new path
                     self.load_path(path, &sender);
                     self.update_breadcrumbs();
 
-                    // 6. NEW: Auto-select first item and grab focus for keyboard navigation
+                    // Update focus and selection on the next main loop iteration
                     let view = self.files.view.clone();
                     glib::idle_add_local_once(move || {
                         view.grab_focus();
@@ -880,14 +891,12 @@ impl FluxApp {
                         let final_dest = dest_path.join(file_name);
 
                         if source_path != final_dest {
-                            // Standard move logic
                             if let Err(e) = std::fs::rename(&source_path, &final_dest) {
                                 eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
                             }
                         }
                     }
                 }
-                // Refresh once after the batch operation
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::HandleExternalDrop {
@@ -896,6 +905,13 @@ impl FluxApp {
             } => {
                 for source in source_paths {
                     if let Some(file_name) = source.file_name() {
+                        let final_dest = dest_path.join(file_name);
+
+                        if source == final_dest {
+                            if let Err(e) = std::fs::rename(&source, &final_dest) {
+                                eprintln!("[DnD Error] Failed to move {:?}: {}", source, e);
+                            }
+                        }
                         let dest = dest_path.join(file_name);
 
                         let src_file = gio::File::for_path(&source);
