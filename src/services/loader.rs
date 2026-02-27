@@ -59,8 +59,15 @@ impl FluxApp {
             root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
         {
             let sender_clone = sender.clone();
-            monitor.connect_changed(move |_, _, _, _| {
-                sender_clone.input(AppMsg::Refresh);
+            monitor.connect_changed(move |_, _, _, event| match event {
+                gio::FileMonitorEvent::ChangesDoneHint
+                | gio::FileMonitorEvent::Created
+                | gio::FileMonitorEvent::Deleted
+                | gio::FileMonitorEvent::Renamed
+                | gio::FileMonitorEvent::Moved => {
+                    sender_clone.input(AppMsg::Refresh);
+                }
+                _ => {}
             });
             self.directory_monitor = Some(monitor);
         }

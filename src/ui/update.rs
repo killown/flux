@@ -668,16 +668,20 @@ impl FluxApp {
                 texture,
                 load_id,
             } => {
-                // Consistency check: Ignore thumbnails if the user has navigated to a new folder (load_id mismatch)
                 if load_id == self.load_id.load(Ordering::SeqCst) {
                     let target_idx = (0..self.files.len())
                         .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
                     if let Some(idx) = target_idx {
                         if let Some(item_wrapper) = self.files.get(idx) {
                             let mut item = item_wrapper.borrow().clone();
-                            item.thumbnail = Some(texture);
-                            self.files.remove(idx);
-                            self.files.insert(idx, item);
+
+                            // Optimization: Only refresh the UI if the thumbnail has actually changed.
+                            // This prevents flickering during rapid background write operations.
+                            if item.thumbnail.as_ref() != Some(&texture) {
+                                item.thumbnail = Some(texture);
+                                self.files.remove(idx);
+                                self.files.insert(idx, item);
+                            }
                         }
                     }
                 }
