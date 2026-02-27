@@ -59,19 +59,30 @@ impl FluxApp {
             root.monitor_directory(gio::FileMonitorFlags::WATCH_MOVES, gio::Cancellable::NONE)
         {
             let sender_clone = sender.clone();
-            monitor.connect_changed(move |_, _, _, event| match event {
-                gio::FileMonitorEvent::ChangesDoneHint
-                | gio::FileMonitorEvent::Created
-                | gio::FileMonitorEvent::Deleted
-                | gio::FileMonitorEvent::Renamed
-                | gio::FileMonitorEvent::Moved => {
-                    sender_clone.input(AppMsg::Refresh);
+            monitor.connect_changed(move |_, file, other_file, event| {
+                if let Some(path) = file.path() {
+                    match event {
+                        gio::FileMonitorEvent::Deleted | gio::FileMonitorEvent::MovedOut => {
+                            sender_clone.input(AppMsg::FileDeleted(path));
+                        }
+                        gio::FileMonitorEvent::Created
+                        | gio::FileMonitorEvent::MovedIn
+                        | gio::FileMonitorEvent::Changed
+                        | gio::FileMonitorEvent::ChangesDoneHint => {
+                            sender_clone.input(AppMsg::FileChanged(path));
+                        }
+                        gio::FileMonitorEvent::Moved | gio::FileMonitorEvent::Renamed => {
+                            sender_clone.input(AppMsg::FileDeleted(path));
+                            if let Some(other) = other_file.and_then(|f| f.path()) {
+                                sender_clone.input(AppMsg::FileChanged(other));
+                            }
+                        }
+                        _ => {}
+                    }
                 }
-                _ => {}
             });
             self.directory_monitor = Some(monitor);
         }
-
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 

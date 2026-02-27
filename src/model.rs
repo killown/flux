@@ -305,4 +305,6 @@ pub enum AppMsg {
     RestoreItem(PathBuf),
     /// Updates the configuration to reflect whether the window is currently maximized.
     SetMaximized(bool),
+    FileDeleted(std::path::PathBuf),
+    FileChanged(std::path::PathBuf),
 }
