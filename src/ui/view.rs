@@ -35,10 +35,31 @@ impl SimpleAsyncComponent for FluxApp {
                 set_vexpand: true,
 
                 /// Left sidebar for system places and user bookmarks.
-                #[name = "sidebar_container"]
-                gtk::ScrolledWindow {
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
                     set_width_request: model.config.ui.sidebar_width,
                     add_css_class: constants::SIDEBAR_CSS_CLASS,
+
+                    #[name = "sidebar_container"]
+                    gtk::ScrolledWindow {
+                        set_vexpand: true,
+                    },
+
+                    /// Selection status bar at the bottom of the sidebar.
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        set_margin_all: 6,
+                        add_css_class: "selection-status",
+                        #[watch]
+                        set_visible: !model.selection_status.is_empty(),
+
+                        gtk::Label {
+                            #[watch]
+                            set_label: &model.selection_status,
+                            add_css_class: "caption",
+                            set_halign: gtk::Align::Start,
+                        }
+                    }
                 },
 
                 /// Main content container for the header and file browser.

@@ -153,3 +153,17 @@ scrollbar.vertical slider:hover {
 .breadcrumb-btn:active {
   box-shadow: inset 0 1px 2px alpha(black, 0.2);
 }
+
+.selection-status {
+  padding: 12px 12px;
+  text-align: center;
+}
+
+.selection-status label {
+  font-size: 9pt;
+  font-weight: 700;
+  color: alpha(@window_fg_color, 0.6);
+  letter-spacing: 0.3px !important;
+  margin-left: auto;
+  margin-right: auto;
+}

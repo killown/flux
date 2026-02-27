@@ -52,6 +52,12 @@ impl FluxApp {
         let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
         files.view.set_enable_rubberband(true);
         files.view.set_single_click_activate(config.ui.single_click);
+        let sender_selection = sender.clone();
+        if let Some(selection_model) = files.view.model().and_downcast::<gtk::MultiSelection>() {
+            selection_model.connect_selection_changed(move |_, _, _| {
+                sender_selection.input(AppMsg::SelectionChanged);
+            });
+        }
         files.view.set_max_columns(20);
         files.view.set_min_columns(1);
 
@@ -108,6 +114,7 @@ impl FluxApp {
                 constants::RECENT_STACK_CAPACITY,
             ),
             state_db,
+            selection_status: String::new(),
         };
 
         // 9. Initial State Population

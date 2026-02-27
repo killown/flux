@@ -663,6 +663,47 @@ impl FluxApp {
                     sender.input(AppMsg::Navigate(target));
                 }
             }
+            AppMsg::SelectionChanged => {
+                let mut total_size = 0u64;
+                let mut count = 0;
+                let mut only_files = true;
+
+                if let Some(selection_model) = self
+                    .files
+                    .view
+                    .model()
+                    .and_downcast::<gtk::MultiSelection>()
+                {
+                    let selection = selection_model.selection();
+                    let n_selected = selection.size();
+
+                    if !selection.is_empty() {
+                        for i in 0..n_selected {
+                            let pos = selection.nth(i as u32);
+                            if let Some(item_wrapper) = self.files.get(pos) {
+                                let item = item_wrapper.borrow();
+                                if item.is_dir {
+                                    only_files = false;
+                                    break;
+                                }
+                                total_size += item.size;
+                                count += 1;
+                            }
+                        }
+                    }
+                }
+
+                if only_files && count > 0 {
+                    let size_str = glib::format_size(total_size);
+                    self.selection_status = if count == 1 {
+                        format!("Selected: {}", size_str)
+                    } else {
+                        format!("{} items ({})", count, size_str)
+                    };
+                } else {
+                    self.selection_status = String::new();
+                }
+            }
             AppMsg::ThumbnailReady {
                 name,
                 texture,
@@ -745,6 +786,7 @@ impl FluxApp {
                                 is_dir,
                                 path: path.clone(),
                                 icon_size: self.current_icon_size,
+                                size: info.size() as u64,
                                 is_editing: false,
                             };
 

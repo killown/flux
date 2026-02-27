@@ -15,6 +15,7 @@ use std::path::PathBuf;
 pub struct FileItem {
     pub name: String,
     pub icon: adw::gio::Icon,
+    pub size: u64,
     pub thumbnail: Option<gdk::Texture>,
     #[allow(dead_code)]
     pub is_dir: bool,

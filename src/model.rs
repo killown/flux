@@ -176,11 +176,15 @@ pub struct FluxApp {
     pub filter: String,
     /// Current active header bar state (e.g., "path", "search", "entry").
     pub header_view: String,
+    /// Reactive string containing selection counts and sizes for the status bar.
+    pub selection_status: String,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Signals that the file selection set in the main grid has changed.
+    SelectionChanged,
     /// Updates the single-click activation setting.
     SetSingleClick(bool),
     /// Updates the global hidden files visibility.

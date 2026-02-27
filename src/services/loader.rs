@@ -204,6 +204,7 @@ impl FluxApp {
                     is_dir: item.is_dir,
                     path: item.target_path,
                     icon_size: self.current_icon_size,
+                    size: item.size,
                     is_editing: false,
                 });
 
