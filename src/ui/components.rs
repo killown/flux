@@ -188,6 +188,30 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             add_child = &gtk::Entry {
                                 set_halign: gtk::Align::Center,
                                 add_css_class: constants::RENAME_ENTRY_CLASS,
+
+                                // 1. Reliable focus loss detection
+                                connect_has_focus_notify[sender = crate::model::SENDER.clone()] => move |entry| {
+                                    if !entry.has_focus() {
+                                        if let Some(s) = sender.get() {
+                                            s.send(crate::model::AppMsg::Refresh).ok();
+                                        }
+                                    }
+                                },
+
+                                // 2. Escape key handling
+                                add_controller = gtk::EventControllerKey {
+                                    connect_key_pressed[sender = crate::model::SENDER.clone()] => move |_, keyval, _, _| {
+                                        if keyval == gdk::Key::Escape {
+                                            if let Some(s) = sender.get() {
+                                                s.send(crate::model::AppMsg::Refresh).ok();
+                                                return glib::Propagation::Stop;
+                                            }
+                                        }
+                                        glib::Propagation::Proceed
+                                    }
+                                },
+
+                                // 3. Enter key handling
                                 connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
                                     if let Some(s) = sender.get() {
                                         let old_path_opt: Option<PathBuf> = unsafe {

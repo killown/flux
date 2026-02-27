@@ -54,6 +54,7 @@ pub struct ShortcutsConfig {
     pub quit: Option<String>,
     pub open: Option<String>,
     pub delete: Option<String>,
+    pub rename: Option<String>,
     pub back: Option<String>,
     pub forward: Option<String>,
     pub refresh: Option<String>,

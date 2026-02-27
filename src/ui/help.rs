@@ -85,6 +85,10 @@ impl SimpleComponent for HelpWindow {
                         adw::PreferencesGroup {
                             set_title: "System & View",
                             adw::ActionRow {
+                                    set_title: &model.format_shortcut(model.config.shortcuts.rename.clone(), "F2"),
+                                    set_subtitle: "Rename selected item"
+                            },
+                            adw::ActionRow {
                                 set_title: "F10",
                                 set_subtitle: "Open preferences"
                             },

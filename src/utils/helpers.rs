@@ -93,6 +93,10 @@ impl FluxApp {
                 sender.input(AppMsg::Activate);
                 glib::Propagation::Stop
             }
+            gdk::Key::F2 => {
+                sender.input(AppMsg::TriggerRenameSelection);
+                glib::Propagation::Stop
+            }
             gdk::Key::Escape => {
                 sender.input(AppMsg::UpdateFilter(String::new()));
                 sender.input(AppMsg::SwitchHeader("path".to_string()));
