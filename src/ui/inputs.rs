@@ -15,6 +15,8 @@ pub fn setup_controllers(
     config_single_click: bool,
     keymap: &KeyMap,
 ) {
+    grid_view.set_enable_rubberband(false);
+
     // 1. Primary Navigation
     let nav_controller = gtk::EventControllerKey::new();
     let sender_nav = sender.clone();
@@ -31,26 +33,32 @@ pub fn setup_controllers(
     let grid_view_t1 = grid_view.clone();
 
     click_toggle.connect_key_pressed(move |_, keyval, _, _| {
-        if config_single_click
-            && (keyval == gdk::Key::Control_L
-                || keyval == gdk::Key::Control_R
-                || keyval == gdk::Key::Shift_L
-                || keyval == gdk::Key::Shift_R)
-        {
-            grid_view_t1.set_single_click_activate(false);
+        let is_mod = keyval == gdk::Key::Control_L
+            || keyval == gdk::Key::Control_R
+            || keyval == gdk::Key::Shift_L
+            || keyval == gdk::Key::Shift_R;
+
+        if is_mod {
+            grid_view_t1.set_enable_rubberband(true);
+            if config_single_click {
+                grid_view_t1.set_single_click_activate(false);
+            }
         }
         glib::Propagation::Proceed
     });
 
     let grid_view_t2 = grid_view.clone();
     click_toggle.connect_key_released(move |_, keyval, _, _| {
-        if config_single_click
-            && (keyval == gdk::Key::Control_L
-                || keyval == gdk::Key::Control_R
-                || keyval == gdk::Key::Shift_L
-                || keyval == gdk::Key::Shift_R)
-        {
-            grid_view_t2.set_single_click_activate(true);
+        let is_mod = keyval == gdk::Key::Control_L
+            || keyval == gdk::Key::Control_R
+            || keyval == gdk::Key::Shift_L
+            || keyval == gdk::Key::Shift_R;
+
+        if is_mod {
+            grid_view_t2.set_enable_rubberband(false);
+            if config_single_click {
+                grid_view_t2.set_single_click_activate(true);
+            }
         }
     });
     window.add_controller(click_toggle);
@@ -124,7 +132,6 @@ pub fn setup_controllers(
     let shortcut_back = gtk::Shortcut::new(
         Some(keymap.back.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
-            // Standard back behavior: returns to previous folder in history
             sender_hist_back.input(AppMsg::GoBack);
             glib::Propagation::Stop
         })),
@@ -134,7 +141,6 @@ pub fn setup_controllers(
     let shortcut_forward = gtk::Shortcut::new(
         Some(keymap.forward.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
-            // Standard forward behavior
             sender_hist_forward.input(AppMsg::GoForward);
             glib::Propagation::Stop
         })),
@@ -188,7 +194,6 @@ pub fn setup_controllers(
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(keymap.properties.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
-            // Placeholder: emit message to request properties overlay
             s_prop.input(AppMsg::TriggerRenameSelection);
             glib::Propagation::Stop
         })),
