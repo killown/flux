@@ -44,22 +44,6 @@ impl SimpleAsyncComponent for FluxApp {
                     gtk::ScrolledWindow {
                         set_vexpand: true,
                     },
-
-                    /// Selection status bar at the bottom of the sidebar.
-                    gtk::Box {
-                        set_orientation: gtk::Orientation::Horizontal,
-                        set_margin_all: 6,
-                        add_css_class: "selection-status",
-                        #[watch]
-                        set_visible: !model.selection_status.is_empty(),
-
-                        gtk::Label {
-                            #[watch]
-                            set_label: &model.selection_status,
-                            add_css_class: "caption",
-                            set_halign: gtk::Align::Start,
-                        }
-                    }
                 },
 
                 /// Main content container for the header and file browser.
@@ -139,7 +123,6 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_halign: gtk::Align::Center,
                                 set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                                 set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
-                                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
 
                                 #[watch] set_text: &model.current_path.to_string_lossy(),
                                 add_controller = gtk::EventControllerKey {
@@ -177,7 +160,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     }
                                 },
                                 connect_activate[sender] => move |_| {
-                                  sender.input(AppMsg::Activate);
+                                    sender.input(AppMsg::Activate);
                                 },
                                 connect_search_changed[sender] => move |entry| {
                                     sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
@@ -323,10 +306,38 @@ impl SimpleAsyncComponent for FluxApp {
                                             current = w.parent();
                                         }
                                     }
-                                     sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
+                                    sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
                                 }
                             }
                         },
+                    },
+
+                  /// Selection status bar at the bottom of the main content view.
+                  gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        set_margin_all: 6,
+                        set_spacing: 12,
+                        add_css_class: "selection-status",
+
+                        /// Visual indicator for background task completion
+                        gtk::ProgressBar {
+                            #[watch]
+                            set_visible: model.task_progress.is_some(),
+                            #[watch]
+                            set_fraction: model.task_progress.unwrap_or(0.0),
+                            set_halign: gtk::Align::Start,
+                            set_valign: gtk::Align::Center,
+                            set_width_request: 150,
+                        },
+
+                        /// Selection information
+                        gtk::Label {
+                            #[watch]
+                            set_label: &model.selection_status,
+                            add_css_class: "caption",
+                            set_halign: gtk::Align::End,
+                            set_hexpand: true, // This pushes the label to the right
+                        }
                     }
                 }
             }

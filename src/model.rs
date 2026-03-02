@@ -23,43 +23,68 @@ fn default_true() -> bool {
 /// Internal metadata container for parallel directory processing.
 #[derive(Debug, Clone)]
 pub struct FileLoadContext {
+    /// The sanitized name used for UI rendering and label display.
     pub display_name: String,
+    /// The absolute filesystem path to the target file or directory.
     pub target_path: PathBuf,
+    /// The size of the file in bytes.
     pub size: u64,
+    /// The last modified timestamp represented as a Unix epoch.
     pub mtime: i64,
+    /// True if the item is a directory, false if it is a file or symlink.
     pub is_dir: bool,
+    /// Pre-processed string used for case-insensitive and natural sorting.
     pub sort_name: String,
+    /// The path to a cached or generated image representing the file content.
     pub thumbnail_path: Option<PathBuf>,
 }
 
 /// Represents a single component of a filesystem path for breadcrumb navigation.
 #[derive(Debug, Clone)]
 pub struct PathSegment {
+    /// The user-facing name of the specific directory in the path hierarchy.
     pub name: String,
+    /// The full absolute path representing this specific segment's location.
     pub path: PathBuf,
 }
 
 /// Defines a user-configured external command to be displayed in context menus.
 #[derive(Clone, Debug)]
 pub struct CustomAction {
+    /// The text label to be displayed in the context menu.
     pub label: String,
+    /// Optional name of a parent menu to group this action under.
     pub submenu: Option<String>,
+    /// Unique identifier used to register and trigger the action.
     pub action_name: String,
+    /// The shell command string to be executed, supporting path placeholders.
     pub command: String,
+    /// A list of supported MIME types or patterns for context-sensitivity.
     pub mime_types: Vec<String>,
 }
 
+/// User-defined keyboard shortcuts for core application operations.
 #[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
+    /// Key combination to exit the application.
     pub quit: Option<String>,
+    /// Key combination to open the selected file or enter a directory.
     pub open: Option<String>,
+    /// Key combination to move selected items to the trash.
     pub delete: Option<String>,
+    /// Key combination to initiate an inline filename edit.
     pub rename: Option<String>,
+    /// Key combination to go back in the navigation history.
     pub back: Option<String>,
+    /// Key combination to go forward in the navigation history.
     pub forward: Option<String>,
+    /// Key combination to reload the current directory contents.
     pub refresh: Option<String>,
+    /// Key combination to focus the search interface.
     pub search: Option<String>,
+    /// Key combination to display the metadata properties window.
     pub open_properties: Option<String>,
+    /// Key combination to toggle the visibility of hidden files.
     pub toggle_hidden: Option<String>,
 }
 
@@ -67,9 +92,12 @@ pub struct ShortcutsConfig {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(default)]
 pub struct Config {
+    /// Visual and behavioral settings for the application window and widgets.
     pub ui: UIConfig,
+    /// A collection of user-defined bookmarks and places for the sidebar.
     #[serde(default)]
     pub sidebar: Vec<CustomPlace>,
+    /// Custom keybindings for navigating and managing files.
     #[serde(default)]
     pub shortcuts: ShortcutsConfig,
 }
@@ -77,9 +105,12 @@ pub struct Config {
 /// Available sorting criteria for the file view.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SortBy {
+    /// Sort items alphabetically by their display name.
     #[default]
     Name,
+    /// Sort items by their last modified timestamp.
     Date,
+    /// Sort items by their filesystem size in bytes.
     Size,
 }
 
@@ -87,9 +118,13 @@ pub enum SortBy {
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct ContextAction {
+    /// The user-facing text displayed in the menu for this action.
     pub label: String,
+    /// Unique identifier for the action used by the system to dispatch events.
     pub action_name: String,
+    /// The shell command or internal function identifier to execute upon activation.
     pub command: String,
+    /// List of file types or categories where this action is valid.
     pub mime_types: Vec<String>,
 }
 
@@ -97,28 +132,44 @@ pub struct ContextAction {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Default pixel size for file and folder icons.
     pub default_icon_size: i32,
+    /// Width of the left navigation sidebar in pixels.
     pub sidebar_width: i32,
+    /// Whether to display standard XDG user directories like Documents and Downloads.
     pub show_xdg_dirs: bool,
+    /// Whether a single click activates an item instead of a double click.
     pub single_click: bool,
+    /// Optional name of the custom GTK/Libadwaita theme to apply.
     pub theme: Option<String>,
+    /// Global fallback sorting method for file listings.
     #[serde(default)]
     pub default_sort: SortBy,
+    /// Whether directories should always be grouped above files.
     #[serde(default = "default_true")]
     pub folders_first: bool,
+    /// Directory-specific overrides for the folders-first grouping behavior.
     #[serde(default)]
     pub current_folders_first: std::collections::HashMap<String, bool>,
+    /// Whether to show dotfiles and hidden items on application startup.
     #[serde(default)]
     pub show_hidden_by_default: bool,
+    /// Directory-specific overrides for the sorting method.
     #[serde(default)]
     pub folder_sort: HashMap<String, SortBy>,
+    /// Directory-specific overrides for the icon scale.
     #[serde(default)]
     pub folder_icon_size: HashMap<String, i32>,
+    /// Custom display names for detected hardware devices and partitions.
     #[serde(default)]
     pub device_renames: HashMap<String, DeviceRename>,
+    /// Whether to render Client-Side Decorations (header bar buttons) within the window.
     pub show_csd: bool,
+    /// Whether the application window opens in a maximized state.
     pub start_maximized: bool,
+    /// Initial width of the application window in pixels.
     pub startup_window_width: i32,
+    /// Initial height of the application window in pixels.
     pub startup_window_height: i32,
 }
 
@@ -139,6 +190,8 @@ pub struct CustomPlace {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Indicates whether a background file system operation or directory reload is currently in progress.
+    pub is_loading: bool,
     /// Persistent SQLite-backed manager for application state and metadata.
     pub state_db: Arc<crate::services::db::StateManager>,
     /// Circular buffer of recently visited locations.
@@ -157,21 +210,33 @@ pub struct FluxApp {
     pub load_id: Arc<AtomicU64>,
     /// Flag indicating the search interface was just initialized to trigger focus.
     pub search_just_opened: bool,
+    /// Current pixel size of the grid item icons.
     pub current_icon_size: i32,
     /// Factory-managed collection of breadcrumb segments for the header.
     pub breadcrumbs: FactoryVecDeque<PathSegment>,
     /// A pinned list of directories for quick multi-context switching.
     pub exclusive_list: Vec<PathBuf>,
+    /// The index of the currently active item in the exclusive directory list.
     pub exclusive_index: Option<usize>,
+    /// Floating menu containing context-sensitive file and application actions.
     pub context_menu_popover: gtk::PopoverMenu,
+    /// Collection of user-defined or plugin-provided contextual actions.
     pub menu_actions: Vec<CustomAction>,
+    /// The filesystem path of the item currently targeted by a context menu or action.
     pub active_item_path: Option<PathBuf>,
+    /// Monitor to receive real-time notifications of changes in the current directory.
     pub directory_monitor: Option<gio::FileMonitor>,
+    /// Group of named actions exposed to the UI for activation.
     pub action_group: gio::SimpleActionGroup,
+    /// The currently active property used to order the file list.
     pub sort_by: SortBy,
+    /// Whether files and directories starting with a dot are displayed.
     pub show_hidden: bool,
+    /// Parsed application configuration containing UI and behavioral preferences.
     pub config: Config,
+    /// Mapping of keyboard shortcuts to application messages.
     pub keymap: KeyMap,
+    /// Monitor for detecting connected storage devices and mount changes.
     pub _volume_monitor: gio::VolumeMonitor,
     /// Current search/filter string.
     pub filter: String,
@@ -179,6 +244,8 @@ pub struct FluxApp {
     pub header_view: String,
     /// Reactive string containing selection counts and sizes for the status bar.
     pub selection_status: String,
+    /// The completion percentage of the current background task, if any.
+    pub task_progress: Option<f64>,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
@@ -310,6 +377,12 @@ pub enum AppMsg {
     RestoreItem(PathBuf),
     /// Updates the configuration to reflect whether the window is currently maximized.
     SetMaximized(bool),
+    /// The path of a file that has been removed from the filesystem.
     FileDeleted(std::path::PathBuf),
+    /// The path of a file whose contents or metadata have been modified.
     FileChanged(std::path::PathBuf),
+    /// The completion percentage of a background task, represented as a value from 0.0 to 1.0.
+    TaskProgress(f64),
+    /// Indicates that the current background task has finished execution.
+    TaskCompleted,
 }

@@ -102,7 +102,7 @@ impl FluxApp {
                 }
             }
             AppMsg::PerformPaste(files) => {
-                self.perform_paste(files);
+                self.perform_paste(files, sender.clone());
             }
             AppMsg::Copy => {
                 self.handle_clipboard_action(false);
@@ -678,6 +678,7 @@ impl FluxApp {
                 let mut total_size = 0u64;
                 let mut count = 0;
                 let mut only_files = true;
+                let mut single_file_name = String::new();
 
                 if let Some(selection_model) = self
                     .files
@@ -699,6 +700,10 @@ impl FluxApp {
                                 }
                                 total_size += item.size;
                                 count += 1;
+
+                                if count == 1 {
+                                    single_file_name = item.name.clone();
+                                }
                             }
                         }
                     }
@@ -707,7 +712,7 @@ impl FluxApp {
                 if only_files && count > 0 {
                     let size_str = glib::format_size(total_size);
                     self.selection_status = if count == 1 {
-                        format!("Selected: {}", size_str)
+                        format!("{} ({})", single_file_name, size_str)
                     } else {
                         format!("{} items ({})", count, size_str)
                     };
@@ -752,7 +757,14 @@ impl FluxApp {
                     self.update_breadcrumbs();
                 }
             }
+            AppMsg::TaskProgress(fraction) => {
+                self.task_progress = Some(fraction);
+            }
+            AppMsg::TaskCompleted => {
+                self.task_progress = None;
+            }
             AppMsg::Refresh => {
+                self.is_loading = true;
                 let p = self.current_path.clone();
                 self.load_path(p, &sender);
             }

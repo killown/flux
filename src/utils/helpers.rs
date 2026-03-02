@@ -442,7 +442,7 @@ impl FluxApp {
         }
     }
 
-    pub fn perform_paste(&self, files: Vec<gio::File>) {
+    pub fn perform_paste(&self, files: Vec<gio::File>, sender: AsyncComponentSender<Self>) {
         // 1. Clone the path so the closure owns it
         let target_dir = self.current_path.clone();
         let clipboard = gdk::Display::default().unwrap().clipboard();
@@ -453,10 +453,38 @@ impl FluxApp {
                 .map(|s| s.map(|t| t.starts_with("cut")).unwrap_or(false))
                 .unwrap_or(false);
 
+            let total_files = files.len();
+            // Track completion across all concurrent file operations
+            let completed_files = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
             for file in files {
                 // 3. Compute destination using the owned target_dir
                 let dest = target_dir.join(file.basename().expect("File must have a name"));
                 let dest_file = gio::File::for_path(dest);
+
+                // Setup the progress callback
+                let p_sender = sender.clone();
+                let progress_callback = move |current, total| {
+                    if total > 0 {
+                        p_sender.input(AppMsg::TaskProgress(current as f64 / total as f64));
+                    }
+                };
+
+                // Setup the completion callback
+                let c_sender = sender.clone();
+                let completed_clone = completed_files.clone();
+                let finish_callback = move |res: Result<(), glib::Error>| {
+                    if let Err(e) = res {
+                        eprintln!("Operation error: {}", e);
+                    }
+                    // Increment the atomic counter safely across threads
+                    let count =
+                        completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                    if count == total_files {
+                        c_sender.input(AppMsg::TaskCompleted);
+                        c_sender.input(AppMsg::Refresh);
+                    }
+                };
 
                 if is_cut {
                     file.move_async(
@@ -464,12 +492,8 @@ impl FluxApp {
                         gio::FileCopyFlags::OVERWRITE,
                         glib::Priority::DEFAULT,
                         gio::Cancellable::NONE,
-                        None,
-                        move |res| {
-                            if let Err(e) = res {
-                                eprintln!("Move error: {}", e);
-                            }
-                        },
+                        Some(Box::new(progress_callback)),
+                        finish_callback,
                     );
                 } else {
                     file.copy_async(
@@ -477,17 +501,14 @@ impl FluxApp {
                         gio::FileCopyFlags::OVERWRITE,
                         glib::Priority::DEFAULT,
                         gio::Cancellable::NONE,
-                        None,
-                        move |res| {
-                            if let Err(e) = res {
-                                eprintln!("Copy error: {}", e);
-                            }
-                        },
+                        Some(Box::new(progress_callback)),
+                        finish_callback,
                     );
                 }
             }
         });
     }
+
     /// Internal helper to populate the clipboard with the current selection.
     ///
     /// Args:

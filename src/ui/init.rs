@@ -115,6 +115,8 @@ impl FluxApp {
             ),
             state_db,
             selection_status: String::new(),
+            is_loading: false,
+            task_progress: None,
         };
 
         // 9. Initial State Population
