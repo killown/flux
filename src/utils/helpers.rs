@@ -459,7 +459,26 @@ impl FluxApp {
 
             for file in files {
                 // 3. Compute destination using the owned target_dir
-                let dest = target_dir.join(file.basename().expect("File must have a name"));
+                let basename = file.basename().expect("File must have a name");
+                let mut dest = target_dir.join(&basename);
+
+                if !is_cut {
+                    let mut copy_number = 1;
+                    let original_name = basename.to_string_lossy().into_owned();
+
+                    while dest.exists() {
+                        let new_name = match original_name.rfind('.') {
+                            Some(idx) if idx > 0 => {
+                                let (name, ext) = original_name.split_at(idx);
+                                format!("{} (copy {}){}", name, copy_number, ext)
+                            }
+                            _ => format!("{} (copy {})", original_name, copy_number),
+                        };
+                        dest = target_dir.join(new_name);
+                        copy_number += 1;
+                    }
+                }
+
                 let dest_file = gio::File::for_path(dest);
 
                 // Setup the progress callback
