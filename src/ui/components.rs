@@ -55,10 +55,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             }
         });
 
-        let drop_target = gtk::DropTarget::new(
-            gtk::gio::File::static_type(),
-            gdk::DragAction::COPY | gdk::DragAction::MOVE,
-        );
+        let formats = gdk::ContentFormats::builder()
+            .add_type(gdk::FileList::static_type())
+            .add_type(gtk::gio::File::static_type())
+            .build();
+
+        let drop_target = gtk::DropTarget::builder()
+            .formats(&formats)
+            .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
+            .build();
 
         drop_target.connect_drop(|target, value, _, _| {
             let widget = target.widget().unwrap();
@@ -157,7 +162,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                         }
                                     }
                                 }
-        }
+                            }
                         },
 
                         #[name = "icon_widget"]
@@ -226,7 +231,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             } -> { set_name: constants::VIEW_ENTRY }
                         }
                     }
-                }
+        }
 
         (
             root,
@@ -268,12 +273,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         let file = gtk::gio::File::for_path(&self.path);
-        let uri = file.uri();
-        let uri_list = format!("{}\r\n", uri);
-        let content = gdk::ContentProvider::for_bytes(
-            "text/uri-list",
-            &glib::Bytes::from(uri_list.as_bytes()),
-        );
+        let content = gdk::ContentProvider::for_value(&file.to_value());
         widgets.drag_source.set_content(Some(&content));
 
         widgets.drop_target.set_actions(if self.is_dir {
