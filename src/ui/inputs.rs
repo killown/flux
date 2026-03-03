@@ -166,7 +166,23 @@ pub fn setup_controllers(
     let s_search = sender.clone();
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(keymap.search.clone()),
-        Some(gtk::CallbackAction::new(move |_, _| {
+        Some(gtk::CallbackAction::new(move |widget, _| {
+            // Don't try focus if a rename entry is currently active
+            let rename_is_focused = widget
+                .root()
+                .and_then(|root| root.focus())
+                .map(|focused: gtk::Widget| {
+                    focused
+                        .css_classes()
+                        .iter()
+                        .any(|c: &gtk::glib::GString| c.as_str() == "flux-rename-entry")
+                })
+                .unwrap_or(false);
+
+            if rename_is_focused {
+                return glib::Propagation::Proceed;
+            }
+
             s_search.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
             glib::Propagation::Stop
         })),

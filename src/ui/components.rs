@@ -195,8 +195,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                 add_css_class: constants::RENAME_ENTRY_CLASS,
 
                                 // 1. Reliable focus loss detection
-                                connect_has_focus_notify[sender = crate::model::SENDER.clone()] => move |entry| {
-                                    if !entry.has_focus() {
+                                add_controller = gtk::EventControllerFocus {
+                                    connect_leave[sender = crate::model::SENDER.clone()] => move |_| {
                                         if let Some(s) = sender.get() {
                                             s.send(crate::model::AppMsg::Refresh).ok();
                                         }
@@ -259,11 +259,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         if self.is_editing {
             widgets.stack.set_visible_child_name(constants::VIEW_ENTRY);
             widgets.entry.set_text(&self.name);
-            widgets.entry.grab_focus();
             let dot_pos = self.name.rfind('.').unwrap_or(self.name.len());
             widgets.entry.select_region(0, dot_pos as i32);
-        } else {
-            widgets.stack.set_visible_child_name(constants::VIEW_LABEL);
+
+            // Defer focus grab to next main loop iteration so the widget
+            // is fully realized after the stack transition completes.
+            let entry = widgets.entry.clone();
+            gtk::glib::idle_add_local_once(move || {
+                entry.grab_focus();
+            });
         }
 
         if let Some(ref texture) = self.thumbnail {
