@@ -60,6 +60,36 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: "Startup Width",
+                        set_subtitle: "Initial window width in pixels",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(model.config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetWindowWidth(spin.value() as i32));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: "Startup Height",
+                        set_subtitle: "Initial window height in pixels",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(model.config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetWindowHeight(spin.value() as i32));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: "Show Client-Side Decorations (CSD)",
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {

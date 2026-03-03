@@ -144,6 +144,14 @@ impl FluxApp {
                 let properties_win = FileProperties::builder().launch(path).detach();
                 properties_win.widget().present();
             }
+            AppMsg::SetWindowWidth(val) => {
+                self.config.ui.startup_window_width = val;
+                utils::save_config(&self.config);
+            }
+            AppMsg::SetWindowHeight(val) => {
+                self.config.ui.startup_window_height = val;
+                utils::save_config(&self.config);
+            }
             AppMsg::ToggleHidden => {
                 self.show_hidden = !self.show_hidden;
                 self.config.ui.show_hidden_by_default = self.show_hidden;

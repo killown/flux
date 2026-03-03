@@ -251,6 +251,10 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Updates the startup window width.
+    SetWindowWidth(i32),
+    /// Updates the startup window height.
+    SetWindowHeight(i32),
     /// Signals that the file selection set in the main grid has changed.
     SelectionChanged,
     /// Updates the single-click activation setting.
