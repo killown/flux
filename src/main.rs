@@ -102,6 +102,40 @@ fn main() {
 
     let args: Vec<String> = std::env::args().collect();
 
+    if args.len() > 1 {
+        match args[1].as_str() {
+            "--version" | "-v" => {
+                println!("flux {}", env!("CARGO_PKG_VERSION"));
+                return;
+            }
+            "--help" | "-h" => {
+                println!("Usage: flux [OPTIONS] [PATH]");
+                println!();
+                println!("Arguments:");
+                println!("  [PATH]  Directory to open on startup");
+                println!();
+                println!("Options:");
+                println!("  -h, --help                  Print this help message");
+                println!("  -v, --version               Print version information");
+                println!("      --file-properties PATH  Open the file properties window for PATH");
+                return;
+            }
+            "--file-properties" if args.len() > 2 => {
+                let path = PathBuf::from(&args[2]);
+                let app = RelmApp::new("flux.PropertiesViewer");
+                app.allow_multiple_instances(true);
+                app.with_args(vec![]).run::<FileProperties>(path);
+                return;
+            }
+            arg if arg.starts_with('-') => {
+                eprintln!("flux: unrecognized option '{arg}'");
+                eprintln!("Try 'flux --help' for more information.");
+                std::process::exit(1);
+            }
+            _ => {}
+        }
+    }
+
     glib::idle_add_local_once(|| {
         load_custom_css();
         setup_config_watcher();
