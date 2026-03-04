@@ -40,6 +40,12 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 
 > **Custom Actions:** You can define your own right-click commands. Add "Open in VS Code" or "Optimize Image" by linking a simple shell command in your config.
 
+## Extra Themes
+
+    git clone https://github.com/killown/flux-themes.git
+    cd flux-themes
+    cp themes/* ~/.local/share/flux/themes
+
 ## Tech Stack
 
 - **Language:** Rust 1.75+ (Memory safe and blazing fast)
