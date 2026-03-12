@@ -605,6 +605,8 @@ impl FluxApp {
                     self.filter.clear();
                     self.files.clear_filters();
 
+                    sender.input(AppMsg::CloseSearchSync);
+
                     // Revert header UI from search mode back to path/breadcrumb view
                     if self.header_view == constants::VIEW_SEARCH {
                         self.header_view = "path".to_string();
