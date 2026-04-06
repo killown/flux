@@ -346,7 +346,8 @@ impl FluxApp {
                                 continue;
                             }
 
-                            matches = match allowed_mime.as_str() {
+                            let requirements: Vec<&str> = allowed_mime.split('+').collect();
+                            matches = requirements.iter().any(|req| match req.trim() {
                                 constants::FILTER_ALL | "all" => true,
                                 "image/all" | "image/*" => mime.starts_with("image/"),
                                 "video/all" | "video/*" => mime.starts_with("video/"),
@@ -363,7 +364,8 @@ impl FluxApp {
                                 }
                                 constants::FILTER_FILE => mime != constants::MIME_DIR,
                                 t => t == mime,
-                            };
+                            });
+
                             if matches {
                                 break;
                             }
