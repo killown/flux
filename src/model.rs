@@ -86,6 +86,8 @@ pub struct ShortcutsConfig {
     pub open_properties: Option<String>,
     /// Key combination to toggle the visibility of hidden files.
     pub toggle_hidden: Option<String>,
+    /// Key combination to navigate to root directory.
+    pub root: Option<String>,
 }
 
 /// Top-level configuration structure for persistent application settings.

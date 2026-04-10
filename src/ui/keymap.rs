@@ -2,16 +2,17 @@ use crate::model::ShortcutsConfig;
 
 /// Hardcoded fallback shortcuts.
 pub mod constants {
-    pub const QUIT: &str = "<Control>q";
+    pub const QUIT: &str = "<ctrl>q";
     pub const OPEN: &str = "Return";
     pub const DELETE: &str = "Delete";
-    pub const BACK: &str = "<Alt>Left";
-    pub const FORWARD: &str = "<Alt>Right";
+    pub const BACK: &str = "<alt>Left";
+    pub const FORWARD: &str = "<alt>Right";
     pub const REFRESH: &str = "F5";
-    pub const SEARCH: &str = "<Control>f";
-    pub const PROPERTIES: &str = "<Control>i";
-    pub const TOGGLE_HIDDEN: &str = "<Control>h";
+    pub const SEARCH: &str = "<ctrl>f";
+    pub const PROPERTIES: &str = "<ctrl>i";
+    pub const TOGGLE_HIDDEN: &str = "<ctrl>h";
     pub const SETTINGS: &str = "F10";
+    pub const ROOT: &str = "slash";
 }
 
 /// A collection of resolved GTK ShortcutTriggers.
@@ -28,6 +29,7 @@ pub struct KeyMap {
     pub properties: gtk::ShortcutTrigger,
     pub toggle_hidden: gtk::ShortcutTrigger,
     pub settings: gtk::ShortcutTrigger,
+    pub root: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -45,13 +47,13 @@ impl KeyMap {
             properties: parse_trigger(&config.open_properties, constants::PROPERTIES),
             toggle_hidden: parse_trigger(&config.toggle_hidden, constants::TOGGLE_HIDDEN),
             settings: parse_trigger(&None, constants::SETTINGS),
+            root: parse_trigger(&config.root, constants::ROOT),
         }
     }
 }
 
 fn parse_trigger(user_val: &Option<String>, default: &str) -> gtk::ShortcutTrigger {
     let pattern = user_val.as_deref().unwrap_or(default);
-
     match gtk::ShortcutTrigger::parse_string(pattern) {
         Some(trigger) => trigger,
         None => {
@@ -59,8 +61,10 @@ fn parse_trigger(user_val: &Option<String>, default: &str) -> gtk::ShortcutTrigg
                 "[KEYMAP ERROR] GTK rejected shortcut '{}'. Falling back to '{}'.",
                 pattern, default
             );
+            // Try the default, then a minimal safe fallback
             gtk::ShortcutTrigger::parse_string(default)
-                .expect("Static constant shortcut must be valid")
+                .or_else(|| gtk::ShortcutTrigger::parse_string("Escape")) // Use a known-valid key
+                .expect("Failed to parse fallback shortcut 'Escape'")
         }
     }
 }

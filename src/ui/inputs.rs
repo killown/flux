@@ -5,6 +5,7 @@ use adw::gdk;
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
+use std::path::PathBuf;
 
 /// Attaches all input controllers to the window/view.
 pub fn setup_controllers(
@@ -220,6 +221,15 @@ pub fn setup_controllers(
         Some(keymap.open.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_open.input(AppMsg::Open);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_root = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.root.clone()), // assuming you added root to KeyMap struct
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_root.input(AppMsg::Navigate(PathBuf::from("/")));
             glib::Propagation::Stop
         })),
     ));

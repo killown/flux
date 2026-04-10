@@ -78,8 +78,9 @@ impl FluxApp {
         // allowing modifiers to be used for native multi-selection expansion.
         if modifiers.is_empty() {
             if let Some(c) = keyval.to_unicode() {
-                if !c.is_control() {
-                    sender.input(AppMsg::SwitchHeader("search".to_string()));
+                // Only trigger type-to-search for alphanumeric characters
+                if c.is_ascii_alphanumeric() {
+                    sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
                     sender.input(AppMsg::SearchInput(c));
                     return glib::Propagation::Stop;
                 }

@@ -137,7 +137,9 @@ impl SimpleAsyncComponent for FluxApp {
                                 connect_activate[sender] => move |entry| {
                                     let path_str = entry.text().to_string();
                                     if !path_str.is_empty() {
-                                        sender.input(AppMsg::Navigate(PathBuf::from(path_str)));
+                                        // Use expand_path for consistent path normalization (handles ~, absolute paths, etc.)
+                                        let normalized_path = crate::utils::expand_path(&path_str);
+                                        sender.input(AppMsg::Navigate(normalized_path));
                                     }
                                     sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                 },

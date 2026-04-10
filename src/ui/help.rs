@@ -64,6 +64,11 @@ impl SimpleComponent for HelpWindow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
                                 set_subtitle: "Open selected file or directory"
                             },
+                            // Added: Root navigation shortcut
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.root.clone(), "/"),
+                                set_subtitle: "Navigate to root directory"
+                            },
                         },
 
                         adw::PreferencesGroup {

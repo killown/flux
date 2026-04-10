@@ -580,10 +580,17 @@ impl FluxApp {
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
 
-                // Validate path existence (except for virtual trash URI)
-                if !path.exists() && !path_str.starts_with(constants::TRASH_URI) {
+                // Explicitly allow root directory and handle edge cases
+                let path_valid =
+                    path_str == "/" || path.exists() || path_str.starts_with(constants::TRASH_URI);
+
+                if !path_valid {
+                    #[cfg(debug_assertions)]
+                    eprintln!("[Flux] Cannot navigate: path does not exist: {}", path_str);
                     return;
                 }
+
+                // Validate path existence (except for virtual trash URI)
 
                 // Only proceed if the target is a directory/trash and different from current location
                 if (path.is_dir() || path_str.starts_with(constants::TRASH_URI))
