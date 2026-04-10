@@ -22,22 +22,29 @@ pub fn ensure_config_file() -> PathBuf {
     }
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
-        //FIXME: file properties not working without full path
+        // Syntax: "Label" => "mime_types", "command", "Optional Toast Message"
+        // - Use %p for file path, %d for directory, %f for filename.
+        // - The third argument (Toast) is optional and shows a notification after execution.
         let default_config = r#"
+# --- Core Operations ---
+"󰆏      Copy" => "all", "builtin::copy", "Copied to clipboard"
+"󰆐      Cut" => "all", "builtin::cut", "Cut to clipboard"
+"󰏊      Paste" => "all", "builtin::paste", "Pasted items"
+"󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
+"󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
+"󰱝      Open With..." => "file", "builtin::open_with"
+
+# --- System & Dev Tools ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
-"󰆏      Copy" => "all", "builtin::copy"
-"󰆐      Cut" => "all", "builtin::cut"
-"󰏊      Paste" => "all", "builtin::paste"
-"󰩹      Move to Trash" => "all", "gio trash %p"
-"󰦬      Restore File" => "trash", "gio trash --restore %p"
-"󰸉      Set as Wallpaper" => "image/all", "swww img %p"
 "󰨞      Open in Code" => "text/all, application/all", "code %p"
 "󰋽      File Properties" => "file", "~/.local/bin/flux --file-properties %p"
-"󰱝      Open With..." => "file", "builtin::open_with"
 "󰋊      Folder Info" => "directory", "flatpak run org.gnome.baobab %p"
-"🛠      Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy"
+"🛠      Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy", "Path copied"
 "🛠      Tools > 󰊢   Git Gui" => "directory", "git gui"
-"      Images > 󰸉   Set Wallpaper" => "image/all", "swww img %p""#;
+
+# --- Media & Images ---
+"      Images > 󰸉   Set Wallpaper" => "image/all", "swww img %p", "Wallpaper set"
+"#;
         if let Ok(mut file) = fs::File::create(&config_path) {
             let _ = file.write_all(default_config.as_bytes());
         }
