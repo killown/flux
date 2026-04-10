@@ -385,6 +385,14 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     }
     let mut hasher = DefaultHasher::new();
     path.hash(&mut hasher);
+
+    if let Ok(metadata) = path.metadata() {
+        metadata.len().hash(&mut hasher);
+        if let Ok(modified) = metadata.modified() {
+            modified.hash(&mut hasher);
+        }
+    }
+
     let hash = hasher.finish();
     let cache_path = cache_dir.join(format!("{}.png", hash));
 
