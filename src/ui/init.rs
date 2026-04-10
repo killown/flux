@@ -117,6 +117,7 @@ impl FluxApp {
             selection_status: String::new(),
             is_loading: false,
             task_progress: None,
+            toast_overlay: adw::ToastOverlay::new(),
         };
 
         // 9. Initial State Population

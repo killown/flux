@@ -248,6 +248,8 @@ pub struct FluxApp {
     pub selection_status: String,
     /// The completion percentage of the current background task, if any.
     pub task_progress: Option<f64>,
+    /// Toast overlay for displaying transient notifications.
+    pub toast_overlay: adw::ToastOverlay,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
@@ -391,4 +393,6 @@ pub enum AppMsg {
     TaskProgress(f64),
     /// Indicates that the current background task has finished execution.
     TaskCompleted,
+    /// This variant is used to provide brief, non-blocking feedback to the user
+    ShowToast(String),
 }

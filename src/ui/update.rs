@@ -130,13 +130,20 @@ impl FluxApp {
             AppMsg::PerformRename(old_path, new_name) => {
                 match utils::rename_path(&old_path, &new_name) {
                     Ok(new_path) => {
-                        // Migration: Transfer persistent folder-specific settings to the new path key in SQLite
                         let _ = self.state_db.rename_path(&old_path, &new_path);
-
                         sender.input(AppMsg::Navigate(self.current_path.clone()));
                     }
                     Err(e) => {
-                        eprintln!("Failed to rename: {}", e);
+                        let msg = e.to_string();
+                        if msg.contains("Permission denied")
+                            || msg.contains("Operation not permitted")
+                        {
+                            sender.input(AppMsg::ShowToast(
+                                "Permission denied: Cannot move item to trash.".into(),
+                            ));
+                        } else {
+                            sender.input(AppMsg::ShowToast(format!("Trash error: {}", e)));
+                        }
                     }
                 }
             }
@@ -874,8 +881,18 @@ impl FluxApp {
                                     // Refresh the view to remove deleted items from UI
                                     s.input(AppMsg::Refresh);
                                 }
+
                                 Err(e) => {
-                                    eprintln!("[Trash Error] Failed to move file: {}", e);
+                                    let msg = e.message().to_string();
+                                    if msg.contains("Permission denied")
+                                        || msg.contains("Operation not permitted")
+                                    {
+                                        s.input(AppMsg::ShowToast(
+                                            "Permission denied: Cannot move item to trash.".into(),
+                                        ));
+                                    } else {
+                                        s.input(AppMsg::ShowToast(format!("Trash error: {}", e)));
+                                    }
                                 }
                             }
                         },
@@ -975,6 +992,9 @@ impl FluxApp {
                 }
                 // Refresh the view to show the now-empty trash
                 sender.input(AppMsg::Refresh);
+            }
+            AppMsg::ShowToast(msg) => {
+                self.toast_overlay.add_toast(adw::Toast::new(&msg));
             }
             AppMsg::RestoreItem(_) => {
                 sender.input(AppMsg::Refresh);
