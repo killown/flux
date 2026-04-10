@@ -426,6 +426,10 @@ impl FluxApp {
                         if let Some(g_action) = self.action_group.lookup_action(lookup_name) {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                                 simple.set_enabled(true);
+                                if let Some(toast_msg) = &action.toast {
+                                    self.pending_toasts
+                                        .insert(action.action_name.clone(), toast_msg.clone());
+                                }
                             }
                         }
 
@@ -462,7 +466,6 @@ impl FluxApp {
             AppMsg::ExecuteCommand(cmd_template) => {
                 let mut targets = Vec::new();
 
-                // Multi-selection: Extract all selected paths from the GtkSelectionModel
                 if let Some(model) = self
                     .files
                     .view
@@ -470,8 +473,7 @@ impl FluxApp {
                     .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                 {
                     let bitset = model.selection();
-                    let n = bitset.size();
-                    for i in 0..n {
+                    for i in 0..bitset.size() {
                         let pos = bitset.nth(i as u32);
                         if let Some(wrapper) = self.files.get(pos) {
                             targets.push(wrapper.borrow().path.clone());
@@ -489,7 +491,6 @@ impl FluxApp {
                     vec![self.current_path.clone()]
                 };
 
-                // --- GIO / Native "Open With" Handling ---
                 if cmd_template == "builtin::open_with" {
                     if let Some(path) = final_targets.first() {
                         let file = gio::File::for_path(path);
@@ -511,32 +512,48 @@ impl FluxApp {
                     return;
                 }
 
-                // Shell expansion: Replace templates (%p for paths, %d for current directory)
-                if final_targets.len() == 1 {
-                    utils::run_custom_command(&cmd_template, &final_targets[0]);
-                } else if !final_targets.is_empty() {
-                    let paths_arg = final_targets
-                        .iter()
-                        .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
-                        .collect::<Vec<_>>()
-                        .join(" ");
+                // Extract data for the background task
+                let current_path = self.current_path.clone();
+                let toast_msg = self
+                    .menu_actions
+                    .iter()
+                    .find(|action| action.command == cmd_template)
+                    .and_then(|a| a.toast.clone());
 
-                    let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
-                    if cmd.contains(constants::TEMPLATE_CWD) {
-                        cmd = cmd.replace(
-                            constants::TEMPLATE_CWD,
-                            &format!(
-                                "'{}'",
-                                self.current_path.to_string_lossy().replace("'", "'\\''")
-                            ),
-                        );
+                let sender_clone = sender.clone();
+
+                relm4::spawn_blocking(move || {
+                    if final_targets.len() == 1 {
+                        utils::run_custom_command(&cmd_template, &final_targets[0]);
+                    } else if !final_targets.is_empty() {
+                        let paths_arg = final_targets
+                            .iter()
+                            .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
+                            .collect::<Vec<_>>()
+                            .join(" ");
+
+                        let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
+                        if cmd.contains(constants::TEMPLATE_CWD) {
+                            cmd = cmd.replace(
+                                constants::TEMPLATE_CWD,
+                                &format!(
+                                    "'{}'",
+                                    current_path.to_string_lossy().replace("'", "'\\''")
+                                ),
+                            );
+                        }
+
+                        let _ = std::process::Command::new(constants::SHELL_BIN)
+                            .arg("-c")
+                            .arg(cmd)
+                            .spawn();
                     }
 
-                    let _ = std::process::Command::new(constants::SHELL_BIN)
-                        .arg("-c")
-                        .arg(cmd)
-                        .spawn();
-                }
+                    // Send toast back to main thread after execution starts/finishes
+                    if let Some(msg) = toast_msg {
+                        sender_clone.input(AppMsg::ShowToast(msg));
+                    }
+                });
             }
             AppMsg::Zoom(delta) => {
                 // Determine if we are zooming in or out using the STEP constant

@@ -261,24 +261,31 @@ path = "~"
     config
 }
 
-fn split_mime_cmd(input: &str) -> Option<(String, String)> {
+/// Parses the right-hand side of a menu config line into (mime, command, optional_toast).
+fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
     let input = input.trim();
 
-    // Extract first quoted part
     let remainder = input.strip_prefix('"')?;
     let (mime, rest) = remainder.split_once('"')?;
 
-    // Extract second quoted part after the comma
     let second_part = rest.trim().strip_prefix(',')?.trim();
-    let cmd = second_part.strip_prefix('"')?.strip_suffix('"')?;
+    // Find the closing quote of the command, allowing for escaped content
+    let cmd_inner = second_part.strip_prefix('"')?;
+    let (cmd, after_cmd) = cmd_inner.split_once('"')?;
 
-    Some((mime.to_string(), cmd.to_string()))
+    // Optional 3rd field: , "toast message"
+    let toast = after_cmd
+        .trim()
+        .strip_prefix(',')
+        .and_then(|s| s.trim().strip_prefix('"'))
+        .and_then(|s| s.strip_suffix('"'))
+        .map(|s| s.to_string());
+
+    Some((mime.to_string(), cmd.to_string(), toast))
 }
 
 pub fn load_menu_config() -> Vec<CustomAction> {
-    // 1. USE ensure_config_file() to get the correct path
     let config_path = ensure_config_file();
-
     let content = std::fs::read_to_string(config_path).unwrap_or_default();
     let mut actions = Vec::new();
 
@@ -288,12 +295,9 @@ pub fn load_menu_config() -> Vec<CustomAction> {
             continue;
         }
 
-        // Parse: "Label" => "mimes", "command"
         if let Some((left, right)) = line.split_once("=>") {
             let full_label = left.trim().trim_matches('"');
 
-            // --- Submenu Parsing ---
-            // Detect "Group > Item" syntax
             let (submenu, label) = if full_label.contains(" > ") {
                 let parts: Vec<&str> = full_label.splitn(2, " > ").collect();
                 (Some(parts[0].to_string()), parts[1].to_string())
@@ -301,8 +305,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 (None, full_label.to_string())
             };
 
-            // 2. USE split_mime_cmd() to correctly parse the right side
-            if let Some((mimes_part, cmd_part)) = split_mime_cmd(right) {
+            if let Some((mimes_part, cmd_part, toast)) = split_mime_cmd(right) {
                 let mime_types: Vec<String> = mimes_part
                     .split(',')
                     .map(|s| s.trim().to_string())
@@ -310,10 +313,11 @@ pub fn load_menu_config() -> Vec<CustomAction> {
 
                 actions.push(CustomAction {
                     label,
-                    submenu, // Field added to CustomAction in model.rs
+                    submenu,
                     action_name: format!("custom_{}", i),
                     command: cmd_part,
                     mime_types,
+                    toast,
                 });
             }
         }

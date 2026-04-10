@@ -118,6 +118,7 @@ impl FluxApp {
             is_loading: false,
             task_progress: None,
             toast_overlay: adw::ToastOverlay::new(),
+            pending_toasts: std::collections::HashMap::new(),
         };
 
         // 9. Initial State Population

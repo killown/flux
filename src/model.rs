@@ -61,6 +61,8 @@ pub struct CustomAction {
     pub command: String,
     /// A list of supported MIME types or patterns for context-sensitivity.
     pub mime_types: Vec<String>,
+    /// Optional toast message to display after the command is dispatched.
+    pub toast: Option<String>,
 }
 
 /// User-defined keyboard shortcuts for core application operations.
@@ -250,6 +252,8 @@ pub struct FluxApp {
     pub task_progress: Option<f64>,
     /// Toast overlay for displaying transient notifications.
     pub toast_overlay: adw::ToastOverlay,
+    /// Pending toast messages keyed by action_name, populated at context-menu build time.
+    pub pending_toasts: std::collections::HashMap<String, String>,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
