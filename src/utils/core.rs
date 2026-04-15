@@ -517,3 +517,64 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     }
     mounts
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+    use std::fs;
+
+    #[test]
+    fn test_ensure_config_file_creation() {
+        let temp_dir = env::current_dir()
+            .unwrap()
+            .join("target")
+            .join("test_config_env");
+        if temp_dir.exists() {
+            fs::remove_dir_all(&temp_dir).unwrap();
+        }
+        fs::create_dir_all(&temp_dir).unwrap();
+        env::set_var("XDG_CONFIG_HOME", &temp_dir);
+
+        let config_path = ensure_config_file();
+        assert!(config_path.exists());
+        assert!(config_path.ends_with("flux/menu.rs"));
+
+        let content = fs::read_to_string(config_path).unwrap();
+        assert!(content.contains("builtin::copy"));
+        assert!(content.contains("builtin::paste"));
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+
+    #[test]
+    fn test_get_system_mounts_structure() {
+        let mounts = get_system_mounts();
+        for (name, path) in mounts {
+            assert!(!name.is_empty());
+            assert!(path.is_absolute());
+        }
+    }
+
+    #[test]
+    fn test_load_menu_config_integration() {
+        let temp_dir = env::current_dir()
+            .unwrap()
+            .join("target")
+            .join("test_menu_load");
+        if temp_dir.exists() {
+            fs::remove_dir_all(&temp_dir).unwrap();
+        }
+        fs::create_dir_all(&temp_dir).unwrap();
+        env::set_var("XDG_CONFIG_HOME", &temp_dir);
+
+        // This calls the internal parsing logic through the public API
+        let actions = load_menu_config();
+
+        // Default menu.rs has several items
+        assert!(!actions.is_empty());
+        assert!(actions.iter().any(|a| a.label.contains("Copy")));
+
+        fs::remove_dir_all(&temp_dir).unwrap();
+    }
+}

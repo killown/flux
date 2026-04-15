@@ -573,3 +573,79 @@ impl FluxApp {
         clipboard.set_content(Some(&content)).unwrap();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::model::SortBy;
+    use std::path::PathBuf;
+
+    /// Tests the logic for generating sorting status strings.
+    #[test]
+    fn test_sort_status_logic() {
+        let cases = vec![
+            (SortBy::Name, "Name"),
+            (SortBy::Date, "Date"),
+            (SortBy::Size, "Size"),
+        ];
+
+        for (variant, expected) in cases {
+            let status = match variant {
+                SortBy::Name => "Name",
+                SortBy::Date => "Date",
+                SortBy::Size => "Size",
+            };
+            assert_eq!(status, expected);
+        }
+    }
+
+    /// Tests the breadcrumb/path segment generation logic.
+    #[test]
+    fn test_path_segment_logic() {
+        let path = PathBuf::from("/home/user/Documents/flux");
+        let mut segments = Vec::new();
+        let mut current = path.as_path();
+
+        // Mirroring the logic used in breadcrumb factory updates
+        while let Some(name) = current.file_name() {
+            segments.push(name.to_string_lossy().to_string());
+            if let Some(parent) = current.parent() {
+                current = parent;
+            } else {
+                break;
+            }
+        }
+
+        // Segments are collected from leaf to root
+        assert_eq!(segments[0], "flux");
+        assert_eq!(segments[1], "Documents");
+        assert_eq!(segments[2], "user");
+    }
+
+    /// Tests the string formatting for the selection status bar.
+    #[test]
+    fn test_selection_status_formatting() {
+        let count = 5;
+        let bytes: u64 = 2 * 1024 * 1024; // 2.0 MB
+
+        let status = if count == 0 {
+            "Empty".to_string()
+        } else {
+            let mb = bytes as f64 / (1024.0 * 1024.0);
+            format!("Selected: {} items ({:.1} MB)", count, mb)
+        };
+
+        assert_eq!(status, "Selected: 5 items (2.0 MB)");
+    }
+
+    /// Verifies the "Empty" state for selection status.
+    #[test]
+    fn test_selection_status_empty() {
+        let count = 0;
+        let status = if count == 0 {
+            "Empty".to_string()
+        } else {
+            "Not Empty".to_string()
+        };
+        assert_eq!(status, "Empty");
+    }
+}

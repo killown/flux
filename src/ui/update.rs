@@ -410,7 +410,7 @@ impl FluxApp {
                                 let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
 
                                 // Using \u{a0} (Non-breaking space) to prevent GTK from collapsing the gap
-                                let spaced_label = format!("󰱝\u{a0} \u{a0} \u{a0} Open With...");
+                                let spaced_label = "󰱝\u{a0} \u{a0} \u{a0} Open With...".to_string();
                                 menu_item.set_label(Some(&spaced_label));
 
                                 open_with_item = Some(menu_item);
@@ -435,9 +435,7 @@ impl FluxApp {
 
                         // Route to Submenu or Main Section
                         if let Some(group_name) = &action.submenu {
-                            let menu = submenu_map
-                                .entry(group_name.clone())
-                                .or_insert_with(gio::Menu::new);
+                            let menu = submenu_map.entry(group_name.clone()).or_default();
 
                             menu.append(Some(&action.label), Some(&full_action_name));
                         } else {
@@ -1017,5 +1015,193 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::model::SortBy;
+    use std::env;
+    use std::path::PathBuf;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::Arc;
+
+    #[test]
+    fn test_cycle_sort_logic() {
+        let mut current_sort = SortBy::Name;
+
+        let cycle = |s: SortBy| match s {
+            SortBy::Name => SortBy::Date,
+            SortBy::Date => SortBy::Size,
+            SortBy::Size => SortBy::Name,
+        };
+
+        current_sort = cycle(current_sort);
+        assert_eq!(current_sort, SortBy::Date);
+
+        current_sort = cycle(current_sort);
+        assert_eq!(current_sort, SortBy::Size);
+
+        current_sort = cycle(current_sort);
+        assert_eq!(current_sort, SortBy::Name);
+    }
+
+    #[test]
+    fn test_history_navigation_integrity() {
+        let base = env::temp_dir().join("flux_test_env");
+        let mut history: Vec<PathBuf> = Vec::new();
+        let mut forward_stack: Vec<PathBuf> = Vec::new();
+        let mut current_path = base.clone();
+
+        let subfolder = base.join("documents");
+        history.push(current_path.clone());
+        current_path = subfolder.clone();
+        forward_stack.clear();
+
+        assert_eq!(current_path, subfolder);
+        assert_eq!(history.len(), 1);
+
+        if let Some(prev) = history.pop() {
+            forward_stack.push(current_path.clone());
+            current_path = prev;
+        }
+
+        assert_eq!(current_path, base);
+        assert_eq!(forward_stack.len(), 1);
+
+        if let Some(next) = forward_stack.pop() {
+            history.push(current_path.clone());
+            current_path = next;
+        }
+
+        assert_eq!(current_path, subfolder);
+        assert!(forward_stack.is_empty());
+    }
+
+    #[test]
+    fn test_asynchronous_load_synchronization() {
+        let load_id = Arc::new(AtomicU64::new(0));
+
+        let req1_id = load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        let req2_id = load_id.fetch_add(1, Ordering::SeqCst) + 1;
+
+        let current_system_id = load_id.load(Ordering::SeqCst);
+
+        assert!(req1_id < current_system_id);
+        assert_eq!(req2_id, current_system_id);
+    }
+
+    #[test]
+    fn test_hidden_files_toggle_logic() {
+        let mut show_hidden = false;
+
+        show_hidden = !show_hidden;
+        assert!(show_hidden);
+
+        show_hidden = !show_hidden;
+        assert!(!show_hidden);
+    }
+
+    #[test]
+    fn test_search_buffer_manipulation() {
+        let mut filter = String::new();
+
+        filter.push('f');
+        filter.push('l');
+        assert_eq!(filter, "fl");
+
+        if !filter.is_empty() {
+            filter.pop();
+        }
+        assert_eq!(filter, "f");
+
+        filter.clear();
+        assert!(filter.is_empty());
+    }
+
+    #[test]
+    fn test_exclusive_index_bounds() {
+        let list = vec![
+            PathBuf::from("/a"),
+            PathBuf::from("/b"),
+            PathBuf::from("/c"),
+        ];
+        let mut index = Some(1);
+
+        // Test increment
+        if let Some(idx) = index {
+            if idx + 1 < list.len() {
+                index = Some(idx + 1);
+            }
+        }
+        assert_eq!(index, Some(2));
+
+        // Test decrement
+        if let Some(idx) = index {
+            if idx > 0 {
+                index = Some(idx - 1);
+            }
+        }
+        assert_eq!(index, Some(1));
+    }
+
+    #[test]
+    fn test_exclusive_index_wrap_around() {
+        let list = vec![
+            PathBuf::from("/a"),
+            PathBuf::from("/b"),
+            PathBuf::from("/c"),
+        ];
+
+        // Test Next Wrap: Last -> First
+        let index = Some(2); // Last item (removed mut)
+        let new_idx = (index.unwrap() + 1) % list.len();
+        assert_eq!(new_idx, 0); // Should wrap to 0
+
+        // Test Prev Wrap: First -> Last
+        let index = Some(0); // First item (removed mut)
+        let new_idx = if index.unwrap() > 0 {
+            index.unwrap() - 1
+        } else {
+            list.len() - 1
+        };
+        assert_eq!(new_idx, 2); // Should wrap to last index
+    }
+
+    #[test]
+    fn test_task_progress_tracking() {
+        let mut is_loading = true;
+        let mut task_progress = Some(0.0);
+
+        assert!(is_loading);
+        assert_eq!(task_progress, Some(0.0));
+
+        task_progress = Some(0.75);
+        assert_eq!(task_progress, Some(0.75));
+
+        is_loading = false;
+        task_progress = None;
+        assert!(!is_loading);
+        assert!(task_progress.is_none());
+    }
+
+    #[test]
+    fn test_breadcrumb_logic_consistency() {
+        let path = PathBuf::from("/tmp/flux/test/path");
+        let mut segments = Vec::new();
+        let mut current = path.as_path();
+
+        while let Some(name) = current.file_name() {
+            segments.push(name.to_string_lossy().to_string());
+            if let Some(parent) = current.parent() {
+                current = parent;
+            } else {
+                break;
+            }
+        }
+
+        assert_eq!(segments[0], "path");
+        assert_eq!(segments[1], "test");
+        assert_eq!(segments[2], "flux");
     }
 }

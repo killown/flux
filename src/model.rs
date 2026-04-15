@@ -133,7 +133,7 @@ pub struct ContextAction {
 }
 
 /// Visual and behavioral settings for the User Interface.
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
     /// Default pixel size for file and folder icons.
@@ -175,6 +175,29 @@ pub struct UIConfig {
     pub startup_window_width: i32,
     /// Initial height of the application window in pixels.
     pub startup_window_height: i32,
+}
+
+impl Default for UIConfig {
+    fn default() -> Self {
+        Self {
+            default_icon_size: 0,
+            sidebar_width: 0,
+            show_xdg_dirs: false,
+            single_click: false,
+            theme: None,
+            default_sort: SortBy::default(),
+            folders_first: true,
+            current_folders_first: HashMap::new(),
+            show_hidden_by_default: false,
+            folder_sort: HashMap::new(),
+            folder_icon_size: HashMap::new(),
+            device_renames: HashMap::new(),
+            show_csd: false,
+            start_maximized: false,
+            startup_window_width: 0,
+            startup_window_height: 0,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
@@ -399,4 +422,116 @@ pub enum AppMsg {
     TaskCompleted,
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sort_by_default() {
+        let sort = SortBy::default();
+        assert_eq!(sort, SortBy::Name);
+    }
+
+    #[test]
+    fn test_sort_by_serialization() {
+        let config = Config {
+            ui: UIConfig {
+                default_sort: SortBy::Date,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+        assert!(toml_str.contains("default_sort = \"Date\""));
+
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+        assert_eq!(parsed.ui.default_sort, SortBy::Date);
+    }
+
+    #[test]
+    fn test_config_defaults() {
+        // Test that an empty TOML string results in a Config with correct defaults
+        // specifically testing serde defaults like folders_first
+        let empty_toml = "";
+        let config: Config = toml::from_str(empty_toml).expect("Failed to parse empty config");
+
+        // Check key defaults
+        assert_eq!(config.ui.default_icon_size, 0); // Default for i32 is 0
+        assert!(!config.ui.single_click); // Default for bool is false
+        assert_eq!(config.ui.default_sort, SortBy::Name); // Custom default via #[default]
+        assert!(config.ui.folders_first); // Custom default via serde(default = "default_true")
+    }
+
+    #[test]
+    fn test_shortcuts_config_serialization() {
+        let mut shortcuts = ShortcutsConfig::default();
+        shortcuts.back = Some("BackSpace".to_string());
+        shortcuts.forward = Some("<Alt>Right".to_string());
+
+        let config = Config {
+            shortcuts,
+            ..Default::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+        assert!(toml_str.contains("back = \"BackSpace\""));
+        assert!(toml_str.contains("forward = \"<Alt>Right\""));
+
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+        assert_eq!(parsed.shortcuts.back, Some("BackSpace".to_string()));
+        assert_eq!(parsed.shortcuts.forward, Some("<Alt>Right".to_string()));
+    }
+
+    #[test]
+    fn test_custom_place_serialization() {
+        let place = CustomPlace {
+            name: "Home".to_string(),
+            icon: "user-home-symbolic".to_string(),
+            path: "~".to_string(),
+        };
+
+        let config = Config {
+            sidebar: vec![place],
+            ..Default::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+        assert!(toml_str.contains("name = \"Home\""));
+        assert!(toml_str.contains("path = \"~\""));
+
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+        assert_eq!(parsed.sidebar.len(), 1);
+        assert_eq!(parsed.sidebar[0].name, "Home");
+    }
+
+    #[test]
+    fn test_device_rename_serialization() {
+        let mut renames = HashMap::new();
+        renames.insert(
+            "/dev/sda1".to_string(),
+            DeviceRename {
+                name: "My Disk".to_string(),
+                icon: Some("drive-harddisk-symbolic".to_string()),
+            },
+        );
+
+        let config = Config {
+            ui: UIConfig {
+                device_renames: renames,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+        assert!(toml_str.contains("My Disk"));
+
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+        let renamed = parsed.ui.device_renames.get("/dev/sda1").unwrap();
+        assert_eq!(renamed.name, "My Disk");
+        assert_eq!(renamed.icon, Some("drive-harddisk-symbolic".to_string()));
+    }
 }

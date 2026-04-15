@@ -1,14 +1,21 @@
-use std::process::Command;
 use std::env;
+use std::process::Command;
 
 fn main() {
     let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
 
     if profile == "release" {
+        // Automatically fix formatting before continuing
+        let fmt_status = Command::new("cargo").args(["fmt"]).status();
+
+        if let Ok(s) = fmt_status {
+            if !s.success() {
+                println!("cargo:warning=>>> cargo fmt failed to run.");
+            }
+        }
+
         println!("cargo:warning=>>> Release build detected. Syncing assets via Makefile...");
-        let status = Command::new("make")
-            .arg("install")
-            .status();
+        let status = Command::new("make").arg("install").status();
 
         match status {
             Ok(s) if s.success() => {

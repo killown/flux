@@ -38,6 +38,35 @@ impl StateManager {
         })
     }
 
+    /// Creates a StateManager with a specific database path (useful for testing).
+    #[cfg(test)]
+    pub fn new_with_path(db_path: &std::path::Path) -> Result<Self> {
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+        }
+
+        let conn = Connection::open(db_path)?;
+
+        conn.execute_batch(
+            "
+            PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+            CREATE TABLE IF NOT EXISTS folder_settings (
+                path TEXT PRIMARY KEY,
+                sort_col TEXT,
+                sort_reversed BOOLEAN,
+                icon_size INTEGER,
+                folders_first BOOLEAN
+            );
+            ",
+        )?;
+
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
+    }
+
     /// Persists view settings for a specific directory.
     pub fn save_view(
         &self,
@@ -126,5 +155,122 @@ impl StateManager {
 impl std::fmt::Debug for StateManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("StateManager").finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn create_test_db() -> (StateManager, tempfile::TempDir) {
+        // Create a temporary directory that will be deleted when dropped
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+        let db_path = temp_dir.path().join("test_state.db");
+
+        let manager = StateManager::new_with_path(&db_path).expect("Failed to create test DB");
+        (manager, temp_dir)
+    }
+
+    #[test]
+    fn test_save_and_get_view() {
+        let (manager, _temp_dir) = create_test_db();
+        let path = PathBuf::from("/home/user/Documents");
+
+        // Save view settings
+        manager.save_view(&path, "Name", false, 128, true).unwrap();
+
+        // Retrieve view settings
+        let result = manager.get_view(&path).unwrap();
+        assert!(result.is_some());
+
+        let (sort_col, reversed, icon_size, folders_first) = result.unwrap();
+        assert_eq!(sort_col, "Name");
+        assert_eq!(reversed, false);
+        assert_eq!(icon_size, 128);
+        assert_eq!(folders_first, true);
+    }
+
+    #[test]
+    fn test_get_nonexistent_view() {
+        let (manager, _temp_dir) = create_test_db();
+        let path = PathBuf::from("/nonexistent/path");
+
+        let result = manager.get_view(&path).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_update_existing_view() {
+        let (manager, _temp_dir) = create_test_db();
+        let path = PathBuf::from("/home/user/Downloads");
+
+        // Save initial settings
+        manager.save_view(&path, "Date", true, 64, false).unwrap();
+
+        // Update settings
+        manager.save_view(&path, "Size", false, 256, true).unwrap();
+
+        // Verify update
+        let result = manager.get_view(&path).unwrap().unwrap();
+        assert_eq!(result.0, "Size");
+        assert_eq!(result.1, false);
+        assert_eq!(result.2, 256);
+        assert_eq!(result.3, true);
+    }
+
+    #[test]
+    fn test_rename_path() {
+        let (manager, _temp_dir) = create_test_db();
+        let old_path = PathBuf::from("/home/user/OldName");
+        let new_path = PathBuf::from("/home/user/NewName");
+
+        // Save with old path
+        manager
+            .save_view(&old_path, "Name", false, 128, true)
+            .unwrap();
+
+        // Rename path
+        manager.rename_path(&old_path, &new_path).unwrap();
+
+        // Old path should no longer exist
+        assert!(manager.get_view(&old_path).unwrap().is_none());
+
+        // New path should exist with same data
+        let result = manager.get_view(&new_path).unwrap().unwrap();
+        assert_eq!(result.0, "Name");
+    }
+
+    #[test]
+    fn test_scrub_orphans() {
+        let (manager, temp_dir) = create_test_db();
+
+        // Create a real directory
+        let real_dir = temp_dir.path().join("real_folder");
+        std::fs::create_dir(&real_dir).unwrap();
+
+        // Create a path that does not exist
+        let fake_dir = temp_dir.path().join("fake_folder");
+
+        // Save both to DB
+        manager
+            .save_view(&real_dir, "Name", false, 128, true)
+            .unwrap();
+        manager
+            .save_view(&fake_dir, "Date", true, 64, false)
+            .unwrap();
+
+        // Verify both exist in DB
+        assert!(manager.get_view(&real_dir).unwrap().is_some());
+        assert!(manager.get_view(&fake_dir).unwrap().is_some());
+
+        // Scrub orphans
+        manager.scrub_orphans().unwrap();
+
+        // Real directory should still be there
+        assert!(manager.get_view(&real_dir).unwrap().is_some());
+
+        // Fake directory should be removed
+        assert!(manager.get_view(&fake_dir).unwrap().is_none());
     }
 }
