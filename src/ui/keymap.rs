@@ -12,6 +12,7 @@ pub mod constants {
     pub const PROPERTIES: &str = "<ctrl>i";
     pub const TOGGLE_HIDDEN: &str = "<ctrl>h";
     pub const SETTINGS: &str = "F10";
+    pub const MENU_EDITOR: &str = "F9";
     pub const ROOT: &str = "slash";
 }
 
@@ -29,6 +30,7 @@ pub struct KeyMap {
     pub properties: gtk::ShortcutTrigger,
     pub toggle_hidden: gtk::ShortcutTrigger,
     pub settings: gtk::ShortcutTrigger,
+    pub menu_editor: gtk::ShortcutTrigger,
     pub root: gtk::ShortcutTrigger,
 }
 
@@ -46,7 +48,8 @@ impl KeyMap {
             search: parse_trigger(&config.search, constants::SEARCH),
             properties: parse_trigger(&config.open_properties, constants::PROPERTIES),
             toggle_hidden: parse_trigger(&config.toggle_hidden, constants::TOGGLE_HIDDEN),
-            settings: parse_trigger(&None, constants::SETTINGS),
+            settings: parse_trigger(&config.settings, constants::SETTINGS),
+            menu_editor: parse_trigger(&config.menu_editor, constants::MENU_EDITOR),
             root: parse_trigger(&config.root, constants::ROOT),
         }
     }

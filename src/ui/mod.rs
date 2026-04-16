@@ -11,6 +11,7 @@ pub mod settings;
 pub mod update;
 pub mod view;
 pub use settings::SettingsWindow;
+pub mod menu_editor;
 
 // --- 2. Existing Submodules ---
 mod components;

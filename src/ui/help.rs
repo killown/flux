@@ -24,6 +24,7 @@ impl HelpWindow {
             .replace("<Shift>", "Shift + ")
             .replace("Return", "Enter")
             .replace("BackSpace", "Backspace")
+            .replace("slash", "/")
     }
 }
 
@@ -64,7 +65,6 @@ impl SimpleComponent for HelpWindow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
                                 set_subtitle: "Open selected file or directory"
                             },
-                            // Added: Root navigation shortcut
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.root.clone(), "/"),
                                 set_subtitle: "Navigate to root directory"
@@ -94,7 +94,11 @@ impl SimpleComponent for HelpWindow {
                                     set_subtitle: "Rename selected item"
                             },
                             adw::ActionRow {
-                                set_title: "F10",
+                                set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
+                                set_subtitle: "Open context menu editor"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.settings.clone(), "F10"),
                                 set_subtitle: "Open preferences"
                             },
                             adw::ActionRow {

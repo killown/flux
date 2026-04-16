@@ -97,6 +97,19 @@ fn setup_config_watcher() {
     }
 }
 
+fn setup_shortcuts(app: &adw::Application) {
+    let action_menu_editor = gio::SimpleAction::new("open-menu-editor", None);
+    action_menu_editor.connect_activate(|_, _| {
+        let exe = std::env::current_exe().expect("Failed to get current exe path");
+        std::process::Command::new(exe)
+            .arg("--menu-editor")
+            .spawn()
+            .expect("Failed to spawn menu editor");
+    });
+    app.add_action(&action_menu_editor);
+    app.set_accels_for_action("app.open-menu-editor", &["F9"]);
+}
+
 fn main() {
     adw::init().expect("Failed to initialize Libadwaita");
 
@@ -118,6 +131,7 @@ fn main() {
                 println!("  -h, --help                  Print this help message");
                 println!("  -v, --version               Print version information");
                 println!("      --file-properties PATH  Open the file properties window for PATH");
+                println!("      --menu-editor           To manage menu.rs");
                 return;
             }
             "--file-properties" if args.len() > 2 => {
@@ -125,6 +139,10 @@ fn main() {
                 let app = RelmApp::new("flux.PropertiesViewer");
                 app.allow_multiple_instances(true);
                 app.with_args(vec![]).run::<FileProperties>(path);
+                return;
+            }
+            "--menu-editor" => {
+                crate::ui::menu_editor::run();
                 return;
             }
             arg if arg.starts_with('-') => {
@@ -156,8 +174,11 @@ fn main() {
     // Setting application_id in the builder triggers a synchronous D-Bus handshake
     // and Wayland compositor lookup that blocks the main thread for around ~200ms.
     let base_app = adw::Application::builder()
+        .application_id("com.flux.FileManager")
         .flags(gio::ApplicationFlags::FLAGS_NONE)
         .build();
+
+    setup_shortcuts(&base_app);
 
     let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);

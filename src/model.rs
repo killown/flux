@@ -66,7 +66,7 @@ pub struct CustomAction {
 }
 
 /// User-defined keyboard shortcuts for core application operations.
-#[derive(Debug, Deserialize, Serialize, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
     /// Key combination to exit the application.
     pub quit: Option<String>,
@@ -90,6 +90,10 @@ pub struct ShortcutsConfig {
     pub toggle_hidden: Option<String>,
     /// Key combination to navigate to root directory.
     pub root: Option<String>,
+    /// Key combination to open the application settings.
+    pub settings: Option<String>,
+    /// Key combination to open the menu editor.
+    pub menu_editor: Option<String>,
 }
 
 /// Top-level configuration structure for persistent application settings.
@@ -422,6 +426,47 @@ pub enum AppMsg {
     TaskCompleted,
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
+}
+
+/// Represents a single entry in the Flux context menu configuration.
+///
+/// This structure maps to the domain-specific language used in `menu.rs`,
+/// allowing for the definition of custom actions based on file types.
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
+pub struct MenuEntry {
+    /// The user-facing text displayed in the menu.
+    pub label: String,
+    /// An optional category name used to nest this entry within a submenu.
+    pub submenu: Option<String>,
+    /// Comma-separated patterns (e.g., "image/all", "directory") that define when this entry appears.
+    pub mime_types: String,
+    /// The shell command to execute, supporting placeholders like %p for the file path.
+    pub command: String,
+    /// An optional message to display as a toast notification after the command runs.
+    pub toast: Option<String>,
+}
+
+impl MenuEntry {
+    /// Converts the entry into the DSL string format used in `menu.rs`.
+    ///
+    /// The output follows the pattern:
+    /// `"Submenu > Label" => "mime_types", "command", "toast"`
+    pub fn to_config_line(&self) -> String {
+        let label_field = match &self.submenu {
+            Some(sub) => format!("{} > {}", sub, self.label),
+            None => self.label.clone(),
+        };
+
+        let base = format!(
+            r#""{}" => "{}", "{}""#,
+            label_field, self.mime_types, self.command
+        );
+
+        match &self.toast {
+            Some(t) => format!(r#"{}, "{}""#, base, t),
+            None => base,
+        }
+    }
 }
 
 #[cfg(test)]
