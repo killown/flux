@@ -77,10 +77,11 @@ pub fn setup_controllers(
                     while let Some(w) = current {
                         let name = w.widget_name().to_string();
                         if name.starts_with("/") || name.starts_with("trash://") {
-                            let _ = std::process::Command::new("flux")
-                                .arg(std::path::PathBuf::from(name))
-                                .spawn();
-                            gesture.set_state(gtk::EventSequenceState::Claimed);
+                            let path = std::path::PathBuf::from(&name);
+                            if path.is_dir() {
+                                let _ = std::process::Command::new("flux").arg(path).spawn();
+                                gesture.set_state(gtk::EventSequenceState::Claimed);
+                            }
                             break;
                         }
                         current = w.parent();
