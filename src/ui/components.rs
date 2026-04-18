@@ -364,6 +364,16 @@ impl FactoryComponent for SidebarPlace {
             },
 
             add_controller = gtk::GestureClick {
+                set_button: 2,
+                connect_pressed[path = self.path.clone()] => move |gesture, _, _, _| {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    let _ = std::process::Command::new("flux")
+                        .arg(&path)
+                        .spawn();
+                }
+            },
+
+            add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
                 connect_pressed[sender, path = self.path.clone()] => move |gesture, _, x, y| {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
