@@ -68,9 +68,13 @@ impl FluxApp {
 
         // 6. Sidebar and Volume Monitoring
         let listbox = gtk::ListBox::default();
-        let sidebar = FactoryVecDeque::builder()
-            .launch(listbox)
-            .forward(sender.input_sender(), AppMsg::Navigate);
+        let sidebar =
+            FactoryVecDeque::builder()
+                .launch(listbox)
+                .forward(sender.input_sender(), |msg| match msg {
+                    crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
+                    crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
+                });
 
         let volume_monitor = gio::VolumeMonitor::get();
         let s_added = sender.clone();

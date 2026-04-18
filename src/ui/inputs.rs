@@ -101,6 +101,10 @@ pub fn setup_controllers(
         let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
 
         match keyval {
+            gdk::Key::Insert if is_ctrl => {
+                sender_cap.input(AppMsg::AddToSidebarPermanent);
+                glib::Propagation::Stop
+            }
             gdk::Key::Insert => {
                 sender_cap.input(AppMsg::AddExclusive);
                 glib::Propagation::Stop

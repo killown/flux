@@ -370,6 +370,10 @@ pub enum AppMsg {
     ToggleSingleClick,
     /// Force a rebuild of the sidebar entries.
     RefreshSidebar,
+    /// Remove a custom entry from the sidebar by its resolved path.
+    RemoveFromSidebar(PathBuf),
+    /// Permanently add the selected folder (or current directory) to config.toml sidebar entries.
+    AddToSidebarPermanent,
     /// Open the keyboard shortcuts and help overlay.
     ShowHelp,
     /// Handle a Drag-and-Drop move/copy operation for multiple items.

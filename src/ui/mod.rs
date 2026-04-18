@@ -12,6 +12,7 @@ pub mod update;
 pub mod view;
 pub use settings::SettingsWindow;
 pub mod menu_editor;
+pub use components::SidebarMsg;
 
 // --- 2. Existing Submodules ---
 mod components;

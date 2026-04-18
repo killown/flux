@@ -30,6 +30,54 @@ impl FluxApp {
                 // Re-run the standard refresh to append system drives/mounts
                 self.refresh_sidebar();
             }
+            AppMsg::RemoveFromSidebar(path) => {
+                let path_str = path.to_string_lossy();
+                // Match against both raw and tilde-collapsed forms
+                let home = dirs::home_dir().unwrap_or_default();
+                self.config.sidebar.retain(|entry| {
+                    let expanded = if entry.path.starts_with('~') {
+                        entry.path.replacen('~', &home.to_string_lossy(), 1)
+                    } else {
+                        entry.path.clone()
+                    };
+                    expanded != path_str.as_ref()
+                });
+                utils::save_config(&self.config);
+                self.refresh_sidebar();
+            }
+            AppMsg::AddToSidebarPermanent => {
+                let path = self
+                    .get_selected_path()
+                    .unwrap_or_else(|| self.current_path.clone());
+
+                let path_str = path.to_string_lossy().to_string();
+
+                let already_exists = self.config.sidebar.iter().any(|entry| {
+                    let expanded = if entry.path.starts_with('~') {
+                        let home = dirs::home_dir().unwrap_or_default();
+                        entry.path.replacen('~', &home.to_string_lossy(), 1)
+                    } else {
+                        entry.path.clone()
+                    };
+                    expanded == path_str
+                });
+
+                if !already_exists {
+                    let name = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| path_str.clone());
+
+                    self.config.sidebar.push(crate::model::CustomPlace {
+                        name,
+                        icon: "folder-symbolic".to_string(),
+                        path: path_str,
+                    });
+
+                    utils::save_config(&self.config);
+                    self.refresh_sidebar();
+                }
+            }
             AppMsg::SetSingleClick(val) => {
                 self.config.ui.single_click = val;
                 self.files.view.set_single_click_activate(val);

@@ -6,6 +6,7 @@ use crate::utils;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
+use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -292,6 +293,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     }
 }
 
+/// Output events emitted by a sidebar row.
+#[derive(Debug)]
+pub enum SidebarMsg {
+    /// Navigate to the given path.
+    Navigate(PathBuf),
+    /// Remove the entry at the given path from the custom sidebar config.
+    Remove(PathBuf),
+}
+
 /// Simple model for a pinned sidebar location.
 #[derive(Debug)]
 pub struct SidebarPlace {
@@ -335,7 +345,7 @@ impl FactoryComponent for PathSegment {
 impl FactoryComponent for SidebarPlace {
     type Init = SidebarPlace;
     type Input = ();
-    type Output = PathBuf;
+    type Output = SidebarMsg;
     type ParentWidget = gtk::ListBox;
     type CommandOutput = ();
 
@@ -347,10 +357,47 @@ impl FactoryComponent for SidebarPlace {
             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
             add_controller = gtk::GestureClick {
-                connect_released[sender, path = self.path.clone()] => move |_, _, _, _| {
-                    let _ = sender.output(path.clone());
+                connect_released[sender, path = self.path.clone()] => move |gesture, _, _, _| {
+                    if gesture.current_button() == 1 {
+                        let _ = sender.output(SidebarMsg::Navigate(path.clone()));
+                    }
                 }
             },
+
+            add_controller = gtk::GestureClick {
+                set_button: MOUSE_RIGHT_CLICK,
+                connect_pressed[sender, path = self.path.clone()] => move |gesture, _, x, y| {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+
+                    let menu = gtk::PopoverMenu::builder()
+                        .has_arrow(false)
+                        .build();
+
+                    let menu_model = gio::Menu::new();
+                    menu_model.append(Some("Remove from sidebar"), Some("sidebar.remove"));
+                    menu.set_menu_model(Some(&menu_model));
+
+                    if let Some(widget) = gesture.widget() {
+                        menu.set_parent(&widget);
+
+                        let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
+                        menu.set_pointing_to(Some(&rect));
+
+                        let action_group = gio::SimpleActionGroup::new();
+                        let remove_action = gio::SimpleAction::new("remove", None);
+                        let sender_c = sender.clone();
+                        let path_c = path.clone();
+                        remove_action.connect_activate(move |_, _| {
+                            let _ = sender_c.output(SidebarMsg::Remove(path_c.clone()));
+                        });
+                        action_group.add_action(&remove_action);
+                        widget.insert_action_group("sidebar", Some(&action_group));
+
+                        menu.popup();
+                    }
+                }
+            },
+
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: constants::SIDEBAR_SPACING,

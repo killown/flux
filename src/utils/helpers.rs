@@ -52,7 +52,11 @@ impl FluxApp {
         }
 
         if keyval == gdk::Key::Insert {
-            sender.input(AppMsg::AddExclusive);
+            if modifiers == gdk::ModifierType::CONTROL_MASK {
+                sender.input(AppMsg::AddToSidebarPermanent);
+            } else {
+                sender.input(AppMsg::AddExclusive);
+            }
             return glib::Propagation::Stop;
         }
 
