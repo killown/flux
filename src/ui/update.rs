@@ -757,7 +757,17 @@ impl FluxApp {
                 let total_selected = count + dir_count;
 
                 self.selection_status = match (total_selected, only_files, only_dirs) {
-                    (0, _, _) => String::new(),
+                    (0, _, _) => {
+                        let child_count = std::fs::read_dir(&self.current_path)
+                            .map(|rd| rd.count())
+                            .unwrap_or(0);
+                        let name = self
+                            .current_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().into_owned())
+                            .unwrap_or_else(|| "/".to_string());
+                        format!("{} ({} items)", name, child_count)
+                    }
 
                     // Single file
                     (1, true, _) => {
