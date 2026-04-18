@@ -717,9 +717,11 @@ impl FluxApp {
             }
             AppMsg::SelectionChanged => {
                 let mut total_size = 0u64;
-                let mut count = 0;
+                let mut count = 0usize;
+                let mut dir_count = 0usize;
                 let mut only_files = true;
-                let mut single_file_name = String::new();
+                let mut only_dirs = true;
+                let mut single_name = String::new();
 
                 if let Some(selection_model) = self
                     .files
@@ -730,36 +732,76 @@ impl FluxApp {
                     let selection = selection_model.selection();
                     let n_selected = selection.size();
 
-                    if !selection.is_empty() {
-                        for i in 0..n_selected {
-                            let pos = selection.nth(i as u32);
-                            if let Some(item_wrapper) = self.files.get(pos) {
-                                let item = item_wrapper.borrow();
-                                if item.is_dir {
-                                    only_files = false;
-                                    break;
+                    for i in 0..n_selected {
+                        let pos = selection.nth(i as u32);
+                        if let Some(item_wrapper) = self.files.get(pos) {
+                            let item = item_wrapper.borrow();
+                            if item.is_dir {
+                                only_files = false;
+                                dir_count += 1;
+                                if count + dir_count == 1 {
+                                    single_name = item.name.clone();
                                 }
+                            } else {
+                                only_dirs = false;
                                 total_size += item.size;
                                 count += 1;
-
-                                if count == 1 {
-                                    single_file_name = item.name.clone();
+                                if count + dir_count == 1 {
+                                    single_name = item.name.clone();
                                 }
                             }
                         }
                     }
                 }
 
-                if only_files && count > 0 {
-                    let size_str = glib::format_size(total_size);
-                    self.selection_status = if count == 1 {
-                        format!("{} ({})", single_file_name, size_str)
-                    } else {
-                        format!("{} items ({})", count, size_str)
-                    };
-                } else {
-                    self.selection_status = String::new();
-                }
+                let total_selected = count + dir_count;
+
+                self.selection_status = match (total_selected, only_files, only_dirs) {
+                    (0, _, _) => String::new(),
+
+                    // Single file
+                    (1, true, _) => {
+                        let size_str = glib::format_size(total_size);
+                        format!("{} ({})", single_name, size_str)
+                    }
+
+                    // Single folder
+                    (1, _, true) => {
+                        let item = self
+                            .files
+                            .view
+                            .model()
+                            .and_downcast::<gtk::MultiSelection>()
+                            .and_then(|m| {
+                                let pos = m.selection().nth(0);
+                                self.files.get(pos)
+                            });
+
+                        if let Some(wrapper) = item {
+                            let path = wrapper.borrow().path.clone();
+                            let child_count =
+                                std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0);
+                            format!("{} ({} items)", single_name, child_count)
+                        } else {
+                            single_name
+                        }
+                    }
+
+                    // Multiple files only
+                    (n, true, _) => {
+                        let size_str = glib::format_size(total_size);
+                        format!("{} items ({})", n, size_str)
+                    }
+
+                    // Multiple folders only
+                    (_, _, true) => format!("{} folders", dir_count),
+
+                    // Mixed files + folders
+                    (_, false, false) => {
+                        let size_str = glib::format_size(total_size);
+                        format!("{} folders, {} files ({})", dir_count, count, size_str)
+                    }
+                };
             }
             AppMsg::ThumbnailReady {
                 name,
