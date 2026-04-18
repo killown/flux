@@ -74,6 +74,9 @@ impl FluxApp {
                 .forward(sender.input_sender(), |msg| match msg {
                     crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
                     crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
+                    crate::ui::SidebarMsg::Reorder { from, to } => {
+                        AppMsg::ReorderSidebar { from, to }
+                    }
                 });
 
         let volume_monitor = gio::VolumeMonitor::get();

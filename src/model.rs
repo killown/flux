@@ -374,6 +374,8 @@ pub enum AppMsg {
     RemoveFromSidebar(PathBuf),
     /// Permanently add the selected folder (or current directory) to config.toml sidebar entries.
     AddToSidebarPermanent,
+    /// Reorder a custom sidebar entry: move `from` path to the position currently held by `to`.
+    ReorderSidebar { from: PathBuf, to: PathBuf },
     /// Open the keyboard shortcuts and help overlay.
     ShowHelp,
     /// Handle a Drag-and-Drop move/copy operation for multiple items.

@@ -296,10 +296,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 /// Output events emitted by a sidebar row.
 #[derive(Debug)]
 pub enum SidebarMsg {
-    /// Navigate to the given path.
     Navigate(PathBuf),
-    /// Remove the entry at the given path from the custom sidebar config.
     Remove(PathBuf),
+    Reorder { from: PathBuf, to: PathBuf },
 }
 
 /// Simple model for a pinned sidebar location.
@@ -396,6 +395,42 @@ impl FactoryComponent for SidebarPlace {
                         menu.popup();
                     }
                 }
+            },
+
+            // Drag source: carry this row's path as a plain string
+            add_controller = gtk::DragSource {
+                set_actions: gdk::DragAction::MOVE,
+                connect_prepare[path = self.path.clone()] => move |src, _, _| {
+                    if let Some(w) = src.widget() {
+                        w.add_css_class("sidebar-dragging");
+                    }
+                    Some(gdk::ContentProvider::for_value(
+                        &path.to_string_lossy().to_string().to_value()
+                    ))
+                },
+                connect_drag_end => |src, _, _| {
+                    if let Some(w) = src.widget() {
+                        w.remove_css_class("sidebar-dragging");
+                    }
+                },
+            },
+
+            // Drop target: accept a path string dropped from another sidebar row
+            add_controller = gtk::DropTarget {
+                set_actions: gdk::DragAction::MOVE,
+                set_types: &[glib::types::Type::STRING],
+                connect_drop[sender, path = self.path.clone()] => move |_, value, _, _| {
+                    if let Ok(from_str) = value.get::<String>() {
+                        let from = PathBuf::from(&from_str);
+                        if from != path {
+                            let _ = sender.output(SidebarMsg::Reorder {
+                                from,
+                                to: path.clone(),
+                            });
+                        }
+                    }
+                    true
+                },
             },
 
             gtk::Box {

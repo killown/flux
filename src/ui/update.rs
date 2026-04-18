@@ -78,6 +78,41 @@ impl FluxApp {
                     self.refresh_sidebar();
                 }
             }
+            AppMsg::ReorderSidebar { from, to } => {
+                let home = dirs::home_dir().unwrap_or_default();
+                let home_str = home.to_string_lossy();
+
+                let resolve = |entry_path: &str| -> String {
+                    if entry_path.starts_with('~') {
+                        entry_path.replacen('~', &home_str, 1)
+                    } else {
+                        entry_path.to_owned()
+                    }
+                };
+
+                let from_str = from.to_string_lossy().to_string();
+                let to_str = to.to_string_lossy().to_string();
+
+                let from_idx = self
+                    .config
+                    .sidebar
+                    .iter()
+                    .position(|e| resolve(&e.path) == from_str);
+                let to_idx = self
+                    .config
+                    .sidebar
+                    .iter()
+                    .position(|e| resolve(&e.path) == to_str);
+
+                if let (Some(fi), Some(ti)) = (from_idx, to_idx) {
+                    let entry = self.config.sidebar.remove(fi);
+                    // After removal, to_idx shifts by -1 if fi < ti
+                    let insert_at = if fi < ti { ti - 1 } else { ti };
+                    self.config.sidebar.insert(insert_at, entry);
+                    utils::save_config(&self.config);
+                    self.refresh_sidebar();
+                }
+            }
             AppMsg::SetSingleClick(val) => {
                 self.config.ui.single_click = val;
                 self.files.view.set_single_click_activate(val);
