@@ -78,6 +78,10 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Add selection or current folder to list"
                             },
                             adw::ActionRow {
+                                set_title: "Ctrl + Insert",
+                                set_subtitle: "Pin selection or current folder to sidebar permanently"
+                            },
+                            adw::ActionRow {
                                 set_title: "Tab",
                                 set_subtitle: "Cycle to the next folder in the list"
                             },
