@@ -288,4 +288,70 @@ pub fn setup_controllers(
         })),
     ));
     window.add_controller(settings_shortcut);
+
+    // 10. Click-on-empty-space deselection
+    setup_deselect_on_background_click(grid_view, sender);
+}
+
+/// Attaches a primary-button gesture to the `GridView` that clears the
+/// `MultiSelection` when the user clicks on empty background space, unless
+/// Ctrl or Shift is held (multi-selection modifiers).
+fn setup_deselect_on_background_click(
+    grid_view: &gtk::GridView,
+    _sender: relm4::AsyncComponentSender<FluxApp>,
+) {
+    let deselect = gtk::GestureClick::new();
+    deselect.set_button(1);
+    // Bubble phase so individual GridView child cells get first refusal.
+    deselect.set_propagation_phase(gtk::PropagationPhase::Bubble);
+
+    let grid_view_weak = grid_view.downgrade();
+
+    deselect.connect_pressed(move |gesture, _, x, y| {
+        let modifiers = gesture
+            .current_event()
+            .map(|e| e.modifier_state())
+            .unwrap_or(gdk::ModifierType::empty());
+
+        let multi_select =
+            modifiers.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK);
+
+        if multi_select {
+            return;
+        }
+
+        let Some(grid_view) = grid_view_weak.upgrade() else {
+            return;
+        };
+
+        // Walk upward from the picked widget; if any ancestor carries a
+        // filesystem path name the click landed on a file/dir item.
+        let hit_item = grid_view
+            .pick(x, y, gtk::PickFlags::DEFAULT)
+            .map(|picked| {
+                let mut current: Option<gtk::Widget> = Some(picked);
+                loop {
+                    match current {
+                        None => break false,
+                        Some(ref w) => {
+                            let name = w.widget_name().to_string();
+                            if name.starts_with('/') || name.starts_with("trash://") {
+                                break true;
+                            }
+                            current = w.parent();
+                        }
+                    }
+                }
+            })
+            .unwrap_or(false);
+
+        if !hit_item {
+            if let Some(model) = grid_view.model().and_downcast::<gtk::MultiSelection>() {
+                model.unselect_all();
+            }
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+        }
+    });
+
+    grid_view.add_controller(deselect);
 }
