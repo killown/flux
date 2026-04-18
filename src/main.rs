@@ -101,10 +101,7 @@ fn setup_shortcuts(app: &adw::Application) {
     let action_menu_editor = gio::SimpleAction::new("open-menu-editor", None);
     action_menu_editor.connect_activate(|_, _| {
         let exe = std::env::current_exe().expect("Failed to get current exe path");
-        std::process::Command::new(exe)
-            .arg("--menu-editor")
-            .spawn()
-            .expect("Failed to spawn menu editor");
+        let _ = std::process::Command::new(exe).arg("--menu-editor").spawn();
     });
     app.add_action(&action_menu_editor);
     app.set_accels_for_action("app.open-menu-editor", &["F9"]);
