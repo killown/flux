@@ -595,7 +595,8 @@ mod tests {
 
         // We must write a dummy menu.rs so load_menu_config has something to parse
         let config_path = flux_config_dir.join("menu.rs");
-        let mock_content = r#""<U+F018F>      Copy" => "all", "builtin::copy", "Copied to clipboard""#;
+        let mock_content =
+            r#""<U+F018F>      Copy" => "all", "builtin::copy", "Copied to clipboard""#;
         fs::write(config_path, mock_content).unwrap();
 
         // This calls the internal parsing logic through the public API
