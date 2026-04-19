@@ -1286,22 +1286,16 @@ mod tests {
 
     #[test]
     fn test_exclusive_index_bounds() {
-        let list = vec![
-            PathBuf::from("/a"),
-            PathBuf::from("/b"),
-            PathBuf::from("/c"),
-        ];
+        let len = 3;
         let mut index = Some(1);
 
-        // Test increment
         if let Some(idx) = index {
-            if idx + 1 < list.len() {
+            if idx + 1 < len {
                 index = Some(idx + 1);
             }
         }
         assert_eq!(index, Some(2));
 
-        // Test decrement
         if let Some(idx) = index {
             if idx > 0 {
                 index = Some(idx - 1);
@@ -1312,25 +1306,15 @@ mod tests {
 
     #[test]
     fn test_exclusive_index_wrap_around() {
-        let list = vec![
-            PathBuf::from("/a"),
-            PathBuf::from("/b"),
-            PathBuf::from("/c"),
-        ];
+        let len = 3;
 
-        // Test Next Wrap: Last -> First
-        let index = Some(2); // Last item (removed mut)
-        let new_idx = (index.unwrap() + 1) % list.len();
-        assert_eq!(new_idx, 0); // Should wrap to 0
+        let index = 2;
+        let new_idx = (index + 1) % len;
+        assert_eq!(new_idx, 0);
 
-        // Test Prev Wrap: First -> Last
-        let index = Some(0); // First item (removed mut)
-        let new_idx = if index.unwrap() > 0 {
-            index.unwrap() - 1
-        } else {
-            list.len() - 1
-        };
-        assert_eq!(new_idx, 2); // Should wrap to last index
+        let index = 0;
+        let new_idx = if index > 0 { index - 1 } else { len - 1 };
+        assert_eq!(new_idx, 2);
     }
 
     #[test]
@@ -1368,5 +1352,37 @@ mod tests {
         assert_eq!(segments[0], "path");
         assert_eq!(segments[1], "test");
         assert_eq!(segments[2], "flux");
+    }
+    #[test]
+    fn test_selection_toggle_logic() {
+        let mut selected_indices = std::collections::HashSet::new();
+        selected_indices.insert(5);
+
+        let target = 5;
+        if selected_indices.contains(&target) {
+            selected_indices.remove(&target);
+        } else {
+            selected_indices.insert(target);
+        }
+        assert!(selected_indices.is_empty());
+
+        let new_target = 10;
+        selected_indices.insert(new_target);
+        assert!(selected_indices.contains(&10));
+    }
+
+    #[test]
+    fn test_directory_navigation_logic() {
+        let is_dir = true;
+
+        let base_path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
+        let mut current_path = base_path.clone();
+        let target_dir = "Downloads";
+
+        if is_dir {
+            current_path.push(target_dir);
+        }
+
+        assert_eq!(current_path, base_path.join("Downloads"));
     }
 }

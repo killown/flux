@@ -235,7 +235,7 @@ impl FluxApp {
 mod tests {
     use super::*;
     use crate::model::FileLoadContext;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     // Helper to create a mock FileLoadContext
     fn mock_ctx(name: &str, is_dir: bool, size: u64, mtime: i64) -> FileLoadContext {
@@ -361,19 +361,19 @@ mod tests {
     #[test]
     fn test_hidden_file_filtering() {
         let show_hidden = false;
-        let raw_data = vec![
-            ("visible.txt".to_string(), false, 0, 0),
-            (".hidden.txt".to_string(), false, 0, 0),
-            ("another.txt".to_string(), false, 0, 0),
+        let raw_data = [
+            ("visible.txt", false, 0, 0),
+            (".hidden.txt", false, 0, 0),
+            ("another.txt", false, 0, 0),
         ];
 
         let filtered: Vec<_> = raw_data
-            .into_iter()
+            .iter()
             .filter_map(|(name, is_dir, size, mtime)| {
                 if !show_hidden && name.starts_with('.') {
                     return None;
                 }
-                Some(mock_ctx(&name, is_dir, size, mtime))
+                Some(mock_ctx(name, *is_dir, *size, *mtime))
             })
             .collect();
 
@@ -384,12 +384,11 @@ mod tests {
 
     #[test]
     fn test_thumbnail_cache_logic() {
-        // Simulate the logic used to determine thumbnail_path
-        let cache_base = PathBuf::from("/home/user/.cache/thumbnails");
+        let cache_base = PathBuf::from(".cache/thumbnails");
         let thumb_folder = "normal";
         let target_cache_dir = cache_base.join(thumb_folder);
 
-        let file_path = PathBuf::from("/home/user/Pictures/photo.jpg");
+        let file_path = Path::new("Pictures/photo.jpg");
         let uri = format!("file://{}", file_path.to_string_lossy());
         let hash = format!("{:x}", md5::compute(uri));
         let cached = target_cache_dir.join(format!("{}.png", hash));

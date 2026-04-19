@@ -588,3 +588,75 @@ impl SimpleComponent for FileProperties {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_size() {
+        assert_eq!(format_size(0), "0B");
+        assert_eq!(format_size(1024), "1.00 KB");
+        assert_eq!(format_size(1024 * 1024), "1.00 MB");
+        assert_eq!(format_size(1024 * 1024 * 1024), "1.00 GB");
+    }
+
+    #[test]
+    fn test_shannon_entropy() {
+        let empty = b"";
+        assert_eq!(get_shannon_entropy(empty), 0.0);
+
+        let constant = vec![0u8; 100];
+        assert_eq!(get_shannon_entropy(&constant), 0.0);
+
+        let data = b"flux-file-manager";
+        let entropy = get_shannon_entropy(data);
+        // Shannon entropy for byte-array is bounded by [0, 8]
+        assert!(entropy > 0.0 && entropy <= 8.0);
+    }
+
+    #[test]
+    fn test_sha256_output_length() {
+        let data = b"flux-test-data";
+        let mut hasher = Sha256::new();
+        hasher.update(data);
+        let hash = hasher.finalize();
+        // SHA-256 must always yield 256 bits (32 bytes)
+        assert_eq!(hash.len(), 32);
+    }
+
+    #[test]
+    fn test_metadata_extraction_logic() {
+        let temp = tempfile::NamedTempFile::new().unwrap();
+        let path = temp.path();
+        let meta = fs::metadata(path).unwrap();
+
+        // Verify Unix permission bits (e.g., 644)
+        let mode = meta.mode();
+        let permissions = format!("{:o}", mode & 0o777);
+        assert!(permissions.len() >= 3);
+
+        let name = path.file_name().unwrap().to_string_lossy();
+        assert!(name.starts_with(".tmp"));
+    }
+
+    #[test]
+    fn test_symlink_detection() {
+        let dir = tempfile::tempdir().unwrap();
+        let target_path = dir.path().join("target");
+        let link_path = dir.path().join("link");
+
+        fs::File::create(&target_path).unwrap();
+
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(&target_path, &link_path).unwrap();
+            // symlink_metadata is required to avoid following the link to the target
+            let meta = fs::symlink_metadata(&link_path).unwrap();
+            assert!(meta.is_symlink());
+
+            let read_link = fs::read_link(&link_path).unwrap();
+            assert_eq!(read_link, target_path);
+        }
+    }
+}

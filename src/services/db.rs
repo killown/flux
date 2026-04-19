@@ -175,20 +175,16 @@ mod tests {
     #[test]
     fn test_save_and_get_view() {
         let (manager, _temp_dir) = create_test_db();
-        let path = PathBuf::from("/home/user/Documents");
+        let path = PathBuf::from("/home/user/downloads");
 
-        // Save view settings
-        manager.save_view(&path, "Name", false, 128, true).unwrap();
+        manager.save_view(&path, "Date", true, 64, false).unwrap();
 
-        // Retrieve view settings
-        let result = manager.get_view(&path).unwrap();
-        assert!(result.is_some());
+        let result = manager.get_view(&path).unwrap().unwrap();
 
-        let (sort_col, reversed, icon_size, folders_first) = result.unwrap();
-        assert_eq!(sort_col, "Name");
-        assert_eq!(reversed, false);
-        assert_eq!(icon_size, 128);
-        assert_eq!(folders_first, true);
+        assert_eq!(result.0, "Date");
+        assert!(result.1);
+        assert_eq!(result.2, 64);
+        assert!(!result.3);
     }
 
     #[test]
@@ -205,13 +201,10 @@ mod tests {
         let (manager, _temp_dir) = create_test_db();
         let path = PathBuf::from("/home/user/Downloads");
 
-        // Save initial settings
         manager.save_view(&path, "Date", true, 64, false).unwrap();
 
-        // Update settings
         manager.save_view(&path, "Size", false, 256, true).unwrap();
 
-        // Verify update
         let result = manager.get_view(&path).unwrap().unwrap();
         assert_eq!(result.0, "Size");
         assert_eq!(result.1, false);
@@ -225,18 +218,14 @@ mod tests {
         let old_path = PathBuf::from("/home/user/OldName");
         let new_path = PathBuf::from("/home/user/NewName");
 
-        // Save with old path
         manager
             .save_view(&old_path, "Name", false, 128, true)
             .unwrap();
 
-        // Rename path
         manager.rename_path(&old_path, &new_path).unwrap();
 
-        // Old path should no longer exist
         assert!(manager.get_view(&old_path).unwrap().is_none());
 
-        // New path should exist with same data
         let result = manager.get_view(&new_path).unwrap().unwrap();
         assert_eq!(result.0, "Name");
     }
@@ -245,14 +234,11 @@ mod tests {
     fn test_scrub_orphans() {
         let (manager, temp_dir) = create_test_db();
 
-        // Create a real directory
         let real_dir = temp_dir.path().join("real_folder");
         std::fs::create_dir(&real_dir).unwrap();
 
-        // Create a path that does not exist
         let fake_dir = temp_dir.path().join("fake_folder");
 
-        // Save both to DB
         manager
             .save_view(&real_dir, "Name", false, 128, true)
             .unwrap();
@@ -260,17 +246,13 @@ mod tests {
             .save_view(&fake_dir, "Date", true, 64, false)
             .unwrap();
 
-        // Verify both exist in DB
         assert!(manager.get_view(&real_dir).unwrap().is_some());
         assert!(manager.get_view(&fake_dir).unwrap().is_some());
 
-        // Scrub orphans
         manager.scrub_orphans().unwrap();
 
-        // Real directory should still be there
         assert!(manager.get_view(&real_dir).unwrap().is_some());
 
-        // Fake directory should be removed
         assert!(manager.get_view(&fake_dir).unwrap().is_none());
     }
 }

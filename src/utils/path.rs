@@ -95,4 +95,26 @@ mod tests {
             PathBuf::from("/etc/flux~/settings.conf")
         );
     }
+
+    #[test]
+    fn test_relative_path_integrity() {
+        let path = PathBuf::from("./local/file.txt");
+        assert_eq!(path.expand_tilde(), PathBuf::from("./local/file.txt"));
+
+        let path = PathBuf::from("../parent/file.txt");
+        assert_eq!(path.expand_tilde(), PathBuf::from("../parent/file.txt"));
+    }
+
+    #[test]
+    fn test_expand_tilde_lone_tilde() {
+        let original_home = env::var_os("HOME");
+        env::set_var("HOME", "/home/developer");
+
+        let path = PathBuf::from("~");
+        assert_eq!(path.expand_tilde(), PathBuf::from("/home/developer"));
+
+        if let Some(home) = original_home {
+            env::set_var("HOME", home);
+        }
+    }
 }

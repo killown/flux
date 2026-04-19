@@ -603,12 +603,11 @@ impl FluxApp {
 #[cfg(test)]
 mod tests {
     use crate::model::SortBy;
-    use std::path::PathBuf;
+    use std::path::Path;
 
-    /// Tests the logic for generating sorting status strings.
     #[test]
     fn test_sort_status_logic() {
-        let cases = vec![
+        let cases = [
             (SortBy::Name, "Name"),
             (SortBy::Date, "Date"),
             (SortBy::Size, "Size"),
@@ -624,16 +623,15 @@ mod tests {
         }
     }
 
-    /// Tests the breadcrumb/path segment generation logic.
     #[test]
     fn test_path_segment_logic() {
-        let path = PathBuf::from("/home/user/Documents/flux");
+        let path = Path::new("Documents/projects/flux");
         let mut segments = Vec::new();
-        let mut current = path.as_path();
+        let mut current = path;
 
         // Mirroring the logic used in breadcrumb factory updates
         while let Some(name) = current.file_name() {
-            segments.push(name.to_string_lossy().to_string());
+            segments.push(name.to_string_lossy());
             if let Some(parent) = current.parent() {
                 current = parent;
             } else {
@@ -641,10 +639,9 @@ mod tests {
             }
         }
 
-        // Segments are collected from leaf to root
         assert_eq!(segments[0], "flux");
-        assert_eq!(segments[1], "Documents");
-        assert_eq!(segments[2], "user");
+        assert_eq!(segments[1], "projects");
+        assert_eq!(segments[2], "Documents");
     }
 
     /// Tests the string formatting for the selection status bar.
