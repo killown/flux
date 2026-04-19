@@ -276,7 +276,7 @@ pub struct FluxApp {
     /// Reactive string containing selection counts and sizes for the status bar.
     pub selection_status: String,
     /// The completion percentage of the current background task, if any.
-    pub task_progress: Option<f64>,
+    pub task_queue: Arc<crate::services::tasks::TaskQueue>,
     /// Toast overlay for displaying transient notifications.
     pub toast_overlay: adw::ToastOverlay,
     /// Pending toast messages keyed by action_name, populated at context-menu build time.
@@ -426,10 +426,17 @@ pub enum AppMsg {
     FileDeleted(std::path::PathBuf),
     /// The path of a file whose contents or metadata have been modified.
     FileChanged(std::path::PathBuf),
-    /// The completion percentage of a background task, represented as a value from 0.0 to 1.0.
-    TaskProgress(f64),
-    /// Indicates that the current background task has finished execution.
-    TaskCompleted,
+    /// Report progress for a specific background operation slot.
+    TaskProgress {
+        id: u64,
+        current: u64,
+        total: u64,
+        total_items: usize,
+    },
+    /// Signal that a specific background operation has completed.
+    TaskCompleted(u64),
+    /// Throttled tick to refresh the status bar from the task queue.
+    TaskQueueTick,
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
 }

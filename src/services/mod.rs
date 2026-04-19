@@ -7,6 +7,7 @@
 // 1. Declare the background service modules
 pub mod db;
 pub mod loader;
+pub mod tasks;
 pub mod thumbnails;
 
 /// Service-level constants, such as cache limits or thread counts.

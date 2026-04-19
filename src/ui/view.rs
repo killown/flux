@@ -326,9 +326,9 @@ impl SimpleAsyncComponent for FluxApp {
                             /// Visual indicator for background task completion
                             gtk::ProgressBar {
                                 #[watch]
-                                set_visible: model.task_progress.is_some(),
+                                set_visible: model.task_queue.summary().is_some(),
                                 #[watch]
-                                set_fraction: model.task_progress.unwrap_or(0.0),
+                                set_fraction: model.task_queue.summary().map(|(_, _, pct)| pct).unwrap_or(0.0),
                                 set_halign: gtk::Align::Start,
                                 set_valign: gtk::Align::Center,
                                 set_width_request: 150,

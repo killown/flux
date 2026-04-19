@@ -799,6 +799,10 @@ impl FluxApp {
                 }
             }
             AppMsg::SelectionChanged => {
+                if self.task_queue.summary().is_some() {
+                    return;
+                }
+
                 let mut total_size = 0u64;
                 let mut count = 0usize;
                 let mut dir_count = 0usize;
@@ -933,12 +937,37 @@ impl FluxApp {
                     self.update_breadcrumbs();
                 }
             }
-            AppMsg::TaskProgress(fraction) => {
-                self.task_progress = Some(fraction);
+            AppMsg::TaskProgress {
+                id,
+                current,
+                total,
+                total_items,
+            } => {
+                self.task_queue.update(id, current, total, total_items);
+                // No UI update here, the 100ms tick handles rendering.
             }
-            AppMsg::TaskCompleted => {
-                self.task_progress = None;
+            AppMsg::TaskCompleted(id) => {
+                self.task_queue.remove(id);
             }
+            AppMsg::TaskQueueTick => match self.task_queue.summary() {
+                Some((1, 1, pct)) => {
+                    self.selection_status = format!("[Copying 1 file | {:.0}%]", pct * 100.0);
+                }
+                Some((1, items, pct)) => {
+                    self.selection_status =
+                        format!("[Copying {} files | {:.0}%]", items, pct * 100.0);
+                }
+                Some((n, items, pct)) => {
+                    self.selection_status =
+                        format!("[{} operations, {} files | {:.0}%]", n, items, pct * 100.0);
+                }
+                None => {
+                    if self.selection_status.starts_with('[') {
+                        self.selection_status = String::new();
+                        sender.input(AppMsg::SelectionChanged);
+                    }
+                }
+            },
             AppMsg::Refresh => {
                 self.is_loading = true;
                 let p = self.current_path.clone();

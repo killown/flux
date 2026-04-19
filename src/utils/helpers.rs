@@ -7,6 +7,10 @@ use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+// Global operation ID counter, monotonically increasing, unique per session.
+static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
 impl FluxApp {
     /// Returns the display-friendly string for the current sorting state.
@@ -463,6 +467,8 @@ impl FluxApp {
             let completed_files = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
             for file in files {
+                let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+
                 // 3. Compute destination using the owned target_dir
                 let basename = file.basename().expect("File must have a name");
                 let mut dest = target_dir.join(&basename);
@@ -486,26 +492,42 @@ impl FluxApp {
 
                 let dest_file = gio::File::for_path(dest);
 
+                // Register immediately so the status bar appears before the first byte is transferred
+                sender.input(AppMsg::TaskProgress {
+                    id: task_id,
+                    current: 0,
+                    total: 1,
+                    total_items: 1,
+                });
+
                 // Setup the progress callback
                 let p_sender = sender.clone();
-                let progress_callback = move |current, total| {
+                let progress_callback = move |current: i64, total: i64| {
                     if total > 0 {
-                        p_sender.input(AppMsg::TaskProgress(current as f64 / total as f64));
+                        p_sender.input(AppMsg::TaskProgress {
+                            id: task_id,
+                            current: current as u64,
+                            total: total as u64,
+                            total_items: 1,
+                        });
                     }
-                };
+                }; // Setup the completion callback
 
-                // Setup the completion callback
                 let c_sender = sender.clone();
                 let completed_clone = completed_files.clone();
                 let finish_callback = move |res: Result<(), glib::Error>| {
                     if let Err(e) = res {
                         eprintln!("Operation error: {}", e);
                     }
+
+                    // Always remove the specific task from the queue upon completion/failure
+                    c_sender.input(AppMsg::TaskCompleted(task_id));
+
                     // Increment the atomic counter safely across threads
                     let count =
                         completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+
                     if count == total_files {
-                        c_sender.input(AppMsg::TaskCompleted);
                         c_sender.input(AppMsg::Refresh);
                     }
                 };

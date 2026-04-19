@@ -123,7 +123,7 @@ impl FluxApp {
             state_db,
             selection_status: String::new(),
             is_loading: false,
-            task_progress: None,
+            task_queue: crate::services::tasks::new_queue(),
             toast_overlay: adw::ToastOverlay::new(),
             pending_toasts: std::collections::HashMap::new(),
         };
@@ -141,6 +141,13 @@ impl FluxApp {
             });
         }
         model.refresh_sidebar();
+
+        // Throttled task queue UI refresh, fires every 100ms, updates status bar only.
+        let tick_sender = sender.clone();
+        gtk::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            tick_sender.input(AppMsg::TaskQueueTick);
+            glib::ControlFlow::Continue
+        });
 
         // 10. Global Action Registration
         let app = relm4::main_adw_application();
