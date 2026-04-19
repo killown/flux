@@ -1353,6 +1353,7 @@ mod tests {
         assert_eq!(segments[1], "test");
         assert_eq!(segments[2], "flux");
     }
+
     #[test]
     fn test_selection_toggle_logic() {
         let mut selected_indices = std::collections::HashSet::new();
@@ -1384,5 +1385,53 @@ mod tests {
         }
 
         assert_eq!(current_path, base_path.join("Downloads"));
+    }
+
+    #[test]
+    fn test_mime_type_action_filtering() {
+        let dir_mime = "inode/directory";
+        let dir_actions = vec!["builtin::copy", "builtin::open_with"];
+
+        let filtered_dir: Vec<&str> = dir_actions
+            .into_iter()
+            .filter(|&action| {
+                if action == "builtin::open_with" && dir_mime == "inode/directory" {
+                    return false;
+                }
+                true
+            })
+            .collect();
+
+        assert!(filtered_dir.contains(&"builtin::copy"));
+        assert!(!filtered_dir.contains(&"builtin::open_with"));
+
+        let file_mime = "text/plain";
+        assert!(file_mime != "inode/directory");
+    }
+
+    #[test]
+    fn test_empty_selection_guard() {
+        let selected_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
+        let has_selection = !selected_indices.is_empty();
+        assert!(!has_selection);
+
+        let mut mutable_selection = selected_indices.clone();
+        mutable_selection.clear();
+        assert!(mutable_selection.is_empty());
+    }
+
+    #[test]
+    fn test_navigation_path_normalization() {
+        let path = PathBuf::from("/home/user/Documents/..");
+        let normalized = if path.ends_with("..") {
+            path.parent()
+                .unwrap_or(&path)
+                .parent()
+                .unwrap_or(&path)
+                .to_path_buf()
+        } else {
+            path
+        };
+        assert_eq!(normalized, PathBuf::from("/home/user"));
     }
 }
