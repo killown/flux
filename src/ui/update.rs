@@ -3,6 +3,7 @@ use crate::ui::constants;
 use crate::ui::FileProperties;
 use crate::utils;
 use adw::gdk;
+use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::{gio, glib};
 use relm4::prelude::*;
@@ -381,7 +382,7 @@ impl FluxApp {
                 });
             }
             AppMsg::LaunchWithApp(app_id) => {
-                if let Some(app_info) = gio::DesktopAppInfo::new(&app_id) {
+                if let Some(app_info) = gio_unix::DesktopAppInfo::new(&app_id) {
                     let selection = self.get_selection();
 
                     // Ensure we actually have files to open

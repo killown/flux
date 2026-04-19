@@ -427,9 +427,14 @@ impl SimpleComponent for FileProperties {
                     "Entropy".to_string(),
                     format!("{:.4}", get_shannon_entropy(&file_content)),
                 ));
-                security.push((
-                    "SHA256".to_string(),
-                    format!("{:x}", Sha256::digest(&file_content)),
+                let hash_hex = Sha256::digest(&file_content)
+                    .iter()
+                    .map(|b| format!("{:02x}", b))
+                    .collect::<String>();
+
+                sections_data.push((
+                    "Security".to_string(),
+                    vec![("SHA256".to_string(), hash_hex)],
                 ));
             }
             sections_data.push(("Security".to_string(), security));
