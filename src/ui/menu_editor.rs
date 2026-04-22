@@ -82,6 +82,7 @@ enum Msg {
         replace: Option<usize>,
     },
     Save,
+    Search(String),
 }
 
 // ─── Shared imperative state ──────────────────────────────────────────────────
@@ -91,6 +92,7 @@ struct Shared {
     toast_overlay: adw::ToastOverlay,
     root: adw::Window,
     sender: ComponentSender<MenuEditor>,
+    search_query: Rc<RefCell<String>>,
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -118,6 +120,7 @@ impl SimpleComponent for MenuEditor {
     ) -> ComponentParts<Self> {
         let entries = Rc::new(RefCell::new(load_from_disk()));
         let toast_overlay = adw::ToastOverlay::new();
+        let search_query = Rc::new(RefCell::new(String::new()));
 
         // ── Layout ───────────────────────────────────────────────────────────
         let outer_box = gtk::Box::builder()
@@ -134,6 +137,16 @@ impl SimpleComponent for MenuEditor {
             .tooltip_text("Write to ~/.config/flux/menu.rs  (Ctrl+S)")
             .css_classes(["suggested-action"])
             .build();
+
+        // ── Search bar in header title position ───────────────────────────────
+        let search_entry = gtk::SearchEntry::builder()
+            .placeholder_text("Search entries…")
+            .hexpand(true)
+            .max_width_chars(40)
+            .tooltip_text("Filter entries  (Ctrl+F)")
+            .build();
+        header.set_title_widget(Some(&search_entry));
+
         header.pack_start(&add_btn);
         header.pack_end(&save_btn);
         outer_box.append(&header);
@@ -161,6 +174,7 @@ impl SimpleComponent for MenuEditor {
             toast_overlay,
             root: root.clone(),
             sender: sender.clone(),
+            search_query,
         }));
 
         rebuild_list(&shared.borrow());
@@ -172,6 +186,14 @@ impl SimpleComponent for MenuEditor {
         {
             let s = sender.clone();
             save_btn.connect_clicked(move |_| s.input(Msg::Save));
+        }
+
+        // ── Live search filtering ─────────────────────────────────────────────
+        {
+            let s = sender.clone();
+            search_entry.connect_search_changed(move |entry| {
+                s.input(Msg::Search(entry.text().to_string()));
+            });
         }
 
         // ── Global keyboard shortcuts ─────────────────────────────────────────
@@ -193,6 +215,17 @@ impl SimpleComponent for MenuEditor {
                 gtk::ShortcutTrigger::parse_string("<ctrl>s"),
                 Some(gtk::CallbackAction::new(move |_, _| {
                     s.input(Msg::Save);
+                    glib::Propagation::Stop
+                })),
+            ));
+        }
+        {
+            // Ctrl+F focuses the search entry, Escape clears and blurs it
+            let se = search_entry.clone();
+            ksc.add_shortcut(gtk::Shortcut::new(
+                gtk::ShortcutTrigger::parse_string("<ctrl>f"),
+                Some(gtk::CallbackAction::new(move |_, _| {
+                    se.grab_focus();
                     glib::Propagation::Stop
                 })),
             ));
@@ -273,6 +306,11 @@ impl SimpleComponent for MenuEditor {
                         .build()
                 });
             }
+
+            Msg::Search(query) => {
+                *shared.search_query.borrow_mut() = query;
+                rebuild_list(&shared);
+            }
         }
     }
 }
@@ -284,9 +322,30 @@ fn rebuild_list(shared: &Shared) {
         list_box.remove(&child);
     }
     let entries = shared.entries.borrow();
-    let total = entries.len();
+    let query = shared.search_query.borrow();
 
-    if total == 0 {
+    // Collect indices that survive the filter so move-up/down targets remain
+    // correct relative to the canonical entries Vec, not the visual subset.
+    let needle = query.trim().to_lowercase();
+    let visible: Vec<(usize, &MenuEntry)> = entries
+        .iter()
+        .enumerate()
+        .filter(|(_, e)| {
+            if needle.is_empty() {
+                return true;
+            }
+            let label_lc = e.label.to_lowercase();
+            let sub_lc = e.submenu.as_deref().unwrap_or("").to_lowercase();
+            let mime_lc = e.mime_types.to_lowercase();
+            let cmd_lc = e.command.to_lowercase();
+            label_lc.contains(&needle)
+                || sub_lc.contains(&needle)
+                || mime_lc.contains(&needle)
+                || cmd_lc.contains(&needle)
+        })
+        .collect();
+
+    if entries.is_empty() {
         list_box.append(
             &adw::ActionRow::builder()
                 .title("No entries yet")
@@ -295,8 +354,20 @@ fn rebuild_list(shared: &Shared) {
         );
         return;
     }
-    for (idx, entry) in entries.iter().enumerate() {
-        list_box.append(&build_row(idx, entry, total, &shared.sender));
+
+    if visible.is_empty() {
+        list_box.append(
+            &adw::ActionRow::builder()
+                .title("No results")
+                .subtitle("Try a different search term")
+                .build(),
+        );
+        return;
+    }
+
+    let total = entries.len();
+    for (idx, entry) in &visible {
+        list_box.append(&build_row(*idx, entry, total, &shared.sender));
     }
 }
 
