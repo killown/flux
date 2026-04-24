@@ -11,10 +11,10 @@ install:
 	@mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(APPDIR) $(DESTDIR)$(ICONDIR) $(DESTDIR)$(CONFDIR)/themes
 	
 	# 1. Install Binary
-	@install -m 755 target/release/flux $(DESTDIR)$(BINDIR)/flux
+	@install -m 755 target/release/flux-fm $(DESTDIR)$(BINDIR)/flux-fm
 	
 	# 2. Generate and Install Desktop File
-	@sed "s|@BIN_PATH@|$(BINDIR)/flux|g" flux.desktop.in > flux.desktop.tmp
+	@sed "s|@BIN_PATH@|$(BINDIR)/flux-fm|g" flux.desktop.in > flux.desktop.tmp
 	@install -m 644 flux.desktop.tmp $(DESTDIR)$(APPDIR)/flux.desktop
 	@rm flux.desktop.tmp
 	

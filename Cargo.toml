@@ -24,3 +24,7 @@ gio-unix = { version = "0.22.0", package = "gio-unix" }
 
 [dev-dependencies]
 tempfile = "3"
+
+[[bin]]
+name = "flux-fm"
+path = "src/main.rs"

@@ -171,8 +171,7 @@ fn main() {
     // Setting application_id in the builder triggers a synchronous D-Bus handshake
     // and Wayland compositor lookup that blocks the main thread for around ~200ms.
     let base_app = adw::Application::builder()
-        .application_id("com.flux.FileManager")
-        .flags(gio::ApplicationFlags::FLAGS_NONE)
+        .flags(gio::ApplicationFlags::NON_UNIQUE)
         .build();
 
     setup_shortcuts(&base_app);
