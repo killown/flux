@@ -445,6 +445,8 @@ pub enum AppMsg {
     TaskQueueTick,
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
+    /// Triggers the asynchronous unmounting of a system drive or mounted volume.
+    UnmountDevice(std::path::PathBuf),
 }
 
 /// Represents a single entry in the Flux context menu configuration.

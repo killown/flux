@@ -25,6 +25,7 @@ impl FluxApp {
                         name: place.name.clone(),
                         icon: place.icon.clone(),
                         path: utils::expand_path(&place.path),
+                        is_mount: false,
                     });
                 }
 
@@ -45,6 +46,24 @@ impl FluxApp {
                 });
                 utils::save_config(&self.config);
                 self.refresh_sidebar();
+            }
+            AppMsg::UnmountDevice(path) => {
+                let sender = sender.clone();
+                let file = gio::File::for_path(&path);
+
+                if let Ok(mount) = file.find_enclosing_mount(gio::Cancellable::NONE) {
+                    mount.unmount_with_operation(
+                        gio::MountUnmountFlags::NONE,
+                        gio::MountOperation::NONE,
+                        gio::Cancellable::NONE,
+                        move |res| match res {
+                            Ok(_) => sender.input(AppMsg::RefreshSidebar),
+                            Err(e) => {
+                                sender.input(AppMsg::ShowToast(format!("Unmount failed: {}", e)))
+                            }
+                        },
+                    );
+                }
             }
             AppMsg::AddToSidebarPermanent => {
                 let path = self

@@ -138,6 +138,7 @@ impl FluxApp {
                 name: place.name.clone(),
                 icon: place.icon.clone(),
                 path: utils::expand_path(&place.path),
+                is_mount: false,
             });
         }
         model.refresh_sidebar();

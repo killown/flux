@@ -146,6 +146,7 @@ impl FluxApp {
                     name: get_xdg_name(&p),
                     icon: "user-home-symbolic".to_string(),
                     path: p,
+                    is_mount: false,
                 });
             }
             if let Some(p) = dirs::desktop_dir() {
@@ -153,6 +154,7 @@ impl FluxApp {
                     name: get_xdg_name(&p),
                     icon: "user-desktop-symbolic".to_string(),
                     path: p,
+                    is_mount: false,
                 });
             }
             if let Some(p) = dirs::download_dir() {
@@ -160,6 +162,7 @@ impl FluxApp {
                     name: get_xdg_name(&p),
                     icon: "folder-download-symbolic".to_string(),
                     path: p,
+                    is_mount: false,
                 });
             }
             if let Some(p) = dirs::document_dir() {
@@ -167,6 +170,7 @@ impl FluxApp {
                     name: get_xdg_name(&p),
                     icon: "folder-documents-symbolic".to_string(),
                     path: p,
+                    is_mount: false,
                 });
             }
             if let Some(p) = dirs::picture_dir() {
@@ -174,6 +178,7 @@ impl FluxApp {
                     name: get_xdg_name(&p),
                     icon: "folder-pictures-symbolic".to_string(),
                     path: p,
+                    is_mount: false,
                 });
             }
             if let Some(p) = dirs::video_dir() {
@@ -181,6 +186,7 @@ impl FluxApp {
                     name: get_xdg_name(&p),
                     icon: "folder-videos-symbolic".to_string(),
                     path: p,
+                    is_mount: false,
                 });
             }
         }
@@ -198,6 +204,7 @@ impl FluxApp {
                 name: custom.name.clone(),
                 icon: custom.icon.clone(),
                 path,
+                is_mount: false,
             });
         }
 
@@ -222,7 +229,12 @@ impl FluxApp {
                 }
             }
 
-            guard.push_back(SidebarPlace { name, icon, path });
+            guard.push_back(SidebarPlace {
+                name,
+                icon,
+                path,
+                is_mount: true,
+            });
         }
 
         // 4. Exclusive List
@@ -232,6 +244,7 @@ impl FluxApp {
                     name: format!("#{}", name.to_string_lossy()),
                     icon: "go-next-symbolic".to_string(),
                     path: path.clone(),
+                    is_mount: false,
                 });
             }
         }
@@ -525,6 +538,8 @@ impl FluxApp {
                         // Cancelled operations produce an error, suppress the noise for that case.
                         if !e.matches(gio::IOErrorEnum::Cancelled) {
                             eprintln!("Operation error: {}", e);
+                            c_sender
+                                .input(AppMsg::ShowToast(format!("Copy failed: {}", e.message())));
                         }
                     }
 
@@ -550,7 +565,7 @@ impl FluxApp {
                 } else {
                     file.copy_async(
                         &dest_file,
-                        gio::FileCopyFlags::OVERWRITE,
+                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::TARGET_DEFAULT_PERMS,
                         glib::Priority::DEFAULT,
                         Some(&cancellable),
                         Some(Box::new(progress_callback)),

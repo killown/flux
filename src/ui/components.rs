@@ -307,6 +307,7 @@ pub struct SidebarPlace {
     pub name: String,
     pub icon: String,
     pub path: PathBuf,
+    pub is_mount: bool,
 }
 
 #[relm4::factory(pub)]
@@ -447,7 +448,23 @@ impl FactoryComponent for SidebarPlace {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: constants::SIDEBAR_SPACING,
                 gtk::Image { set_icon_name: Some(&self.icon) },
-                gtk::Label { set_label: &self.name, add_css_class: constants::SIDEBAR_LABEL_CLASS }
+                gtk::Label {
+                    set_label: &self.name,
+                    add_css_class: constants::SIDEBAR_LABEL_CLASS,
+                    set_hexpand: true,
+                    set_halign: gtk::Align::Start,
+                },
+               #[name = "eject_button"]
+                gtk::Button {
+                    set_icon_name: "media-eject-symbolic",
+                    set_visible: self.is_mount,
+                    add_css_class: "flat",
+                    connect_clicked[path = self.path.clone()] => move |_| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(crate::model::AppMsg::UnmountDevice(path.clone()));
+                        }
+                    }
+                }
             }
         }
     }
