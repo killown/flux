@@ -4,28 +4,22 @@ use std::process::Command;
 fn main() {
     let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
 
-    if profile == "release" {
-        // Automatically fix formatting before continuing
-        let fmt_status = Command::new("cargo").args(["fmt"]).status();
+    // Skip automations if we are building a package (e.g., Arch PKGBUILD)
+    // Arch's makepkg sets SOURCE_DATE_EPOCH.
+    let is_packaging = env::var("SOURCE_DATE_EPOCH").is_ok();
 
-        if let Ok(s) = fmt_status {
-            if !s.success() {
-                println!("cargo:warning=>>> cargo fmt failed to run.");
-            }
-        }
+    if profile == "release" && !is_packaging {
+        // Only run formatting and asset syncing during local development release builds
+        let _ = Command::new("cargo").args(["fmt"]).status();
 
         println!("cargo:warning=>>> Release build detected. Syncing assets via Makefile...");
         let status = Command::new("make").arg("install").status();
 
-        match status {
-            Ok(s) if s.success() => {
+        if let Ok(s) = status {
+            if s.success() {
                 println!("cargo:warning=>>> Assets synced successfully.");
-            }
-            Ok(s) => {
+            } else {
                 println!("cargo:warning=>>> Makefile failed with status: {}", s);
-            }
-            Err(e) => {
-                println!("cargo:warning=>>> Failed to run Makefile: {}", e);
             }
         }
     }
