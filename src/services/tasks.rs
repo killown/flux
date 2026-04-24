@@ -3,6 +3,8 @@
 //! Provides a thread-safe accumulator that decouples high-frequency progress
 //! callbacks from the GTK main loop update rate.
 
+use gtk::gio;
+use gtk::gio::prelude::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -12,6 +14,8 @@ pub struct Task {
     pub current: u64,
     pub total: u64,
     pub total_items: usize,
+    /// GIO cancellable token; calling `.cancel()` aborts the underlying I/O.
+    pub cancellable: gio::Cancellable,
 }
 
 /// Shared, thread-safe registry of all active background operations.
@@ -22,7 +26,21 @@ pub struct TaskQueue {
 
 impl TaskQueue {
     /// Inserts or updates a task entry.
-    pub fn update(&self, id: u64, current: u64, total: u64, total_items: usize) {
+    ///
+    /// Args:
+    ///     id: Unique monotonic identifier for the operation.
+    ///     current: Bytes (or units) transferred so far.
+    ///     total: Total bytes (or units) for the operation.
+    ///     total_items: Number of files within this logical operation.
+    ///     cancellable: GIO cancellable handle associated with this task.
+    pub fn update(
+        &self,
+        id: u64,
+        current: u64,
+        total: u64,
+        total_items: usize,
+        cancellable: gio::Cancellable,
+    ) {
         if let Ok(mut map) = self.inner.lock() {
             map.insert(
                 id,
@@ -30,6 +48,7 @@ impl TaskQueue {
                     current,
                     total,
                     total_items,
+                    cancellable,
                 },
             );
         }
@@ -39,6 +58,28 @@ impl TaskQueue {
     pub fn remove(&self, id: u64) {
         if let Ok(mut map) = self.inner.lock() {
             map.remove(&id);
+        }
+    }
+
+    /// Cancels a single in-flight task and removes it from the queue.
+    ///
+    /// Args:
+    ///     id: The task identifier to cancel.
+    pub fn cancel(&self, id: u64) {
+        if let Ok(mut map) = self.inner.lock() {
+            if let Some(task) = map.remove(&id) {
+                task.cancellable.cancel();
+            }
+        }
+    }
+
+    /// Cancels every in-flight task and clears the queue.
+    pub fn cancel_all(&self) {
+        if let Ok(mut map) = self.inner.lock() {
+            for task in map.values() {
+                task.cancellable.cancel();
+            }
+            map.clear();
         }
     }
 

@@ -943,12 +943,22 @@ impl FluxApp {
                 current,
                 total,
                 total_items,
+                cancellable,
             } => {
-                self.task_queue.update(id, current, total, total_items);
+                self.task_queue
+                    .update(id, current, total, total_items, cancellable);
                 // No UI update here, the 100ms tick handles rendering.
             }
             AppMsg::TaskCompleted(id) => {
                 self.task_queue.remove(id);
+            }
+            AppMsg::CancelTask(id) => {
+                self.task_queue.cancel(id);
+                sender.input(AppMsg::SelectionChanged);
+            }
+            AppMsg::CancelAllTasks => {
+                self.task_queue.cancel_all();
+                sender.input(AppMsg::SelectionChanged);
             }
             AppMsg::TaskQueueTick => match self.task_queue.summary() {
                 Some((1, 1, pct)) => {

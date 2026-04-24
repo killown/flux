@@ -334,6 +334,18 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_width_request: 150,
                             },
 
+                            /// Cancel button, visible only while transfers are in flight.
+                            gtk::Button {
+                                #[watch]
+                                set_visible: model.task_queue.summary().is_some(),
+                                set_icon_name: "process-stop-symbolic",
+                                set_tooltip_text: Some("Cancel all transfers"),
+                                add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
+                                set_valign: gtk::Align::Center,
+                                connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                                connect_clicked => AppMsg::CancelAllTasks,
+                            },
+
                             /// Selection information
                             gtk::Label {
                                 #[watch]

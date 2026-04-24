@@ -451,25 +451,28 @@ impl FluxApp {
         }
     }
 
+    /// Initiates async copy or move operations for all pasted files, registering
+    /// each with the task queue so progress is visible and cancellable.
+    ///
+    /// Args:
+    ///     files: The list of GIO file handles retrieved from the clipboard.
+    ///     sender: The application's async message sender.
     pub fn perform_paste(&self, files: Vec<gio::File>, sender: AsyncComponentSender<Self>) {
-        // 1. Clone the path so the closure owns it
         let target_dir = self.current_path.clone();
         let clipboard = gdk::Display::default().unwrap().clipboard();
 
-        // 2. Use 'move' to transfer target_dir and files into the first closure
         clipboard.read_text_async(gio::Cancellable::NONE, move |res| {
             let is_cut = res
                 .map(|s| s.map(|t| t.starts_with("cut")).unwrap_or(false))
                 .unwrap_or(false);
 
             let total_files = files.len();
-            // Track completion across all concurrent file operations
             let completed_files = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
             for file in files {
                 let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+                let cancellable = gio::Cancellable::new();
 
-                // 3. Compute destination using the owned target_dir
                 let basename = file.basename().expect("File must have a name");
                 let mut dest = target_dir.join(&basename);
 
@@ -498,10 +501,11 @@ impl FluxApp {
                     current: 0,
                     total: 1,
                     total_items: 1,
+                    cancellable: cancellable.clone(),
                 });
 
-                // Setup the progress callback
                 let p_sender = sender.clone();
+                let p_cancellable = cancellable.clone();
                 let progress_callback = move |current: i64, total: i64| {
                     if total > 0 {
                         p_sender.input(AppMsg::TaskProgress {
@@ -509,21 +513,23 @@ impl FluxApp {
                             current: current as u64,
                             total: total as u64,
                             total_items: 1,
+                            cancellable: p_cancellable.clone(),
                         });
                     }
-                }; // Setup the completion callback
+                };
 
                 let c_sender = sender.clone();
                 let completed_clone = completed_files.clone();
                 let finish_callback = move |res: Result<(), glib::Error>| {
                     if let Err(e) = res {
-                        eprintln!("Operation error: {}", e);
+                        // Cancelled operations produce an error, suppress the noise for that case.
+                        if !e.matches(gio::IOErrorEnum::Cancelled) {
+                            eprintln!("Operation error: {}", e);
+                        }
                     }
 
-                    // Always remove the specific task from the queue upon completion/failure
                     c_sender.input(AppMsg::TaskCompleted(task_id));
 
-                    // Increment the atomic counter safely across threads
                     let count =
                         completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
 
@@ -537,7 +543,7 @@ impl FluxApp {
                         &dest_file,
                         gio::FileCopyFlags::OVERWRITE,
                         glib::Priority::DEFAULT,
-                        gio::Cancellable::NONE,
+                        Some(&cancellable),
                         Some(Box::new(progress_callback)),
                         finish_callback,
                     );
@@ -546,7 +552,7 @@ impl FluxApp {
                         &dest_file,
                         gio::FileCopyFlags::OVERWRITE,
                         glib::Priority::DEFAULT,
-                        gio::Cancellable::NONE,
+                        Some(&cancellable),
                         Some(Box::new(progress_callback)),
                         finish_callback,
                     );
