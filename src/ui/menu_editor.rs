@@ -602,7 +602,15 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
 
 pub fn run() {
     adw::init().expect("Failed to initialize Libadwaita");
-    RelmApp::new("flux.MenuEditor")
+
+    // NON_UNIQUE prevents D-Bus name registration, which avoids disrupting
+    // GIO async operations (copy_async, move_async) running in the parent process
+    // that share the same session bus.
+    let app = adw::Application::builder()
+        .flags(gtk::gio::ApplicationFlags::NON_UNIQUE)
+        .build();
+
+    RelmApp::from_app(app)
         .with_args(vec![])
         .run::<MenuEditor>(());
 }
