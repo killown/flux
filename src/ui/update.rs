@@ -621,11 +621,19 @@ impl FluxApp {
                     .find(|action| action.command == cmd_template)
                     .and_then(|a| a.toast.clone());
 
+                // Commands that mutate the trash virtual filesystem require a view refresh
+                // after completion; spawn() is fire-and-forget so the flag is determined
+                // before entering the blocking task.
+                let needs_refresh = self
+                    .current_path
+                    .to_string_lossy()
+                    .starts_with(constants::TRASH_URI);
+
                 let sender_clone = sender.clone();
 
                 relm4::spawn_blocking(move || {
                     if final_targets.len() == 1 {
-                        utils::run_custom_command(&cmd_template, &final_targets[0]);
+                        Self::run_custom_command_wait(&cmd_template, &final_targets[0]);
                     } else if !final_targets.is_empty() {
                         let paths_arg = final_targets
                             .iter()
@@ -647,12 +655,16 @@ impl FluxApp {
                         let _ = std::process::Command::new(constants::SHELL_BIN)
                             .arg("-c")
                             .arg(cmd)
-                            .spawn();
+                            .status();
                     }
 
                     // Send toast back to main thread after execution starts/finishes
                     if let Some(msg) = toast_msg {
                         sender_clone.input(AppMsg::ShowToast(msg));
+                    }
+
+                    if needs_refresh {
+                        sender_clone.input(AppMsg::Refresh);
                     }
                 });
             }

@@ -453,35 +453,6 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     None
 }
 
-pub fn run_custom_command(command_template: &str, file_path: &Path) {
-    let path_str = file_path.to_string_lossy();
-    let parent = file_path.parent().unwrap_or(file_path).to_string_lossy();
-    let filename = file_path.file_name().unwrap_or_default().to_string_lossy();
-
-    // Escape variables to prevent shell injection
-    let p_arg = format!("'{}'", path_str.replace("'", "'\\''"));
-    let d_arg = format!("'{}'", parent.replace("'", "'\\''"));
-    let f_arg = format!("'{}'", filename.replace("'", "'\\''"));
-
-    let mut final_cmd = command_template
-        .replace("%p", &p_arg)
-        .replace("%d", &d_arg)
-        .replace("%f", &f_arg);
-
-    // MANUALLY EXPAND ~ and $HOME:
-    // This ensures that even if the Desktop environment has a limited PATH,
-    // we resolve the user's local bin folder correctly.
-    //Resolve tildes in the command template ONLY,
-    // or better yet, rely on the shell to handle standard shortcuts.
-    if final_cmd.starts_with("~/") {
-        if let Ok(home) = std::env::var("HOME") {
-            final_cmd = final_cmd.replacen("~", &home, 1);
-        }
-    }
-
-    let _ = Command::new("sh").arg("-c").arg(final_cmd).spawn();
-}
-
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     let mut mounts = Vec::new();
     let home_dir = dirs::home_dir().unwrap_or_default();
