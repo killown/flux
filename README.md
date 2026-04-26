@@ -2,8 +2,6 @@
 
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
 
-<img width="1262" height="749" alt="focused_view" src="https://github.com/user-attachments/assets/17f4e6c0-2ca8-4a81-bc16-cde9d2dfd05d" />
-
 <img width="1244" height="879" alt="focused_view" src="https://github.com/user-attachments/assets/479ed40e-0d26-48a3-b087-7e5f0dca8b6c" />
 
 ## Why Flux?
@@ -18,21 +16,26 @@ Most file managers try to do everything. Flux tries to do _one thing_ perfectly:
 
 Flux is built around the "Config-Driven" philosophy. You control the logic, we provide the speed.
 
-Action
+| Action | Shortcut |
+| :--- | :--- |
+| **Show Help / Shortcuts** | `F1` |
+| **Cycle Sort Mode** (Name → Date → Size) | `Ctrl + S` |
+| **Toggle Hidden Files** | `Ctrl + H` |
+| **Zoom Icons** (Smooth Scaling) | `Ctrl + Mouse Wheel` |
+| **Search Files** | `Ctrl + F` |
+| **Open Preferences** | `F10` |
+| **Open Menu Editor** | `F9` |
+| **Refresh Directory** | `F5` |
+| **Rename Item** | `F2` |
+| **Move to Trash** | `Delete` |
+| **Go Back / Forward** | `Backspace` / `Alt + Right` |
+| **Navigate to Root** | `/` |
 
-Shortcut
-
-**Cycle Sort Mode** (Name → Date → Size)
-
-`Ctrl + S`
-
-**Toggle Hidden Files**
-
-`Ctrl + H`
-
-**Zoom Icons** (Smooth Scaling)
-
-`Ctrl + Mouse Wheel`
+### Quick List (Exclusive List)
+- `Insert`: Add selection or current folder to list.
+- `Ctrl + Insert`: Pin selection/folder to sidebar permanently.
+- `Tab`: Cycle to the next folder in the list.
+- `Ctrl + End`: Clear the entire list.
 
 ## Configuration & Customization
 
