@@ -37,7 +37,7 @@ pub fn ensure_config_file() -> PathBuf {
 # --- System & Dev Tools ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
 "󰨞      Open in Code" => "text/all, application/all", "code %p"
-"󰋽      File Properties" => "file", "~/.local/bin/flux --file-properties %p"
+"󰋽      File Properties" => "file", "~/.local/bin/flux-fm --file-properties %p"
 "󰋊      Folder Info" => "directory", "flatpak run org.gnome.baobab %p"
 "🛠      Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy", "Path copied"
 "🛠      Tools > 󰊢   Git Gui" => "directory", "git gui"
