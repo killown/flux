@@ -891,6 +891,33 @@ impl FluxApp {
                     // Single file
                     (1, true, _) => {
                         let size_str = glib::format_size(total_size);
+
+                        // Kick off a non-blocking duration probe for audio/video files.
+                        // The result arrives via MediaDurationReady and appends to the status.
+                        let selected_path = self
+                            .files
+                            .view
+                            .model()
+                            .and_downcast::<gtk::MultiSelection>()
+                            .and_then(|m| {
+                                let pos = m.selection().nth(0);
+                                self.files.get(pos)
+                            })
+                            .map(|w| w.borrow().path.clone());
+
+                        if let Some(path) = selected_path {
+                            let mime = utils::get_mime_type(&path);
+                            let is_media = mime.starts_with("audio/") || mime.starts_with("video/");
+
+                            if is_media {
+                                let s = sender.clone();
+                                relm4::spawn_blocking(move || {
+                                    let dur = crate::utils::media::probe_media_duration(&path);
+                                    s.input(AppMsg::MediaDurationReady(dur));
+                                });
+                            }
+                        }
+
                         format!("{} ({})", single_name, size_str)
                     }
 
@@ -1216,6 +1243,22 @@ impl FluxApp {
             }
             AppMsg::ShowToast(msg) => {
                 self.toast_overlay.add_toast(adw::Toast::new(&msg));
+            }
+            AppMsg::MediaDurationReady(maybe_duration) => {
+                // Only append duration if status bar still shows a single-file selection
+                // (the user hasn't moved on) and a task is not running.
+                if self.task_queue.summary().is_none()
+                    && !self.selection_status.starts_with('[')
+                    && !self.selection_status.is_empty()
+                {
+                    if let Some(dur) = maybe_duration {
+                        let dur_str = crate::utils::media::format_duration(dur);
+                        // Append only if not already present (guard against duplicate events)
+                        if !self.selection_status.contains(&dur_str) {
+                            self.selection_status.push_str(&format!(" — {}", dur_str));
+                        }
+                    }
+                }
             }
             AppMsg::RestoreItem(_) => {
                 sender.input(AppMsg::Refresh);

@@ -445,6 +445,11 @@ pub enum AppMsg {
     TaskQueueTick,
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
+    /// Delivers the result of an async media duration probe for status bar display.
+    ///
+    /// Carries `Some(duration)` on success or `None` if the file is not a
+    /// media container or `ffprobe` is unavailable.
+    MediaDurationReady(Option<std::time::Duration>),
     /// Triggers the asynchronous unmounting of a system drive or mounted volume.
     UnmountDevice(std::path::PathBuf),
 }

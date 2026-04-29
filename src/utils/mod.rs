@@ -6,6 +6,7 @@
 // 1. Internal submodules
 mod core;
 mod helpers;
+pub mod media;
 mod path;
 
 // 2. Public Re-exports
