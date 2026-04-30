@@ -21,6 +21,7 @@ imagesize = "0.14.0"
 md5 = "0.8.0"
 rusqlite = { version = "0.39", features = ["bundled"] }
 gio-unix = { version = "0.22.0", package = "gio-unix" }
+gdk-pixbuf = "0.22.0"
 
 [dev-dependencies]
 tempfile = "3"

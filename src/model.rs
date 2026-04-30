@@ -450,6 +450,11 @@ pub enum AppMsg {
     /// Carries `Some(duration)` on success or `None` if the file is not a
     /// media container or `ffprobe` is unavailable.
     MediaDurationReady(Option<std::time::Duration>),
+    /// Delivers async file metadata (MIME type and optional image dimensions)
+    FileMetaReady {
+        mime: String,
+        dimensions: Option<(u32, u32)>,
+    },
     /// Triggers the asynchronous unmounting of a system drive or mounted volume.
     UnmountDevice(std::path::PathBuf),
 }

@@ -1,7 +1,8 @@
-//! Non-blocking media duration extraction via `ffprobe`.
+//! Non-blocking media metadata extraction.
 //!
-//! Uses the same `ffprobe` binary that ships alongside `ffmpeg`, which is
-//! already required for video thumbnail generation in `utils::core`.
+//! Duration probing uses `ffprobe`. Image dimension probing uses
+//! `gdk_pixbuf::Pixbuf::file_info`, which reads only the image header
+//! and is already available via the GTK dependency chain.
 
 use std::path::Path;
 use std::time::Duration;
@@ -16,10 +17,6 @@ use std::time::Duration;
 /// # Arguments
 ///
 /// * `path` - Absolute path to the audio or video file to inspect.
-///
-/// # Returns
-///
-/// `Some(Duration)` on success, `None` on any failure.
 pub fn probe_media_duration(path: &Path) -> Option<Duration> {
     let output = std::process::Command::new("ffprobe")
         .args([
@@ -40,14 +37,12 @@ pub fn probe_media_duration(path: &Path) -> Option<Duration> {
 
     let stdout = std::str::from_utf8(&output.stdout).ok()?.trim();
 
-    // ffprobe returns "N/A" for container formats with no duration header
     if stdout == "N/A" || stdout.is_empty() {
         return None;
     }
 
     let secs: f64 = stdout.parse().ok()?;
 
-    // Reject non-finite values (e.g. live streams can return infinity)
     if !secs.is_finite() || secs < 0.0 {
         return None;
     }
@@ -55,16 +50,63 @@ pub fn probe_media_duration(path: &Path) -> Option<Duration> {
     Some(Duration::from_secs_f64(secs))
 }
 
+/// Probes an image file for its pixel dimensions by reading only the file
+/// header, without decoding the full image into memory.
+///
+/// Delegates to [`gdk_pixbuf::Pixbuf::file_info`], which is already
+/// available through the GTK dependency chain.
+///
+/// # Arguments
+///
+/// * `path` - Absolute path to the image file to inspect.
+///
+/// # Returns
+///
+/// `Some((width, height))` in pixels on success, `None` otherwise.
+pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
+    let path_str = path.to_str()?;
+    let (_, w, h) = gdk_pixbuf::Pixbuf::file_info(path_str)?;
+    // file_info returns i32; treat negatives (malformed headers) as unknown
+    Some((u32::try_from(w).ok()?, u32::try_from(h).ok()?))
+}
+
+/// Returns a canonical aspect ratio label for a given resolution.
+///
+/// Reduces `width × height` by their GCD, then matches common display ratios.
+/// Falls back to the reduced fraction string for non-standard ratios.
+///
+/// # Arguments
+///
+/// * `w` - Image width in pixels.
+/// * `h` - Image height in pixels.
+pub fn aspect_ratio_label(w: u32, h: u32) -> String {
+    if w == 0 || h == 0 {
+        return String::new();
+    }
+
+    let g = gcd(w, h);
+    let rw = w / g;
+    let rh = h / g;
+
+    match (rw, rh) {
+        (16, 9) => "16:9".into(),
+        (4, 3) => "4:3".into(),
+        (21, 9) => "21:9".into(),
+        (1, 1) => "1:1".into(),
+        (3, 2) => "3:2".into(),
+        (5, 4) => "5:4".into(),
+        (16, 10) => "16:10".into(),
+        (9, 16) => "9:16".into(),
+        (2, 3) => "2:3".into(),
+        _ => format!("{}:{}", rw, rh),
+    }
+}
+
 /// Formats a [`Duration`] into a human-readable `H:MM:SS` or `M:SS` string.
 ///
 /// # Arguments
 ///
 /// * `d` - The duration to format.
-///
-/// # Returns
-///
-/// A `String` in `H:MM:SS` format when the duration is one hour or longer,
-/// or `M:SS` format otherwise.
 pub fn format_duration(d: Duration) -> String {
     let total = d.as_secs();
     let h = total / 3600;
@@ -76,4 +118,11 @@ pub fn format_duration(d: Duration) -> String {
     } else {
         format!("{}:{:02}", m, s)
     }
+}
+
+fn gcd(mut a: u32, mut b: u32) -> u32 {
+    while b != 0 {
+        (a, b) = (b, a % b);
+    }
+    a
 }

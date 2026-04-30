@@ -906,16 +906,23 @@ impl FluxApp {
                             .map(|w| w.borrow().path.clone());
 
                         if let Some(path) = selected_path {
-                            let mime = utils::get_mime_type(&path);
-                            let is_media = mime.starts_with("audio/") || mime.starts_with("video/");
+                            let s = sender.clone();
+                            relm4::spawn_blocking(move || {
+                                let mime = utils::get_mime_type(&path);
 
-                            if is_media {
-                                let s = sender.clone();
-                                relm4::spawn_blocking(move || {
+                                let dimensions = if mime.starts_with("image/") {
+                                    crate::utils::media::probe_image_dimensions(&path)
+                                } else {
+                                    None
+                                };
+
+                                if mime.starts_with("audio/") || mime.starts_with("video/") {
                                     let dur = crate::utils::media::probe_media_duration(&path);
                                     s.input(AppMsg::MediaDurationReady(dur));
-                                });
-                            }
+                                }
+
+                                s.input(AppMsg::FileMetaReady { mime, dimensions });
+                            });
                         }
 
                         format!("{} ({})", single_name, size_str)
@@ -1260,6 +1267,32 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::FileMetaReady { mime, dimensions } => {
+                if self.task_queue.summary().is_some() || self.selection_status.is_empty() {
+                    return;
+                }
+
+                // Only act on single-file selections, multi-selection status starts with a digit
+                if self.selection_status.starts_with('[')
+                    || self.selection_status.contains("items")
+                    || self.selection_status.contains("folders")
+                {
+                    return;
+                }
+
+                let dim_str = dimensions.map(|(w, h)| {
+                    let ratio = crate::utils::media::aspect_ratio_label(w, h);
+                    format!(" — {}×{} ({})", w, h, ratio)
+                });
+
+                // Append dimensions first (before mime), then mime type
+                if let Some(d) = dim_str {
+                    self.selection_status.push_str(&d);
+                }
+
+                self.selection_status.push_str(&format!(" — {}", mime));
+            }
+
             AppMsg::RestoreItem(_) => {
                 sender.input(AppMsg::Refresh);
             }
