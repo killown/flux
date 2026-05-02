@@ -70,4 +70,4 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 
 ## License
 
-Flux is free and open-source software licensed under the **GPLv3**.
+Flux is free and open-source software licensed under the **[GPLv3](https://github.com/killown/flux/blob/main/LICENSE)**.
