@@ -444,8 +444,34 @@ impl FluxApp {
                 help_win.widget().present();
             }
             AppMsg::PrepareContextMenu(x, y, path) => {
+                if let Some(ref target_path) = path {
+                    let selection_model = self
+                        .files
+                        .view
+                        .model()
+                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                        .expect("Selection model must be MultiSelection");
+
+                    let selection = selection_model.selection();
+                    let mut target_idx = None;
+
+                    for i in 0..self.files.len() {
+                        if let Some(wrapper) = self.files.get(i) {
+                            if &wrapper.borrow().path == target_path {
+                                target_idx = Some(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    if let Some(idx) = target_idx {
+                        if !selection.contains(idx) {
+                            selection_model.select_item(idx, true);
+                        }
+                    }
+                }
+
                 let sender_ctx = sender.clone();
-                // Performance: MIME detection is a blocking I/O operation; offload to a thread
                 relm4::spawn_blocking(move || {
                     let mime = path
                         .as_ref()
