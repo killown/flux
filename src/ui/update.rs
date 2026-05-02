@@ -204,8 +204,58 @@ impl FluxApp {
                     }
                 }
             }
-            AppMsg::PerformPaste(files) => {
-                self.perform_paste(files, sender.clone());
+            AppMsg::ConfirmReplacePaste {
+                files,
+                conflicts,
+                is_cut,
+            } => {
+                let window = gtk::Application::default().active_window();
+
+                let body = if conflicts.len() == 1 {
+                    format!(
+                        "\"{}\" already exists in this location. Replace it and merge its contents?",
+                        conflicts[0]
+                    )
+                } else {
+                    format!(
+                        "{} folders already exist in this location. Replace them and merge their contents?",
+                        conflicts.len()
+                    )
+                };
+
+                let dialog = gtk::MessageDialog::new(
+                    window.as_ref(),
+                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                    gtk::MessageType::Warning,
+                    gtk::ButtonsType::None,
+                    "Replace Existing Folder?",
+                );
+                dialog.set_secondary_text(Some(&body));
+                dialog.add_button("Cancel", gtk::ResponseType::Cancel);
+
+                let replace_btn = dialog.add_button("Replace", gtk::ResponseType::Accept);
+                replace_btn.style_context().add_class("destructive-action");
+
+                let s = sender.clone();
+                dialog.connect_response(move |dlg, response| {
+                    dlg.close();
+                    if response == gtk::ResponseType::Accept {
+                        s.input(AppMsg::PerformPasteForced {
+                            files: files.clone(),
+                            is_cut,
+                        });
+                    }
+                });
+
+                dialog.present();
+            }
+
+            AppMsg::PerformPasteForced { files, is_cut } => {
+                self.perform_paste_inner(files, true, is_cut, sender.clone());
+            }
+
+            AppMsg::PerformPaste { files, is_cut } => {
+                self.perform_paste(files, is_cut, sender.clone());
             }
             AppMsg::Copy => {
                 self.handle_clipboard_action(false);
@@ -215,20 +265,24 @@ impl FluxApp {
             }
             AppMsg::Paste => {
                 let clipboard = gdk::Display::default().unwrap().clipboard();
-                let sender = sender.clone(); // Capture sender for the callback
+                let s = sender.clone();
 
-                clipboard.read_value_async(
-                    gdk::FileList::static_type(),
-                    glib::Priority::DEFAULT,
-                    None::<&gio::Cancellable>,
-                    move |res| {
-                        if let Ok(value) = res {
-                            let file_list: gdk::FileList = value.get().unwrap();
-                            // Send the files back to the main loop via PerformPaste
-                            sender.input(AppMsg::PerformPaste(file_list.files()));
+                clipboard.read_text_async(None::<&gio::Cancellable>, move |res| {
+                    if let Ok(Some(text)) = res {
+                        let mut lines = text.lines();
+                        let first_line = lines.next().unwrap_or("");
+                        let is_cut = first_line == "cut";
+
+                        let files: Vec<gio::File> = lines
+                            .filter(|uri| !uri.is_empty())
+                            .map(gio::File::for_uri)
+                            .collect();
+
+                        if !files.is_empty() {
+                            s.input(AppMsg::PerformPaste { files, is_cut });
                         }
-                    },
-                );
+                    }
+                });
             }
             AppMsg::PerformRename(old_path, new_name) => {
                 match utils::rename_path(&old_path, &new_name) {

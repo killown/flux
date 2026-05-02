@@ -1,3 +1,5 @@
+// FILE: src/model.rs
+
 use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::gio;
@@ -321,7 +323,7 @@ pub enum AppMsg {
     /// Triggers the process to move selected files to the system trash.
     Delete,
     /// Internal message to execute the file operations after clipboard data is retrieved.
-    PerformPaste(Vec<gio::File>),
+    PerformPaste { files: Vec<gio::File>, is_cut: bool },
     /// Launches the currently selected file(s) using a specific application.
     ///
     /// This variant bypasses thread-safety restrictions of `gio::AppInfo` by passing
@@ -457,6 +459,20 @@ pub enum AppMsg {
     },
     /// Triggers the asynchronous unmounting of a system drive or mounted volume.
     UnmountDevice(std::path::PathBuf),
+    /// Pause a paste operation and ask the user whether to replace conflicting directories.
+    ///
+    /// Carries the full original file list so it can be resumed via `PerformPasteForced`
+    /// and the display names of the conflicting items for the dialog body.
+    ConfirmReplacePaste {
+        files: Vec<gio::File>,
+        conflicts: Vec<String>,
+        is_cut: bool,
+    },
+    /// Resume a paste operation after the user has confirmed directory replacement.
+    ///
+    /// Identical to `PerformPaste` but skips conflict detection and always passes
+    /// `FileCopyFlags::OVERWRITE` for both copy and move operations.
+    PerformPasteForced { files: Vec<gio::File>, is_cut: bool },
 }
 
 /// Represents a single entry in the Flux context menu configuration.
