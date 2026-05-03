@@ -220,6 +220,12 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_valign: gtk::Align::Center,
                                 add_css_class: constants::SORT_CONTAINER_CLASS,
 
+                                add_controller = gtk::GestureClick {
+                                    connect_pressed[sender] => move |_, _, _, _| {
+                                        sender.input(AppMsg::CycleSort);
+                                    }
+                                },
+
                                 gtk::Image {
                                     set_icon_name: Some(constants::ICON_SORT_INDICATOR),
                                     set_pixel_size: constants::STATUS_ICON_SIZE,
