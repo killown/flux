@@ -260,17 +260,20 @@ impl SimpleComponent for SettingsWindow {
                         set_title: "Default Sort",
                         set_subtitle: "Primary sorting method for files",
                         add_css_class: "settings-row",
-                        add_suffix = &gtk::DropDown::from_strings(&["Name", "Size", "Date"]) {
+                        add_suffix = &gtk::DropDown::from_strings(&["Name", "Size", "Date", "type"]) {
                             set_valign: gtk::Align::Center,
                             set_selected: match model.config.ui.default_sort {
                                 crate::model::SortBy::Name => 0,
                                 crate::model::SortBy::Size => 1,
                                 crate::model::SortBy::Date => 2,
+                                crate::model::SortBy::Type => 3,
                             },
                             connect_selected_notify => move |drop| {
                                 let sort = match drop.selected() {
+                                    0 => crate::model::SortBy::Name,
                                     1 => crate::model::SortBy::Size,
                                     2 => crate::model::SortBy::Date,
+                                    3 => crate::model::SortBy::Type,
                                     _ => crate::model::SortBy::Name,
                                 };
                                 if let Some(s) = crate::model::SENDER.get() {

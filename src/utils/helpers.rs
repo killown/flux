@@ -22,6 +22,7 @@ impl FluxApp {
             SortBy::Name => "Name",
             SortBy::Date => "Date",
             SortBy::Size => "Size",
+            SortBy::Type => "Type",
         }
     }
 
@@ -824,6 +825,7 @@ mod tests {
             (SortBy::Name, "Name"),
             (SortBy::Date, "Date"),
             (SortBy::Size, "Size"),
+            (SortBy::Type, "Type"),
         ];
 
         for (variant, expected) in cases {
@@ -831,6 +833,7 @@ mod tests {
                 SortBy::Name => "Name",
                 SortBy::Date => "Date",
                 SortBy::Size => "Size",
+                SortBy::Type => "Type",
             };
             assert_eq!(status, expected);
         }

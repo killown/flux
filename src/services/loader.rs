@@ -32,14 +32,15 @@ impl FluxApp {
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         self.directory_monitor = None;
         let path_str = path.to_string_lossy().to_string();
-
         let mut folders_first = self.config.ui.folders_first;
 
+        // Load persistent folder state from SQLite before scanning
         // Load persistent folder state from SQLite before scanning
         if let Ok(Some((sort, _rev, size, ff))) = self.state_db.get_view(&path) {
             self.sort_by = match sort.as_str() {
                 "Date" => SortBy::Date,
                 "Size" => SortBy::Size,
+                "Type" => SortBy::Type,
                 _ => SortBy::Name,
             };
             self.current_icon_size = size as i32;
@@ -83,11 +84,12 @@ impl FluxApp {
             });
             self.directory_monitor = Some(monitor);
         }
+
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         let attributes =
-        "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
+            "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
 
         if let Ok(enumerator) = root.enumerate_children(
             attributes,
@@ -180,6 +182,7 @@ impl FluxApp {
             }
 
             items.par_sort_unstable_by(move |a, b| {
+                // 1. Folders First Logic
                 if a.is_dir != b.is_dir {
                     return if folders_first {
                         b.is_dir.cmp(&a.is_dir) // Directories first
@@ -187,10 +190,39 @@ impl FluxApp {
                         a.is_dir.cmp(&b.is_dir) // Files first or mixed (depending on strategy)
                     };
                 }
-                match sort_strategy {
-                    SortBy::Name => a.sort_name.cmp(&b.sort_name),
+
+                // 2. Primary Sort Strategy
+                let primary_order = match sort_strategy {
+                    SortBy::Name => a
+                        .display_name
+                        .to_lowercase()
+                        .cmp(&b.display_name.to_lowercase()),
                     SortBy::Size => b.size.cmp(&a.size),
                     SortBy::Date => b.mtime.cmp(&a.mtime),
+                    SortBy::Type => {
+                        let ext_a = std::path::Path::new(&a.display_name)
+                            .extension()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or("")
+                            .to_lowercase();
+
+                        let ext_b = std::path::Path::new(&b.display_name)
+                            .extension()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or("")
+                            .to_lowercase();
+
+                        ext_a.cmp(&ext_b)
+                    }
+                };
+
+                // 3. Tie-Breaker: If primary sort is equal, sort by Name
+                if primary_order == std::cmp::Ordering::Equal {
+                    a.display_name
+                        .to_lowercase()
+                        .cmp(&b.display_name.to_lowercase())
+                } else {
+                    primary_order
                 }
             });
 

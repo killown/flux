@@ -124,6 +124,8 @@ pub enum SortBy {
     Date,
     /// Sort items by their filesystem size in bytes.
     Size,
+    /// Sort items by their file extension or MIME type.
+    Type,
 }
 
 /// Metadata for actions available within a specific UI context.

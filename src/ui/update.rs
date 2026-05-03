@@ -336,10 +336,10 @@ impl FluxApp {
                 self.sort_by = match self.sort_by {
                     SortBy::Name => SortBy::Date,
                     SortBy::Date => SortBy::Size,
-                    SortBy::Size => SortBy::Name,
+                    SortBy::Size => SortBy::Type,
+                    SortBy::Type => SortBy::Name,
                 };
 
-                // Persist state to database
                 let _ = self.state_db.save_view(
                     &self.current_path,
                     &format!("{:?}", self.sort_by),
@@ -1406,7 +1406,8 @@ mod tests {
         let cycle = |s: SortBy| match s {
             SortBy::Name => SortBy::Date,
             SortBy::Date => SortBy::Size,
-            SortBy::Size => SortBy::Name,
+            SortBy::Size => SortBy::Type,
+            SortBy::Type => SortBy::Name,
         };
 
         current_sort = cycle(current_sort);
@@ -1414,6 +1415,9 @@ mod tests {
 
         current_sort = cycle(current_sort);
         assert_eq!(current_sort, SortBy::Size);
+
+        current_sort = cycle(current_sort);
+        assert_eq!(current_sort, SortBy::Type);
 
         current_sort = cycle(current_sort);
         assert_eq!(current_sort, SortBy::Name);
