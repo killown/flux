@@ -87,7 +87,7 @@ impl FluxApp {
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         let attributes =
-            "standard::name,standard::display-name,standard::type,standard::size,time::modified";
+        "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
 
         if let Ok(enumerator) = root.enumerate_children(
             attributes,
@@ -95,7 +95,7 @@ impl FluxApp {
             gio::Cancellable::NONE,
         ) {
             // Extract immutable state from GObjects on the main thread to enable parallel processing.
-            let raw_data: Vec<(String, String, bool, u64, i64)> = enumerator
+            let raw_data: Vec<(String, String, bool, u64, i64, u32)> = enumerator
                 .flatten()
                 .map(|info| {
                     (
@@ -106,12 +106,18 @@ impl FluxApp {
                         info.modification_date_time()
                             .map(|dt| dt.to_unix())
                             .unwrap_or(0),
+                        // attribute_uint32 returns 0 if the attribute is absent (e.g. trash:// URIs)
+                        info.attribute_uint32("unix::uid"),
                     )
                 })
                 .collect();
 
             let show_hidden = self.show_hidden;
             let sort_strategy = self.sort_by;
+            let is_trash = path_str.starts_with("trash://");
+
+            // SAFETY: getuid() is always safe, it never fails.
+            let current_uid: u32 = unsafe { libc::getuid() };
 
             // Resolve the cache directory for the specific size defined in constants.
             let cache_base = dirs::cache_dir().unwrap_or_default().join("thumbnails");
@@ -122,15 +128,14 @@ impl FluxApp {
             };
             let target_cache_dir = cache_base.join(thumb_folder);
 
-            // Offload intensive path resolution and sort-key generation to the thread pool.
             let mut items: Vec<FileLoadContext> = raw_data
                 .into_par_iter()
-                .filter_map(|(name, display_name, is_dir, size, mtime)| {
+                .filter_map(|(name, display_name, is_dir, size, mtime, uid)| {
                     if !show_hidden && name.starts_with('.') {
                         return None;
                     }
 
-                    let target_path = if path_str.starts_with("trash://") {
+                    let target_path = if is_trash {
                         PathBuf::from(root.child(&name).uri())
                     } else {
                         path.join(&name)
@@ -161,6 +166,10 @@ impl FluxApp {
                         mtime,
                         is_dir,
                         thumbnail_path,
+                        // uid == 0 from GIO means the attribute was unavailable (virtual paths).
+                        // For real filesystems uid 0 is root, which is legitimately foreign.
+                        // The trash:// guard prevents false positives on virtual entries.
+                        is_foreign_owner: !is_trash && uid != current_uid,
                     })
                 })
                 .collect();
@@ -206,6 +215,7 @@ impl FluxApp {
                     icon_size: self.current_icon_size,
                     size: item.size,
                     is_editing: false,
+                    is_foreign_owner: item.is_foreign_owner,
                 });
 
                 if let Some(abs_path) = item.thumbnail_path {
@@ -247,6 +257,7 @@ mod tests {
             mtime,
             is_dir,
             thumbnail_path: None,
+            is_foreign_owner: false,
         }
     }
 

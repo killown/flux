@@ -23,11 +23,13 @@ pub struct FileItem {
     pub path: PathBuf,
     pub icon_size: i32,
     pub is_editing: bool,
+    pub is_foreign_owner: bool,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
 pub struct FileWidgets {
     pub icon_widget: gtk::Image,
+    pub lock_icon: gtk::Image,
     pub label: gtk::Label,
     pub entry: gtk::Entry,
     pub stack: gtk::Stack,
@@ -180,14 +182,28 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             set_halign: gtk::Align::Center,
                             set_vexpand: false,
 
-                            #[name = "label"]
-                            add_child = &gtk::Label {
-                                set_wrap: true,
-                                set_justify: gtk::Justification::Center,
-                                set_max_width_chars: constants::MAX_LABEL_CHARS,
-                                set_ellipsize: gtk::pango::EllipsizeMode::End,
-                                set_max_width_chars: 20,
-                                add_css_class: constants::FLUX_LABEL_CLASS,
+                            add_child = &gtk::Box {
+                                set_orientation: gtk::Orientation::Horizontal,
+                                set_halign: gtk::Align::Center,
+                                set_spacing: 4,
+
+                                #[name = "lock_icon"]
+                                gtk::Image {
+                                    set_icon_name: Some("changes-prevent-symbolic"),
+                                    set_pixel_size: 12,
+                                    set_visible: false,
+                                    add_css_class: "flux-lock-badge",
+                                },
+
+                                #[name = "label"]
+                                gtk::Label {
+                                    set_wrap: true,
+                                    set_justify: gtk::Justification::Center,
+                                    set_max_width_chars: constants::MAX_LABEL_CHARS,
+                                    set_ellipsize: gtk::pango::EllipsizeMode::End,
+                                    set_max_width_chars: 20,
+                                    add_css_class: constants::FLUX_LABEL_CLASS,
+                                },
                             } -> { set_name: constants::VIEW_LABEL },
 
                             #[name = "entry"]
@@ -238,6 +254,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root,
             FileWidgets {
                 icon_widget,
+                lock_icon,
                 label,
                 entry,
                 stack,
@@ -256,6 +273,14 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         // Set the widget name to the absolute path so the app.rs controller can find it
         root.set_widget_name(&self.path.to_string_lossy());
+
+        if self.is_foreign_owner {
+            root.add_css_class("flux-card--restricted");
+            widgets.lock_icon.set_visible(true);
+        } else {
+            root.remove_css_class("flux-card--restricted");
+            widgets.lock_icon.set_visible(false);
+        }
 
         if self.is_editing {
             widgets.stack.set_visible_child_name(constants::VIEW_ENTRY);

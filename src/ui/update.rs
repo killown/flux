@@ -1172,6 +1172,7 @@ impl FluxApp {
                                 icon_size: self.current_icon_size,
                                 size: info.size() as u64,
                                 is_editing: false,
+                                is_foreign_owner: false,
                             };
 
                             self.files.append(item);

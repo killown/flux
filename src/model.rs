@@ -39,6 +39,8 @@ pub struct FileLoadContext {
     pub sort_name: String,
     /// The path to a cached or generated image representing the file content.
     pub thumbnail_path: Option<PathBuf>,
+    /// True when the file's Unix UID does not match the current process's effective UID.
+    pub is_foreign_owner: bool,
 }
 
 /// Represents a single component of a filesystem path for breadcrumb navigation.
