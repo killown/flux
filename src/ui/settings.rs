@@ -260,7 +260,7 @@ impl SimpleComponent for SettingsWindow {
                         set_title: "Default Sort",
                         set_subtitle: "Primary sorting method for files",
                         add_css_class: "settings-row",
-                        add_suffix = &gtk::DropDown::from_strings(&["Name", "Size", "Date", "type"]) {
+                        add_suffix = &gtk::DropDown::from_strings(&["Name", "Size", "Date", "Type"]) {
                             set_valign: gtk::Align::Center,
                             set_selected: match model.config.ui.default_sort {
                                 crate::model::SortBy::Name => 0,
@@ -278,6 +278,27 @@ impl SimpleComponent for SettingsWindow {
                                 };
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetDefaultSort(sort));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: "Sort Order",
+                        set_subtitle: "Direction of the primary sort",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::DropDown::from_strings(&["Ascending", "Descending"]) {
+                            set_valign: gtk::Align::Center,
+                            set_selected: match model.config.ui.ascending {
+                                true => 0,
+                                false => 1,
+                            },
+                            connect_selected_notify => move |drop| {
+                                let asc = match drop.selected() {
+                                    0 => true,
+                                    _ => false,
+                                };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetAsc(asc));
                                 }
                             }
                         }

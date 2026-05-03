@@ -98,9 +98,9 @@ pub struct ShortcutsConfig {
     pub settings: Option<String>,
     /// Key combination to open the menu editor.
     pub menu_editor: Option<String>,
-    /// Accelerator to cycle through available sorting modes (Name, Date, Size, Type).
+    /// Key combination to rotate through available sorting methods.
     pub cycle_sort: Option<String>,
-    /// Accelerator to toggle between ascending and descending sort order.
+    /// Key combination to toggle between ascending and descending order.
     pub toggle_sort_order: Option<String>,
 }
 
@@ -193,6 +193,8 @@ pub struct UIConfig {
     pub max_width_chars: i32,
     /// Pixel spacing between items in the file grid.
     pub grid_spacing: i32,
+    /// Whether the directory listing is sorted in ascending order.
+    pub ascending: bool,
 }
 
 impl Default for UIConfig {
@@ -216,6 +218,7 @@ impl Default for UIConfig {
             startup_window_height: 0,
             max_width_chars: 20,
             grid_spacing: 10,
+            ascending: true,
         }
     }
 }
@@ -495,6 +498,8 @@ pub enum AppMsg {
     SetMaxWidthChars(i32),
     /// Toggles the directory listing between ascending and descending order.
     ToggleSortOrder,
+    /// Sets sort direction: true for Ascending, false for Descending.
+    SetAsc(bool),
 }
 
 /// Represents a single entry in the Flux context menu configuration.

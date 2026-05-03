@@ -1394,7 +1394,17 @@ impl FluxApp {
 
                 self.selection_status.push_str(&format!(" — {}", mime));
             }
-
+            AppMsg::SetAsc(asc) => {
+                self.sort_ascending = asc;
+                let _ = self.state_db.save_view(
+                    &self.current_path,
+                    &format!("{:?}", self.sort_by),
+                    !self.sort_ascending,
+                    self.current_icon_size as u32,
+                    self.config.ui.folders_first,
+                );
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::RestoreItem(_) => {
                 sender.input(AppMsg::Refresh);
             }
