@@ -30,20 +30,48 @@ pub fn ensure_config_file() -> PathBuf {
 "󰆏      Copy" => "all", "builtin::copy", "Copied to clipboard"
 "󰆐      Cut" => "all", "builtin::cut", "Cut to clipboard"
 "󰏊      Paste" => "all", "builtin::paste", "Pasted items"
+"󰱝      Open With..." => "file", "builtin::open_with"
 "󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
 "󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
-"󰱝      Open With..." => "file", "builtin::open_with"
+"󰆴      Shred File (Permanent)" => "all", "shred -u -n 3 -z %p", "File shredded and deleted"
 
-# --- System & Dev Tools ---
+# --- Navigation & System ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
-"󰨞      Open in Code" => "text/all, application/all", "code %p"
-"󰋽      File Properties" => "file", "~/.local/bin/flux-fm --file-properties %p"
-"󰋊      Folder Info" => "directory", "flatpak run org.gnome.baobab %p"
-"🛠      Tools > 󰯦   Copy Path" => "all", "echo -n %p | wl-copy", "Path copied"
-"🛠      Tools > 󰊢   Git Gui" => "directory", "git gui"
+"󰨞      Open in VSCode" => "text/all, application/all", "code %p"
+"󰋽      File Properties" => "file", "flux-fm --file-properties %p"
+"󰋊      Folder Info" => "directory", "baobab %p"
+"󰉋      New Folder" => "directory", "mkdir %p/New-Folder", "Folder created"
 
-# --- Media & Images ---
-"      Images > 󰸉   Set Wallpaper" => "image/all", "swww img %p", "Wallpaper set"
+# --- Media Edit ---
+"󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p", "Joining videos..."
+"󰽰      Media Edit > Cut Video" => "video/all", "python $HOME/.local/share/flux/scripts/video_cutter.py %p", "Opening Video Cutter..."
+"󰽰      Media Edit > Mix Audio" => "audio/", "python3 $HOME/.local/share/flux/scripts/mix_audio.py %p", "Mixing audio..."
+"󰽰      Media Edit > Merge Video + Audio" => "video/all+audio/all", "python $HOME/.local/share/flux/scripts/join_mp4_mp3.py %p", "Merging media..."
+
+# --- Media Convert ---
+"󰽰      Media Convert > To MP4" => "video/all", "ffmpeg -i %p -codec copy %p.mp4", "Converting to MP4..."
+"󰽰      Media Convert > To MKV" => "video/all", "ffmpeg -i %p -codec copy %p.mkv", "Converting to MKV..."
+"󰽰      Media Convert > To WebM" => "video/all", "ffmpeg -i %p -codec copy %p.webm", "Converting to WebM..."
+"󰽰      Media Convert > To MOV" => "video/all", "ffmpeg -i %p -codec copy %p.mov", "Converting to MOV..."
+"󰝚      Media Convert > Audio to MP3" => "audio/x-opus+ogg, audio/vnd.wave, audio/ogg", "ffmpeg -i %p -vn -ab 192k -ar 44100 -y %p.mp3", "Converting to MP3..."
+
+# --- Media Optimization & Extraction ---
+"󰠝      Media Extract > MP3 from Video" => "video/all", "ffmpeg -i %p -vn -acodec libmp3lame -q:a 2 %p.mp3", "Extracting MP3..."
+"󰕧      Media Optimize > Reduce Video Size" => "video/all", "ffmpeg -i %p -vcodec libx265 -crf 28 -tag:v hvc1 -preset faster %p_reduced.mp4", "Reducing video size..."
+"󰛖      Extract Here!" => "application/zip, application/x-7z-compressed, application/x-rar, application/x-tar", "7z x %p -o%p_extracted", "Extracting archive..."
+
+# --- Images & Wallpaper ---
+"󰸉      Image Wallpaper > Set (swww)" => "image/all", "swww img %p", "Wallpaper set (swww)"
+"󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && wbg -s ~/Images/fav.jpg", "Wallpaper set (wbg)"
+"󰸉      Image Wallpaper > Set Dual" => "image/all", "cp %p ~/.config/waypanel/wallpaper-main.jpg && cp %p ~/.config/waypanel/wallpaper-backdrop.jpg && pkill wbg; wbg ~/.config/waypanel/wallpaper-main.jpg & wbg -s wallpaper-backdrop ~/.config/waypanel/wallpaper-backdrop.jpg & python ~/Scripts/niri-matugen.py", "Dual Wallpapers set"
+"󰸉      Image Convert > To AVIF" => "image/all", "avifenc --jobs all -q 65 %p %p.avif", "Image converted to AVIF"
+"󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg", "Image converted to JPG"
+
+# --- Tools ---
+"󰊢      Tools > Git Gui" => "directory", "git gui"
+"󰕧      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)", "Video download started"
+"󰯦      Tools > Copy Path" => "all", "echo -n %p | wl-copy", "Path copied to clipboard"
+"󰯦      Tools > Advanced Archive Manager" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_compressor.py %p"
 "#;
         if let Ok(mut file) = fs::File::create(&config_path) {
             let _ = file.write_all(default_config.as_bytes());
