@@ -33,7 +33,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰱝      Open With..." => "file", "builtin::open_with"
 "󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
 "󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
-"󰆴      Shred File (Permanent)" => "all", "shred -u -n 3 -z %p", "File shredded and deleted"
+"󰆴      Shred File (Permanent)" => "all", "python $HOME/.local/share/flux/scripts/flux_shredder.py %p", "Shredder initialized"
 
 # --- Navigation & System ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
@@ -67,8 +67,8 @@ pub fn ensure_config_file() -> PathBuf {
 "󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg", "Image converted to JPG"
 
 # --- Tools ---
-"󰊢      Tools > Git Gui" => "directory", "git gui"
-"󰕧      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)", "Video download started"
+"󰯦      Tools > Git Gui" => "directory", "git gui"
+"󰯦      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)", "Video download started"
 "󰯦      Tools > Copy Path" => "all", "echo -n %p | wl-copy", "Path copied to clipboard"
 "󰯦      Tools > Advanced Archive Manager" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_compressor.py %p"
 "#;
