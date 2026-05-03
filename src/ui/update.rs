@@ -144,6 +144,16 @@ impl FluxApp {
                 utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::SetGridSpacing(val) => {
+                self.config.ui.grid_spacing = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetMaxWidthChars(val) => {
+                self.config.ui.max_width_chars = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::SetFoldersFirst(val) => {
                 self.config.ui.folders_first = val;
                 utils::save_config(&self.config);

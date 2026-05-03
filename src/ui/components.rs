@@ -106,148 +106,147 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         });
 
         relm4::view! {
-                    #[root]
-                    root = gtk::Box {
-                        set_orientation: gtk::Orientation::Vertical,
-                        set_spacing: constants::GRID_SPACING as i32,
-                        set_halign: gtk::Align::Center,
-                        set_spacing: 0,
-                        set_valign: gtk::Align::Center,
-                        add_css_class: constants::CARD_CSS_CLASS,
+            #[root]
+            root = gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_halign: gtk::Align::Center,
+                set_spacing: 0,
+                set_valign: gtk::Align::Center,
+                add_css_class: constants::CARD_CSS_CLASS,
 
-                        // only if single_click is enabled
-                        connect_realize => move |w| {
-                                FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
-                        },
+                // only if single_click is enabled
+                connect_realize => move |w| {
+                    FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
+                },
 
-                        add_controller: drag_source.clone(),
-                        add_controller: drop_target.clone(),
+                add_controller: drag_source.clone(),
+                add_controller: drop_target.clone(),
 
-                        add_controller = gtk::GestureLongPress {
-                            connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
-                                if let Some(s) = sender.get() {
-                                    let widget = gesture.widget().unwrap();
-                                    let path_opt: Option<PathBuf> = unsafe {
-                                        widget.data::<PathBuf>("file_path").map(|p| p.as_ref().expand_tilde())
-                                    };
+                add_controller = gtk::GestureLongPress {
+                    connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
+                        if let Some(s) = sender.get() {
+                            let widget = gesture.widget().unwrap();
+                            let path_opt: Option<PathBuf> = unsafe {
+                                widget.data::<PathBuf>("file_path").map(|p| p.as_ref().expand_tilde())
+                            };
 
-                                    if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                        let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                        s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
-                                    }
-                                }
+                            if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                             }
-                        },
-
-                        add_controller = gtk::GestureClick {
-                            set_button: 0,
-                            connect_pressed => |gesture, _, _, _| {
-                                let button = gesture.current_button();
-                                if button == constants::MOUSE_RIGHT_CLICK {
-                                    gesture.set_state(gtk::EventSequenceState::Claimed);
-                                }
-                            },
-                            connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
-                                if gesture.current_button() == MOUSE_RIGHT_CLICK {
-                                    if let Some(s) = sender.get() {
-                                        let widget = gesture.widget().unwrap();
-
-                                        // Extract and resolve the path immediately to prevent double-expansion bugs
-                                        let path_opt: Option<PathBuf> = unsafe {
-                                            widget.data::<PathBuf>("file_path").map(|p| {
-                                                p.as_ref().expand_tilde()
-                                            })
-                                        };
-
-                                        if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                            let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                            s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
-                                        }
-                                    }
-                                }
-                            }
-                        },
-
-                        #[name = "icon_widget"]
-                        gtk::Image {
-                            set_halign: gtk::Align::Center,
-                            set_valign: gtk::Align::End, // Pull icon toward the bottom of its area
-                            set_vexpand: false,
-                            add_css_class: constants::THUMBNAIL_CLASS,
-                        },
-
-                        #[name = "stack"]
-                        gtk::Stack {
-                            set_transition_type: gtk::StackTransitionType::Crossfade,
-                            set_halign: gtk::Align::Center,
-                            set_vexpand: false,
-
-                            add_child = &gtk::Box {
-                                set_orientation: gtk::Orientation::Horizontal,
-                                set_halign: gtk::Align::Center,
-                                set_spacing: 4,
-
-                                #[name = "lock_icon"]
-                                gtk::Image {
-                                    set_icon_name: Some("changes-prevent-symbolic"),
-                                    set_pixel_size: 12,
-                                    set_visible: false,
-                                    add_css_class: "flux-lock-badge",
-                                },
-
-                                #[name = "label"]
-                                gtk::Label {
-                                    set_wrap: true,
-                                    set_justify: gtk::Justification::Center,
-                                    set_max_width_chars: constants::MAX_LABEL_CHARS,
-                                    set_ellipsize: gtk::pango::EllipsizeMode::End,
-                                    set_max_width_chars: 20,
-                                    add_css_class: constants::FLUX_LABEL_CLASS,
-                                },
-                            } -> { set_name: constants::VIEW_LABEL },
-
-                            #[name = "entry"]
-                            add_child = &gtk::Entry {
-                                set_halign: gtk::Align::Center,
-                                add_css_class: constants::RENAME_ENTRY_CLASS,
-
-                                // 1. Reliable focus loss detection
-                                add_controller = gtk::EventControllerFocus {
-                                    connect_leave[sender = crate::model::SENDER.clone()] => move |_| {
-                                        if let Some(s) = sender.get() {
-                                            s.send(crate::model::AppMsg::Refresh).ok();
-                                        }
-                                    }
-                                },
-
-                                // 2. Escape key handling
-                                add_controller = gtk::EventControllerKey {
-                                    connect_key_pressed[sender = crate::model::SENDER.clone()] => move |_, keyval, _, _| {
-                                        if keyval == gdk::Key::Escape {
-                                            if let Some(s) = sender.get() {
-                                                s.send(crate::model::AppMsg::Refresh).ok();
-                                                return glib::Propagation::Stop;
-                                            }
-                                        }
-                                        glib::Propagation::Proceed
-                                    }
-                                },
-
-                                // 3. Enter key handling
-                                connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
-                                    if let Some(s) = sender.get() {
-                                        let old_path_opt: Option<PathBuf> = unsafe {
-                                            root.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
-                                        };
-                                        if let Some(old_path) = old_path_opt {
-                                            let new_name = entry.text().to_string();
-                                            s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
-                                        }
-                                    }
-                                },
-                            } -> { set_name: constants::VIEW_ENTRY }
                         }
                     }
+                },
+
+                add_controller = gtk::GestureClick {
+                    set_button: 0,
+                    connect_pressed => |gesture, _, _, _| {
+                        let button = gesture.current_button();
+                        if button == constants::MOUSE_RIGHT_CLICK {
+                            gesture.set_state(gtk::EventSequenceState::Claimed);
+                        }
+                    },
+                    connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
+                        if gesture.current_button() == MOUSE_RIGHT_CLICK {
+                            if let Some(s) = sender.get() {
+                                let widget = gesture.widget().unwrap();
+
+                                // Extract and resolve the path immediately to prevent double-expansion bugs
+                                let path_opt: Option<PathBuf> = unsafe {
+                                    widget.data::<PathBuf>("file_path").map(|p| {
+                                        p.as_ref().expand_tilde()
+                                    })
+                                };
+
+                                if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                    let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                }
+                            }
+                        }
+                    }
+                },
+
+                #[name = "icon_widget"]
+                gtk::Image {
+                    set_halign: gtk::Align::Center,
+                    set_valign: gtk::Align::End,
+                    set_vexpand: false,
+                    add_css_class: constants::THUMBNAIL_CLASS,
+                },
+
+                #[name = "stack"]
+                gtk::Stack {
+                    set_transition_type: gtk::StackTransitionType::Crossfade,
+                    set_halign: gtk::Align::Center,
+                    set_vexpand: false,
+
+                    add_child = &gtk::Box {
+                        set_orientation: gtk::Orientation::Horizontal,
+                        set_halign: gtk::Align::Center,
+                        set_spacing: 4,
+
+                        #[name = "lock_icon"]
+                        gtk::Image {
+                            set_icon_name: Some("changes-prevent-symbolic"),
+                            set_pixel_size: 12,
+                            set_visible: false,
+                            add_css_class: "flux-lock-badge",
+                        },
+
+                        #[name = "label"]
+                        gtk::Label {
+                            set_justify: gtk::Justification::Center,
+                            set_max_width_chars: config.ui.max_width_chars,
+                            set_width_chars: config.ui.grid_spacing,
+                            set_ellipsize: gtk::pango::EllipsizeMode::End,
+                            set_hexpand: false,
+                            add_css_class: constants::FLUX_LABEL_CLASS,
+                        },
+                    } -> { set_name: constants::VIEW_LABEL },
+
+                    #[name = "entry"]
+                    add_child = &gtk::Entry {
+                        set_halign: gtk::Align::Center,
+                        add_css_class: constants::RENAME_ENTRY_CLASS,
+
+                        // 1. Reliable focus loss detection
+                        add_controller = gtk::EventControllerFocus {
+                            connect_leave[sender = crate::model::SENDER.clone()] => move |_| {
+                                if let Some(s) = sender.get() {
+                                    s.send(crate::model::AppMsg::Refresh).ok();
+                                }
+                            }
+                        },
+
+                        // 2. Escape key handling
+                        add_controller = gtk::EventControllerKey {
+                            connect_key_pressed[sender = crate::model::SENDER.clone()] => move |_, keyval, _, _| {
+                                if keyval == gdk::Key::Escape {
+                                    if let Some(s) = sender.get() {
+                                        s.send(crate::model::AppMsg::Refresh).ok();
+                                        return glib::Propagation::Stop;
+                                    }
+                                }
+                                glib::Propagation::Proceed
+                            }
+                        },
+
+                        // 3. Enter key handling
+                        connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
+                            if let Some(s) = sender.get() {
+                                let old_path_opt: Option<PathBuf> = unsafe {
+                                    root.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
+                                };
+                                if let Some(old_path) = old_path_opt {
+                                    let new_name = entry.text().to_string();
+                                    s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
+                                }
+                            }
+                        },
+                    } -> { set_name: constants::VIEW_ENTRY }
+                }
+            }
         }
 
         (

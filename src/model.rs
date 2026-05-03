@@ -183,6 +183,10 @@ pub struct UIConfig {
     pub startup_window_width: i32,
     /// Initial height of the application window in pixels.
     pub startup_window_height: i32,
+    /// Maximum number of characters to display in file labels before truncation.
+    pub max_width_chars: i32,
+    /// Pixel spacing between items in the file grid.
+    pub grid_spacing: i32,
 }
 
 impl Default for UIConfig {
@@ -204,6 +208,8 @@ impl Default for UIConfig {
             start_maximized: false,
             startup_window_width: 0,
             startup_window_height: 0,
+            max_width_chars: 20,
+            grid_spacing: 10,
         }
     }
 }
@@ -475,6 +481,10 @@ pub enum AppMsg {
     /// Identical to `PerformPaste` but skips conflict detection and always passes
     /// `FileCopyFlags::OVERWRITE` for both copy and move operations.
     PerformPasteForced { files: Vec<gio::File>, is_cut: bool },
+    /// Updates the pixel spacing between items in the grid.
+    SetGridSpacing(i32),
+    /// Updates the character limit for file labels.
+    SetMaxWidthChars(i32),
 }
 
 /// Represents a single entry in the Flux context menu configuration.

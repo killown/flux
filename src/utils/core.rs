@@ -251,6 +251,8 @@ path = "~"
                 folders_first: true,
                 theme: Some("default".to_string()),
                 start_maximized: true,
+                max_width_chars: 20,
+                grid_spacing: 10,
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),

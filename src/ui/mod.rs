@@ -58,7 +58,6 @@ pub mod constants {
     pub const SEARCH_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const RECENT_STACK_CAPACITY: usize = 10;
     pub const MAX_RECENT_ITEMS: usize = 9;
-    pub const GRID_SPACING: u32 = 16;
     pub const SIDEBAR_SPACING: i32 = 18;
     pub const HEADER_BTN_SPACING: i32 = 6;
     pub const STATUS_ICON_SPACING: i32 = 8;
@@ -66,7 +65,6 @@ pub mod constants {
     pub const MAX_BREADCRUMBS: usize = 5;
 
     // Widget Specifics
-    pub const MAX_LABEL_CHARS: i32 = 14;
     pub const STATUS_ICON_SIZE: i32 = 16;
 
     // Visual Polish

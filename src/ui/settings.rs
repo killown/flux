@@ -1,3 +1,5 @@
+// FILE: src/ui/settings.rs
+
 use crate::model::{AppMsg, Config};
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -44,6 +46,39 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
+
+                    add = &adw::ActionRow {
+                        set_title: "Grid Spacing",
+                        set_subtitle: "Pixel spacing between items in the grid view",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(model.config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetGridSpacing(spin.value() as i32));
+                                }
+                            }
+                        }
+                    },
+
+                    add = &adw::ActionRow {
+                        set_title: "Max Label Length",
+                        set_subtitle: "Maximum characters to show before truncating filenames",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(model.config.ui.max_width_chars as f64, 8.0, 128.0, 1.0, 0.0, 0.0),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetMaxWidthChars(spin.value() as i32));
+                                }
+                            }
+                        }
+                    },
+
                     add = &adw::ActionRow {
                         set_title: "Sidebar Width",
                         set_subtitle: "Default width of the navigation pane",
