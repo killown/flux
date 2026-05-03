@@ -254,6 +254,7 @@ path = "~"
                 max_width_chars: 20,
                 grid_spacing: 10,
                 ascending: true,
+                expand_labels: false,
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),

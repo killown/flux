@@ -154,6 +154,11 @@ impl FluxApp {
                 utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::SetExpandLabels(val) => {
+                self.config.ui.expand_labels = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::SetFoldersFirst(val) => {
                 self.config.ui.folders_first = val;
                 utils::save_config(&self.config);
@@ -1194,6 +1199,7 @@ impl FluxApp {
                                 size: info.size() as u64,
                                 is_editing: false,
                                 is_foreign_owner: false,
+                                expand_labels: self.config.ui.expand_labels,
                             };
 
                             self.files.append(item);

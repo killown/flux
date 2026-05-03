@@ -24,6 +24,8 @@ pub struct FileItem {
     pub icon_size: i32,
     pub is_editing: bool,
     pub is_foreign_owner: bool,
+    /// Whether the label should wrap to multiple lines instead of ellipsizing.
+    pub expand_labels: bool,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -269,6 +271,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         widgets.label.set_label(&self.name);
         widgets.icon_widget.set_pixel_size(self.icon_size);
+
+        if self.expand_labels {
+            widgets.label.set_wrap(true);
+            widgets.label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::None);
+        } else {
+            widgets.label.set_wrap(false);
+            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
+        }
 
         // Set the widget name to the absolute path so the app.rs controller can find it
         root.set_widget_name(&self.path.to_string_lossy());

@@ -41,6 +41,8 @@ pub struct FileLoadContext {
     pub thumbnail_path: Option<PathBuf>,
     /// True when the file's Unix UID does not match the current process's effective UID.
     pub is_foreign_owner: bool,
+    /// Whether the filename label should wrap across multiple lines.
+    pub expand_labels: bool,
 }
 
 /// Represents a single component of a filesystem path for breadcrumb navigation.
@@ -195,6 +197,9 @@ pub struct UIConfig {
     pub grid_spacing: i32,
     /// Whether the directory listing is sorted in ascending order.
     pub ascending: bool,
+    /// Whether filenames in the grid wrap across multiple lines instead of truncating.
+    #[serde(default)]
+    pub expand_labels: bool,
 }
 
 impl Default for UIConfig {
@@ -219,6 +224,7 @@ impl Default for UIConfig {
             max_width_chars: 20,
             grid_spacing: 10,
             ascending: true,
+            expand_labels: false,
         }
     }
 }
@@ -496,6 +502,8 @@ pub enum AppMsg {
     SetGridSpacing(i32),
     /// Updates the character limit for file labels.
     SetMaxWidthChars(i32),
+    /// Toggles multi-line label wrapping in the grid.
+    SetExpandLabels(bool),
     /// Toggles the directory listing between ascending and descending order.
     ToggleSortOrder,
     /// Sets sort direction: true for Ascending, false for Descending.

@@ -1,5 +1,6 @@
 use crate::model::{AppMsg, Config};
 use adw::prelude::*;
+use gtk::glib;
 use relm4::prelude::*;
 
 pub struct SettingsWindow {
@@ -73,6 +74,22 @@ impl SimpleComponent for SettingsWindow {
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetMaxWidthChars(spin.value() as i32));
                                 }
+                            }
+                        }
+                    },
+
+                    add = &adw::ActionRow {
+                        set_title: "Expand Filenames",
+                        set_subtitle: "Show full filenames in the grid, wrapping across multiple lines",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.expand_labels,
+                            set_valign: gtk::Align::Center,
+                            connect_state_set => move |_, state| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetExpandLabels(state));
+                                }
+                                glib::Propagation::Proceed
                             }
                         }
                     },

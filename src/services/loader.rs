@@ -174,6 +174,7 @@ impl FluxApp {
                         // For real filesystems uid 0 is root, which is legitimately foreign.
                         // The trash:// guard prevents false positives on virtual entries.
                         is_foreign_owner: !is_trash && uid != current_uid,
+                        expand_labels: self.config.ui.expand_labels,
                     })
                 })
                 .collect();
@@ -256,6 +257,7 @@ impl FluxApp {
                     size: item.size,
                     is_editing: false,
                     is_foreign_owner: item.is_foreign_owner,
+                    expand_labels: item.expand_labels,
                 });
 
                 if let Some(abs_path) = item.thumbnail_path {
@@ -298,6 +300,7 @@ mod tests {
             is_dir,
             thumbnail_path: None,
             is_foreign_owner: false,
+            expand_labels: false,
         }
     }
 
