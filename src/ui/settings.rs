@@ -1,5 +1,3 @@
-// FILE: src/ui/settings.rs
-
 use crate::model::{AppMsg, Config};
 use adw::prelude::*;
 use relm4::prelude::*;
