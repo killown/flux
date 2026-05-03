@@ -221,7 +221,11 @@ impl SimpleAsyncComponent for FluxApp {
                                 add_css_class: constants::SORT_CONTAINER_CLASS,
 
                                 add_controller = gtk::GestureClick {
-                                    connect_pressed[sender] => move |_, _, _, _| {
+                                    // Claim the event on press to prevent double-click propagation
+                                    set_propagation_phase: gtk::PropagationPhase::Capture,
+                                    connect_pressed[sender] => move |gesture, _, _, _| {
+                                        // Stop the event from propagating further (e.g., to window maximization logic)
+                                        gesture.set_state(gtk::EventSequenceState::Claimed);
                                         sender.input(AppMsg::CycleSort);
                                     }
                                 },
