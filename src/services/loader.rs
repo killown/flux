@@ -35,18 +35,19 @@ impl FluxApp {
         let mut folders_first = self.config.ui.folders_first;
 
         // Load persistent folder state from SQLite before scanning
-        // Load persistent folder state from SQLite before scanning
-        if let Ok(Some((sort, _rev, size, ff))) = self.state_db.get_view(&path) {
+        if let Ok(Some((sort, rev, size, ff))) = self.state_db.get_view(&path) {
             self.sort_by = match sort.as_str() {
                 "Date" => SortBy::Date,
                 "Size" => SortBy::Size,
                 "Type" => SortBy::Type,
                 _ => SortBy::Name,
             };
+            self.sort_ascending = !rev; // Restore sort order from 'reversed' DB field
             self.current_icon_size = size as i32;
             folders_first = ff;
         } else {
             self.sort_by = self.config.ui.default_sort;
+            self.sort_ascending = true; // Default to ascending if no state exists
             self.current_icon_size = self.config.ui.default_icon_size;
         }
 
@@ -116,6 +117,7 @@ impl FluxApp {
 
             let show_hidden = self.show_hidden;
             let sort_strategy = self.sort_by;
+            let sort_ascending = self.sort_ascending;
             let is_trash = path_str.starts_with("trash://");
 
             // SAFETY: getuid() is always safe, it never fails.
@@ -197,8 +199,8 @@ impl FluxApp {
                         .display_name
                         .to_lowercase()
                         .cmp(&b.display_name.to_lowercase()),
-                    SortBy::Size => b.size.cmp(&a.size),
-                    SortBy::Date => b.mtime.cmp(&a.mtime),
+                    SortBy::Size => a.size.cmp(&b.size),
+                    SortBy::Date => a.mtime.cmp(&b.mtime),
                     SortBy::Type => {
                         let ext_a = std::path::Path::new(&a.display_name)
                             .extension()
@@ -217,12 +219,18 @@ impl FluxApp {
                 };
 
                 // 3. Tie-Breaker: If primary sort is equal, sort by Name
-                if primary_order == std::cmp::Ordering::Equal {
+                let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
                     a.display_name
                         .to_lowercase()
                         .cmp(&b.display_name.to_lowercase())
                 } else {
                     primary_order
+                };
+
+                if sort_ascending {
+                    tie_breaker
+                } else {
+                    tie_breaker.reverse()
                 }
             });
 

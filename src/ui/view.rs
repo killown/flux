@@ -239,7 +239,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     add_css_class: constants::SORT_LABEL_CLASS,
                                     set_opacity: constants::OPACITY_LABEL,
                                     #[watch]
-                                    set_label: model.sort_status(),
+                                    set_label: &model.sort_status(),
                                 }
                             }
                         },

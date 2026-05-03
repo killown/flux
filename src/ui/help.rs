@@ -114,6 +114,14 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Search files"
                             },
                             adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.cycle_sort.clone(), "Ctrl + S"),
+                                set_subtitle: "Cycle through sorting modes"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.toggle_sort_order.clone(), "Ctrl + Shift + S"),
+                                set_subtitle: "Toggle ascending/descending sort order"
+                            },
+                            adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
                                 set_subtitle: "Toggle hidden files"
                             },

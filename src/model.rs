@@ -98,6 +98,10 @@ pub struct ShortcutsConfig {
     pub settings: Option<String>,
     /// Key combination to open the menu editor.
     pub menu_editor: Option<String>,
+    /// Accelerator to cycle through available sorting modes (Name, Date, Size, Type).
+    pub cycle_sort: Option<String>,
+    /// Accelerator to toggle between ascending and descending sort order.
+    pub toggle_sort_order: Option<String>,
 }
 
 /// Top-level configuration structure for persistent application settings.
@@ -293,6 +297,8 @@ pub struct FluxApp {
     pub toast_overlay: adw::ToastOverlay,
     /// Pending toast messages keyed by action_name, populated at context-menu build time.
     pub pending_toasts: std::collections::HashMap<String, String>,
+    /// Determines if the file list is sorted in ascending (true) or descending (false) order.
+    pub sort_ascending: bool,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
@@ -487,6 +493,8 @@ pub enum AppMsg {
     SetGridSpacing(i32),
     /// Updates the character limit for file labels.
     SetMaxWidthChars(i32),
+    /// Toggles the directory listing between ascending and descending order.
+    ToggleSortOrder,
 }
 
 /// Represents a single entry in the Flux context menu configuration.

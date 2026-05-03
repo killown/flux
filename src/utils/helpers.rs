@@ -17,13 +17,18 @@ pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
 impl FluxApp {
     /// Returns the display-friendly string for the current sorting state.
-    pub fn sort_status(&self) -> &str {
-        match self.sort_by {
-            SortBy::Name => "Name",
-            SortBy::Date => "Date",
-            SortBy::Size => "Size",
-            SortBy::Type => "Type",
-        }
+    pub fn sort_status(&self) -> String {
+        let arrow = if self.sort_ascending { " ↑" } else { " ↓" };
+        format!(
+            "{}{}",
+            match self.sort_by {
+                SortBy::Name => "Name",
+                SortBy::Date => "Date",
+                SortBy::Size => "Size",
+                SortBy::Type => "Type",
+            },
+            arrow
+        )
     }
 
     /// Processes keyboard events to trigger system shortcuts or manage focus-dependent navigation.
@@ -377,6 +382,7 @@ impl FluxApp {
             ("<Control>h", AppMsg::ToggleHidden),
             ("F1", AppMsg::ShowHelp),
             ("<Control>s", AppMsg::CycleSort),
+            ("<Control><Shift>s", AppMsg::ToggleSortOrder),
             ("<Shift>s", AppMsg::CycleFolderPriority),
             ("<Control>c", AppMsg::Copy),
             ("<Control>x", AppMsg::Cut),

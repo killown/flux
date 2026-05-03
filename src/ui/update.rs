@@ -332,6 +332,17 @@ impl FluxApp {
                 utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::ToggleSortOrder => {
+                self.sort_ascending = !self.sort_ascending;
+                let _ = self.state_db.save_view(
+                    &self.current_path,
+                    &format!("{:?}", self.sort_by),
+                    !self.sort_ascending,
+                    self.current_icon_size as u32,
+                    self.config.ui.folders_first,
+                );
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::CycleSort => {
                 self.sort_by = match self.sort_by {
                     SortBy::Name => SortBy::Date,
@@ -343,7 +354,7 @@ impl FluxApp {
                 let _ = self.state_db.save_view(
                     &self.current_path,
                     &format!("{:?}", self.sort_by),
-                    false,
+                    !self.sort_ascending,
                     self.current_icon_size as u32,
                     self.config.ui.folders_first,
                 );
