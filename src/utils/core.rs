@@ -63,7 +63,6 @@ pub fn ensure_config_file() -> PathBuf {
 # --- Images & Wallpaper ---
 "󰸉      Image Wallpaper > Set (swww)" => "image/all", "swww img %p", "Wallpaper set (swww)"
 "󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && wbg -s ~/Images/fav.jpg", "Wallpaper set (wbg)"
-"󰸉      Image Wallpaper > Set Dual" => "image/all", "cp %p ~/.config/waypanel/wallpaper-main.jpg && cp %p ~/.config/waypanel/wallpaper-backdrop.jpg && pkill wbg; wbg ~/.config/waypanel/wallpaper-main.jpg & wbg -s wallpaper-backdrop ~/.config/waypanel/wallpaper-backdrop.jpg & python ~/Scripts/niri-matugen.py", "Dual Wallpapers set"
 "󰸉      Image Convert > To AVIF" => "image/all", "avifenc --jobs all -q 65 %p %p.avif", "Image converted to AVIF"
 "󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg", "Image converted to JPG"
 
