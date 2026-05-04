@@ -310,10 +310,7 @@ impl SimpleComponent for SettingsWindow {
                                 false => 1,
                             },
                             connect_selected_notify => move |drop| {
-                                let asc = match drop.selected() {
-                                    0 => true,
-                                    _ => false,
-                                };
+                                let asc = matches!(drop.selected(), 0);
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetAsc(asc));
                                 }

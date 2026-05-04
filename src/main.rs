@@ -14,7 +14,7 @@ use std::path::PathBuf;
 
 thread_local! {
     static CSS_PROVIDER: gtk::CssProvider = gtk::CssProvider::new();
-    static CONFIG_MONITOR: OnceCell<gio::FileMonitor> = OnceCell::new();
+    static CONFIG_MONITOR: OnceCell<gio::FileMonitor> = const { OnceCell::new() };
 }
 
 /// Loads CSS based on config.toml theme selection with local and internal fallbacks.
