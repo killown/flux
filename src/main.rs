@@ -8,12 +8,13 @@ use crate::ui::FileProperties;
 use adw::prelude::*;
 use adw::{gio, glib};
 use relm4::prelude::*;
+use std::cell::OnceCell;
 use std::fs;
 use std::path::PathBuf;
 
-// Thread-local provider remains in main.rs as it manages global display styles
 thread_local! {
     static CSS_PROVIDER: gtk::CssProvider = gtk::CssProvider::new();
+    static CONFIG_MONITOR: OnceCell<gio::FileMonitor> = OnceCell::new();
 }
 
 /// Loads CSS based on config.toml theme selection with local and internal fallbacks.
@@ -63,38 +64,50 @@ fn load_custom_css() {
 }
 
 /// Sets up a GIO directory monitor to watch for config or style changes and refreshes UI components.
+///
+/// Idempotent: subsequent calls are no-ops. The monitor is stored in the thread-local
+/// [`CONFIG_MONITOR`] and remains active for the entire process lifetime, which is the
+/// correct scope for a config-directory watcher. Re-entrant calls (e.g. from a UI
+/// restart) will not create a second monitor or cause a memory leak.
 fn setup_config_watcher() {
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
     let file = gio::File::for_path(&config_dir);
 
-    if let Ok(monitor) = file.monitor_directory(
+    let Ok(monitor) = file.monitor_directory(
         gio::FileMonitorFlags::WATCH_MOUNTS | gio::FileMonitorFlags::SEND_MOVED,
         gio::Cancellable::NONE,
-    ) {
-        monitor.connect_changed(|_, file, _, event_type| {
-            if let Some(name) = file.basename() {
-                let n = name.to_string_lossy();
-                if n == "style.css" || n == "config.toml" {
-                    match event_type {
-                        gio::FileMonitorEvent::Changed
-                        | gio::FileMonitorEvent::ChangesDoneHint
-                        | gio::FileMonitorEvent::Created
-                        | gio::FileMonitorEvent::MovedIn => {
-                            load_custom_css();
-                            // Signal the application to reload the sidebar if the config file was modified
-                            if n == "config.toml" {
-                                if let Some(app) = gio::Application::default() {
-                                    app.activate_action("reload-sidebar", None);
-                                }
+    ) else {
+        return;
+    };
+
+    monitor.connect_changed(|_, file, _, event_type| {
+        if let Some(name) = file.basename() {
+            let n = name.to_string_lossy();
+            if n == "style.css" || n == "config.toml" {
+                match event_type {
+                    gio::FileMonitorEvent::Changed
+                    | gio::FileMonitorEvent::ChangesDoneHint
+                    | gio::FileMonitorEvent::Created
+                    | gio::FileMonitorEvent::MovedIn => {
+                        load_custom_css();
+                        // Signal the application to reload the sidebar if the config file was modified
+                        if n == "config.toml" {
+                            if let Some(app) = gio::Application::default() {
+                                app.activate_action("reload-sidebar", None);
                             }
                         }
-                        _ => {}
                     }
+                    _ => {}
                 }
             }
-        });
-        Box::leak(Box::new(monitor));
-    }
+        }
+    });
+
+    // `set` is a no-op if already initialized, the losing monitor is dropped,
+    // which cancels the underlying GFileMonitor via GIO's ref-counting.
+    CONFIG_MONITOR.with(|cell| {
+        let _ = cell.set(monitor);
+    });
 }
 
 fn setup_shortcuts(app: &adw::Application) {
