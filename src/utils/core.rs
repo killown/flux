@@ -91,6 +91,14 @@ pub fn save_config(config: &crate::model::Config) {
 }
 
 pub fn rename_path(old_path: &Path, new_name: &str) -> std::io::Result<PathBuf> {
+    // Reject any name containing a path separator to prevent directory traversal
+    if new_name.contains(std::path::MAIN_SEPARATOR) || new_name.contains('/') {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "new name must be a plain filename, not a path",
+        ));
+    }
+
     let mut new_path = old_path.to_path_buf();
     new_path.set_file_name(new_name);
 
