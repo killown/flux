@@ -54,19 +54,32 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 - **Language:** Rust 1.75+ (Memory safe and blazing fast)
 - **UI Framework:** Relm4 & GTK4 (Native GNOME experience)
 - **Runtime:** Tokio & Futures (Non-blocking I/O)
+### flux - build & runtime requirements
 
-## Getting Started
+#### system libraries (pkg-config)
+*   **libadwaita-1** → modern widgets and adaptive layout capabilities.
+*   **gtk4** → the primary toolkit for window management and rendering.
+*   **gdk-pixbuf-2.0** → image loading and scaling for file icons.
+*   **cairo-gobject** → vector graphics rendering for custom ui elements.
+*   **graphene-1.0** → hardware-accelerated 2d/3d transformations.
+*   **gio-2.0** → virtual file system operations and directory monitoring.
+*   **glib-2.0** → core event loop and data structure management.
+*   **gobject-2.0** → the type system required for rust-to-c interoperability.
+*   **pango** → font handling and phonetic text layout.
 
-    # required:
-    -ladwaita-1 → libadwaita
-    -lgtk-4 → GTK 4
-    -lgdk_pixbuf-2.0 → GdkPixbuf
-    -lcairo-gobject → Cairo
-    -lgraphene-1.0 → Graphene
+#### runtime dependencies
+*   **ffmpeg** → video decoding and frame capture.
+*   **ffprobe** → extraction of technical media metadata.
+*   **magick** → image conversion and processing (imagemagick).
 
-    git clone https://github.com/killown/flux.git
-    cd flux
-    cargo run --release
+---
+
+### installation
+
+#### arch linux
+```bash
+sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 ffmpeg imagemagick
+```
 
 ## License
 
