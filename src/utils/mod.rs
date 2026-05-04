@@ -5,6 +5,7 @@
 
 // 1. Internal submodules
 mod core;
+pub mod deps;
 pub(crate) mod helpers;
 pub mod media;
 mod path;
