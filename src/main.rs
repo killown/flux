@@ -110,6 +110,20 @@ fn setup_config_watcher() {
     });
 }
 
+/// Logs a warning for each optional external binary that is not found in `$PATH`.
+fn check_optional_deps() {
+    for bin in ["ffmpeg", "ffprobe", "magick"] {
+        if std::process::Command::new("which")
+            .arg(bin)
+            .output()
+            .map(|o| !o.status.success())
+            .unwrap_or(true)
+        {
+            eprintln!("[flux] optional dependency '{bin}' not found in PATH");
+        }
+    }
+}
+
 fn setup_shortcuts(app: &adw::Application) {
     let action_menu_editor = gio::SimpleAction::new("open-menu-editor", None);
     action_menu_editor.connect_activate(|_, _| {
@@ -167,6 +181,7 @@ fn main() {
     glib::idle_add_local_once(|| {
         load_custom_css();
         setup_config_watcher();
+        std::thread::spawn(check_optional_deps);
     });
 
     // --- CLI HANDLER: FILE PROPERTIES ---
