@@ -890,10 +890,106 @@ fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::
     Ok(())
 }
 
+/// Spawns a new application instance rooted at `path`.
+///
+/// Uses the running executable path rather than a hardcoded binary name so
+/// dev builds (`flux-fm`) and installed builds (`flux`) both work correctly.
+///
+/// Returns `false` if the path is not a directory or the exe path cannot be
+/// resolved, `true` if the child process was spawned successfully.
+pub fn open_new_instance(path: &std::path::Path) -> bool {
+    if !path.is_dir() {
+        return false;
+    }
+    let Ok(exe) = std::env::current_exe() else {
+        return false;
+    };
+    std::process::Command::new(exe).arg(path).spawn().is_ok()
+}
+
+/// Normalizes a URI string by removing trailing carriage returns and slashes.
+/// This prevents GIO from failing to resolve paths from cross-instance clipboards.
+#[allow(dead_code)]
+pub fn normalize_uri(uri: &str) -> String {
+    uri.trim_end_matches('\r').trim_end_matches('/').to_string()
+}
+
+/// Checks if a paste operation is recursive (pasting a folder into itself or a subfolder).
+#[allow(dead_code)]
+pub fn is_recursive_paste(src: &Path, dest_dir: &Path) -> bool {
+    dest_dir.starts_with(src)
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::model::SortBy;
+    use std::fs;
     use std::path::Path;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_normalize_uri_removes_garbage() {
+        assert_eq!(normalize_uri("file:///tmp/dir\r"), "file:///tmp/dir");
+        assert_eq!(normalize_uri("file:///tmp/dir/"), "file:///tmp/dir");
+        assert_eq!(normalize_uri("file:///tmp/dir/\r"), "file:///tmp/dir");
+    }
+
+    #[test]
+    fn test_is_recursive_paste_detection() {
+        let tmp = TempDir::new().unwrap();
+        let src = tmp.path().join("source_folder");
+        fs::create_dir(&src).unwrap();
+
+        assert!(is_recursive_paste(&src, &src));
+        assert!(is_recursive_paste(&src, &src.join("sub")));
+        assert!(!is_recursive_paste(&src, tmp.path()));
+    }
+
+    #[test]
+    fn test_copy_dir_recursive_self_guard() {
+        let tmp = TempDir::new().unwrap();
+        let dir_path = tmp.path().join("work_dir");
+        fs::create_dir(&dir_path).unwrap();
+        let file_path = dir_path.join("data.txt");
+        fs::write(&file_path, b"content").unwrap();
+
+        let result = copy_dir_recursive(&dir_path, &dir_path);
+        assert!(result.is_ok());
+        assert_eq!(fs::read_to_string(&file_path).unwrap(), "content");
+    }
+
+    #[test]
+    fn test_open_new_instance_rejects_file() {
+        let tmp = TempDir::new().unwrap();
+        let file = tmp.path().join("regular.txt");
+        fs::write(&file, b"").unwrap();
+        assert!(!open_new_instance(&file));
+    }
+
+    #[test]
+    fn test_open_new_instance_rejects_nonexistent() {
+        assert!(!open_new_instance(std::path::Path::new(
+            "/nonexistent/path/xyz"
+        )));
+    }
+
+    #[test]
+    fn test_open_new_instance_accepts_dir() {
+        let tmp = TempDir::new().unwrap();
+        // Returns true because the process spawns, it doesn't matter if the test
+        // binary isn't a functional flux instance.
+        assert!(open_new_instance(tmp.path()));
+    }
+
+    #[test]
+    fn test_open_new_instance_uses_current_exe() {
+        // Guard against hardcoded "flux" strings which fail in CI/Dev environments.
+        let tmp = TempDir::new().unwrap();
+        let exe = std::env::current_exe().unwrap();
+        assert!(exe.exists(), "current_exe must resolve to a real file");
+        assert!(open_new_instance(tmp.path()));
+    }
 
     #[test]
     fn test_sort_status_logic() {

@@ -78,10 +78,7 @@ pub fn setup_controllers(
                         let name = w.widget_name().to_string();
                         if name.starts_with("/") || name.starts_with("trash://") {
                             let path = std::path::PathBuf::from(&name);
-                            if path.is_dir() {
-                                if let Ok(exe) = std::env::current_exe() {
-                                    let _ = std::process::Command::new(exe).arg(path).spawn();
-                                }
+                            if crate::utils::helpers::open_new_instance(&path) {
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
                             }
                             break;

@@ -107,14 +107,14 @@ mod tests {
 
     #[test]
     fn test_expand_tilde_lone_tilde() {
-        let original_home = env::var_os("HOME");
-        env::set_var("HOME", "/home/developer");
+        let original_home = std::env::var_os("HOME");
+        std::env::set_var("HOME", "/home/developer");
 
         let path = PathBuf::from("~");
         assert_eq!(path.expand_tilde(), PathBuf::from("/home/developer"));
 
         if let Some(home) = original_home {
-            env::set_var("HOME", home);
+            std::env::set_var("HOME", home);
         }
     }
 }

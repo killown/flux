@@ -588,34 +588,33 @@ mod tests {
     /// Verifies that the menu parser can handle the default internal config string.
     #[test]
     fn test_load_menu_config_integration() {
-        let temp_dir = env::current_dir()
-            .unwrap()
-            .join("target")
-            .join("test_menu_load");
-        if temp_dir.exists() {
-            fs::remove_dir_all(&temp_dir).unwrap();
-        }
-        fs::create_dir_all(&temp_dir).unwrap();
+        let original_xdg = std::env::var_os("XDG_CONFIG_HOME");
 
-        // Ensure the flux subdirectory exists inside our mock config home
+        // Use tempfile to avoid manual cleanup and path collisions
+        let tmp = tempfile::TempDir::new().unwrap();
+        let temp_dir = tmp.path();
+
         let flux_config_dir = temp_dir.join("flux");
-        fs::create_dir_all(&flux_config_dir).unwrap();
+        std::fs::create_dir_all(&flux_config_dir).unwrap();
 
-        env::set_var("XDG_CONFIG_HOME", &temp_dir);
+        // Set environment for the current process
+        std::env::set_var("XDG_CONFIG_HOME", temp_dir);
 
-        // We must write a dummy menu.rs so load_menu_config has something to parse
         let config_path = flux_config_dir.join("menu.rs");
         let mock_content =
             r#""<U+F018F>      Copy" => "all", "builtin::copy", "Copied to clipboard""#;
-        fs::write(config_path, mock_content).unwrap();
+        std::fs::write(config_path, mock_content).unwrap();
 
-        // This calls the internal parsing logic through the public API
         let actions = load_menu_config();
 
-        // Default menu.rs has several items
+        // Ensure state is restored regardless of assertion outcome
+        if let Some(val) = original_xdg {
+            std::env::set_var("XDG_CONFIG_HOME", val);
+        } else {
+            std::env::remove_var("XDG_CONFIG_HOME");
+        }
+
         assert!(!actions.is_empty());
         assert!(actions.iter().any(|a| a.label.contains("Copy")));
-
-        fs::remove_dir_all(&temp_dir).unwrap();
     }
 }
