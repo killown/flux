@@ -266,9 +266,8 @@ impl FluxApp {
             }
 
             AppMsg::PerformPasteForced { files, is_cut } => {
-                self.perform_paste_inner(files, true, is_cut, sender.clone());
+                self.perform_paste_inner(files, is_cut, true, sender.clone());
             }
-
             AppMsg::PerformPaste { files, is_cut } => {
                 self.perform_paste(files, is_cut, sender.clone());
             }
@@ -290,7 +289,7 @@ impl FluxApp {
 
                         let files: Vec<gio::File> = lines
                             .filter(|uri| !uri.is_empty())
-                            .map(gio::File::for_uri)
+                            .map(|uri| gio::File::for_uri(uri.trim_end_matches('\r')))
                             .collect();
 
                         if !files.is_empty() {
@@ -1297,36 +1296,60 @@ impl FluxApp {
                 source_paths,
                 dest_path,
             } => {
-                for source_path in source_paths {
-                    if let Some(file_name) = source_path.file_name() {
+                let sender_clone = sender.clone();
+
+                relm4::spawn_blocking(move || {
+                    for source_path in source_paths {
+                        if !dest_path.is_dir() {
+                            break;
+                        }
+
+                        let Some(file_name) = source_path.file_name() else {
+                            continue;
+                        };
+
                         let final_dest = dest_path.join(file_name);
 
-                        if source_path != final_dest {
-                            if let Err(e) = std::fs::rename(&source_path, &final_dest) {
-                                eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
-                            }
+                        if source_path == final_dest {
+                            continue;
+                        }
+
+                        let src_file = gio::File::for_path(&source_path);
+                        let dst_file = gio::File::for_path(&final_dest);
+
+                        if let Err(e) = src_file.move_(
+                            &dst_file,
+                            gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                            gio::Cancellable::NONE,
+                            None,
+                        ) {
+                            eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
                         }
                     }
-                }
-                sender.input(AppMsg::Refresh);
+
+                    sender_clone.input(AppMsg::Refresh);
+                });
             }
             AppMsg::HandleExternalDrop {
                 source_paths,
                 dest_path,
             } => {
-                for source in source_paths {
-                    if let Some(file_name) = source.file_name() {
+                let sender_clone = sender.clone();
+
+                relm4::spawn_blocking(move || {
+                    for source in source_paths {
+                        let Some(file_name) = source.file_name() else {
+                            continue;
+                        };
+
                         let final_dest = dest_path.join(file_name);
 
                         if source == final_dest {
-                            if let Err(e) = std::fs::rename(&source, &final_dest) {
-                                eprintln!("[DnD Error] Failed to move {:?}: {}", source, e);
-                            }
+                            continue;
                         }
-                        let dest = dest_path.join(file_name);
 
                         let src_file = gio::File::for_path(&source);
-                        let dst_file = gio::File::for_path(&dest);
+                        let dst_file = gio::File::for_path(&final_dest);
 
                         if let Err(e) = src_file.move_(
                             &dst_file,
@@ -1337,8 +1360,9 @@ impl FluxApp {
                             eprintln!("[File Error] External move failed: {}", e);
                         }
                     }
-                }
-                sender.input(AppMsg::Refresh);
+
+                    sender_clone.input(AppMsg::Refresh);
+                });
             }
             AppMsg::EmptyTrash => {
                 let root = gio::File::for_uri(constants::TRASH_URI);

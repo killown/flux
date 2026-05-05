@@ -495,6 +495,18 @@ impl FluxApp {
     ) {
         let target_dir = self.current_path.clone();
 
+        // Abort if any source is an ancestor of (or equal to) the destination
+        for f in &files {
+            if let Some(src) = f.path() {
+                if target_dir.starts_with(&src) {
+                    sender.input(AppMsg::ShowToast(
+                        "Cannot paste a folder into itself or one of its subfolders.".into(),
+                    ));
+                    return;
+                }
+            }
+        }
+
         // Directory collision detection applies to copy only, cut passes OVERWRITE natively.
         let conflicts: Vec<String> = if !is_cut {
             files
@@ -574,7 +586,15 @@ impl FluxApp {
 
                 relm4::spawn_blocking(move || {
                     let result = if is_cut {
-                        std::fs::rename(&src, &dest).map_err(|e| e.to_string())
+                        gio::File::for_path(&src)
+                            .move_(
+                                &gio::File::for_path(&dest),
+                                gio::FileCopyFlags::OVERWRITE
+                                    | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                                gio::Cancellable::NONE,
+                                None,
+                            )
+                            .map_err(|e| e.to_string())
                     } else {
                         copy_dir_recursive(&src, &dest).map_err(|e| e.to_string())
                     };
@@ -625,13 +645,16 @@ impl FluxApp {
             let basename = file.basename().expect("File must have a name");
             let mut dest = target_dir.join(&basename);
 
+            let src_path = file.path();
+            let is_dir = src_path.as_deref().is_some_and(|p| p.is_dir());
+
             if !is_cut {
                 let mut copy_number = 1;
                 let original_name = basename.to_string_lossy().into_owned();
 
                 while dest.exists() {
                     let new_name = match original_name.rfind('.') {
-                        Some(idx) if idx > 0 => {
+                        Some(idx) if idx > 0 && !is_dir => {
                             let (name, ext) = original_name.split_at(idx);
                             format!("{} (copy {}){}", name, copy_number, ext)
                         }
@@ -640,6 +663,50 @@ impl FluxApp {
                     dest = target_dir.join(new_name);
                     copy_number += 1;
                 }
+            }
+
+            if is_dir {
+                let Some(src) = src_path else { continue };
+                let s = sender.clone();
+                let completed_clone = completed_files.clone();
+
+                sender.input(AppMsg::TaskProgress {
+                    id: task_id,
+                    current: 0,
+                    total: 1,
+                    total_items: 1,
+                    cancellable: cancellable.clone(),
+                });
+
+                relm4::spawn_blocking(move || {
+                    let result = if is_cut {
+                        gio::File::for_path(&src)
+                            .move_(
+                                &gio::File::for_path(&dest),
+                                gio::FileCopyFlags::OVERWRITE
+                                    | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                                gio::Cancellable::NONE,
+                                None,
+                            )
+                            .map_err(|e| e.to_string())
+                    } else {
+                        copy_dir_recursive(&src, &dest).map_err(|e| e.to_string())
+                    };
+
+                    if let Err(e) = result {
+                        s.input(AppMsg::ShowToast(format!("Copy failed: {}", e)));
+                    }
+
+                    s.input(AppMsg::TaskCompleted(task_id));
+
+                    let count =
+                        completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                    if count == total_files {
+                        s.input(AppMsg::Refresh);
+                    }
+                });
+
+                continue;
             }
 
             let dest_file = gio::File::for_path(dest);
@@ -805,6 +872,9 @@ impl FluxApp {
 /// Returns `Err` on any I/O failure encountered during directory creation,
 /// entry enumeration, or file copying.
 fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    if src == dst {
+        return Ok(());
+    }
     if !dst.exists() {
         std::fs::create_dir_all(dst)?;
     }
