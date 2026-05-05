@@ -79,7 +79,9 @@ pub fn setup_controllers(
                         if name.starts_with("/") || name.starts_with("trash://") {
                             let path = std::path::PathBuf::from(&name);
                             if path.is_dir() {
-                                let _ = std::process::Command::new("flux").arg(path).spawn();
+                                if let Ok(exe) = std::env::current_exe() {
+                                    let _ = std::process::Command::new(exe).arg(path).spawn();
+                                }
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
                             }
                             break;

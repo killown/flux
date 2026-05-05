@@ -403,9 +403,9 @@ impl FactoryComponent for SidebarPlace {
                 set_button: 2,
                 connect_pressed[path = self.path.clone()] => move |gesture, _, _, _| {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                    let _ = std::process::Command::new("flux")
-                        .arg(&path)
-                        .spawn();
+                    if let Ok(exe) = std::env::current_exe() {
+                        let _ = std::process::Command::new(exe).arg(&path).spawn();
+                    }
                 }
             },
 
