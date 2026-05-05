@@ -181,12 +181,27 @@ fn main() {
     }
 
     // --- MAIN APP HANDLER ---
-    //NOTE: This must be not included here
-    // Setting application_id in the builder triggers a synchronous D-Bus handshake
-    // and Wayland compositor lookup that blocks the main thread for around ~200ms.
-    let base_app = adw::Application::builder()
-        .flags(gio::ApplicationFlags::NON_UNIQUE)
-        .build();
+    //NOTE:
+    // Setting application_id with .flags(gio::ApplicationFlags...) in the builder
+    // triggers a synchronous D-Bus handshake  and Wayland compositor lookup
+    // that blocks the main thread for around ~200ms.
+    let base_app = adw::Application::builder().build();
+
+    assert!(
+        base_app.application_id().is_none(),
+        "\n\n[flux] STARTUP REGRESSION: application_id is set on the main adw::Application.\n\
+     This triggers a synchronous D-Bus name acquisition and Wayland compositor\n\
+     lookup on the main thread, adding ~200ms to startup time.\n\
+     Remove .application_id(...) from the adw::Application::builder() call.\n"
+    );
+
+    assert!(
+        !base_app.flags().contains(gio::ApplicationFlags::NON_UNIQUE),
+        "\n\n[flux] STARTUP REGRESSION: NON_UNIQUE flag is set on the main adw::Application.\n\
+     This triggers a synchronous D-Bus handshake and Wayland compositor lookup\n\
+     on the main thread, adding ~200ms to startup time.\n\
+     Remove .flags(gio::ApplicationFlags::NON_UNIQUE) from the adw::Application::builder() call.\n"
+    );
 
     setup_shortcuts(&base_app);
 
