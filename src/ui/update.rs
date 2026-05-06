@@ -567,6 +567,12 @@ impl FluxApp {
                                 "image/all" | "image/*" => mime.starts_with("image/"),
                                 "video/all" | "video/*" => mime.starts_with("video/"),
                                 "audio/all" | "audio/*" => mime.starts_with("audio/"),
+                                "font/all" | "font/*" => mime.starts_with("font/"),
+                                "model/all" | "model/*" => mime.starts_with("model/"),
+                                "message/all" | "message/*" => mime.starts_with("message/"),
+                                "chemical/all" | "chemical/*" => mime.starts_with("chemical/"),
+                                "multipart/all" | "multipart/*" => mime.starts_with("multipart/"),
+                                "x-content/all" | "x-content/*" => mime.starts_with("x-content/"),
                                 "application/all" | "application/*" => {
                                     mime.starts_with("application/")
                                 }
@@ -582,7 +588,6 @@ impl FluxApp {
                                 t if t.ends_with('/') => mime.starts_with(t),
                                 t => t == mime,
                             });
-
                             if matches {
                                 break;
                             }
