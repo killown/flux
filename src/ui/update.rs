@@ -566,6 +566,7 @@ impl FluxApp {
                                 constants::FILTER_ALL | "all" => true,
                                 "image/all" | "image/*" => mime.starts_with("image/"),
                                 "video/all" | "video/*" => mime.starts_with("video/"),
+                                "audio/all" | "audio/*" => mime.starts_with("audio/"),
                                 "application/all" | "application/*" => {
                                     mime.starts_with("application/")
                                 }
@@ -578,6 +579,7 @@ impl FluxApp {
                                     mime == constants::MIME_DIR
                                 }
                                 constants::FILTER_FILE => mime != constants::MIME_DIR,
+                                t if t.ends_with('/') => mime.starts_with(t),
                                 t => t == mime,
                             });
 
