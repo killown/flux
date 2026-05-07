@@ -535,6 +535,40 @@ mod tests {
     use std::fs;
 
     #[test]
+    fn test_rename_path_rejects_path_separator() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let file = tmp.path().join("original.txt");
+        fs::write(&file, b"").unwrap();
+
+        let err = rename_path(&file, "sub/dir/name.txt").unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::InvalidInput);
+    }
+
+    #[test]
+    fn test_rename_path_rejects_existing_destination() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let src = tmp.path().join("a.txt");
+        let dst = tmp.path().join("b.txt");
+        fs::write(&src, b"").unwrap();
+        fs::write(&dst, b"").unwrap();
+
+        let err = rename_path(&src, "b.txt").unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::AlreadyExists);
+    }
+
+    #[test]
+    fn test_rename_path_happy_path() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let src = tmp.path().join("old.txt");
+        fs::write(&src, b"content").unwrap();
+
+        let new_path = rename_path(&src, "new.txt").unwrap();
+        assert!(!src.exists());
+        assert!(new_path.exists());
+        assert_eq!(new_path.file_name().unwrap(), "new.txt");
+    }
+
+    #[test]
     fn test_ensure_config_file_creation() {
         let temp_dir = env::current_dir()
             .unwrap()

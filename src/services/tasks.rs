@@ -113,3 +113,79 @@ impl TaskQueue {
 pub fn new_queue() -> Arc<TaskQueue> {
     Arc::new(TaskQueue::default())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_queue() -> TaskQueue {
+        TaskQueue::default()
+    }
+
+    #[test]
+    fn test_summary_empty_queue_returns_none() {
+        let q = make_queue();
+        assert!(q.summary().is_none());
+    }
+
+    #[test]
+    fn test_update_and_summary_single_task() {
+        let q = make_queue();
+        let c = gtk::gio::Cancellable::new();
+        q.update(1, 50, 100, 3, c);
+
+        let (ops, items, avg) = q.summary().expect("queue must be non-empty");
+        assert_eq!(ops, 1);
+        assert_eq!(items, 3);
+        assert!((avg - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_remove_empties_queue() {
+        let q = make_queue();
+        let c = gtk::gio::Cancellable::new();
+        q.update(1, 10, 10, 1, c);
+        q.remove(1);
+        assert!(q.summary().is_none());
+    }
+
+    #[test]
+    fn test_cancel_all_clears_queue() {
+        let q = make_queue();
+        q.update(1, 0, 100, 1, gtk::gio::Cancellable::new());
+        q.update(2, 0, 200, 2, gtk::gio::Cancellable::new());
+        q.cancel_all();
+        assert!(q.summary().is_none());
+    }
+
+    #[test]
+    fn test_summary_averages_multiple_tasks() {
+        let q = make_queue();
+        // Task A: 0% complete
+        q.update(1, 0, 100, 1, gtk::gio::Cancellable::new());
+        // Task B: 100% complete
+        q.update(2, 200, 200, 1, gtk::gio::Cancellable::new());
+
+        let (ops, items, avg) = q.summary().unwrap();
+        assert_eq!(ops, 2);
+        assert_eq!(items, 2);
+        // Mean of 0.0 and 1.0
+        assert!((avg - 0.5).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_summary_zero_total_contributes_zero_progress() {
+        let q = make_queue();
+        // total == 0 must not panic and must count as 0.0 progress
+        q.update(1, 0, 0, 1, gtk::gio::Cancellable::new());
+        let (_, _, avg) = q.summary().unwrap();
+        assert!((avg - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_remove_nonexistent_is_a_noop() {
+        let q = make_queue();
+        q.remove(999); // must not panic
+        assert!(q.summary().is_none());
+    }
+}

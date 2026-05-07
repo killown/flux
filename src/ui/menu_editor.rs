@@ -614,3 +614,99 @@ pub fn run() {
         .with_args(vec![])
         .run::<MenuEditor>(());
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── split_mime_cmd ────────────────────────────────────────────────────────
+
+    #[test]
+    fn test_split_mime_cmd_basic() {
+        let input = r#""all", "builtin::copy", "Copied to clipboard""#;
+        let (mime, cmd, toast) = split_mime_cmd(input).expect("must parse");
+        assert_eq!(mime, "all");
+        assert_eq!(cmd, "builtin::copy");
+        assert_eq!(toast.as_deref(), Some("Copied to clipboard"));
+    }
+
+    #[test]
+    fn test_split_mime_cmd_no_toast() {
+        let input = r#""image/*", "eog {path}""#;
+        let (mime, cmd, toast) = split_mime_cmd(input).expect("must parse");
+        assert_eq!(mime, "image/*");
+        assert_eq!(cmd, "eog {path}");
+        assert!(toast.is_none());
+    }
+
+    #[test]
+    fn test_split_mime_cmd_malformed_returns_none() {
+        assert!(split_mime_cmd("not valid at all").is_none());
+        assert!(split_mime_cmd("").is_none());
+        assert!(split_mime_cmd(r#""only_mime""#).is_none());
+    }
+
+    #[test]
+    fn test_split_mime_cmd_leading_trailing_whitespace() {
+        let input = r#"  "text/plain", "gedit {path}"  "#;
+        let (mime, cmd, _) = split_mime_cmd(input).expect("must parse despite whitespace");
+        assert_eq!(mime, "text/plain");
+        assert_eq!(cmd, "gedit {path}");
+    }
+
+    // ── MenuEntry round-trip ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_menu_entry_to_config_line_with_submenu() {
+        let entry = crate::model::MenuEntry {
+            label: "Open".to_string(),
+            submenu: Some("Actions".to_string()),
+            mime_types: "all".to_string(),
+            command: "xdg-open {path}".to_string(),
+            toast: Some("Opened".to_string()),
+        };
+
+        let line = entry.to_config_line();
+        assert!(line.contains("Actions > Open"));
+        assert!(line.contains("xdg-open {path}"));
+        assert!(line.contains("Opened"));
+    }
+
+    #[test]
+    fn test_menu_entry_to_config_line_without_submenu() {
+        let entry = crate::model::MenuEntry {
+            label: "Copy".to_string(),
+            submenu: None,
+            mime_types: "all".to_string(),
+            command: "builtin::copy".to_string(),
+            toast: None,
+        };
+
+        let line = entry.to_config_line();
+        assert!(
+            !line.contains(" > "),
+            "submenu separator must be absent when submenu is None"
+        );
+        assert!(line.contains("\"Copy\""));
+        assert!(line.contains("builtin::copy"));
+        assert!(!line.contains("toast"));
+    }
+
+    #[test]
+    fn test_load_and_parse_round_trip() {
+        let input = r#""Open With Gedit" => "text/*", "gedit {path}""#;
+        let (left, right) = input.split_once("=>").expect("must have =>");
+        let full_label = left.trim().trim_matches('"');
+        let (submenu, label) = match full_label.split_once(" > ") {
+            Some((s, l)) => (Some(s.to_string()), l.to_string()),
+            None => (None, full_label.to_string()),
+        };
+        let (mime, cmd, toast) = split_mime_cmd(right).expect("must parse");
+
+        assert!(submenu.is_none());
+        assert_eq!(label, "Open With Gedit");
+        assert_eq!(mime, "text/*");
+        assert_eq!(cmd, "gedit {path}");
+        assert!(toast.is_none());
+    }
+}
