@@ -99,11 +99,11 @@ impl SimpleComponent for HelpWindow {
                             },
                             adw::ActionRow {
                               set_title: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
-                                set_subtitle: "Change icon (selected or current folder)"
+                                set_subtitle: "Change current folder icon"
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.reset_icon.clone(), "Ctrl + F3"),
-                                set_subtitle: "Reset icon to default"
+                                set_subtitle: "Reset current folder icon to default"
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),

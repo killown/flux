@@ -658,18 +658,28 @@ impl FluxApp {
                     .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                 self.context_menu_popover.popup();
             }
-
             AppMsg::TriggerIconPicker => {
+                // Get the selected item path, or fallback to the current directory if nothing is selected.
                 let target = self
                     .get_selected_path()
                     .unwrap_or_else(|| self.current_path.clone());
-                sender.input(AppMsg::ShowIconPicker(target));
+
+                // Only proceed if the target is a directory.
+                // This prevents opening the picker for selected files.
+                if target.is_dir() {
+                    sender.input(AppMsg::ShowIconPicker(target));
+                }
             }
             AppMsg::TriggerResetIcon => {
+                // Get the selected item path, or fallback to the current directory.
                 let target = self
                     .get_selected_path()
                     .unwrap_or_else(|| self.current_path.clone());
-                sender.input(AppMsg::ResetFolderIcon(target));
+
+                // Only proceed if the target is a directory.
+                if target.is_dir() {
+                    sender.input(AppMsg::ResetFolderIcon(target));
+                }
             }
             AppMsg::ExecuteCommand(cmd_template) => {
                 let mut targets = Vec::new();
