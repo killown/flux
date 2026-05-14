@@ -17,6 +17,7 @@ pub fn ensure_config_file() -> PathBuf {
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
+
     if !config_dir.exists() {
         let _ = fs::create_dir_all(&config_dir);
     }
@@ -25,6 +26,7 @@ pub fn ensure_config_file() -> PathBuf {
         // Syntax: "Label" => "mime_types", "command", "Optional Toast Message"
         // - Use %p for file path, %d for directory, %f for filename.
         // - The third argument (Toast) is optional and shows a notification after execution.
+
         let default_config = r#"
 # --- Core Operations ---
 "󰆏      Copy" => "all", "builtin::copy", "Copied to clipboard"
@@ -72,6 +74,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰯦      Tools > Copy Path" => "all", "echo -n %p | wl-copy", "Path copied to clipboard"
 "󰯦      Tools > Advanced Archive Manager" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_compressor.py %p"
 "#;
+
         if let Ok(mut file) = fs::File::create(&config_path) {
             let _ = file.write_all(default_config.as_bytes());
         }
@@ -83,6 +86,7 @@ pub fn save_config(config: &crate::model::Config) {
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
+
     let config_path = config_dir.join("config.toml");
 
     if let Ok(toml_str) = toml::to_string_pretty(config) {
@@ -117,6 +121,7 @@ pub fn load_config() -> crate::model::Config {
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
+
     let config_path = config_dir.join("config.toml");
 
     if !config_path.exists() {
@@ -245,24 +250,28 @@ path = "~"
             ui: crate::model::UIConfig {
                 default_icon_size: 128,
                 startup_window_width: crate::ui::constants::DEFAULT_WIDTH,
+
                 startup_window_height: crate::ui::constants::DEFAULT_HEIGHT,
                 single_click: false,
                 show_csd: true,
                 sidebar_width: 240,
                 show_xdg_dirs: false,
                 current_folders_first: std::collections::HashMap::new(),
+
                 default_sort: crate::model::SortBy::Name,
                 folder_sort: std::collections::HashMap::new(),
                 folder_icon_size: std::collections::HashMap::new(),
                 show_hidden_by_default: false,
                 device_renames: std::collections::HashMap::new(),
                 folders_first: true,
+
                 theme: Some("default".to_string()),
                 start_maximized: true,
                 max_width_chars: 20,
                 grid_spacing: 10,
                 ascending: true,
                 expand_labels: false,
+                folder_icons: std::collections::HashMap::new(),
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),
@@ -278,6 +287,7 @@ path = "~"
         } else {
             PathBuf::from(path_str)
         };
+
         let exists = path.exists() || path_str == "trash:///";
         if !exists {
             changed = true;
@@ -315,6 +325,7 @@ fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
     let (mime, rest) = remainder.split_once('"')?;
 
     let second_part = rest.trim().strip_prefix(',')?.trim();
+
     // Find the closing quote of the command, allowing for escaped content
     let cmd_inner = second_part.strip_prefix('"')?;
     let (cmd, after_cmd) = cmd_inner.split_once('"')?;
@@ -333,10 +344,12 @@ fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
 pub fn load_menu_config() -> Vec<CustomAction> {
     let config_path = ensure_config_file();
     let content = std::fs::read_to_string(config_path).unwrap_or_default();
+
     let mut actions = Vec::new();
 
     for (i, line) in content.lines().enumerate() {
         let line = line.trim();
+
         if line.is_empty() || line.starts_with("//") {
             continue;
         }
@@ -360,6 +373,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 actions.push(CustomAction {
                     label,
                     submenu,
+
                     action_name: format!("custom_{}", i),
                     command: cmd_part,
                     mime_types,
@@ -372,11 +386,32 @@ pub fn load_menu_config() -> Vec<CustomAction> {
 }
 
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
+    get_icon_for_path_with_override(path, is_dir, None)
+}
+
+/// Returns a GIO icon for the given path, applying a custom icon name override when provided.
+///
+/// # Arguments
+///
+/// * `path`          - Absolute path to the file or directory.
+/// * `is_dir`        - Whether the entry is a directory.
+/// * `custom_icon`   - Optional GTK icon name to use instead of the derived default.
+pub fn get_icon_for_path_with_override(
+    path: &Path,
+    is_dir: bool,
+    custom_icon: Option<&str>,
+) -> adw::gio::Icon {
+    if let Some(icon_name) = custom_icon {
+        if let Ok(icon) = gio::Icon::for_string(icon_name) {
+            return icon;
+        }
+    }
     if is_dir {
         return gio::Icon::for_string("folder").unwrap();
     }
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+
     adw::gio::content_type_get_icon(&content_type)
 }
 
@@ -404,6 +439,7 @@ pub fn get_mime_type(path: &Path) -> String {
 
 pub fn is_visual_media(path: &Path) -> (bool, bool) {
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
+
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
     (
         content_type.starts_with("image/"),
@@ -414,12 +450,14 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
 pub fn expand_path(path: &str) -> PathBuf {
     // We delegate the logic to our PathExt trait which handles
     // component stripping and home directory joining safely.
+
     PathBuf::from(path).expand_tilde()
 }
 
 pub fn open_file(path: PathBuf) {
     let file = adw::gio::File::for_path(&path);
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
+
     let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
     if let Some(app_info) = adw::gio::AppInfo::default_for_type(&content_type, false) {
         let _ = app_info.launch(&[file], None::<&adw::gio::AppLaunchContext>);
@@ -430,6 +468,7 @@ pub fn open_file(path: PathBuf) {
 
 pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let cache_dir = dirs::cache_dir()?.join("flux").join("thumbnails");
+
     if fs::create_dir_all(&cache_dir).is_err() {
         return None;
     }
@@ -438,6 +477,7 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     if let Ok(metadata) = path.metadata() {
         metadata.len().hash(&mut hasher);
+
         if let Ok(modified) = metadata.modified() {
             modified.hash(&mut hasher);
         }
@@ -482,9 +522,11 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .arg("scale=512:-1")
             .arg(&cache_path)
             .status();
+
         if let Ok(s) = status {
             if s.success() && cache_path.exists() {
                 let file = adw::gio::File::for_path(&cache_path);
+
                 return gdk::Texture::from_file(&file).ok();
             }
         }
@@ -494,13 +536,16 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     let mut mounts = Vec::new();
+
     let home_dir = dirs::home_dir().unwrap_or_default();
 
     if let Ok(content) = fs::read_to_string("/proc/self/mounts") {
         for line in content.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
+
             if parts.len() >= 3 {
                 let path_str = parts[1];
+
                 let fs_type = parts[2];
                 let path = PathBuf::from(path_str);
 
@@ -517,6 +562,7 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
 
                     if let Some(name) = path.file_name() {
                         let display_name = name.to_string_lossy().to_string();
+
                         if !mounts.iter().any(|(_, p)| p == &path) {
                             mounts.push((display_name, path));
                         }
@@ -531,12 +577,14 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use std::env;
     use std::fs;
 
     #[test]
     fn test_rename_path_rejects_path_separator() {
         let tmp = tempfile::TempDir::new().unwrap();
+
         let file = tmp.path().join("original.txt");
         fs::write(&file, b"").unwrap();
 
@@ -547,6 +595,7 @@ mod tests {
     #[test]
     fn test_rename_path_rejects_existing_destination() {
         let tmp = tempfile::TempDir::new().unwrap();
+
         let src = tmp.path().join("a.txt");
         let dst = tmp.path().join("b.txt");
         fs::write(&src, b"").unwrap();
@@ -559,6 +608,7 @@ mod tests {
     #[test]
     fn test_rename_path_happy_path() {
         let tmp = tempfile::TempDir::new().unwrap();
+
         let src = tmp.path().join("old.txt");
         fs::write(&src, b"content").unwrap();
 
@@ -574,6 +624,7 @@ mod tests {
             .unwrap()
             .join("target")
             .join("test_config_init");
+
         if temp_dir.exists() {
             fs::remove_dir_all(&temp_dir).unwrap();
         }
@@ -591,10 +642,12 @@ mod tests {
     #[test]
     fn test_get_system_mounts_structure() {
         let mounts = get_system_mounts();
+
         assert!(!mounts.is_empty());
 
         for (name, path) in mounts {
             assert!(!name.is_empty(), "Mount name should not be empty");
+
             assert!(path.is_absolute(), "Mount path must be absolute");
         }
     }
@@ -602,6 +655,7 @@ mod tests {
     #[test]
     fn test_config_invalid_toml() {
         let invalid_toml = "invalid = [unclosed bracket";
+
         let result: Result<crate::model::Config, _> = toml::from_str(invalid_toml);
         assert!(result.is_err());
     }
@@ -620,12 +674,14 @@ mod tests {
     }
 
     /// Verifies that the menu parser can handle the default internal config string.
+
     #[test]
     fn test_load_menu_config_integration() {
         let original_xdg = std::env::var_os("XDG_CONFIG_HOME");
 
         // Use tempfile to avoid manual cleanup and path collisions
         let tmp = tempfile::TempDir::new().unwrap();
+
         let temp_dir = tmp.path();
 
         let flux_config_dir = temp_dir.join("flux");
@@ -637,6 +693,7 @@ mod tests {
         let config_path = flux_config_dir.join("menu.rs");
         let mock_content =
             r#""<U+F018F>      Copy" => "all", "builtin::copy", "Copied to clipboard""#;
+
         std::fs::write(config_path, mock_content).unwrap();
 
         let actions = load_menu_config();

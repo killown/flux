@@ -132,6 +132,8 @@ impl FluxApp {
             };
             let target_cache_dir = cache_base.join(thumb_folder);
 
+            let config_folder_icons = self.config.ui.folder_icons.clone();
+
             let mut items: Vec<FileLoadContext> = raw_data
                 .into_par_iter()
                 .filter_map(|(name, display_name, is_dir, size, mtime, uid)| {
@@ -162,6 +164,13 @@ impl FluxApp {
                         }
                     }
 
+                    let custom_icon = if is_dir {
+                        let path_key = target_path.to_string_lossy().to_string();
+                        config_folder_icons.get(&path_key).cloned()
+                    } else {
+                        None
+                    };
+
                     Some(FileLoadContext {
                         sort_name: display_name.to_lowercase(),
                         display_name,
@@ -175,6 +184,7 @@ impl FluxApp {
                         // The trash:// guard prevents false positives on virtual entries.
                         is_foreign_owner: !is_trash && uid != current_uid,
                         expand_labels: self.config.ui.expand_labels,
+                        custom_icon,
                     })
                 })
                 .collect();
@@ -301,6 +311,7 @@ mod tests {
             thumbnail_path: None,
             is_foreign_owner: false,
             expand_labels: false,
+            custom_icon: None,
         }
     }
 

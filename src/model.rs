@@ -1,5 +1,3 @@
-// FILE: src/model.rs
-
 use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::gio;
@@ -43,6 +41,9 @@ pub struct FileLoadContext {
     pub is_foreign_owner: bool,
     /// Whether the filename label should wrap across multiple lines.
     pub expand_labels: bool,
+    /// Optional override icon name for the item.
+    #[allow(dead_code)]
+    pub custom_icon: Option<String>,
 }
 
 /// Represents a single component of a filesystem path for breadcrumb navigation.
@@ -74,6 +75,10 @@ pub struct CustomAction {
 /// User-defined keyboard shortcuts for core application operations.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
+    /// Key combination to open the folder icon picker.
+    pub change_icon: Option<String>,
+    /// Key combination to reset a folder's icon to default.
+    pub reset_icon: Option<String>,
     /// Key combination to exit the application.
     pub quit: Option<String>,
     /// Key combination to open the selected file or enter a directory.
@@ -200,6 +205,9 @@ pub struct UIConfig {
     /// Whether filenames in the grid wrap across multiple lines instead of truncating.
     #[serde(default)]
     pub expand_labels: bool,
+    /// Per-path custom icon overrides for directories, keyed by absolute path string.
+    #[serde(default)]
+    pub folder_icons: HashMap<String, String>,
 }
 
 impl Default for UIConfig {
@@ -225,6 +233,7 @@ impl Default for UIConfig {
             grid_spacing: 10,
             ascending: true,
             expand_labels: false,
+            folder_icons: HashMap::new(),
         }
     }
 }
@@ -313,6 +322,10 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Internal trigger to open icon picker (resolves path from selection/current dir).
+    TriggerIconPicker,
+    /// Internal trigger to reset icon (resolves path from selection/current dir).
+    TriggerResetIcon,
     /// Updates the startup window width.
     SetWindowWidth(i32),
     /// Updates the startup window height.
@@ -508,6 +521,12 @@ pub enum AppMsg {
     ToggleSortOrder,
     /// Sets sort direction: true for Ascending, false for Descending.
     SetAsc(bool),
+    /// Opens an icon picker dialog for the given directory path.
+    ShowIconPicker(PathBuf),
+    /// Persists a custom icon name for the given directory path.
+    SetFolderIcon { path: PathBuf, icon_name: String },
+    /// Removes the custom icon override for the given directory path, restoring the default.
+    ResetFolderIcon(PathBuf),
 }
 
 /// Represents a single entry in the Flux context menu configuration.
@@ -660,5 +679,31 @@ mod tests {
         let renamed = parsed.ui.device_renames.get("/dev/sda1").unwrap();
         assert_eq!(renamed.name, "My Disk");
         assert_eq!(renamed.icon, Some("drive-harddisk-symbolic".to_string()));
+    }
+
+    #[test]
+    fn test_folder_icons_serialization() {
+        let mut icons = HashMap::new();
+        icons.insert(
+            "/home/user/Projects".to_string(),
+            "folder-development-symbolic".to_string(),
+        );
+
+        let config = Config {
+            ui: UIConfig {
+                folder_icons: icons,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+        assert!(toml_str.contains("folder-development-symbolic"));
+
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+        assert_eq!(
+            parsed.ui.folder_icons.get("/home/user/Projects").cloned(),
+            Some("folder-development-symbolic".to_string())
+        );
     }
 }

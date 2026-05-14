@@ -98,6 +98,14 @@ impl SimpleComponent for HelpWindow {
                                     set_subtitle: "Rename selected item"
                             },
                             adw::ActionRow {
+                              set_title: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
+                                set_subtitle: "Change icon (selected or current folder)"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.reset_icon.clone(), "Ctrl + F3"),
+                                set_subtitle: "Reset icon to default"
+                            },
+                            adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
                                 set_subtitle: "Open context menu editor"
                             },

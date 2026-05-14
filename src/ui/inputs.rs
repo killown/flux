@@ -238,6 +238,25 @@ pub fn setup_controllers(
         })),
     ));
 
+    // 6.1 Icon Management Shortcuts
+    let s_icon_picker = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.change_icon.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_icon_picker.input(AppMsg::TriggerIconPicker);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_icon_reset = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.reset_icon.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_icon_reset.input(AppMsg::TriggerResetIcon);
+            glib::Propagation::Stop
+        })),
+    ));
+
     window.add_controller(global_shortcuts);
 
     // 7. Swipe Gestures

@@ -14,6 +14,8 @@ pub mod constants {
     pub const SETTINGS: &str = "F10";
     pub const MENU_EDITOR: &str = "F9";
     pub const ROOT: &str = "slash";
+    pub const CHANGE_ICON: &str = "F3";
+    pub const RESET_ICON: &str = "<ctrl>F3";
 }
 
 /// A collection of resolved GTK ShortcutTriggers.
@@ -32,6 +34,8 @@ pub struct KeyMap {
     pub settings: gtk::ShortcutTrigger,
     pub menu_editor: gtk::ShortcutTrigger,
     pub root: gtk::ShortcutTrigger,
+    pub change_icon: gtk::ShortcutTrigger,
+    pub reset_icon: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -51,6 +55,8 @@ impl KeyMap {
             settings: parse_trigger(&config.settings, constants::SETTINGS),
             menu_editor: parse_trigger(&config.menu_editor, constants::MENU_EDITOR),
             root: parse_trigger(&config.root, constants::ROOT),
+            change_icon: parse_trigger(&config.change_icon, constants::CHANGE_ICON),
+            reset_icon: parse_trigger(&config.reset_icon, constants::RESET_ICON),
         }
     }
 }

@@ -15,10 +15,8 @@ impl FluxApp {
             AppMsg::RefreshSidebar => {
                 // Reload the configuration from disk to capture external changes
                 self.config = utils::load_config();
-
                 // Clear the current sidebar factory items
                 self.sidebar.guard().clear();
-
                 // Repopulate with the new entries from the config file
                 for place in &self.config.sidebar {
                     self.sidebar.guard().push_back(crate::ui::SidebarPlace {
@@ -69,7 +67,6 @@ impl FluxApp {
                 let path = self
                     .get_selected_path()
                     .unwrap_or_else(|| self.current_path.clone());
-
                 let path_str = path.to_string_lossy().to_string();
 
                 let already_exists = self.config.sidebar.iter().any(|entry| {
@@ -81,19 +78,16 @@ impl FluxApp {
                     };
                     expanded == path_str
                 });
-
                 if !already_exists {
                     let name = path
                         .file_name()
                         .map(|n| n.to_string_lossy().into_owned())
                         .unwrap_or_else(|| path_str.clone());
-
                     self.config.sidebar.push(crate::model::CustomPlace {
                         name,
                         icon: "folder-symbolic".to_string(),
                         path: path_str,
                     });
-
                     utils::save_config(&self.config);
                     self.refresh_sidebar();
                 }
@@ -109,7 +103,6 @@ impl FluxApp {
                         entry_path.to_owned()
                     }
                 };
-
                 let from_str = from.to_string_lossy().to_string();
                 let to_str = to.to_string_lossy().to_string();
 
@@ -123,7 +116,6 @@ impl FluxApp {
                     .sidebar
                     .iter()
                     .position(|e| resolve(&e.path) == to_str);
-
                 if let (Some(fi), Some(ti)) = (from_idx, to_idx) {
                     let entry = self.config.sidebar.remove(fi);
                     // After removal, to_idx shifts by -1 if fi < ti
@@ -197,10 +189,12 @@ impl FluxApp {
                 match key.as_str() {
                     "back" => self.config.shortcuts.back = val,
                     "forward" => self.config.shortcuts.forward = val,
+
                     "open" => self.config.shortcuts.open = val,
                     "delete" => self.config.shortcuts.delete = val,
                     "refresh" => self.config.shortcuts.refresh = val,
                     "search" => self.config.shortcuts.search = val,
+
                     "toggle_hidden" => self.config.shortcuts.toggle_hidden = val,
                     _ => {}
                 }
@@ -225,19 +219,19 @@ impl FluxApp {
                 is_cut,
             } => {
                 let window = gtk::Application::default().active_window();
-
                 let body = if conflicts.len() == 1 {
                     format!(
                         "\"{}\" already exists in this location. Replace it and merge its contents?",
                         conflicts[0]
+
                     )
                 } else {
                     format!(
                         "{} folders already exist in this location. Replace them and merge their contents?",
+
                         conflicts.len()
                     )
                 };
-
                 let dialog = gtk::MessageDialog::new(
                     window.as_ref(),
                     gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
@@ -261,7 +255,6 @@ impl FluxApp {
                         });
                     }
                 });
-
                 dialog.present();
             }
 
@@ -285,6 +278,7 @@ impl FluxApp {
                     if let Ok(Some(text)) = res {
                         let mut lines = text.lines();
                         let first_line = lines.next().unwrap_or("");
+
                         let is_cut = first_line == "cut";
 
                         let files: Vec<gio::File> = lines
@@ -354,7 +348,6 @@ impl FluxApp {
                     SortBy::Size => SortBy::Type,
                     SortBy::Type => SortBy::Name,
                 };
-
                 let _ = self.state_db.save_view(
                     &self.current_path,
                     &format!("{:?}", self.sort_by),
@@ -362,19 +355,16 @@ impl FluxApp {
                     self.current_icon_size as u32,
                     self.config.ui.folders_first,
                 );
-
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::CycleFolderPriority => {
                 let path = self.current_path.clone();
-
                 // Toggle logic: If we have a DB entry, use it, otherwise fallback to config default
                 let current_state = if let Ok(Some((_, _, _, ff))) = self.state_db.get_view(&path) {
                     ff
                 } else {
                     self.config.ui.folders_first
                 };
-
                 let new_state = !current_state;
 
                 // Save toggle to DB
@@ -385,7 +375,6 @@ impl FluxApp {
                     self.current_icon_size as u32,
                     new_state,
                 );
-
                 // Reload the current path to apply the new sorting
                 self.load_path(path, &sender);
             }
@@ -476,7 +465,6 @@ impl FluxApp {
                         .model()
                         .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                         .expect("Selection model must be MultiSelection");
-
                     let selection = selection_model.selection();
                     let mut target_idx = None;
 
@@ -502,13 +490,13 @@ impl FluxApp {
                         .as_ref()
                         .map(|p| utils::get_mime_type(p))
                         .unwrap_or_else(|| constants::MIME_DIR.to_string());
+
                     sender_ctx.input(AppMsg::ShowContextMenu { x, y, path, mime });
                 });
             }
             AppMsg::LaunchWithApp(app_id) => {
                 if let Some(app_info) = gio_unix::DesktopAppInfo::new(&app_id) {
                     let selection = self.get_selection();
-
                     // Ensure we actually have files to open
                     if selection.is_empty() {
                         return;
@@ -516,11 +504,9 @@ impl FluxApp {
 
                     let files: Vec<gio::File> =
                         selection.into_iter().map(gio::File::for_path).collect();
-
                     // Create a valid launch context
                     let context =
                         gdk::Display::default().map(|display| display.app_launch_context());
-
                     let launch_result = app_info.launch(&files, context.as_ref());
 
                     if let Err(e) = launch_result {
@@ -530,23 +516,18 @@ impl FluxApp {
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();
-
                 let is_in_trash = self
                     .current_path
                     .to_string_lossy()
                     .starts_with(constants::TRASH_URI);
-
                 let root_menu = gio::Menu::new();
                 let main_section = gio::Menu::new();
                 let mut open_with_item: Option<gio::MenuItem> = None;
-
                 // Registry for dynamic submenus: Map<SubmenuName, MenuModel>
                 let mut submenu_map: std::collections::HashMap<String, gio::Menu> =
                     std::collections::HashMap::new();
-
                 for action in &self.menu_actions {
                     let mut matches = false;
-
                     // --- FILTERING LOGIC ---
                     if is_in_trash {
                         if action
@@ -565,17 +546,21 @@ impl FluxApp {
                             matches = requirements.iter().any(|req| match req.trim() {
                                 constants::FILTER_ALL | "all" => true,
                                 "image/all" | "image/*" => mime.starts_with("image/"),
+
                                 "video/all" | "video/*" => mime.starts_with("video/"),
                                 "audio/all" | "audio/*" => mime.starts_with("audio/"),
                                 "font/all" | "font/*" => mime.starts_with("font/"),
+
                                 "model/all" | "model/*" => mime.starts_with("model/"),
                                 "message/all" | "message/*" => mime.starts_with("message/"),
                                 "chemical/all" | "chemical/*" => mime.starts_with("chemical/"),
+
                                 "multipart/all" | "multipart/*" => mime.starts_with("multipart/"),
                                 "x-content/all" | "x-content/*" => mime.starts_with("x-content/"),
                                 "application/all" | "application/*" => {
                                     mime.starts_with("application/")
                                 }
+
                                 "text/all" | "text/*" => {
                                     mime.starts_with("text/")
                                         || gio::content_type_is_a(&mime, constants::MIME_TEXT)
@@ -584,6 +569,7 @@ impl FluxApp {
                                 constants::FILTER_FOLDER | "directory" => {
                                     mime == constants::MIME_DIR
                                 }
+
                                 constants::FILTER_FILE => mime != constants::MIME_DIR,
                                 t if t.ends_with('/') => mime.starts_with(t),
                                 t => t == mime,
@@ -599,19 +585,18 @@ impl FluxApp {
                         // --- MINIMAL BUILTIN MAPPING ---
                         let (full_action_name, lookup_name) = match action.command.as_str() {
                             "builtin::copy" => ("win.copy".to_string(), "copy"),
+
                             "builtin::cut" => ("win.cut".to_string(), "cut"),
                             "builtin::paste" => ("win.paste".to_string(), "paste"),
                             "builtin::open_with" => {
                                 let open_with_menu = gio::Menu::new();
                                 let apps = gio::AppInfo::all_for_type(&mime);
-
                                 for app in apps {
                                     let label = app.display_name();
                                     let app_id = app
                                         .id()
                                         .map(|id| id.to_string())
                                         .unwrap_or_else(|| app.name().to_string());
-
                                     let item =
                                         gio::MenuItem::new(Some(&label), Some("win.launch-with"));
                                     item.set_action_and_target_value(
@@ -623,7 +608,6 @@ impl FluxApp {
 
                                 // Explicitly create the item and set the label to preserve spacing
                                 let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
-
                                 // Using \u{a0} (Non-breaking space) to prevent GTK from collapsing the gap
                                 let spaced_label = "󰱝\u{a0} \u{a0} \u{a0} Open With...".to_string();
                                 menu_item.set_label(Some(&spaced_label));
@@ -636,7 +620,6 @@ impl FluxApp {
                                 action.action_name.as_str(),
                             ),
                         };
-
                         // --- ENABLE ACTION ---
                         if let Some(g_action) = self.action_group.lookup_action(lookup_name) {
                             if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
@@ -649,9 +632,9 @@ impl FluxApp {
                         }
 
                         // Route to Submenu or Main Section
+
                         if let Some(group_name) = &action.submenu {
                             let menu = submenu_map.entry(group_name.clone()).or_default();
-
                             menu.append(Some(&action.label), Some(&full_action_name));
                         } else {
                             main_section.append(Some(&action.label), Some(&full_action_name));
@@ -661,7 +644,6 @@ impl FluxApp {
 
                 // Assemble the UI
                 root_menu.append_section(None, &main_section);
-
                 if let Some(item) = open_with_item {
                     root_menu.append_item(&item);
                 }
@@ -676,9 +658,21 @@ impl FluxApp {
                     .set_pointing_to(Some(&gdk::Rectangle::new(x as i32, y as i32, 1, 1)));
                 self.context_menu_popover.popup();
             }
+
+            AppMsg::TriggerIconPicker => {
+                let target = self
+                    .get_selected_path()
+                    .unwrap_or_else(|| self.current_path.clone());
+                sender.input(AppMsg::ShowIconPicker(target));
+            }
+            AppMsg::TriggerResetIcon => {
+                let target = self
+                    .get_selected_path()
+                    .unwrap_or_else(|| self.current_path.clone());
+                sender.input(AppMsg::ResetFolderIcon(target));
+            }
             AppMsg::ExecuteCommand(cmd_template) => {
                 let mut targets = Vec::new();
-
                 if let Some(model) = self
                     .files
                     .view
@@ -703,7 +697,6 @@ impl FluxApp {
                 } else {
                     vec![self.current_path.clone()]
                 };
-
                 if cmd_template == "builtin::open_with" {
                     if let Some(path) = final_targets.first() {
                         let file = gio::File::for_path(path);
@@ -732,15 +725,14 @@ impl FluxApp {
                     .iter()
                     .find(|action| action.command == cmd_template)
                     .and_then(|a| a.toast.clone());
-
                 // Commands that mutate the trash virtual filesystem require a view refresh
-                // after completion; spawn() is fire-and-forget so the flag is determined
+                // after completion,
+                // spawn() is fire-and-forget so the flag is determined
                 // before entering the blocking task.
                 let needs_refresh = self
                     .current_path
                     .to_string_lossy()
                     .starts_with(constants::TRASH_URI);
-
                 let sender_clone = sender.clone();
 
                 relm4::spawn_blocking(move || {
@@ -787,14 +779,11 @@ impl FluxApp {
                 } else {
                     constants::ZOOM_STEP
                 };
-
                 // Use the MIN and MAX constants to prevent the icons from becoming too small or too large
                 let new_size = (self.current_icon_size + change)
                     .clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
-
                 if new_size != self.current_icon_size {
                     self.current_icon_size = new_size;
-
                     // Save the new size to SQLite DB so it persists for this folder
                     let _ = self.state_db.save_view(
                         &self.current_path,
@@ -803,7 +792,6 @@ impl FluxApp {
                         new_size as u32,
                         self.config.ui.folders_first,
                     );
-
                     // Update all visible items in the grid
                     for i in 0..self.files.len() {
                         if let Some(item_wrapper) = self.files.get(i) {
@@ -822,13 +810,13 @@ impl FluxApp {
                     .set_single_click_activate(self.config.ui.single_click);
                 utils::save_config(&self.config);
             }
-            //WARN: Change this logic with caution. If the process working directory
+            //WARN: Change this logic with caution.
+            // If the process working directory
             // (CWD) is not synchronized, operations like drag-and-drop or shell commands
             // may resolve relative paths incorrectly, moving files to previous locations
             // instead of the directory currently displayed to the user.
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
-
                 // Explicitly allow root directory and handle edge cases
                 let path_valid =
                     path_str == "/" || path.exists() || path_str.starts_with(constants::TRASH_URI);
@@ -846,7 +834,6 @@ impl FluxApp {
                     && path != self.current_path
                 {
                     let old_path = std::mem::replace(&mut self.current_path, path.clone());
-
                     // Synchronize the physical process working directory with the application state.
                     // This ensures std::fs operations and spawned child processes resolve
                     // relative paths against the folder currently visible in the UI.
@@ -894,7 +881,6 @@ impl FluxApp {
             }
             AppMsg::JumpToRecent(rank) => {
                 let target_index = if rank == 0 { 0 } else { rank - 1 };
-
                 if let Some(target_path) = self.recent_stack.get(target_index).cloned() {
                     if rank != 0 && target_path == self.current_path {
                         return;
@@ -906,7 +892,6 @@ impl FluxApp {
                 let path_to_add = self
                     .get_selected_path()
                     .unwrap_or_else(|| self.current_path.clone());
-
                 if !self.exclusive_list.contains(&path_to_add) {
                     self.exclusive_list.push(path_to_add);
                     if self.exclusive_index.is_none() {
@@ -924,6 +909,7 @@ impl FluxApp {
                 if !self.exclusive_list.is_empty() {
                     let new_idx = match self.exclusive_index {
                         Some(i) => (i + 1) % self.exclusive_list.len(),
+
                         None => 0,
                     };
                     self.exclusive_index = Some(new_idx);
@@ -986,7 +972,6 @@ impl FluxApp {
                 }
 
                 let total_selected = count + dir_count;
-
                 self.selection_status = match (total_selected, only_files, only_dirs) {
                     (0, _, _) => {
                         let child_count = std::fs::read_dir(&self.current_path)
@@ -1003,7 +988,6 @@ impl FluxApp {
                     // Single file
                     (1, true, _) => {
                         let size_str = glib::format_size(total_size);
-
                         // Kick off a non-blocking duration probe for audio/video files.
                         // The result arrives via MediaDurationReady and appends to the status.
                         let selected_path = self
@@ -1013,10 +997,10 @@ impl FluxApp {
                             .and_downcast::<gtk::MultiSelection>()
                             .and_then(|m| {
                                 let pos = m.selection().nth(0);
+
                                 self.files.get(pos)
                             })
                             .map(|w| w.borrow().path.clone());
-
                         if let Some(path) = selected_path {
                             let s = sender.clone();
                             relm4::spawn_blocking(move || {
@@ -1030,6 +1014,7 @@ impl FluxApp {
 
                                 if mime.starts_with("audio/") || mime.starts_with("video/") {
                                     let dur = crate::utils::media::probe_media_duration(&path);
+
                                     s.input(AppMsg::MediaDurationReady(dur));
                                 }
 
@@ -1049,9 +1034,9 @@ impl FluxApp {
                             .and_downcast::<gtk::MultiSelection>()
                             .and_then(|m| {
                                 let pos = m.selection().nth(0);
+
                                 self.files.get(pos)
                             });
-
                         if let Some(wrapper) = item {
                             let path = wrapper.borrow().path.clone();
                             let child_count =
@@ -1120,6 +1105,7 @@ impl FluxApp {
                 current,
                 total,
                 total_items,
+
                 cancellable,
             } => {
                 self.task_queue
@@ -1186,7 +1172,6 @@ impl FluxApp {
 
                         let target_idx = (0..self.files.len())
                             .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
-
                         if let Some(idx) = target_idx {
                             if let Some(item_wrapper) = self.files.get(idx) {
                                 let mut item = item_wrapper.borrow().clone();
@@ -1197,17 +1182,19 @@ impl FluxApp {
                         } else {
                             let item = crate::ui::FileItem {
                                 name: display_name.clone(),
+
                                 icon,
                                 thumbnail: None,
                                 is_dir,
+
                                 path: path.clone(),
                                 icon_size: self.current_icon_size,
                                 size: info.size() as u64,
+
                                 is_editing: false,
                                 is_foreign_owner: false,
                                 expand_labels: self.config.ui.expand_labels,
                             };
-
                             self.files.append(item);
 
                             let current_session = self.load_id.load(Ordering::SeqCst);
@@ -1216,7 +1203,6 @@ impl FluxApp {
                                 current_session,
                                 sender.clone(),
                             );
-
                             sender.input(AppMsg::Refresh);
                         }
                     } else {
@@ -1235,7 +1221,6 @@ impl FluxApp {
                 }
 
                 let sender_clone = sender.clone();
-
                 for path in selection {
                     let file = gio::File::for_path(path);
                     let s = sender_clone.clone();
@@ -1275,10 +1260,8 @@ impl FluxApp {
                     .and_then(|s| s.keyboard())
                     .map(|k| k.modifier_state())
                     .unwrap_or(gdk::ModifierType::empty());
-
                 let is_selecting = modifiers
                     .intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK);
-
                 // If holding Ctrl/Shift, we stop the "Open" action.
                 // This prevents the app from navigating away during multi-selection.
                 if is_selecting {
@@ -1342,7 +1325,6 @@ impl FluxApp {
                 dest_path,
             } => {
                 let sender_clone = sender.clone();
-
                 relm4::spawn_blocking(move || {
                     for source in source_paths {
                         let Some(file_name) = source.file_name() else {
@@ -1373,7 +1355,6 @@ impl FluxApp {
             }
             AppMsg::EmptyTrash => {
                 let root = gio::File::for_uri(constants::TRASH_URI);
-
                 if let Ok(enumerator) = root.enumerate_children(
                     "standard::name",
                     gio::FileQueryInfoFlags::NONE,
@@ -1423,7 +1404,6 @@ impl FluxApp {
                     let ratio = crate::utils::media::aspect_ratio_label(w, h);
                     format!(" — {}×{} ({})", w, h, ratio)
                 });
-
                 // Append dimensions first (before mime), then mime type
                 if let Some(d) = dim_str {
                     self.selection_status.push_str(&d);
@@ -1445,6 +1425,143 @@ impl FluxApp {
             AppMsg::RestoreItem(_) => {
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::ShowIconPicker(target_path) => {
+                use gtk::prelude::*;
+                // Safely grab any active window to parent the modal dialog
+                let toplevels = gtk::Window::list_toplevels();
+                let parent = toplevels
+                    .first()
+                    .and_then(|w| w.downcast_ref::<gtk::Window>());
+                let dialog = gtk::Dialog::builder()
+                    .title("Select Folder Icon")
+                    .transient_for(parent.unwrap())
+                    .modal(true)
+                    .use_header_bar(1)
+                    .build();
+                let flow_box = gtk::FlowBox::builder()
+                    .valign(gtk::Align::Start)
+                    .max_children_per_line(6)
+                    .min_children_per_line(6)
+                    .selection_mode(gtk::SelectionMode::Single)
+                    .build();
+                let scrolled = gtk::ScrolledWindow::builder()
+                    .hscrollbar_policy(gtk::PolicyType::Never)
+                    .vscrollbar_policy(gtk::PolicyType::Automatic)
+                    .child(&flow_box)
+                    .height_request(350)
+                    .width_request(400)
+                    .build();
+                let search_entry = gtk::SearchEntry::builder()
+                    .margin_top(6)
+                    .margin_bottom(6)
+                    .margin_start(6)
+                    .margin_end(6)
+                    .build();
+                let content_area = dialog.content_area();
+                content_area.append(&search_entry);
+                content_area.append(&scrolled);
+                let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
+                let icon_names = icon_theme.icon_names();
+                for icon_name in icon_names {
+                    let name_str = icon_name.as_str();
+                    if name_str.contains("folder") || name_str.contains("Folder") {
+                        let image = gtk::Image::from_icon_name(name_str);
+                        image.set_icon_size(gtk::IconSize::Large);
+                        let button = gtk::Button::builder()
+                            .child(&image)
+                            .tooltip_text(name_str)
+                            .has_frame(false)
+                            .build();
+                        unsafe {
+                            button.set_data("icon-name", icon_name.to_string());
+                        }
+                        let dialog_btn_clone = dialog.clone();
+                        let flow_box_btn_clone = flow_box.clone();
+                        button.connect_clicked(move |btn| {
+                            if let Some(row) = btn
+                                .parent()
+                                .and_then(|p| p.downcast::<gtk::FlowBoxChild>().ok())
+                            {
+                                flow_box_btn_clone.select_child(&row);
+                                dialog_btn_clone.response(gtk::ResponseType::Ok);
+                            }
+                        });
+                        flow_box.append(&button);
+                    }
+                }
+                let flow_box_clone = flow_box.clone();
+                search_entry.connect_search_changed(move |entry| {
+                    let text = entry.text().to_string().to_lowercase();
+                    let mut child = flow_box_clone.first_child();
+                    while let Some(ref widget) = child {
+                        if let Some(child_row) = widget.downcast_ref::<gtk::FlowBoxChild>() {
+                            if let Some(button) = child_row
+                                .child()
+                                .and_then(|c| c.downcast::<gtk::Button>().ok())
+                            {
+                                unsafe {
+                                    if let Some(name) =
+                                        button.data::<String>("icon-name").map(|p| p.as_ref())
+                                    {
+                                        child_row.set_visible(name.to_lowercase().contains(&text));
+                                    }
+                                }
+                            }
+                        }
+                        child = widget.next_sibling();
+                    }
+                });
+                let dialog_select = dialog.clone();
+                flow_box.connect_child_activated(move |_, _| {
+                    dialog_select.response(gtk::ResponseType::Ok);
+                });
+                dialog.add_button("Cancel", gtk::ResponseType::Cancel);
+                dialog.add_button("Select", gtk::ResponseType::Ok);
+
+                let flow_box_select = flow_box.clone();
+                let sender_clone = sender.clone();
+                let target_path_clone = target_path.clone();
+
+                dialog.connect_response(move |win, response| {
+                    if response == gtk::ResponseType::Ok {
+                        if let Some(row) = flow_box_select.selected_children().first() {
+                            if let Some(button) =
+                                row.child().and_then(|c| c.downcast::<gtk::Button>().ok())
+                            {
+                                unsafe {
+                                    if let Some(name) =
+                                        button.data::<String>("icon-name").map(|p| p.as_ref())
+                                    {
+                                        // Dispatch to your existing, working state handler
+                                        sender_clone.input(AppMsg::SetFolderIcon {
+                                            path: target_path_clone.clone(),
+                                            icon_name: name.to_string(),
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    win.destroy();
+                });
+                dialog.present();
+            }
+            AppMsg::SetFolderIcon { path, icon_name } => {
+                self.config
+                    .ui
+                    .folder_icons
+                    .insert(path.to_string_lossy().to_string(), icon_name);
+                crate::utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::ResetFolderIcon(path) => {
+                self.config
+                    .ui
+                    .folder_icons
+                    .remove(&path.to_string_lossy().to_string());
+                crate::utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
         }
     }
 }
@@ -1460,14 +1577,12 @@ mod tests {
     #[test]
     fn test_cycle_sort_logic() {
         let mut current_sort = SortBy::Name;
-
         let cycle = |s: SortBy| match s {
             SortBy::Name => SortBy::Date,
             SortBy::Date => SortBy::Size,
             SortBy::Size => SortBy::Type,
             SortBy::Type => SortBy::Name,
         };
-
         current_sort = cycle(current_sort);
         assert_eq!(current_sort, SortBy::Date);
 
@@ -1487,7 +1602,6 @@ mod tests {
         let mut history: Vec<PathBuf> = Vec::new();
         let mut forward_stack: Vec<PathBuf> = Vec::new();
         let mut current_path = base.clone();
-
         let subfolder = base.join("documents");
         history.push(current_path.clone());
         current_path = subfolder.clone();
@@ -1495,7 +1609,6 @@ mod tests {
 
         assert_eq!(current_path, subfolder);
         assert_eq!(history.len(), 1);
-
         if let Some(prev) = history.pop() {
             forward_stack.push(current_path.clone());
             current_path = prev;
@@ -1503,7 +1616,6 @@ mod tests {
 
         assert_eq!(current_path, base);
         assert_eq!(forward_stack.len(), 1);
-
         if let Some(next) = forward_stack.pop() {
             history.push(current_path.clone());
             current_path = next;
@@ -1516,12 +1628,10 @@ mod tests {
     #[test]
     fn test_asynchronous_load_synchronization() {
         let load_id = Arc::new(AtomicU64::new(0));
-
         let req1_id = load_id.fetch_add(1, Ordering::SeqCst) + 1;
         let req2_id = load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         let current_system_id = load_id.load(Ordering::SeqCst);
-
         assert!(req1_id < current_system_id);
         assert_eq!(req2_id, current_system_id);
     }
@@ -1529,7 +1639,6 @@ mod tests {
     #[test]
     fn test_hidden_files_toggle_logic() {
         let mut show_hidden = false;
-
         show_hidden = !show_hidden;
         assert!(show_hidden);
 
@@ -1540,7 +1649,6 @@ mod tests {
     #[test]
     fn test_search_buffer_manipulation() {
         let mut filter = String::new();
-
         filter.push('f');
         filter.push('l');
         assert_eq!(filter, "fl");
@@ -1565,7 +1673,6 @@ mod tests {
             }
         }
         assert_eq!(index, Some(2));
-
         if let Some(idx) = index {
             if idx > 0 {
                 index = Some(idx - 1);
@@ -1577,7 +1684,6 @@ mod tests {
     #[test]
     fn test_exclusive_index_wrap_around() {
         let len = 3;
-
         let index = 2;
         let new_idx = (index + 1) % len;
         assert_eq!(new_idx, 0);
@@ -1609,7 +1715,6 @@ mod tests {
         let path = PathBuf::from("/tmp/flux/test/path");
         let mut segments = Vec::new();
         let mut current = path.as_path();
-
         while let Some(name) = current.file_name() {
             segments.push(name.to_string_lossy().to_string());
             if let Some(parent) = current.parent() {
@@ -1645,11 +1750,9 @@ mod tests {
     #[test]
     fn test_directory_navigation_logic() {
         let is_dir = true;
-
         let base_path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
         let mut current_path = base_path.clone();
         let target_dir = "Downloads";
-
         if is_dir {
             current_path.push(target_dir);
         }
@@ -1668,10 +1771,10 @@ mod tests {
                 if action == "builtin::open_with" && dir_mime == "inode/directory" {
                     return false;
                 }
+
                 true
             })
             .collect();
-
         assert!(filtered_dir.contains(&"builtin::copy"));
         assert!(!filtered_dir.contains(&"builtin::open_with"));
 
