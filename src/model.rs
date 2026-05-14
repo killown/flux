@@ -42,7 +42,6 @@ pub struct FileLoadContext {
     /// Whether the filename label should wrap across multiple lines.
     pub expand_labels: bool,
     /// Optional override icon name for the item.
-    #[allow(dead_code)]
     pub custom_icon: Option<String>,
 }
 

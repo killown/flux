@@ -1,3 +1,5 @@
+// FILE: src/services/loader.rs
+
 use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
 use crate::ui::constants;
 use crate::ui::FileItem;
@@ -247,7 +249,13 @@ impl FluxApp {
 
             let mut media_tasks = Vec::new();
             for item in items {
-                let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
+                let icon = if let Some(ref custom) = item.custom_icon {
+                    gtk::gio::Icon::for_string(custom).unwrap_or_else(|_| {
+                        utils::get_icon_for_path(&item.target_path, item.is_dir)
+                    })
+                } else {
+                    utils::get_icon_for_path(&item.target_path, item.is_dir)
+                };
 
                 // Load the texture immediately if it exists in the hi-res cache.
                 let mut instant_thumb = None;
