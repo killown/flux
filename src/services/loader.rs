@@ -1,17 +1,38 @@
 // FILE: src/services/loader.rs
 
 use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
-use crate::ui::constants;
 use crate::ui::FileItem;
 use crate::utils;
 use adw::prelude::*;
-use gtk::gdk;
 use gtk::gio;
 use rayon::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
+/// Returns `(is_image, is_video)` by extension only — zero I/O, safe to call inside
+/// a Rayon iterator on the directory listing hot path. Accuracy is intentionally
+/// approximate: false positives are harmless (they go into `media_tasks` and get
+/// filtered again by the full `is_visual_media` check inside `get_or_create_thumbnail`).
+#[inline]
+fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase());
+
+    match ext.as_deref() {
+        Some(
+            "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
+            | "tif" | "jxl" | "svg",
+        ) => (true, false),
+        Some(
+            "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ts"
+            | "ogv",
+        ) => (false, true),
+        _ => (false, false),
+    }
+}
 impl FluxApp {
     /// Synchronizes the application view with the filesystem state at the provided path.
     ///
@@ -125,15 +146,6 @@ impl FluxApp {
             // SAFETY: getuid() is always safe, it never fails.
             let current_uid: u32 = unsafe { libc::getuid() };
 
-            // Resolve the cache directory for the specific size defined in constants.
-            let cache_base = dirs::cache_dir().unwrap_or_default().join("thumbnails");
-            let thumb_folder = match constants::CACHED_THUMBNAIL_SIZE {
-                512 => "xx-large",
-                256 => "x-large",
-                _ => "normal",
-            };
-            let target_cache_dir = cache_base.join(thumb_folder);
-
             let config_folder_icons = self.config.ui.folder_icons.clone();
 
             let mut items: Vec<FileLoadContext> = raw_data
@@ -151,18 +163,9 @@ impl FluxApp {
 
                     let mut thumbnail_path = None;
                     if !is_dir {
-                        let (is_img, is_vid) = utils::is_visual_media(&target_path);
+                        let (is_img, is_vid) = is_visual_media_by_ext(&target_path);
                         if is_img || is_vid {
-                            let uri = format!("file://{}", target_path.to_string_lossy());
-                            let hash = format!("{:x}", md5::compute(uri));
-                            let cached = target_cache_dir.join(format!("{}.png", hash));
-
-                            // Check for instant cache hit at the configured hi-res size.
-                            if cached.exists() {
-                                thumbnail_path = Some(cached);
-                            } else {
-                                thumbnail_path = Some(target_path.clone());
-                            }
+                            thumbnail_path = Some(target_path.clone());
                         }
                     }
 
@@ -257,18 +260,10 @@ impl FluxApp {
                     utils::get_icon_for_path(&item.target_path, item.is_dir)
                 };
 
-                // Load the texture immediately if it exists in the hi-res cache.
-                let mut instant_thumb = None;
-                if let Some(ref tp) = item.thumbnail_path {
-                    if tp.starts_with(&cache_base) {
-                        instant_thumb = gdk::Texture::from_file(&gio::File::for_path(tp)).ok();
-                    }
-                }
-
                 self.files.append(FileItem {
                     name: item.display_name.clone(),
                     icon,
-                    thumbnail: instant_thumb,
+                    thumbnail: None,
                     is_dir: item.is_dir,
                     path: item.target_path,
                     icon_size: self.current_icon_size,
@@ -279,24 +274,13 @@ impl FluxApp {
                 });
 
                 if let Some(abs_path) = item.thumbnail_path {
-                    // Only dispatch to background if not already loaded from the high-res cache.
-                    if !abs_path.starts_with(&cache_base) {
-                        media_tasks.push((item.display_name, abs_path));
-                    }
+                    media_tasks.push((item.display_name, abs_path));
                 }
             }
 
             self.current_path = path;
 
-            // Prioritize initial thumbnail generation to improve perceived UI readiness.
-            let priority_limit = 15;
-            if media_tasks.len() > priority_limit {
-                let background_tasks = media_tasks.split_off(priority_limit);
-                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
-                self.spawn_thumbnail_loader(background_tasks, current_session, sender.clone());
-            } else {
-                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
-            }
+            self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
         }
     }
 }

@@ -4,9 +4,7 @@ use adw::gdk;
 use adw::prelude::*;
 use gtk::gdk_pixbuf;
 use gtk::gio;
-use std::collections::hash_map::DefaultHasher;
 use std::fs;
-use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -466,32 +464,119 @@ pub fn open_file(path: PathBuf) {
     }
 }
 
-pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
-    let cache_dir = dirs::cache_dir()?.join("flux").join("thumbnails");
+/// Resolves the FreeDesktop-compliant thumbnail cache path for a given source file.
+///
+/// Implements §2 of the [Thumbnail Managing Standard] by computing an MD5 digest
+/// of the canonical `file://` URI and mapping it into the shared XDG thumbnail
+/// store at `$XDG_CACHE_HOME/thumbnails/<size-tier>/<hash>.png`. Cache entries
+/// produced here are session-persistent and visible to other XDG-compliant
+/// applications (e.g. Nautilus, Thunar) in the same store.
+///
+/// [Thumbnail Managing Standard]: https://specifications.freedesktop.org/thumbnail-spec/
+///
+/// # Arguments
+///
+/// * `path` - Absolute path to the source media file.
+///
+/// # Returns
+///
+/// `(cache_dir, cache_path)` where `cache_dir` is the resolved size-tier directory
+/// and `cache_path` is the full `.png` destination. Returns `None` if
+/// `dirs::cache_dir()` is unavailable or `path` contains non-UTF-8 bytes.
+fn thumbnail_cache_path(path: &Path) -> Option<(PathBuf, PathBuf)> {
+    let thumb_folder = match constants::CACHED_THUMBNAIL_SIZE {
+        512 => "xx-large",
+        256 => "x-large",
+        128 => "large",
+        _ => "normal",
+    };
 
-    if fs::create_dir_all(&cache_dir).is_err() {
-        return None;
-    }
-    let mut hasher = DefaultHasher::new();
-    path.hash(&mut hasher);
+    let cache_dir = dirs::cache_dir()?.join("thumbnails").join(thumb_folder);
 
-    if let Ok(metadata) = path.metadata() {
-        metadata.len().hash(&mut hasher);
+    // The FreeDesktop spec mandates MD5 of the percent-encoded `file://` URI.
+    let uri = format!("file://{}", path.to_str()?);
+    let hash = format!("{:x}", md5::compute(uri.as_bytes()));
+    let cache_path = cache_dir.join(format!("{}.png", hash));
 
-        if let Ok(modified) = metadata.modified() {
-            modified.hash(&mut hasher);
+    Some((cache_dir, cache_path))
+}
+
+/// Returns whether a cached thumbnail PNG is still valid for the given source file.
+///
+/// Compares the source's `mtime` against the thumbnail's own `mtime`. A thumbnail
+/// is considered stale when the source was modified after the thumbnail was written,
+/// or when the on-disk entry is zero bytes (partial write / crash residue).
+///
+/// # Arguments
+///
+/// * `cache_path`   - Path to the candidate `.png` thumbnail.
+/// * `source_meta`  - [`fs::Metadata`] of the original source file.
+fn thumbnail_is_valid(cache_path: &Path, source_meta: &fs::Metadata) -> bool {
+    let cache_meta = match fs::metadata(cache_path) {
+        Ok(m) => m,
+        Err(_) => return false,
+    };
+
+    let cache_mtime = cache_meta.modified().ok();
+    let source_mtime = source_meta.modified().ok();
+
+    // Source newer than cache → stale.
+    if let (Some(ct), Some(st)) = (cache_mtime, source_mtime) {
+        if st > ct {
+            return false;
         }
     }
 
-    let hash = hasher.finish();
-    let cache_path = cache_dir.join(format!("{}.png", hash));
+    // Guard against zero-byte truncation or partial writes.
+    cache_meta.len() > 0
+}
+
+/// Retrieves a thumbnail [`gdk::Texture`] for a visual media file, generating
+/// and caching it on first access.
+///
+/// Cache entries follow the [FreeDesktop Thumbnail Managing Standard], stored under
+/// `$XDG_CACHE_HOME/thumbnails/<size-tier>/` as `MD5("file://<path>").hex + ".png"`.
+/// This makes cache hits session-persistent: a thumbnail written in a previous
+/// session is reused without regeneration as long as the source file's `mtime` and
+/// size have not changed.
+///
+/// Stale entries (source modified after thumbnail was written, or zero-byte files)
+/// are evicted and regenerated atomically.
+///
+/// [FreeDesktop Thumbnail Managing Standard]: https://specifications.freedesktop.org/thumbnail-spec/
+///
+/// # Arguments
+///
+/// * `path` - Absolute path to an image or video file.
+///
+/// # Returns
+///
+/// `Some(texture)` on success, `None` if the file is not visual media, if any
+/// required external tool (`ffmpeg`) is unavailable, or if I/O fails.
+pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
+    let (cache_dir, cache_path) = thumbnail_cache_path(path)?;
+
+    fs::create_dir_all(&cache_dir).ok()?;
+
+    let source_meta = fs::metadata(path).ok();
 
     if cache_path.exists() {
-        let file = adw::gio::File::for_path(&cache_path);
-        return gdk::Texture::from_file(&file).ok();
+        let is_valid = source_meta
+            .as_ref()
+            .map(|m| thumbnail_is_valid(&cache_path, m))
+            .unwrap_or(true); // No source metadata (e.g. remote mount) → assume valid.
+
+        if is_valid {
+            let file = adw::gio::File::for_path(&cache_path);
+            return gdk::Texture::from_file(&file).ok();
+        }
+
+        // Evict the stale entry before regenerating.
+        let _ = fs::remove_file(&cache_path);
     }
 
     let (is_img, is_vid) = is_visual_media(path);
+
     if is_img {
         match gdk_pixbuf::Pixbuf::from_file_at_scale(
             path,
@@ -507,7 +592,9 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             }
             Err(_) => return None,
         }
-    } else if is_vid {
+    }
+
+    if is_vid {
         let status = Command::new("ffmpeg")
             .arg("-y")
             .arg("-loglevel")
@@ -519,18 +606,16 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .arg("-vframes")
             .arg("1")
             .arg("-vf")
-            .arg("scale=512:-1")
+            .arg(format!("scale={}:-1", constants::CACHED_THUMBNAIL_SIZE))
             .arg(&cache_path)
             .status();
 
-        if let Ok(s) = status {
-            if s.success() && cache_path.exists() {
-                let file = adw::gio::File::for_path(&cache_path);
-
-                return gdk::Texture::from_file(&file).ok();
-            }
+        if matches!(status, Ok(s) if s.success() && cache_path.exists()) {
+            let file = adw::gio::File::for_path(&cache_path);
+            return gdk::Texture::from_file(&file).ok();
         }
     }
+
     None
 }
 
