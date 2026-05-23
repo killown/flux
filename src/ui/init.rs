@@ -96,17 +96,42 @@ impl FluxApp {
         let terminal = vte4::Terminal::new();
         terminal.set_vexpand(true);
 
-        // Intercept F4 when the terminal is focused. VTE consumes keys by default,
-        // so a local controller is required to catch it before the terminal does.
+        // Intercept F4 and clipboard shortcuts before VTE consumes them.
+        // VTE grabs all key events; a local EventControllerKey with the highest
+        // phase (Capture) is required so our handler wins the dispatch race.
         let term_sender = sender.clone();
         let term_key_ctrl = gtk::EventControllerKey::new();
-        term_key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
-            if keyval == gtk::gdk::Key::F4 {
-                term_sender.input(AppMsg::ToggleTerminal);
-                return glib::Propagation::Stop;
-            }
-            glib::Propagation::Proceed
-        });
+        term_key_ctrl.set_propagation_phase(gtk::PropagationPhase::Capture);
+        {
+            let terminal_ref = terminal.clone();
+            term_key_ctrl.connect_key_pressed(move |_, keyval, _, modifiers| {
+                use gtk::gdk::Key;
+                use vte4::prelude::*;
+
+                let ctrl_shift =
+                    gtk::gdk::ModifierType::CONTROL_MASK | gtk::gdk::ModifierType::SHIFT_MASK;
+
+                match keyval {
+                    Key::F4 => {
+                        term_sender.input(AppMsg::ToggleTerminal);
+                        return glib::Propagation::Stop;
+                    }
+                    // Ctrl+Shift+C → copy selection to clipboard
+                    Key::c | Key::C if modifiers == ctrl_shift => {
+                        terminal_ref.emit_copy_clipboard();
+                        return glib::Propagation::Stop;
+                    }
+                    // Ctrl+Shift+V → paste from clipboard into terminal
+                    Key::v | Key::V if modifiers == ctrl_shift => {
+                        terminal_ref.emit_paste_clipboard();
+                        return glib::Propagation::Stop;
+                    }
+                    _ => {}
+                }
+
+                glib::Propagation::Proceed
+            });
+        }
         terminal.add_controller(term_key_ctrl);
 
         // Spawn the user's default shell
