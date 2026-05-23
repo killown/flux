@@ -134,6 +134,20 @@ impl FluxApp {
         }
         terminal.add_controller(term_key_ctrl);
 
+        // Middle-click paste from the primary selection.
+        {
+            let terminal_ref = terminal.clone();
+            let middle_click = gtk::GestureClick::new();
+            middle_click.set_button(2); // BUTTON_MIDDLE
+            middle_click.set_propagation_phase(gtk::PropagationPhase::Capture);
+            middle_click.connect_pressed(move |gesture, _, _, _| {
+                use vte4::prelude::*;
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                terminal_ref.emit_paste_clipboard();
+            });
+            terminal.add_controller(middle_click);
+        }
+
         // Spawn the user's default shell
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
         let pty_flags = vte4::PtyFlags::DEFAULT;
