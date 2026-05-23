@@ -136,6 +136,15 @@ impl FluxApp {
 
         // Middle-click paste from the primary selection.
         {
+            // Suppress VTE's built-in right-click menu.
+            let right_click = gtk::GestureClick::new();
+            right_click.set_button(3);
+            right_click.set_propagation_phase(gtk::PropagationPhase::Capture);
+            right_click.connect_pressed(|gesture, _, _, _| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+            });
+            terminal.add_controller(right_click);
+
             let terminal_ref = terminal.clone();
             let middle_click = gtk::GestureClick::new();
             middle_click.set_button(2); // BUTTON_MIDDLE
