@@ -68,7 +68,7 @@ impl FluxApp {
             if modifiers == gdk::ModifierType::CONTROL_MASK {
                 sender.input(AppMsg::AddToSidebarPermanent);
             } else {
-                sender.input(AppMsg::AddExclusive);
+                sender.input(AppMsg::AddExclusive(None));
             }
             return glib::Propagation::Stop;
         }

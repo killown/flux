@@ -106,7 +106,7 @@ pub fn setup_controllers(
                 glib::Propagation::Stop
             }
             gdk::Key::Insert => {
-                sender_cap.input(AppMsg::AddExclusive);
+                sender_cap.input(AppMsg::AddExclusive(None));
                 glib::Propagation::Stop
             }
             gdk::Key::End if is_ctrl => {

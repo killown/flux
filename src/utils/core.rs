@@ -27,6 +27,7 @@ pub fn ensure_config_file() -> PathBuf {
 
         let default_config = r#"
 # --- Core Operations ---
+"󰋼      Add to Quick List" => "directory", "builtin::add_to_quick_list"
 "󰆏      Copy" => "all", "builtin::copy", "Copied to clipboard"
 "󰆐      Cut" => "all", "builtin::cut", "Cut to clipboard"
 "󰏊      Paste" => "all", "builtin::paste", "Pasted items"

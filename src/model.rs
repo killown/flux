@@ -391,8 +391,12 @@ pub enum AppMsg {
     SearchBackspace,
     /// Synchronize the search entry state with the model.
     CloseSearchSync,
-    /// Add the current directory to the exclusive navigation list.
-    AddExclusive,
+    /// Add a directory to the exclusive navigation list.
+    ///
+    /// `Some(path)` targets an explicit path (e.g. from a context menu action).
+    /// `None` resolves the path from the current selection or working directory,
+    /// which is the behaviour of the `Insert` keyboard shortcut.
+    AddExclusive(Option<PathBuf>),
     /// Clear all items from the exclusive navigation list.
     ClearExclusive,
     /// Switch to the next directory in the exclusive list.

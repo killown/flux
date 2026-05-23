@@ -522,6 +522,7 @@ impl FluxApp {
                     .starts_with(constants::TRASH_URI);
                 let root_menu = gio::Menu::new();
                 let main_section = gio::Menu::new();
+
                 let mut open_with_item: Option<gio::MenuItem> = None;
                 // Registry for dynamic submenus: Map<SubmenuName, MenuModel>
                 let mut submenu_map: std::collections::HashMap<String, gio::Menu> =
@@ -585,9 +586,23 @@ impl FluxApp {
                         // --- MINIMAL BUILTIN MAPPING ---
                         let (full_action_name, lookup_name) = match action.command.as_str() {
                             "builtin::copy" => ("win.copy".to_string(), "copy"),
-
                             "builtin::cut" => ("win.cut".to_string(), "cut"),
                             "builtin::paste" => ("win.paste".to_string(), "paste"),
+                            "builtin::add_to_quick_list" => {
+                                if let Some(ref target) = path {
+                                    let quick_action =
+                                        gio::SimpleAction::new("add-to-quick-list", None);
+                                    let target_clone = target.clone();
+                                    let sender_q = sender.clone();
+                                    quick_action.connect_activate(move |_, _| {
+                                        sender_q.input(AppMsg::AddExclusive(Some(
+                                            target_clone.clone(),
+                                        )));
+                                    });
+                                    self.action_group.add_action(&quick_action);
+                                }
+                                ("win.add-to-quick-list".to_string(), "add-to-quick-list")
+                            }
                             "builtin::open_with" => {
                                 let open_with_menu = gio::Menu::new();
                                 let apps = gio::AppInfo::all_for_type(&mime);
@@ -898,10 +913,11 @@ impl FluxApp {
                     sender.input(AppMsg::Navigate(target_path));
                 }
             }
-            AppMsg::AddExclusive => {
-                let path_to_add = self
-                    .get_selected_path()
-                    .unwrap_or_else(|| self.current_path.clone());
+            AppMsg::AddExclusive(explicit_path) => {
+                let path_to_add = explicit_path.unwrap_or_else(|| {
+                    self.get_selected_path()
+                        .unwrap_or_else(|| self.current_path.clone())
+                });
                 if !self.exclusive_list.contains(&path_to_add) {
                     self.exclusive_list.push(path_to_add);
                     if self.exclusive_index.is_none() {
