@@ -23,6 +23,8 @@ rusqlite = { version = "0.39", features = ["bundled"] }
 gio-unix = { version = "0.22.0", package = "gio-unix" }
 gdk-pixbuf = "0.22.0"
 libc = "0.2.186"
+vte4 = "0.10.0"
+pango = "0.22.6"
 
 [dev-dependencies]
 tempfile = "3"

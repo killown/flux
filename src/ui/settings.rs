@@ -21,15 +21,14 @@ impl SimpleComponent for SettingsWindow {
             set_search_enabled: true,
             add_css_class: "settings-window",
 
+            // --- Appearance Page ---
             add = &adw::PreferencesPage {
                 set_title: "Appearance",
                 set_icon_name: Some("applications-graphics-symbolic"),
                 add_css_class: "appearance-page",
-
                 add = &adw::PreferencesGroup {
                     set_title: "Layout",
                     add_css_class: "layout-group",
-
                     add = &adw::ActionRow {
                         set_title: "Default Icon Size",
                         set_subtitle: "Base size of icons in the grid view",
@@ -45,7 +44,6 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
-
                     add = &adw::ActionRow {
                         set_title: "Grid Spacing",
                         set_subtitle: "Pixel spacing between items in the grid view",
@@ -61,7 +59,6 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
-
                     add = &adw::ActionRow {
                         set_title: "Max Label Length",
                         set_subtitle: "Maximum characters to show before truncating filenames",
@@ -77,7 +74,6 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
-
                     add = &adw::ActionRow {
                         set_title: "Expand Filenames",
                         set_subtitle: "Show full filenames in the grid, wrapping across multiple lines",
@@ -93,7 +89,6 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
-
                     add = &adw::ActionRow {
                         set_title: "Sidebar Width",
                         set_subtitle: "Default width of the navigation pane",
@@ -167,11 +162,9 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                 },
-
                 add = &adw::PreferencesGroup {
                     set_title: "Theming",
                     add_css_class: "theming-group",
-
                     add = &adw::ActionRow {
                         set_title: "Theme",
                         add_css_class: "settings-row",
@@ -244,15 +237,14 @@ impl SimpleComponent for SettingsWindow {
                 }
             },
 
+            // --- Behavior Page ---
             add = &adw::PreferencesPage {
                 set_title: "Behavior",
                 set_icon_name: Some("emblem-system-symbolic"),
                 add_css_class: "behavior-page",
-
                 add = &adw::PreferencesGroup {
                     set_title: "File Operations",
                     add_css_class: "file-ops-group",
-
                     add = &adw::ActionRow {
                         set_title: "Single Click to Open",
                         set_subtitle: "Open files and directories with a single click instead of double click",
@@ -268,11 +260,9 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                 },
-
                 add = &adw::PreferencesGroup {
                     set_title: "Sorting and Filtering",
                     add_css_class: "sorting-group",
-
                     add = &adw::ActionRow {
                         set_title: "Default Sort",
                         set_subtitle: "Primary sorting method for files",
@@ -348,15 +338,84 @@ impl SimpleComponent for SettingsWindow {
                 }
             },
 
+            // --- Terminal Page ---
+            add = &adw::PreferencesPage {
+                set_title: "Terminal",
+                set_icon_name: Some("utilities-terminal-symbolic"),
+                add_css_class: "terminal-page",
+                add = &adw::PreferencesGroup {
+                    set_title: "Configuration",
+                    add = &adw::ActionRow {
+                        set_title: "Height",
+                        set_subtitle: "Height of the terminal pane in pixels",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.terminal.height as f64,
+                                20.0, 800.0, 10.0, 0.0, 0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetTerminalHeight(spin.value() as i32));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: "Font",
+                        set_subtitle: "Pango font description (e.g., 'JetBrains Mono 13')",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::Entry {
+                            set_text: &model.config.ui.terminal.font,
+                            set_valign: gtk::Align::Center,
+                            connect_changed => move |entry| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetTerminalFont(entry.text().to_string()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: "Foreground Color",
+                        set_subtitle: "Hex color code (e.g., '#E5E5E5')",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::Entry {
+                            set_text: &model.config.ui.terminal.fg_color,
+                            set_valign: gtk::Align::Center,
+                            connect_changed => move |entry| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetTerminalFgColor(entry.text().to_string()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: "Background Color",
+                        set_subtitle: "Hex color code (e.g., '#1A1A1A')",
+                        add_css_class: "settings-row",
+                        add_suffix = &gtk::Entry {
+                            set_text: &model.config.ui.terminal.bg_color,
+                            set_valign: gtk::Align::Center,
+                            connect_changed => move |entry| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetTerminalBgColor(entry.text().to_string()));
+                                }
+                            }
+                        }
+                    },
+                },
+            },
+
+            // --- Shortcuts Page ---
             add = &adw::PreferencesPage {
                 set_title: "Shortcuts",
                 set_icon_name: Some("keyboard-shortcuts-symbolic"),
                 add_css_class: "shortcuts-page",
-
                 add = &adw::PreferencesGroup {
                     set_title: "Navigation",
                     add_css_class: "shortcuts-group",
-
                     add = &adw::ActionRow {
                         set_title: "Back",
                         add_css_class: "settings-row",
@@ -403,11 +462,9 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                 },
-
                 add = &adw::PreferencesGroup {
                     set_title: "File Operations",
                     add_css_class: "shortcuts-group",
-
                     add = &adw::ActionRow {
                         set_title: "Delete",
                         add_css_class: "settings-row",
@@ -424,11 +481,9 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                 },
-
                 add = &adw::PreferencesGroup {
                     set_title: "View and Application",
                     add_css_class: "shortcuts-group",
-
                     add = &adw::ActionRow {
                         set_title: "Refresh",
                         add_css_class: "settings-row",

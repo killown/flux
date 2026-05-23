@@ -156,6 +156,8 @@ pub struct ContextAction {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Configuration settings for the embedded terminal widget.
+    pub terminal: TerminalConfig,
     /// Default pixel size for file and folder icons.
     pub default_icon_size: i32,
     /// Width of the left navigation sidebar in pixels.
@@ -233,6 +235,7 @@ impl Default for UIConfig {
             ascending: true,
             expand_labels: false,
             folder_icons: HashMap::new(),
+            terminal: TerminalConfig::default(),
         }
     }
 }
@@ -251,9 +254,33 @@ pub struct CustomPlace {
     pub path: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(default)]
+pub struct TerminalConfig {
+    pub height: i32,
+    pub fg_color: String,
+    pub bg_color: String,
+    pub font: String,
+}
+
+impl Default for TerminalConfig {
+    fn default() -> Self {
+        Self {
+            height: 50,
+            fg_color: "#E5E5E5".to_string(),
+            bg_color: "#1A1A1A".to_string(),
+            font: "JetBrains Mono 13".to_string(),
+        }
+    }
+}
+
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// The embedded VTE terminal widget.
+    pub terminal: vte4::Terminal,
+    /// Whether the terminal panel is currently visible.
+    pub terminal_visible: bool,
     /// Indicates whether a background file system operation or directory reload is currently in progress.
     pub is_loading: bool,
     /// Persistent SQLite-backed manager for application state and metadata.
@@ -321,6 +348,10 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Toggle the embedded terminal panel visibility.
+    ToggleTerminal,
+    /// Send a cd command to the embedded terminal for the given path.
+    TerminalCd(PathBuf),
     /// Internal trigger to open icon picker (resolves path from selection/current dir).
     TriggerIconPicker,
     /// Internal trigger to reset icon (resolves path from selection/current dir).
@@ -530,6 +561,14 @@ pub enum AppMsg {
     SetFolderIcon { path: PathBuf, icon_name: String },
     /// Removes the custom icon override for the given directory path, restoring the default.
     ResetFolderIcon(PathBuf),
+    /// Updates the height of the embedded terminal panel in pixels.
+    SetTerminalHeight(i32),
+    /// Updates the Pango font description string for the embedded terminal.
+    SetTerminalFont(String),
+    /// Updates the foreground text color (as a hex string) for the embedded terminal.
+    SetTerminalFgColor(String),
+    /// Updates the background color (as a hex string) for the embedded terminal.
+    SetTerminalBgColor(String),
 }
 
 /// Represents a single entry in the Flux context menu configuration.

@@ -8,6 +8,7 @@ use adw::prelude::*;
 use gtk::{gio, glib};
 use relm4::prelude::*;
 use std::sync::atomic::Ordering;
+use vte4::TerminalExt;
 
 impl FluxApp {
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
@@ -514,6 +515,45 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::SetTerminalHeight(h) => {
+                self.config.ui.terminal.height = h;
+                crate::utils::save_config(&self.config);
+            }
+            AppMsg::SetTerminalFont(f) => {
+                self.config.ui.terminal.font = f;
+                crate::utils::save_config(&self.config);
+            }
+            AppMsg::SetTerminalFgColor(c) => {
+                self.config.ui.terminal.fg_color = c;
+                crate::utils::save_config(&self.config);
+            }
+            AppMsg::SetTerminalBgColor(c) => {
+                self.config.ui.terminal.bg_color = c;
+                crate::utils::save_config(&self.config);
+            }
+            AppMsg::ToggleTerminal => {
+                self.terminal_visible = !self.terminal_visible;
+                if self.terminal_visible {
+                    sender.input(AppMsg::TerminalCd(self.current_path.clone()));
+                }
+            }
+            AppMsg::TerminalCd(path) => {
+                if self.terminal_visible {
+                    let path_str = path.to_string_lossy();
+                    let cmd = format!("cd '{}'\n", path_str.replace('\'', "'\\''"));
+                    if let Some(pty) = self.terminal.pty() {
+                        use std::os::unix::io::AsRawFd;
+                        unsafe {
+                            let bytes = cmd.as_bytes();
+                            libc::write(
+                                pty.fd().as_raw_fd(),
+                                bytes.as_ptr() as *const libc::c_void,
+                                bytes.len(),
+                            );
+                        }
+                    }
+                }
+            }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();
                 let is_in_trash = self
@@ -887,6 +927,7 @@ impl FluxApp {
 
                     // Perform the actual I/O to populate the file model for the new path
                     self.load_path(path, &sender);
+                    sender.input(AppMsg::TerminalCd(self.current_path.clone()));
                     self.update_breadcrumbs();
 
                     // Update focus and selection on the next main loop iteration

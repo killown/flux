@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::model::CustomAction;
+use crate::model::TerminalConfig;
 
 pub fn ensure_config_file() -> PathBuf {
     let config_dir = dirs::config_dir()
@@ -141,6 +142,12 @@ theme = "default"
 show_csd = false
 start_maximized = true
 
+[ui.terminal]
+height = 50
+fg_color = ""
+bg_color = ""
+font = "JetBrains Mono 11"
+
 [ui.folder_sort]
 
 [ui.device_renames]
@@ -271,6 +278,7 @@ path = "~"
                 ascending: true,
                 expand_labels: false,
                 folder_icons: std::collections::HashMap::new(),
+                terminal: TerminalConfig::default(),
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),

@@ -94,11 +94,11 @@ impl SimpleComponent for HelpWindow {
                         adw::PreferencesGroup {
                             set_title: "System & View",
                             adw::ActionRow {
-                                    set_title: &model.format_shortcut(model.config.shortcuts.rename.clone(), "F2"),
-                                    set_subtitle: "Rename selected item"
+                                set_title: &model.format_shortcut(model.config.shortcuts.rename.clone(), "F2"),
+                                set_subtitle: "Rename selected item"
                             },
                             adw::ActionRow {
-                              set_title: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
+                                set_title: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
                                 set_subtitle: "Change current folder icon"
                             },
                             adw::ActionRow {
@@ -106,12 +106,8 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Reset current folder icon to default"
                             },
                             adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
-                                set_subtitle: "Open context menu editor"
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.settings.clone(), "F10"),
-                                set_subtitle: "Open preferences"
+                                set_title: "F4",
+                                set_subtitle: "Toggle embedded terminal"
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.refresh.clone(), "F5"),
@@ -122,14 +118,6 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: "Search files"
                             },
                             adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.cycle_sort.clone(), "Ctrl + S"),
-                                set_subtitle: "Cycle through sorting modes"
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.toggle_sort_order.clone(), "Ctrl + Shift + S"),
-                                set_subtitle: "Toggle ascending/descending sort order"
-                            },
-                            adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
                                 set_subtitle: "Toggle hidden files"
                             },
@@ -137,7 +125,27 @@ impl SimpleComponent for HelpWindow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.delete.clone(), "Delete"),
                                 set_subtitle: "Move selected items to trash"
                             },
-                        }
+                        },
+
+                        adw::PreferencesGroup {
+                            set_title: "Application",
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
+                                set_subtitle: "Open context menu editor"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.settings.clone(), "F10"),
+                                set_subtitle: "Open preferences"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.cycle_sort.clone(), "Ctrl + S"),
+                                set_subtitle: "Cycle through sorting modes"
+                            },
+                            adw::ActionRow {
+                                set_title: &model.format_shortcut(model.config.shortcuts.toggle_sort_order.clone(), "Ctrl + Shift + S"),
+                                set_subtitle: "Toggle ascending/descending sort order"
+                            },
+                        },
                     }
                 }
             }

@@ -5,6 +5,7 @@ use relm4::typed_view::grid::TypedGridView;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
+use vte4::prelude::*;
 
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::{constants, FileItem, SidebarPlace};
@@ -92,6 +93,39 @@ impl FluxApp {
             .launch(breadcrumb_box.clone())
             .forward(sender.input_sender(), AppMsg::Navigate);
 
+        let terminal = vte4::Terminal::new();
+        terminal.set_vexpand(true);
+
+        // Intercept F4 when the terminal is focused. VTE consumes keys by default,
+        // so a local controller is required to catch it before the terminal does.
+        let term_sender = sender.clone();
+        let term_key_ctrl = gtk::EventControllerKey::new();
+        term_key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
+            if keyval == gtk::gdk::Key::F4 {
+                term_sender.input(AppMsg::ToggleTerminal);
+                return glib::Propagation::Stop;
+            }
+            glib::Propagation::Proceed
+        });
+        terminal.add_controller(term_key_ctrl);
+
+        // Spawn the user's default shell
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+        let pty_flags = vte4::PtyFlags::DEFAULT;
+        let spawn_flags = glib::SpawnFlags::DEFAULT;
+
+        terminal.spawn_async(
+            pty_flags,
+            Some(start_path.to_str().unwrap_or("/")),
+            &[&shell],
+            &[],
+            spawn_flags,
+            || {},
+            -1,
+            gio::Cancellable::NONE,
+            |_| {},
+        );
+
         // 8. Model Assembly
         let mut model = FluxApp {
             files,
@@ -127,6 +161,8 @@ impl FluxApp {
             task_queue: crate::services::tasks::new_queue(),
             toast_overlay: adw::ToastOverlay::new(),
             pending_toasts: std::collections::HashMap::new(),
+            terminal,
+            terminal_visible: false,
         };
 
         // 9. Initial State Population

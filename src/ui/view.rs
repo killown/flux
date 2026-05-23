@@ -245,9 +245,28 @@ impl SimpleAsyncComponent for FluxApp {
                         },
 
                         /// Main scrollable viewport for the file grid.
-                        #[name = "grid_scroller"]
-                        gtk::ScrolledWindow {
+                        gtk::Paned {
+                            set_orientation: gtk::Orientation::Vertical,
                             set_vexpand: true,
+                            set_wide_handle: true,
+                            set_shrink_end_child: true,
+                            set_shrink_start_child: true,
+
+                            #[wrap(Some)]
+                            set_start_child: grid_scroller = &gtk::ScrolledWindow {
+                                set_vexpand: true,
+                            },
+
+                            #[wrap(Some)]
+                            set_end_child: terminal_revealer = &gtk::Revealer {
+                                set_transition_type: gtk::RevealerTransitionType::SlideUp,
+                                set_transition_duration: 150,
+                                #[watch]
+                                set_reveal_child: model.terminal_visible,
+                                #[watch]
+                                set_visible: model.terminal_visible,
+                                set_vexpand: false,
+        },
 
                             /// Scroll event controller for UI zooming (Ctrl + Scroll).
                             add_controller = gtk::EventControllerScroll {
@@ -420,6 +439,39 @@ impl SimpleAsyncComponent for FluxApp {
         if model.config.ui.start_maximized {
             root.maximize();
         }
+
+        let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+
+        terminal_box.set_size_request(-1, model.config.ui.terminal.height);
+
+        use gtk::prelude::WidgetExt;
+        use vte4::TerminalExt;
+
+        let resolve_color = |hex: &str, theme_key: &str, r: f32, g: f32, b: f32, a: f32| {
+            gdk::RGBA::parse(hex)
+                .ok()
+                .or_else(|| model.terminal.style_context().lookup_color(theme_key))
+                .unwrap_or_else(|| {
+                    gdk::RGBA::builder()
+                        .red(r)
+                        .green(g)
+                        .blue(b)
+                        .alpha(a)
+                        .build()
+                })
+        };
+
+        let term_cfg = &model.config.ui.terminal;
+        let foreground = resolve_color(&term_cfg.fg_color, "window_fg_color", 0.9, 0.9, 0.9, 1.0);
+        let background = resolve_color(&term_cfg.bg_color, "window_bg_color", 0.1, 0.1, 0.1, 1.0);
+
+        model.terminal.set_color_foreground(&foreground);
+        model.terminal.set_color_background(&background);
+
+        let font_desc = pango::FontDescription::from_string(&term_cfg.font);
+        model.terminal.set_font(Some(&font_desc));
+        terminal_box.append(&model.terminal);
+        widgets.terminal_revealer.set_child(Some(&terminal_box));
 
         let startup_sender = sender.clone();
         gtk::glib::idle_add_local_once(move || {

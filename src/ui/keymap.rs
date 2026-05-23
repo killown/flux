@@ -16,6 +16,7 @@ pub mod constants {
     pub const ROOT: &str = "slash";
     pub const CHANGE_ICON: &str = "F3";
     pub const RESET_ICON: &str = "<ctrl>F3";
+    pub const TOGGLE_TERMINAL: &str = "F4";
 }
 
 /// A collection of resolved GTK ShortcutTriggers.
@@ -36,6 +37,7 @@ pub struct KeyMap {
     pub root: gtk::ShortcutTrigger,
     pub change_icon: gtk::ShortcutTrigger,
     pub reset_icon: gtk::ShortcutTrigger,
+    pub toggle_terminal: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -57,6 +59,7 @@ impl KeyMap {
             root: parse_trigger(&config.root, constants::ROOT),
             change_icon: parse_trigger(&config.change_icon, constants::CHANGE_ICON),
             reset_icon: parse_trigger(&config.reset_icon, constants::RESET_ICON),
+            toggle_terminal: parse_trigger(&None, constants::TOGGLE_TERMINAL),
         }
     }
 }

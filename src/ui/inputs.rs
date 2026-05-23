@@ -168,6 +168,15 @@ pub fn setup_controllers(
         })),
     ));
 
+    let s_terminal = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("F4").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_terminal.input(AppMsg::ToggleTerminal);
+            glib::Propagation::Stop
+        })),
+    ));
+
     let s_search = sender.clone();
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(keymap.search.clone()),
