@@ -252,4 +252,26 @@ impl FluxApp {
 
         (model, breadcrumb_box)
     }
+
+    /// Constructs the `gio::Menu` model for the main hamburger popover.
+    ///
+    /// Uses GIO menu sections for visual grouping. Each `detailed_action` string
+    /// references an `app.*` action registered in `main.rs::setup_shortcuts`.
+    pub(crate) fn build_main_menu() -> gtk::gio::Menu {
+        let menu = gtk::gio::Menu::new();
+
+        // ── View & Preferences ───────────────────────────────────────────────
+        let view_section = gtk::gio::Menu::new();
+        view_section.append(Some("Preferences"), Some("app.open-settings"));
+        view_section.append(Some("Keyboard Shortcuts"), Some("app.open-help"));
+        menu.append_section(None, &view_section);
+
+        // ── Tools ────────────────────────────────────────────────────────────
+        let tools_section = gtk::gio::Menu::new();
+        tools_section.append(Some("Context Menu Editor"), Some("app.open-menu-editor"));
+        tools_section.append(Some("New Window"), Some("app.new-window"));
+        menu.append_section(None, &tools_section);
+
+        menu
+    }
 }

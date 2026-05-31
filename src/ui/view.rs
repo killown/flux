@@ -212,6 +212,20 @@ impl SimpleAsyncComponent for FluxApp {
                                     }
                                 }
                             },
+
+                            pack_end = &gtk::MenuButton {
+                                set_icon_name: "open-menu-symbolic",
+                                set_tooltip_text: Some("Main Menu"),
+                                add_css_class: "flat",
+                                connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                                #[wrap(Some)]
+                                set_popover: main_menu_popover = &gtk::PopoverMenu::from_model(
+                                    Option::<&gtk::gio::MenuModel>::None,
+                                ) {
+                                    set_has_arrow: false,
+                                }
+                            },
+
                             /// Visual indicator of the current active sorting mode.
                             pack_end = &gtk::Box {
                                 set_orientation: gtk::Orientation::Horizontal,
@@ -241,7 +255,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     #[watch]
                                     set_label: &model.sort_status(),
                                 }
-                            }
+                            },
                         },
 
                         /// Main scrollable viewport for the file grid.
@@ -412,6 +426,9 @@ impl SimpleAsyncComponent for FluxApp {
         let (model, breadcrumb_box) = Self::init_components(PathBuf::new(), &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
         let widgets = view_output!();
+
+        let main_menu = Self::build_main_menu();
+        widgets.main_menu_popover.set_menu_model(Some(&main_menu));
 
         // Map widgets that were not part of the view macro directly
         widgets.grid_scroller.set_child(Some(&model.files.view));
