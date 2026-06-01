@@ -244,6 +244,34 @@ impl FluxApp {
         });
         app.add_action(&reload_action);
 
+        for (name, variant) in [
+            ("sort-by-name", crate::model::SortBy::Name),
+            ("sort-by-date", crate::model::SortBy::Date),
+            ("sort-by-size", crate::model::SortBy::Size),
+            ("sort-by-type", crate::model::SortBy::Type),
+        ] {
+            let s = sender.clone();
+            let action = gio::SimpleAction::new(name, None);
+            action.connect_activate(move |_, _| {
+                s.input(AppMsg::SetDefaultSort(variant));
+            });
+            app.add_action(&action);
+        }
+
+        let s_asc = sender.clone();
+        let action_sort_asc = gio::SimpleAction::new("sort-asc", None);
+        action_sort_asc.connect_activate(move |_, _| {
+            s_asc.input(AppMsg::SetAsc(true));
+        });
+        app.add_action(&action_sort_asc);
+
+        let s_desc = sender.clone();
+        let action_sort_desc = gio::SimpleAction::new("sort-desc", None);
+        action_sort_desc.connect_activate(move |_, _| {
+            s_desc.input(AppMsg::SetAsc(false));
+        });
+        app.add_action(&action_sort_desc);
+
         // Queue initial data fetch
         let s_init = sender.clone();
         glib::idle_add_local_once(move || {
@@ -259,6 +287,23 @@ impl FluxApp {
     /// references an `app.*` action registered in `main.rs::setup_shortcuts`.
     pub(crate) fn build_main_menu() -> gtk::gio::Menu {
         let menu = gtk::gio::Menu::new();
+
+        // ── Sort ─────────────────────────────────────────────────────────────
+        let sort_submenu = gtk::gio::Menu::new();
+
+        let sort_fields = gtk::gio::Menu::new();
+        sort_fields.append(Some("By Name"), Some("app.sort-by-name"));
+        sort_fields.append(Some("By Date"), Some("app.sort-by-date"));
+        sort_fields.append(Some("By Size"), Some("app.sort-by-size"));
+        sort_fields.append(Some("By Type"), Some("app.sort-by-type"));
+        sort_submenu.append_section(None, &sort_fields);
+
+        let sort_direction = gtk::gio::Menu::new();
+        sort_direction.append(Some("Ascending"), Some("app.sort-asc"));
+        sort_direction.append(Some("Descending"), Some("app.sort-desc"));
+        sort_submenu.append_section(None, &sort_direction);
+
+        menu.append_submenu(Some("Sort By"), &sort_submenu);
 
         // ── View & Preferences ───────────────────────────────────────────────
         let view_section = gtk::gio::Menu::new();

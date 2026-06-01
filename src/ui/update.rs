@@ -184,6 +184,13 @@ impl FluxApp {
                 self.config.ui.default_sort = sort;
                 self.sort_by = sort;
                 utils::save_config(&self.config);
+                let _ = self.state_db.save_view(
+                    &self.current_path,
+                    &format!("{:?}", self.sort_by),
+                    !self.sort_ascending,
+                    self.current_icon_size as u32,
+                    self.config.ui.folders_first,
+                );
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::SetShortcut(key, val) => {
