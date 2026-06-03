@@ -523,7 +523,7 @@ impl SimpleComponent for FileProperties {
             .build();
 
         let row = adw::ActionRow::builder()
-            .title(&tr("Open With"))
+            .title(tr("Open With").as_str())
             .activatable_widget(&dropdown)
             .build();
         row.add_suffix(&dropdown);

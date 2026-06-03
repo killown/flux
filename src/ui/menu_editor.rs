@@ -109,7 +109,7 @@ impl SimpleComponent for MenuEditor {
 
     view! {
         adw::Window {
-            set_title: Some(&tr("Flux Menu Editor")),
+            set_title: Some(tr("Flux Menu Editor").as_str()),
             set_default_size: (820, 640),
         }
     }
@@ -131,20 +131,20 @@ impl SimpleComponent for MenuEditor {
         let header = adw::HeaderBar::new();
         let add_btn = gtk::Button::builder()
             .icon_name("list-add-symbolic")
-            .tooltip_text(&tr("Add new entry  (Ctrl+N)"))
+            .tooltip_text(tr("Add new entry  (Ctrl+N)").as_str())
             .build();
         let save_btn = gtk::Button::builder()
-            .label(&tr("Save"))
-            .tooltip_text(&tr("Write to ~/.config/flux/menu.rs  (Ctrl+S)"))
+            .label(tr("Save").as_str())
+            .tooltip_text(tr("Write to ~/.config/flux/menu.rs  (Ctrl+S)").as_str())
             .css_classes(["suggested-action"])
             .build();
 
         // ── Search bar in header title position ───────────────────────────────
         let search_entry = gtk::SearchEntry::builder()
-            .placeholder_text(&tr("Search entries…"))
+            .placeholder_text(tr("Search entries…").as_str())
             .hexpand(true)
             .max_width_chars(40)
-            .tooltip_text(&tr("Filter entries  (Ctrl+F)"))
+            .tooltip_text(tr("Filter entries  (Ctrl+F)").as_str())
             .build();
         header.set_title_widget(Some(&search_entry));
 
@@ -297,12 +297,12 @@ impl SimpleComponent for MenuEditor {
                 let ok = write_to_disk(&shared.entries.borrow()).is_ok();
                 shared.toast_overlay.add_toast(if ok {
                     adw::Toast::builder()
-                        .title(&tr("menu.rs saved"))
+                        .title(tr("menu.rs saved").as_str())
                         .timeout(2)
                         .build()
                 } else {
                     adw::Toast::builder()
-                        .title(&tr("Failed to save menu.rs"))
+                        .title(tr("Failed to save menu.rs").as_str())
                         .timeout(4)
                         .build()
                 });
@@ -349,8 +349,8 @@ fn rebuild_list(shared: &Shared) {
     if entries.is_empty() {
         list_box.append(
             &adw::ActionRow::builder()
-                .title(&tr("No entries yet"))
-                .subtitle(&tr("Press + or Ctrl+N to add your first menu action"))
+                .title(tr("No entries yet").as_str())
+                .subtitle(tr("Press + or Ctrl+N to add your first menu action").as_str())
                 .build(),
         );
         return;
@@ -359,8 +359,8 @@ fn rebuild_list(shared: &Shared) {
     if visible.is_empty() {
         list_box.append(
             &adw::ActionRow::builder()
-                .title(&tr("No results"))
-                .subtitle(&tr("Try a different search term"))
+                .title(tr("No results").as_str())
+                .subtitle(tr("Try a different search term").as_str())
                 .build(),
         );
         return;
@@ -411,10 +411,10 @@ fn build_row(
             .css_classes(["flat"])
             .build()
     };
-    let up = mk("go-up-symbolic", &tr("Move up"));
-    let down = mk("go-down-symbolic", &tr("Move down"));
-    let edit = mk("document-edit-symbolic", &tr("Edit"));
-    let del = mk("user-trash-symbolic", &tr("Delete"));
+    let up = mk("go-up-symbolic", tr("Move up").as_str());
+    let down = mk("go-down-symbolic", tr("Move down").as_str());
+    let edit = mk("document-edit-symbolic", tr("Edit").as_str());
+    let del = mk("user-trash-symbolic", tr("Delete").as_str());
 
     up.set_sensitive(idx > 0);
     down.set_sensitive(idx + 1 < total);
@@ -465,10 +465,10 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
 
     let page = adw::PreferencesPage::new();
     let g_id = adw::PreferencesGroup::builder()
-        .title(&tr("Identity"))
+        .title(tr("Identity").as_str())
         .build();
     let g_act = adw::PreferencesGroup::builder()
-        .title(&tr("Action"))
+        .title(tr("Action").as_str())
         .build();
 
     // ── Fields ────────────────────────────────────────────────────────────────
@@ -486,18 +486,18 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         (row, entry)
     };
 
-    let (label_row, label_entry) = make_entry_row(&tr("Label"), &entry.label);
+    let (label_row, label_entry) = make_entry_row(tr("Label").as_str(), &entry.label);
     let (sub_row, sub_entry) = make_entry_row(
-        &tr("Submenu  (blank = top-level)"),
+        tr("Submenu  (blank = top-level)").as_str(),
         entry.submenu.as_deref().unwrap_or(""),
     );
-    let (mime_row, mime_entry) = make_entry_row(&tr("MIME Types"), &entry.mime_types);
+    let (mime_row, mime_entry) = make_entry_row(tr("MIME Types").as_str(), &entry.mime_types);
     let mime_hint = adw::ActionRow::builder()
         .title("all │ file │ directory │ trash │ image/all │ video/all │ audio/ │ text/all, application/all")
         .css_classes(["property"])
         .build();
     let (cmd_row, cmd_entry) = make_entry_row(
-        &tr("Command  (%p = path · %d = dir · %f = filename)"),
+        tr("Command  (%p = path · %d = dir · %f = filename)").as_str(),
         &entry.command,
     );
     let cmd_hint = adw::ActionRow::builder()
@@ -505,7 +505,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .css_classes(["property"])
         .build();
     let (toast_row, toast_entry) = make_entry_row(
-        &tr("Notification  (optional)"),
+        tr("Notification  (optional)").as_str(),
         entry.toast.as_deref().unwrap_or(""),
     );
 
@@ -530,7 +530,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .margin_bottom(20)
         .margin_end(20)
         .build();
-    let cancel_btn = gtk::Button::builder().label(&tr("Cancel")).build();
+    let cancel_btn = gtk::Button::builder().label(tr("Cancel").as_str()).build();
     let commit_label = if replace.is_some() {
         tr("Save")
     } else {
