@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::Config;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -37,7 +38,7 @@ impl SimpleComponent for HelpWindow {
     view! {
         adw::Window {
             set_default_size: (550, 750),
-            set_title: Some("flux - Shortcuts"),
+            set_title: Some(&tr("flux - Shortcuts")),
             set_modal: true,
             set_resizable: false,
 
@@ -52,98 +53,98 @@ impl SimpleComponent for HelpWindow {
 
                     adw::PreferencesPage {
                         adw::PreferencesGroup {
-                            set_title: "Navigation",
+                            set_title: &tr("Navigation"),
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.back.clone(), "Backspace"),
-                                set_subtitle: "Go back in history"
+                                set_subtitle: &tr("Go back in history")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.forward.clone(), "Alt + Right"),
-                                set_subtitle: "Go forward in history"
+                                set_subtitle: &tr("Go forward in history")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
-                                set_subtitle: "Open selected file or directory"
+                                set_subtitle: &tr("Open selected file or directory")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.root.clone(), "/"),
-                                set_subtitle: "Navigate to root directory"
+                                set_subtitle: &tr("Navigate to root directory")
                             },
                         },
 
                         adw::PreferencesGroup {
-                            set_title: "Quick List (Exclusive List)",
+                            set_title: &tr("Quick List (Exclusive List)"),
                             adw::ActionRow {
                                 set_title: "Insert",
-                                set_subtitle: "Add selection or current folder to list"
+                                set_subtitle: &tr("Add selection or current folder to list")
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + Insert",
-                                set_subtitle: "Pin selection or current folder to sidebar permanently"
+                                set_subtitle: &tr("Pin selection or current folder to sidebar permanently")
                             },
                             adw::ActionRow {
                                 set_title: "Tab",
-                                set_subtitle: "Cycle to the next folder in the list"
+                                set_subtitle: &tr("Cycle to the next folder in the list")
                             },
                             adw::ActionRow {
                                 set_title: "Ctrl + End",
-                                set_subtitle: "Clear the entire list"
+                                set_subtitle: &tr("Clear the entire list")
                             },
                         },
 
                         adw::PreferencesGroup {
-                            set_title: "System & View",
+                            set_title: &tr("System & View"),
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.rename.clone(), "F2"),
-                                set_subtitle: "Rename selected item"
+                                set_subtitle: &tr("Rename selected item")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
-                                set_subtitle: "Change current folder icon"
+                                set_subtitle: &tr("Change current folder icon")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.reset_icon.clone(), "Ctrl + F3"),
-                                set_subtitle: "Reset current folder icon to default"
+                                set_subtitle: &tr("Reset current folder icon to default")
                             },
                             adw::ActionRow {
                                 set_title: "F4",
-                                set_subtitle: "Toggle embedded terminal"
+                                set_subtitle: &tr("Toggle embedded terminal")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.refresh.clone(), "F5"),
-                                set_subtitle: "Refresh current directory"
+                                set_subtitle: &tr("Refresh current directory")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
-                                set_subtitle: "Search files"
+                                set_subtitle: &tr("Search files")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
-                                set_subtitle: "Toggle hidden files"
+                                set_subtitle: &tr("Toggle hidden files")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.delete.clone(), "Delete"),
-                                set_subtitle: "Move selected items to trash"
+                                set_subtitle: &tr("Move selected items to trash")
                             },
                         },
 
                         adw::PreferencesGroup {
-                            set_title: "Application",
+                            set_title: &tr("Application"),
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
-                                set_subtitle: "Open context menu editor"
+                                set_subtitle: &tr("Open context menu editor")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.settings.clone(), "F10"),
-                                set_subtitle: "Open preferences"
+                                set_subtitle: &tr("Open preferences")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.cycle_sort.clone(), "Ctrl + S"),
-                                set_subtitle: "Cycle through sorting modes"
+                                set_subtitle: &tr("Cycle through sorting modes")
                             },
                             adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.toggle_sort_order.clone(), "Ctrl + Shift + S"),
-                                set_subtitle: "Toggle ascending/descending sort order"
+                                set_subtitle: &tr("Toggle ascending/descending sort order")
                             },
                         },
                     }

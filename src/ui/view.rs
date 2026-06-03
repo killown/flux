@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
@@ -17,7 +18,7 @@ impl SimpleAsyncComponent for FluxApp {
         adw::Window {
             #[watch]
             set_title: Some(&if model.current_path.to_string_lossy().starts_with(constants::TRASH_URI) {
-                "Trash".to_string()
+                tr("Trash")
             } else {
                 model.current_path.file_name()
                     .unwrap_or_else(|| std::ffi::OsStr::new("/"))
@@ -215,7 +216,7 @@ impl SimpleAsyncComponent for FluxApp {
 
                             pack_end = &gtk::MenuButton {
                                 set_icon_name: "open-menu-symbolic",
-                                set_tooltip_text: Some("Main Menu"),
+                                set_tooltip_text: Some(&tr("Main Menu")),
                                 add_css_class: "flat",
                                 connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                                 #[wrap(Some)]
@@ -382,7 +383,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 #[watch]
                                 set_visible: model.task_queue.summary().is_some(),
                                 set_icon_name: "process-stop-symbolic",
-                                set_tooltip_text: Some("Cancel all transfers"),
+                                set_tooltip_text: Some(&tr("Cancel all transfers")),
                                 add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                                 set_valign: gtk::Align::Center,
                                 connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),

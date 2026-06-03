@@ -1,0 +1,695 @@
+# Tradução para Português do Brasil do pacote flux.
+# Copyright (C) 2026 Thiago Lucio
+# This file is distributed under the same license as the flux package.
+# neo <thiago.dev.lucio@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: flux\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-03 00:42-0300\n"
+"PO-Revision-Date: 2026-06-03 00:44-0300\n"
+"Last-Translator: neo <thiago.dev.lucio@gmail.com>\n"
+"Language-Team: Brazilian Portuguese <ldpbr-translation@lists.sourceforge.net>\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: src/ui/view.rs:21
+msgid "Trash"
+msgstr "Lixeira"
+
+#: src/ui/view.rs:219
+msgid "Main Menu"
+msgstr "Menu principal"
+
+#: src/ui/view.rs:386
+msgid "Cancel all transfers"
+msgstr "Cancelar todas as transferências"
+
+#: src/ui/help.rs:41
+msgid "flux - Shortcuts"
+msgstr "flux - Atalhos"
+
+#: src/ui/help.rs:56 src/ui/settings.rs:418
+msgid "Navigation"
+msgstr "Navegação"
+
+#: src/ui/help.rs:59
+msgid "Go back in history"
+msgstr "Voltar no histórico"
+
+#: src/ui/help.rs:63
+msgid "Go forward in history"
+msgstr "Avançar no histórico"
+
+#: src/ui/help.rs:67
+msgid "Open selected file or directory"
+msgstr "Abrir arquivo ou pasta selecionado"
+
+#: src/ui/help.rs:71
+msgid "Navigate to root directory"
+msgstr "Ir para o diretório raiz"
+
+#: src/ui/help.rs:76
+msgid "Quick List (Exclusive List)"
+msgstr "Lista rápida (lista exclusiva)"
+
+#: src/ui/help.rs:79
+msgid "Add selection or current folder to list"
+msgstr "Adicionar seleção ou pasta atual à lista"
+
+#: src/ui/help.rs:83
+msgid "Pin selection or current folder to sidebar permanently"
+msgstr "Fixar seleção ou pasta atual na barra lateral permanentemente"
+
+#: src/ui/help.rs:87
+msgid "Cycle to the next folder in the list"
+msgstr "Avançar para a próxima pasta da lista"
+
+#: src/ui/help.rs:91
+msgid "Clear the entire list"
+msgstr "Limpar toda a lista"
+
+#: src/ui/help.rs:96
+msgid "System & View"
+msgstr "Sistema e exibição"
+
+#: src/ui/help.rs:99
+msgid "Rename selected item"
+msgstr "Renomear item selecionado"
+
+#: src/ui/help.rs:103
+msgid "Change current folder icon"
+msgstr "Alterar ícone da pasta atual"
+
+#: src/ui/help.rs:107
+msgid "Reset current folder icon to default"
+msgstr "Restaurar ícone padrão da pasta atual"
+
+#: src/ui/help.rs:111
+msgid "Toggle embedded terminal"
+msgstr "Mostrar/ocultar terminal integrado"
+
+#: src/ui/help.rs:115
+msgid "Refresh current directory"
+msgstr "Atualizar diretório atual"
+
+#: src/ui/help.rs:119
+msgid "Search files"
+msgstr "Pesquisar arquivos"
+
+#: src/ui/help.rs:123
+msgid "Toggle hidden files"
+msgstr "Mostrar/ocultar arquivos ocultos"
+
+#: src/ui/help.rs:127
+msgid "Move selected items to trash"
+msgstr "Mover itens selecionados para a lixeira"
+
+#: src/ui/help.rs:132
+msgid "Application"
+msgstr "Aplicativo"
+
+#: src/ui/help.rs:135
+msgid "Open context menu editor"
+msgstr "Abrir editor de menu de contexto"
+
+#: src/ui/help.rs:139
+msgid "Open preferences"
+msgstr "Abrir preferências"
+
+#: src/ui/help.rs:143
+msgid "Cycle through sorting modes"
+msgstr "Alternar modos de ordenação"
+
+#: src/ui/help.rs:147
+msgid "Toggle ascending/descending sort order"
+msgstr "Alternar ordem crescente/decrescente"
+
+#: src/ui/settings.rs:19 src/ui/init.rs:311
+msgid "Preferences"
+msgstr "Preferências"
+
+#: src/ui/settings.rs:27
+msgid "Appearance"
+msgstr "Aparência"
+
+#: src/ui/settings.rs:31
+msgid "Layout"
+msgstr "Layout"
+
+#: src/ui/settings.rs:34
+msgid "Default Icon Size"
+msgstr "Tamanho padrão dos ícones"
+
+#: src/ui/settings.rs:35
+msgid "Base size of icons in the grid view"
+msgstr "Tamanho base dos ícones na grade"
+
+#: src/ui/settings.rs:49
+msgid "Grid Spacing"
+msgstr "Espaçamento da grade"
+
+#: src/ui/settings.rs:50
+msgid "Pixel spacing between items in the grid view"
+msgstr "Espaçamento em pixels entre itens na grade"
+
+#: src/ui/settings.rs:64
+msgid "Max Label Length"
+msgstr "Comprimento máximo do nome"
+
+#: src/ui/settings.rs:65
+msgid "Maximum characters to show before truncating filenames"
+msgstr "Número máximo de caracteres antes de truncar nomes de arquivo"
+
+#: src/ui/settings.rs:79
+msgid "Expand Filenames"
+msgstr "Expandir nomes de arquivo"
+
+#: src/ui/settings.rs:80
+msgid "Show full filenames in the grid, wrapping across multiple lines"
+msgstr "Exibir nomes completos na grade, quebrando em múltiplas linhas"
+
+#: src/ui/settings.rs:94
+msgid "Sidebar Width"
+msgstr "Largura da barra lateral"
+
+#: src/ui/settings.rs:95
+msgid "Default width of the navigation pane"
+msgstr "Largura padrão do painel de navegação"
+
+#: src/ui/settings.rs:109
+msgid "Startup Width"
+msgstr "Largura inicial"
+
+#: src/ui/settings.rs:110
+msgid "Initial window width in pixels"
+msgstr "Largura inicial da janela em pixels"
+
+#: src/ui/settings.rs:124
+msgid "Startup Height"
+msgstr "Altura inicial"
+
+#: src/ui/settings.rs:125
+msgid "Initial window height in pixels"
+msgstr "Altura inicial da janela em pixels"
+
+#: src/ui/settings.rs:139
+msgid "Show Client-Side Decorations (CSD)"
+msgstr "Exibir decorações do lado do cliente (CSD)"
+
+#: src/ui/settings.rs:152
+msgid "Start Maximized"
+msgstr "Iniciar maximizado"
+
+#: src/ui/settings.rs:153
+msgid "Open the application in maximized state"
+msgstr "Abrir o aplicativo maximizado"
+
+#: src/ui/settings.rs:167
+msgid "Theming"
+msgstr "Temas"
+
+#: src/ui/settings.rs:170
+msgid "Theme"
+msgstr "Tema"
+
+#: src/ui/settings.rs:225
+msgid "Show XDG Directories"
+msgstr "Exibir diretórios XDG"
+
+#: src/ui/settings.rs:227
+msgid "Display standard user directories in the sidebar"
+msgstr "Exibir diretórios padrão do usuário na barra lateral"
+
+#: src/ui/settings.rs:243
+msgid "Behavior"
+msgstr "Comportamento"
+
+#: src/ui/settings.rs:247 src/ui/settings.rs:467
+msgid "File Operations"
+msgstr "Operações com arquivos"
+
+#: src/ui/settings.rs:250
+msgid "Single Click to Open"
+msgstr "Abrir com um clique"
+
+#: src/ui/settings.rs:251
+msgid "Open files and directories with a single click instead of double click"
+msgstr "Abrir arquivos e pastas com um único clique em vez de duplo clique"
+
+#: src/ui/settings.rs:265
+msgid "Sorting and Filtering"
+msgstr "Ordenação e filtragem"
+
+#: src/ui/settings.rs:268
+msgid "Default Sort"
+msgstr "Ordenação padrão"
+
+#: src/ui/settings.rs:269
+msgid "Primary sorting method for files"
+msgstr "Método de ordenação principal para arquivos"
+
+#: src/ui/settings.rs:271
+msgid "Name"
+msgstr "Nome"
+
+#: src/ui/settings.rs:271 src/ui/properties.rs:373
+msgid "Size"
+msgstr "Tamanho"
+
+#: src/ui/settings.rs:271 src/ui/properties.rs:70
+msgid "Date"
+msgstr "Data"
+
+#: src/ui/settings.rs:271 src/ui/properties.rs:120
+msgid "Type"
+msgstr "Tipo"
+
+#: src/ui/settings.rs:294
+msgid "Sort Order"
+msgstr "Ordem de classificação"
+
+#: src/ui/settings.rs:295
+msgid "Direction of the primary sort"
+msgstr "Direção da ordenação principal"
+
+#: src/ui/settings.rs:297 src/ui/init.rs:303
+msgid "Ascending"
+msgstr "Crescente"
+
+#: src/ui/settings.rs:297 src/ui/init.rs:304
+msgid "Descending"
+msgstr "Decrescente"
+
+#: src/ui/settings.rs:312
+msgid "Folders First"
+msgstr "Pastas primeiro"
+
+#: src/ui/settings.rs:313
+msgid "Always display folders before files when sorting"
+msgstr "Sempre exibir pastas antes dos arquivos ao ordenar"
+
+#: src/ui/settings.rs:326
+msgid "Show Hidden Files"
+msgstr "Exibir arquivos ocultos"
+
+#: src/ui/settings.rs:327
+msgid "Display files and folders that start with a dot"
+msgstr "Exibir arquivos e pastas que começam com ponto"
+
+#: src/ui/settings.rs:344
+msgid "Terminal"
+msgstr "Terminal"
+
+#: src/ui/settings.rs:348
+msgid "Configuration"
+msgstr "Configuração"
+
+#: src/ui/settings.rs:350
+msgid "Height"
+msgstr "Altura"
+
+#: src/ui/settings.rs:351
+msgid "Height of the terminal pane in pixels"
+msgstr "Altura do painel do terminal em pixels"
+
+#: src/ui/settings.rs:368
+msgid "Font"
+msgstr "Fonte"
+
+#: src/ui/settings.rs:369
+msgid "Pango font description (e.g., 'JetBrains Mono 13')"
+msgstr "Descrição de fonte Pango (ex.: 'JetBrains Mono 13')"
+
+#: src/ui/settings.rs:382
+msgid "Foreground Color"
+msgstr "Cor do texto"
+
+#: src/ui/settings.rs:383
+msgid "Hex color code for foreground (e.g., '#E5E5E5')"
+msgstr "Código de cor hexadecimal para o texto (ex.: '#E5E5E5')"
+
+#: src/ui/settings.rs:396
+msgid "Background Color"
+msgstr "Cor de fundo"
+
+#: src/ui/settings.rs:397
+msgid "Hex color code for background (e.g., '#1A1A1A')"
+msgstr "Código de cor hexadecimal para o fundo (ex.: '#1A1A1A')"
+
+#: src/ui/settings.rs:414
+msgid "Shortcuts"
+msgstr "Atalhos"
+
+#: src/ui/settings.rs:421
+msgid "Back"
+msgstr "Voltar"
+
+#: src/ui/settings.rs:436
+msgid "Forward"
+msgstr "Avançar"
+
+#: src/ui/settings.rs:451
+msgid "Open"
+msgstr "Abrir"
+
+#: src/ui/settings.rs:470 src/ui/menu_editor.rs:417
+msgid "Delete"
+msgstr "Excluir"
+
+#: src/ui/settings.rs:486
+msgid "View and Application"
+msgstr "Exibição e aplicativo"
+
+#: src/ui/settings.rs:489
+msgid "Refresh"
+msgstr "Atualizar"
+
+#: src/ui/settings.rs:504
+msgid "Search"
+msgstr "Pesquisar"
+
+#: src/ui/settings.rs:519
+msgid "Toggle Hidden"
+msgstr "Alternar ocultos"
+
+#: src/ui/init.rs:296
+msgid "By Name"
+msgstr "Por nome"
+
+#: src/ui/init.rs:297
+msgid "By Date"
+msgstr "Por data"
+
+#: src/ui/init.rs:298
+msgid "By Size"
+msgstr "Por tamanho"
+
+#: src/ui/init.rs:299
+msgid "By Type"
+msgstr "Por tipo"
+
+#: src/ui/init.rs:307
+msgid "Sort By"
+msgstr "Ordenar por"
+
+#: src/ui/init.rs:312
+msgid "Keyboard Shortcuts"
+msgstr "Atalhos de teclado"
+
+#: src/ui/init.rs:318
+msgid "Context Menu Editor"
+msgstr "Editor de menu de contexto"
+
+#: src/ui/init.rs:321
+msgid "New Window"
+msgstr "Nova janela"
+
+#: src/ui/menu_editor.rs:112
+msgid "Flux Menu Editor"
+msgstr "Editor de menu do Flux"
+
+#: src/ui/menu_editor.rs:134
+msgid "Add new entry  (Ctrl+N)"
+msgstr "Adicionar nova entrada  (Ctrl+N)"
+
+#: src/ui/menu_editor.rs:137 src/ui/menu_editor.rs:535
+msgid "Save"
+msgstr "Salvar"
+
+#: src/ui/menu_editor.rs:138
+msgid "Write to ~/.config/flux/menu.rs  (Ctrl+S)"
+msgstr "Salvar em ~/.config/flux/menu.rs  (Ctrl+S)"
+
+#: src/ui/menu_editor.rs:144
+msgid "Search entries…"
+msgstr "Pesquisar entradas…"
+
+#: src/ui/menu_editor.rs:147
+msgid "Filter entries  (Ctrl+F)"
+msgstr "Filtrar entradas  (Ctrl+F)"
+
+#: src/ui/menu_editor.rs:300
+msgid "menu.rs saved"
+msgstr "menu.rs salvo"
+
+#: src/ui/menu_editor.rs:305
+msgid "Failed to save menu.rs"
+msgstr "Falha ao salvar menu.rs"
+
+#: src/ui/menu_editor.rs:352
+msgid "No entries yet"
+msgstr "Nenhuma entrada ainda"
+
+#: src/ui/menu_editor.rs:353
+msgid "Press + or Ctrl+N to add your first menu action"
+msgstr "Pressione + ou Ctrl+N para adicionar sua primeira ação de menu"
+
+#: src/ui/menu_editor.rs:362
+msgid "No results"
+msgstr "Nenhum resultado"
+
+#: src/ui/menu_editor.rs:363
+msgid "Try a different search term"
+msgstr "Tente um termo de pesquisa diferente"
+
+#: src/ui/menu_editor.rs:414
+msgid "Move up"
+msgstr "Mover para cima"
+
+#: src/ui/menu_editor.rs:415
+msgid "Move down"
+msgstr "Mover para baixo"
+
+#: src/ui/menu_editor.rs:416
+msgid "Edit"
+msgstr "Editar"
+
+#: src/ui/menu_editor.rs:446
+msgid "Edit Entry"
+msgstr "Editar entrada"
+
+#: src/ui/menu_editor.rs:448
+msgid "Add Entry"
+msgstr "Adicionar entrada"
+
+#: src/ui/menu_editor.rs:468
+msgid "Identity"
+msgstr "Identificação"
+
+#: src/ui/menu_editor.rs:471
+msgid "Action"
+msgstr "Ação"
+
+#: src/ui/menu_editor.rs:489
+msgid "Label"
+msgstr "Rótulo"
+
+#: src/ui/menu_editor.rs:491
+msgid "Submenu  (blank = top-level)"
+msgstr "Submenu  (vazio = nível superior)"
+
+#: src/ui/menu_editor.rs:494
+msgid "MIME Types"
+msgstr "Tipos MIME"
+
+#: src/ui/menu_editor.rs:500
+#, c-format
+msgid "Command  (%p = path · %d = dir · %f = filename)"
+msgstr "Comando  (%p = caminho · %d = diretório · %f = nome do arquivo)"
+
+#: src/ui/menu_editor.rs:508
+msgid "Notification  (optional)"
+msgstr "Notificação  (opcional)"
+
+#: src/ui/menu_editor.rs:533
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: src/ui/menu_editor.rs:537
+msgid "Add"
+msgstr "Adicionar"
+
+#: src/ui/properties.rs:69
+msgid "Hash"
+msgstr "Hash"
+
+#: src/ui/properties.rs:71
+msgid "Subject"
+msgstr "Assunto"
+
+#: src/ui/properties.rs:121
+msgid "Arch"
+msgstr "Arquitetura"
+
+#: src/ui/properties.rs:122
+msgid "Endian"
+msgstr "Ordem de bytes"
+
+#: src/ui/properties.rs:141
+msgid "Line Count"
+msgstr "Número de linhas"
+
+#: src/ui/properties.rs:142
+msgid "Word Count"
+msgstr "Número de palavras"
+
+#: src/ui/properties.rs:143
+msgid "TODOs"
+msgstr "TODOs"
+
+#: src/ui/properties.rs:144
+msgid "Line Endings"
+msgstr "Terminação de linha"
+
+#: src/ui/properties.rs:322
+msgid "File Identity"
+msgstr "Identificação do arquivo"
+
+#: src/ui/properties.rs:324
+msgid "Filename"
+msgstr "Nome do arquivo"
+
+#: src/ui/properties.rs:326
+msgid "Extension"
+msgstr "Extensão"
+
+#: src/ui/properties.rs:329
+msgid "None"
+msgstr "Nenhuma"
+
+#: src/ui/properties.rs:331
+msgid "MIME Type"
+msgstr "Tipo MIME"
+
+#: src/ui/properties.rs:338
+msgid "Symlink Info"
+msgstr "Informações do link simbólico"
+
+#: src/ui/properties.rs:340
+msgid "Target"
+msgstr "Destino"
+
+#: src/ui/properties.rs:341
+msgid "Broken"
+msgstr "Quebrado"
+
+#: src/ui/properties.rs:343
+msgid "Canonical"
+msgstr "Canônico"
+
+#: src/ui/properties.rs:365
+msgid "Extended Attributes"
+msgstr "Atributos estendidos"
+
+#: src/ui/properties.rs:371
+msgid "Full Path"
+msgstr "Caminho completo"
+
+#: src/ui/properties.rs:376
+msgid "Disk Usage"
+msgstr "Uso em disco"
+
+#: src/ui/properties.rs:377
+msgid "Inode"
+msgstr "Inode"
+
+#: src/ui/properties.rs:378
+msgid "Device ID"
+msgstr "ID do dispositivo"
+
+#: src/ui/properties.rs:387
+msgid "Mount Source"
+msgstr "Origem da montagem"
+
+#: src/ui/properties.rs:388
+msgid "FS Type"
+msgstr "Tipo de sistema de arquivos"
+
+#: src/ui/properties.rs:391
+msgid "System & Disk"
+msgstr "Sistema e disco"
+
+#: src/ui/properties.rs:399
+msgid "Temporal"
+msgstr "Temporal"
+
+#: src/ui/properties.rs:402
+msgid "Created"
+msgstr "Criado"
+
+#: src/ui/properties.rs:406
+msgid "Modified"
+msgstr "Modificado"
+
+#: src/ui/properties.rs:410
+msgid "Accessed"
+msgstr "Acessado"
+
+#: src/ui/properties.rs:417
+msgid "Permissions"
+msgstr "Permissões"
+
+#: src/ui/properties.rs:418
+msgid "UID/GID"
+msgstr "UID/GID"
+
+#: src/ui/properties.rs:422
+msgid "Entropy"
+msgstr "Entropia"
+
+#: src/ui/properties.rs:430 src/ui/properties.rs:432
+msgid "Security"
+msgstr "Segurança"
+
+#: src/ui/properties.rs:430
+msgid "SHA256"
+msgstr "SHA256"
+
+#: src/ui/properties.rs:437
+msgid "Executable Analysis"
+msgstr "Análise do executável"
+
+#: src/ui/properties.rs:452
+msgid "Content Metrics"
+msgstr "Métricas do conteúdo"
+
+#: src/ui/properties.rs:459
+msgid "Visual Media"
+msgstr "Mídia visual"
+
+#: src/ui/properties.rs:461
+msgid "Dimensions"
+msgstr "Dimensões"
+
+#: src/ui/properties.rs:463
+msgid "Aspect Ratio"
+msgstr "Proporção de tela"
+
+#: src/ui/properties.rs:472
+msgid "Git History"
+msgstr "Histórico Git"
+
+#: src/ui/properties.rs:489
+msgid "System Handler"
+msgstr "Aplicativo padrão"
+
+#: src/ui/properties.rs:492
+msgid "Default application for"
+msgstr "Aplicativo padrão para"
+
+#: src/ui/properties.rs:526
+msgid "Open With"
+msgstr "Abrir com"
+
+#: src/ui/properties.rs:560
+msgid "Copied to clipboard"
+msgstr "Copiado para a área de transferência"
+
+#: src/ui/properties.rs:579
+msgid "Set as default:"
+msgstr "Definido como padrão:"

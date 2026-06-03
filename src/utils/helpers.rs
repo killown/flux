@@ -22,10 +22,10 @@ impl FluxApp {
         format!(
             "{}{}",
             match self.sort_by {
-                SortBy::Name => "Name",
-                SortBy::Date => "Date",
-                SortBy::Size => "Size",
-                SortBy::Type => "Type",
+                SortBy::Name => crate::i18n::tr("Name"),
+                SortBy::Date => crate::i18n::tr("Date"),
+                SortBy::Size => crate::i18n::tr("Size"),
+                SortBy::Type => crate::i18n::tr("Type"),
             },
             arrow
         )

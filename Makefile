@@ -4,12 +4,13 @@ APPDIR = $(PREFIX)/share/applications
 ICONDIR = $(PREFIX)/share/icons/hicolor/scalable/apps
 CONFDIR = $(PREFIX)/share/flux
 SCRIPTDIR = $(CONFDIR)/scripts
+LOCALEDIR = $(PREFIX)/share/locale
 
 .PHONY: install
 
 install:
 	# Create all necessary directories
-	@mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(APPDIR) $(DESTDIR)$(ICONDIR) $(DESTDIR)$(CONFDIR)/themes $(DESTDIR)$(SCRIPTDIR)
+	@mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(APPDIR) $(DESTDIR)$(ICONDIR) $(DESTDIR)$(CONFDIR)/themes $(DESTDIR)$(SCRIPTDIR) $(DESTDIR)$(LOCALEDIR)
 	
 	# 1. Install Binary
 	@install -m 755 target/release/flux-fm $(DESTDIR)$(BINDIR)/flux-fm
@@ -31,7 +32,17 @@ install:
 	# 6. Install Scripts
 	@install -m 755 scripts/*.py $(DESTDIR)$(SCRIPTDIR)/
 	
-	# 7. Refresh
+	# 7. Compile and Install Translations (.po -> .mo)
+	@for po in share/locale/*/LC_MESSAGES/*.po; do \
+		if [ -f "$$po" ]; then \
+			lang=$$(echo $$po | cut -d'/' -f3); \
+			mkdir -p $(DESTDIR)$(LOCALEDIR)/$$lang/LC_MESSAGES; \
+			msgfmt -o $(DESTDIR)$(LOCALEDIR)/$$lang/LC_MESSAGES/flux.mo $$po; \
+			echo "Installed translation for $$lang"; \
+		fi \
+	done
+	
+	# 8. Refresh
 	@if [ -z "$(DESTDIR)" ]; then \
 		update-desktop-database $(PREFIX)/share/applications; \
 		echo "Successfully installed to $(PREFIX)"; \

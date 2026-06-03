@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::MenuEntry;
 use adw::prelude::*;
 use gtk::glib::{self};
@@ -108,7 +109,7 @@ impl SimpleComponent for MenuEditor {
 
     view! {
         adw::Window {
-            set_title: Some("Flux Menu Editor"),
+            set_title: Some(&tr("Flux Menu Editor")),
             set_default_size: (820, 640),
         }
     }
@@ -130,20 +131,20 @@ impl SimpleComponent for MenuEditor {
         let header = adw::HeaderBar::new();
         let add_btn = gtk::Button::builder()
             .icon_name("list-add-symbolic")
-            .tooltip_text("Add new entry  (Ctrl+N)")
+            .tooltip_text(&tr("Add new entry  (Ctrl+N)"))
             .build();
         let save_btn = gtk::Button::builder()
-            .label("Save")
-            .tooltip_text("Write to ~/.config/flux/menu.rs  (Ctrl+S)")
+            .label(&tr("Save"))
+            .tooltip_text(&tr("Write to ~/.config/flux/menu.rs  (Ctrl+S)"))
             .css_classes(["suggested-action"])
             .build();
 
         // ── Search bar in header title position ───────────────────────────────
         let search_entry = gtk::SearchEntry::builder()
-            .placeholder_text("Search entries…")
+            .placeholder_text(&tr("Search entries…"))
             .hexpand(true)
             .max_width_chars(40)
-            .tooltip_text("Filter entries  (Ctrl+F)")
+            .tooltip_text(&tr("Filter entries  (Ctrl+F)"))
             .build();
         header.set_title_widget(Some(&search_entry));
 
@@ -296,12 +297,12 @@ impl SimpleComponent for MenuEditor {
                 let ok = write_to_disk(&shared.entries.borrow()).is_ok();
                 shared.toast_overlay.add_toast(if ok {
                     adw::Toast::builder()
-                        .title("menu.rs saved")
+                        .title(&tr("menu.rs saved"))
                         .timeout(2)
                         .build()
                 } else {
                     adw::Toast::builder()
-                        .title("Failed to save menu.rs")
+                        .title(&tr("Failed to save menu.rs"))
                         .timeout(4)
                         .build()
                 });
@@ -348,8 +349,8 @@ fn rebuild_list(shared: &Shared) {
     if entries.is_empty() {
         list_box.append(
             &adw::ActionRow::builder()
-                .title("No entries yet")
-                .subtitle("Press + or Ctrl+N to add your first menu action")
+                .title(&tr("No entries yet"))
+                .subtitle(&tr("Press + or Ctrl+N to add your first menu action"))
                 .build(),
         );
         return;
@@ -358,8 +359,8 @@ fn rebuild_list(shared: &Shared) {
     if visible.is_empty() {
         list_box.append(
             &adw::ActionRow::builder()
-                .title("No results")
-                .subtitle("Try a different search term")
+                .title(&tr("No results"))
+                .subtitle(&tr("Try a different search term"))
                 .build(),
         );
         return;
@@ -410,10 +411,10 @@ fn build_row(
             .css_classes(["flat"])
             .build()
     };
-    let up = mk("go-up-symbolic", "Move up");
-    let down = mk("go-down-symbolic", "Move down");
-    let edit = mk("document-edit-symbolic", "Edit");
-    let del = mk("user-trash-symbolic", "Delete");
+    let up = mk("go-up-symbolic", &tr("Move up"));
+    let down = mk("go-down-symbolic", &tr("Move down"));
+    let edit = mk("document-edit-symbolic", &tr("Edit"));
+    let del = mk("user-trash-symbolic", &tr("Delete"));
 
     up.set_sensitive(idx > 0);
     down.set_sensitive(idx + 1 < total);
@@ -441,11 +442,12 @@ fn build_row(
 // ─── Entry dialog ─────────────────────────────────────────────────────────────
 fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     let dialog = adw::Window::new();
-    dialog.set_title(Some(if replace.is_some() {
-        "Edit Entry"
+    let dialog_title = if replace.is_some() {
+        tr("Edit Entry")
     } else {
-        "Add Entry"
-    }));
+        tr("Add Entry")
+    };
+    dialog.set_title(Some(&dialog_title));
     dialog.set_modal(true);
     dialog.set_transient_for(Some(&shared.root));
     dialog.set_default_size(560, -1);
@@ -462,8 +464,12 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .build();
 
     let page = adw::PreferencesPage::new();
-    let g_id = adw::PreferencesGroup::builder().title("Identity").build();
-    let g_act = adw::PreferencesGroup::builder().title("Action").build();
+    let g_id = adw::PreferencesGroup::builder()
+        .title(&tr("Identity"))
+        .build();
+    let g_act = adw::PreferencesGroup::builder()
+        .title(&tr("Action"))
+        .build();
 
     // ── Fields ────────────────────────────────────────────────────────────────
     let make_entry_row = |title: &str, value: &str| -> (adw::ActionRow, gtk::Entry) {
@@ -480,18 +486,18 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         (row, entry)
     };
 
-    let (label_row, label_entry) = make_entry_row("Label", &entry.label);
+    let (label_row, label_entry) = make_entry_row(&tr("Label"), &entry.label);
     let (sub_row, sub_entry) = make_entry_row(
-        "Submenu  (blank = top-level)",
+        &tr("Submenu  (blank = top-level)"),
         entry.submenu.as_deref().unwrap_or(""),
     );
-    let (mime_row, mime_entry) = make_entry_row("MIME Types", &entry.mime_types);
+    let (mime_row, mime_entry) = make_entry_row(&tr("MIME Types"), &entry.mime_types);
     let mime_hint = adw::ActionRow::builder()
         .title("all │ file │ directory │ trash │ image/all │ video/all │ audio/ │ text/all, application/all")
         .css_classes(["property"])
         .build();
     let (cmd_row, cmd_entry) = make_entry_row(
-        "Command  (%p = path · %d = dir · %f = filename)",
+        &tr("Command  (%p = path · %d = dir · %f = filename)"),
         &entry.command,
     );
     let cmd_hint = adw::ActionRow::builder()
@@ -499,7 +505,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .css_classes(["property"])
         .build();
     let (toast_row, toast_entry) = make_entry_row(
-        "Notification  (optional)",
+        &tr("Notification  (optional)"),
         entry.toast.as_deref().unwrap_or(""),
     );
 
@@ -524,9 +530,14 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .margin_bottom(20)
         .margin_end(20)
         .build();
-    let cancel_btn = gtk::Button::builder().label("Cancel").build();
+    let cancel_btn = gtk::Button::builder().label(&tr("Cancel")).build();
+    let commit_label = if replace.is_some() {
+        tr("Save")
+    } else {
+        tr("Add")
+    };
     let commit_btn = gtk::Button::builder()
-        .label(if replace.is_some() { "Save" } else { "Add" })
+        .label(&commit_label)
         .css_classes(["suggested-action"])
         .build();
     btn_bar.append(&cancel_btn);

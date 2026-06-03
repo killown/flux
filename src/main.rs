@@ -1,3 +1,4 @@
+mod i18n;
 mod model;
 mod services;
 mod ui;
@@ -147,6 +148,7 @@ fn setup_shortcuts(app: &adw::Application) {
 }
 
 fn main() {
+    i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
 
     let args: Vec<String> = std::env::args().collect();

@@ -7,6 +7,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use vte4::prelude::*;
 
+use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::{constants, FileItem, SidebarPlace};
 use crate::utils;
@@ -292,29 +293,32 @@ impl FluxApp {
         let sort_submenu = gtk::gio::Menu::new();
 
         let sort_fields = gtk::gio::Menu::new();
-        sort_fields.append(Some("By Name"), Some("app.sort-by-name"));
-        sort_fields.append(Some("By Date"), Some("app.sort-by-date"));
-        sort_fields.append(Some("By Size"), Some("app.sort-by-size"));
-        sort_fields.append(Some("By Type"), Some("app.sort-by-type"));
+        sort_fields.append(Some(&tr("By Name")), Some("app.sort-by-name"));
+        sort_fields.append(Some(&tr("By Date")), Some("app.sort-by-date"));
+        sort_fields.append(Some(&tr("By Size")), Some("app.sort-by-size"));
+        sort_fields.append(Some(&tr("By Type")), Some("app.sort-by-type"));
         sort_submenu.append_section(None, &sort_fields);
 
         let sort_direction = gtk::gio::Menu::new();
-        sort_direction.append(Some("Ascending"), Some("app.sort-asc"));
-        sort_direction.append(Some("Descending"), Some("app.sort-desc"));
+        sort_direction.append(Some(&tr("Ascending")), Some("app.sort-asc"));
+        sort_direction.append(Some(&tr("Descending")), Some("app.sort-desc"));
         sort_submenu.append_section(None, &sort_direction);
 
-        menu.append_submenu(Some("Sort By"), &sort_submenu);
+        menu.append_submenu(Some(&tr("Sort By")), &sort_submenu);
 
         // ── View & Preferences ───────────────────────────────────────────────
         let view_section = gtk::gio::Menu::new();
-        view_section.append(Some("Preferences"), Some("app.open-settings"));
-        view_section.append(Some("Keyboard Shortcuts"), Some("app.open-help"));
+        view_section.append(Some(&tr("Preferences")), Some("app.open-settings"));
+        view_section.append(Some(&tr("Keyboard Shortcuts")), Some("app.open-help"));
         menu.append_section(None, &view_section);
 
         // ── Tools ────────────────────────────────────────────────────────────
         let tools_section = gtk::gio::Menu::new();
-        tools_section.append(Some("Context Menu Editor"), Some("app.open-menu-editor"));
-        tools_section.append(Some("New Window"), Some("app.new-window"));
+        tools_section.append(
+            Some(&tr("Context Menu Editor")),
+            Some("app.open-menu-editor"),
+        );
+        tools_section.append(Some(&tr("New Window")), Some("app.new-window"));
         menu.append_section(None, &tools_section);
 
         menu

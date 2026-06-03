@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::{AppMsg, Config};
 use adw::prelude::*;
 use gtk::glib;
@@ -15,7 +16,7 @@ impl SimpleComponent for SettingsWindow {
 
     view! {
         adw::PreferencesWindow {
-            set_title: Some("Preferences"),
+            set_title: Some(&tr("Preferences")),
             set_default_size: (650, 700),
             set_modal: true,
             set_search_enabled: true,
@@ -23,15 +24,15 @@ impl SimpleComponent for SettingsWindow {
 
             // --- Appearance Page ---
             add = &adw::PreferencesPage {
-                set_title: "Appearance",
+                set_title: &tr("Appearance"),
                 set_icon_name: Some("applications-graphics-symbolic"),
                 add_css_class: "appearance-page",
                 add = &adw::PreferencesGroup {
-                    set_title: "Layout",
+                    set_title: &tr("Layout"),
                     add_css_class: "layout-group",
                     add = &adw::ActionRow {
-                        set_title: "Default Icon Size",
-                        set_subtitle: "Base size of icons in the grid view",
+                        set_title: &tr("Default Icon Size"),
+                        set_subtitle: &tr("Base size of icons in the grid view"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.default_icon_size as f64, 16.0, 512.0, 16.0, 0.0, 0.0),
@@ -45,8 +46,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Grid Spacing",
-                        set_subtitle: "Pixel spacing between items in the grid view",
+                        set_title: &tr("Grid Spacing"),
+                        set_subtitle: &tr("Pixel spacing between items in the grid view"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0),
@@ -60,8 +61,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Max Label Length",
-                        set_subtitle: "Maximum characters to show before truncating filenames",
+                        set_title: &tr("Max Label Length"),
+                        set_subtitle: &tr("Maximum characters to show before truncating filenames"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.max_width_chars as f64, 8.0, 128.0, 1.0, 0.0, 0.0),
@@ -75,8 +76,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Expand Filenames",
-                        set_subtitle: "Show full filenames in the grid, wrapping across multiple lines",
+                        set_title: &tr("Expand Filenames"),
+                        set_subtitle: &tr("Show full filenames in the grid, wrapping across multiple lines"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.expand_labels,
@@ -90,8 +91,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Sidebar Width",
-                        set_subtitle: "Default width of the navigation pane",
+                        set_title: &tr("Sidebar Width"),
+                        set_subtitle: &tr("Default width of the navigation pane"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.sidebar_width as f64, 100.0, 800.0, 10.0, 0.0, 0.0),
@@ -105,8 +106,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Startup Width",
-                        set_subtitle: "Initial window width in pixels",
+                        set_title: &tr("Startup Width"),
+                        set_subtitle: &tr("Initial window width in pixels"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0),
@@ -120,8 +121,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Startup Height",
-                        set_subtitle: "Initial window height in pixels",
+                        set_title: &tr("Startup Height"),
+                        set_subtitle: &tr("Initial window height in pixels"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0),
@@ -135,7 +136,7 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Show Client-Side Decorations (CSD)",
+                        set_title: &tr("Show Client-Side Decorations (CSD)"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.show_csd,
@@ -148,8 +149,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Start Maximized",
-                        set_subtitle: "Open the application in maximized state",
+                        set_title: &tr("Start Maximized"),
+                        set_subtitle: &tr("Open the application in maximized state"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.start_maximized,
@@ -163,10 +164,10 @@ impl SimpleComponent for SettingsWindow {
                     },
                 },
                 add = &adw::PreferencesGroup {
-                    set_title: "Theming",
+                    set_title: &tr("Theming"),
                     add_css_class: "theming-group",
                     add = &adw::ActionRow {
-                        set_title: "Theme",
+                        set_title: &tr("Theme"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::DropDown {
                             set_valign: gtk::Align::Center,
@@ -221,9 +222,9 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Show XDG Directories",
+                        set_title: &tr("Show XDG Directories"),
                         add_css_class: "settings-row",
-                        set_subtitle: "Display standard user directories in the sidebar",
+                        set_subtitle: &tr("Display standard user directories in the sidebar"),
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.show_xdg_dirs,
                             set_valign: gtk::Align::Center,
@@ -239,15 +240,15 @@ impl SimpleComponent for SettingsWindow {
 
             // --- Behavior Page ---
             add = &adw::PreferencesPage {
-                set_title: "Behavior",
+                set_title: &tr("Behavior"),
                 set_icon_name: Some("emblem-system-symbolic"),
                 add_css_class: "behavior-page",
                 add = &adw::PreferencesGroup {
-                    set_title: "File Operations",
+                    set_title: &tr("File Operations"),
                     add_css_class: "file-ops-group",
                     add = &adw::ActionRow {
-                        set_title: "Single Click to Open",
-                        set_subtitle: "Open files and directories with a single click instead of double click",
+                        set_title: &tr("Single Click to Open"),
+                        set_subtitle: &tr("Open files and directories with a single click instead of double click"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.single_click,
@@ -261,13 +262,13 @@ impl SimpleComponent for SettingsWindow {
                     },
                 },
                 add = &adw::PreferencesGroup {
-                    set_title: "Sorting and Filtering",
+                    set_title: &tr("Sorting and Filtering"),
                     add_css_class: "sorting-group",
                     add = &adw::ActionRow {
-                        set_title: "Default Sort",
-                        set_subtitle: "Primary sorting method for files",
+                        set_title: &tr("Default Sort"),
+                        set_subtitle: &tr("Primary sorting method for files"),
                         add_css_class: "settings-row",
-                        add_suffix = &gtk::DropDown::from_strings(&["Name", "Size", "Date", "Type"]) {
+                        add_suffix = &gtk::DropDown::from_strings(&[&tr("Name"), &tr("Size"), &tr("Date"), &tr("Type")]) {
                             set_valign: gtk::Align::Center,
                             set_selected: match model.config.ui.default_sort {
                                 crate::model::SortBy::Name => 0,
@@ -290,10 +291,10 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Sort Order",
-                        set_subtitle: "Direction of the primary sort",
+                        set_title: &tr("Sort Order"),
+                        set_subtitle: &tr("Direction of the primary sort"),
                         add_css_class: "settings-row",
-                        add_suffix = &gtk::DropDown::from_strings(&["Ascending", "Descending"]) {
+                        add_suffix = &gtk::DropDown::from_strings(&[&tr("Ascending"), &tr("Descending")]) {
                             set_valign: gtk::Align::Center,
                             set_selected: match model.config.ui.ascending {
                                 true => 0,
@@ -308,8 +309,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Folders First",
-                        set_subtitle: "Always display folders before files when sorting",
+                        set_title: &tr("Folders First"),
+                        set_subtitle: &tr("Always display folders before files when sorting"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.folders_first,
@@ -322,8 +323,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Show Hidden Files",
-                        set_subtitle: "Display files and folders that start with a dot",
+                        set_title: &tr("Show Hidden Files"),
+                        set_subtitle: &tr("Display files and folders that start with a dot"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.show_hidden_by_default,
@@ -340,14 +341,14 @@ impl SimpleComponent for SettingsWindow {
 
             // --- Terminal Page ---
             add = &adw::PreferencesPage {
-                set_title: "Terminal",
+                set_title: &tr("Terminal"),
                 set_icon_name: Some("utilities-terminal-symbolic"),
                 add_css_class: "terminal-page",
                 add = &adw::PreferencesGroup {
-                    set_title: "Configuration",
+                    set_title: &tr("Configuration"),
                     add = &adw::ActionRow {
-                        set_title: "Height",
-                        set_subtitle: "Height of the terminal pane in pixels",
+                        set_title: &tr("Height"),
+                        set_subtitle: &tr("Height of the terminal pane in pixels"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(
@@ -364,8 +365,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Font",
-                        set_subtitle: "Pango font description (e.g., 'JetBrains Mono 13')",
+                        set_title: &tr("Font"),
+                        set_subtitle: &tr("Pango font description (e.g., 'JetBrains Mono 13')")  ,
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: &model.config.ui.terminal.font,
@@ -378,8 +379,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Foreground Color",
-                        set_subtitle: "Hex color code (e.g., '#E5E5E5')",
+                        set_title: &tr("Foreground Color"),
+                        set_subtitle: &tr("Hex color code for foreground (e.g., '#E5E5E5')")  ,
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: &model.config.ui.terminal.fg_color,
@@ -392,8 +393,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Background Color",
-                        set_subtitle: "Hex color code (e.g., '#1A1A1A')",
+                        set_title: &tr("Background Color"),
+                        set_subtitle: &tr("Hex color code for background (e.g., '#1A1A1A')")  ,
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: &model.config.ui.terminal.bg_color,
@@ -410,14 +411,14 @@ impl SimpleComponent for SettingsWindow {
 
             // --- Shortcuts Page ---
             add = &adw::PreferencesPage {
-                set_title: "Shortcuts",
+                set_title: &tr("Shortcuts"),
                 set_icon_name: Some("keyboard-shortcuts-symbolic"),
                 add_css_class: "shortcuts-page",
                 add = &adw::PreferencesGroup {
-                    set_title: "Navigation",
+                    set_title: &tr("Navigation"),
                     add_css_class: "shortcuts-group",
                     add = &adw::ActionRow {
-                        set_title: "Back",
+                        set_title: &tr("Back"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.back.as_deref().unwrap_or(""),
@@ -432,7 +433,7 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Forward",
+                        set_title: &tr("Forward"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.forward.as_deref().unwrap_or(""),
@@ -447,7 +448,7 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Open",
+                        set_title: &tr("Open"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.open.as_deref().unwrap_or(""),
@@ -463,10 +464,10 @@ impl SimpleComponent for SettingsWindow {
                     },
                 },
                 add = &adw::PreferencesGroup {
-                    set_title: "File Operations",
+                    set_title: &tr("File Operations"),
                     add_css_class: "shortcuts-group",
                     add = &adw::ActionRow {
-                        set_title: "Delete",
+                        set_title: &tr("Delete"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.delete.as_deref().unwrap_or(""),
@@ -482,10 +483,10 @@ impl SimpleComponent for SettingsWindow {
                     },
                 },
                 add = &adw::PreferencesGroup {
-                    set_title: "View and Application",
+                    set_title: &tr("View and Application"),
                     add_css_class: "shortcuts-group",
                     add = &adw::ActionRow {
-                        set_title: "Refresh",
+                        set_title: &tr("Refresh"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.refresh.as_deref().unwrap_or(""),
@@ -500,7 +501,7 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Search",
+                        set_title: &tr("Search"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.search.as_deref().unwrap_or(""),
@@ -515,7 +516,7 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: "Toggle Hidden",
+                        set_title: &tr("Toggle Hidden"),
                         add_css_class: "settings-row",
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.toggle_hidden.as_deref().unwrap_or(""),

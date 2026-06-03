@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::utils;
 use adw::gio;
 use adw::prelude::*;
@@ -65,9 +66,9 @@ fn get_git_info(path: &Path) -> Option<Vec<(String, String)>> {
     let parts: Vec<&str> = out_str.split('|').collect();
     if parts.len() >= 3 {
         Some(vec![
-            ("Hash".to_string(), parts[0].to_string()),
-            ("Date".to_string(), parts[1].to_string()),
-            ("Subject".to_string(), parts[2].to_string()),
+            (tr("Hash"), parts[0].to_string()),
+            (tr("Date"), parts[1].to_string()),
+            (tr("Subject"), parts[2].to_string()),
         ])
     } else {
         None
@@ -116,9 +117,9 @@ fn get_elf_info(path: &Path) -> Option<Vec<(String, String)>> {
     };
 
     Some(vec![
-        ("Type".to_string(), type_str.to_string()),
-        ("Arch".to_string(), mach_str.to_string()),
-        ("Endian".to_string(), endian.to_string()),
+        (tr("Type"), type_str.to_string()),
+        (tr("Arch"), mach_str.to_string()),
+        (tr("Endian"), endian.to_string()),
     ])
 }
 
@@ -137,10 +138,10 @@ fn get_text_metrics(raw: &[u8]) -> Option<Vec<(String, String)>> {
         };
 
         Some(vec![
-            ("Line Count".to_string(), lines.len().to_string()),
-            ("Word Count".to_string(), word_count.to_string()),
-            ("TODOs".to_string(), todo_count.to_string()),
-            ("Line Endings".to_string(), line_endings.to_string()),
+            (tr("Line Count"), lines.len().to_string()),
+            (tr("Word Count"), word_count.to_string()),
+            (tr("TODOs"), todo_count.to_string()),
+            (tr("Line Endings"), line_endings.to_string()),
         ])
     } else {
         None
@@ -262,7 +263,7 @@ impl SimpleComponent for FileProperties {
     view! {
         adw::Window {
             set_default_size: (540, 850),
-            #[watch] set_title: Some(&format!("Properties — {}", model.filename)),
+            #[watch] set_title: Some(&format!("{} — {}", tr("Properties"), model.filename)),
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
@@ -318,28 +319,28 @@ impl SimpleComponent for FileProperties {
         let mut sections_data = Vec::new();
 
         sections_data.push((
-            "File Identity".to_string(),
+            tr("File Identity"),
             vec![
-                ("Filename".to_string(), filename.clone()),
+                (tr("Filename"), filename.clone()),
                 (
-                    "Extension".to_string(),
+                    tr("Extension"),
                     path.extension()
                         .map(|e| e.to_string_lossy().to_string())
-                        .unwrap_or("None".to_string()),
+                        .unwrap_or(tr("None")),
                 ),
-                ("MIME Type".to_string(), mime_type.clone()),
+                (tr("MIME Type"), mime_type.clone()),
             ],
         ));
 
         if path.is_symlink() {
             if let Ok(target) = fs::read_link(&path) {
                 sections_data.push((
-                    "Symlink Info".to_string(),
+                    tr("Symlink Info"),
                     vec![
-                        ("Target".to_string(), target.to_string_lossy().to_string()),
-                        ("Broken".to_string(), (!target.exists()).to_string()),
+                        (tr("Target"), target.to_string_lossy().to_string()),
+                        (tr("Broken"), (!target.exists()).to_string()),
                         (
-                            "Canonical".to_string(),
+                            tr("Canonical"),
                             path.canonicalize()
                                 .unwrap_or_default()
                                 .to_string_lossy()
@@ -361,20 +362,20 @@ impl SimpleComponent for FileProperties {
                 }
             }
             if !xattrs_list.is_empty() {
-                sections_data.push(("Extended Attributes".to_string(), xattrs_list));
+                sections_data.push((tr("Extended Attributes"), xattrs_list));
             }
         }
 
         if let Ok(meta) = path.metadata() {
             let mut system_disk = vec![
-                ("Full Path".to_string(), path.to_string_lossy().to_string()),
+                (tr("Full Path"), path.to_string_lossy().to_string()),
                 (
-                    "Size".to_string(),
+                    tr("Size"),
                     format!("{} ({} B)", format_size(meta.len()), meta.len()),
                 ),
-                ("Disk Usage".to_string(), format_size(meta.blocks() * 512)),
-                ("Inode".to_string(), meta.ino().to_string()),
-                ("Device ID".to_string(), meta.dev().to_string()),
+                (tr("Disk Usage"), format_size(meta.blocks() * 512)),
+                (tr("Inode"), meta.ino().to_string()),
+                (tr("Device ID"), meta.dev().to_string()),
             ];
 
             if let Ok(mounts) = fs::read_to_string("/proc/self/mounts") {
@@ -383,11 +384,11 @@ impl SimpleComponent for FileProperties {
                     .rfind(|l| path.starts_with(l.split_whitespace().nth(1).unwrap_or("")));
                 if let Some(line) = mount_info {
                     let parts: Vec<&str> = line.split_whitespace().collect();
-                    system_disk.push(("Mount Source".to_string(), parts[0].to_string()));
-                    system_disk.push(("FS Type".to_string(), parts[2].to_string()));
+                    system_disk.push((tr("Mount Source"), parts[0].to_string()));
+                    system_disk.push((tr("FS Type"), parts[2].to_string()));
                 }
             }
-            sections_data.push(("System & Disk".to_string(), system_disk));
+            sections_data.push((tr("System & Disk"), system_disk));
 
             let fmt_time = |t: std::time::SystemTime| -> String {
                 let dt: DateTime<Local> = t.into();
@@ -395,36 +396,30 @@ impl SimpleComponent for FileProperties {
             };
 
             sections_data.push((
-                "Temporal".to_string(),
+                tr("Temporal"),
                 vec![
                     (
-                        "Created".to_string(),
+                        tr("Created"),
                         meta.created().map(fmt_time).unwrap_or_default(),
                     ),
                     (
-                        "Modified".to_string(),
+                        tr("Modified"),
                         meta.modified().map(fmt_time).unwrap_or_default(),
                     ),
                     (
-                        "Accessed".to_string(),
+                        tr("Accessed"),
                         meta.accessed().map(fmt_time).unwrap_or_default(),
                     ),
                 ],
             ));
 
             let mut security = vec![
-                (
-                    "Permissions".to_string(),
-                    format!("{:03o}", meta.mode() & 0o777),
-                ),
-                (
-                    "UID/GID".to_string(),
-                    format!("{}:{}", meta.uid(), meta.gid()),
-                ),
+                (tr("Permissions"), format!("{:03o}", meta.mode() & 0o777)),
+                (tr("UID/GID"), format!("{}:{}", meta.uid(), meta.gid())),
             ];
             if !file_content.is_empty() {
                 security.push((
-                    "Entropy".to_string(),
+                    tr("Entropy"),
                     format!("{:.4}", get_shannon_entropy(&file_content)),
                 ));
                 let hash_hex = Sha256::digest(&file_content)
@@ -432,17 +427,14 @@ impl SimpleComponent for FileProperties {
                     .map(|b| format!("{:02x}", b))
                     .collect::<String>();
 
-                sections_data.push((
-                    "Security".to_string(),
-                    vec![("SHA256".to_string(), hash_hex)],
-                ));
+                sections_data.push((tr("Security"), vec![(tr("SHA256"), hash_hex)]));
             }
-            sections_data.push(("Security".to_string(), security));
+            sections_data.push((tr("Security"), security));
         }
 
         if mime_type.contains("executable") || mime_type.contains("sharedlib") {
             if let Some(elf) = get_elf_info(&path) {
-                sections_data.push(("Executable Analysis".to_string(), elf));
+                sections_data.push((tr("Executable Analysis"), elf));
             }
         }
 
@@ -457,21 +449,18 @@ impl SimpleComponent for FileProperties {
             .unwrap_or(false);
         if (is_text || has_text_ext) && !file_content.is_empty() {
             if let Some(metrics) = get_text_metrics(&file_content) {
-                sections_data.push(("Content Metrics".to_string(), metrics));
+                sections_data.push((tr("Content Metrics"), metrics));
             }
         }
 
         if mime_type.starts_with("image/") {
             if let Ok(dim) = imagesize::size(&path) {
                 sections_data.push((
-                    "Visual Media".to_string(),
+                    tr("Visual Media"),
                     vec![
+                        (tr("Dimensions"), format!("{}x{}", dim.width, dim.height)),
                         (
-                            "Dimensions".to_string(),
-                            format!("{}x{}", dim.width, dim.height),
-                        ),
-                        (
-                            "Aspect Ratio".to_string(),
+                            tr("Aspect Ratio"),
                             format!("{:.2}:1", dim.width as f64 / dim.height as f64),
                         ),
                     ],
@@ -480,7 +469,7 @@ impl SimpleComponent for FileProperties {
         }
 
         if let Some(git) = get_git_info(&path) {
-            sections_data.push(("Git History".to_string(), git));
+            sections_data.push((tr("Git History"), git));
         }
 
         let mut sections = FactoryVecDeque::builder()
@@ -497,8 +486,12 @@ impl SimpleComponent for FileProperties {
         let toast_overlay = adw::ToastOverlay::new();
 
         let app_group = adw::PreferencesGroup::new();
-        app_group.set_title("System Handler");
-        app_group.set_description(Some(&format!("Default application for {}", mime_type)));
+        app_group.set_title(&tr("System Handler"));
+        app_group.set_description(Some(&format!(
+            "{} {}",
+            tr("Default application for"),
+            mime_type
+        )));
 
         let mut all_apps: Vec<gio::AppInfo> = gio::AppInfo::all().into_iter().collect();
         all_apps.sort_by_key(|a| a.name().to_lowercase());
@@ -530,7 +523,7 @@ impl SimpleComponent for FileProperties {
             .build();
 
         let row = adw::ActionRow::builder()
-            .title("Open With")
+            .title(&tr("Open With"))
             .activatable_widget(&dropdown)
             .build();
         row.add_suffix(&dropdown);
@@ -564,7 +557,7 @@ impl SimpleComponent for FileProperties {
                 if let Some(display) = adw::gdk::Display::default() {
                     display.clipboard().set_text(&text);
                     self.toast_overlay
-                        .add_toast(adw::Toast::new("Copied to clipboard"));
+                        .add_toast(adw::Toast::new(&tr("Copied to clipboard")));
                 }
             }
             PropertiesMsg::AppSelected(idx) => {
@@ -581,8 +574,11 @@ impl SimpleComponent for FileProperties {
                     }
 
                     let name = app.name().to_string();
-                    self.toast_overlay
-                        .add_toast(adw::Toast::new(&format!("Set {} as default", name)));
+                    self.toast_overlay.add_toast(adw::Toast::new(&format!(
+                        "{} {}",
+                        tr("Set as default:"),
+                        name
+                    )));
                 }
             }
         }
