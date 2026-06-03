@@ -1,4 +1,10 @@
+
+
 # 🌊 Flux
+
+![Rust](https://img.shields.io/badge/Rust-1.75%2B-black?logo=rust)
+![GTK4](https://img.shields.io/badge/GTK-4-green?logo=gnome)
+![License](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
 
@@ -74,13 +80,35 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 
 ---
 
-### installation
+### DEPS
 
-#### arch linux
+###### arch linux
 ```bash
 sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 ffmpeg imagemagick
 ```
 
-## License
+###### Ubuntu / Debian
+```bash
+sudo apt update
+sudo apt install libadwaita-1-dev libgtk-4-dev libpango1.0-dev libgraphene-1.0-dev libcairo2-dev libgdk-pixbuf-2.0-dev ffmpeg imagemagick
+```
+###### Fedora
+```bash
+sudo dnf install libadwaita-devel gtk4-devel pango-devel graphene-devel cairo-devel gdk-pixbuf2-devel ffmpeg ImageMagick
+```
+### Install
+```bash
+git clone https://github.com/killown/flux.git
+cd flux
+cargo build --release
+```
 
+## Contributing
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change. 
+Make sure to run `cargo fmt` and `cargo clippy` before submitting your PR.
+
+## Support
+If you encounter any bugs or have feature requests, please open an issue on the [GitHub Issue Tracker](https://github.com/killown/flux/issues).
+
+## License
 Flux is free and open-source software licensed under the **[GPLv3](https://github.com/killown/flux/blob/main/LICENSE)**.
