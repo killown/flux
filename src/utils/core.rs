@@ -502,8 +502,9 @@ fn thumbnail_cache_path(path: &Path) -> Option<(PathBuf, PathBuf)> {
 
     let cache_dir = dirs::cache_dir()?.join("thumbnails").join(thumb_folder);
 
-    // The FreeDesktop spec mandates MD5 of the percent-encoded `file://` URI.
-    let uri = format!("file://{}", path.to_str()?);
+    // gio::File::uri() produces a correctly percent-encoded RFC 2396 URI,
+    // which is what the FreeDesktop thumbnail spec mandates for the MD5 input.
+    let uri = gio::File::for_path(path).uri();
     let hash = format!("{:x}", md5::compute(uri.as_bytes()));
     let cache_path = cache_dir.join(format!("{}.png", hash));
 
