@@ -245,33 +245,45 @@ impl FluxApp {
         });
         app.add_action(&reload_action);
 
-        for (name, variant) in [
-            ("sort-by-name", crate::model::SortBy::Name),
-            ("sort-by-date", crate::model::SortBy::Date),
-            ("sort-by-size", crate::model::SortBy::Size),
-            ("sort-by-type", crate::model::SortBy::Type),
-        ] {
+        // Stateful radio action: GIO compares each menu item's target against this
+        // action's state and renders a native radio checkmark on the matching item.
+        let sort_field_action = gio::SimpleAction::new_stateful(
+            "sort-field",
+            Some(&String::static_variant_type()),
+            &model.sort_by.as_action_state(),
+        );
+        {
             let s = sender.clone();
-            let action = gio::SimpleAction::new(name, None);
-            action.connect_activate(move |_, _| {
-                s.input(AppMsg::SetDefaultSort(variant));
+            sort_field_action.connect_activate(move |action, target| {
+                if let Some(v) = target {
+                    action.set_state(v);
+                    if let Some(key) = v.str() {
+                        s.input(AppMsg::SetDefaultSort(
+                            crate::model::SortBy::from_action_key(key),
+                        ));
+                    }
+                }
             });
-            app.add_action(&action);
         }
+        app.add_action(&sort_field_action);
 
-        let s_asc = sender.clone();
-        let action_sort_asc = gio::SimpleAction::new("sort-asc", None);
-        action_sort_asc.connect_activate(move |_, _| {
-            s_asc.input(AppMsg::SetAsc(true));
-        });
-        app.add_action(&action_sort_asc);
-
-        let s_desc = sender.clone();
-        let action_sort_desc = gio::SimpleAction::new("sort-desc", None);
-        action_sort_desc.connect_activate(move |_, _| {
-            s_desc.input(AppMsg::SetAsc(false));
-        });
-        app.add_action(&action_sort_desc);
+        let sort_dir_action = gio::SimpleAction::new_stateful(
+            "sort-direction",
+            Some(&String::static_variant_type()),
+            &model.sort_direction_state(),
+        );
+        {
+            let s = sender.clone();
+            sort_dir_action.connect_activate(move |action, target| {
+                if let Some(v) = target {
+                    action.set_state(v);
+                    if let Some(key) = v.str() {
+                        s.input(AppMsg::SetAsc(key == "asc"));
+                    }
+                }
+            });
+        }
+        app.add_action(&sort_dir_action);
 
         // Queue initial data fetch
         let s_init = sender.clone();
@@ -293,15 +305,30 @@ impl FluxApp {
         let sort_submenu = gtk::gio::Menu::new();
 
         let sort_fields = gtk::gio::Menu::new();
-        sort_fields.append(Some(&tr("By Name")), Some("app.sort-by-name"));
-        sort_fields.append(Some(&tr("By Date")), Some("app.sort-by-date"));
-        sort_fields.append(Some(&tr("By Size")), Some("app.sort-by-size"));
-        sort_fields.append(Some(&tr("By Type")), Some("app.sort-by-type"));
+        for (label, key) in [
+            (tr("By Name"), "name"),
+            (tr("By Date"), "date"),
+            (tr("By Size"), "size"),
+            (tr("By Type"), "type"),
+        ] {
+            let item = gtk::gio::MenuItem::new(Some(&label), None);
+            item.set_action_and_target_value(
+                Some("app.sort-field"),
+                Some(&glib::Variant::from(key)),
+            );
+            sort_fields.append_item(&item);
+        }
         sort_submenu.append_section(None, &sort_fields);
 
         let sort_direction = gtk::gio::Menu::new();
-        sort_direction.append(Some(&tr("Ascending")), Some("app.sort-asc"));
-        sort_direction.append(Some(&tr("Descending")), Some("app.sort-desc"));
+        for (label, key) in [(tr("Ascending"), "asc"), (tr("Descending"), "desc")] {
+            let item = gtk::gio::MenuItem::new(Some(&label), None);
+            item.set_action_and_target_value(
+                Some("app.sort-direction"),
+                Some(&glib::Variant::from(key)),
+            );
+            sort_direction.append_item(&item);
+        }
         sort_submenu.append_section(None, &sort_direction);
 
         menu.append_submenu(Some(&tr("Sort By")), &sort_submenu);

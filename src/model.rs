@@ -138,6 +138,31 @@ pub enum SortBy {
     Type,
 }
 
+impl SortBy {
+    /// Returns the `GVariant` string used as the state/target for the stateful
+    /// `app.sort-field` radio action, enabling GIO to render the matching menu
+    /// item with a native radio checkmark.
+    pub fn as_action_state(self) -> gtk::glib::Variant {
+        let key = match self {
+            SortBy::Name => "name",
+            SortBy::Date => "date",
+            SortBy::Size => "size",
+            SortBy::Type => "type",
+        };
+        gtk::glib::Variant::from(key)
+    }
+
+    /// Reconstructs a [`SortBy`] from the variant key used by the `app.sort-field` action.
+    pub fn from_action_key(key: &str) -> Self {
+        match key {
+            "date" => SortBy::Date,
+            "size" => SortBy::Size,
+            "type" => SortBy::Type,
+            _ => SortBy::Name,
+        }
+    }
+}
+
 /// Metadata for actions available within a specific UI context.
 #[allow(dead_code)]
 #[derive(Clone, Debug)]

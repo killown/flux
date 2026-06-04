@@ -31,6 +31,33 @@ impl FluxApp {
         )
     }
 
+    /// Returns the `GVariant` string state for the stateful `app.sort-direction` radio action.
+    pub fn sort_direction_state(&self) -> gtk::glib::Variant {
+        gtk::glib::Variant::from(if self.sort_ascending { "asc" } else { "desc" })
+    }
+
+    /// Synchronizes both stateful sort GIO actions with the current model state.
+    ///
+    /// Must be called after any mutation of `sort_by` or `sort_ascending` so the
+    /// hamburger menu renders the correct radio checkmark even when the sort is
+    /// changed via keyboard shortcut rather than the menu itself.
+    #[allow(dead_code)]
+    pub fn sync_sort_menu_state(&self) {
+        let app = relm4::main_adw_application();
+        if let Some(action) = app
+            .lookup_action("sort-field")
+            .and_then(|a| a.downcast::<gio::SimpleAction>().ok())
+        {
+            action.set_state(&self.sort_by.as_action_state());
+        }
+        if let Some(action) = app
+            .lookup_action("sort-direction")
+            .and_then(|a| a.downcast::<gio::SimpleAction>().ok())
+        {
+            action.set_state(&self.sort_direction_state());
+        }
+    }
+
     /// Processes keyboard events to trigger system shortcuts or manage focus-dependent navigation.
     ///
     /// Args:
