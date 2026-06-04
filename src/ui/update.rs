@@ -46,6 +46,9 @@ impl FluxApp {
                 utils::save_config(&self.config);
                 self.refresh_sidebar();
             }
+            AppMsg::ShowAbout => {
+                FluxApp::show_about_window();
+            }
             AppMsg::UnmountDevice(path) => {
                 let sender = sender.clone();
                 let file = gio::File::for_path(&path);

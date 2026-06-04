@@ -693,3 +693,15 @@ msgstr "Copiado para a área de transferência"
 #: src/ui/properties.rs:579
 msgid "Set as default:"
 msgstr "Definido como padrão:"
+
+#: src/ui/init.rs:325
+msgid "About Flux"
+msgstr "Sobre o Flux"
+
+#: src/utils/helpers.rs:83
+msgid "Source Code"
+msgstr "Código-fonte"
+
+#: src/utils/helpers.rs:75
+msgid "A fast, keyboard-driven file manager built with GTK4 and Libadwaita."
+msgstr "Um gerenciador de arquivos rápido, orientado a teclado, construído com GTK4 e Libadwaita."

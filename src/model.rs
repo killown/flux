@@ -594,6 +594,8 @@ pub enum AppMsg {
     SetTerminalFgColor(String),
     /// Updates the background color (as a hex string) for the embedded terminal.
     SetTerminalBgColor(String),
+    /// Opens the About dialog with application metadata and repository link.
+    ShowAbout,
 }
 
 /// Represents a single entry in the Flux context menu configuration.

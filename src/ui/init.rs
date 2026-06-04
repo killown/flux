@@ -285,6 +285,14 @@ impl FluxApp {
         }
         app.add_action(&sort_dir_action);
 
+        let s_about = sender.clone();
+        let action_about = gio::SimpleAction::new("show-about", None);
+        action_about.connect_activate(move |_, _| {
+            s_about.input(AppMsg::ShowAbout);
+        });
+        app.add_action(&action_about);
+        app.set_accels_for_action("app.show-about", &[]);
+
         // Queue initial data fetch
         let s_init = sender.clone();
         glib::idle_add_local_once(move || {
@@ -347,6 +355,11 @@ impl FluxApp {
         );
         tools_section.append(Some(&tr("New Window")), Some("app.new-window"));
         menu.append_section(None, &tools_section);
+
+        // ── About ─────────────────────────────────────────────────────────────
+        let about_section = gtk::gio::Menu::new();
+        about_section.append(Some(&tr("About Flux")), Some("app.show-about"));
+        menu.append_section(None, &about_section);
 
         menu
     }
