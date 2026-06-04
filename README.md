@@ -80,23 +80,33 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 
 ---
 
-### DEPS
+## Installation
 
-###### arch linux
+### Prerequisites
+Flux requires the following system libraries and runtime tools:
+
+| Category | Dependencies |
+| :--- | :--- |
+| **System** | `libadwaita`, `gtk4`, `glib2`, `pango`, `graphene`, `cairo`, `gdk-pixbuf2` |
+| **Runtime** | `ffmpeg`, `ffprobe`, `ImageMagick` |
+
+**Arch Linux**
 ```bash
 sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 ffmpeg imagemagick
 ```
 
-###### Ubuntu / Debian
+###### 
+**Ubuntu / Debian**
 ```bash
 sudo apt update
 sudo apt install libadwaita-1-dev libgtk-4-dev libpango1.0-dev libgraphene-1.0-dev libcairo2-dev libgdk-pixbuf-2.0-dev ffmpeg imagemagick
 ```
-###### Fedora
+###### 
+**Fedora**
 ```bash
 sudo dnf install libadwaita-devel gtk4-devel pango-devel graphene-devel cairo-devel gdk-pixbuf2-devel ffmpeg ImageMagick
 ```
-### Install
+### Build
 ```bash
 git clone https://github.com/killown/flux.git
 cd flux
@@ -105,7 +115,7 @@ cargo build --release
 
 ## Contributing
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change. 
-Make sure to run `cargo fmt` and `cargo clippy` before submitting your PR.
+Make sure to run the tests before submitting your PR.
 
 ## Support
 If you encounter any bugs or have feature requests, please open an issue on the [GitHub Issue Tracker](https://github.com/killown/flux/issues).
