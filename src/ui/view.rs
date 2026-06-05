@@ -270,8 +270,20 @@ impl SimpleAsyncComponent for FluxApp {
                             #[wrap(Some)]
                             set_start_child: grid_scroller = &gtk::ScrolledWindow {
                                 set_vexpand: true,
+                                /// Scroll event controller for UI zooming (Ctrl + Scroll).
+                                add_controller = gtk::EventControllerScroll {
+                                    set_flags: gtk::EventControllerScrollFlags::VERTICAL,
+                                    set_propagation_phase: gtk::PropagationPhase::Capture,
+                                    connect_scroll[sender] => move |ctrl, _, dy| {
+                                        let modifiers = ctrl.current_event_state();
+                                        if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                                            sender.input(AppMsg::Zoom(dy));
+                                            return glib::Propagation::Stop;
+                                        }
+                                        glib::Propagation::Proceed
+                                    }
+                                },
                             },
-
                             #[wrap(Some)]
                             set_end_child: terminal_revealer = &gtk::Revealer {
                                 set_transition_type: gtk::RevealerTransitionType::SlideUp,
@@ -281,20 +293,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 #[watch]
                                 set_visible: model.terminal_visible,
                                 set_vexpand: false,
-        },
-
-                            /// Scroll event controller for UI zooming (Ctrl + Scroll).
-                            add_controller = gtk::EventControllerScroll {
-                                set_flags: gtk::EventControllerScrollFlags::VERTICAL,
-                                connect_scroll[sender] => move |ctrl, _, dy| {
-                                    let modifiers = ctrl.current_event_state();
-                                    if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
-                                        sender.input(AppMsg::Zoom(dy));
-                                        return glib::Propagation::Stop;
-                                    }
-                                    glib::Propagation::Proceed
-                                }
-                            },
+                              },
 
                             /// Global drop handler for cross-instance and external file transfers.
                             ///
