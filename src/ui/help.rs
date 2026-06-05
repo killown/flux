@@ -119,6 +119,14 @@ impl SimpleComponent for HelpWindow {
                                 set_subtitle: &tr("Search files")
                             },
                             adw::ActionRow {
+                                set_title: "Ctrl + Scroll",
+                                set_subtitle: &tr("Resize grid items")
+                            },
+                            adw::ActionRow {
+                                set_title: "Ctrl + Middle Click",
+                                set_subtitle: &tr("Open folder in new window")
+                            },
+                            adw::ActionRow {
                                 set_title: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
                                 set_subtitle: &tr("Toggle hidden files")
                             },
