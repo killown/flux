@@ -545,6 +545,10 @@ impl FluxApp {
                 self.terminal_visible = !self.terminal_visible;
                 if self.terminal_visible {
                     sender.input(AppMsg::TerminalCd(self.current_path.clone()));
+                    let term = self.terminal.clone();
+                    glib::idle_add_local_once(move || {
+                        term.grab_focus();
+                    });
                 }
             }
             AppMsg::TerminalCd(path) => {

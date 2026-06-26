@@ -122,6 +122,18 @@ pub fn setup_controllers(
                 glib::Propagation::Stop
             }
             gdk::Key::Tab => {
+                // Yield Tab to VTE when the terminal widget holds keyboard focus.
+                let terminal_focused = _ctrl
+                    .widget()
+                    .and_then(|w| w.root())
+                    .and_then(|r| r.focus())
+                    .map(|f| f.type_() == vte4::Terminal::static_type())
+                    .unwrap_or(false);
+
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+
                 sender_cap.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }

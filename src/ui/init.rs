@@ -127,6 +127,13 @@ impl FluxApp {
                         terminal_ref.emit_paste_clipboard();
                         return glib::Propagation::Stop;
                     }
+                    // Feed Tab directly to the PTY so shell completion works.
+                    // In Capture phase the event never reaches VTE's own input
+                    // handler, so the \t byte must be injected manually.
+                    Key::Tab if modifiers.is_empty() => {
+                        terminal_ref.feed_child(b"\t");
+                        return glib::Propagation::Stop;
+                    }
                     _ => {}
                 }
 
