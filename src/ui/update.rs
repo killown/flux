@@ -408,6 +408,9 @@ impl FluxApp {
                     self.header_view = constants::VIEW_SEARCH.to_string();
                 }
 
+                // Store current selection before filtering
+                let selected_paths = self.get_selection();
+
                 self.filter = query.clone();
                 let query_lc = query.to_lowercase();
 
@@ -418,17 +421,39 @@ impl FluxApp {
                         .add_filter(move |item| item.name.to_lowercase().contains(&filter_str));
                 }
 
-                if !query_lc.is_empty() {
+                // Restore selection if possible
+                if !query_lc.is_empty() && !selected_paths.is_empty() {
                     if let Some(model) = self
                         .files
                         .view
                         .model()
                         .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                     {
-                        if model.n_items() > 0 {
+                        // Iterate through all visible items after filtering
+                        for idx in 0..self.files.len() {
+                            if let Some(item) = self.files.get(idx) {
+                                let path = item.borrow().path.clone();
+                                if selected_paths.contains(&path) {
+                                    // idx is u32, no cast needed
+                                    model.select_item(idx, true);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else if !query_lc.is_empty() && self.search_just_opened {
+                    // Only auto-select if filter just opened and no selection
+                    if let Some(model) = self
+                        .files
+                        .view
+                        .model()
+                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                    {
+                        if model.n_items() > 0 && self.get_selection().is_empty() {
                             model.select_item(0, true);
                         }
                     }
+                    self.search_just_opened = false;
                 }
             }
             AppMsg::SearchInput(c) => {
