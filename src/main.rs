@@ -49,16 +49,24 @@ fn load_custom_css() {
         css_data = fs::read_to_string(config_dir.join("style.css")).ok();
     }
 
-    if let Some(data) = css_data {
+    if let Some(display) = adw::gdk::Display::default() {
         CSS_PROVIDER.with(|provider| {
-            if let Some(display) = adw::gdk::Display::default() {
-                gtk::style_context_remove_provider_for_display(&display, provider);
+            // Remove existing provider from display
+            gtk::style_context_remove_provider_for_display(&display, provider);
+
+            if let Some(data) = css_data {
+                // Load new CSS data
                 provider.load_from_data(&data);
+
+                // Add the updated provider back
                 gtk::style_context_add_provider_for_display(
                     &display,
                     provider,
                     gtk::STYLE_PROVIDER_PRIORITY_USER,
                 );
+            } else {
+                // No CSS data available, clear the provider
+                provider.load_from_data("");
             }
         });
     }
