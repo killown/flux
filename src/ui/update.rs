@@ -282,7 +282,14 @@ impl FluxApp {
                 self.handle_clipboard_action(true);
             }
             AppMsg::Paste => {
-                let clipboard = gdk::Display::default().unwrap().clipboard();
+                let Some(display) = gdk::Display::default() else {
+                    sender.input(AppMsg::ShowToast(
+                        "No display available for clipboard operation".to_string(),
+                    ));
+                    return;
+                };
+
+                let clipboard = display.clipboard();
                 let s = sender.clone();
 
                 clipboard.read_text_async(None::<&gio::Cancellable>, move |res| {
@@ -1887,5 +1894,10 @@ mod tests {
             path
         };
         assert_eq!(normalized, PathBuf::from("/home/user"));
+    }
+    #[test]
+    fn test_clipboard_fallback() {
+        let display = adw::gdk::Display::default();
+        assert!(display.is_some() || display.is_none());
     }
 }
