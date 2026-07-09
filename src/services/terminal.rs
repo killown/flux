@@ -66,8 +66,8 @@ impl TerminalState {
             cursor_y: 0,
             cols,
             rows,
-            fg_color: fg.clone(),
-            bg_color: bg.clone(),
+            fg_color: fg,
+            bg_color: bg,
             font_desc: pango::FontDescription::from_string("JetBrains Mono 13"),
             pty_fd: None,
             saved_cursor_x: 0,
@@ -203,8 +203,8 @@ impl TerminalState {
         }
         self.cursor_x = 0;
         self.cursor_y = 0;
-        self.current_fg = self.fg_color.clone();
-        self.current_bg = self.bg_color.clone();
+        self.current_fg = self.fg_color;
+        self.current_bg = self.bg_color;
         self.bold = false;
         self.scrollback.clear();
         self.scroll_offset = 0;
@@ -256,6 +256,30 @@ impl TerminalState {
         }
         text
     }
+
+    pub fn send_cursor_position(&self) {
+        let row = self.cursor_y + 1;
+        let col = self.cursor_x + 1;
+        let response = format!("\x1b[{};{}R", row, col);
+        if let Some(fd) = self.pty_fd {
+            unsafe {
+                libc::write(fd, response.as_ptr() as *const libc::c_void, response.len());
+            }
+        }
+    }
+
+    pub fn send_background_color(&self) {
+        let bg = &self.bg_color;
+        let r = (bg.red() * 65535.0) as u16;
+        let g = (bg.green() * 65535.0) as u16;
+        let b = (bg.blue() * 65535.0) as u16;
+        let response = format!("\x1b]11;rgb:{:04x}/{:04x}/{:04x}\x1b\\", r, g, b);
+        if let Some(fd) = self.pty_fd {
+            unsafe {
+                libc::write(fd, response.as_ptr() as *const libc::c_void, response.len());
+            }
+        }
+    }
 }
 
 pub struct TerminalHandler {
@@ -270,8 +294,8 @@ impl Perform for TerminalHandler {
         let x = state.cursor_x;
         if x < state.cols && y < state.rows {
             state.grid[y][x].ch = c;
-            state.grid[y][x].fg = Some(state.current_fg.clone());
-            state.grid[y][x].bg = Some(state.current_bg.clone());
+            state.grid[y][x].fg = Some(state.current_fg);
+            state.grid[y][x].bg = Some(state.current_bg);
             state.grid[y][x].bold = state.bold;
         }
         state.cursor_x += 1;
@@ -306,10 +330,8 @@ impl Perform for TerminalHandler {
                     state.cursor_x = state.cols - 1;
                 }
             }
-            b'\x08' => {
-                if state.cursor_x > 0 {
-                    state.cursor_x -= 1;
-                }
+            b'\x08' if state.cursor_x > 0 => {
+                state.cursor_x -= 1;
             }
             b'\x0c' => {
                 state.clear();
@@ -335,20 +357,20 @@ impl Perform for TerminalHandler {
 
         let mut p = Vec::new();
         for param in params.iter() {
-            if let Some(&val) = param.get(0) {
+            if let Some(&val) = param.first() {
                 p.push(val as i64);
             }
         }
 
+        let has_question = !intermediates.is_empty() && intermediates[0] == b'?';
+
         if command == 'c' {
             let is_secondary = !intermediates.is_empty() && intermediates[0] == b'>';
-
             let response: &[u8] = if is_secondary {
                 b"\x1b[>0;0;0c"
             } else {
                 b"\x1b[?1;0c"
             };
-
             if let Some(fd) = state.pty_fd {
                 let _ = unsafe {
                     libc::write(fd, response.as_ptr() as *const libc::c_void, response.len())
@@ -359,28 +381,28 @@ impl Perform for TerminalHandler {
 
         match command {
             'A' => {
-                let n = p.get(0).map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1);
                 state.cursor_y = state.cursor_y.saturating_sub(n);
             }
             'B' => {
-                let n = p.get(0).map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1);
                 state.cursor_y = (state.cursor_y + n).min(state.rows - 1);
             }
             'C' => {
-                let n = p.get(0).map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1);
                 state.cursor_x = (state.cursor_x + n).min(state.cols - 1);
             }
             'D' => {
-                let n = p.get(0).map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1);
                 state.cursor_x = state.cursor_x.saturating_sub(n);
             }
             'H' | 'f' => {
-                let row = p.get(0).map(|&v| v as usize).unwrap_or(1);
+                let row = p.first().map(|&v| v as usize).unwrap_or(1);
                 let col = p.get(1).map(|&v| v as usize).unwrap_or(1);
                 state.cursor_y = (row - 1).min(state.rows - 1);
                 state.cursor_x = (col - 1).min(state.cols - 1);
             }
-            'J' => match p.get(0).map(|&v| v).unwrap_or(0) {
+            'J' => match p.first().copied().unwrap_or(0) {
                 0 => {
                     for y in state.cursor_y..state.rows {
                         for x in 0..state.cols {
@@ -414,7 +436,7 @@ impl Perform for TerminalHandler {
             },
             'K' => {
                 let row = state.cursor_y;
-                match p.get(0).map(|&v| v).unwrap_or(0) {
+                match p.first().copied().unwrap_or(0) {
                     0 => {
                         for x in state.cursor_x..state.cols {
                             state.grid[row][x].ch = ' ';
@@ -444,16 +466,16 @@ impl Perform for TerminalHandler {
             }
             'm' => {
                 if p.is_empty() || p[0] == 0 {
-                    state.current_fg = state.fg_color.clone();
-                    state.current_bg = state.bg_color.clone();
+                    state.current_fg = state.fg_color;
+                    state.current_bg = state.bg_color;
                     state.bold = false;
                 } else {
                     let mut i = 0;
                     while i < p.len() {
                         match p[i] {
                             0 => {
-                                state.current_fg = state.fg_color.clone();
-                                state.current_bg = state.bg_color.clone();
+                                state.current_fg = state.fg_color;
+                                state.current_bg = state.bg_color;
                                 state.bold = false;
                             }
                             1 => state.bold = true,
@@ -505,13 +527,40 @@ impl Perform for TerminalHandler {
                 state.cursor_x = state.saved_cursor_x;
                 state.cursor_y = state.saved_cursor_y;
             }
+            'n' if has_question && p.first().copied().unwrap_or(0) == 6 => {
+                state.send_cursor_position();
+            }
             _ => {}
         }
         let _ = self.draw_sender.send(());
     }
 
-    fn osc_dispatch(&mut self, _params: &[&[u8]], _command: bool) {
-        // Ignore OSC sequences for now
+    fn osc_dispatch(&mut self, params: &[&[u8]], _command: bool) {
+        let state = self.state.lock().unwrap();
+
+        if params.is_empty() {
+            return;
+        }
+
+        let cmd = if let Some(first) = params.first() {
+            std::str::from_utf8(first)
+                .unwrap_or("")
+                .parse::<u16>()
+                .unwrap_or(0)
+        } else {
+            return;
+        };
+
+        let payload = if params.len() > 1 {
+            params[1..].concat()
+        } else {
+            Vec::new()
+        };
+        let payload_str = String::from_utf8_lossy(&payload);
+
+        if cmd == 11 && payload_str == "?" {
+            state.send_background_color();
+        }
     }
 }
 
@@ -575,10 +624,11 @@ impl Terminal {
                 let new_cols = (width as f64 / char_width).floor() as usize;
                 let new_rows = (height as f64 / char_height).floor() as usize;
 
-                if new_cols > 0 && new_rows > 0 {
-                    if new_cols != state.cols || new_rows != state.rows {
-                        state.resize(new_cols, new_rows);
-                    }
+                if new_cols > 0
+                    && new_rows > 0
+                    && (new_cols != state.cols || new_rows != state.rows)
+                {
+                    state.resize(new_cols, new_rows);
                 }
 
                 draw_terminal(area, cr, &state, width, height);
@@ -596,7 +646,6 @@ impl Terminal {
             let is_ctrl = modifiers.contains(gtk::gdk::ModifierType::CONTROL_MASK);
             let is_shift = modifiers.contains(gtk::gdk::ModifierType::SHIFT_MASK);
 
-            // Ctrl+Shift+C to copy selection
             if is_ctrl && is_shift && (keyval == gtk::gdk::Key::c || keyval == gtk::gdk::Key::C) {
                 let state = state_for_keys.lock().unwrap();
                 let text = state.get_selected_text();
@@ -615,48 +664,48 @@ impl Terminal {
                     let mut state = state_for_keys.lock().unwrap();
                     state.scroll_lines(20);
                     drawing_area_for_keys.queue_draw();
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Page_Down if is_shift => {
                     let mut state = state_for_keys.lock().unwrap();
                     state.scroll_lines(-20);
                     drawing_area_for_keys.queue_draw();
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::BackSpace => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
                         let _ =
                             unsafe { libc::write(fd, b"\x7f".as_ptr() as *const libc::c_void, 1) };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Return => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
                         let _ =
                             unsafe { libc::write(fd, b"\r".as_ptr() as *const libc::c_void, 1) };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Tab => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
                         let _ =
                             unsafe { libc::write(fd, b"\t".as_ptr() as *const libc::c_void, 1) };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::c | gtk::gdk::Key::C if is_ctrl => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
                         let _ =
                             unsafe { libc::write(fd, b"\x03".as_ptr() as *const libc::c_void, 1) };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::d | gtk::gdk::Key::D if is_ctrl => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
                         let _ =
                             unsafe { libc::write(fd, b"\x04".as_ptr() as *const libc::c_void, 1) };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Up => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
@@ -664,7 +713,7 @@ impl Terminal {
                             libc::write(fd, b"\x1b[A".as_ptr() as *const libc::c_void, 3)
                         };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Down => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
@@ -672,7 +721,7 @@ impl Terminal {
                             libc::write(fd, b"\x1b[B".as_ptr() as *const libc::c_void, 3)
                         };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Left => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
@@ -680,7 +729,7 @@ impl Terminal {
                             libc::write(fd, b"\x1b[D".as_ptr() as *const libc::c_void, 3)
                         };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Right => {
                     if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
@@ -688,7 +737,7 @@ impl Terminal {
                             libc::write(fd, b"\x1b[C".as_ptr() as *const libc::c_void, 3)
                         };
                     }
-                    return glib::Propagation::Stop;
+                    glib::Propagation::Stop
                 }
                 _ => {
                     if let Some(ch) = keyval.to_unicode() {
@@ -704,17 +753,23 @@ impl Terminal {
                                     )
                                 };
                             }
-                            return glib::Propagation::Stop;
+                            glib::Propagation::Stop
+                        } else {
+                            glib::Propagation::Proceed
                         }
+                    } else {
+                        glib::Propagation::Proceed
                     }
                 }
             }
-            glib::Propagation::Proceed
         });
         drawing_area.add_controller(key_controller);
 
-        // Mouse selection support
-        let drag_started = Arc::new(std::cell::Cell::new(false));
+        // Mouse selection support - using Rc instead of Arc (not Send/Sync)
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let drag_started = Rc::new(RefCell::new(false));
 
         let state_for_drag = state.clone();
         let drawing_area_for_drag = drawing_area.clone();
@@ -748,7 +803,7 @@ impl Terminal {
             state.selection_start = Some((abs_row, col));
             state.selection_end = Some((abs_row, col));
             state.selection_active = true;
-            drag_started_clone.set(true);
+            *drag_started_clone.borrow_mut() = true;
             drawing_area_for_drag.queue_draw();
         });
 
@@ -756,7 +811,7 @@ impl Terminal {
         let drawing_area_for_drag_update = drawing_area.clone();
         let drag_started_clone2 = drag_started.clone();
         drag_controller.connect_drag_update(move |gesture, _x, _y| {
-            if !drag_started_clone2.get() {
+            if !*drag_started_clone2.borrow() {
                 return;
             }
             let mut state = state_for_drag_update.lock().unwrap();
@@ -790,7 +845,7 @@ impl Terminal {
         let drawing_area_for_drag_end = drawing_area.clone();
         let drag_started_clone3 = drag_started;
         drag_controller.connect_drag_end(move |_gesture, _x, _y| {
-            drag_started_clone3.set(false);
+            *drag_started_clone3.borrow_mut() = false;
             let state = state_for_drag_end.lock().unwrap();
             if state.selection_active {
                 let text = state.get_selected_text();
@@ -845,8 +900,6 @@ impl Terminal {
             draw_sender,
         };
 
-        // Spawn the shell after a small delay to allow the widget to be realized
-        // and get proper sizing
         let mut term_clone = term.clone();
         glib::idle_add_local_once(move || {
             term_clone.spawn_async(
@@ -876,15 +929,15 @@ impl Terminal {
 
     pub fn set_color_foreground(&self, color: &gtk::gdk::RGBA) {
         let mut state = self.state.lock().unwrap();
-        state.fg_color = color.clone();
-        state.current_fg = color.clone();
+        state.fg_color = *color;
+        state.current_fg = *color;
         self.drawing_area.queue_draw();
     }
 
     pub fn set_color_background(&self, color: &gtk::gdk::RGBA) {
         let mut state = self.state.lock().unwrap();
-        state.bg_color = color.clone();
-        state.current_bg = color.clone();
+        state.bg_color = *color;
+        state.current_bg = *color;
         self.drawing_area.queue_draw();
     }
 
@@ -912,6 +965,7 @@ impl Terminal {
         self.state.lock().unwrap().pty_fd
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn spawn_async<F>(
         &mut self,
         _pty_flags: u32,
@@ -929,10 +983,8 @@ impl Terminal {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
         let working_dir = working_dir.map(str::to_owned);
 
-        // Get the actual size of the drawing area before spawning
         let (width, height) = (self.drawing_area.width(), self.drawing_area.height());
 
-        // Calculate initial size
         let layout = self.drawing_area.create_pango_layout(None);
         layout.set_font_description(Some(&self.state.lock().unwrap().font_desc));
         layout.set_text("W");
@@ -954,7 +1006,7 @@ impl Terminal {
         let (master_fd, slave_fd): (RawFd, RawFd) = unsafe {
             let mut master: RawFd = -1;
             let mut slave: RawFd = -1;
-            let mut winsize = libc::winsize {
+            let winsize = libc::winsize {
                 ws_row: rows as u16,
                 ws_col: cols as u16,
                 ws_xpixel: 0,
@@ -965,7 +1017,7 @@ impl Terminal {
                 &mut slave,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
-                &mut winsize,
+                &winsize,
             ) != 0
             {
                 callback(Err(glib::Error::new(
@@ -977,7 +1029,6 @@ impl Terminal {
             (master, slave)
         };
 
-        // Store the master fd for resizing
         {
             let mut state = self.state.lock().unwrap();
             state.pty_master_fd = Some(master_fd);
