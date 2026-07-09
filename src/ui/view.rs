@@ -293,7 +293,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 #[watch]
                                 set_visible: model.terminal_visible,
                                 set_vexpand: false,
-                              },
+                            },
 
                             /// Global drop handler for cross-instance and external file transfers.
                             ///
@@ -422,7 +422,6 @@ impl SimpleAsyncComponent for FluxApp {
         root: Self::Root,
         sender: AsyncComponentSender<Self>,
     ) -> AsyncComponentParts<Self> {
-        // Initialize an empty model here instead of synchronously loading `start_path`.
         let (model, breadcrumb_box) = Self::init_components(PathBuf::new(), &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
         let widgets = view_output!();
@@ -457,9 +456,11 @@ impl SimpleAsyncComponent for FluxApp {
             root.maximize();
         }
 
-        // Terminal disabled due to dependency conflicts - using placeholder
+        // The terminal is already initialized in init_components
+        // We just need to get the terminal widget from the model
+        let terminal_widget = model.terminal.drawing_area.clone();
         let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        // The terminal widget is disabled, but we keep the revealer structure
+        terminal_box.append(&terminal_widget);
         widgets.terminal_revealer.set_child(Some(&terminal_box));
 
         let startup_sender = sender.clone();

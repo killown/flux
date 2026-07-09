@@ -8,6 +8,7 @@
 pub mod db;
 pub mod loader;
 pub mod tasks;
+pub mod terminal;
 pub mod thumbnails;
 
 /// Service-level constants, such as cache limits or thread counts.

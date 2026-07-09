@@ -558,33 +558,42 @@ impl FluxApp {
                 }
             }
             AppMsg::SetTerminalHeight(h) => {
-                // Terminal disabled
                 self.config.ui.terminal.height = h;
                 crate::utils::save_config(&self.config);
             }
             AppMsg::SetTerminalFont(f) => {
-                // Terminal disabled
                 self.config.ui.terminal.font = f;
                 crate::utils::save_config(&self.config);
             }
             AppMsg::SetTerminalFgColor(c) => {
-                // Terminal disabled
                 self.config.ui.terminal.fg_color = c;
                 crate::utils::save_config(&self.config);
             }
             AppMsg::SetTerminalBgColor(c) => {
-                // Terminal disabled
                 self.config.ui.terminal.bg_color = c;
                 crate::utils::save_config(&self.config);
             }
             AppMsg::ToggleTerminal => {
                 self.terminal_visible = !self.terminal_visible;
-                // Terminal functionality disabled
-                // If you want, you could show a toast message:
-                // sender.input(AppMsg::ShowToast("Terminal support is currently disabled".to_string()));
+                if self.terminal_visible {
+                    sender.input(AppMsg::TerminalCd(self.current_path.clone()));
+                    let term = self.terminal.clone();
+                    glib::idle_add_local_once(move || {
+                        term.grab_focus();
+                    });
+                }
             }
             AppMsg::TerminalCd(path) => {
-                // Terminal functionality disabled
+                if self.terminal_visible {
+                    let path_str = path.to_string_lossy();
+                    let cmd = format!("cd '{}'\n", path_str.replace('\'', "'\\''"));
+                    if let Some(fd) = self.terminal.pty() {
+                        unsafe {
+                            let bytes = cmd.as_bytes();
+                            libc::write(fd, bytes.as_ptr() as *const libc::c_void, bytes.len());
+                        }
+                    }
+                }
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.active_item_path = path.clone();

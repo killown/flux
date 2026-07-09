@@ -303,7 +303,7 @@ impl Default for TerminalConfig {
 #[derive(Debug)]
 pub struct FluxApp {
     /// The embedded VTE terminal widget.
-    //pub terminal: vte4::Terminal,
+    pub terminal: crate::services::terminal::Terminal,
     /// Whether the terminal panel is currently visible.
     pub terminal_visible: bool,
     /// Indicates whether a background file system operation or directory reload is currently in progress.
