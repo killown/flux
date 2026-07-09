@@ -40,6 +40,7 @@ pub struct TerminalState {
     pub selection_start: Option<(usize, usize)>,
     pub selection_end: Option<(usize, usize)>,
     pub selection_active: bool,
+    pub pty_master_fd: Option<RawFd>,
 }
 
 impl TerminalState {
@@ -80,6 +81,7 @@ impl TerminalState {
             selection_start: None,
             selection_end: None,
             selection_active: false,
+            pty_master_fd: None,
         }
     }
 
@@ -139,6 +141,18 @@ impl TerminalState {
         self.selection_start = None;
         self.selection_end = None;
         self.selection_active = false;
+
+        if let Some(fd) = self.pty_master_fd {
+            let winsize = libc::winsize {
+                ws_row: rows as u16,
+                ws_col: cols as u16,
+                ws_xpixel: 0,
+                ws_ypixel: 0,
+            };
+            unsafe {
+                libc::ioctl(fd, libc::TIOCSWINSZ, &winsize);
+            }
+        }
     }
 
     pub fn scroll_up(&mut self) {
@@ -562,7 +576,9 @@ impl Terminal {
                 let new_rows = (height as f64 / char_height).floor() as usize;
 
                 if new_cols > 0 && new_rows > 0 {
-                    state.resize(new_cols, new_rows);
+                    if new_cols != state.cols || new_rows != state.rows {
+                        state.resize(new_cols, new_rows);
+                    }
                 }
 
                 draw_terminal(area, cr, &state, width, height);
@@ -822,28 +838,33 @@ impl Terminal {
         });
         drawing_area.add_controller(click_controller);
 
-        let mut term = Self {
+        let term = Self {
             drawing_area,
             state,
             _pty_reader: None,
             draw_sender,
         };
 
-        term.spawn_async(
-            0,
-            None,
-            &[],
-            &[],
-            0,
-            || {},
-            -1,
-            None,
-            |result| {
-                if let Err(e) = result {
-                    eprintln!("Failed to spawn terminal shell: {}", e);
-                }
-            },
-        );
+        // Spawn the shell after a small delay to allow the widget to be realized
+        // and get proper sizing
+        let mut term_clone = term.clone();
+        glib::idle_add_local_once(move || {
+            term_clone.spawn_async(
+                0,
+                None,
+                &[],
+                &[],
+                0,
+                || {},
+                -1,
+                None,
+                |result| {
+                    if let Err(e) = result {
+                        eprintln!("Failed to spawn terminal shell: {}", e);
+                    }
+                },
+            );
+        });
 
         term
     }
@@ -908,12 +929,34 @@ impl Terminal {
         let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
         let working_dir = working_dir.map(str::to_owned);
 
+        // Get the actual size of the drawing area before spawning
+        let (width, height) = (self.drawing_area.width(), self.drawing_area.height());
+
+        // Calculate initial size
+        let layout = self.drawing_area.create_pango_layout(None);
+        layout.set_font_description(Some(&self.state.lock().unwrap().font_desc));
+        layout.set_text("W");
+        let extents = layout.pixel_extents();
+        let char_width = extents.1.width() as f64;
+        let char_height = extents.1.height() as f64;
+
+        let cols = if width > 0 {
+            (width as f64 / char_width).floor() as usize
+        } else {
+            80
+        };
+        let rows = if height > 0 {
+            (height as f64 / char_height).floor() as usize
+        } else {
+            24
+        };
+
         let (master_fd, slave_fd): (RawFd, RawFd) = unsafe {
             let mut master: RawFd = -1;
             let mut slave: RawFd = -1;
             let mut winsize = libc::winsize {
-                ws_row: 24,
-                ws_col: 80,
+                ws_row: rows as u16,
+                ws_col: cols as u16,
                 ws_xpixel: 0,
                 ws_ypixel: 0,
             };
@@ -934,7 +977,17 @@ impl Terminal {
             (master, slave)
         };
 
+        // Store the master fd for resizing
+        {
+            let mut state = self.state.lock().unwrap();
+            state.pty_master_fd = Some(master_fd);
+            state.cols = cols;
+            state.rows = rows;
+        }
+
         let mut command = Command::new(&shell);
+        command.env("TERM", "xterm-256color");
+
         if let Some(dir) = &working_dir {
             if !dir.is_empty() && std::path::Path::new(dir).is_dir() {
                 command.current_dir(dir);
@@ -1057,59 +1110,76 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
                 false
             };
 
-        for (col, cell) in row.iter().enumerate() {
-            if cell.ch != ' ' {
-                let x_pos = col as f64 * char_width;
+        let mut x_pos = 0.0;
+        let mut col = 0;
 
-                let cell_selected = if is_selected {
-                    let (start_col, end_col) = if let (Some(start), Some(end)) =
-                        (state.selection_start, state.selection_end)
-                    {
-                        let (row1, row2) = (start.0.min(end.0), start.0.max(end.0));
-                        if abs_row == row1 && abs_row == row2 {
-                            (start.1.min(end.1), start.1.max(end.1))
-                        } else if abs_row == row1 {
-                            (start.1, state.cols - 1)
-                        } else if abs_row == row2 {
-                            (0, end.1)
-                        } else {
-                            (0, state.cols - 1)
-                        }
-                    } else {
-                        (0, 0)
-                    };
-                    col >= start_col && col <= end_col
-                } else {
-                    false
-                };
+        while col < row.len() {
+            let cell = &row[col];
 
-                if cell_selected {
-                    cr.set_source_rgba(0.3, 0.5, 0.9, 0.5);
-                    cr.rectangle(x_pos, y_pos, char_width, char_height);
-                    cr.fill().unwrap();
-                    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
-                } else if let Some(fg) = &cell.fg {
-                    cr.set_source_rgba(
-                        fg.red() as f64,
-                        fg.green() as f64,
-                        fg.blue() as f64,
-                        fg.alpha() as f64,
-                    );
-                } else {
-                    cr.set_source_rgba(
-                        state.fg_color.red() as f64,
-                        state.fg_color.green() as f64,
-                        state.fg_color.blue() as f64,
-                        state.fg_color.alpha() as f64,
-                    );
-                }
-
-                let mut text = String::new();
-                text.push(cell.ch);
-                layout.set_text(&text);
-                cr.move_to(x_pos, y_pos);
-                pangocairo::functions::show_layout(cr, &layout);
+            if cell.ch == ' ' {
+                col += 1;
+                x_pos += char_width;
+                continue;
             }
+
+            let mut text = String::new();
+
+            while col < row.len() && row[col].ch != ' ' {
+                text.push(row[col].ch);
+                col += 1;
+            }
+
+            layout.set_text(&text);
+            let text_extents = layout.pixel_extents();
+            let text_width = text_extents.1.width() as f64;
+
+            let block_selected = if is_selected {
+                let (start_col, end_col) = if let (Some(start), Some(end)) =
+                    (state.selection_start, state.selection_end)
+                {
+                    let (row1, row2) = (start.0.min(end.0), start.0.max(end.0));
+                    if abs_row == row1 && abs_row == row2 {
+                        (start.1.min(end.1), start.1.max(end.1))
+                    } else if abs_row == row1 {
+                        (start.1, state.cols - 1)
+                    } else if abs_row == row2 {
+                        (0, end.1)
+                    } else {
+                        (0, state.cols - 1)
+                    }
+                } else {
+                    (0, 0)
+                };
+                let block_end = start_col + text.len();
+                !(block_end <= start_col || start_col >= end_col)
+            } else {
+                false
+            };
+
+            if block_selected {
+                cr.set_source_rgba(0.3, 0.5, 0.9, 0.5);
+                cr.rectangle(x_pos, y_pos, text_width, char_height);
+                cr.fill().unwrap();
+                cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+            } else if let Some(fg) = &cell.fg {
+                cr.set_source_rgba(
+                    fg.red() as f64,
+                    fg.green() as f64,
+                    fg.blue() as f64,
+                    fg.alpha() as f64,
+                );
+            } else {
+                cr.set_source_rgba(
+                    state.fg_color.red() as f64,
+                    state.fg_color.green() as f64,
+                    state.fg_color.blue() as f64,
+                    state.fg_color.alpha() as f64,
+                );
+            }
+
+            cr.move_to(x_pos, y_pos);
+            pangocairo::functions::show_layout(cr, &layout);
+            x_pos += text_width;
         }
 
         drawn += 1;
