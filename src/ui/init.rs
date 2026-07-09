@@ -5,7 +5,7 @@ use relm4::typed_view::grid::TypedGridView;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
-use vte4::prelude::*;
+// use vte4::prelude::*;
 
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
@@ -94,93 +94,95 @@ impl FluxApp {
             .launch(breadcrumb_box.clone())
             .forward(sender.input_sender(), AppMsg::Navigate);
 
-        let terminal = vte4::Terminal::new();
-        terminal.set_vexpand(true);
-
+        // Terminal disabled due to dependency conflicts, using placeholder
+        //let terminal = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        // let terminal = vte4::Terminal::new();
+        // terminal.set_vexpand(true);
+        //
         // Intercept F4 and clipboard shortcuts before VTE consumes them.
         // VTE grabs all key events; a local EventControllerKey with the highest
         // phase (Capture) is required so our handler wins the dispatch race.
-        let term_sender = sender.clone();
-        let term_key_ctrl = gtk::EventControllerKey::new();
-        term_key_ctrl.set_propagation_phase(gtk::PropagationPhase::Capture);
-        {
-            let terminal_ref = terminal.clone();
-            term_key_ctrl.connect_key_pressed(move |_, keyval, _, modifiers| {
-                use gtk::gdk::Key;
-                use vte4::prelude::*;
-
-                let ctrl_shift =
-                    gtk::gdk::ModifierType::CONTROL_MASK | gtk::gdk::ModifierType::SHIFT_MASK;
-
-                match keyval {
-                    Key::F4 => {
-                        term_sender.input(AppMsg::ToggleTerminal);
-                        return glib::Propagation::Stop;
-                    }
-                    // Ctrl+Shift+C → copy selection to clipboard
-                    Key::c | Key::C if modifiers == ctrl_shift => {
-                        terminal_ref.emit_copy_clipboard();
-                        return glib::Propagation::Stop;
-                    }
-                    // Ctrl+Shift+V → paste from clipboard into terminal
-                    Key::v | Key::V if modifiers == ctrl_shift => {
-                        terminal_ref.emit_paste_clipboard();
-                        return glib::Propagation::Stop;
-                    }
-                    // Feed Tab directly to the PTY so shell completion works.
-                    // In Capture phase the event never reaches VTE's own input
-                    // handler, so the \t byte must be injected manually.
-                    Key::Tab if modifiers.is_empty() => {
-                        terminal_ref.feed_child(b"\t");
-                        return glib::Propagation::Stop;
-                    }
-                    _ => {}
-                }
-
-                glib::Propagation::Proceed
-            });
-        }
-        terminal.add_controller(term_key_ctrl);
-
-        // Middle-click paste from the primary selection.
-        {
-            // Suppress VTE's built-in right-click menu.
-            let right_click = gtk::GestureClick::new();
-            right_click.set_button(3);
-            right_click.set_propagation_phase(gtk::PropagationPhase::Capture);
-            right_click.connect_pressed(|gesture, _, _, _| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-            });
-            terminal.add_controller(right_click);
-
-            let terminal_ref = terminal.clone();
-            let middle_click = gtk::GestureClick::new();
-            middle_click.set_button(2); // BUTTON_MIDDLE
-            middle_click.set_propagation_phase(gtk::PropagationPhase::Capture);
-            middle_click.connect_pressed(move |gesture, _, _, _| {
-                use vte4::prelude::*;
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                terminal_ref.emit_paste_clipboard();
-            });
-            terminal.add_controller(middle_click);
-        }
-
-        // Spawn the user's default shell
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-        let pty_flags = vte4::PtyFlags::DEFAULT;
-        let spawn_flags = glib::SpawnFlags::DEFAULT;
-
-        terminal.spawn_async(
-            pty_flags,
-            Some(start_path.to_str().unwrap_or("/")),
-            &[&shell],
-            &[],
-            spawn_flags,
-            || {},
-            -1,
-            gio::Cancellable::NONE,
-            |_| {},
-        );
+        // let term_sender = sender.clone();
+        // let term_key_ctrl = gtk::EventControllerKey::new();
+        // term_key_ctrl.set_propagation_phase(gtk::PropagationPhase::Capture);
+        // {
+        //     let terminal_ref = terminal.clone();
+        //     term_key_ctrl.connect_key_pressed(move |_, keyval, _, modifiers| {
+        //         use gtk::gdk::Key;
+        //         use vte4::prelude::*;
+        //
+        //         let ctrl_shift =
+        //             gtk::gdk::ModifierType::CONTROL_MASK | gtk::gdk::ModifierType::SHIFT_MASK;
+        //
+        //         match keyval {
+        //             Key::F4 => {
+        //                 term_sender.input(AppMsg::ToggleTerminal);
+        //                 return glib::Propagation::Stop;
+        //             }
+        //             // Ctrl+Shift+C → copy selection to clipboard
+        //             Key::c | Key::C if modifiers == ctrl_shift => {
+        //                 terminal_ref.emit_copy_clipboard();
+        //                 return glib::Propagation::Stop;
+        //             }
+        //             // Ctrl+Shift+V → paste from clipboard into terminal
+        //             Key::v | Key::V if modifiers == ctrl_shift => {
+        //                 terminal_ref.emit_paste_clipboard();
+        //                 return glib::Propagation::Stop;
+        //             }
+        //             // Feed Tab directly to the PTY so shell completion works.
+        //             // In Capture phase the event never reaches VTE's own input
+        //             // handler, so the \t byte must be injected manually.
+        //             Key::Tab if modifiers.is_empty() => {
+        //                 terminal_ref.feed_child(b"\t");
+        //                 return glib::Propagation::Stop;
+        //             }
+        //             _ => {}
+        //         }
+        //
+        //         glib::Propagation::Proceed
+        //     });
+        // }
+        // terminal.add_controller(term_key_ctrl);
+        //
+        // // Middle-click paste from the primary selection.
+        // {
+        //     // Suppress VTE's built-in right-click menu.
+        //     let right_click = gtk::GestureClick::new();
+        //     right_click.set_button(3);
+        //     right_click.set_propagation_phase(gtk::PropagationPhase::Capture);
+        //     right_click.connect_pressed(|gesture, _, _, _| {
+        //         gesture.set_state(gtk::EventSequenceState::Claimed);
+        //     });
+        //     terminal.add_controller(right_click);
+        //
+        //     let terminal_ref = terminal.clone();
+        //     let middle_click = gtk::GestureClick::new();
+        //     middle_click.set_button(2); // BUTTON_MIDDLE
+        //     middle_click.set_propagation_phase(gtk::PropagationPhase::Capture);
+        //     middle_click.connect_pressed(move |gesture, _, _, _| {
+        //         use vte4::prelude::*;
+        //         gesture.set_state(gtk::EventSequenceState::Claimed);
+        //         terminal_ref.emit_paste_clipboard();
+        //     });
+        //     terminal.add_controller(middle_click);
+        // }
+        //
+        // // Spawn the user's default shell
+        // let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+        // let pty_flags = vte4::PtyFlags::DEFAULT;
+        // let spawn_flags = glib::SpawnFlags::DEFAULT;
+        //
+        // terminal.spawn_async(
+        //     pty_flags,
+        //     Some(start_path.to_str().unwrap_or("/")),
+        //     &[&shell],
+        //     &[],
+        //     spawn_flags,
+        //     || {},
+        //     -1,
+        //     gio::Cancellable::NONE,
+        //     |_| {},
+        // );
 
         // 8. Model Assembly
         let mut model = FluxApp {
@@ -217,7 +219,7 @@ impl FluxApp {
             task_queue: crate::services::tasks::new_queue(),
             toast_overlay: adw::ToastOverlay::new(),
             pending_toasts: std::collections::HashMap::new(),
-            terminal,
+            //terminal,
             terminal_visible: false,
         };
 
