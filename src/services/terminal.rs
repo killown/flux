@@ -16,6 +16,29 @@ pub struct Cell {
     pub fg: Option<gtk::gdk::RGBA>,
     pub bg: Option<gtk::gdk::RGBA>,
     pub bold: bool,
+    pub dim: bool,
+    pub italic: bool,
+    pub underline: bool,
+    pub strikethrough: bool,
+    pub reverse: bool,
+}
+
+impl Cell {
+    /// Returns a blank space cell with no attributes.
+    #[inline]
+    pub fn blank() -> Self {
+        Self {
+            ch: ' ',
+            fg: None,
+            bg: None,
+            bold: false,
+            dim: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+            reverse: false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -34,6 +57,11 @@ pub struct TerminalState {
     pub current_fg: gtk::gdk::RGBA,
     pub current_bg: gtk::gdk::RGBA,
     pub bold: bool,
+    pub dim: bool,
+    pub italic: bool,
+    pub underline: bool,
+    pub strikethrough: bool,
+    pub reverse: bool,
     pub scrollback: Vec<Vec<Cell>>,
     pub scrollback_limit: usize,
     pub scroll_offset: usize,
@@ -41,6 +69,11 @@ pub struct TerminalState {
     pub selection_end: Option<(usize, usize)>,
     pub selection_active: bool,
     pub pty_master_fd: Option<RawFd>,
+    /// Saved grid/cursor for the alternate screen buffer (\e[?1049h/l).
+    pub alt_screen: Option<(Vec<Vec<Cell>>, usize, usize)>,
+    pub bracketed_paste: bool,
+    pub cursor_visible: bool,
+    pub focus_reporting: bool,
 }
 
 impl TerminalState {
@@ -54,6 +87,11 @@ impl TerminalState {
                     fg: None,
                     bg: None,
                     bold: false,
+                    dim: false,
+                    italic: false,
+                    underline: false,
+                    strikethrough: false,
+                    reverse: false,
                 });
             }
             grid.push(row);
@@ -75,6 +113,11 @@ impl TerminalState {
             current_fg: fg,
             current_bg: bg,
             bold: false,
+            dim: false,
+            italic: false,
+            underline: false,
+            strikethrough: false,
+            reverse: false,
             scrollback: Vec::new(),
             scrollback_limit: 10000,
             scroll_offset: 0,
@@ -82,6 +125,10 @@ impl TerminalState {
             selection_end: None,
             selection_active: false,
             pty_master_fd: None,
+            alt_screen: None,
+            bracketed_paste: false,
+            cursor_visible: true,
+            focus_reporting: false,
         }
     }
 
@@ -97,12 +144,7 @@ impl TerminalState {
                     let cell = if x < row.len() {
                         row[x].clone()
                     } else {
-                        Cell {
-                            ch: ' ',
-                            fg: None,
-                            bg: None,
-                            bold: false,
-                        }
+                        Cell::blank()
                     };
                     new_row.push(cell);
                 }
@@ -117,12 +159,7 @@ impl TerminalState {
                 let cell = if y < self.rows && x < self.cols {
                     self.grid[y][x].clone()
                 } else {
-                    Cell {
-                        ch: ' ',
-                        fg: None,
-                        bg: None,
-                        bold: false,
-                    }
+                    Cell::blank()
                 };
                 row.push(cell);
             }
@@ -165,15 +202,7 @@ impl TerminalState {
             self.scrollback.remove(0);
         }
 
-        let empty_row = vec![
-            Cell {
-                ch: ' ',
-                fg: None,
-                bg: None,
-                bold: false
-            };
-            self.cols
-        ];
+        let empty_row = vec![Cell::blank(); self.cols];
         self.grid.push(empty_row);
 
         if self.scroll_offset > 0 {
@@ -195,22 +224,32 @@ impl TerminalState {
     pub fn clear(&mut self) {
         for row in self.grid.iter_mut() {
             for cell in row.iter_mut() {
-                cell.ch = ' ';
-                cell.fg = None;
-                cell.bg = None;
-                cell.bold = false;
+                *cell = Cell::blank();
             }
         }
         self.cursor_x = 0;
         self.cursor_y = 0;
-        self.current_fg = self.fg_color;
-        self.current_bg = self.bg_color;
-        self.bold = false;
+        self.reset_attrs();
         self.scrollback.clear();
         self.scroll_offset = 0;
         self.selection_start = None;
         self.selection_end = None;
         self.selection_active = false;
+    }
+
+    fn reset_attrs(&mut self) {
+        self.current_fg = self.fg_color;
+        self.current_bg = self.bg_color;
+        self.bold = false;
+        self.dim = false;
+        self.italic = false;
+        self.underline = false;
+        self.strikethrough = false;
+        self.reverse = false;
+    }
+
+    fn blank_row(&self) -> Vec<Cell> {
+        vec![Cell::blank(); self.cols]
     }
 
     pub fn scroll_lines(&mut self, lines: i32) {
@@ -257,6 +296,71 @@ impl TerminalState {
         text
     }
 
+    /// Switches to the alternate screen buffer, saving the current grid and cursor.
+    pub fn enter_alt_screen(&mut self) {
+        if self.alt_screen.is_some() {
+            return;
+        }
+        self.alt_screen = Some((self.grid.clone(), self.cursor_x, self.cursor_y));
+        self.grid = (0..self.rows).map(|_| self.blank_row()).collect();
+        self.cursor_x = 0;
+        self.cursor_y = 0;
+    }
+
+    /// Restores the primary screen buffer saved by [`enter_alt_screen`].
+    pub fn exit_alt_screen(&mut self) {
+        if let Some((saved_grid, cx, cy)) = self.alt_screen.take() {
+            self.grid = saved_grid;
+            self.cursor_x = cx;
+            self.cursor_y = cy;
+        }
+    }
+
+    /// Expands a xterm 256-color palette index into an RGBA value.
+    pub fn color_from_256(index: u16) -> gtk::gdk::RGBA {
+        // First 16 are the standard ANSI colors (same table used in SGR 30-37/90-97).
+        const ANSI16: [(f32, f32, f32); 16] = [
+            (0.0, 0.0, 0.0),
+            (0.8, 0.0, 0.0),
+            (0.0, 0.8, 0.0),
+            (0.8, 0.8, 0.0),
+            (0.0, 0.0, 0.8),
+            (0.8, 0.0, 0.8),
+            (0.0, 0.8, 0.8),
+            (0.8, 0.8, 0.8),
+            (0.4, 0.4, 0.4),
+            (1.0, 0.2, 0.2),
+            (0.2, 1.0, 0.2),
+            (1.0, 1.0, 0.2),
+            (0.2, 0.2, 1.0),
+            (1.0, 0.2, 1.0),
+            (0.2, 1.0, 1.0),
+            (1.0, 1.0, 1.0),
+        ];
+        if index < 16 {
+            let (r, g, b) = ANSI16[index as usize];
+            return gtk::gdk::RGBA::new(r, g, b, 1.0);
+        }
+        // 6x6x6 colour cube: indices 16-231.
+        if index < 232 {
+            let i = index - 16;
+            let b = (i % 6) as f32;
+            let g = ((i / 6) % 6) as f32;
+            let r = (i / 36) as f32;
+            let scale = |v: f32| {
+                if v == 0.0 {
+                    0.0
+                } else {
+                    (55.0 + v * 40.0) / 255.0
+                }
+            };
+            return gtk::gdk::RGBA::new(scale(r), scale(g), scale(b), 1.0);
+        }
+        // Grayscale ramp: indices 232-255.
+        let level = (8 + (index - 232) * 10) as f32 / 255.0;
+        gtk::gdk::RGBA::new(level, level, level, 1.0)
+    }
+
     pub fn send_cursor_position(&self) {
         let row = self.cursor_y + 1;
         let col = self.cursor_x + 1;
@@ -293,10 +397,22 @@ impl Perform for TerminalHandler {
         let y = state.cursor_y;
         let x = state.cursor_x;
         if x < state.cols && y < state.rows {
-            state.grid[y][x].ch = c;
-            state.grid[y][x].fg = Some(state.current_fg);
-            state.grid[y][x].bg = Some(state.current_bg);
-            state.grid[y][x].bold = state.bold;
+            let (fg, bg) = if state.reverse {
+                (Some(state.current_bg), Some(state.current_fg))
+            } else {
+                (Some(state.current_fg), Some(state.current_bg))
+            };
+            state.grid[y][x] = Cell {
+                ch: c,
+                fg,
+                bg,
+                bold: state.bold,
+                dim: state.dim,
+                italic: state.italic,
+                underline: state.underline,
+                strikethrough: state.strikethrough,
+                reverse: state.reverse,
+            };
         }
         state.cursor_x += 1;
         if state.cursor_x >= state.cols {
@@ -355,167 +471,293 @@ impl Perform for TerminalHandler {
     ) {
         let mut state = self.state.lock().unwrap();
 
-        let mut p = Vec::new();
+        let mut p: Vec<i64> = Vec::new();
         for param in params.iter() {
             if let Some(&val) = param.first() {
                 p.push(val as i64);
             }
         }
 
-        let has_question = !intermediates.is_empty() && intermediates[0] == b'?';
-
-        if command == 'c' {
-            let is_secondary = !intermediates.is_empty() && intermediates[0] == b'>';
-            let response: &[u8] = if is_secondary {
-                b"\x1b[>0;0;0c"
-            } else {
-                b"\x1b[?1;0c"
-            };
-            if let Some(fd) = state.pty_fd {
-                let _ = unsafe {
-                    libc::write(fd, response.as_ptr() as *const libc::c_void, response.len())
-                };
-            }
-            return;
-        }
+        let has_question = intermediates.first().copied() == Some(b'?');
+        let has_gt = intermediates.first().copied() == Some(b'>');
 
         match command {
+            'c' => {
+                let response: &[u8] = if has_gt {
+                    b"\x1b[>0;0;0c"
+                } else {
+                    b"\x1b[?1;0c"
+                };
+                if let Some(fd) = state.pty_fd {
+                    let _ = unsafe {
+                        libc::write(fd, response.as_ptr() as *const libc::c_void, response.len())
+                    };
+                }
+            }
             'A' => {
-                let n = p.first().map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
                 state.cursor_y = state.cursor_y.saturating_sub(n);
             }
             'B' => {
-                let n = p.first().map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
                 state.cursor_y = (state.cursor_y + n).min(state.rows - 1);
             }
             'C' => {
-                let n = p.first().map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
                 state.cursor_x = (state.cursor_x + n).min(state.cols - 1);
             }
             'D' => {
-                let n = p.first().map(|&v| v as usize).unwrap_or(1);
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
                 state.cursor_x = state.cursor_x.saturating_sub(n);
             }
+            'E' => {
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                state.cursor_y = (state.cursor_y + n).min(state.rows - 1);
+                state.cursor_x = 0;
+            }
+            'F' => {
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                state.cursor_y = state.cursor_y.saturating_sub(n);
+                state.cursor_x = 0;
+            }
+            'G' => {
+                let col = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                state.cursor_x = (col - 1).min(state.cols - 1);
+            }
             'H' | 'f' => {
-                let row = p.first().map(|&v| v as usize).unwrap_or(1);
-                let col = p.get(1).map(|&v| v as usize).unwrap_or(1);
+                let row = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                let col = p.get(1).map(|&v| v as usize).unwrap_or(1).max(1);
                 state.cursor_y = (row - 1).min(state.rows - 1);
                 state.cursor_x = (col - 1).min(state.cols - 1);
             }
-            'J' => match p.first().copied().unwrap_or(0) {
-                0 => {
-                    for y in state.cursor_y..state.rows {
-                        for x in 0..state.cols {
-                            if y == state.cursor_y && x < state.cursor_x {
-                                continue;
-                            }
-                            state.grid[y][x].ch = ' ';
-                            state.grid[y][x].fg = None;
-                            state.grid[y][x].bg = None;
-                            state.grid[y][x].bold = false;
-                        }
-                    }
-                }
-                1 => {
-                    for y in 0..=state.cursor_y {
-                        for x in 0..state.cols {
-                            if y == state.cursor_y && x > state.cursor_x {
-                                continue;
-                            }
-                            state.grid[y][x].ch = ' ';
-                            state.grid[y][x].fg = None;
-                            state.grid[y][x].bg = None;
-                            state.grid[y][x].bold = false;
-                        }
-                    }
-                }
-                2 => {
-                    state.clear();
-                }
-                _ => {}
-            },
-            'K' => {
-                let row = state.cursor_y;
+            'J' => {
+                let rows = state.rows;
+                let cols = state.cols;
+                let cy = state.cursor_y;
+                let cx = state.cursor_x;
                 match p.first().copied().unwrap_or(0) {
                     0 => {
-                        for x in state.cursor_x..state.cols {
-                            state.grid[row][x].ch = ' ';
-                            state.grid[row][x].fg = None;
-                            state.grid[row][x].bg = None;
-                            state.grid[row][x].bold = false;
+                        for y in cy..rows {
+                            for x in 0..cols {
+                                if y == cy && x < cx {
+                                    continue;
+                                }
+                                state.grid[y][x] = Cell::blank();
+                            }
                         }
                     }
                     1 => {
-                        for x in 0..=state.cursor_x {
-                            state.grid[row][x].ch = ' ';
-                            state.grid[row][x].fg = None;
-                            state.grid[row][x].bg = None;
-                            state.grid[row][x].bold = false;
+                        for y in 0..=cy {
+                            for x in 0..cols {
+                                if y == cy && x > cx {
+                                    continue;
+                                }
+                                state.grid[y][x] = Cell::blank();
+                            }
+                        }
+                    }
+                    2 | 3 => {
+                        let rows = state.rows;
+                        let cols = state.cols;
+                        for y in 0..rows {
+                            for x in 0..cols {
+                                state.grid[y][x] = Cell::blank();
+                            }
+                        }
+                        state.cursor_x = 0;
+                        state.cursor_y = 0;
+                    }
+                    _ => {}
+                }
+            }
+            'K' => {
+                let row = state.cursor_y;
+                let cx = state.cursor_x;
+                let cols = state.cols;
+                match p.first().copied().unwrap_or(0) {
+                    0 => {
+                        for x in cx..cols {
+                            state.grid[row][x] = Cell::blank();
+                        }
+                    }
+                    1 => {
+                        for x in 0..=cx {
+                            state.grid[row][x] = Cell::blank();
                         }
                     }
                     2 => {
-                        for x in 0..state.cols {
-                            state.grid[row][x].ch = ' ';
-                            state.grid[row][x].fg = None;
-                            state.grid[row][x].bg = None;
-                            state.grid[row][x].bold = false;
+                        for x in 0..cols {
+                            state.grid[row][x] = Cell::blank();
                         }
                     }
                     _ => {}
                 }
             }
+            'L' => {
+                // Insert Ps blank lines at cursor row, scrolling down.
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                let cy = state.cursor_y;
+                let rows = state.rows;
+                let cols = state.cols;
+                for _ in 0..n {
+                    if rows > 0 {
+                        state.grid.pop();
+                    }
+                    state.grid.insert(cy, vec![Cell::blank(); cols]);
+                }
+            }
+            'M' => {
+                // Delete Ps lines at cursor row, scrolling up.
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                let cy = state.cursor_y;
+                let rows = state.rows;
+                let cols = state.cols;
+                for _ in 0..n {
+                    if cy < state.grid.len() {
+                        state.grid.remove(cy);
+                        state.grid.push(vec![Cell::blank(); cols]);
+                    }
+                }
+                let _ = rows;
+            }
+            'P' => {
+                // Delete Ps characters at cursor position.
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                let cy = state.cursor_y;
+                let cx = state.cursor_x;
+                let cols = state.cols;
+                let row = &mut state.grid[cy];
+                for _ in 0..n {
+                    if cx < row.len() {
+                        row.remove(cx);
+                        row.push(Cell::blank());
+                    }
+                }
+                let _ = cols;
+            }
+            'S' => {
+                // Scroll up Ps lines (content moves up, new blank lines at bottom).
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                for _ in 0..n {
+                    state.scroll_up();
+                }
+            }
+            '@' => {
+                // Insert Ps blank characters at cursor.
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                let cy = state.cursor_y;
+                let cx = state.cursor_x;
+                let cols = state.cols;
+                let row = &mut state.grid[cy];
+                for _ in 0..n {
+                    if cx < row.len() {
+                        row.insert(cx, Cell::blank());
+                        row.truncate(cols);
+                    }
+                }
+            }
+            'd' => {
+                // Move cursor to absolute row Ps (1-based).
+                let row = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                state.cursor_y = (row - 1).min(state.rows - 1);
+            }
             'm' => {
-                if p.is_empty() || p[0] == 0 {
-                    state.current_fg = state.fg_color;
-                    state.current_bg = state.bg_color;
-                    state.bold = false;
+                // SGR - Select Graphic Rendition.
+                if p.is_empty() {
+                    state.reset_attrs();
                 } else {
                     let mut i = 0;
                     while i < p.len() {
                         match p[i] {
-                            0 => {
-                                state.current_fg = state.fg_color;
-                                state.current_bg = state.bg_color;
-                                state.bold = false;
-                            }
+                            0 => state.reset_attrs(),
                             1 => state.bold = true,
-                            30..=37 => {
-                                let colors = [
-                                    (0.0, 0.0, 0.0),
-                                    (0.8, 0.0, 0.0),
-                                    (0.0, 0.8, 0.0),
-                                    (0.8, 0.8, 0.0),
-                                    (0.0, 0.0, 0.8),
-                                    (0.8, 0.0, 0.8),
-                                    (0.0, 0.8, 0.8),
-                                    (0.8, 0.8, 0.8),
-                                ];
-                                let idx = (p[i] - 30) as usize;
-                                if idx < colors.len() {
-                                    let (r, g, b) = colors[idx];
-                                    state.current_fg = gtk::gdk::RGBA::new(r, g, b, 1.0);
-                                }
+                            2 => state.dim = true,
+                            3 => state.italic = true,
+                            4 => state.underline = true,
+                            7 => state.reverse = true,
+                            9 => state.strikethrough = true,
+                            22 => {
+                                state.bold = false;
+                                state.dim = false;
                             }
-                            40..=47 => {
-                                let colors = [
-                                    (0.0, 0.0, 0.0),
-                                    (0.8, 0.0, 0.0),
-                                    (0.0, 0.8, 0.0),
-                                    (0.8, 0.8, 0.0),
-                                    (0.0, 0.0, 0.8),
-                                    (0.8, 0.0, 0.8),
-                                    (0.0, 0.8, 0.8),
-                                    (0.8, 0.8, 0.8),
-                                ];
-                                let idx = (p[i] - 40) as usize;
-                                if idx < colors.len() {
-                                    let (r, g, b) = colors[idx];
-                                    state.current_bg = gtk::gdk::RGBA::new(r, g, b, 1.0);
+                            23 => state.italic = false,
+                            24 => state.underline = false,
+                            27 => state.reverse = false,
+                            29 => state.strikethrough = false,
+                            // Standard foreground colors (30-37).
+                            30..=37 => {
+                                state.current_fg = ansi_color(p[i] as u16 - 30, false);
+                            }
+                            // Extended foreground: 38,5,Ps (256-color) or 38,2,r,g,b (true-color).
+                            38 => match p.get(i + 1).copied() {
+                                Some(5) if p.len() > i + 2 => {
+                                    state.current_fg =
+                                        TerminalState::color_from_256(p[i + 2] as u16);
+                                    i += 2;
                                 }
+                                Some(2) if p.len() > i + 4 => {
+                                    state.current_fg = rgb_color(p[i + 2], p[i + 3], p[i + 4]);
+                                    i += 4;
+                                }
+                                _ => {}
+                            },
+                            // Reset foreground to default.
+                            39 => state.current_fg = state.fg_color,
+                            // Standard background colors (40-47).
+                            40..=47 => {
+                                state.current_bg = ansi_color(p[i] as u16 - 40, false);
+                            }
+                            // Extended background: 48,5,Ps or 48,2,r,g,b.
+                            48 => match p.get(i + 1).copied() {
+                                Some(5) if p.len() > i + 2 => {
+                                    state.current_bg =
+                                        TerminalState::color_from_256(p[i + 2] as u16);
+                                    i += 2;
+                                }
+                                Some(2) if p.len() > i + 4 => {
+                                    state.current_bg = rgb_color(p[i + 2], p[i + 3], p[i + 4]);
+                                    i += 4;
+                                }
+                                _ => {}
+                            },
+                            // Reset background to default.
+                            49 => state.current_bg = state.bg_color,
+                            // Bright foreground colors (90-97).
+                            90..=97 => {
+                                state.current_fg = ansi_color(p[i] as u16 - 90, true);
+                            }
+                            // Bright background colors (100-107).
+                            100..=107 => {
+                                state.current_bg = ansi_color(p[i] as u16 - 100, true);
                             }
                             _ => {}
                         }
                         i += 1;
+                    }
+                }
+            }
+            'n' => {
+                // Device Status Report - \e[6n requests cursor position (no ? prefix).
+                if !has_question && p.first().copied().unwrap_or(0) == 6 {
+                    state.send_cursor_position();
+                }
+            }
+            'h' | 'l' if has_question => {
+                let enable = command == 'h';
+                for &mode in &p {
+                    match mode {
+                        25 => state.cursor_visible = enable,
+                        1004 => state.focus_reporting = enable,
+                        1049 => {
+                            if enable {
+                                state.enter_alt_screen();
+                            } else {
+                                state.exit_alt_screen();
+                            }
+                        }
+                        2004 => state.bracketed_paste = enable,
+                        // Modes the terminal acknowledges but doesn't act on (ignored).
+                        _ => {}
                     }
                 }
             }
@@ -527,9 +769,7 @@ impl Perform for TerminalHandler {
                 state.cursor_x = state.saved_cursor_x;
                 state.cursor_y = state.saved_cursor_y;
             }
-            'n' if has_question && p.first().copied().unwrap_or(0) == 6 => {
-                state.send_cursor_position();
-            }
+            // Ignore unknown sequences per ECMA-48.
             _ => {}
         }
         let _ = self.draw_sender.send(());
@@ -542,14 +782,10 @@ impl Perform for TerminalHandler {
             return;
         }
 
-        let cmd = if let Some(first) = params.first() {
-            std::str::from_utf8(first)
-                .unwrap_or("")
-                .parse::<u16>()
-                .unwrap_or(0)
-        } else {
-            return;
-        };
+        let cmd = std::str::from_utf8(params[0])
+            .unwrap_or("")
+            .parse::<u16>()
+            .unwrap_or(u16::MAX);
 
         let payload = if params.len() > 1 {
             params[1..].concat()
@@ -558,8 +794,31 @@ impl Perform for TerminalHandler {
         };
         let payload_str = String::from_utf8_lossy(&payload);
 
-        if cmd == 11 && payload_str == "?" {
-            state.send_background_color();
+        match cmd {
+            // OSC 0 / 1 - Set window/tab title. fish_title and fish_tab_title use these.
+            0 | 1 => {
+                // Title updates are intentionally not stored: expose via a callback if
+                // the embedding widget ever needs to forward them to a notebook tab label.
+            }
+            // OSC 7 - Report working directory (file://hostname/path).
+            7 => {
+                // Available for the parent widget to read via TerminalState if desired.
+                // No action required for fish to function correctly.
+            }
+            // OSC 8 - Hyperlinks. Silently ignored, fish uses them for man pages.
+            8 => {}
+            // OSC 11 - Query background color. fish sends \e]11,?\e\\.
+            11 if payload_str == "?" => {
+                state.send_background_color();
+            }
+            // OSC 52 - Clipboard copy. fish_clipboard_copy uses this.
+            // OSC 52 - Clipboard write. Requires a GDK display handle unavailable
+            // from the PTY reader thread, wire up via draw channel if needed.
+            52 => {}
+            // OSC 133 - Shell integration marks (prompt/command start/end). Silently
+            // accepted so fish doesn't stall waiting for a negative acknowledgment.
+            133 => {}
+            _ => {}
         }
     }
 }
@@ -655,6 +914,36 @@ impl Terminal {
                         let clipboard = display.clipboard();
                         clipboard.set_text(&text);
                     }
+                }
+                return glib::Propagation::Stop;
+            }
+
+            if is_ctrl && is_shift && (keyval == gtk::gdk::Key::v || keyval == gtk::gdk::Key::V) {
+                let state_clone = state_for_keys.clone();
+                if let Some(window) = drawing_area_for_keys.root() {
+                    let display = gtk::prelude::RootExt::display(&window);
+                    let clipboard = display.clipboard();
+                    clipboard.read_text_async(gio::Cancellable::NONE, move |result| {
+                        if let Ok(Some(text)) = result {
+                            let state = state_clone.lock().unwrap();
+                            if let Some(fd) = state.pty_fd {
+                                let write = |data: &[u8]| unsafe {
+                                    libc::write(
+                                        fd,
+                                        data.as_ptr() as *const libc::c_void,
+                                        data.len(),
+                                    );
+                                };
+                                if state.bracketed_paste {
+                                    write(b"\x1b[200~");
+                                }
+                                write(text.as_bytes());
+                                if state.bracketed_paste {
+                                    write(b"\x1b[201~");
+                                }
+                            }
+                        }
+                    });
                 }
                 return glib::Propagation::Stop;
             }
@@ -900,23 +1189,26 @@ impl Terminal {
             draw_sender,
         };
 
-        let mut term_clone = term.clone();
-        glib::idle_add_local_once(move || {
-            term_clone.spawn_async(
-                0,
-                None,
-                &[],
-                &[],
-                0,
-                || {},
-                -1,
-                None,
-                |result| {
-                    if let Err(e) = result {
-                        eprintln!("Failed to spawn terminal shell: {}", e);
-                    }
-                },
-            );
+        let term_clone = term.clone();
+        term.drawing_area.connect_realize(move |_area| {
+            let mut t = term_clone.clone();
+            glib::idle_add_local_once(move || {
+                t.spawn_async(
+                    0,
+                    None,
+                    &[],
+                    &[],
+                    0,
+                    || {},
+                    -1,
+                    None,
+                    |result| {
+                        if let Err(e) = result {
+                            eprintln!("Failed to spawn terminal shell: {}", e);
+                        }
+                    },
+                );
+            });
         });
 
         term
@@ -1107,6 +1399,46 @@ impl Terminal {
     }
 }
 
+/// Maps a 3-bit ANSI color index (0-7) to an RGBA value.
+/// `bright` selects the high-intensity variant used by SGR 90-97 / 100-107.
+#[inline]
+fn ansi_color(index: u16, bright: bool) -> gtk::gdk::RGBA {
+    const NORMAL: [(f32, f32, f32); 8] = [
+        (0.0, 0.0, 0.0),
+        (0.8, 0.0, 0.0),
+        (0.0, 0.8, 0.0),
+        (0.8, 0.8, 0.0),
+        (0.0, 0.0, 0.8),
+        (0.8, 0.0, 0.8),
+        (0.0, 0.8, 0.8),
+        (0.8, 0.8, 0.8),
+    ];
+    const BRIGHT: [(f32, f32, f32); 8] = [
+        (0.4, 0.4, 0.4),
+        (1.0, 0.2, 0.2),
+        (0.2, 1.0, 0.2),
+        (1.0, 1.0, 0.2),
+        (0.2, 0.2, 1.0),
+        (1.0, 0.2, 1.0),
+        (0.2, 1.0, 1.0),
+        (1.0, 1.0, 1.0),
+    ];
+    let table = if bright { &BRIGHT } else { &NORMAL };
+    let (r, g, b) = table[(index as usize).min(7)];
+    gtk::gdk::RGBA::new(r, g, b, 1.0)
+}
+
+/// Converts a 24-bit RGB triple (0-255 each, passed as i64) into RGBA.
+#[inline]
+fn rgb_color(r: i64, g: i64, b: i64) -> gtk::gdk::RGBA {
+    gtk::gdk::RGBA::new(
+        (r as f32 / 255.0).clamp(0.0, 1.0),
+        (g as f32 / 255.0).clamp(0.0, 1.0),
+        (b as f32 / 255.0).clamp(0.0, 1.0),
+        1.0,
+    )
+}
+
 fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width: i32, height: i32) {
     cr.set_source_rgba(
         state.bg_color.red() as f64,
@@ -1167,22 +1499,93 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
         while col < row.len() {
             let cell = &row[col];
 
-            if cell.ch == ' ' {
+            if cell.ch == ' ' && !cell.underline && cell.bg.is_none() {
                 col += 1;
                 x_pos += char_width;
                 continue;
             }
 
+            // Collect a run of cells that share the same visual attributes so they
+            // can be rendered as a single Pango layout call.
+            let run_start_col = col;
+            let first_cell = cell.clone();
             let mut text = String::new();
 
-            while col < row.len() && row[col].ch != ' ' {
-                text.push(row[col].ch);
+            while col < row.len() {
+                let c = &row[col];
+                let same_attrs = c.bold == first_cell.bold
+                    && c.dim == first_cell.dim
+                    && c.italic == first_cell.italic
+                    && c.underline == first_cell.underline
+                    && c.strikethrough == first_cell.strikethrough
+                    && c.fg == first_cell.fg
+                    && c.bg == first_cell.bg;
+                if !same_attrs {
+                    break;
+                }
+                text.push(c.ch);
                 col += 1;
             }
 
+            let mut font_desc = state.font_desc.clone();
+            if first_cell.bold {
+                font_desc.set_weight(pango::Weight::Bold);
+            }
+            if first_cell.italic {
+                font_desc.set_style(pango::Style::Italic);
+            }
+            layout.set_font_description(Some(&font_desc));
             layout.set_text(&text);
+
+            let attr_list = pango::AttrList::new();
+            let byte_len = text.len() as u32;
+
+            if first_cell.underline {
+                let mut a = pango::AttrInt::new_underline(pango::Underline::Single);
+                a.set_start_index(0);
+                a.set_end_index(byte_len);
+                attr_list.insert(a);
+            }
+            if first_cell.strikethrough {
+                let mut a = pango::AttrInt::new_strikethrough(true);
+                a.set_start_index(0);
+                a.set_end_index(byte_len);
+                attr_list.insert(a);
+            }
+            if first_cell.dim {
+                // Dim = ~60% opacity on the foreground, approximate with alpha via color.
+                let fg = first_cell.fg.as_ref().unwrap_or(&state.fg_color);
+                let mut a = pango::AttrColor::new_foreground(
+                    (fg.red() * 0.6 * 65535.0) as u16,
+                    (fg.green() * 0.6 * 65535.0) as u16,
+                    (fg.blue() * 0.6 * 65535.0) as u16,
+                );
+                a.set_start_index(0);
+                a.set_end_index(byte_len);
+                attr_list.insert(a);
+            }
+            layout.set_attributes(Some(&attr_list));
+
             let text_extents = layout.pixel_extents();
             let text_width = text_extents.1.width() as f64;
+            let run_width = (col - run_start_col) as f64 * char_width;
+
+            // Draw background cell fill.
+            let effective_bg = if first_cell.reverse {
+                first_cell.fg.as_ref().unwrap_or(&state.fg_color)
+            } else {
+                first_cell.bg.as_ref().unwrap_or(&state.bg_color)
+            };
+            if *effective_bg != state.bg_color {
+                cr.set_source_rgba(
+                    effective_bg.red() as f64,
+                    effective_bg.green() as f64,
+                    effective_bg.blue() as f64,
+                    effective_bg.alpha() as f64,
+                );
+                cr.rectangle(x_pos, y_pos, run_width, char_height);
+                cr.fill().unwrap();
+            }
 
             let block_selected = if is_selected {
                 let (start_col, end_col) = if let (Some(start), Some(end)) =
@@ -1201,43 +1604,51 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
                 } else {
                     (0, 0)
                 };
-                let block_end = start_col + text.len();
-                !(block_end <= start_col || start_col >= end_col)
+                let block_end = run_start_col + text.len();
+                !(block_end <= start_col || run_start_col >= end_col)
             } else {
                 false
             };
 
             if block_selected {
                 cr.set_source_rgba(0.3, 0.5, 0.9, 0.5);
-                cr.rectangle(x_pos, y_pos, text_width, char_height);
+                cr.rectangle(x_pos, y_pos, run_width, char_height);
                 cr.fill().unwrap();
                 cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
-            } else if let Some(fg) = &cell.fg {
+            } else if !first_cell.dim {
+                let fg = if first_cell.reverse {
+                    first_cell.bg.as_ref().unwrap_or(&state.bg_color)
+                } else {
+                    first_cell.fg.as_ref().unwrap_or(&state.fg_color)
+                };
                 cr.set_source_rgba(
                     fg.red() as f64,
                     fg.green() as f64,
                     fg.blue() as f64,
                     fg.alpha() as f64,
                 );
-            } else {
-                cr.set_source_rgba(
-                    state.fg_color.red() as f64,
-                    state.fg_color.green() as f64,
-                    state.fg_color.blue() as f64,
-                    state.fg_color.alpha() as f64,
-                );
+            }
+
+            if text.trim().is_empty() && !first_cell.underline {
+                x_pos += run_width;
+                layout.set_font_description(Some(&state.font_desc));
+                layout.set_attributes(None);
+                continue;
             }
 
             cr.move_to(x_pos, y_pos);
             pangocairo::functions::show_layout(cr, &layout);
-            x_pos += text_width;
+            x_pos += text_width.max(run_width);
+
+            layout.set_font_description(Some(&state.font_desc));
+            layout.set_attributes(None);
         }
 
         drawn += 1;
         abs_row += 1;
     }
 
-    if state.scroll_offset == 0 {
+    if state.scroll_offset == 0 && state.cursor_visible {
         let cursor_x = state.cursor_x;
         let cursor_y = state.cursor_y;
         if cursor_y < state.rows && cursor_x < state.cols {
