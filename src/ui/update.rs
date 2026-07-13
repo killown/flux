@@ -8,7 +8,7 @@ use adw::prelude::*;
 use gtk::{gio, glib};
 use relm4::prelude::*;
 use std::sync::atomic::Ordering;
-//use vte4::TerminalExt;
+//use vte4::TerminalExt,
 
 impl FluxApp {
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
@@ -576,6 +576,11 @@ impl FluxApp {
             AppMsg::ToggleTerminal => {
                 self.terminal_visible = !self.terminal_visible;
                 if self.terminal_visible {
+                    if !self.terminal_cleared {
+                        self.terminal.feed_child(b"clear\n");
+                        self.terminal_cleared = true;
+                    }
+
                     sender.input(AppMsg::TerminalCd(self.current_path.clone()));
                     let term = self.terminal.clone();
                     glib::idle_add_local_once(move || {
@@ -1490,7 +1495,7 @@ impl FluxApp {
                         let dur_str = crate::utils::media::format_duration(dur);
                         // Append only if not already present (guard against duplicate events)
                         if !self.selection_status.contains(&dur_str) {
-                            self.selection_status.push_str(&format!(" — {}", dur_str));
+                            self.selection_status.push_str(&format!(" - {}", dur_str));
                         }
                     }
                 }
@@ -1510,14 +1515,14 @@ impl FluxApp {
 
                 let dim_str = dimensions.map(|(w, h)| {
                     let ratio = crate::utils::media::aspect_ratio_label(w, h);
-                    format!(" — {}×{} ({})", w, h, ratio)
+                    format!(" - {}×{} ({})", w, h, ratio)
                 });
                 // Append dimensions first (before mime), then mime type
                 if let Some(d) = dim_str {
                     self.selection_status.push_str(&d);
                 }
 
-                self.selection_status.push_str(&format!(" — {}", mime));
+                self.selection_status.push_str(&format!(" - {}", mime));
             }
             AppMsg::SetAsc(asc) => {
                 self.sort_ascending = asc;

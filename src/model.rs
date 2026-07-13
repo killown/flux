@@ -302,6 +302,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Whether the terminal has been cleared on first open.
+    pub terminal_cleared: bool,
     /// The embedded VTE terminal widget.
     pub terminal: crate::services::terminal::Terminal,
     /// Whether the terminal panel is currently visible.

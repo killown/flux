@@ -508,7 +508,9 @@ impl Perform for TerminalHandler {
         state.pending_wrap = false;
 
         match command {
-            'c' => {
+            // \e[0c or \e[>0c are DA queries from the shell.
+            // \e[?1,0c is our own response echoed back, ignore it.
+            'c' if !has_question => {
                 let response: &[u8] = if has_gt {
                     b"\x1b[>0;0;0c"
                 } else {
@@ -520,6 +522,7 @@ impl Perform for TerminalHandler {
                     };
                 }
             }
+            'c' => {} // \e[?...c is our own DA response echoed back, ignore
             'A' => {
                 let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
                 state.cursor_y = state.cursor_y.saturating_sub(n);

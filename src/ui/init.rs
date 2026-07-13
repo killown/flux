@@ -229,6 +229,7 @@ impl FluxApp {
             pending_toasts: std::collections::HashMap::new(),
             terminal,
             terminal_visible: false,
+            terminal_cleared: false,
         };
 
         // 9. Initial State Population
