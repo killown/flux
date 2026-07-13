@@ -578,10 +578,10 @@ impl FluxApp {
                 if self.terminal_visible {
                     if !self.terminal_cleared {
                         self.terminal.feed_child(b"clear\n");
+                        sender.input(AppMsg::TerminalCd(self.current_path.clone()));
                         self.terminal_cleared = true;
                     }
 
-                    sender.input(AppMsg::TerminalCd(self.current_path.clone()));
                     let term = self.terminal.clone();
                     glib::idle_add_local_once(move || {
                         term.grab_focus();
