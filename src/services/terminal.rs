@@ -1,6 +1,8 @@
 //NOTE: add scrollbar
 
+use crate::model::TerminalConfig;
 use gtk::cairo::Context;
+use gtk::gio;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 use std::os::unix::io::{FromRawFd, RawFd};
@@ -850,13 +852,22 @@ impl Clone for Terminal {
 }
 
 impl Terminal {
-    pub fn new() -> Self {
+    pub fn new(config: &TerminalConfig) -> Self {
         let drawing_area = DrawingArea::new();
         drawing_area.set_vexpand(true);
         drawing_area.set_hexpand(true);
         drawing_area.set_focusable(true);
         drawing_area.set_can_focus(true);
-        drawing_area.set_height_request(200);
+
+        let font_desc = pango::FontDescription::from_string(&config.font);
+        let char_height = {
+            let ctx = pangocairo::FontMap::default().create_context();
+            let layout = pango::Layout::new(&ctx);
+            layout.set_font_description(Some(&font_desc));
+            layout.set_text("M");
+            layout.pixel_extents().1.height().max(1)
+        };
+        drawing_area.set_height_request(char_height * config.height);
 
         let (draw_sender, mut draw_receiver) = tokio::sync::mpsc::unbounded_channel::<()>();
 
@@ -868,6 +879,7 @@ impl Terminal {
         });
 
         let state = Arc::new(Mutex::new(TerminalState::new(80, 24)));
+        state.lock().unwrap().font_desc = font_desc;
 
         {
             let state = state.clone();
@@ -1249,9 +1261,39 @@ impl Terminal {
         self.drawing_area.add_controller(controller.clone());
     }
 
-    pub fn emit_copy_clipboard(&self) {}
+    pub fn emit_copy_clipboard(&self) {
+        let text = self.state.lock().unwrap().get_selected_text();
+        if text.is_empty() {
+            return;
+        }
+        if let Some(display) = gtk::gdk::Display::default() {
+            display.clipboard().set_text(&text);
+        }
+    }
 
-    pub fn emit_paste_clipboard(&self) {}
+    pub fn emit_paste_clipboard(&self) {
+        let state = self.state.clone();
+        if let Some(display) = gtk::gdk::Display::default() {
+            let clipboard = display.clipboard();
+            clipboard.read_text_async(gio::Cancellable::NONE, move |result| {
+                if let Ok(Some(text)) = result {
+                    let s = state.lock().unwrap();
+                    if let Some(fd) = s.pty_fd {
+                        let write = |data: &[u8]| unsafe {
+                            libc::write(fd, data.as_ptr() as *const libc::c_void, data.len());
+                        };
+                        if s.bracketed_paste {
+                            write(b"\x1b[200~");
+                        }
+                        write(text.as_bytes());
+                        if s.bracketed_paste {
+                            write(b"\x1b[201~");
+                        }
+                    }
+                }
+            });
+        }
+    }
 
     pub fn pty(&self) -> Option<std::os::unix::io::RawFd> {
         self.state.lock().unwrap().pty_fd
