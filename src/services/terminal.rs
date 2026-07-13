@@ -76,6 +76,11 @@ pub struct TerminalState {
     pub bracketed_paste: bool,
     pub cursor_visible: bool,
     pub focus_reporting: bool,
+    /// When true, the next printed character wraps to the next line first.
+    /// Matches DECAWM: printing to the last column sets this flag instead of
+    /// immediately advancing cursor_y, so a bare \r cancels the wrap without
+    /// a spurious line increment.
+    pub pending_wrap: bool,
 }
 
 impl TerminalState {
@@ -131,6 +136,7 @@ impl TerminalState {
             bracketed_paste: false,
             cursor_visible: true,
             focus_reporting: false,
+            pending_wrap: false,
         }
     }
 
@@ -396,6 +402,20 @@ pub struct TerminalHandler {
 impl Perform for TerminalHandler {
     fn print(&mut self, c: char) {
         let mut state = self.state.lock().unwrap();
+
+        // DECAWM pending wrap (xenl): if the previous character landed on the
+        // last column, wrap NOW before printing the new character. This means
+        // a bare \r after filling a line cancels the wrap, which fish requires.
+        if state.pending_wrap {
+            state.pending_wrap = false;
+            state.cursor_x = 0;
+            state.cursor_y += 1;
+            if state.cursor_y >= state.rows {
+                state.scroll_up();
+                state.cursor_y = state.rows - 1;
+            }
+        }
+
         let y = state.cursor_y;
         let x = state.cursor_x;
         if x < state.cols && y < state.rows {
@@ -416,14 +436,13 @@ impl Perform for TerminalHandler {
                 reverse: state.reverse,
             };
         }
+
         state.cursor_x += 1;
         if state.cursor_x >= state.cols {
-            state.cursor_x = 0;
-            state.cursor_y += 1;
-            if state.cursor_y >= state.rows {
-                state.scroll_up();
-                state.cursor_y = state.rows - 1;
-            }
+            // Don't wrap yet - set the pending flag. The wrap happens at the
+            // start of the next print(), so \r can still reset cursor_x first.
+            state.cursor_x = state.cols - 1;
+            state.pending_wrap = true;
         }
         state.selection_active = false;
         state.selection_start = None;
@@ -434,7 +453,10 @@ impl Perform for TerminalHandler {
     fn execute(&mut self, byte: u8) {
         let mut state = self.state.lock().unwrap();
         match byte {
-            b'\r' => state.cursor_x = 0,
+            b'\r' => {
+                state.cursor_x = 0;
+                state.pending_wrap = false;
+            }
             b'\n' => {
                 state.cursor_y += 1;
                 if state.cursor_y >= state.rows {
@@ -482,6 +504,8 @@ impl Perform for TerminalHandler {
 
         let has_question = intermediates.first().copied() == Some(b'?');
         let has_gt = intermediates.first().copied() == Some(b'>');
+
+        state.pending_wrap = false;
 
         match command {
             'c' => {
@@ -1361,6 +1385,17 @@ impl Terminal {
                 return;
             }
             (master, slave)
+        };
+
+        // Disable echo on the master side only, the shell handles its own
+        // echoing. Preserving ONLCR (NL→CR+NL translation) is intentional so
+        // bare \n from the shell still moves the cursor to column 0.
+        unsafe {
+            let mut termios: libc::termios = std::mem::zeroed();
+            if libc::tcgetattr(master_fd, &mut termios) == 0 {
+                termios.c_lflag &= !(libc::ECHO | libc::ECHOE | libc::ECHOK | libc::ECHONL);
+                libc::tcsetattr(master_fd, libc::TCSANOW, &termios);
+            }
         };
 
         {
