@@ -577,27 +577,17 @@ impl FluxApp {
                 self.terminal_visible = !self.terminal_visible;
                 if self.terminal_visible {
                     if !self.terminal_cleared {
-                        self.terminal.feed_child(b"clear\n");
-                        sender.input(AppMsg::TerminalCd(self.current_path.clone()));
                         self.terminal_cleared = true;
+                    }
+
+                    if let Some(dir) = self.current_path.to_str() {
+                        self.terminal.respawn(dir);
                     }
 
                     let term = self.terminal.clone();
                     glib::idle_add_local_once(move || {
                         term.grab_focus();
                     });
-                }
-            }
-            AppMsg::TerminalCd(path) => {
-                if self.terminal_visible {
-                    let path_str = path.to_string_lossy();
-                    let cmd = format!("cd '{}'\n", path_str.replace('\'', "'\\''"));
-                    if let Some(fd) = self.terminal.pty() {
-                        unsafe {
-                            let bytes = cmd.as_bytes();
-                            libc::write(fd, bytes.as_ptr() as *const libc::c_void, bytes.len());
-                        }
-                    }
                 }
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
@@ -973,7 +963,6 @@ impl FluxApp {
 
                     // Perform the actual I/O to populate the file model for the new path
                     self.load_path(path, &sender);
-                    sender.input(AppMsg::TerminalCd(self.current_path.clone()));
                     self.update_breadcrumbs();
 
                     // Update focus and selection on the next main loop iteration

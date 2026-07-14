@@ -43,7 +43,6 @@ impl Cell {
     }
 }
 
-#[derive(Debug)]
 pub struct TerminalState {
     pub grid: Vec<Vec<Cell>>,
     pub cursor_x: usize,
@@ -71,6 +70,8 @@ pub struct TerminalState {
     pub selection_end: Option<(usize, usize)>,
     pub selection_active: bool,
     pub pty_master_fd: Option<RawFd>,
+    /// PID of the shell process, used to detect whether the terminal is idle.
+    pub shell_pid: Option<libc::pid_t>,
     /// Saved grid/cursor for the alternate screen buffer (\e[?1049h/l).
     pub alt_screen: Option<(Vec<Vec<Cell>>, usize, usize)>,
     pub bracketed_paste: bool,
@@ -81,6 +82,10 @@ pub struct TerminalState {
     /// immediately advancing cursor_y, so a bare \r cancels the wrap without
     /// a spurious line increment.
     pub pending_wrap: bool,
+    /// Invoked on the PTY reader thread whenever fish emits an OSC 7
+    /// working-directory notification. The callback receives the decoded
+    /// absolute path of the new directory.
+    pub on_cwd_change: Option<Box<dyn Fn(std::path::PathBuf) + Send>>,
 }
 
 impl TerminalState {
@@ -132,11 +137,13 @@ impl TerminalState {
             selection_end: None,
             selection_active: false,
             pty_master_fd: None,
+            shell_pid: None,
             alt_screen: None,
             bracketed_paste: false,
             cursor_visible: true,
             focus_reporting: false,
             pending_wrap: false,
+            on_cwd_change: None,
         }
     }
 
@@ -391,6 +398,36 @@ impl TerminalState {
                 libc::write(fd, response.as_ptr() as *const libc::c_void, response.len());
             }
         }
+    }
+
+    /// Returns `true` when no foreground process other than the shell itself
+    /// is running in the PTY, i.e. it is safe to respawn without killing a
+    /// user process.
+    ///
+    /// Uses `TIOCGPGRP` to read the foreground process group of the PTY master
+    /// and compares it against the shell's own PID. If the foreground pgrp
+    /// differs, a child process (e.g. `vim`, `htop`, a long compile) is active.
+    pub fn is_idle(&self) -> bool {
+        let (Some(master_fd), Some(shell_pid)) = (self.pty_master_fd, self.shell_pid) else {
+            return true;
+        };
+        let mut fgpgrp: libc::pid_t = -1;
+        let ret = unsafe { libc::ioctl(master_fd, libc::TIOCGPGRP, &mut fgpgrp) };
+        if ret != 0 {
+            return true;
+        }
+        fgpgrp == shell_pid
+    }
+}
+
+impl std::fmt::Debug for TerminalState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TerminalState")
+            .field("cols", &self.cols)
+            .field("rows", &self.rows)
+            .field("cursor_x", &self.cursor_x)
+            .field("cursor_y", &self.cursor_y)
+            .finish_non_exhaustive()
     }
 }
 
@@ -765,11 +802,9 @@ impl Perform for TerminalHandler {
                     }
                 }
             }
-            'n' => {
+            'n' if !has_question && p.first().copied().unwrap_or(0) == 6 => {
                 // Device Status Report - \e[6n requests cursor position (no ? prefix).
-                if !has_question && p.first().copied().unwrap_or(0) == 6 {
-                    state.send_cursor_position();
-                }
+                state.send_cursor_position();
             }
             'h' | 'l' if has_question => {
                 let enable = command == 'h';
@@ -830,9 +865,24 @@ impl Perform for TerminalHandler {
                 // the embedding widget ever needs to forward them to a notebook tab label.
             }
             // OSC 7 - Report working directory (file://hostname/path).
+            // fish emits this on every prompt, used to sync the file manager's
+            // navigation pane without the user typing anything.
             7 => {
-                // Available for the parent widget to read via TerminalState if desired.
-                // No action required for fish to function correctly.
+                let path_str = payload_str
+                    .strip_prefix("file://")
+                    .map(|s| {
+                        // Strip optional hostname: "file://host/path" → "/path"
+                        //                          "file:///path"     → "/path"
+                        s.find('/').map(|i| &s[i..]).unwrap_or(s)
+                    })
+                    .unwrap_or(&payload_str);
+
+                let path = std::path::PathBuf::from(percent_decode(path_str));
+                if path.is_dir() {
+                    if let Some(cb) = &state.on_cwd_change {
+                        cb(path);
+                    }
+                }
             }
             // OSC 8 - Hyperlinks. Silently ignored, fish uses them for man pages.
             8 => {}
@@ -857,6 +907,8 @@ pub struct Terminal {
     pub state: Arc<Mutex<TerminalState>>,
     _pty_reader: Option<std::thread::JoinHandle<()>>,
     draw_sender: tokio::sync::mpsc::UnboundedSender<()>,
+    /// Last directory queued for respawn, only the most recent survives rapid navigation.
+    pending_dir: Arc<Mutex<Option<String>>>,
 }
 
 impl std::fmt::Debug for Terminal {
@@ -874,6 +926,7 @@ impl Clone for Terminal {
             state: self.state.clone(),
             _pty_reader: None,
             draw_sender: self.draw_sender.clone(),
+            pending_dir: self.pending_dir.clone(),
         }
     }
 }
@@ -1226,6 +1279,7 @@ impl Terminal {
             state,
             _pty_reader: None,
             draw_sender,
+            pending_dir: Arc::new(Mutex::new(None)),
         };
 
         let term_clone = term.clone();
@@ -1253,6 +1307,61 @@ impl Terminal {
         term
     }
 
+    /// Schedules a shell respawn in the given directory.
+    ///
+    /// Writes the target path into a shared slot and returns immediately,
+    /// the main thread is never blocked. A 150 ms debounce timer fires once
+    /// navigation settles, only the last directory wins, so rapid folder
+    /// traversal never queues multiple respawns.
+    pub fn respawn(&self, working_dir: &str) {
+        *self.pending_dir.lock().unwrap() = Some(working_dir.to_owned());
+
+        let pending = self.pending_dir.clone();
+        let mut term = self.clone();
+
+        // 150 ms debounce: if another respawn arrives before the timer fires,
+        // it overwrites pending_dir and this closure becomes a no-op.
+        glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
+            let dir = pending.lock().unwrap().take();
+            if let Some(dir) = dir {
+                if !term.state.lock().unwrap().is_idle() {
+                    return;
+                }
+                {
+                    let mut state = term.state.lock().unwrap();
+                    if let Some(fd) = state.pty_master_fd.take() {
+                        unsafe { libc::close(fd) };
+                    }
+                    state.pty_fd = None;
+                    state.shell_pid = None;
+                    let cols = state.cols;
+                    let rows = state.rows;
+                    state.grid = (0..rows).map(|_| vec![Cell::blank(); cols]).collect();
+                    state.scrollback.clear();
+                    state.scroll_offset = 0;
+                    state.cursor_x = 0;
+                    state.cursor_y = 0;
+                    state.pending_wrap = false;
+                }
+                term.spawn_async(
+                    0,
+                    Some(&dir),
+                    &[],
+                    &[],
+                    0,
+                    || {},
+                    -1,
+                    None,
+                    |result| {
+                        if let Err(e) = result {
+                            eprintln!("[terminal] respawn failed: {e}");
+                        }
+                    },
+                );
+            }
+        });
+    }
+
     pub fn feed_child(&self, data: &[u8]) {
         let state = self.state.lock().unwrap();
         state.write_pty(data);
@@ -1278,6 +1387,30 @@ impl Terminal {
             state.font_desc = fd.clone();
             self.drawing_area.queue_draw();
         }
+    }
+
+    /// Registers a callback invoked on the PTY reader thread whenever fish
+    /// reports a working-directory change via OSC 7.
+    ///
+    /// The callback receives the decoded, absolute path of the new directory.
+    /// Register this before the widget is realized to avoid missing the first
+    /// prompt. The callback must be `Send` because it is called from the PTY
+    /// reader thread, use a channel (e.g. `relm4::Sender`) rather than touching
+    /// GTK objects directly.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// terminal.set_cwd_callback({
+    ///     let sender = app_sender.clone(),
+    ///     move |path| { let _ = sender.send(AppMsg::NavigateTo(path)), }
+    /// }),
+    /// ```
+    pub fn set_cwd_callback<F>(&self, f: F)
+    where
+        F: Fn(std::path::PathBuf) + Send + 'static,
+    {
+        self.state.lock().unwrap().on_cwd_change = Some(Box::new(f));
     }
 
     pub fn grab_focus(&self) {
@@ -1322,10 +1455,10 @@ impl Terminal {
         }
     }
 
+    #[allow(dead_code)]
     pub fn pty(&self) -> Option<std::os::unix::io::RawFd> {
         self.state.lock().unwrap().pty_fd
     }
-
     #[allow(clippy::too_many_arguments)]
     pub fn spawn_async<F>(
         &mut self,
@@ -1438,6 +1571,7 @@ impl Terminal {
                 {
                     let mut state = self.state.lock().unwrap();
                     state.pty_fd = Some(master_fd);
+                    state.shell_pid = Some(child.id() as libc::pid_t);
                 }
 
                 let state_clone = self.state.clone();
@@ -1477,6 +1611,26 @@ impl Terminal {
             }
         }
     }
+}
+
+/// Decodes percent-encoded URI path components (e.g. `%20` → space).
+fn percent_decode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '%' {
+            let h1 = chars.next();
+            let h2 = chars.next();
+            if let (Some(a), Some(b)) = (h1, h2) {
+                if let Ok(byte) = u8::from_str_radix(&format!("{a}{b}"), 16) {
+                    out.push(byte as char);
+                    continue;
+                }
+            }
+        }
+        out.push(c);
+    }
+    out
 }
 
 /// Maps a 3-bit ANSI color index (0-7) to an RGBA value.

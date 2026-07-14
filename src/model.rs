@@ -377,8 +377,6 @@ pub struct FluxApp {
 pub enum AppMsg {
     /// Toggle the embedded terminal panel visibility.
     ToggleTerminal,
-    /// Send a cd command to the embedded terminal for the given path.
-    TerminalCd(PathBuf),
     /// Internal trigger to open icon picker (resolves path from selection/current dir).
     TriggerIconPicker,
     /// Internal trigger to reset icon (resolves path from selection/current dir).

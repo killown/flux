@@ -111,6 +111,13 @@ impl FluxApp {
             &config.ui.terminal.font,
         )));
 
+        {
+            let s = sender.clone();
+            terminal.set_cwd_callback(move |path| {
+                s.input(AppMsg::Navigate(path));
+            });
+        }
+
         // Intercept F4 and clipboard shortcuts before terminal consumes them.
         let term_sender = sender.clone();
         let term_key_ctrl = gtk::EventControllerKey::new();
