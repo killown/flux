@@ -947,7 +947,7 @@ impl Terminal {
             layout.set_text("M");
             layout.pixel_extents().1.height().max(1)
         };
-        drawing_area.set_height_request(char_height * config.height);
+        drawing_area.set_size_request(-1, char_height * config.height);
 
         let (draw_sender, mut draw_receiver) = tokio::sync::mpsc::unbounded_channel::<()>();
 

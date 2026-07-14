@@ -237,6 +237,7 @@ impl FluxApp {
             terminal,
             terminal_visible: false,
             terminal_cleared: false,
+            terminal_paned: None,
         };
 
         // 9. Initial State Population

@@ -584,6 +584,18 @@ impl FluxApp {
                         self.terminal.respawn(dir);
                     }
 
+                    // Set the paned position to give terminal proper height
+                    if let Some(paned) = &self.terminal_paned {
+                        let height = paned.height();
+                        if height > 0 {
+                            // Convert terminal height from config (in character lines) to pixels
+                            // Each line is roughly 20-24px depending on font
+                            let line_height = 24; // Approximate pixel height per line
+                            let terminal_height = self.config.ui.terminal.height * line_height;
+                            paned.set_position(height - terminal_height);
+                        }
+                    }
+
                     let term = self.terminal.clone();
                     glib::idle_add_local_once(move || {
                         term.grab_focus();

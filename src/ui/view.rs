@@ -260,6 +260,7 @@ impl SimpleAsyncComponent for FluxApp {
                         },
 
                         /// Main scrollable viewport for the file grid.
+                        #[name = "main_paned"]
                         gtk::Paned {
                             set_orientation: gtk::Orientation::Vertical,
                             set_vexpand: true,
@@ -292,7 +293,6 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_reveal_child: model.terminal_visible,
                                 #[watch]
                                 set_visible: model.terminal_visible,
-                                set_vexpand: false,
                             },
 
                             /// Global drop handler for cross-instance and external file transfers.
@@ -422,7 +422,8 @@ impl SimpleAsyncComponent for FluxApp {
         root: Self::Root,
         sender: AsyncComponentSender<Self>,
     ) -> AsyncComponentParts<Self> {
-        let (model, breadcrumb_box) = Self::init_components(PathBuf::new(), &root, sender.clone());
+        let (mut model, breadcrumb_box) =
+            Self::init_components(PathBuf::new(), &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
         let widgets = view_output!();
 
@@ -437,6 +438,25 @@ impl SimpleAsyncComponent for FluxApp {
         model
             .context_menu_popover
             .set_parent(&widgets.grid_scroller);
+
+        // Store the paned reference in the model
+        model.terminal_paned = Some(widgets.main_paned.clone());
+
+        if let Some(paned) = &model.terminal_paned {
+            let sender_clone = sender.clone();
+            paned.connect_notify(Some("position"), move |paned, _| {
+                // Calculate terminal height from paned position
+                let height = paned.height();
+                let position = paned.position();
+                let terminal_height = height - position;
+
+                // Convert pixels to character lines (roughly divide by 24)
+                let terminal_lines = terminal_height / 24;
+                if terminal_lines > 0 {
+                    sender_clone.input(AppMsg::SetTerminalHeight(terminal_lines));
+                }
+            });
+        }
 
         crate::ui::inputs::setup_controllers(
             &root,

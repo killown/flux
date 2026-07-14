@@ -291,7 +291,7 @@ pub struct TerminalConfig {
 impl Default for TerminalConfig {
     fn default() -> Self {
         Self {
-            height: 50,
+            height: 30,
             fg_color: "#E5E5E5".to_string(),
             bg_color: "#1A1A1A".to_string(),
             font: "JetBrains Mono 13".to_string(),
@@ -302,6 +302,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// The Paned widget that contains the terminal.
+    pub terminal_paned: Option<gtk::Paned>,
     /// Whether the terminal has been cleared on first open.
     pub terminal_cleared: bool,
     /// The embedded VTE terminal widget.
