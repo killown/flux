@@ -916,6 +916,12 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::ToggleSidebar => {
+                self.sidebar_visible = !self.sidebar_visible;
+                if let Some(ref widget) = self.sidebar_widget {
+                    widget.set_visible(self.sidebar_visible);
+                }
+            }
             AppMsg::ToggleSingleClick => {
                 self.config.ui.single_click = !self.config.ui.single_click;
                 self.files

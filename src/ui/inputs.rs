@@ -121,6 +121,10 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }
+            gdk::Key::F8 => {
+                sender_cap.input(AppMsg::ToggleSidebar);
+                glib::Propagation::Stop
+            }
             gdk::Key::Tab => {
                 // Yield Tab to VTE when the terminal widget holds keyboard focus.
                 // Terminal disabled due to dependency conflicts
@@ -179,6 +183,15 @@ pub fn setup_controllers(
         Some(keymap.refresh.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_refresh.input(AppMsg::Refresh);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_sidebar = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("F8").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_sidebar.input(AppMsg::ToggleSidebar);
             glib::Propagation::Stop
         })),
     ));
@@ -371,7 +384,7 @@ fn setup_deselect_on_background_click(
             return;
         };
 
-        // Walk upward from the picked widget; if any ancestor carries a
+        // Walk upward from the picked widget, if any ancestor carries a
         // filesystem path name the click landed on a file/dir item.
         let hit_item = grid_view
             .pick(x, y, gtk::PickFlags::DEFAULT)

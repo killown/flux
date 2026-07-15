@@ -36,10 +36,13 @@ impl SimpleAsyncComponent for FluxApp {
                 set_vexpand: true,
 
                 /// Left sidebar for system places and user bookmarks.
+                #[name = "sidebar_box"]
                 gtk::Box {
                     set_orientation: gtk::Orientation::Vertical,
                     set_width_request: model.config.ui.sidebar_width,
                     add_css_class: constants::SIDEBAR_CSS_CLASS,
+                    #[watch]
+                    set_visible: model.sidebar_visible,
 
                     #[name = "sidebar_container"]
                     gtk::ScrolledWindow {
@@ -438,6 +441,9 @@ impl SimpleAsyncComponent for FluxApp {
         model
             .context_menu_popover
             .set_parent(&widgets.grid_scroller);
+
+        // Store sidebar widget reference for toggling
+        model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
 
         // Store the paned reference in the model
         model.terminal_paned = Some(widgets.main_paned.clone());

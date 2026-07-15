@@ -42,8 +42,6 @@ pub struct KeyMap {
 
 impl KeyMap {
     pub fn new(config: &ShortcutsConfig) -> Self {
-        //println!("[DEBUG] Shortcuts passed from TOML parser: {:#?}", config);
-
         Self {
             quit: parse_trigger(&config.quit, constants::QUIT),
             open: parse_trigger(&config.open, constants::OPEN),

@@ -372,6 +372,10 @@ pub struct FluxApp {
     pub pending_toasts: std::collections::HashMap<String, String>,
     /// Determines if the file list is sorted in ascending (true) or descending (false) order.
     pub sort_ascending: bool,
+    // sidebar visibility state, used to restore the previous state when toggling.
+    pub sidebar_visible: bool,
+    /// Reference to the sidebar widget for toggling visibility.
+    pub sidebar_widget: Option<gtk::Widget>,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
@@ -598,6 +602,8 @@ pub enum AppMsg {
     SetTerminalBgColor(String),
     /// Opens the About dialog with application metadata and repository link.
     ShowAbout,
+    /// Toggles the visibility of the sidebar.
+    ToggleSidebar,
 }
 
 /// Represents a single entry in the Flux context menu configuration.

@@ -49,6 +49,14 @@ impl FluxApp {
         let action_group = gio::SimpleActionGroup::new();
         root.insert_action_group("win", Some(&action_group));
 
+        // Register sidebar toggle action BEFORE moving action_group into model
+        let toggle_sidebar_action = gio::SimpleAction::new("toggle-sidebar", None);
+        let s_sidebar = sender.clone();
+        toggle_sidebar_action.connect_activate(move |_, _| {
+            s_sidebar.input(AppMsg::ToggleSidebar);
+        });
+        action_group.add_action(&toggle_sidebar_action);
+
         // 5. Grid View Configuration
         let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
         files.view.set_enable_rubberband(true);
@@ -238,6 +246,8 @@ impl FluxApp {
             terminal_visible: false,
             terminal_cleared: false,
             terminal_paned: None,
+            sidebar_visible: true,
+            sidebar_widget: None,
         };
 
         // 9. Initial State Population
@@ -332,6 +342,7 @@ impl FluxApp {
     ///
     /// Uses GIO menu sections for visual grouping. Each `detailed_action` string
     /// references an `app.*` action registered in `main.rs::setup_shortcuts`.
+    /// Constructs the `gio::Menu` model for the main hamburger popover.
     pub(crate) fn build_main_menu() -> gtk::gio::Menu {
         let menu = gtk::gio::Menu::new();
 
@@ -371,6 +382,13 @@ impl FluxApp {
         let view_section = gtk::gio::Menu::new();
         view_section.append(Some(&tr("Preferences")), Some("app.open-settings"));
         view_section.append(Some(&tr("Keyboard Shortcuts")), Some("app.open-help"));
+
+        // Toggle Sidebar - create item manually to set accelerator
+        let toggle_item =
+            gtk::gio::MenuItem::new(Some(&tr("Toggle Sidebar")), Some("win.toggle-sidebar"));
+        toggle_item.set_attribute_value("accel", Some(&"F8".to_variant()));
+        view_section.append_item(&toggle_item);
+
         menu.append_section(None, &view_section);
 
         // ── Tools ────────────────────────────────────────────────────────────
