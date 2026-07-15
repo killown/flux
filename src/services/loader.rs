@@ -10,7 +10,7 @@ use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
-/// Returns `(is_image, is_video)` by extension only — zero I/O, safe to call inside
+/// Returns `(is_image, is_video)` by extension only - zero I/O, safe to call inside
 /// a Rayon iterator on the directory listing hot path. Accuracy is intentionally
 /// approximate: false positives are harmless (they go into `media_tasks` and get
 /// filtered again by the full `is_visual_media` check inside `get_or_create_thumbnail`).
@@ -271,6 +271,7 @@ impl FluxApp {
                     is_editing: false,
                     is_foreign_owner: item.is_foreign_owner,
                     expand_labels: item.expand_labels,
+                    is_custom_icon: item.custom_icon.is_some(),
                 });
 
                 if let Some(abs_path) = item.thumbnail_path {

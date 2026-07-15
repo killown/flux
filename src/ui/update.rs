@@ -1296,18 +1296,16 @@ impl FluxApp {
                         } else {
                             let item = crate::ui::FileItem {
                                 name: display_name.clone(),
-
                                 icon,
                                 thumbnail: None,
                                 is_dir,
-
                                 path: path.clone(),
                                 icon_size: self.current_icon_size,
                                 size: info.size() as u64,
-
                                 is_editing: false,
                                 is_foreign_owner: false,
                                 expand_labels: self.config.ui.expand_labels,
+                                is_custom_icon: false,
                             };
                             self.files.append(item);
 

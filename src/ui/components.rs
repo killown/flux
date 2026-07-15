@@ -26,6 +26,9 @@ pub struct FileItem {
     pub is_foreign_owner: bool,
     /// Whether the label should wrap to multiple lines instead of ellipsizing.
     pub expand_labels: bool,
+    /// Whether this icon was set by the user via F3 (custom folder icon).
+    /// Used to determine if we should fall back to default when icon missing from theme.
+    pub is_custom_icon: bool,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -309,37 +312,31 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         if let Some(ref texture) = self.thumbnail {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
-            // Check if the icon exists in the current theme before using it.
-            // If the custom icon name doesn't exist (e.g., after theme change),
-            // fall back to the default folder icon.
-            let display = match adw::gdk::Display::default() {
-                Some(d) => d,
-                None => {
-                    widgets.icon_widget.set_from_gicon(&self.icon);
-                    return;
-                }
-            };
-            let icon_theme = gtk::IconTheme::for_display(&display);
-
-            // Try to get the icon name from the GIcon
-            if let Some(icon_str) = self.icon.to_string() {
-                let icon_str = icon_str.as_str();
-                if !icon_str.is_empty() {
-                    // Check if the icon exists in the current theme
-                    let has_icon = icon_theme.has_icon(icon_str);
-                    if has_icon {
+            // Only apply the theme fallback check for custom user-set icons.
+            // For normal file/directory icons, use the icon as-is.
+            if self.is_custom_icon {
+                let display = match adw::gdk::Display::default() {
+                    Some(d) => d,
+                    None => {
                         widgets.icon_widget.set_from_gicon(&self.icon);
-                    } else {
-                        // Fallback: use the default folder icon
+                        return;
+                    }
+                };
+                let icon_theme = gtk::IconTheme::for_display(&display);
+
+                if let Some(icon_str) = self.icon.to_string() {
+                    let icon_str = icon_str.as_str();
+                    if !icon_str.is_empty() && !icon_theme.has_icon(icon_str) {
+                        // Custom icon not found in current theme, fall back to folder icon
                         let fallback_icon =
                             gio::Icon::for_string("folder").unwrap_or_else(|_| self.icon.clone());
                         widgets.icon_widget.set_from_gicon(&fallback_icon);
+                        return;
                     }
-                    return;
                 }
             }
 
-            // Fallback: use the icon as-is if we couldn't determine its name
+            // Default: use the icon as-is
             widgets.icon_widget.set_from_gicon(&self.icon);
         }
 
