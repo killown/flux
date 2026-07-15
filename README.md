@@ -12,6 +12,31 @@
 
 ## Why Flux?
 
+To keep benchmarks completely transparent, here is the real **Time to First Frame** (measured via IPC event-stream watching) showing both **cold-start** (first run) and **warm-start** (second run, leveraging OS page cache) times:
+
+```bash
+#CPU: AMD Ryzen 5 5600X (6 Cores, 12 Threads @ 3.7GHz Base / 4.6GHz Boost)
+#Methodology: High-precision time.perf_counter() differential, IPC event stream.
+
+# 1. Flux-FM (Consistent performance, no cold-start overhead)
+~ ❯❯❯ python measure_app_speed.py flux-fm
+Startup Time: 229.05 ms
+~ ❯❯❯ python measure_app_speed.py flux-fm
+Startup Time: 226.04 ms
+
+# 2. Thunar (Relies heavily on page cache to feel fast)
+~ ❯❯❯ python measure_app_speed.py thunar
+Startup Time: 250.01 ms
+~ ❯❯❯ python measure_app_speed.py thunar
+Startup Time: 196.79 ms
+
+# 3. Nautilus (Heavy startup bottlenecks)
+~ ❯❯❯ python measure_app_speed.py nautilus
+Startup Time: 742.84 ms
+~ ❯❯❯ python measure_app_speed.py nautilus
+Startup Time: 449.54 ms
+```
+
 Most file managers try to do everything. Flux tries to do _one thing_ perfectly: letting you browse your data at light speed without the visual noise.
 
 - **Zero Clutter:** We replaced bulky buttons with a smart, dynamic header that shows you exactly what you need to know.
