@@ -8,6 +8,10 @@ use relm4::prelude::*;
 use std::path::PathBuf;
 
 /// Attaches all input controllers to the window/view.
+///
+/// `terminal_area` is the [`gtk::DrawingArea`] that backs the embedded terminal.
+/// When it holds keyboard focus, `Tab` is yielded to it (shell completion) instead
+/// of being consumed by the file-grid cycle shortcut.
 pub fn setup_controllers(
     window: &impl IsA<gtk::Widget>,
     grid_view: &gtk::GridView,
@@ -15,6 +19,7 @@ pub fn setup_controllers(
     header_stack: &gtk::Stack,
     config_single_click: bool,
     keymap: &KeyMap,
+    terminal_area: &gtk::DrawingArea,
 ) {
     grid_view.set_enable_rubberband(false);
 
@@ -95,6 +100,7 @@ pub fn setup_controllers(
     let capture = gtk::EventControllerKey::new();
     capture.set_propagation_phase(gtk::PropagationPhase::Capture);
     let sender_cap = sender.clone();
+    let terminal_area_cap = terminal_area.clone();
 
     capture.connect_key_pressed(move |_ctrl, keyval, _keycode, state| {
         let modifiers = state & gtk::accelerator_get_default_mod_mask();
@@ -126,21 +132,11 @@ pub fn setup_controllers(
                 glib::Propagation::Stop
             }
             gdk::Key::Tab => {
-                // Yield Tab to VTE when the terminal widget holds keyboard focus.
-                // Terminal disabled due to dependency conflicts
-                /*
-                let terminal_focused = _ctrl
-                    .widget()
-                    .and_then(|w| w.root())
-                    .and_then(|r| r.focus())
-                    .map(|f| f.type_() == vte4::Terminal::static_type())
-                    .unwrap_or(false);
-
-                if terminal_focused {
+                // When the terminal DrawingArea holds focus, let Tab pass through
+                // to its own EventControllerKey so the shell sees \t for completion.
+                if terminal_area_cap.has_focus() {
                     return glib::Propagation::Proceed;
                 }
-                */
-
                 sender_cap.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }

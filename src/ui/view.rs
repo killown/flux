@@ -471,6 +471,7 @@ impl SimpleAsyncComponent for FluxApp {
             &widgets.header_stack,
             model.config.ui.single_click,
             &model.keymap,
+            &model.terminal.drawing_area,
         );
 
         root.set_default_size(
