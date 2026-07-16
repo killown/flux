@@ -43,30 +43,34 @@ Most file managers try to do everything. Flux tries to do _one thing_ perfectly:
 - **Asynchronous Heart:** Got a folder with 5,000 high-res wallpapers? Flux won't sweat. It uses a throttled async pipeline to load thumbnails without ever freezing the window.
 - **Shortcut First:** Flux is designed for power users who prefer the keyboard over hunting for tiny icons.
 
-## Power User Shortcuts
+## ⌨️ Keyboard Shortcut & Input Hub Reference
 
-Flux is built around the "Config-Driven" philosophy. You control the logic, we provide the speed.
+### 6.1 Unified Global Bindings
+The following table details the core hotkey mappings defined across `src/ui/inputs.rs`, `src/utils/helpers.rs`, and the shortcut controller stack:
 
-| Action | Shortcut |
-| :--- | :--- |
-| **Show Help / Shortcuts** | `F1` |
-| **Cycle Sort Mode** (Name → Date → Size) | `Ctrl + S` |
-| **Toggle Hidden Files** | `Ctrl + H` |
-| **Zoom Icons** (Smooth Scaling) | `Ctrl + Mouse Wheel` |
-| **Search Files** | `Ctrl + F` |
-| **Open Preferences** | `F10` |
-| **Open Menu Editor** | `F9` |
-| **Refresh Directory** | `F5` |
-| **Rename Item** | `F2` |
-| **Move to Trash** | `Delete` |
-| **Go Back / Forward** | `Backspace` / `Alt + Right` |
-| **Navigate to Root** | `/` |
-
-### Quick List (Exclusive List)
-- `Insert`: Add selection or current folder to list.
-- `Ctrl + Insert`: Pin selection/folder to sidebar permanently.
-- `Tab`: Cycle to the next folder in the list.
-- `Ctrl + End`: Clear the entire list.
+| Key Combination | Message Reference / Operation Target | Functional System Description |
+| :--- | :--- | :--- |
+| `F1` | `AppMsg::ShowHelp` | Opens the graphical keyboard shortcut overlay window. |
+| `F2` | `AppMsg::TriggerRenameSelection` | Puts the selected item into inline name editing mode. |
+| `F3` | `AppMsg::ShowIconPicker` | Opens a custom icon picker dialog for the current directory. |
+| `F4` | `AppMsg::ToggleTerminal` | Toggles the visibility of the embedded virtual terminal panel. |
+| `F5` | `AppMsg::Refresh` | Forces a full reload of the current directory from disk. |
+| `F8` | `AppMsg::ToggleSidebar` | Toggles the left navigation sidebar tray. |
+| `F9` | `app.open-menu-editor` | Spawns the runtime context menu configuration editor window. |
+| `F10` | `app.open-settings` | Launches the central preference settings interface panel. |
+| `Return` / `KP_Enter` | `AppMsg::Activate` | Opens selected files or navigates into selected folders. |
+| `Backspace` | `AppMsg::GoBack` | Navigates back one step in the directory history log. |
+| `Alt + Right` | `AppMsg::GoForward` | Moves forward one step in the directory history stack. |
+| `Ctrl + f` | `AppMsg::SwitchHeader("search")` | Focuses the entry line and switches the interface to filtering mode. |
+| `Ctrl + h` | `AppMsg::ToggleHidden` | Toggles the visibility of hidden files and folders. |
+| `Ctrl + s` | `AppMsg::CycleSort` | Rotates through the available sorting criteria. |
+| `Ctrl + Shift + s` | `AppMsg::ToggleSortOrder` | Toggles between ascending and descending sort order. |
+| `Shift + s` | `AppMsg::CycleFolderPriority` | Toggles whether folders are grouped above files when sorting. |
+| `Insert` | `AppMsg::AddExclusive(None)` | Adds the selected path to the temporary quick list cache. |
+| `Tab` | `AppMsg::NextExclusive` | Cycles forward to the next folder in the temporary quick list. |
+| `Ctrl + Tab` | `AppMsg::PrevExclusive` | Cycles backward to the previous folder in the temporary quick list. |
+| `Ctrl + Insert` | `AppMsg::AddToSidebarPermanent` | Pins the current directory to the configuration bookmarks permanently. |
+| `Ctrl + Delete` | `AppMsg::ClearExclusive` | Clears all entries from the temporary quick list cache. |
 
 ## Configuration & Customization
 
