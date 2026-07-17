@@ -918,6 +918,8 @@ impl FluxApp {
             }
             AppMsg::ToggleSidebar => {
                 self.sidebar_visible = !self.sidebar_visible;
+                self.config.ui.sidebar_visible = self.sidebar_visible;
+                crate::utils::save_config(&self.config);
                 if let Some(ref widget) = self.sidebar_widget {
                     widget.set_visible(self.sidebar_visible);
                 }

@@ -246,7 +246,7 @@ impl FluxApp {
             terminal_visible: false,
             terminal_cleared: false,
             terminal_paned: None,
-            sidebar_visible: true,
+            sidebar_visible: config.ui.sidebar_visible,
             sidebar_widget: None,
         };
 

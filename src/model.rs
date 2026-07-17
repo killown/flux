@@ -234,6 +234,9 @@ pub struct UIConfig {
     /// Per-path custom icon overrides for directories, keyed by absolute path string.
     #[serde(default)]
     pub folder_icons: HashMap<String, String>,
+    /// Persisted across sessions, defaults to `true`.
+    #[serde(default = "default_true")]
+    pub sidebar_visible: bool,
 }
 
 impl Default for UIConfig {
@@ -261,6 +264,7 @@ impl Default for UIConfig {
             expand_labels: false,
             folder_icons: HashMap::new(),
             terminal: TerminalConfig::default(),
+            sidebar_visible: true,
         }
     }
 }

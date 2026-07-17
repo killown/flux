@@ -279,6 +279,7 @@ path = "~"
                 expand_labels: false,
                 folder_icons: std::collections::HashMap::new(),
                 terminal: TerminalConfig::default(),
+                sidebar_visible: true,
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),
