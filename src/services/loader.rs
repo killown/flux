@@ -24,7 +24,7 @@ fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
     match ext.as_deref() {
         Some(
             "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
-            | "tif" | "jxl" | "svg",
+            | "tif" | "jxl" | "svg" | "pdf",
         ) => (true, false),
         Some(
             "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ts"
