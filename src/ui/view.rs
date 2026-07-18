@@ -425,8 +425,7 @@ impl SimpleAsyncComponent for FluxApp {
         root: Self::Root,
         sender: AsyncComponentSender<Self>,
     ) -> AsyncComponentParts<Self> {
-        let (mut model, breadcrumb_box) =
-            Self::init_components(PathBuf::new(), &root, sender.clone());
+        let (mut model, breadcrumb_box) = Self::init_components(start_path, &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
         let widgets = view_output!();
 
@@ -489,11 +488,6 @@ impl SimpleAsyncComponent for FluxApp {
         let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         terminal_box.append(&terminal_widget);
         widgets.terminal_revealer.set_child(Some(&terminal_box));
-
-        let startup_sender = sender.clone();
-        gtk::glib::idle_add_local_once(move || {
-            startup_sender.input(AppMsg::Navigate(start_path));
-        });
 
         AsyncComponentParts { model, widgets }
     }
