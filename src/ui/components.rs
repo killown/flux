@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::FluxApp;
 use crate::model::PathSegment;
 use crate::ui::constants;
@@ -447,7 +448,7 @@ impl FactoryComponent for SidebarPlace {
                         .build();
 
                     let menu_model = gio::Menu::new();
-                    menu_model.append(Some("Remove from sidebar"), Some("sidebar.remove"));
+                    menu_model.append(Some(&tr("Remove from sidebar")), Some("sidebar.remove"));
                     menu.set_menu_model(Some(&menu_model));
 
                     if let Some(widget) = gesture.widget() {

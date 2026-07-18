@@ -705,3 +705,11 @@ msgstr "Código-fonte"
 #: src/utils/helpers.rs:75
 msgid "A fast, keyboard-driven file manager built with GTK4 and Libadwaita."
 msgstr "Um gerenciador de arquivos rápido, orientado a teclado, construído com GTK4 e Libadwaita."
+
+#: src/ui/init.rs:325
+msgid "Toggle Sidebar"
+msgstr "Alternar barra lateral"
+
+#: src/ui/components.rs:453
+msgid "Remove from sidebar"
+msgstr "Remover da barra lateral"
