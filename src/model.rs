@@ -177,6 +177,34 @@ pub struct ContextAction {
     pub mime_types: Vec<String>,
 }
 
+/// Per-type thumbnail generation settings for file previews.
+///
+/// Controls which file types should have visual previews generated in the file grid.
+/// Each field defaults to `true` when a new config is created.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(default)]
+pub struct ThumbnailTypes {
+    /// Generate thumbnails for image files (PNG, JPG, GIF, WebP, etc.)
+    pub images: bool,
+    /// Generate thumbnails for video files (MP4, MKV, WebM, etc.)
+    pub videos: bool,
+    /// Generate thumbnails for font files (TTF, OTF, WOFF, etc.)
+    pub fonts: bool,
+    /// Generate thumbnails for PDF documents
+    pub pdfs: bool,
+}
+
+impl Default for ThumbnailTypes {
+    fn default() -> Self {
+        Self {
+            images: true,
+            videos: true,
+            fonts: true,
+            pdfs: true,
+        }
+    }
+}
+
 /// Visual and behavioral settings for the User Interface.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
@@ -237,6 +265,18 @@ pub struct UIConfig {
     /// Persisted across sessions, defaults to `true`.
     #[serde(default = "default_true")]
     pub sidebar_visible: bool,
+    /// Global toggle for all thumbnail generation.
+    ///
+    /// When `false`, no thumbnails are generated for any file type, overriding
+    /// the individual `thumbnail_types` settings. Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub show_thumbnails: bool,
+    /// Per-file-type thumbnail generation controls.
+    ///
+    /// Only effective when `show_thumbnails` is `true`. Allows users to enable
+    /// or disable previews for specific file categories independently.
+    #[serde(default)]
+    pub thumbnail_types: ThumbnailTypes,
 }
 
 impl Default for UIConfig {
@@ -265,6 +305,8 @@ impl Default for UIConfig {
             folder_icons: HashMap::new(),
             terminal: TerminalConfig::default(),
             sidebar_visible: true,
+            show_thumbnails: true,
+            thumbnail_types: ThumbnailTypes::default(),
         }
     }
 }
@@ -608,6 +650,17 @@ pub enum AppMsg {
     ShowAbout,
     /// Toggles the visibility of the sidebar.
     ToggleSidebar,
+    /// Toggles the global thumbnail generation setting.
+    ///
+    /// When disabled, no thumbnails are generated for any file type, improving
+    /// performance on low-spec systems or for users who prefer a minimal view.
+    SetShowThumbnails(bool),
+    /// Toggles thumbnail generation for a specific file type.
+    ///
+    /// # Fields
+    /// - `type_name`: One of "images", "videos", "fonts", or "pdfs"
+    /// - `enabled`: Whether thumbnails should be generated for this type
+    SetThumbnailType { type_name: String, enabled: bool },
 }
 
 /// Represents a single entry in the Flux context menu configuration.
@@ -786,5 +839,45 @@ mod tests {
             parsed.ui.folder_icons.get("/home/user/Projects").cloned(),
             Some("folder-development-symbolic".to_string())
         );
+    }
+
+    #[test]
+    fn test_thumbnail_types_defaults() {
+        let types = ThumbnailTypes::default();
+        assert!(types.images);
+        assert!(types.videos);
+        assert!(types.fonts);
+        assert!(types.pdfs);
+    }
+
+    #[test]
+    fn test_thumbnail_types_serialization() {
+        let config = Config {
+            ui: UIConfig {
+                show_thumbnails: false,
+                thumbnail_types: ThumbnailTypes {
+                    images: false,
+                    videos: true,
+                    fonts: false,
+                    pdfs: true,
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+        assert!(toml_str.contains("show_thumbnails = false"));
+        assert!(toml_str.contains("images = false"));
+        assert!(toml_str.contains("videos = true"));
+        assert!(toml_str.contains("fonts = false"));
+        assert!(toml_str.contains("pdfs = true"));
+
+        let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+        assert!(!parsed.ui.show_thumbnails);
+        assert!(!parsed.ui.thumbnail_types.images);
+        assert!(parsed.ui.thumbnail_types.videos);
+        assert!(!parsed.ui.thumbnail_types.fonts);
+        assert!(parsed.ui.thumbnail_types.pdfs);
     }
 }

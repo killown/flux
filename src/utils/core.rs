@@ -145,12 +145,19 @@ folders_first = true
 theme = "default"
 show_csd = false
 start_maximized = true
+show_thumbnails = true
 
 [ui.terminal]
 height = 50
 fg_color = ""
 bg_color = ""
 font = "JetBrains Mono 11"
+
+[ui.thumbnail_types]
+images = true
+videos = true
+fonts = true
+pdfs = true
 
 [ui.folder_sort]
 
@@ -284,6 +291,8 @@ path = "~"
                 folder_icons: std::collections::HashMap::new(),
                 terminal: TerminalConfig::default(),
                 sidebar_visible: true,
+                show_thumbnails: true,
+                thumbnail_types: crate::model::ThumbnailTypes::default(),
             },
             sidebar: vec![],
             shortcuts: crate::model::ShortcutsConfig::default(),
@@ -787,8 +796,7 @@ fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
     // Draw the pangram sample in the target font.
     cx.set_source_rgb(0.05, 0.05, 0.05);
     let (_, label_h) = label_layout.pixel_size();
-    // Reduce the gap: use a smaller multiplier or just a fixed small padding
-    cx.move_to(margin, margin + label_h as f64 + margin * 0.25); // Changed from 0.5 to 0.25
+    cx.move_to(margin, margin + label_h as f64 + margin * 0.25);
     let body_layout = pango::Layout::new(&pango_cx);
     body_layout.set_font_description(Some(&body_desc));
     body_layout.set_text(sample_body);
@@ -874,28 +882,64 @@ fn thumbnail_is_valid(cache_path: &Path, source_meta: &fs::Metadata) -> bool {
 /// `Some(texture)` on success, `None` if the file is not visual media, if any
 /// required external tool (`ffmpeg`) is unavailable, or if I/O fails.
 pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
+    // Load config once and check if thumbnails are enabled at all
+    let config = load_config();
+    if !config.ui.show_thumbnails {
+        return None;
+    }
+
     let (cache_dir, cache_path) = thumbnail_cache_path(path)?;
+
+    // Don't even check the cache if the type is disabled - this prevents
+    // the function from returning cached thumbnails when the type is disabled
+    // Check PDF first before is_visual_media
+    if is_pdf(path) {
+        if !config.ui.thumbnail_types.pdfs {
+            return None;
+        }
+        return pdf_thumbnail(path, &cache_path);
+    }
+
+    if is_font(path) {
+        if !config.ui.thumbnail_types.fonts {
+            return None;
+        }
+        return font_thumbnail(path, &cache_path);
+    }
+
+    let (is_img, is_vid) = is_visual_media(path);
+
+    if is_img {
+        if !config.ui.thumbnail_types.images {
+            return None;
+        }
+    } else if is_vid {
+        if !config.ui.thumbnail_types.videos {
+            return None;
+        }
+    } else {
+        // Not a supported thumbnail type
+        return None;
+    }
 
     fs::create_dir_all(&cache_dir).ok()?;
 
     let source_meta = fs::metadata(path).ok();
 
+    // Only check cache if the type is enabled
     if cache_path.exists() {
         let is_valid = source_meta
             .as_ref()
             .map(|m| thumbnail_is_valid(&cache_path, m))
-            .unwrap_or(true); // No source metadata (e.g. remote mount) → assume valid.
+            .unwrap_or(true);
 
         if is_valid {
             let file = adw::gio::File::for_path(&cache_path);
             return gdk::Texture::from_file(&file).ok();
         }
 
-        // Evict the stale entry before regenerating.
         let _ = fs::remove_file(&cache_path);
     }
-
-    let (is_img, is_vid) = is_visual_media(path);
 
     if is_img {
         match gdk_pixbuf::Pixbuf::from_file_at_scale(
@@ -934,14 +978,6 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             let file = adw::gio::File::for_path(&cache_path);
             return gdk::Texture::from_file(&file).ok();
         }
-    }
-
-    if is_pdf(path) {
-        return pdf_thumbnail(path, &cache_path);
-    }
-
-    if is_font(path) {
-        return font_thumbnail(path, &cache_path);
     }
 
     None

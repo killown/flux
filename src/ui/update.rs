@@ -1682,6 +1682,22 @@ impl FluxApp {
                 crate::utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::SetShowThumbnails(val) => {
+                self.config.ui.show_thumbnails = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetThumbnailType { type_name, enabled } => {
+                match type_name.as_str() {
+                    "images" => self.config.ui.thumbnail_types.images = enabled,
+                    "videos" => self.config.ui.thumbnail_types.videos = enabled,
+                    "fonts" => self.config.ui.thumbnail_types.fonts = enabled,
+                    "pdfs" => self.config.ui.thumbnail_types.pdfs = enabled,
+                    _ => {}
+                }
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
+            }
         }
     }
 }
