@@ -917,9 +917,9 @@ impl FluxApp {
 
 /// Recursively copies a directory tree from `src` to `dst`.
 ///
-/// If `dst` already exists, the contents of `src` are merged into it —
+/// If `dst` already exists, the contents of `src` are merged into it
 /// matching the "Replace" behaviour the user confirms in the conflict dialog.
-/// Existing files at the destination are overwritten; files absent from `src`
+/// Existing files at the destination are overwritten, files absent from `src`
 /// are left untouched.
 ///
 /// # Errors
