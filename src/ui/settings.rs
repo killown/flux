@@ -29,6 +29,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Layout"),
+                    set_description: Some(&tr("Adjust the visual layout of the file grid and sidebar")),
                     add = &adw::ActionRow {
                         set_title: &tr("Default Icon Size"),
                         set_subtitle: &tr("Base size of icons in the grid view"),
@@ -45,7 +46,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Grid Spacing"),
-                        set_subtitle: &tr("Pixel spacing between items"),
+                        set_subtitle: &tr("Pixel spacing between items in the grid view"),
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0),
                             set_numeric: true,
@@ -103,6 +104,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Window"),
+                    set_description: Some(&tr("Window behavior and startup settings")),
                     add = &adw::ActionRow {
                         set_title: &tr("Start Maximized"),
                         set_subtitle: &tr("Open the application in maximized state"),
@@ -131,6 +133,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Startup Width"),
+                        set_subtitle: &tr("Initial window width in pixels"),
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0),
                             set_numeric: true,
@@ -144,6 +147,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Startup Height"),
+                        set_subtitle: &tr("Initial window height in pixels"),
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(model.config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0),
                             set_numeric: true,
@@ -159,6 +163,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Theme"),
+                    set_description: Some(&tr("Customize the visual appearance with CSS themes")),
                     add = &adw::ActionRow {
                         set_title: &tr("Theme"),
                         set_subtitle: &tr("Select a custom CSS theme"),
@@ -237,6 +242,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Preview Settings"),
+                    set_description: Some(&tr("Enable or disable thumbnail generation for different file types")),
                     add = &adw::ActionRow {
                         set_title: &tr("Enable Thumbnails"),
                         set_subtitle: &tr("Show previews for supported file types"),
@@ -322,6 +328,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Preview Examples"),
+                    set_description: Some(&tr("How thumbnails will appear in the file grid")),
                     add = &gtk::Box {
                         set_orientation: gtk::Orientation::Horizontal,
                         set_halign: gtk::Align::Center,
@@ -338,7 +345,7 @@ impl SimpleComponent for SettingsWindow {
                                 set_opacity: if model.config.ui.thumbnail_types.images && model.config.ui.show_thumbnails { 1.0 } else { 0.3 },
                             },
                             gtk::Label {
-                                set_label: "Image",
+                                set_label: &tr("Image"),
                                 set_css_classes: &["caption", "dim-label"],
                             },
                             gtk::Label {
@@ -360,7 +367,7 @@ impl SimpleComponent for SettingsWindow {
                                 set_opacity: if model.config.ui.thumbnail_types.videos && model.config.ui.show_thumbnails { 1.0 } else { 0.3 },
                             },
                             gtk::Label {
-                                set_label: "Video",
+                                set_label: &tr("Video"),
                                 set_css_classes: &["caption", "dim-label"],
                             },
                             gtk::Label {
@@ -382,7 +389,7 @@ impl SimpleComponent for SettingsWindow {
                                 set_opacity: if model.config.ui.thumbnail_types.fonts && model.config.ui.show_thumbnails { 1.0 } else { 0.3 },
                             },
                             gtk::Label {
-                                set_label: "Font",
+                                set_label: &tr("Font"),
                                 set_css_classes: &["caption", "dim-label"],
                             },
                             gtk::Label {
@@ -404,7 +411,7 @@ impl SimpleComponent for SettingsWindow {
                                 set_opacity: if model.config.ui.thumbnail_types.pdfs && model.config.ui.show_thumbnails { 1.0 } else { 0.3 },
                             },
                             gtk::Label {
-                                set_label: "PDF",
+                                set_label: &tr("PDF"),
                                 set_css_classes: &["caption", "dim-label"],
                             },
                             gtk::Label {
@@ -426,6 +433,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("File Operations"),
+                    set_description: Some(&tr("How files and directories are opened and managed")),
                     add = &adw::ActionRow {
                         set_title: &tr("Single Click to Open"),
                         set_subtitle: &tr("Open files with a single click instead of double click"),
@@ -443,6 +451,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Sorting & Filtering"),
+                    set_description: Some(&tr("How files are ordered and displayed")),
                     add = &adw::ActionRow {
                         set_title: &tr("Default Sort"),
                         set_subtitle: &tr("Primary sorting method"),
@@ -521,6 +530,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Appearance"),
+                    set_description: Some(&tr("Customize the embedded terminal look and feel")),
                     add = &adw::ActionRow {
                         set_title: &tr("Height (lines)"),
                         set_subtitle: &tr("Number of character lines in the terminal"),
@@ -587,8 +597,10 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Navigation"),
+                    set_description: Some(&tr("Shortcuts for navigating between directories")),
                     add = &adw::ActionRow {
                         set_title: &tr("Back"),
+                        set_subtitle: &tr("Go to previous directory in history"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.back.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -604,6 +616,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Forward"),
+                        set_subtitle: &tr("Go to next directory in history"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.forward.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -619,6 +632,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Open"),
+                        set_subtitle: &tr("Open selected file or directory"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.open.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -636,8 +650,10 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("File Operations"),
+                    set_description: Some(&tr("Shortcuts for managing files")),
                     add = &adw::ActionRow {
                         set_title: &tr("Delete"),
+                        set_subtitle: &tr("Move selected items to trash"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.delete.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -653,6 +669,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Rename"),
+                        set_subtitle: &tr("Rename selected item"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.rename.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -670,8 +687,10 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("View"),
+                    set_description: Some(&tr("Shortcuts for controlling the interface")),
                     add = &adw::ActionRow {
                         set_title: &tr("Refresh"),
+                        set_subtitle: &tr("Reload current directory"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.refresh.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -687,6 +706,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Search"),
+                        set_subtitle: &tr("Focus search/filter bar"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.search.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
@@ -702,6 +722,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Toggle Hidden"),
+                        set_subtitle: &tr("Show/hide hidden files and folders"),
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.toggle_hidden.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
