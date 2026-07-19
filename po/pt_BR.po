@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: flux\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-03 00:42-0300\n"
-"PO-Revision-Date: 2026-06-03 00:44-0300\n"
+"PO-Revision-Date: 2026-07-19 00:00-0300\n"
 "Last-Translator: neo <thiago.dev.lucio@gmail.com>\n"
 "Language-Team: Brazilian Portuguese <ldpbr-translation@lists.sourceforge.net>\n"
 "Language: pt_BR\n"
@@ -141,6 +141,10 @@ msgstr "Aparência"
 msgid "Layout"
 msgstr "Layout"
 
+#: src/ui/settings.rs:33
+msgid "Adjust the visual layout of the file grid and sidebar"
+msgstr "Ajustar o layout visual da grade de arquivos e barra lateral"
+
 #: src/ui/settings.rs:34
 msgid "Default Icon Size"
 msgstr "Tamanho padrão dos ícones"
@@ -162,24 +166,24 @@ msgid "Max Label Length"
 msgstr "Comprimento máximo do nome"
 
 #: src/ui/settings.rs:65
-msgid "Maximum characters to show before truncating filenames"
-msgstr "Número máximo de caracteres antes de truncar nomes de arquivo"
+msgid "Characters before truncating filenames"
+msgstr "Caracteres antes de truncar nomes de arquivo"
 
 #: src/ui/settings.rs:79
 msgid "Expand Filenames"
 msgstr "Expandir nomes de arquivo"
 
 #: src/ui/settings.rs:80
-msgid "Show full filenames in the grid, wrapping across multiple lines"
-msgstr "Exibir nomes completos na grade, quebrando em múltiplas linhas"
+msgid "Wrap filenames across multiple lines"
+msgstr "Quebrar nomes de arquivo em múltiplas linhas"
 
 #: src/ui/settings.rs:94
 msgid "Sidebar Width"
 msgstr "Largura da barra lateral"
 
 #: src/ui/settings.rs:95
-msgid "Default width of the navigation pane"
-msgstr "Largura padrão do painel de navegação"
+msgid "Width of the navigation pane"
+msgstr "Largura do painel de navegação"
 
 #: src/ui/settings.rs:109
 msgid "Startup Width"
@@ -188,6 +192,14 @@ msgstr "Largura inicial"
 #: src/ui/settings.rs:110
 msgid "Initial window width in pixels"
 msgstr "Largura inicial da janela em pixels"
+
+#: src/ui/settings.rs:112
+msgid "Window"
+msgstr "Janela"
+
+#: src/ui/settings.rs:112
+msgid "Window behavior and startup settings"
+msgstr "Comportamento da janela e configurações de inicialização"
 
 #: src/ui/settings.rs:124
 msgid "Startup Height"
@@ -209,21 +221,49 @@ msgstr "Iniciar maximizado"
 msgid "Open the application in maximized state"
 msgstr "Abrir o aplicativo maximizado"
 
+#: src/ui/settings.rs:155
+msgid "Theme"
+msgstr "Tema"
+
+#: src/ui/settings.rs:155
+msgid "Customize the visual appearance with CSS themes"
+msgstr "Personalizar a aparência visual com temas CSS"
+
 #: src/ui/settings.rs:167
 msgid "Theming"
 msgstr "Temas"
 
 #: src/ui/settings.rs:170
-msgid "Theme"
-msgstr "Tema"
+msgid "Select a custom CSS theme"
+msgstr "Selecionar um tema CSS personalizado"
 
 #: src/ui/settings.rs:225
 msgid "Show XDG Directories"
 msgstr "Exibir diretórios XDG"
 
 #: src/ui/settings.rs:227
-msgid "Display standard user directories in the sidebar"
+msgid "Show standard user directories in sidebar"
 msgstr "Exibir diretórios padrão do usuário na barra lateral"
+
+#: src/ui/settings.rs:233
+msgid "Thumbnails"
+msgstr "Miniaturas"
+
+#: src/ui/settings.rs:235
+msgid "Enable or disable thumbnail generation for different file types"
+msgstr "Habilitar ou desabilitar a geração de miniaturas para diferentes tipos de arquivo"
+
+#: src/ui/settings.rs:238
+msgid "Preview Settings"
+msgstr "Configurações de pré-visualização"
+
+#: src/ui/settings.rs:241
+msgid "Enable Thumbnails"
+msgstr "Habilitar miniaturas"
+
+#: src/ui/settings.rs:242
+msgid "Show previews for supported file types"
+msgstr "Mostrar pré-visualizações para tipos de arquivo suportados"
 
 #: src/ui/settings.rs:243
 msgid "Behavior"
@@ -238,8 +278,16 @@ msgid "Single Click to Open"
 msgstr "Abrir com um clique"
 
 #: src/ui/settings.rs:251
-msgid "Open files and directories with a single click instead of double click"
-msgstr "Abrir arquivos e pastas com um único clique em vez de duplo clique"
+msgid "Open files with a single click instead of double click"
+msgstr "Abrir arquivos com um único clique em vez de duplo clique"
+
+#: src/ui/settings.rs:256
+msgid "Images"
+msgstr "Imagens"
+
+#: src/ui/settings.rs:257
+msgid "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
+msgstr "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
 
 #: src/ui/settings.rs:265
 msgid "Sorting and Filtering"
@@ -250,8 +298,8 @@ msgid "Default Sort"
 msgstr "Ordenação padrão"
 
 #: src/ui/settings.rs:269
-msgid "Primary sorting method for files"
-msgstr "Método de ordenação principal para arquivos"
+msgid "Primary sorting method"
+msgstr "Método de ordenação principal"
 
 #: src/ui/settings.rs:271
 msgid "Name"
@@ -269,6 +317,22 @@ msgstr "Data"
 msgid "Type"
 msgstr "Tipo"
 
+#: src/ui/settings.rs:272
+msgid "Videos"
+msgstr "Vídeos"
+
+#: src/ui/settings.rs:273
+msgid "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
+msgstr "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
+
+#: src/ui/settings.rs:288
+msgid "Fonts"
+msgstr "Fontes"
+
+#: src/ui/settings.rs:289
+msgid "TTF, OTF, WOFF, WOFF2, TTC"
+msgstr "TTF, OTF, WOFF, WOFF2, TTC"
+
 #: src/ui/settings.rs:294
 msgid "Sort Order"
 msgstr "Ordem de classificação"
@@ -285,25 +349,45 @@ msgstr "Crescente"
 msgid "Descending"
 msgstr "Decrescente"
 
+#: src/ui/settings.rs:304
+msgid "PDF Documents"
+msgstr "Documentos PDF"
+
+#: src/ui/settings.rs:305
+msgid "Portable Document Format files"
+msgstr "Arquivos em formato PDF"
+
 #: src/ui/settings.rs:312
 msgid "Folders First"
 msgstr "Pastas primeiro"
 
 #: src/ui/settings.rs:313
-msgid "Always display folders before files when sorting"
-msgstr "Sempre exibir pastas antes dos arquivos ao ordenar"
+msgid "Display folders before files"
+msgstr "Exibir pastas antes dos arquivos"
+
+#: src/ui/settings.rs:320
+msgid "Preview Examples"
+msgstr "Exemplos de pré-visualização"
+
+#: src/ui/settings.rs:321
+msgid "How thumbnails will appear in the file grid"
+msgstr "Como as miniaturas aparecerão na grade de arquivos"
 
 #: src/ui/settings.rs:326
 msgid "Show Hidden Files"
 msgstr "Exibir arquivos ocultos"
 
 #: src/ui/settings.rs:327
-msgid "Display files and folders that start with a dot"
+msgid "Display files and folders starting with a dot"
 msgstr "Exibir arquivos e pastas que começam com ponto"
 
 #: src/ui/settings.rs:344
 msgid "Terminal"
 msgstr "Terminal"
+
+#: src/ui/settings.rs:346
+msgid "File operations and sorting preferences"
+msgstr "Operações com arquivos e preferências de ordenação"
 
 #: src/ui/settings.rs:348
 msgid "Configuration"
@@ -313,33 +397,41 @@ msgstr "Configuração"
 msgid "Height"
 msgstr "Altura"
 
+#: src/ui/settings.rs:350
+msgid "How files and directories are opened and managed"
+msgstr "Como arquivos e diretórios são abertos e gerenciados"
+
 #: src/ui/settings.rs:351
 msgid "Height of the terminal pane in pixels"
 msgstr "Altura do painel do terminal em pixels"
+
+#: src/ui/settings.rs:365
+msgid "How files are ordered and displayed"
+msgstr "Como os arquivos são ordenados e exibidos"
 
 #: src/ui/settings.rs:368
 msgid "Font"
 msgstr "Fonte"
 
 #: src/ui/settings.rs:369
-msgid "Pango font description (e.g., 'JetBrains Mono 13')"
-msgstr "Descrição de fonte Pango (ex.: 'JetBrains Mono 13')"
+msgid "Pango font description"
+msgstr "Descrição de fonte Pango"
 
 #: src/ui/settings.rs:382
 msgid "Foreground Color"
 msgstr "Cor do texto"
 
 #: src/ui/settings.rs:383
-msgid "Hex color code for foreground (e.g., '#E5E5E5')"
-msgstr "Código de cor hexadecimal para o texto (ex.: '#E5E5E5')"
+msgid "Text color (hex, e.g., '#E5E5E5')"
+msgstr "Cor do texto (hex, ex.: '#E5E5E5')"
 
 #: src/ui/settings.rs:396
 msgid "Background Color"
 msgstr "Cor de fundo"
 
 #: src/ui/settings.rs:397
-msgid "Hex color code for background (e.g., '#1A1A1A')"
-msgstr "Código de cor hexadecimal para o fundo (ex.: '#1A1A1A')"
+msgid "Background color (hex, e.g., '#1A1A1A')"
+msgstr "Cor de fundo (hex, ex.: '#1A1A1A')"
 
 #: src/ui/settings.rs:414
 msgid "Shortcuts"
@@ -352,6 +444,14 @@ msgstr "Voltar"
 #: src/ui/settings.rs:436
 msgid "Forward"
 msgstr "Avançar"
+
+#: src/ui/settings.rs:440
+msgid "Embedded terminal appearance and behavior"
+msgstr "Aparência e comportamento do terminal integrado"
+
+#: src/ui/settings.rs:445
+msgid "Customize the embedded terminal look and feel"
+msgstr "Personalizar a aparência do terminal integrado"
 
 #: src/ui/settings.rs:451
 msgid "Open"
@@ -376,6 +476,58 @@ msgstr "Pesquisar"
 #: src/ui/settings.rs:519
 msgid "Toggle Hidden"
 msgstr "Alternar ocultos"
+
+#: src/ui/settings.rs:532
+msgid "Custom keyboard shortcuts for common actions"
+msgstr "Atalhos de teclado personalizados para ações comuns"
+
+#: src/ui/settings.rs:535
+msgid "Rename"
+msgstr "Renomear"
+
+#: src/ui/settings.rs:539
+msgid "Window"
+msgstr "Janela"
+
+#: src/ui/settings.rs:609
+msgid "Shortcuts for navigating between directories"
+msgstr "Atalhos para navegar entre diretórios"
+
+#: src/ui/settings.rs:637
+msgid "Go to previous directory in history"
+msgstr "Ir para o diretório anterior no histórico"
+
+#: src/ui/settings.rs:652
+msgid "Go to next directory in history"
+msgstr "Ir para o próximo diretório no histórico"
+
+#: src/ui/settings.rs:667
+msgid "Open selected file or directory"
+msgstr "Abrir arquivo ou diretório selecionado"
+
+#: src/ui/settings.rs:683
+msgid "Shortcuts for managing files"
+msgstr "Atalhos para gerenciar arquivos"
+
+#: src/ui/settings.rs:700
+msgid "Rename selected item"
+msgstr "Renomear item selecionado"
+
+#: src/ui/settings.rs:717
+msgid "Shortcuts for controlling the interface"
+msgstr "Atalhos para controlar a interface"
+
+#: src/ui/settings.rs:734
+msgid "Reload current directory"
+msgstr "Recarregar diretório atual"
+
+#: src/ui/settings.rs:749
+msgid "Focus search/filter bar"
+msgstr "Focar barra de pesquisa/filtro"
+
+#: src/ui/settings.rs:764
+msgid "Show/hide hidden files and folders"
+msgstr "Mostrar/ocultar arquivos e pastas ocultos"
 
 #: src/ui/init.rs:296
 msgid "By Name"
@@ -408,6 +560,18 @@ msgstr "Editor de menu de contexto"
 #: src/ui/init.rs:321
 msgid "New Window"
 msgstr "Nova janela"
+
+#: src/ui/init.rs:325
+msgid "About Flux"
+msgstr "Sobre o Flux"
+
+#: src/ui/init.rs:325
+msgid "Toggle Sidebar"
+msgstr "Alternar barra lateral"
+
+#: src/ui/components.rs:453
+msgid "Remove from sidebar"
+msgstr "Remover da barra lateral"
 
 #: src/ui/menu_editor.rs:112
 msgid "Flux Menu Editor"
@@ -694,10 +858,6 @@ msgstr "Copiado para a área de transferência"
 msgid "Set as default:"
 msgstr "Definido como padrão:"
 
-#: src/ui/init.rs:325
-msgid "About Flux"
-msgstr "Sobre o Flux"
-
 #: src/utils/helpers.rs:83
 msgid "Source Code"
 msgstr "Código-fonte"
@@ -706,10 +866,18 @@ msgstr "Código-fonte"
 msgid "A fast, keyboard-driven file manager built with GTK4 and Libadwaita."
 msgstr "Um gerenciador de arquivos rápido, orientado a teclado, construído com GTK4 e Libadwaita."
 
-#: src/ui/init.rs:325
-msgid "Toggle Sidebar"
-msgstr "Alternar barra lateral"
+#: src/ui/settings.rs:329
+msgid "Image"
+msgstr "Imagem"
 
-#: src/ui/components.rs:453
-msgid "Remove from sidebar"
-msgstr "Remover da barra lateral"
+#: src/ui/settings.rs:344
+msgid "Video"
+msgstr "Vídeo"
+
+#: src/ui/settings.rs:359
+msgid "Font"
+msgstr "Fonte"
+
+#: src/ui/settings.rs:374
+msgid "PDF"
+msgstr "PDF"
