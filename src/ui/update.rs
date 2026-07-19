@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp, SortBy};
 use crate::ui::constants;
 use crate::ui::FileProperties;
@@ -1118,8 +1119,15 @@ impl FluxApp {
                 let total_selected = count + dir_count;
 
                 // ── Update recents selection flag ──────────────────────────────
-                if self.current_path.to_string_lossy() == crate::ui::constants::RECENT_URI {
+                if self.current_path.to_string_lossy() == constants::RECENT_URI {
                     self.recents_has_selection = total_selected > 0;
+                    if self.recents_has_selection {
+                        self.recents_label = tr("Remove Selected");
+                        self.recents_tooltip = tr("Remove selected items from recents");
+                    } else {
+                        self.recents_label = tr("Clear Recents");
+                        self.recents_tooltip = tr("Clear all recents");
+                    }
                 }
 
                 self.selection_status = match (total_selected, only_files, only_dirs) {

@@ -355,6 +355,10 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// The current label for the contextual Recents button.
+    pub recents_label: String,
+    /// The current tooltip for the contextual Recents button.
+    pub recents_tooltip: String,
     /// Used to toggle the header button label.
     pub recents_has_selection: bool,
     /// The Paned widget that contains the terminal.

@@ -283,11 +283,8 @@ impl SimpleAsyncComponent for FluxApp {
                                 #[watch]
                                 set_visible: model.current_path.to_string_lossy() == constants::RECENT_URI,
                                 connect_clicked => AppMsg::ClearRecents,
-                                set_tooltip_text: Some(if model.recents_has_selection {
-                                    "Remove selected items from recents"
-                                } else {
-                                    "Clear all recents"
-                                }),
+                                #[watch]
+                                set_tooltip_text: Some(&model.recents_tooltip),
                                 add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                                 connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
@@ -300,11 +297,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     },
                                     gtk::Label {
                                         #[watch]
-                                        set_label: if model.recents_has_selection {
-                                            "Remove Selected"
-                                        } else {
-                                            "Clear Recents"
-                                        },
+                                        set_label: &model.recents_label,
                                     }
                                 }
                             },

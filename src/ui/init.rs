@@ -249,6 +249,8 @@ impl FluxApp {
             sidebar_visible: config.ui.sidebar_visible,
             sidebar_widget: None,
             recents_has_selection: false,
+            recents_label: tr("Clear Recents"),
+            recents_tooltip: tr("Clear all recents"),
         };
 
         // 9. Initial State Population
