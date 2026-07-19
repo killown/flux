@@ -271,8 +271,15 @@ impl FluxApp {
             } else {
                 PathBuf::from(&custom.path)
             };
+
+            let mut name = custom.name.clone();
+            // Translate Trash if it's the default English name
+            if custom.path == constants::TRASH_URI && name == "Trash" {
+                name = crate::i18n::tr("Trash");
+            }
+
             guard.push_back(SidebarPlace {
-                name: custom.name.clone(),
+                name,
                 icon: custom.icon.clone(),
                 path,
                 is_mount: false,

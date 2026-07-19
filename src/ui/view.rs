@@ -261,7 +261,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 #[watch]
                                 set_visible: model.current_path.to_string_lossy() == constants::TRASH_URI,
                                 connect_clicked => AppMsg::EmptyTrash,
-                                set_tooltip_text: Some(constants::LABEL_EMPTY_TRASH),
+                                set_tooltip_text: Some(&tr("Empty Trash")),
                                 add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                                 connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
@@ -273,7 +273,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_icon_name: Some(constants::ICON_TRASH),
                                     },
                                     gtk::Label {
-                                        set_label: constants::LABEL_EMPTY_TRASH,
+                                        set_label: &tr("Empty Trash"),
                                     }
                                 }
                             },

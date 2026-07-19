@@ -107,7 +107,6 @@ pub mod constants {
     pub const MOUSE_MIDDLE: u32 = 2;
 
     // Text Labels & Tooltips
-    pub const LABEL_EMPTY_TRASH: &str = "Empty Trash";
     pub const BREADCRUMB_MAX_WIDTH_CHARS: u32 = 20;
     pub const SWIPE_VELOCITY_THRESHOLD: f64 = 500.0;
 }
