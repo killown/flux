@@ -248,6 +248,7 @@ impl FluxApp {
             terminal_paned: None,
             sidebar_visible: config.ui.sidebar_visible,
             sidebar_widget: None,
+            recents_has_selection: false, // <── Added this line
         };
 
         // 9. Initial State Population

@@ -98,6 +98,7 @@ pub mod constants {
     pub const ICON_TRASH: &str = "user-trash-full-symbolic";
     pub const ICON_SORT_INDICATOR: &str = "view-sort-ascending-symbolic";
     pub const TRASH_URI: &str = "trash:///";
+    pub const RECENT_URI: &str = "recent:///";
 
     // Mouse Buttons
     pub const MOUSE_BACK: u32 = 8;

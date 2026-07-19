@@ -1,5 +1,3 @@
-// FILE: src/services/loader.rs
-
 use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
 use crate::ui::FileItem;
 use crate::utils;
@@ -72,6 +70,11 @@ impl FluxApp {
             self.sort_by = self.config.ui.default_sort;
             self.sort_ascending = true; // Default to ascending if no state exists
             self.current_icon_size = self.config.ui.default_icon_size;
+        }
+
+        if path_str.starts_with("recent:///") {
+            self.load_recents(sender);
+            return;
         }
 
         let root = if path_str.starts_with("trash://") {
@@ -283,6 +286,116 @@ impl FluxApp {
 
             self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
         }
+    }
+
+    /// Populates the file grid with entries from the GTK recent-files registry.
+    ///
+    /// Parses `~/.local/share/recently-used.xbel` with the standard XML reader.
+    /// Each `<bookmark href="file://...">` element carries a `visited` timestamp
+    /// in its `<info><metadata><mime-type>` subtree, which is used to sort newest-first.
+    /// Entries whose backing file no longer exists on disk are silently skipped.
+    ///
+    /// # Arguments
+    /// * `sender` - Component handle used to dispatch lifecycle updates.
+    pub fn load_recents(&mut self, sender: &AsyncComponentSender<Self>) {
+        self.directory_monitor = None;
+        self.files.clear();
+        let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        self.current_path = std::path::PathBuf::from(crate::ui::constants::RECENT_URI);
+
+        let xbel_path = dirs::data_local_dir()
+            .unwrap_or_else(|| PathBuf::from(".local/share"))
+            .join("recently-used.xbel");
+
+        let xml = match std::fs::read_to_string(&xbel_path) {
+            Ok(s) => s,
+            Err(_) => {
+                self.update_breadcrumbs();
+                return;
+            }
+        };
+
+        // Extract (visited_rfc3339, href) from each <bookmark> element.
+        // The XBEL format places `visited` as an attribute on the <bookmark> tag itself:
+        //   <bookmark href="file:///path/to/file" added="..." modified="..." visited="...">
+        let mut entries: Vec<(String, String)> = xml
+            .lines()
+            .filter_map(|line| {
+                let line = line.trim();
+                if !line.starts_with("<bookmark ") {
+                    return None;
+                }
+                let href = Self::xbel_attr(line, "href")?;
+                if !href.starts_with("file://") {
+                    return None;
+                }
+                // Use `modified` as the recency signal, `visited` is often absent.
+                let ts = Self::xbel_attr(line, "modified")
+                    .or_else(|| Self::xbel_attr(line, "added"))
+                    .unwrap_or_default();
+                Some((ts, href))
+            })
+            .collect();
+
+        // RFC 3339 timestamps sort lexicographically, so string comparison is correct.
+        entries.sort_by(|a, b| b.0.cmp(&a.0));
+        entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
+
+        let mut media_tasks = Vec::new();
+        for (_ts, href) in entries {
+            let gfile = gio::File::for_uri(&href);
+            let Some(path) = gfile.path() else { continue };
+            if !path.exists() {
+                continue;
+            }
+
+            let display_name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| href.clone());
+
+            let is_dir = path.is_dir();
+            let icon = utils::get_icon_for_path(&path, is_dir);
+
+            let (is_img, is_vid) = is_visual_media_by_ext(&path);
+            if is_img || is_vid {
+                media_tasks.push((display_name.clone(), path.clone()));
+            }
+
+            self.files.append(crate::ui::FileItem {
+                name: display_name,
+                icon,
+                thumbnail: None,
+                is_dir,
+                path,
+                icon_size: self.current_icon_size,
+                size: 0,
+                is_editing: false,
+                is_foreign_owner: false,
+                expand_labels: self.config.ui.expand_labels,
+                is_custom_icon: false,
+            });
+        }
+
+        self.update_breadcrumbs();
+        self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+    }
+
+    /// Extracts the value of a named XML attribute from a single-line tag string.
+    ///
+    /// Matches the pattern `name="value"` or `name='value'` and returns the value.
+    /// Only intended for the simple flat attributes on XBEL `<bookmark>` elements.
+    ///
+    /// # Arguments
+    /// * `tag` - A single line of XML containing the attribute.
+    /// * `name` - The attribute name to search for.
+    fn xbel_attr(tag: &str, name: &str) -> Option<String> {
+        // XBEL files produced by GTK always use double-quoted attributes.
+        let needle = format!("{}=\"", name);
+        let start = tag.find(&needle)? + needle.len();
+        let rest = &tag[start..];
+        let end = rest.find('"')?;
+        Some(rest[..end].to_owned())
     }
 }
 

@@ -1,5 +1,3 @@
-// FILE: src/utils/helpers.rs
-
 use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
 use crate::ui::{constants, SidebarPlace};
 use crate::utils;
@@ -187,6 +185,15 @@ impl FluxApp {
     pub fn refresh_sidebar(&mut self) {
         let mut guard = self.sidebar.guard();
         guard.clear();
+
+        if self.config.ui.show_recents {
+            guard.push_back(crate::ui::SidebarPlace {
+                name: crate::i18n::tr("Recents"),
+                icon: "document-open-recent-symbolic".to_string(),
+                path: std::path::PathBuf::from(crate::ui::constants::RECENT_URI),
+                is_mount: false,
+            });
+        }
 
         let get_xdg_name = |p: &PathBuf| {
             gio::File::for_path(p)

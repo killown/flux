@@ -278,6 +278,37 @@ impl SimpleAsyncComponent for FluxApp {
                                 }
                             },
 
+                            // ── Contextual button for Recents ───────────────────────────────
+                            pack_end = &gtk::Button {
+                                #[watch]
+                                set_visible: model.current_path.to_string_lossy() == constants::RECENT_URI,
+                                connect_clicked => AppMsg::ClearRecents,
+                                set_tooltip_text: Some(if model.recents_has_selection {
+                                    "Remove selected items from recents"
+                                } else {
+                                    "Clear all recents"
+                                }),
+                                add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
+                                connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+
+                                gtk::Box {
+                                    set_orientation: gtk::Orientation::Horizontal,
+                                    set_spacing: constants::HEADER_BTN_SPACING,
+
+                                    gtk::Image {
+                                        set_icon_name: Some("edit-clear-symbolic"),
+                                    },
+                                    gtk::Label {
+                                        #[watch]
+                                        set_label: if model.recents_has_selection {
+                                            "Remove Selected"
+                                        } else {
+                                            "Clear Recents"
+                                        },
+                                    }
+                                }
+                            },
+
                             pack_end = &gtk::MenuButton {
                                 set_icon_name: "open-menu-symbolic",
                                 set_tooltip_text: Some(&tr("Main Menu")),

@@ -265,6 +265,12 @@ pub struct UIConfig {
     /// Persisted across sessions, defaults to `true`.
     #[serde(default = "default_true")]
     pub sidebar_visible: bool,
+    /// Whether the Recents virtual location is shown in the sidebar.
+    ///
+    /// Mirrors the behaviour of Nautilus and Thunar: a single "Recents" row that
+    /// opens a live view of the GTK recent-files registry.
+    #[serde(default = "default_true")]
+    pub show_recents: bool,
     /// Global toggle for all thumbnail generation.
     ///
     /// When `false`, no thumbnails are generated for any file type, overriding
@@ -305,6 +311,7 @@ impl Default for UIConfig {
             folder_icons: HashMap::new(),
             terminal: TerminalConfig::default(),
             sidebar_visible: true,
+            show_recents: true,
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
         }
@@ -348,6 +355,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Used to toggle the header button label.
+    pub recents_has_selection: bool,
     /// The Paned widget that contains the terminal.
     pub terminal_paned: Option<gtk::Paned>,
     /// Whether the terminal has been cleared on first open.
@@ -427,6 +436,8 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Remove one or all entries from the recent-files list.
+    ClearRecents,
     /// Toggle the embedded terminal panel visibility.
     ToggleTerminal,
     /// Internal trigger to open icon picker (resolves path from selection/current dir).
@@ -661,6 +672,8 @@ pub enum AppMsg {
     /// - `type_name`: One of "images", "videos", "fonts", or "pdfs"
     /// - `enabled`: Whether thumbnails should be generated for this type
     SetThumbnailType { type_name: String, enabled: bool },
+    /// Toggles the "Recents" virtual entry in the sidebar.
+    SetShowRecents(bool),
 }
 
 /// Represents a single entry in the Flux context menu configuration.

@@ -220,6 +220,19 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Show Recents"),
+                        set_subtitle: &tr("Show recently visited files in the sidebar"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.show_recents,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShowRecents(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("XDG Directories"),
                         set_subtitle: &tr("Show standard user directories in sidebar"),
                         add_suffix = &gtk::Switch {

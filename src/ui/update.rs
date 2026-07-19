@@ -557,6 +557,24 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::ClearRecents => {
+                let selection = self.get_selection();
+                let result = if selection.is_empty() {
+                    crate::utils::remove_recents(None)
+                } else {
+                    crate::utils::remove_recents(Some(&selection))
+                };
+
+                match result {
+                    Ok(()) => {
+                        sender.input(AppMsg::Refresh);
+                        self.recents_has_selection = false;
+                    }
+                    Err(e) => {
+                        sender.input(AppMsg::ShowToast(format!("Failed to clear recents: {}", e)));
+                    }
+                }
+            }
             AppMsg::SetTerminalHeight(h) => {
                 self.config.ui.terminal.height = h;
                 crate::utils::save_config(&self.config);
@@ -939,8 +957,10 @@ impl FluxApp {
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
                 // Explicitly allow root directory and handle edge cases
-                let path_valid =
-                    path_str == "/" || path.exists() || path_str.starts_with(constants::TRASH_URI);
+                let path_valid = path_str == "/"
+                    || path.exists()
+                    || path_str.starts_with(constants::TRASH_URI)
+                    || path_str.starts_with(constants::RECENT_URI);
 
                 if !path_valid {
                     #[cfg(debug_assertions)]
@@ -951,7 +971,9 @@ impl FluxApp {
                 // Validate path existence (except for virtual trash URI)
 
                 // Only proceed if the target is a directory/trash and different from current location
-                if (path.is_dir() || path_str.starts_with(constants::TRASH_URI))
+                if (path.is_dir()
+                    || path_str.starts_with(constants::TRASH_URI)
+                    || path_str.starts_with(constants::RECENT_URI))
                     && path != self.current_path
                 {
                     let old_path = std::mem::replace(&mut self.current_path, path.clone());
@@ -1094,6 +1116,12 @@ impl FluxApp {
                 }
 
                 let total_selected = count + dir_count;
+
+                // ── Update recents selection flag ──────────────────────────────
+                if self.current_path.to_string_lossy() == crate::ui::constants::RECENT_URI {
+                    self.recents_has_selection = total_selected > 0;
+                }
+
                 self.selection_status = match (total_selected, only_files, only_dirs) {
                     (0, _, _) => {
                         let child_count = std::fs::read_dir(&self.current_path)
@@ -1119,7 +1147,6 @@ impl FluxApp {
                             .and_downcast::<gtk::MultiSelection>()
                             .and_then(|m| {
                                 let pos = m.selection().nth(0);
-
                                 self.files.get(pos)
                             })
                             .map(|w| w.borrow().path.clone());
@@ -1136,7 +1163,6 @@ impl FluxApp {
 
                                 if mime.starts_with("audio/") || mime.starts_with("video/") {
                                     let dur = crate::utils::media::probe_media_duration(&path);
-
                                     s.input(AppMsg::MediaDurationReady(dur));
                                 }
 
@@ -1156,7 +1182,6 @@ impl FluxApp {
                             .and_downcast::<gtk::MultiSelection>()
                             .and_then(|m| {
                                 let pos = m.selection().nth(0);
-
                                 self.files.get(pos)
                             });
                         if let Some(wrapper) = item {
@@ -1697,6 +1722,11 @@ impl FluxApp {
                 }
                 utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetShowRecents(val) => {
+                self.config.ui.show_recents = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::RefreshSidebar);
             }
         }
     }
