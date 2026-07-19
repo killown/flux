@@ -101,16 +101,65 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_vscrollbar_policy: gtk::PolicyType::Never,
                                     set_halign: gtk::Align::Center,
 
-                                    gtk::Box {
+                                    #[local_ref]
+                                    breadcrumb_box -> gtk::Box {
+                                        set_orientation: gtk::Orientation::Horizontal,
                                         add_css_class: "linked",
                                         set_spacing: 0,
                                         set_halign: gtk::Align::Center,
                                         set_valign: gtk::Align::Center,
-                                        #[local_ref]
-                                        breadcrumb_box -> gtk::Box {
-                                            set_orientation: gtk::Orientation::Horizontal,
-                                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                                        set_focusable: true,
+                                        set_can_focus: true,
+                                        connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
+                                        add_controller = gtk::EventControllerKey {
+                                            set_propagation_phase: gtk::PropagationPhase::Capture,
+                                            connect_key_pressed => move |ctrl, keyval, _, _| {
+                                                let widget = ctrl.widget().unwrap();
+                                                let b = widget.downcast_ref::<gtk::Box>().unwrap();
+                                                // Walk children to find the one that currently owns GTK focus,
+                                                // focus_child() is only a layout routing hint and may be stale.
+                                                let mut focused: Option<gtk::Widget> = None;
+                                                let mut child = b.first_child();
+                                                while let Some(w) = child {
+                                                    if w.has_focus() {
+                                                        focused = Some(w.clone());
+                                                        break;
+                                                    }
+                                                    child = w.next_sibling();
+                                                }
+                                                match keyval {
+                                                    gdk::Key::Left => {
+                                                        if let Some(prev) = focused.as_ref().and_then(|w| w.prev_sibling()) {
+                                                            prev.grab_focus();
+                                                        } else if let Some(last) = b.last_child() {
+                                                            last.grab_focus();
+                                                        }
+                                                        glib::Propagation::Stop
+                                                    }
+                                                    gdk::Key::Right => {
+                                                        if let Some(next) = focused.as_ref().and_then(|w| w.next_sibling()) {
+                                                            next.grab_focus();
+                                                        } else if let Some(first) = b.first_child() {
+                                                            first.grab_focus();
+                                                        }
+                                                        glib::Propagation::Stop
+                                                    }
+                                                    gdk::Key::Home => {
+                                                        if let Some(first) = b.first_child() {
+                                                            first.grab_focus();
+                                                        }
+                                                        glib::Propagation::Stop
+                                                    }
+                                                    gdk::Key::End => {
+                                                        if let Some(last) = b.last_child() {
+                                                            last.grab_focus();
+                                                        }
+                                                        glib::Propagation::Stop
+                                                    }
+                                                    _ => glib::Propagation::Proceed,
+                                                }
+                                            }
                                         },
                                         add_controller = gtk::GestureClick {
                                             set_propagation_phase: gtk::PropagationPhase::Capture,
@@ -118,6 +167,11 @@ impl SimpleAsyncComponent for FluxApp {
                                                 if n_press == 2 {
                                                     sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
                                                 }
+                                            }
+                                        },
+                                        connect_map => |container| {
+                                            if let Some(last) = container.last_child() {
+                                                last.grab_focus();
                                             }
                                         },
                                     }
@@ -130,7 +184,14 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                                     set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
 
-                                    #[watch] set_text: &model.current_path.to_string_lossy(),
+                                    // Populate once when the entry is mapped (i.e. when the user
+                                    // switches to path-entry mode), not on every model update.
+                                    connect_map[current_path = model.current_path.clone()] => move |entry| {
+                                        entry.set_text(&current_path.to_string_lossy());
+                                        let pos = entry.text_length() as i32;
+                                        entry.set_position(pos);
+                                        entry.grab_focus();
+                                    },
                                     add_controller = gtk::EventControllerKey {
                                         connect_key_pressed[sender] => move |_, keyval, _, _| {
                                             if keyval == gdk::Key::Escape {
@@ -287,6 +348,28 @@ impl SimpleAsyncComponent for FluxApp {
                                         glib::Propagation::Proceed
                                     }
                                 },
+
+                                /// Secondary click controller for context menu spawning.
+                                add_controller = gtk::GestureClick {
+                                    set_button: 3,
+                                    connect_pressed[sender] => move |gesture, _, x, y| {
+                                        if let Some(widget) = gesture.widget() {
+                                            let mut picked_path = None;
+                                            if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
+                                                let mut current: Option<gtk::Widget> = Some(picked);
+                                                while let Some(w) = current {
+                                                    let name = w.widget_name().to_string();
+                                                    if name.starts_with("/") || name.starts_with("trash://") {
+                                                        picked_path = Some(PathBuf::from(name));
+                                                        break;
+                                                    }
+                                                    current = w.parent();
+                                                }
+                                            }
+                                            sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
+                                        }
+                                    }
+                                },
                             },
                             #[wrap(Some)]
                             set_end_child: terminal_revealer = &gtk::Revealer {
@@ -336,29 +419,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         return true;
                                     }
                                     false
-                                }
-                            },
-
-                            /// Secondary click controller for context menu spawning.
-                            add_controller = gtk::GestureClick {
-                                set_button: 3,
-                                connect_pressed[sender] => move |gesture, _, x, y| {
-                                    if let Some(widget) = gesture.widget() {
-                                        let mut picked_path = None;
-                                        if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
-                                            let mut current: Option<gtk::Widget> = Some(picked);
-                                            while let Some(w) = current {
-                                                let name = w.widget_name().to_string();
-                                                if name.starts_with("/") || name.starts_with("trash://") {
-                                                    picked_path = Some(PathBuf::from(name));
-                                                    break;
-                                                }
-                                                current = w.parent();
-                                            }
-                                        }
-                                        sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
-                                    }
-                                }
+                                },
                             },
                         },
 
