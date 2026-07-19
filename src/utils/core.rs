@@ -1206,4 +1206,131 @@ mod tests {
         assert!(!actions.is_empty());
         assert!(actions.iter().any(|a| a.label.contains("Copy")));
     }
+    #[cfg(test)]
+    mod recents_tests {
+        use super::*;
+        use std::fs;
+        use tempfile::TempDir;
+
+        /// Helper: writes a mock XBEL file to `dir/recently-used.xbel` with given lines.
+        fn setup_xbel(dir: &TempDir, lines: &[&str]) -> std::path::PathBuf {
+            let xbel_path = dir.path().join("recently-used.xbel");
+            let content = lines.join("\n");
+            fs::write(&xbel_path, content).unwrap();
+            xbel_path
+        }
+
+        #[test]
+        fn remove_recents_without_paths_clears_all_bookmarks() {
+            let dir = TempDir::new().unwrap();
+            // Mock data dir: set environment so dirs::data_local_dir() returns the temp dir.
+            let original_xdg = std::env::var_os("XDG_DATA_HOME");
+            std::env::set_var("XDG_DATA_HOME", dir.path());
+
+            let xbel_content = vec![
+                r#"<?xml version="1.0"?>"#,
+                r#"<xbel version="1.0">"#,
+                r#"  <bookmark href="file:///tmp/file1.txt" modified="2025-01-01T00:00:00Z"/>"#,
+                r#"  <bookmark href="file:///tmp/file2.txt" modified="2025-01-02T00:00:00Z"/>"#,
+                r#"</xbel>"#,
+            ];
+            setup_xbel(&dir, &xbel_content);
+
+            let result = remove_recents(None);
+            assert!(result.is_ok());
+
+            let content = fs::read_to_string(dir.path().join("recently-used.xbel")).unwrap();
+            // No <bookmark> tags should remain
+            assert!(!content.contains("<bookmark"));
+            // Non‑bookmark lines (XML headers) are preserved
+            assert!(content.contains(r#"<?xml version="1.0"?>"#));
+
+            // Restore environment
+            if let Some(val) = original_xdg {
+                std::env::set_var("XDG_DATA_HOME", val);
+            } else {
+                std::env::remove_var("XDG_DATA_HOME");
+            }
+        }
+
+        #[test]
+        fn remove_recents_with_paths_removes_matching_entries_only() {
+            let dir = TempDir::new().unwrap();
+            let original_xdg = std::env::var_os("XDG_DATA_HOME");
+            std::env::set_var("XDG_DATA_HOME", dir.path());
+
+            let xbel_content = vec![
+                r#"<?xml version="1.0"?>"#,
+                r#"<xbel version="1.0">"#,
+                r#"  <bookmark href="file:///tmp/file1.txt"/>"#,
+                r#"  <bookmark href="file:///tmp/file2.txt"/>"#,
+                r#"  <bookmark href="file:///tmp/file3.txt"/>"#,
+                r#"</xbel>"#,
+            ];
+            setup_xbel(&dir, &xbel_content);
+
+            let paths_to_remove = vec![
+                PathBuf::from("/tmp/file1.txt"),
+                PathBuf::from("/tmp/file3.txt"),
+            ];
+            let result = remove_recents(Some(&paths_to_remove));
+            assert!(result.is_ok());
+
+            let content = fs::read_to_string(dir.path().join("recently-used.xbel")).unwrap();
+            // Only file2 should remain
+            assert!(content.contains("file2.txt"));
+            assert!(!content.contains("file1.txt"));
+            assert!(!content.contains("file3.txt"));
+
+            if let Some(val) = original_xdg {
+                std::env::set_var("XDG_DATA_HOME", val);
+            } else {
+                std::env::remove_var("XDG_DATA_HOME");
+            }
+        }
+
+        #[test]
+        fn remove_recents_handles_missing_xbel() {
+            let dir = TempDir::new().unwrap();
+            let original_xdg = std::env::var_os("XDG_DATA_HOME");
+            std::env::set_var("XDG_DATA_HOME", dir.path());
+
+            // No file exists
+            let result = remove_recents(None);
+            assert!(result.is_ok()); // Should not error, just returns Ok(())
+
+            if let Some(val) = original_xdg {
+                std::env::set_var("XDG_DATA_HOME", val);
+            } else {
+                std::env::remove_var("XDG_DATA_HOME");
+            }
+        }
+
+        #[test]
+        fn remove_recents_handles_malformed_xbel() {
+            let dir = TempDir::new().unwrap();
+            let original_xdg = std::env::var_os("XDG_DATA_HOME");
+            std::env::set_var("XDG_DATA_HOME", dir.path());
+
+            let malformed = vec![
+                r#"<xbel>"#, // No closing, random text
+                r#"<bookmark href="file:///tmp/a.txt""#,
+            ];
+            setup_xbel(&dir, &malformed);
+
+            // Should not panic, it will just skip non‑bookmark lines or try to match.
+            let result = remove_recents(None);
+            assert!(result.is_ok());
+
+            let content = fs::read_to_string(dir.path().join("recently-used.xbel")).unwrap();
+            // All bookmark lines should be removed (they matched the '<bookmark' condition)
+            assert!(!content.contains("<bookmark"));
+
+            if let Some(val) = original_xdg {
+                std::env::set_var("XDG_DATA_HOME", val);
+            } else {
+                std::env::remove_var("XDG_DATA_HOME");
+            }
+        }
+    }
 }
