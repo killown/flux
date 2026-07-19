@@ -264,7 +264,7 @@ pub fn setup_controllers(
 
     let s_root = sender.clone();
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
-        Some(keymap.root.clone()), // assuming you added root to KeyMap struct
+        Some(keymap.root.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_root.input(AppMsg::Navigate(PathBuf::from("/")));
             glib::Propagation::Stop
