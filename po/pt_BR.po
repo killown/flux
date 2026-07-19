@@ -193,7 +193,7 @@ msgstr "Largura inicial"
 msgid "Initial window width in pixels"
 msgstr "Largura inicial da janela em pixels"
 
-#: src/ui/settings.rs:112
+#: src/ui/settings.rs:112 src/ui/settings.rs:539
 msgid "Window"
 msgstr "Janela"
 
@@ -409,7 +409,7 @@ msgstr "Altura do painel do terminal em pixels"
 msgid "How files are ordered and displayed"
 msgstr "Como os arquivos são ordenados e exibidos"
 
-#: src/ui/settings.rs:368
+#: src/ui/settings.rs:359 src/ui/settings.rs:368
 msgid "Font"
 msgstr "Fonte"
 
@@ -485,10 +485,6 @@ msgstr "Atalhos de teclado personalizados para ações comuns"
 msgid "Rename"
 msgstr "Renomear"
 
-#: src/ui/settings.rs:539
-msgid "Window"
-msgstr "Janela"
-
 #: src/ui/settings.rs:609
 msgid "Shortcuts for navigating between directories"
 msgstr "Atalhos para navegar entre diretórios"
@@ -501,17 +497,9 @@ msgstr "Ir para o diretório anterior no histórico"
 msgid "Go to next directory in history"
 msgstr "Ir para o próximo diretório no histórico"
 
-#: src/ui/settings.rs:667
-msgid "Open selected file or directory"
-msgstr "Abrir arquivo ou diretório selecionado"
-
 #: src/ui/settings.rs:683
 msgid "Shortcuts for managing files"
 msgstr "Atalhos para gerenciar arquivos"
-
-#: src/ui/settings.rs:700
-msgid "Rename selected item"
-msgstr "Renomear item selecionado"
 
 #: src/ui/settings.rs:717
 msgid "Shortcuts for controlling the interface"
@@ -874,10 +862,50 @@ msgstr "Imagem"
 msgid "Video"
 msgstr "Vídeo"
 
-#: src/ui/settings.rs:359
-msgid "Font"
-msgstr "Fonte"
-
 #: src/ui/settings.rs:374
 msgid "PDF"
 msgstr "PDF"
+
+#: src/ui/components.rs:??? src/model.rs:???
+msgid "Recents"
+msgstr "Recentes"
+
+#: src/ui/view.rs:???
+msgid "Clear Recents"
+msgstr "Limpar Recentes"
+
+#: src/ui/view.rs:???
+msgid "Clear all recents"
+msgstr "Limpar todos os recentes"
+
+#: src/ui/view.rs:???
+msgid "Remove selected items from recents"
+msgstr "Remover itens selecionados dos recentes"
+
+#: src/ui/view.rs:???
+msgid "Remove Selected"
+msgstr "Remover Selecionados"
+
+#: src/ui/settings.rs:???
+msgid "Show Recents"
+msgstr "Mostrar Recentes"
+
+#: src/ui/settings.rs:???
+msgid "Show recently visited files in the sidebar"
+msgstr "Mostrar arquivos visitados recentemente na barra lateral"
+
+#: src/ui/settings.rs:???
+msgid "Height (lines)"
+msgstr "Altura (linhas)"
+
+#: src/ui/settings.rs:???
+msgid "Number of character lines in the terminal"
+msgstr "Número de linhas de caracteres no terminal"
+
+#: src/ui/settings.rs:???
+msgid "Client-Side Decorations"
+msgstr "Decorações do lado do cliente"
+
+#: src/ui/settings.rs:???
+msgid "Show window controls in the header bar"
+msgstr "Mostrar controles da janela na barra de cabeçalho"
