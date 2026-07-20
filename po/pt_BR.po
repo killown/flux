@@ -21,6 +21,10 @@ msgstr ""
 msgid "Trash"
 msgstr "Lixeira"
 
+#: src/ui/view.rs:???
+msgid "Empty Trash"
+msgstr "Esvaziar Lixeira"
+
 #: src/ui/view.rs:219
 msgid "Main Menu"
 msgstr "Menu principal"
