@@ -996,144 +996,354 @@ impl Terminal {
 
             let is_ctrl = modifiers.contains(gtk::gdk::ModifierType::CONTROL_MASK);
             let is_shift = modifiers.contains(gtk::gdk::ModifierType::SHIFT_MASK);
+            let is_alt = modifiers.contains(gtk::gdk::ModifierType::ALT_MASK);
 
+            /// Writes `data` to the PTY file descriptor without blocking.
+            #[inline]
+            fn pty_write(fd: std::os::unix::io::RawFd, data: &[u8]) {
+                unsafe {
+                    libc::write(fd, data.as_ptr() as *const libc::c_void, data.len());
+                }
+            }
+
+            // Ctrl+Shift+C - copy selection to clipboard.
             if is_ctrl && is_shift && (keyval == gtk::gdk::Key::c || keyval == gtk::gdk::Key::C) {
                 let state = state_for_keys.lock().unwrap();
                 let text = state.get_selected_text();
                 if !text.is_empty() {
                     if let Some(window) = drawing_area_for_keys.root() {
                         let display = gtk::prelude::RootExt::display(&window);
-                        let clipboard = display.clipboard();
-                        clipboard.set_text(&text);
+                        display.clipboard().set_text(&text);
                     }
                 }
                 return glib::Propagation::Stop;
             }
 
+            // Ctrl+Shift+V - paste from clipboard with optional bracketed-paste wrapping.
             if is_ctrl && is_shift && (keyval == gtk::gdk::Key::v || keyval == gtk::gdk::Key::V) {
                 let state_clone = state_for_keys.clone();
                 if let Some(window) = drawing_area_for_keys.root() {
                     let display = gtk::prelude::RootExt::display(&window);
-                    let clipboard = display.clipboard();
-                    clipboard.read_text_async(gio::Cancellable::NONE, move |result| {
-                        if let Ok(Some(text)) = result {
-                            let state = state_clone.lock().unwrap();
-                            if let Some(fd) = state.pty_fd {
-                                let write = |data: &[u8]| unsafe {
-                                    libc::write(
-                                        fd,
-                                        data.as_ptr() as *const libc::c_void,
-                                        data.len(),
-                                    );
-                                };
-                                if state.bracketed_paste {
-                                    write(b"\x1b[200~");
-                                }
-                                write(text.as_bytes());
-                                if state.bracketed_paste {
-                                    write(b"\x1b[201~");
+                    display
+                        .clipboard()
+                        .read_text_async(gio::Cancellable::NONE, move |result| {
+                            if let Ok(Some(text)) = result {
+                                let state = state_clone.lock().unwrap();
+                                if let Some(fd) = state.pty_fd {
+                                    if state.bracketed_paste {
+                                        pty_write(fd, b"\x1b[200~");
+                                    }
+                                    pty_write(fd, text.as_bytes());
+                                    if state.bracketed_paste {
+                                        pty_write(fd, b"\x1b[201~");
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
                 }
                 return glib::Propagation::Stop;
             }
 
+            // Ctrl+Shift+Up/Down - scroll one line at a time.
+            if is_ctrl && is_shift {
+                match keyval {
+                    gtk::gdk::Key::Up => {
+                        state_for_keys.lock().unwrap().scroll_lines(1);
+                        drawing_area_for_keys.queue_draw();
+                        return glib::Propagation::Stop;
+                    }
+                    gtk::gdk::Key::Down => {
+                        state_for_keys.lock().unwrap().scroll_lines(-1);
+                        drawing_area_for_keys.queue_draw();
+                        return glib::Propagation::Stop;
+                    }
+                    _ => {}
+                }
+            }
+
+            let fd_opt = state_for_keys.lock().unwrap().pty_fd;
+            let Some(fd) = fd_opt else {
+                return glib::Propagation::Proceed;
+            };
+
             match keyval {
+                // ── Scrollback ────────────────────────────────────────────────
                 gtk::gdk::Key::Page_Up if is_shift => {
-                    let mut state = state_for_keys.lock().unwrap();
-                    state.scroll_lines(20);
+                    state_for_keys.lock().unwrap().scroll_lines(20);
                     drawing_area_for_keys.queue_draw();
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Page_Down if is_shift => {
-                    let mut state = state_for_keys.lock().unwrap();
-                    state.scroll_lines(-20);
+                    state_for_keys.lock().unwrap().scroll_lines(-20);
                     drawing_area_for_keys.queue_draw();
                     glib::Propagation::Stop
                 }
+
+                // ── Basic editing keys ────────────────────────────────────────
                 gtk::gdk::Key::BackSpace => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ =
-                            unsafe { libc::write(fd, b"\x7f".as_ptr() as *const libc::c_void, 1) };
+                    // Ctrl+Backspace - delete word to the left (^W in readline/fish).
+                    if is_ctrl {
+                        pty_write(fd, b"\x17");
+                    } else {
+                        pty_write(fd, b"\x7f");
+                    }
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::Delete => {
+                    // Ctrl+Delete - delete word to the right (\e[3,5~).
+                    if is_ctrl {
+                        pty_write(fd, b"\x1b[3;5~");
+                    } else {
+                        pty_write(fd, b"\x1b[3~");
                     }
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Return => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ =
-                            unsafe { libc::write(fd, b"\r".as_ptr() as *const libc::c_void, 1) };
-                    }
+                    pty_write(fd, b"\r");
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Tab => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ =
-                            unsafe { libc::write(fd, b"\t".as_ptr() as *const libc::c_void, 1) };
+                    // Shift+Tab - reverse tab / menu-back in completions (\e[Z).
+                    if is_shift {
+                        pty_write(fd, b"\x1b[Z");
+                    } else {
+                        pty_write(fd, b"\t");
                     }
                     glib::Propagation::Stop
                 }
-                gtk::gdk::Key::c | gtk::gdk::Key::C if is_ctrl => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ =
-                            unsafe { libc::write(fd, b"\x03".as_ptr() as *const libc::c_void, 1) };
+                gtk::gdk::Key::Escape => {
+                    pty_write(fd, b"\x1b");
+                    glib::Propagation::Stop
+                }
+
+                // ── Line / word navigation ────────────────────────────────────
+                gtk::gdk::Key::Home => {
+                    // Ctrl+Home - scroll to top of scrollback.
+                    if is_ctrl {
+                        let max = state_for_keys.lock().unwrap().scrollback.len();
+                        state_for_keys.lock().unwrap().scroll_offset = max;
+                        drawing_area_for_keys.queue_draw();
+                    } else {
+                        // Move cursor to beginning of line (^A / \e[H).
+                        pty_write(fd, b"\x1b[H");
                     }
                     glib::Propagation::Stop
                 }
-                gtk::gdk::Key::d | gtk::gdk::Key::D if is_ctrl => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ =
-                            unsafe { libc::write(fd, b"\x04".as_ptr() as *const libc::c_void, 1) };
+                gtk::gdk::Key::End => {
+                    // Ctrl+End - scroll back to the live view.
+                    if is_ctrl {
+                        state_for_keys.lock().unwrap().scroll_offset = 0;
+                        drawing_area_for_keys.queue_draw();
+                    } else {
+                        pty_write(fd, b"\x1b[F");
                     }
                     glib::Propagation::Stop
                 }
+                gtk::gdk::Key::Insert => {
+                    // Shift+Insert - paste from primary selection.
+                    if is_shift {
+                        let state_clone = state_for_keys.clone();
+                        if let Some(window) = drawing_area_for_keys.root() {
+                            let display = gtk::prelude::RootExt::display(&window);
+                            display.primary_clipboard().read_text_async(
+                                gio::Cancellable::NONE,
+                                move |result| {
+                                    if let Ok(Some(text)) = result {
+                                        let state = state_clone.lock().unwrap();
+                                        if let Some(fd) = state.pty_fd {
+                                            if state.bracketed_paste {
+                                                pty_write(fd, b"\x1b[200~");
+                                            }
+                                            pty_write(fd, text.as_bytes());
+                                            if state.bracketed_paste {
+                                                pty_write(fd, b"\x1b[201~");
+                                            }
+                                        }
+                                    }
+                                },
+                            );
+                        }
+                    } else {
+                        pty_write(fd, b"\x1b[2~");
+                    }
+                    glib::Propagation::Stop
+                }
+
+                // ── Arrow keys ────────────────────────────────────────────────
                 gtk::gdk::Key::Up => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ = unsafe {
-                            libc::write(fd, b"\x1b[A".as_ptr() as *const libc::c_void, 3)
-                        };
-                    }
+                    // Ctrl+Up - jump word upward in history (\e[1,5A).
+                    let seq: &[u8] = if is_ctrl { b"\x1b[1;5A" } else { b"\x1b[A" };
+                    pty_write(fd, seq);
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Down => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ = unsafe {
-                            libc::write(fd, b"\x1b[B".as_ptr() as *const libc::c_void, 3)
-                        };
-                    }
+                    let seq: &[u8] = if is_ctrl { b"\x1b[1;5B" } else { b"\x1b[B" };
+                    pty_write(fd, seq);
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Left => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ = unsafe {
-                            libc::write(fd, b"\x1b[D".as_ptr() as *const libc::c_void, 3)
-                        };
-                    }
+                    // Ctrl+Left - move one word left (\e[1,5D).
+                    // Alt+Left - same, alternate encoding some shells prefer (\e[1,3D).
+                    let seq: &[u8] = if is_ctrl {
+                        b"\x1b[1;5D"
+                    } else if is_alt {
+                        b"\x1b[1;3D"
+                    } else {
+                        b"\x1b[D"
+                    };
+                    pty_write(fd, seq);
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Right => {
-                    if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                        let _ = unsafe {
-                            libc::write(fd, b"\x1b[C".as_ptr() as *const libc::c_void, 3)
-                        };
-                    }
+                    let seq: &[u8] = if is_ctrl {
+                        b"\x1b[1;5C"
+                    } else if is_alt {
+                        b"\x1b[1;3C"
+                    } else {
+                        b"\x1b[C"
+                    };
+                    pty_write(fd, seq);
                     glib::Propagation::Stop
                 }
+
+                // ── Function keys ─────────────────────────────────────────────
+                gtk::gdk::Key::F1 => {
+                    pty_write(fd, b"\x1bOP");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F2 => {
+                    pty_write(fd, b"\x1bOQ");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F3 => {
+                    pty_write(fd, b"\x1bOR");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F4 => {
+                    pty_write(fd, b"\x1bOS");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F5 => {
+                    pty_write(fd, b"\x1b[15~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F6 => {
+                    pty_write(fd, b"\x1b[17~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F7 => {
+                    pty_write(fd, b"\x1b[18~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F8 => {
+                    pty_write(fd, b"\x1b[19~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F9 => {
+                    pty_write(fd, b"\x1b[20~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F10 => {
+                    pty_write(fd, b"\x1b[21~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F11 => {
+                    pty_write(fd, b"\x1b[23~");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::F12 => {
+                    pty_write(fd, b"\x1b[24~");
+                    glib::Propagation::Stop
+                }
+
+                // ── Ctrl + letter signals / readline bindings ─────────────────
+                gtk::gdk::Key::c | gtk::gdk::Key::C if is_ctrl => {
+                    pty_write(fd, b"\x03");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::d | gtk::gdk::Key::D if is_ctrl => {
+                    pty_write(fd, b"\x04");
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::z | gtk::gdk::Key::Z if is_ctrl => {
+                    pty_write(fd, b"\x1a"); // SIGTSTP
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::l | gtk::gdk::Key::L if is_ctrl => {
+                    pty_write(fd, b"\x0c"); // clear screen (^L)
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::a | gtk::gdk::Key::A if is_ctrl => {
+                    pty_write(fd, b"\x01"); // beginning of line
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::e | gtk::gdk::Key::E if is_ctrl => {
+                    pty_write(fd, b"\x05"); // end of line
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::k | gtk::gdk::Key::K if is_ctrl => {
+                    pty_write(fd, b"\x0b"); // kill to end of line
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::u | gtk::gdk::Key::U if is_ctrl => {
+                    pty_write(fd, b"\x15"); // kill to beginning of line
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::w | gtk::gdk::Key::W if is_ctrl => {
+                    pty_write(fd, b"\x17"); // delete word left
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::y | gtk::gdk::Key::Y if is_ctrl => {
+                    pty_write(fd, b"\x19"); // yank (paste kill-ring)
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::p | gtk::gdk::Key::P if is_ctrl => {
+                    pty_write(fd, b"\x10"); // previous history entry
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::n | gtk::gdk::Key::N if is_ctrl => {
+                    pty_write(fd, b"\x0e"); // next history entry
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::r | gtk::gdk::Key::R if is_ctrl => {
+                    pty_write(fd, b"\x12"); // reverse history search
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::t | gtk::gdk::Key::T if is_ctrl => {
+                    pty_write(fd, b"\x14"); // transpose chars
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::b | gtk::gdk::Key::B if is_ctrl => {
+                    pty_write(fd, b"\x02"); // move char left
+                    glib::Propagation::Stop
+                }
+                gtk::gdk::Key::f | gtk::gdk::Key::F if is_ctrl => {
+                    pty_write(fd, b"\x06"); // move char right
+                    glib::Propagation::Stop
+                }
+
+                // ── Printable / UTF-8 input ───────────────────────────────────
                 _ => {
+                    // Alt+key - prefix with ESC (\e + byte), used by readline/fish
+                    // for word-navigation and meta-bindings (Alt+f, Alt+b, etc.).
+                    if is_alt {
+                        if let Some(ch) = keyval.to_unicode() {
+                            if ch.is_ascii_graphic() || ch == ' ' {
+                                let mut seq = [0u8; 5];
+                                seq[0] = 0x1b;
+                                let mut tmp = [0u8; 4];
+                                let n = ch.encode_utf8(&mut tmp).len();
+                                seq[1..1 + n].copy_from_slice(&tmp[..n]);
+                                pty_write(fd, &seq[..1 + n]);
+                                return glib::Propagation::Stop;
+                            }
+                        }
+                    }
                     if let Some(ch) = keyval.to_unicode() {
                         if ch.is_ascii_graphic() || ch == ' ' {
                             let mut buf = [0u8; 4];
                             let bytes = ch.encode_utf8(&mut buf);
-                            if let Some(fd) = state_for_keys.lock().unwrap().pty_fd {
-                                let _ = unsafe {
-                                    libc::write(
-                                        fd,
-                                        bytes.as_ptr() as *const libc::c_void,
-                                        bytes.len(),
-                                    )
-                                };
-                            }
+                            pty_write(fd, bytes.as_bytes());
                             glib::Propagation::Stop
                         } else {
                             glib::Propagation::Proceed
