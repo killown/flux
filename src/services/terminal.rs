@@ -1,5 +1,3 @@
-//NOTE: add scrollbar
-
 use crate::model::TerminalConfig;
 use gtk::cairo::Context;
 use gtk::gio;
@@ -82,6 +80,8 @@ pub struct TerminalState {
     /// immediately advancing cursor_y, so a bare \r cancels the wrap without
     /// a spurious line increment.
     pub pending_wrap: bool,
+    /// Cached character cell height in pixels, updated each draw cycle.
+    pub char_height: f64,
     /// Invoked on the PTY reader thread whenever fish emits an OSC 7
     /// working-directory notification. The callback receives the decoded
     /// absolute path of the new directory.
@@ -143,6 +143,7 @@ impl TerminalState {
             cursor_visible: true,
             focus_reporting: false,
             pending_wrap: false,
+            char_height: 0.0,
             on_cwd_change: None,
         }
     }
@@ -622,16 +623,35 @@ impl Perform for TerminalHandler {
                             }
                         }
                     }
-                    2 | 3 => {
-                        let rows = state.rows;
-                        let cols = state.cols;
-                        for y in 0..rows {
-                            for x in 0..cols {
-                                state.grid[y][x] = Cell::blank();
+                    2 => {
+                        // Push every non-blank grid row into scrollback so the
+                        // user can still scroll up to see previous output, then
+                        // blank the grid and home the cursor. This matches the
+                        // behaviour of xterm / alacritty for `clear`.
+                        let old_grid: Vec<Vec<Cell>> = std::mem::replace(
+                            &mut state.grid,
+                            (0..rows).map(|_| vec![Cell::blank(); cols]).collect(),
+                        );
+                        for row in old_grid {
+                            if row.iter().any(|c| c.ch != ' ' || c.bg.is_some()) {
+                                state.scrollback.push(row);
+                                if state.scrollback.len() > state.scrollback_limit {
+                                    state.scrollback.remove(0);
+                                }
                             }
                         }
                         state.cursor_x = 0;
                         state.cursor_y = 0;
+                        state.pending_wrap = false;
+                    }
+                    3 => {
+                        // Erase scrollback and blank the grid (Ps=3 extension).
+                        state.scrollback.clear();
+                        state.scroll_offset = 0;
+                        state.grid = (0..rows).map(|_| vec![Cell::blank(); cols]).collect();
+                        state.cursor_x = 0;
+                        state.cursor_y = 0;
+                        state.pending_wrap = false;
                     }
                     _ => {}
                 }
@@ -974,6 +994,8 @@ impl Terminal {
 
                 let new_cols = (width as f64 / char_width).floor() as usize;
                 let new_rows = (height as f64 / char_height).floor() as usize;
+
+                state.char_height = char_height;
 
                 if new_cols > 0
                     && new_rows > 0
@@ -1458,10 +1480,16 @@ impl Terminal {
             gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
         scroll_controller.connect_scroll(move |_controller, _dx, dy| {
             let mut state = state_for_scroll.lock().unwrap();
-            if state.scrollback.is_empty() && state.scroll_offset == 0 {
+            if state.scrollback.is_empty() && state.scroll_offset == 0 && dy > 0.0 {
                 return glib::Propagation::Proceed;
             }
-            let lines = (dy / 3.0) as i32;
+            // dy > 0 = wheel down = towards newer content (decrease offset).
+            // Use signum so even a sub-1.0 touchpad nudge registers as 1 line.
+            let lines = if dy.abs() < 1.0 {
+                -(dy.signum() as i32)
+            } else {
+                -(dy.round() as i32)
+            };
             state.scroll_lines(lines);
             drawing_area_for_scroll.queue_draw();
             glib::Propagation::Stop
@@ -1478,11 +1506,74 @@ impl Terminal {
                 state.selection_start = None;
                 state.selection_end = None;
             }
-            state.scroll_offset = 0;
             drawing_area_focus.queue_draw();
             drawing_area_focus.grab_focus();
         });
         drawing_area.add_controller(click_controller);
+
+        // Scrollbar drag: a secondary GestureDrag that only activates when the
+        // press lands inside the right SCROLLBAR_WIDTH * 2 hit zone. Translating
+        // the Y position of the drag point into a scroll_offset mirrors the
+        // inverse of the thumb_y formula in draw_scrollbar.
+        let state_for_sb = state.clone();
+        let drawing_area_for_sb = drawing_area.clone();
+        let sb_drag = gtk::GestureDrag::new();
+        sb_drag.set_button(1);
+        sb_drag.set_exclusive(true);
+
+        let state_sb_begin = state_for_sb.clone();
+        let da_sb_begin = drawing_area_for_sb.clone();
+        sb_drag.connect_drag_begin(move |gesture, x, _y| {
+            let widget_width = da_sb_begin.width() as f64;
+            if x < widget_width - SCROLLBAR_WIDTH * 2.0 {
+                gesture.set_state(gtk::EventSequenceState::Denied);
+                return;
+            }
+            let sb = state_sb_begin.lock().unwrap();
+            if sb.scrollback.is_empty() {
+                gesture.set_state(gtk::EventSequenceState::Denied);
+                return;
+            }
+            gesture.set_state(gtk::EventSequenceState::Claimed);
+        });
+
+        let state_sb_update = state_for_sb.clone();
+        let da_sb_update = drawing_area_for_sb.clone();
+        sb_drag.connect_drag_update(move |gesture, _dx, _dy| {
+            let (_, y) = match gesture.point(None) {
+                Some(p) => p,
+                None => return,
+            };
+            let h = da_sb_update.height() as f64;
+            if h <= 0.0 {
+                return;
+            }
+            let mut state = state_sb_update.lock().unwrap();
+            if state.scrollback.is_empty() {
+                return;
+            }
+            let max_offset = state.scrollback.len();
+            let visible_rows = if state.char_height > 0.0 {
+                (h / state.char_height).floor() as usize
+            } else {
+                state.rows
+            };
+            let total_rows = max_offset + visible_rows;
+            let thumb_ratio = (visible_rows as f64 / total_rows as f64).min(1.0);
+            let thumb_h = (h * thumb_ratio).max(20.0);
+            // Invert draw_scrollbar's thumb_y: thumb_y = h - thumb_h - (h - thumb_h) * frac
+            let thumb_y = (y - thumb_h / 2.0).clamp(0.0, h - thumb_h);
+            let track_h = h - thumb_h;
+            let scroll_frac = if track_h > 0.0 {
+                ((h - thumb_h - thumb_y) / track_h).clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+            state.scroll_offset = (scroll_frac * max_offset as f64).round() as usize;
+            da_sb_update.queue_draw();
+        });
+
+        drawing_area.add_controller(sb_drag);
 
         let term = Self {
             drawing_area,
@@ -2104,24 +2195,73 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
         }
     }
 
-    if state.scroll_offset > 0 {
-        let indicator_text = format!("↑ {} lines", state.scroll_offset);
-        layout.set_text(&indicator_text);
-        let text_width = layout.pixel_extents().1.width() as f64;
-        let x_pos = width as f64 - text_width - 10.0;
-        let y_pos = 5.0;
+    draw_scrollbar(cr, state, width, height);
+}
 
-        cr.set_source_rgba(0.0, 0.0, 0.0, 0.7);
-        cr.rectangle(
-            x_pos - 5.0,
-            y_pos - 2.0,
-            text_width + 10.0,
-            char_height + 4.0,
-        );
-        cr.fill().unwrap();
+/// Draws a 6 px overlay scrollbar on the right edge of the terminal.
+///
+/// The scrollbar is only rendered when there is scrollback content. The track
+/// spans the full widget height, the thumb position reflects the current
+/// `scroll_offset` relative to the total content height (scrollback + grid).
+/// Both track and thumb are semi-transparent so they sit cleanly over text.
+///
+/// Geometry contract (must stay in sync with `SCROLLBAR_WIDTH` used by the
+/// scrollbar drag gesture in `Terminal::new`):
+/// - Track: rightmost `SCROLLBAR_WIDTH` px, full height, rgba(1,1,1,0.06).
+/// - Thumb: same x, proportional height, rgba(1,1,1,0.35), minimum 20 px tall.
+pub(crate) const SCROLLBAR_WIDTH: f64 = 6.0;
 
-        cr.set_source_rgba(0.8, 0.8, 0.8, 1.0);
-        cr.move_to(x_pos, y_pos);
-        pangocairo::functions::show_layout(cr, &layout);
+fn draw_scrollbar(cr: &Context, state: &TerminalState, width: i32, height: i32) {
+    if state.scrollback.is_empty() {
+        return;
     }
+
+    let h = height as f64;
+    // Derive visible_rows from current allocated pixel height, not state.rows,
+    // so the thumb ratio stays correct after the widget is resized.
+    let visible_rows = if state.char_height > 0.0 {
+        (h / state.char_height).floor() as usize
+    } else {
+        state.rows
+    };
+    let total_rows = state.scrollback.len() + visible_rows;
+
+    // thumb_ratio = fraction of total content that is visible.
+    let thumb_ratio = (visible_rows as f64 / total_rows as f64).min(1.0);
+    let thumb_h = (h * thumb_ratio).max(20.0);
+
+    // scroll_offset == scrollback.len() means top, 0 means live (bottom).
+    let max_offset = state.scrollback.len() as f64;
+    let scroll_frac = state.scroll_offset as f64 / max_offset;
+    // thumb_y: 0.0 at bottom (live view), h-thumb_h at top (oldest).
+    let thumb_y = (h - thumb_h) * scroll_frac;
+    // Flip: live view thumb sits at bottom.
+    let thumb_y = h - thumb_h - thumb_y;
+
+    let track_x = width as f64 - SCROLLBAR_WIDTH;
+
+    // Track.
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.06);
+    cr.rectangle(track_x, 0.0, SCROLLBAR_WIDTH, h);
+    cr.fill().unwrap();
+
+    // Thumb.
+    let radius = SCROLLBAR_WIDTH / 2.0;
+    cr.set_source_rgba(1.0, 1.0, 1.0, 0.35);
+    cr.arc(
+        track_x + radius,
+        thumb_y + radius,
+        radius,
+        std::f64::consts::PI,
+        2.0 * std::f64::consts::PI,
+    );
+    cr.arc(
+        track_x + radius,
+        thumb_y + thumb_h - radius,
+        radius,
+        0.0,
+        std::f64::consts::PI,
+    );
+    cr.close_path();
+    cr.fill().unwrap();
 }
