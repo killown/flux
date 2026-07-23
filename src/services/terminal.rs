@@ -82,6 +82,9 @@ pub struct TerminalState {
     pub pending_wrap: bool,
     /// Cached character cell height in pixels, updated each draw cycle.
     pub char_height: f64,
+    /// DECCKM: when true, arrow keys send application sequences (\eOA)
+    /// instead of cursor sequences (\e[A). Required for nvim/vim navigation.
+    pub application_cursor_keys: bool,
     /// Invoked on the PTY reader thread whenever fish emits an OSC 7
     /// working-directory notification. The callback receives the decoded
     /// absolute path of the new directory.
@@ -144,6 +147,7 @@ impl TerminalState {
             focus_reporting: false,
             pending_wrap: false,
             char_height: 0.0,
+            application_cursor_keys: false,
             on_cwd_change: None,
         }
     }
@@ -330,6 +334,7 @@ impl TerminalState {
             self.cursor_x = cx;
             self.cursor_y = cy;
         }
+        self.application_cursor_keys = false;
     }
 
     /// Expands a xterm 256-color palette index into an RGBA value.
@@ -457,10 +462,19 @@ impl Perform for TerminalHandler {
         let y = state.cursor_y;
         let x = state.cursor_x;
         if x < state.cols && y < state.rows {
-            let (fg, bg) = if state.reverse {
-                (Some(state.current_bg), Some(state.current_fg))
+            // Only store an explicit bg when it differs from the terminal default.
+            // Cells with bg=None are skipped in the draw loop, which prevents the
+            // terminal background colour from overwriting nvim/vim colour schemes
+            // that rely on the default background being transparent.
+            let explicit_bg = if state.current_bg == state.bg_color {
+                None
             } else {
-                (Some(state.current_fg), Some(state.current_bg))
+                Some(state.current_bg)
+            };
+            let (fg, bg) = if state.reverse {
+                (explicit_bg, Some(state.current_fg))
+            } else {
+                (Some(state.current_fg), explicit_bg)
             };
             state.grid[y][x] = Cell {
                 ch: c,
@@ -830,6 +844,7 @@ impl Perform for TerminalHandler {
                 let enable = command == 'h';
                 for &mode in &p {
                     match mode {
+                        1 => state.application_cursor_keys = enable,
                         25 => state.cursor_visible = enable,
                         1004 => state.focus_reporting = enable,
                         1049 => {
@@ -1194,22 +1209,41 @@ impl Terminal {
                 // ── Arrow keys ────────────────────────────────────────────────
                 gtk::gdk::Key::Up => {
                     // Ctrl+Up - jump word upward in history (\e[1,5A).
-                    let seq: &[u8] = if is_ctrl { b"\x1b[1;5A" } else { b"\x1b[A" };
+                    // DECCKM: application mode sends \eOA instead of \e[A.
+                    let app = state_for_keys.lock().unwrap().application_cursor_keys;
+                    let seq: &[u8] = if is_ctrl {
+                        b"\x1b[1;5A"
+                    } else if app {
+                        b"\x1bOA"
+                    } else {
+                        b"\x1b[A"
+                    };
                     pty_write(fd, seq);
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Down => {
-                    let seq: &[u8] = if is_ctrl { b"\x1b[1;5B" } else { b"\x1b[B" };
+                    let app = state_for_keys.lock().unwrap().application_cursor_keys;
+                    let seq: &[u8] = if is_ctrl {
+                        b"\x1b[1;5B"
+                    } else if app {
+                        b"\x1bOB"
+                    } else {
+                        b"\x1b[B"
+                    };
                     pty_write(fd, seq);
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Left => {
                     // Ctrl+Left - move one word left (\e[1,5D).
                     // Alt+Left - same, alternate encoding some shells prefer (\e[1,3D).
+                    // DECCKM: application mode sends \eOD instead of \e[D.
+                    let app = state_for_keys.lock().unwrap().application_cursor_keys;
                     let seq: &[u8] = if is_ctrl {
                         b"\x1b[1;5D"
                     } else if is_alt {
                         b"\x1b[1;3D"
+                    } else if app {
+                        b"\x1bOD"
                     } else {
                         b"\x1b[D"
                     };
@@ -1217,10 +1251,13 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::Right => {
+                    let app = state_for_keys.lock().unwrap().application_cursor_keys;
                     let seq: &[u8] = if is_ctrl {
                         b"\x1b[1;5C"
                     } else if is_alt {
                         b"\x1b[1;3C"
+                    } else if app {
+                        b"\x1bOC"
                     } else {
                         b"\x1b[C"
                     };
