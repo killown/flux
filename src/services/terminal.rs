@@ -41,6 +41,24 @@ impl Cell {
     }
 }
 
+/// Returns `true` when the PTY slave is in raw or cbreak mode (`ICANON` clear).
+///
+/// Terminal emulators use this to decide whether to apply readline-style key
+/// bindings (cooked mode) or to pass every byte straight through to the
+/// application (raw mode). nvim, nano, less, and similar full-screen apps all
+/// put the PTY in raw/cbreak mode while running.
+///
+/// A single `tcgetattr` syscall per keypress (~1 µs) is negligible.
+#[inline]
+fn pty_is_raw(fd: libc::c_int) -> bool {
+    let mut termios = unsafe { std::mem::zeroed::<libc::termios>() };
+    let ret = unsafe { libc::tcgetattr(fd, &mut termios) };
+    if ret != 0 {
+        return false;
+    }
+    termios.c_lflag & libc::ICANON == 0
+}
+
 pub struct TerminalState {
     pub grid: Vec<Vec<Cell>>,
     pub cursor_x: usize,
@@ -1315,70 +1333,45 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
 
-                // ── Ctrl + letter signals / readline bindings ─────────────────
-                gtk::gdk::Key::c | gtk::gdk::Key::C if is_ctrl => {
-                    pty_write(fd, b"\x03");
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::d | gtk::gdk::Key::D if is_ctrl => {
-                    pty_write(fd, b"\x04");
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::z | gtk::gdk::Key::Z if is_ctrl => {
-                    pty_write(fd, b"\x1a"); // SIGTSTP
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::l | gtk::gdk::Key::L if is_ctrl => {
-                    pty_write(fd, b"\x0c"); // clear screen (^L)
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::a | gtk::gdk::Key::A if is_ctrl => {
-                    pty_write(fd, b"\x01"); // beginning of line
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::e | gtk::gdk::Key::E if is_ctrl => {
-                    pty_write(fd, b"\x05"); // end of line
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::k | gtk::gdk::Key::K if is_ctrl => {
-                    pty_write(fd, b"\x0b"); // kill to end of line
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::u | gtk::gdk::Key::U if is_ctrl => {
-                    pty_write(fd, b"\x15"); // kill to beginning of line
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::w | gtk::gdk::Key::W if is_ctrl => {
-                    pty_write(fd, b"\x17"); // delete word left
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::y | gtk::gdk::Key::Y if is_ctrl => {
-                    pty_write(fd, b"\x19"); // yank (paste kill-ring)
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::p | gtk::gdk::Key::P if is_ctrl => {
-                    pty_write(fd, b"\x10"); // previous history entry
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::n | gtk::gdk::Key::N if is_ctrl => {
-                    pty_write(fd, b"\x0e"); // next history entry
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::r | gtk::gdk::Key::R if is_ctrl => {
-                    pty_write(fd, b"\x12"); // reverse history search
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::t | gtk::gdk::Key::T if is_ctrl => {
-                    pty_write(fd, b"\x14"); // transpose chars
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::b | gtk::gdk::Key::B if is_ctrl => {
-                    pty_write(fd, b"\x02"); // move char left
-                    glib::Propagation::Stop
-                }
-                gtk::gdk::Key::f | gtk::gdk::Key::F if is_ctrl => {
-                    pty_write(fd, b"\x06"); // move char right
-                    glib::Propagation::Stop
+                // ── Ctrl + letter: readline bindings (cooked) or raw pass-through ──
+                //
+                // When the PTY is in raw/cbreak mode (ICANON=0), e.g. nvim, nano,
+                // less, every Ctrl+key must reach the application as its ASCII
+                // control byte without any emulator-level interpretation. In cooked
+                // mode (fish prompt) we keep the explicit readline bindings so that
+                // Ctrl+Z suspends, Ctrl+C interrupts, etc.
+                _ if is_ctrl && !is_shift => {
+                    if let Some(ch) = keyval.to_unicode() {
+                        let lower = ch.to_ascii_lowercase();
+                        if lower >= 'a' && lower <= 'z' {
+                            let ctrl_byte = (lower as u8) - b'a' + 1;
+                            if pty_is_raw(fd) {
+                                pty_write(fd, &[ctrl_byte]);
+                            } else {
+                                match ctrl_byte {
+                                    0x01 => pty_write(fd, b"\x01"), // ^A beginning of line
+                                    0x02 => pty_write(fd, b"\x02"), // ^B move char left
+                                    0x03 => pty_write(fd, b"\x03"), // ^C SIGINT
+                                    0x04 => pty_write(fd, b"\x04"), // ^D EOF
+                                    0x05 => pty_write(fd, b"\x05"), // ^E end of line
+                                    0x06 => pty_write(fd, b"\x06"), // ^F move char right
+                                    0x0b => pty_write(fd, b"\x0b"), // ^K kill to EOL
+                                    0x0c => pty_write(fd, b"\x0c"), // ^L clear screen
+                                    0x0e => pty_write(fd, b"\x0e"), // ^N next history
+                                    0x10 => pty_write(fd, b"\x10"), // ^P prev history
+                                    0x12 => pty_write(fd, b"\x12"), // ^R reverse search
+                                    0x14 => pty_write(fd, b"\x14"), // ^T transpose
+                                    0x15 => pty_write(fd, b"\x15"), // ^U kill to BOL
+                                    0x17 => pty_write(fd, b"\x17"), // ^W delete word left
+                                    0x19 => pty_write(fd, b"\x19"), // ^Y yank
+                                    0x1a => pty_write(fd, b"\x1a"), // ^Z SIGTSTP
+                                    _ => pty_write(fd, &[ctrl_byte]),
+                                }
+                            }
+                            return glib::Propagation::Stop;
+                        }
+                    }
+                    glib::Propagation::Proceed
                 }
 
                 // ── Printable / UTF-8 input ───────────────────────────────────
