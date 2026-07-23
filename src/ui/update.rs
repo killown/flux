@@ -1008,10 +1008,17 @@ impl FluxApp {
                     self.load_path(path, &sender);
                     self.update_breadcrumbs();
 
-                    // Update focus and selection on the next main loop iteration
+                    // Update focus and selection on the next main loop iteration.
+                    // When the terminal triggered this navigation via OSC 7 (cd),
+                    // it already holds focus, don't steal it for the file grid.
                     let view = self.files.view.clone();
+                    let terminal = self.terminal.clone();
+                    let terminal_visible = self.terminal_visible;
                     glib::idle_add_local_once(move || {
-                        view.grab_focus();
+                        let terminal_has_focus = terminal_visible && terminal.has_focus();
+                        if !terminal_has_focus {
+                            view.grab_focus();
+                        }
                         if let Some(model) = view
                             .model()
                             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())

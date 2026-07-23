@@ -1044,6 +1044,7 @@ impl Terminal {
         let state_for_keys = state.clone();
         let drawing_area_for_keys = drawing_area.clone();
         let key_controller = gtk::EventControllerKey::new();
+        key_controller.set_propagation_phase(gtk::PropagationPhase::Capture);
         key_controller.connect_key_pressed(move |_ctrl, keyval, _keycode, modifiers| {
             if !drawing_area_for_keys.has_focus() {
                 return glib::Propagation::Proceed;
@@ -1746,6 +1747,11 @@ impl Terminal {
 
     pub fn grab_focus(&self) {
         self.drawing_area.grab_focus();
+    }
+
+    /// Returns `true` if the terminal's drawing area currently holds keyboard focus.
+    pub fn has_focus(&self) -> bool {
+        self.drawing_area.has_focus()
     }
 
     pub fn add_controller(&self, controller: &(impl IsA<gtk::EventController> + Clone)) {
