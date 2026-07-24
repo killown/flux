@@ -192,6 +192,7 @@ impl FluxApp {
                 icon: "document-open-recent-symbolic".to_string(),
                 path: std::path::PathBuf::from(crate::ui::constants::RECENT_URI),
                 is_mount: false,
+                is_section_label: false,
             });
         }
 
@@ -218,6 +219,7 @@ impl FluxApp {
                     icon: "user-home-symbolic".to_string(),
                     path: p,
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
             if let Some(p) = dirs::desktop_dir() {
@@ -226,6 +228,7 @@ impl FluxApp {
                     icon: "user-desktop-symbolic".to_string(),
                     path: p,
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
             if let Some(p) = dirs::download_dir() {
@@ -234,6 +237,7 @@ impl FluxApp {
                     icon: "folder-download-symbolic".to_string(),
                     path: p,
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
             if let Some(p) = dirs::document_dir() {
@@ -242,6 +246,7 @@ impl FluxApp {
                     icon: "folder-documents-symbolic".to_string(),
                     path: p,
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
             if let Some(p) = dirs::picture_dir() {
@@ -250,6 +255,7 @@ impl FluxApp {
                     icon: "folder-pictures-symbolic".to_string(),
                     path: p,
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
             if let Some(p) = dirs::video_dir() {
@@ -258,12 +264,24 @@ impl FluxApp {
                     icon: "folder-videos-symbolic".to_string(),
                     path: p,
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
         }
 
         // 2. Custom Sidebar logic
         for custom in &self.config.sidebar {
+            if custom.kind.as_deref() == Some("label") {
+                guard.push_back(SidebarPlace {
+                    name: custom.name.clone(),
+                    icon: String::new(),
+                    path: PathBuf::new(),
+                    is_mount: false,
+                    is_section_label: true,
+                });
+                continue;
+            }
+
             let path = if custom.path.starts_with('~') {
                 dirs::home_dir()
                     .map(|h| PathBuf::from(custom.path.replace('~', &h.to_string_lossy())))
@@ -283,6 +301,7 @@ impl FluxApp {
                 icon: custom.icon.clone(),
                 path,
                 is_mount: false,
+                is_section_label: false,
             });
         }
 
@@ -312,6 +331,7 @@ impl FluxApp {
                 icon,
                 path,
                 is_mount: true,
+                is_section_label: false,
             });
         }
 
@@ -323,6 +343,7 @@ impl FluxApp {
                     icon: "go-next-symbolic".to_string(),
                     path: path.clone(),
                     is_mount: false,
+                    is_section_label: false,
                 });
             }
         }

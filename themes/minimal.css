@@ -46,7 +46,7 @@ headerbar button:hover {
   box-shadow: inset -1px 0 0 0 rgba(0, 0, 0, 0.1);
 }
 
-.sidebar-row {
+.sidebar-row:not(#sidebar-section) {
   margin: 6px 14px;
   padding: 10px 16px;
   border-radius: 12px;
@@ -57,19 +57,19 @@ headerbar button:hover {
     transform 200ms cubic-bezier(0.1, 0.7, 0.1, 1);
 }
 
-.sidebar-row label {
+.sidebar-row:not(#sidebar-section) label {
   color: @theme_fg_color;
   font-family: var(--font-main);
   font-size: 10.5pt;
   letter-spacing: 0.6px !important;
 }
 
-.sidebar-row:hover:not(:selected) {
+.sidebar-row:not(#sidebar-section):hover:not(:selected) {
   background-color: alpha(@theme_fg_color, 0.12);
   transform: translateX(4px);
 }
 
-.sidebar-row:selected {
+.sidebar-row:not(#sidebar-section):selected {
   background: linear-gradient(
     135deg,
     color-mix(in srgb, @accent_bg_color, transparent 75%) 0%,
@@ -80,9 +80,41 @@ headerbar button:hover {
     0 4px 12px var(--hue-bleed);
 }
 
-.sidebar-row:selected label {
+.sidebar-row:not(#sidebar-section):selected label {
   color: @accent_color;
   font-weight: bold;
+}
+
+#sidebar-section {
+  margin-top: 14px;
+  margin-bottom: 4px;
+  padding: 10px 12px 6px 12px;
+  min-height: 0;
+  background: transparent;
+  border-radius: 0;
+  transform: none;
+}
+
+#sidebar-section:hover,
+#sidebar-section:focus {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+#sidebar-section .sidebar-section-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: alpha(@window_fg_color, 0.45);
+  background-color: alpha(@window_fg_color, 0.06);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-left: 8px;
+  box-shadow:
+    0 1px 0 alpha(@window_fg_color, 0.08),
+    inset 0 1px 0 alpha(@window_fg_color, 0.04);
 }
 
 gridview,
@@ -239,4 +271,24 @@ scrollbar slider {
 
 scrollbar slider:hover {
   background-color: alpha(@theme_fg_color, 0.4);
+}
+
+.sidebar-section-row {
+  margin-top: 16px;
+  margin-bottom: 2px;
+  padding: 0 8px;
+  min-height: 0;
+  background: transparent;
+}
+
+.sidebar-section-row:hover {
+  background: transparent;
+}
+
+.sidebar-section-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.45;
+  text-transform: uppercase;
 }

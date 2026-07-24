@@ -249,8 +249,13 @@ impl FluxApp {
             model.sidebar.guard().push_back(SidebarPlace {
                 name: place.name.clone(),
                 icon: place.icon.clone(),
-                path: utils::expand_path(&place.path),
+                path: if place.kind.as_deref() == Some("label") {
+                    std::path::PathBuf::new()
+                } else {
+                    utils::expand_path(&place.path)
+                },
                 is_mount: false,
+                is_section_label: place.kind.as_deref() == Some("label"),
             });
         }
         model.refresh_sidebar();

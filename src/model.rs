@@ -328,6 +328,8 @@ pub struct DeviceRename {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct CustomPlace {
     pub name: String,
+    #[serde(default)]
+    pub kind: Option<String>,
     pub icon: String,
     pub path: String,
 }

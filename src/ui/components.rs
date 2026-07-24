@@ -372,6 +372,8 @@ pub struct SidebarPlace {
     pub icon: String,
     pub path: PathBuf,
     pub is_mount: bool,
+    /// When true, renders as a non-interactive section header instead of a navigation row.
+    pub is_section_label: bool,
 }
 
 #[relm4::factory(pub)]
@@ -415,13 +417,25 @@ impl FactoryComponent for SidebarPlace {
     view! {
         #[root]
         gtk::ListBoxRow {
+            #[watch]
+            set_selectable: !self.is_section_label,
+            #[watch]
+            set_activatable: !self.is_section_label,
             add_css_class: constants::SIDEBAR_ROW_CLASS,
-            set_selectable: false,
-            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+            connect_realize[is_label = self.is_section_label] => move |w| {
+                FluxApp::set_cursor_pointer(w.as_ref(), !is_label);
+                if is_label {
+                    let w = w.clone();
+                    glib::idle_add_local_once(move || {
+                        w.remove_css_class(constants::SIDEBAR_ROW_CLASS);
+                        w.add_css_class(constants::SIDEBAR_SECTION_ROW_CLASS);
+                    });
+                }
+            },
 
             add_controller = gtk::GestureClick {
-                connect_released[sender, path = self.path.clone()] => move |gesture, _, _, _| {
-                    if gesture.current_button() == 1 {
+                connect_released[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
+                    if !is_label && gesture.current_button() == 1 {
                         let _ = sender.output(SidebarMsg::Navigate(path.clone()));
                     }
                 }
@@ -429,7 +443,8 @@ impl FactoryComponent for SidebarPlace {
 
             add_controller = gtk::GestureClick {
                 set_button: 2,
-                connect_pressed[path = self.path.clone()] => move |gesture, _, _, _| {
+                connect_pressed[path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
+                    if is_label { return; }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
                     if let Ok(exe) = std::env::current_exe() {
                         let _ = std::process::Command::new(exe).arg(&path).spawn();
@@ -439,7 +454,8 @@ impl FactoryComponent for SidebarPlace {
 
             add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
-                connect_pressed[sender, path = self.path.clone()] => move |gesture, _, x, y| {
+                connect_pressed[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
+                    if is_label { return; }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
 
                     let menu = gtk::PopoverMenu::builder()
@@ -474,7 +490,8 @@ impl FactoryComponent for SidebarPlace {
             // Drag source: carry this row's path as a plain string
             add_controller = gtk::DragSource {
                 set_actions: gdk::DragAction::MOVE,
-                connect_prepare[path = self.path.clone()] => move |src, _, _| {
+                connect_prepare[path = self.path.clone(), is_label = self.is_section_label] => move |src, _, _| {
+                    if is_label { return None; }
                     if let Some(w) = src.widget() {
                         w.add_css_class("sidebar-dragging");
                     }
@@ -493,7 +510,8 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::DropTarget {
                 set_actions: gdk::DragAction::MOVE,
                 set_types: &[glib::types::Type::STRING],
-                connect_drop[sender, path = self.path.clone()] => move |_, value, _, _| {
+                connect_drop[sender, path = self.path.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
+                    if is_label { return false; }
                     if let Ok(from_str) = value.get::<String>() {
                         let from = PathBuf::from(&from_str);
                         if from != path {
@@ -509,25 +527,46 @@ impl FactoryComponent for SidebarPlace {
 
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
-                set_spacing: constants::SIDEBAR_SPACING,
-                gtk::Image { set_icon_name: Some(&self.icon) },
+
                 gtk::Label {
+                    #[watch]
+                    set_visible: self.is_section_label,
+                    #[watch]
                     set_label: &self.name,
-                    add_css_class: constants::SIDEBAR_LABEL_CLASS,
-                    set_hexpand: true,
                     set_halign: gtk::Align::Start,
+                    add_css_class: constants::SIDEBAR_SECTION_LABEL_CLASS,
                 },
-               #[name = "eject_button"]
-                gtk::Button {
-                    set_icon_name: "media-eject-symbolic",
-                    set_visible: self.is_mount,
-                    add_css_class: "flat",
-                    connect_clicked[path = self.path.clone()] => move |_| {
-                        if let Some(s) = crate::model::SENDER.get() {
-                            let _ = s.send(crate::model::AppMsg::UnmountDevice(path.clone()));
+
+                gtk::Box {
+                    #[watch]
+                    set_visible: !self.is_section_label,
+                    set_orientation: gtk::Orientation::Horizontal,
+                    set_spacing: constants::SIDEBAR_SPACING,
+                    set_hexpand: true,
+                    gtk::Image {
+                        #[watch]
+                        set_icon_name: Some(&self.icon),
+                    },
+                    gtk::Label {
+                        #[watch]
+                        set_label: &self.name,
+                        add_css_class: constants::SIDEBAR_LABEL_CLASS,
+                        set_hexpand: true,
+                        set_halign: gtk::Align::Start,
+                    },
+                    #[name = "eject_button"]
+                    gtk::Button {
+                        set_icon_name: "media-eject-symbolic",
+                        #[watch]
+                        set_visible: self.is_mount,
+                        add_css_class: "flat",
+                        connect_clicked[path = self.path.clone()] => move |_| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(crate::model::AppMsg::UnmountDevice(path.clone()));
+                            }
                         }
                     }
-                }
+                },
             }
         }
     }

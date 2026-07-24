@@ -36,6 +36,8 @@ pub mod constants {
     pub const BREADCRUMB_BTN_CLASS: &str = "breadcrumb-btn";
     pub const SIDEBAR_ROW_CLASS: &str = "sidebar-row";
     pub const SIDEBAR_LABEL_CLASS: &str = "sidebar-label";
+    pub const SIDEBAR_SECTION_ROW_CLASS: &str = "sidebar-section-row";
+    pub const SIDEBAR_SECTION_LABEL_CLASS: &str = "sidebar-section-label";
     pub const THUMBNAIL_CLASS: &str = "thumbnail";
     pub const FLUX_LABEL_CLASS: &str = "flux-label";
     pub const RENAME_ENTRY_CLASS: &str = "flux-rename-entry";

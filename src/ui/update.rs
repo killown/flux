@@ -24,8 +24,13 @@ impl FluxApp {
                     self.sidebar.guard().push_back(crate::ui::SidebarPlace {
                         name: place.name.clone(),
                         icon: place.icon.clone(),
-                        path: utils::expand_path(&place.path),
+                        path: if place.kind.as_deref() == Some("label") {
+                            std::path::PathBuf::new()
+                        } else {
+                            utils::expand_path(&place.path)
+                        },
                         is_mount: false,
+                        is_section_label: place.kind.as_deref() == Some("label"),
                     });
                 }
 
@@ -88,11 +93,15 @@ impl FluxApp {
                         .file_name()
                         .map(|n| n.to_string_lossy().into_owned())
                         .unwrap_or_else(|| path_str.clone());
-                    self.config.sidebar.push(crate::model::CustomPlace {
-                        name,
-                        icon: "folder-symbolic".to_string(),
-                        path: path_str,
-                    });
+                    self.config.sidebar.insert(
+                        0,
+                        crate::model::CustomPlace {
+                            name,
+                            kind: None,
+                            icon: "folder-symbolic".to_string(),
+                            path: path_str,
+                        },
+                    );
                     utils::save_config(&self.config);
                     self.refresh_sidebar();
                 }
