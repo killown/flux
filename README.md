@@ -1,5 +1,3 @@
-
-
 # 🌊 Flux
 
 ![Rust](https://img.shields.io/badge/Rust-1.75%2B-black?logo=rust)
@@ -9,7 +7,6 @@
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
 
 <img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/019f362a-2de6-4f6c-94f2-891564fee863" />
-
 
 ## Why Flux?
 
@@ -80,7 +77,7 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 > **Custom Actions:** You can define your own right-click commands. Add "Open in VS Code" or "Optimize Image" by linking a simple shell command in your config.
 
 ## Extra Themes
-
+<img width="1080" height="608" alt="demo" src="https://github.com/user-attachments/assets/b4ca8e9c-ec4b-47bf-a560-be88086df10e" />
     git clone https://github.com/killown/flux-themes.git
     cd flux-themes
     cp themes/* ~/.local/share/flux/themes
