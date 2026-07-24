@@ -389,14 +389,13 @@ impl FactoryComponent for PathSegment {
     view! {
         #[root]
         gtk::Button {
-            set_label: &self.name,
             add_css_class: constants::BREADCRUMB_BTN_CLASS,
             #[wrap(Some)]
             set_child = &gtk::Label {
                 #[watch]
                 set_label: &self.name,
                 set_ellipsize: gtk::pango::EllipsizeMode::End,
-                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
+                set_max_width_chars: -1,
             },
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
