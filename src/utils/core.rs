@@ -69,11 +69,13 @@ pub fn ensure_config_file() -> PathBuf {
 "󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && wbg -s ~/Images/fav.jpg", "Wallpaper set (wbg)"
 "󰸉      Image Convert > To AVIF" => "image/all", "avifenc --jobs all -q 65 %p %p.avif", "Image converted to AVIF"
 "󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg", "Image converted to JPG"
+"󰏦      Convert to PDF" => "image/all, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document", "python3 $HOME/.local/share/flux/scripts/pdf_converter.py %p", "Converting to PDF..."
 
 # --- Tools ---
 "󰯦      Tools > Git Gui" => "directory", "git gui"
 "󰯦      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)", "Video download started"
 "󰯦      Tools > Copy Path" => "all", "echo -n %p | wl-copy", "Path copied to clipboard"
+"󰯦      Tools > Copy Name" => "all", "basename %p | tr -d '\n' | wl-copy", "Name copied to clipboard"
 "󰯦      Tools > Advanced Archive Manager" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_compressor.py %p"
 "#;
 
