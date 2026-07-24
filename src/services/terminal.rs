@@ -1013,7 +1013,8 @@ impl Terminal {
             layout.set_text("M");
             layout.pixel_extents().1.height().max(1)
         };
-        drawing_area.set_size_request(-1, char_height * config.height);
+        // Set size request to 1 character line so GTK allows shrinking when resized
+        drawing_area.set_size_request(-1, char_height);
 
         let (draw_sender, mut draw_receiver) = tokio::sync::mpsc::unbounded_channel::<()>();
 
@@ -1648,7 +1649,9 @@ impl Terminal {
         // actually shown and GTK has assigned real pixel dimensions.
         let term_clone = term.clone();
         let spawned = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-        term.drawing_area.connect_map(move |_area| {
+        let config_height_lines = config.height;
+
+        term.drawing_area.connect_map(move |area| {
             if !spawned.swap(true, std::sync::atomic::Ordering::SeqCst) {
                 let mut t = term_clone.clone();
                 glib::idle_add_local_once(move || {
@@ -1669,8 +1672,57 @@ impl Terminal {
                     );
                 });
             }
-        });
 
+            // Defer paned position adjustment until GTK completes layout allocation for the panel
+            let area_clone = area.clone();
+            let state_clone = term_clone.state.clone();
+
+            glib::idle_add_local_once(move || {
+                if let Some(paned) = area_clone
+                    .ancestor(gtk::Paned::static_type())
+                    .and_then(|w| w.downcast::<gtk::Paned>().ok())
+                {
+                    let state_for_check = state_clone.clone();
+                    let set_position_if_allocated = move |p: &gtk::Paned| -> bool {
+                        let total_h = p.height();
+                        if total_h > 0 {
+                            let ch = {
+                                let s = state_for_check.lock().unwrap();
+                                if s.char_height > 0.0 {
+                                    s.char_height as i32
+                                } else {
+                                    char_height
+                                }
+                            };
+                            let desired_pixel_height = config_height_lines * ch;
+                            p.set_position(total_h - desired_pixel_height);
+                            true
+                        } else {
+                            false
+                        }
+                    };
+
+                    if !set_position_if_allocated(&paned) {
+                        let state_retry = state_clone.clone();
+                        let paned_retry = paned.clone();
+                        glib::idle_add_local_once(move || {
+                            let total_h = paned_retry.height();
+                            if total_h > 0 {
+                                let ch = {
+                                    let s = state_retry.lock().unwrap();
+                                    if s.char_height > 0.0 {
+                                        s.char_height as i32
+                                    } else {
+                                        char_height
+                                    }
+                                };
+                                paned_retry.set_position(total_h - config_height_lines * ch);
+                            }
+                        });
+                    }
+                }
+            });
+        });
         term
     }
 
