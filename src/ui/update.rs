@@ -635,8 +635,8 @@ impl FluxApp {
 
                 let mut open_with_item: Option<gio::MenuItem> = None;
                 // Registry for dynamic submenus: Map<SubmenuName, MenuModel>
-                let mut submenu_map: std::collections::HashMap<String, gio::Menu> =
-                    std::collections::HashMap::new();
+                let mut submenu_map: indexmap::IndexMap<String, gio::Menu> =
+                    indexmap::IndexMap::new();
                 for action in &self.menu_actions {
                     let mut matches = false;
                     // --- FILTERING LOGIC ---
