@@ -194,11 +194,19 @@ search = "<Primary>f"
 # Toggles the visibility of hidden files (dotfiles).
 toggle_hidden = "<Primary>h"
 
+
+[[sidebar]]
+name = "Default"
+kind = "label"
+icon = ""
+path = ""
+
 [[sidebar]]
 name = "Home"
 icon = "user-home-symbolic"
 path = "~"
-"#,
+"
+#,
         );
 
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
