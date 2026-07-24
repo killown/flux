@@ -603,14 +603,14 @@ impl FluxApp {
                         self.terminal.respawn(dir);
                     }
 
-                    // Set the paned position to give terminal proper height
+                    // Set the paned position using the actual char_height from the
+                    // terminal state rather than a hardcoded 24px approximation,
+                    // so fish starts with the correct row count.
                     if let Some(paned) = &self.terminal_paned {
                         let height = paned.height();
                         if height > 0 {
-                            // Convert terminal height from config (in character lines) to pixels
-                            // Each line is roughly 20-24px depending on font
-                            let line_height = 24; // Approximate pixel height per line
-                            let terminal_height = self.config.ui.terminal.height * line_height;
+                            let char_height = self.terminal.char_height().max(1);
+                            let terminal_height = self.config.ui.terminal.height * char_height;
                             paned.set_position(height - terminal_height);
                         }
                     }
@@ -618,6 +618,9 @@ impl FluxApp {
                     let term = self.terminal.clone();
                     glib::idle_add_local_once(move || {
                         term.grab_focus();
+                        // After the pane has settled and the draw func has run,
+                        // send SIGWINCH so fish re-reads the correct $LINES/$COLUMNS.
+                        term.send_sigwinch();
                     });
                 }
             }

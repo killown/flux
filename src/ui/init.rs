@@ -103,21 +103,8 @@ impl FluxApp {
 
         // Terminal setup using custom terminal implementation from services
         let mut terminal = crate::services::terminal::Terminal::new(&config.ui.terminal);
-        terminal.set_color_foreground(&gtk::gdk::RGBA::new(
-            config.ui.terminal.fg_color.parse().unwrap_or(0.9),
-            config.ui.terminal.fg_color.parse().unwrap_or(0.9),
-            config.ui.terminal.fg_color.parse().unwrap_or(0.9),
-            1.0,
-        ));
-        terminal.set_color_background(&gtk::gdk::RGBA::new(
-            config.ui.terminal.bg_color.parse().unwrap_or(0.1),
-            config.ui.terminal.bg_color.parse().unwrap_or(0.1),
-            config.ui.terminal.bg_color.parse().unwrap_or(0.1),
-            1.0,
-        ));
-        terminal.set_font(Some(&pango::FontDescription::from_string(
-            &config.ui.terminal.font,
-        )));
+        terminal.apply_theme(&config.ui.terminal);
+        terminal.connect_theme_changes(config.ui.terminal.clone());
 
         {
             let s = sender.clone();

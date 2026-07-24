@@ -1,4 +1,5 @@
 use crate::model::TerminalConfig;
+use adw;
 use gtk::cairo::Context;
 use gtk::gio;
 use gtk::prelude::*;
@@ -103,6 +104,13 @@ pub struct TerminalState {
     /// DECCKM: when true, arrow keys send application sequences (\eOA)
     /// instead of cursor sequences (\e[A). Required for nvim/vim navigation.
     pub application_cursor_keys: bool,
+    /// Set when the shell spawned with fallback cols=80 (widget was hidden).
+    /// Cleared after the first real resize sends a corrective SIGWINCH.
+    pub needs_initial_sigwinch: bool,
+    /// Accent color resolved from the active GTK theme (`@accent_bg_color`).
+    /// Used for the cursor and selection highlight. `None` until `apply_theme`
+    /// is called.
+    pub accent_color: Option<gtk::gdk::RGBA>,
     /// Invoked on the PTY reader thread whenever fish emits an OSC 7
     /// working-directory notification. The callback receives the decoded
     /// absolute path of the new directory.
@@ -166,6 +174,8 @@ impl TerminalState {
             pending_wrap: false,
             char_height: 0.0,
             application_cursor_keys: false,
+            needs_initial_sigwinch: false,
+            accent_color: None,
             on_cwd_change: None,
         }
     }
@@ -479,7 +489,7 @@ impl Perform for TerminalHandler {
 
         let y = state.cursor_y;
         let x = state.cursor_x;
-        if x < state.cols && y < state.rows {
+        if y < state.grid.len() && x < state.grid[y].len() {
             // Only store an explicit bg when it differs from the terminal default.
             // Cells with bg=None are skipped in the draw loop, which prevents the
             // terminal background colour from overwriting nvim/vim colour schemes
@@ -630,10 +640,10 @@ impl Perform for TerminalHandler {
                 state.cursor_x = (col - 1).min(state.cols - 1);
             }
             'J' => {
-                let rows = state.rows;
-                let cols = state.cols;
-                let cy = state.cursor_y;
-                let cx = state.cursor_x;
+                let cols = state.cols.min(state.grid.first().map_or(0, |r| r.len()));
+                let rows = state.rows.min(state.grid.len());
+                let cy = state.cursor_y.min(rows.saturating_sub(1));
+                let cx = state.cursor_x.min(cols.saturating_sub(1));
                 match p.first().copied().unwrap_or(0) {
                     0 => {
                         for y in cy..rows {
@@ -690,25 +700,28 @@ impl Perform for TerminalHandler {
             }
             'K' => {
                 let row = state.cursor_y;
-                let cx = state.cursor_x;
-                let cols = state.cols;
-                match p.first().copied().unwrap_or(0) {
-                    0 => {
-                        for x in cx..cols {
-                            state.grid[row][x] = Cell::blank();
+                let grid_cols = state.grid.get(row).map_or(0, |r| r.len());
+                let cx = state.cursor_x.min(grid_cols.saturating_sub(1));
+                let cols = state.cols.min(grid_cols);
+                if row < state.grid.len() {
+                    match p.first().copied().unwrap_or(0) {
+                        0 => {
+                            for x in cx..cols {
+                                state.grid[row][x] = Cell::blank();
+                            }
                         }
-                    }
-                    1 => {
-                        for x in 0..=cx {
-                            state.grid[row][x] = Cell::blank();
+                        1 => {
+                            for x in 0..=cx {
+                                state.grid[row][x] = Cell::blank();
+                            }
                         }
-                    }
-                    2 => {
-                        for x in 0..cols {
-                            state.grid[row][x] = Cell::blank();
+                        2 => {
+                            for x in 0..cols {
+                                state.grid[row][x] = Cell::blank();
+                            }
                         }
+                        _ => {}
                     }
-                    _ => {}
                 }
             }
             'L' => {
@@ -1017,7 +1030,10 @@ impl Terminal {
         {
             let state = state.clone();
             drawing_area.set_draw_func(move |area, cr, width, height| {
-                let mut state = state.lock().unwrap();
+                let mut state = match state.lock() {
+                    Ok(s) => s,
+                    Err(p) => p.into_inner(), // recover from PTY thread panic
+                };
                 let layout = area.create_pango_layout(None);
                 layout.set_font_description(Some(&state.font_desc));
                 layout.set_text("W");
@@ -1035,6 +1051,17 @@ impl Terminal {
                     && (new_cols != state.cols || new_rows != state.rows)
                 {
                     state.resize(new_cols, new_rows);
+                    // Always send SIGWINCH after resize so fish immediately
+                    // redraws at the new dimensions. resize() already issues
+                    // TIOCSWINSZ, the explicit SIGWINCH ensures fish re-queries
+                    // $LINES/$COLUMNS even when it missed the kernel signal.
+                    if let Some(pid) = state.shell_pid {
+                        unsafe {
+                            libc::kill(pid, libc::SIGWINCH);
+                        }
+                    }
+                    // Clear the deferred-winch flag if it was pending.
+                    state.needs_initial_sigwinch = false;
                 }
 
                 draw_terminal(area, cr, &state, width, height);
@@ -1614,26 +1641,34 @@ impl Terminal {
             pending_dir: Arc::new(Mutex::new(None)),
         };
 
+        // Spawn the shell on the first size-allocate with non-zero dimensions
+        // rather than on realize, because the terminal pane is hidden at startup
+        // so realize fires with width=height=0, causing fish to start with the
+        // fallback 80x24 size. connect_size_allocate fires once the pane is
+        // actually shown and GTK has assigned real pixel dimensions.
         let term_clone = term.clone();
-        term.drawing_area.connect_realize(move |_area| {
-            let mut t = term_clone.clone();
-            glib::idle_add_local_once(move || {
-                t.spawn_async(
-                    0,
-                    None,
-                    &[],
-                    &[],
-                    0,
-                    || {},
-                    -1,
-                    None,
-                    |result| {
-                        if let Err(e) = result {
-                            eprintln!("Failed to spawn terminal shell: {}", e);
-                        }
-                    },
-                );
-            });
+        let spawned = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        term.drawing_area.connect_map(move |_area| {
+            if !spawned.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                let mut t = term_clone.clone();
+                glib::idle_add_local_once(move || {
+                    t.spawn_async(
+                        0,
+                        None,
+                        &[],
+                        &[],
+                        0,
+                        || {},
+                        -1,
+                        None,
+                        |result| {
+                            if let Err(e) = result {
+                                eprintln!("Failed to spawn terminal shell: {}", e);
+                            }
+                        },
+                    );
+                });
+            }
         });
 
         term
@@ -1738,6 +1773,117 @@ impl Terminal {
     ///     move |path| { let _ = sender.send(AppMsg::NavigateTo(path)), }
     /// }),
     /// ```
+    /// Resolves terminal colors and font from the active GTK/libadwaita theme,
+    /// then applies them, but only for config fields that are empty/default,
+    /// preserving any explicit user overrides in `config.toml`.
+    ///
+    /// Call this once after construction and again whenever the system theme
+    /// changes (see [`connect_theme_changes`]).
+    ///
+    /// Resolution order per field (first non-empty wins):
+    /// - **fg_color**: config hex → `@theme_fg_color` → fallback `#E5E5E5 / #1A1A1A`
+    /// - **bg_color**: config hex → `@window_bg_color` → fallback `#1A1A1A / #FAFAFA`
+    /// - **font**: config string (non-default) → system monospace → `"monospace 13"`
+    pub fn apply_theme(&self, config: &TerminalConfig) {
+        let widget = self.drawing_area.upcast_ref::<gtk::Widget>();
+
+        // --- colors -------------------------------------------------------
+        let style = widget.style_context();
+
+        let theme_fg = style.lookup_color("theme_fg_color");
+        let window_bg = style.lookup_color("window_bg_color");
+        let accent = style.lookup_color("accent_bg_color");
+
+        // fg: config hex → GTK theme_fg_color → hardcoded fallback
+        let fg = if !config.fg_color.is_empty() {
+            config.fg_color.parse::<gtk::gdk::RGBA>().ok()
+        } else {
+            None
+        }
+        .or(theme_fg)
+        .unwrap_or_else(|| {
+            let dark = adw::StyleManager::default().is_dark();
+            if dark {
+                gtk::gdk::RGBA::new(0.898, 0.898, 0.898, 1.0)
+            } else {
+                gtk::gdk::RGBA::new(0.133, 0.133, 0.133, 1.0)
+            }
+        });
+
+        // bg: config hex → GTK window_bg_color → hardcoded fallback
+        let bg = if !config.bg_color.is_empty() {
+            config.bg_color.parse::<gtk::gdk::RGBA>().ok()
+        } else {
+            None
+        }
+        .or(window_bg)
+        .unwrap_or_else(|| {
+            let dark = adw::StyleManager::default().is_dark();
+            if dark {
+                gtk::gdk::RGBA::new(0.102, 0.106, 0.149, 1.0)
+            } else {
+                gtk::gdk::RGBA::new(0.980, 0.980, 0.980, 1.0)
+            }
+        });
+
+        self.set_color_foreground(&fg);
+        self.set_color_background(&bg);
+
+        // cursor / selection tint from accent color
+        if let Some(acc) = accent {
+            let mut state = self.state.lock().unwrap();
+            state.accent_color = Some(acc);
+        }
+
+        // --- font ---------------------------------------------------------
+        // Only substitute the theme monospace font when the config value is
+        // the compiled-in default (user hasn't customised it).
+        const DEFAULT_FONT: &str = "JetBrains Mono 13";
+        let font_str = if config.font.is_empty() || config.font == DEFAULT_FONT {
+            // Ask GTK settings for the system monospace font, then append the
+            // size from the default so it looks reasonable out of the box.
+            gtk::Settings::default()
+                .and_then(|s| s.gtk_font_name())
+                .map(|_| {
+                    // Use "Geist Mono" from the Flux CSS if available,
+                    // otherwise fall back to the GTK monospace font.
+                    let families = ["Geist Mono", "JetBrains Mono", "monospace"];
+                    let pango_ctx = widget.pango_context();
+                    let available: Vec<String> = pango_ctx
+                        .font_map()
+                        .map(|fm| {
+                            fm.list_families()
+                                .iter()
+                                .map(|f| f.name().to_string())
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    let chosen = families
+                        .iter()
+                        .find(|&&f| available.iter().any(|a| a == f))
+                        .copied()
+                        .unwrap_or("monospace");
+                    format!("{} 13", chosen)
+                })
+                .unwrap_or_else(|| DEFAULT_FONT.to_string())
+        } else {
+            config.font.clone()
+        };
+
+        self.set_font(Some(&pango::FontDescription::from_string(&font_str)));
+    }
+
+    /// Connects to `adw::StyleManager::dark` property changes so the terminal
+    /// re-applies the resolved theme whenever the user switches between light
+    /// and dark mode at runtime. Only color fields that are empty in `config`
+    /// will be updated, user-overridden values are preserved.
+    pub fn connect_theme_changes(&self, config: TerminalConfig) {
+        let term = self.clone();
+        adw::StyleManager::default().connect_dark_notify(move |_| {
+            term.apply_theme(&config);
+        });
+    }
+
     pub fn set_cwd_callback<F>(&self, f: F)
     where
         F: Fn(std::path::PathBuf) + Send + 'static,
@@ -1752,6 +1898,22 @@ impl Terminal {
     /// Returns `true` if the terminal's drawing area currently holds keyboard focus.
     pub fn has_focus(&self) -> bool {
         self.drawing_area.has_focus()
+    }
+
+    /// Returns the cached character cell height in pixels, or 0 if not yet drawn.
+    pub fn char_height(&self) -> i32 {
+        self.state.lock().unwrap().char_height as i32
+    }
+
+    /// Sends `SIGWINCH` to the shell process so it re-reads `$LINES`/`$COLUMNS`
+    /// from `TIOCGWINSZ`. Call this after the pane has settled at its final size.
+    pub fn send_sigwinch(&self) {
+        let state = self.state.lock().unwrap();
+        if let Some(pid) = state.shell_pid {
+            unsafe {
+                libc::kill(pid, libc::SIGWINCH);
+            }
+        }
     }
 
     pub fn add_controller(&self, controller: &(impl IsA<gtk::EventController> + Clone)) {
@@ -1833,6 +1995,7 @@ impl Terminal {
         } else {
             24
         };
+        let spawned_hidden = width == 0 || height == 0;
 
         let (master_fd, slave_fd): (RawFd, RawFd) = unsafe {
             let mut master: RawFd = -1;
@@ -1876,6 +2039,7 @@ impl Terminal {
             state.pty_master_fd = Some(master_fd);
             state.cols = cols;
             state.rows = rows;
+            state.needs_initial_sigwinch = spawned_hidden;
         }
 
         let mut command = Command::new(&shell);
@@ -2030,7 +2194,9 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
 
     let total_scrollback = state.scrollback.len();
     let scroll_offset = state.scroll_offset;
-    let visible_rows = (height as f64 / char_height).floor() as usize;
+    // Use pixel height for rendering so content always fills the widget exactly.
+    // state.rows may lag by one frame, rendering by pixel avoids over/under draw.
+    let visible_rows = ((height as f64) / char_height).ceil() as usize;
 
     let start_abs_row = if scroll_offset > 0 {
         total_scrollback.saturating_sub(scroll_offset)
@@ -2225,7 +2391,17 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
         if cursor_y < state.rows && cursor_x < state.cols {
             let x_pos = cursor_x as f64 * char_width;
             let y_pos = cursor_y as f64 * char_height;
-            cr.set_source_rgba(1.0, 1.0, 1.0, 0.3);
+            // Use accent color for the cursor when the theme has provided one.
+            if let Some(acc) = state.accent_color {
+                cr.set_source_rgba(
+                    acc.red() as f64,
+                    acc.green() as f64,
+                    acc.blue() as f64,
+                    0.75,
+                );
+            } else {
+                cr.set_source_rgba(1.0, 1.0, 1.0, 0.3);
+            }
             cr.rectangle(x_pos, y_pos, char_width, char_height);
             cr.fill().unwrap();
         }
