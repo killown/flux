@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
-<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/9ee2ed19-3721-4be3-96ca-7d46c8018d8e" />
+<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/c4382d06-4ee4-470e-8fd6-a8e388f4266c" />
 
 ## Why Flux?
 
