@@ -13,11 +13,9 @@ pub enum HelpMsg {}
 impl HelpWindow {
     fn format_shortcut(&self, shortcut: Option<String>, default: &str) -> String {
         let raw = shortcut.unwrap_or_else(|| default.to_string());
-
         if raw.trim().is_empty() {
             return default.to_string();
         }
-
         raw.replace("<Primary>", "Ctrl + ")
             .replace("<Control>", "Ctrl + ")
             .replace("<control>", "Ctrl + ")
@@ -36,140 +34,219 @@ impl SimpleComponent for HelpWindow {
     type Output = ();
 
     view! {
-        adw::Window {
-            set_default_size: (550, 750),
-            set_title: Some(&tr("flux - Shortcuts")),
+        adw::PreferencesWindow {
+            set_title: Some(&tr("flux - Keyboard Shortcuts")),
+            set_default_size: (600, 700),
             set_modal: true,
-            set_resizable: false,
+            set_search_enabled: true,
+            set_resizable: true,
 
-            gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
+            // --- Navigation Page ---
+            add = &adw::PreferencesPage {
+                set_title: &tr("Navigation"),
+                set_icon_name: Some("compass-symbolic"),
 
-                adw::HeaderBar {},
-
-                gtk::ScrolledWindow {
-                    set_vexpand: true,
-                    set_propagate_natural_height: true,
-
-                    adw::PreferencesPage {
-                        adw::PreferencesGroup {
-                            set_title: &tr("Navigation"),
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.back.clone(), "Backspace"),
-                                set_subtitle: &tr("Go back in history")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.forward.clone(), "Alt + Right"),
-                                set_subtitle: &tr("Go forward in history")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
-                                set_subtitle: &tr("Open selected file or directory")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.root.clone(), "/"),
-                                set_subtitle: &tr("Navigate to root directory")
-                            },
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Navigation Shortcuts"),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Go back in history"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.back.clone(), "Backspace"),
+                            add_css_class: "keycap",
                         },
-
-                        adw::PreferencesGroup {
-                            set_title: &tr("Quick List (Exclusive List)"),
-                            adw::ActionRow {
-                                set_title: "Insert",
-                                set_subtitle: &tr("Add selection or current folder to list")
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + Insert",
-                                set_subtitle: &tr("Pin selection or current folder to sidebar permanently")
-                            },
-                            adw::ActionRow {
-                                set_title: "Tab",
-                                set_subtitle: &tr("Cycle to the next folder in the list")
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + End",
-                                set_subtitle: &tr("Clear the entire list")
-                            },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Go forward in history"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.forward.clone(), "Alt + Right"),
+                            add_css_class: "keycap",
                         },
-
-                        adw::PreferencesGroup {
-                            set_title: &tr("System & View"),
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.rename.clone(), "F2"),
-                                set_subtitle: &tr("Rename selected item")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
-                                set_subtitle: &tr("Change current folder icon")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.reset_icon.clone(), "Ctrl + F3"),
-                                set_subtitle: &tr("Reset current folder icon to default")
-                            },
-                            adw::ActionRow {
-                                set_title: "F4",
-                                set_subtitle: &tr("Toggle embedded terminal")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.refresh.clone(), "F5"),
-                                set_subtitle: &tr("Refresh current directory")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
-                                set_subtitle: &tr("Search files")
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + Scroll",
-                                set_subtitle: &tr("Resize grid items")
-                            },
-                            adw::ActionRow {
-                                set_title: "Ctrl + Middle Click",
-                                set_subtitle: &tr("Open folder in new window")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
-                                set_subtitle: &tr("Toggle hidden files")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.delete.clone(), "Delete"),
-                                set_subtitle: &tr("Move selected items to trash")
-                            },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open selected file or directory"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
+                            add_css_class: "keycap",
                         },
-
-                        adw::PreferencesGroup {
-                            set_title: &tr("Application"),
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
-                                set_subtitle: &tr("Open context menu editor")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.settings.clone(), "F10"),
-                                set_subtitle: &tr("Open preferences")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.cycle_sort.clone(), "Ctrl + S"),
-                                set_subtitle: &tr("Cycle through sorting modes")
-                            },
-                            adw::ActionRow {
-                                set_title: &model.format_shortcut(model.config.shortcuts.toggle_sort_order.clone(), "Ctrl + Shift + S"),
-                                set_subtitle: &tr("Toggle ascending/descending sort order")
-                            },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Navigate to root directory"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.root.clone(), "/"),
+                            add_css_class: "keycap",
                         },
-                    }
-                }
+                    },
+                },
+            },
+
+            // --- Quick List Page ---
+            add = &adw::PreferencesPage {
+                set_title: &tr("Quick List"),
+                set_icon_name: Some("view-list-symbolic"),
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Quick List Shortcuts"),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Add selection or current folder to list"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Insert",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Pin selection or current folder to sidebar permanently"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Insert",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Cycle to the next folder in the list"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Tab",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Clear the entire list"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + End",
+                            add_css_class: "keycap",
+                        },
+                    },
+                },
+            },
+
+            // --- System & View Page ---
+            add = &adw::PreferencesPage {
+                set_title: &tr("System & View"),
+                set_icon_name: Some("view-grid-symbolic"),
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("System & View Shortcuts"),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Rename selected item"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.rename.clone(), "F2"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Change current folder icon"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Reset current folder icon to default"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.reset_icon.clone(), "Ctrl + F3"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle embedded terminal"),
+                        add_suffix = &gtk::Label {
+                            set_label: "F4",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Refresh current directory"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.refresh.clone(), "F5"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Search files"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Resize grid items"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Scroll",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open folder in new window"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Middle Click",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle hidden files"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_hidden.clone(), "Ctrl + H"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Move selected items to trash"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.delete.clone(), "Delete"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                },
+            },
+
+            // --- Application Page ---
+            add = &adw::PreferencesPage {
+                set_title: &tr("Application"),
+                set_icon_name: Some("application-default-icon-symbolic"),
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Application Shortcuts"),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open context menu editor"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.menu_editor.clone(), "F9"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open preferences"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.settings.clone(), "F10"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Cycle through sorting modes"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.cycle_sort.clone(), "Ctrl + S"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle ascending/descending sort order"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_sort_order.clone(), "Ctrl + Shift + S"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                },
             }
         }
     }
 
     fn init(
-        _: Self::Init,
+        _init: Self::Init,
         _root: Self::Root,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let model = HelpWindow {
-            config: crate::utils::load_config(),
-        };
+        let config = crate::utils::load_config();
+        let model = HelpWindow { config };
         let widgets = view_output!();
         ComponentParts { model, widgets }
     }
+
+    fn update(&mut self, _msg: Self::Input, _sender: ComponentSender<Self>) {}
 }
