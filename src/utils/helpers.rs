@@ -186,15 +186,13 @@ impl FluxApp {
         let mut guard = self.sidebar.guard();
         guard.clear();
 
-        if self.config.ui.show_recents {
-            guard.push_back(crate::ui::SidebarPlace {
-                name: crate::i18n::tr("Recents"),
-                icon: "document-open-recent-symbolic".to_string(),
-                path: std::path::PathBuf::from(crate::ui::constants::RECENT_URI),
-                is_mount: false,
-                is_section_label: false,
-            });
-        }
+        let recents_place = || crate::ui::SidebarPlace {
+            name: crate::i18n::tr("Recents"),
+            icon: "document-open-recent-symbolic".to_string(),
+            path: std::path::PathBuf::from(crate::ui::constants::RECENT_URI),
+            is_mount: false,
+            is_section_label: false,
+        };
 
         let get_xdg_name = |p: &PathBuf| {
             gio::File::for_path(p)
@@ -270,7 +268,12 @@ impl FluxApp {
         }
 
         // 2. Custom Sidebar logic
-        for custom in &self.config.sidebar {
+        let show_recents = self.config.ui.show_recents;
+        let recents_row = self.config.ui.recents_row;
+        for (idx, custom) in self.config.sidebar.iter().enumerate() {
+            if show_recents && idx == recents_row {
+                guard.push_back(recents_place());
+            }
             if custom.kind.as_deref() == Some("label") {
                 guard.push_back(SidebarPlace {
                     name: custom.name.clone(),
@@ -303,6 +306,10 @@ impl FluxApp {
                 is_mount: false,
                 is_section_label: false,
             });
+        }
+
+        if show_recents && recents_row >= self.config.sidebar.len() {
+            guard.push_back(recents_place());
         }
 
         // 3. Mounts

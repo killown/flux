@@ -233,6 +233,20 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Recents Position"),
+                        set_subtitle: &tr("Row index of Recents in the sidebar (0 = top)"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(model.config.ui.recents_row as f64, 0.0, 999.0, 1.0, 0.0, 0.0),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetRecentsRow(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("XDG Directories"),
                         set_subtitle: &tr("Show standard user directories in sidebar"),
                         add_suffix = &gtk::Switch {

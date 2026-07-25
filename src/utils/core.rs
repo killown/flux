@@ -299,6 +299,7 @@ path = "~"
                 terminal: TerminalConfig::default(),
                 sidebar_visible: true,
                 show_recents: true,
+                recents_row: 0,
                 show_thumbnails: true,
                 thumbnail_types: crate::model::ThumbnailTypes::default(),
             },

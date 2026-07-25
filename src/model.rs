@@ -271,6 +271,13 @@ pub struct UIConfig {
     /// opens a live view of the GTK recent-files registry.
     #[serde(default = "default_true")]
     pub show_recents: bool,
+    /// Zero-based insertion index for the Recents row within the `[[sidebar]]` entry list.
+    ///
+    /// `0` places Recents above all custom sidebar entries (the previous hardcoded behaviour).
+    /// Any value ≥ the number of `[[sidebar]]` entries appends it after all of them.
+    /// This field has no effect when `show_recents` is `false`.
+    #[serde(default)]
+    pub recents_row: usize,
     /// Global toggle for all thumbnail generation.
     ///
     /// When `false`, no thumbnails are generated for any file type, overriding
@@ -312,6 +319,7 @@ impl Default for UIConfig {
             terminal: TerminalConfig::default(),
             sidebar_visible: true,
             show_recents: true,
+            recents_row: 0,
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
         }
@@ -442,6 +450,11 @@ pub struct FluxApp {
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 pub enum AppMsg {
+    /// Sets the zero-based insertion index for the Recents row within the `[[sidebar]]` entry list.
+    ///
+    /// Values ≥ the number of configured sidebar entries place Recents after all of them.
+    /// Has no effect when `show_recents` is `false`.
+    SetRecentsRow(usize),
     /// Remove one or all entries from the recent-files list.
     ClearRecents,
     /// Toggle the embedded terminal panel visibility.

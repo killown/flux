@@ -1042,6 +1042,11 @@ impl FluxApp {
                     });
                 }
             }
+            AppMsg::SetRecentsRow(val) => {
+                self.config.ui.recents_row = val;
+                utils::save_config(&self.config);
+                sender.input(AppMsg::RefreshSidebar);
+            }
             AppMsg::JumpToRecent(rank) => {
                 let target_index = if rank == 0 { 0 } else { rank - 1 };
                 if let Some(target_path) = self.recent_stack.get(target_index).cloned() {
