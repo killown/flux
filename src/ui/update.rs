@@ -1031,14 +1031,6 @@ impl FluxApp {
                         if !terminal_has_focus {
                             view.grab_focus();
                         }
-                        if let Some(model) = view
-                            .model()
-                            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                        {
-                            if model.n_items() > 0 {
-                                model.select_item(0, true);
-                            }
-                        }
                     });
                 }
             }
