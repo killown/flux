@@ -205,8 +205,7 @@ path = ""
 name = "Home"
 icon = "user-home-symbolic"
 path = "~"
-"
-#,
+"#,
         );
 
         let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
