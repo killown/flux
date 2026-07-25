@@ -111,6 +111,13 @@ pub struct TerminalState {
     /// Used for the cursor and selection highlight. `None` until `apply_theme`
     /// is called.
     pub accent_color: Option<gtk::gdk::RGBA>,
+    /// The 16-entry ANSI color palette (indices 0-7 normal, 8-15 bright).
+    ///
+    /// Resolved from the active GTK/libadwaita named palette colors in
+    /// [`apply_theme`] so that directory highlighting and other SGR colors
+    /// follow the user's theme. Falls back to the xterm defaults when theme
+    /// variables are unavailable.
+    pub ansi_palette: [gtk::gdk::RGBA; 16],
     /// Invoked on the PTY reader thread whenever fish emits an OSC 7
     /// working-directory notification. The callback receives the decoded
     /// absolute path of the new directory.
@@ -176,6 +183,7 @@ impl TerminalState {
             application_cursor_keys: false,
             needs_initial_sigwinch: false,
             accent_color: None,
+            ansi_palette: default_ansi_palette(),
             on_cwd_change: None,
         }
     }
@@ -367,28 +375,10 @@ impl TerminalState {
 
     /// Expands a xterm 256-color palette index into an RGBA value.
     pub fn color_from_256(index: u16) -> gtk::gdk::RGBA {
-        // First 16 are the standard ANSI colors (same table used in SGR 30-37/90-97).
-        const ANSI16: [(f32, f32, f32); 16] = [
-            (0.0, 0.0, 0.0),
-            (0.8, 0.0, 0.0),
-            (0.0, 0.8, 0.0),
-            (0.8, 0.8, 0.0),
-            (0.0, 0.0, 0.8),
-            (0.8, 0.0, 0.8),
-            (0.0, 0.8, 0.8),
-            (0.8, 0.8, 0.8),
-            (0.4, 0.4, 0.4),
-            (1.0, 0.2, 0.2),
-            (0.2, 1.0, 0.2),
-            (1.0, 1.0, 0.2),
-            (0.2, 0.2, 1.0),
-            (1.0, 0.2, 1.0),
-            (0.2, 1.0, 1.0),
-            (1.0, 1.0, 1.0),
-        ];
+        // First 16 delegate to the shared fallback palette (same entries used
+        // for SGR 30-37/90-97 before theme resolution).
         if index < 16 {
-            let (r, g, b) = ANSI16[index as usize];
-            return gtk::gdk::RGBA::new(r, g, b, 1.0);
+            return default_ansi_palette()[index as usize];
         }
         // 6x6x6 colour cube: indices 16-231.
         if index < 232 {
@@ -817,7 +807,7 @@ impl Perform for TerminalHandler {
                             29 => state.strikethrough = false,
                             // Standard foreground colors (30-37).
                             30..=37 => {
-                                state.current_fg = ansi_color(p[i] as u16 - 30, false);
+                                state.current_fg = state.ansi_palette[(p[i] as usize - 30).min(7)];
                             }
                             // Extended foreground: 38,5,Ps (256-color) or 38,2,r,g,b (true-color).
                             38 => match p.get(i + 1).copied() {
@@ -836,7 +826,7 @@ impl Perform for TerminalHandler {
                             39 => state.current_fg = state.fg_color,
                             // Standard background colors (40-47).
                             40..=47 => {
-                                state.current_bg = ansi_color(p[i] as u16 - 40, false);
+                                state.current_bg = state.ansi_palette[(p[i] as usize - 40).min(7)];
                             }
                             // Extended background: 48,5,Ps or 48,2,r,g,b.
                             48 => match p.get(i + 1).copied() {
@@ -855,11 +845,13 @@ impl Perform for TerminalHandler {
                             49 => state.current_bg = state.bg_color,
                             // Bright foreground colors (90-97).
                             90..=97 => {
-                                state.current_fg = ansi_color(p[i] as u16 - 90, true);
+                                state.current_fg =
+                                    state.ansi_palette[8 + (p[i] as usize - 90).min(7)];
                             }
                             // Bright background colors (100-107).
                             100..=107 => {
-                                state.current_bg = ansi_color(p[i] as u16 - 100, true);
+                                state.current_bg =
+                                    state.ansi_palette[8 + (p[i] as usize - 100).min(7)];
                             }
                             _ => {}
                         }
@@ -1881,10 +1873,39 @@ impl Terminal {
         self.set_color_foreground(&fg);
         self.set_color_background(&bg);
 
-        // cursor / selection tint from accent color
-        if let Some(acc) = accent {
+        // Resolve the 16-color ANSI palette from the libadwaita named palette.
+        // Each GTK variable maps to an xterm ANSI slot, missing variables fall
+        // back to the compiled-in xterm defaults for that slot only.
+        let palette_vars: [(&str, usize); 14] = [
+            ("green_3", 2),
+            ("green_5", 10),
+            ("yellow_3", 3),
+            ("yellow_5", 11),
+            ("blue_3", 4),
+            ("blue_5", 12),
+            ("purple_3", 5),
+            ("purple_5", 13),
+            ("cyan", 6),
+            ("blue_4", 14),
+            ("red_3", 1),
+            ("red_5", 9),
+            ("dark_2", 8),
+            ("light_5", 15),
+        ];
+        let mut palette = default_ansi_palette();
+        for (var, slot) in palette_vars {
+            if let Some(c) = style.lookup_color(var) {
+                palette[slot] = c;
+            }
+        }
+
+        {
             let mut state = self.state.lock().unwrap();
-            state.accent_color = Some(acc);
+            state.ansi_palette = palette;
+            // cursor / selection tint from accent color
+            if let Some(acc) = accent {
+                state.accent_color = Some(acc);
+            }
         }
 
         // --- font ---------------------------------------------------------
@@ -2189,30 +2210,45 @@ fn percent_decode(s: &str) -> String {
 /// Maps a 3-bit ANSI color index (0-7) to an RGBA value.
 /// `bright` selects the high-intensity variant used by SGR 90-97 / 100-107.
 #[inline]
+/// Returns the xterm-compatible 16-color ANSI palette as a fallback.
+///
+/// Indices 0-7 are the normal colors, 8-15 are their bright counterparts.
+/// [`TerminalState::apply_theme`] overwrites individual slots with GTK
+/// theme values at runtime, so these are only used before the first theme
+/// application or for palette entries with no matching GTK variable.
+fn default_ansi_palette() -> [gtk::gdk::RGBA; 16] {
+    const ENTRIES: [(f32, f32, f32); 16] = [
+        (0.0, 0.0, 0.0), // 0  black
+        (0.8, 0.0, 0.0), // 1  red
+        (0.0, 0.8, 0.0), // 2  green
+        (0.8, 0.8, 0.0), // 3  yellow
+        (0.0, 0.0, 0.8), // 4  blue
+        (0.8, 0.0, 0.8), // 5  magenta
+        (0.0, 0.8, 0.8), // 6  cyan
+        (0.8, 0.8, 0.8), // 7  white
+        (0.4, 0.4, 0.4), // 8  bright black
+        (1.0, 0.2, 0.2), // 9  bright red
+        (0.2, 1.0, 0.2), // 10 bright green
+        (1.0, 1.0, 0.2), // 11 bright yellow
+        (0.2, 0.2, 1.0), // 12 bright blue
+        (1.0, 0.2, 1.0), // 13 bright magenta
+        (0.2, 1.0, 1.0), // 14 bright cyan
+        (1.0, 1.0, 1.0), // 15 bright white
+    ];
+    ENTRIES.map(|(r, g, b)| gtk::gdk::RGBA::new(r, g, b, 1.0))
+}
+
+/// Retained for use in [`TerminalState::color_from_256`] (indices 0-15 of the
+/// 256-color palette still need a static lookup path).
+#[allow(dead_code)]
 fn ansi_color(index: u16, bright: bool) -> gtk::gdk::RGBA {
-    const NORMAL: [(f32, f32, f32); 8] = [
-        (0.0, 0.0, 0.0),
-        (0.8, 0.0, 0.0),
-        (0.0, 0.8, 0.0),
-        (0.8, 0.8, 0.0),
-        (0.0, 0.0, 0.8),
-        (0.8, 0.0, 0.8),
-        (0.0, 0.8, 0.8),
-        (0.8, 0.8, 0.8),
-    ];
-    const BRIGHT: [(f32, f32, f32); 8] = [
-        (0.4, 0.4, 0.4),
-        (1.0, 0.2, 0.2),
-        (0.2, 1.0, 0.2),
-        (1.0, 1.0, 0.2),
-        (0.2, 0.2, 1.0),
-        (1.0, 0.2, 1.0),
-        (0.2, 1.0, 1.0),
-        (1.0, 1.0, 1.0),
-    ];
-    let table = if bright { &BRIGHT } else { &NORMAL };
-    let (r, g, b) = table[(index as usize).min(7)];
-    gtk::gdk::RGBA::new(r, g, b, 1.0)
+    let palette = default_ansi_palette();
+    let idx = if bright {
+        8 + (index as usize).min(7)
+    } else {
+        (index as usize).min(7)
+    };
+    palette[idx]
 }
 
 /// Converts a 24-bit RGB triple (0-255 each, passed as i64) into RGBA.
