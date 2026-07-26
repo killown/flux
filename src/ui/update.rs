@@ -1058,24 +1058,74 @@ impl FluxApp {
                     if self.exclusive_index.is_none() {
                         self.exclusive_index = Some(self.exclusive_list.len() - 1);
                     }
-                    self.refresh_sidebar();
+                    sender.input(AppMsg::RebuildQuickPanel);
                 }
             }
             AppMsg::ClearExclusive => {
                 self.exclusive_list.clear();
                 self.exclusive_index = None;
-                self.refresh_sidebar();
+                sender.input(AppMsg::RebuildQuickPanel);
+            }
+            AppMsg::RemoveQuickItem(path) => {
+                if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
+                    self.exclusive_list.remove(pos);
+                    self.exclusive_index = if self.exclusive_list.is_empty() {
+                        None
+                    } else {
+                        Some(pos.saturating_sub(1).min(self.exclusive_list.len() - 1))
+                    };
+                    sender.input(AppMsg::RebuildQuickPanel);
+                }
+            }
+            AppMsg::RebuildQuickPanel => {
+                let panel = &self.quick_panel_box;
+                while let Some(child) = panel.first_child() {
+                    panel.remove(&child);
+                }
+                let active_idx = self.exclusive_index;
+                for (idx, path) in self.exclusive_list.iter().enumerate() {
+                    let label = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| path.to_string_lossy().into_owned());
+
+                    let btn = gtk::Button::with_label(&label);
+                    btn.set_tooltip_text(Some(&path.to_string_lossy()));
+                    btn.add_css_class("flat");
+                    if active_idx == Some(idx) {
+                        btn.add_css_class("suggested-action");
+                    }
+
+                    let path_nav = path.clone();
+                    let s_nav = sender.clone();
+                    btn.connect_clicked(move |_| {
+                        s_nav.input(AppMsg::Navigate(path_nav.clone()));
+                    });
+
+                    // Middle-click removes the tab.
+                    let path_rm = path.clone();
+                    let s_rm = sender.clone();
+                    let middle = gtk::GestureClick::new();
+                    middle.set_button(2);
+                    middle.connect_pressed(move |gesture, _, _, _| {
+                        gesture.set_state(gtk::EventSequenceState::Claimed);
+                        s_rm.input(AppMsg::RemoveQuickItem(path_rm.clone()));
+                    });
+                    btn.add_controller(middle);
+
+                    panel.append(&btn);
+                }
             }
             AppMsg::NextExclusive => {
                 if !self.exclusive_list.is_empty() {
                     let new_idx = match self.exclusive_index {
                         Some(i) => (i + 1) % self.exclusive_list.len(),
-
                         None => 0,
                     };
                     self.exclusive_index = Some(new_idx);
                     let target = self.exclusive_list[new_idx].clone();
                     sender.input(AppMsg::Navigate(target));
+                    sender.input(AppMsg::RebuildQuickPanel);
                 }
             }
             AppMsg::PrevExclusive => {
@@ -1087,6 +1137,7 @@ impl FluxApp {
                     self.exclusive_index = Some(new_idx);
                     let target = self.exclusive_list[new_idx].clone();
                     sender.input(AppMsg::Navigate(target));
+                    sender.input(AppMsg::RebuildQuickPanel);
                 }
             }
             AppMsg::SelectionChanged => {

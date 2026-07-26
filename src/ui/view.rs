@@ -357,8 +357,13 @@ impl SimpleAsyncComponent for FluxApp {
                             set_shrink_start_child: true,
 
                             #[wrap(Some)]
-                            set_start_child: grid_scroller = &gtk::ScrolledWindow {
+                            set_start_child = &gtk::Box {
+                                set_orientation: gtk::Orientation::Vertical,
                                 set_vexpand: true,
+
+                                #[name = "grid_scroller"]
+                                gtk::ScrolledWindow {
+                                    set_vexpand: true,
                                 /// Scroll event controller for UI zooming (Ctrl + Scroll).
                                 add_controller = gtk::EventControllerScroll {
                                     set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -394,7 +399,39 @@ impl SimpleAsyncComponent for FluxApp {
                                         }
                                     }
                                 },
+                                },
+
+                                // Quick-list tab bar, hidden until at least one folder is pinned.
+                                // Rendered at the bottom of the grid area, centered horizontally.
+                                gtk::Revealer {
+                                    set_transition_type: gtk::RevealerTransitionType::SlideUp,
+                                    set_transition_duration: 150,
+                                    #[watch]
+                                    set_reveal_child: !model.exclusive_list.is_empty(),
+                                    #[watch]
+                                    set_visible: !model.exclusive_list.is_empty(),
+
+                                    gtk::ScrolledWindow {
+                                        set_hscrollbar_policy: gtk::PolicyType::Automatic,
+                                        set_vscrollbar_policy: gtk::PolicyType::Never,
+                                        set_propagate_natural_height: true,
+                                        add_css_class: "quick-panel-scroll",
+
+                                        #[local_ref]
+                                        quick_panel_box -> gtk::Box {
+                                            set_orientation: gtk::Orientation::Horizontal,
+                                            set_halign: gtk::Align::Center,
+                                            add_css_class: "quick-panel",
+                                            set_spacing: 4,
+                                            set_margin_start: 6,
+                                            set_margin_end: 6,
+                                            set_margin_top: 6,
+                                            set_margin_bottom: 6,
+                                        }
+                                    }
+                                },
                             },
+
                             #[wrap(Some)]
                             set_end_child: terminal_revealer = &gtk::Revealer {
                                 set_transition_type: gtk::RevealerTransitionType::SlideUp,
@@ -512,6 +549,7 @@ impl SimpleAsyncComponent for FluxApp {
     ) -> AsyncComponentParts<Self> {
         let (mut model, breadcrumb_box) = Self::init_components(start_path, &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
+        let quick_panel_box = model.quick_panel_box.clone();
         let widgets = view_output!();
 
         let main_menu = Self::build_main_menu();

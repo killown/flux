@@ -445,6 +445,11 @@ pub struct FluxApp {
     pub sidebar_visible: bool,
     /// Reference to the sidebar widget for toggling visibility.
     pub sidebar_widget: Option<gtk::Widget>,
+    /// Horizontal box holding the quick-list tab buttons.
+    ///
+    /// Populated imperatively by `RebuildQuickPanel` whenever `exclusive_list` changes.
+    /// Lives outside the relm4 view macro so it can be mutated freely from `update.rs`.
+    pub quick_panel_box: gtk::Box,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
@@ -693,6 +698,13 @@ pub enum AppMsg {
     SetThumbnailType { type_name: String, enabled: bool },
     /// Toggles the "Recents" virtual entry in the sidebar.
     SetShowRecents(bool),
+    /// Remove a single path from the quick-list panel by exact match.
+    RemoveQuickItem(PathBuf),
+    /// Tear down and reconstruct all tab buttons in the quick-list panel.
+    ///
+    /// Sent automatically after any mutation of `exclusive_list` so the widget
+    /// tree always reflects the current state.
+    RebuildQuickPanel,
 }
 
 /// Represents a single entry in the Flux context menu configuration.

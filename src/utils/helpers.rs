@@ -341,19 +341,6 @@ impl FluxApp {
                 is_section_label: false,
             });
         }
-
-        // 4. Exclusive List
-        for path in &self.exclusive_list {
-            if let Some(name) = path.file_name() {
-                guard.push_back(SidebarPlace {
-                    name: format!("#{}", name.to_string_lossy()),
-                    icon: "go-next-symbolic".to_string(),
-                    path: path.clone(),
-                    is_mount: false,
-                    is_section_label: false,
-                });
-            }
-        }
     }
 
     /// Attaches a motion controller to change the cursor to a pointer on hover.
