@@ -557,10 +557,10 @@ impl FactoryComponent for SidebarPlace {
                     },
                     #[name = "eject_button"]
                     gtk::Button {
-                        set_icon_name: "media-eject-symbolic",
+                        set_icon_name: "media-eject",
                         #[watch]
                         set_visible: self.is_mount,
-                        add_css_class: "flat",
+                        add_css_class: "eject-button",
                         connect_clicked[path = self.path.clone()] => move |_| {
                             if let Some(s) = crate::model::SENDER.get() {
                                 let _ = s.send(crate::model::AppMsg::UnmountDevice(path.clone()));
