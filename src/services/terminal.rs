@@ -212,7 +212,7 @@ impl TerminalState {
         for y in 0..rows {
             let mut row = Vec::with_capacity(cols);
             for x in 0..cols {
-                let cell = if y < self.rows && x < self.cols {
+                let cell = if y < self.grid.len() && x < self.grid[y].len() {
                     self.grid[y][x].clone()
                 } else {
                     Cell::blank()
