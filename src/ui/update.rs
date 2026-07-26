@@ -981,13 +981,22 @@ impl FluxApp {
                     return;
                 }
 
-                // Validate path existence (except for virtual trash URI)
+                // Update quick-panel active index if the target is in the exclusive list
+                if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
+                    self.exclusive_index = Some(pos);
+                    sender.input(AppMsg::RebuildQuickPanel);
+                }
 
+                // If we are already at this path, we only needed the style update above
+                if path == self.current_path {
+                    return;
+                }
+
+                // Validate path existence (except for virtual trash URI)
                 // Only proceed if the target is a directory/trash and different from current location
                 if (path.is_dir()
                     || path_str.starts_with(constants::TRASH_URI)
                     || path_str.starts_with(constants::RECENT_URI))
-                    && path != self.current_path
                 {
                     let old_path = std::mem::replace(&mut self.current_path, path.clone());
                     // Synchronize the physical process working directory with the application state.
