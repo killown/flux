@@ -1364,7 +1364,7 @@ impl Terminal {
                 _ if is_ctrl && !is_shift => {
                     if let Some(ch) = keyval.to_unicode() {
                         let lower = ch.to_ascii_lowercase();
-                        if lower >= 'a' && lower <= 'z' {
+                        if lower.is_ascii_lowercase() {
                             let ctrl_byte = (lower as u8) - b'a' + 1;
                             if pty_is_raw(fd) {
                                 pty_write(fd, &[ctrl_byte]);

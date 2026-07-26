@@ -815,6 +815,7 @@ mod tests {
             name: "Home".to_string(),
             icon: "user-home-symbolic".to_string(),
             path: "~".to_string(),
+            kind: None,
         };
 
         let config = Config {
