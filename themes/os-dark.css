@@ -1,0 +1,592 @@
+:root {
+  --accent-color: #007aff;
+  --shadow: rgba(0, 0, 0, 0.6);
+  --shadow-hover: rgba(0, 0, 0, 0.7);
+  --font-main: "Inter", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  letter-spacing: 0.2px !important;
+}
+
+headerbar {
+  background-color: @headerbar_bg_color;
+  padding: 4px 12px;
+  min-height: 38px;
+  border: none;
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.2);
+  font-family: var(--font-main);
+}
+
+headerbar label {
+  color: @headerbar_fg_color;
+  letter-spacing: 1.5px !important;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+headerbar button {
+  background-color: transparent;
+  color: @headerbar_fg_color;
+  border: none;
+  box-shadow: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+headerbar button:hover {
+  background-color: alpha(@headerbar_fg_color, 0.08);
+}
+
+.sidebar {
+  background-color: @window_bg_color;
+  border: none;
+  box-shadow: inset -1px 0 0 0 rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-row:not(.sidebar-section) {
+  margin: 2px 14px;
+  padding: 6px 16px;
+  border-radius: 12px;
+  background-color: transparent;
+  border: none;
+  transition:
+    background-color 200ms linear,
+    transform 200ms cubic-bezier(0.1, 0.7, 0.1, 1);
+  color: alpha(@theme_fg_color, 0.85);
+}
+
+.sidebar-row:not(.sidebar-section) label {
+  color: alpha(@theme_fg_color, 0.85);
+  font-family: var(--font-main);
+  font-size: 10.5pt;
+  letter-spacing: 0.6px;
+}
+
+.sidebar-row:not(.sidebar-section):hover:not(:selected) {
+  background-color: alpha(@theme_fg_color, 0.08);
+  transform: translateX(4px);
+}
+
+.sidebar-row:not(.sidebar-section):selected {
+  background-color: @accent_bg_color;
+  box-shadow: 0 4px 12px var(--shadow);
+  transform: translateX(6px);
+}
+
+.sidebar-row:not(.sidebar-section):selected label {
+  color: white;
+  font-weight: bold;
+}
+
+.sidebar-section {
+  margin-top: 8px;
+  margin-bottom: 2px;
+  padding: 10px 12px 6px 12px;
+  min-height: 0;
+  background: transparent;
+  border-radius: 0;
+  transform: none;
+  pointer-events: none;
+}
+
+.sidebar-section:hover,
+.sidebar-section:focus {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.sidebar-section .sidebar-section-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: alpha(@window_fg_color, 0.6);
+  background-color: alpha(@window_fg_color, 0.08);
+  border-radius: 6px;
+  padding: 2px 10px;
+  margin-left: 16px;
+  box-shadow:
+    0 1px 0 alpha(@window_fg_color, 0.08),
+    inset 0 1px 0 alpha(@window_fg_color, 0.04);
+}
+
+.sidebar-section::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: alpha(@window_fg_color, 0.08);
+  margin: 0 14px 6px 14px;
+}
+
+gridview,
+listview {
+  background-color: transparent;
+  padding: 16px 24px;
+}
+
+gridview child {
+  padding: 2px;
+  margin: 0;
+}
+
+.flux-card {
+  background-color: @card_bg_color;
+  border-radius: 18px;
+  padding: 12px;
+  margin: 6px;
+  border: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 2px 8px var(--shadow);
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+}
+
+.flux-card:hover {
+  background-color: alpha(@theme_fg_color, 0.06);
+  box-shadow:
+    0 0 0 1px alpha(@accent_color, 0.3),
+    0 8px 16px var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+.flux-label {
+  color: @theme_fg_color;
+  font-family: var(--font-main);
+  font-size: 10pt;
+  letter-spacing: 0.4px !important;
+}
+
+gridview > child:selected .flux-label {
+  color: @theme_fg_color;
+  font-weight: bold;
+}
+
+/* ── Breadcrumb pill style ── */
+
+button.breadcrumb-btn {
+  background: linear-gradient(
+    to bottom,
+    alpha(@theme_fg_color, 0.06),
+    alpha(@theme_fg_color, 0.02)
+  );
+  padding: 4px 14px;
+  margin: 1px;
+  font-weight: 500;
+  transition: all 0.12s ease;
+  color: alpha(@theme_fg_color, 0.8);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  position: relative;
+}
+
+/* First and last child get rounded ends */
+button.breadcrumb-btn:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-right-width: 0;
+}
+button.breadcrumb-btn:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-right-width: 1px;
+  background: @accent_bg_color;
+  border-color: @accent_bg_color;
+  color: @accent_fg_color;
+  box-shadow:
+    0 2px 8px alpha(@accent_color, 0.3),
+    inset 0 1px 0 alpha(white, 0.2);
+  font-weight: 600;
+  padding: 4px 18px;
+}
+button.breadcrumb-btn:last-child label {
+  color: @accent_fg_color;
+  font-weight: 600;
+}
+button.breadcrumb-btn:last-child:hover {
+  background: color-mix(in srgb, @accent_bg_color, #000 10%);
+  box-shadow: 0 4px 12px alpha(@accent_color, 0.4);
+}
+
+/* Arrow separator between items (except after the last) */
+button.breadcrumb-btn:not(:last-child)::after {
+  content: "›";
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 1.3em;
+  font-weight: 200;
+  color: alpha(@theme_fg_color, 0.25);
+  pointer-events: none;
+}
+
+button.breadcrumb-btn:hover:not(:last-child) {
+  background: linear-gradient(
+    to bottom,
+    alpha(@theme_fg_color, 0.12),
+    alpha(@theme_fg_color, 0.06)
+  );
+  box-shadow:
+    inset 0 1px 0 alpha(@window_fg_color, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: alpha(@theme_fg_color, 0.18);
+  color: @theme_fg_color;
+}
+button.breadcrumb-btn:active:not(:last-child) {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
+}
+
+button.breadcrumb-btn label {
+  color: inherit;
+  font-family: var(--font-mono);
+  letter-spacing: 0.8px !important;
+}
+
+popover.menu {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+popover.menu contents {
+  background-color: @window_bg_color;
+  border: none;
+  outline: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+popover.menu modelbutton label {
+  color: @theme_fg_color;
+  letter-spacing: 0.4px !important;
+}
+
+popover.menu modelbutton:hover {
+  background-color: @accent_bg_color;
+  color: @accent_color;
+}
+
+popover.menu > contents separator {
+  background-color: alpha(@theme_fg_color, 0.1);
+  min-height: 1px;
+  margin: 4px 8px;
+}
+
+entry {
+  background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 5%);
+  border: none;
+  border-radius: 22px;
+  padding: 4px 12px;
+  color: @theme_fg_color;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  letter-spacing: 0.5px !important;
+}
+
+entry:focus {
+  box-shadow: 0 0 0 3px alpha(@accent_color, 0.3);
+}
+
+.selection-status {
+  background-color: alpha(@window_bg_color, 0.8);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px 16px;
+  min-height: 28px;
+}
+
+.selection-status label.caption {
+  color: @theme_fg_color;
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+}
+
+progressbar {
+  background-color: alpha(@theme_fg_color, 0.05);
+  border-radius: 4px;
+}
+
+progressbar progress {
+  background-color: @accent_bg_color;
+  border-radius: 4px;
+  min-height: 4px;
+}
+
+.suggested-action {
+  background-color: @accent_bg_color;
+  color: @accent_color;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: bold;
+}
+
+.suggested-action:hover {
+  background-color: alpha(@accent_bg_color, 0.8);
+}
+
+.destructive-action {
+  background-color: alpha(#ff3b30, 0.1);
+  color: #ff3b30;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: bold;
+  letter-spacing: 1.2px !important;
+}
+
+.destructive-action:hover {
+  background-color: alpha(#ff3b30, 0.2);
+}
+
+.property {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 0;
+  color: @theme_fg_color;
+  font-size: 9.5pt;
+}
+
+.property label {
+  color: @theme_fg_color;
+}
+
+.monospace {
+  font-family: var(--font-mono);
+}
+
+.error {
+  border: 1px solid #ff3b30;
+  background: alpha(#ff3b30, 0.08);
+  color: #ff3b30;
+}
+
+.warning {
+  border: 1px solid #ff9500;
+  background: alpha(#ff9500, 0.08);
+  color: #ff9500;
+}
+
+.card {
+  background: alpha(@theme_fg_color, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.frame {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.boxed-list {
+  background: alpha(@theme_fg_color, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+check,
+radio {
+  background-color: alpha(@theme_fg_color, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  min-height: 16px;
+  min-width: 16px;
+}
+
+check:checked,
+radio:checked {
+  background-color: @accent_bg_color;
+  border-color: @accent_bg_color;
+}
+
+check:hover,
+radio:hover {
+  border-color: @accent_bg_color;
+}
+
+check:disabled,
+radio:disabled {
+  opacity: 0.4;
+}
+
+tooltip.background {
+  background-color: alpha(@window_bg_color, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: @theme_fg_color;
+  padding: 6px 12px;
+}
+
+spinbutton {
+  background-color: alpha(@theme_fg_color, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: @theme_fg_color;
+  padding: 0 4px;
+  min-height: 28px;
+}
+
+spinbutton:focus-within {
+  border-color: @accent_bg_color;
+}
+
+spinbutton > button {
+  background: transparent;
+  border: none;
+  color: @theme_fg_color;
+}
+
+spinbutton > button:hover {
+  color: @accent_color;
+}
+
+dropdown,
+combobox {
+  background-color: alpha(@theme_fg_color, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: @theme_fg_color;
+  min-height: 28px;
+}
+
+dropdown button,
+combobox button {
+  background: transparent;
+  border: none;
+  color: @theme_fg_color;
+}
+
+dropdown:focus-within,
+combobox:focus-within {
+  border-color: @accent_bg_color;
+}
+
+notebook > header {
+  background: transparent;
+  border: none;
+}
+
+notebook > header > tabs > tab {
+  background: transparent;
+  color: @theme_fg_color;
+  padding: 4px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+}
+
+notebook > header > tabs > tab:checked {
+  color: @accent_color;
+  border-bottom-color: @accent_color;
+}
+
+scale trough {
+  background: alpha(@theme_fg_color, 0.1);
+  border-radius: 10px;
+  min-height: 4px;
+}
+
+scale highlight {
+  background: @accent_bg_color;
+}
+
+scale slider {
+  background: @theme_fg_color;
+  border: 2px solid @accent_bg_color;
+  border-radius: 50%;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+levelbar block {
+  border-radius: 4px;
+}
+
+levelbar block.low {
+  background: #ff3b30;
+}
+
+levelbar block.high {
+  background: @accent_bg_color;
+}
+
+levelbar block.full {
+  background: #34c759;
+}
+
+list,
+listview {
+  background: transparent;
+  color: @theme_fg_color;
+}
+
+row {
+  background: transparent;
+  color: @theme_fg_color;
+}
+
+row:selected {
+  background: alpha(@accent_bg_color, 0.08);
+  color: @accent_color;
+}
+
+.view {
+  background: transparent;
+  color: @theme_fg_color;
+}
+
+.view:selected {
+  background: alpha(@accent_bg_color, 0.08);
+  color: @accent_color;
+}
+
+scrollbar {
+  background: transparent;
+}
+
+scrollbar slider {
+  background-color: alpha(@theme_fg_color, 0.2);
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: alpha(@theme_fg_color, 0.4);
+}
+
+window.settings-window headerbar label,
+adwpreferenceswindow headerbar label {
+  letter-spacing: 2px !important;
+  font-weight: 800;
+}
+
+.settings-row label {
+  letter-spacing: 0.3px !important;
+}
+
+adwpreferencesgroup > box > label {
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.7;
+}
+
+adwactionrow label {
+  color: @theme_fg_color;
+  letter-spacing: 0.3px !important;
+}
+
+dropdown {
+  background-color: @card_bg_color;
+  color: @theme_fg_color;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+dropdown label {
+  letter-spacing: 0.5px !important;
+}
+
+toast label {
+  color: @theme_fg_color;
+  letter-spacing: 0.6px !important;
+}

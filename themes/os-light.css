@@ -1,0 +1,661 @@
+:root {
+  --accent-color: #007aff;
+  --shadow: rgba(0, 0, 0, 0.08);
+  --shadow-hover: rgba(0, 0, 0, 0.15);
+  --font-main: "Inter", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+  letter-spacing: 0.2px !important;
+}
+
+window {
+  background-color: #f5f5f7;
+}
+
+headerbar {
+  background-color: #ececec;
+  padding: 4px 12px;
+  min-height: 38px;
+  border: none;
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.06);
+  font-family: var(--font-main);
+}
+
+headerbar label {
+  color: #1d1d1f;
+  letter-spacing: 1.5px !important;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+headerbar button {
+  background-color: transparent;
+  color: #1d1d1f;
+  border: none;
+  box-shadow: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
+headerbar button:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+/* ── Light Sidebar ── */
+.sidebar {
+  background-color: #f5f5f7;
+  border: none;
+  box-shadow: inset -1px 0 0 0 rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-row:not(.sidebar-section) {
+  margin: 2px 14px;
+  padding: 6px 16px;
+  border-radius: 12px;
+  background-color: transparent;
+  border: none;
+  transition:
+    background-color 200ms linear,
+    transform 200ms cubic-bezier(0.1, 0.7, 0.1, 1);
+  color: rgba(29, 29, 31, 0.85);
+}
+
+.sidebar-row:not(.sidebar-section) label {
+  color: #1d1d1f;
+  font-family: var(--font-main);
+  font-size: 10.5pt;
+  letter-spacing: 0.6px;
+}
+
+.sidebar-row:not(.sidebar-section):hover:not(:selected) {
+  background-color: rgba(0, 0, 0, 0.06);
+  transform: translateX(4px);
+}
+
+.sidebar-row:not(.sidebar-section):selected {
+  background-color: #007aff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateX(6px);
+}
+
+.sidebar-row:not(.sidebar-section):selected label {
+  color: white;
+  font-weight: bold;
+}
+
+.sidebar-section {
+  margin-top: 8px;
+  margin-bottom: 2px;
+  padding: 10px 12px 6px 12px;
+  min-height: 0;
+  border-radius: 0;
+  transform: none;
+  pointer-events: none;
+}
+
+.sidebar-section:hover,
+.sidebar-section:focus {
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.sidebar-section .sidebar-section-label {
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1d1d1f;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  padding: 2px 10px;
+  margin-left: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.sort-container image {
+  color: #1d1d1f;
+}
+
+.eject-button {
+  color: @theme_fg_color;
+}
+
+.eject-button:hover {
+  color: @accent_color;
+}
+
+.sidebar-section::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: 0 14px 6px 14px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+gridview,
+listview {
+  background-color: #ffffff;
+  padding: 16px 24px;
+}
+
+gridview child {
+  padding: 2px;
+  margin: 0;
+  border-radius: 12px;
+  transition: background-color 150ms ease;
+}
+
+gridview child:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+gridview child:selected {
+  background-color: rgba(0, 122, 255, 0.18);
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
+}
+
+gridview child:selected .flux-label {
+  color: #1d1d1f;
+  font-weight: bold;
+}
+
+.flux-card {
+  background-color: #ffffff;
+  border-radius: 18px;
+  padding: 12px;
+  margin: 6px;
+  border: none;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.02),
+    0 2px 8px var(--shadow);
+  transition:
+    background-color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+}
+
+.flux-card:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  box-shadow:
+    0 0 0 1px rgba(0, 122, 255, 0.3),
+    0 8px 16px var(--shadow-hover);
+  transform: translateY(-4px);
+}
+
+.flux-label {
+  color: #1d1d1f;
+  font-family: var(--font-main);
+  font-size: 10pt;
+  letter-spacing: 0.4px !important;
+}
+
+/* ── Breadcrumb ── */
+button.breadcrumb-btn {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.04),
+    rgba(0, 0, 0, 0.01)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-right-color: rgba(0, 0, 0, 0.06);
+  padding: 4px 14px;
+  margin: 1px;
+  font-weight: 500;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.12s ease;
+  color: rgba(29, 29, 31, 0.85);
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  position: relative;
+}
+
+button.breadcrumb-btn:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-right-width: 0;
+}
+
+button.breadcrumb-btn:last-child {
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-right-width: 1px;
+  background: #007aff;
+  border-color: #007aff;
+  color: white;
+  box-shadow:
+    0 2px 8px rgba(0, 122, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+  padding: 4px 18px;
+}
+
+button.breadcrumb-btn:last-child label {
+  color: white;
+  font-weight: 600;
+}
+
+button.breadcrumb-btn:last-child:hover {
+  background: #0066d9;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
+}
+
+button.breadcrumb-btn:not(:last-child)::after {
+  content: "›";
+  display: inline-block;
+  margin-left: 10px;
+  font-size: 1.3em;
+  font-weight: 200;
+  color: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+button.breadcrumb-btn:hover:not(:last-child) {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.08),
+    rgba(0, 0, 0, 0.04)
+  );
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+  color: #1d1d1f;
+}
+
+button.breadcrumb-btn:active:not(:last-child) {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  transform: translateY(1px);
+}
+
+button.breadcrumb-btn label {
+  color: inherit;
+  font-family: var(--font-mono);
+  letter-spacing: 0.8px !important;
+}
+
+/* ── Popovers ── */
+popover.menu {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+popover.menu contents {
+  background-color: #ffffff;
+  border: none;
+  outline: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px var(--shadow);
+}
+
+popover.menu modelbutton label {
+  color: #1d1d1f;
+  letter-spacing: 0.4px !important;
+}
+
+popover.menu modelbutton:hover {
+  background-color: #007aff;
+  color: white;
+}
+
+popover.menu > contents separator {
+  background-color: rgba(0, 0, 0, 0.08);
+  min-height: 1px;
+  margin: 4px 8px;
+}
+
+/* ── Entry ── */
+entry {
+  background-color: #f5f5f7;
+  border: none;
+  border-radius: 22px;
+  padding: 4px 12px;
+  color: #1d1d1f;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  letter-spacing: 0.5px !important;
+}
+
+entry:focus {
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+/* ── Selection status ── */
+.selection-status {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 4px 16px;
+  min-height: 28px;
+}
+
+.selection-status label.caption {
+  color: #1d1d1f;
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+}
+
+/* ── Progressbar ── */
+progressbar {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
+progressbar progress {
+  background-color: #007aff;
+  border-radius: 4px;
+  min-height: 4px;
+}
+
+/* ── Buttons ── */
+.suggested-action {
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: bold;
+}
+
+.suggested-action:hover {
+  background-color: #0066d9;
+}
+
+.destructive-action {
+  background-color: rgba(255, 59, 48, 0.08);
+  color: #ff3b30;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: bold;
+  letter-spacing: 1.2px !important;
+}
+
+.destructive-action:hover {
+  background-color: rgba(255, 59, 48, 0.15);
+}
+
+/* ── Misc UI elements ── */
+.property {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 6px 0;
+  color: #1d1d1f;
+  font-size: 9.5pt;
+}
+
+.property label {
+  color: #1d1d1f;
+}
+
+.monospace {
+  font-family: var(--font-mono);
+}
+
+.error {
+  border: 1px solid #ff3b30;
+  background: rgba(255, 59, 48, 0.06);
+  color: #ff3b30;
+}
+
+.warning {
+  border: 1px solid #ff9500;
+  background: rgba(255, 149, 0, 0.06);
+  color: #ff9500;
+}
+
+.card {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.frame {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.boxed-list {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+/* ── Checkboxes & Radios ── */
+check,
+radio {
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  min-height: 16px;
+  min-width: 16px;
+}
+
+check:checked,
+radio:checked {
+  background-color: #007aff;
+  border-color: #007aff;
+}
+
+check:hover,
+radio:hover {
+  border-color: #007aff;
+}
+
+check:disabled,
+radio:disabled {
+  opacity: 0.4;
+}
+
+/* ── Tooltips ── */
+tooltip.background {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: #1d1d1f;
+  padding: 6px 12px;
+}
+
+/* ── Spinbutton ── */
+spinbutton {
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: #1d1d1f;
+  padding: 0 4px;
+  min-height: 28px;
+}
+
+spinbutton:focus-within {
+  border-color: #007aff;
+}
+
+spinbutton > button {
+  background: transparent;
+  border: none;
+  color: #1d1d1f;
+}
+
+spinbutton > button:hover {
+  color: #007aff;
+}
+
+/* ── Dropdown / Combobox ── */
+dropdown,
+combobox {
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: #1d1d1f;
+  min-height: 28px;
+}
+
+dropdown button,
+combobox button {
+  background: transparent;
+  border: none;
+  color: #1d1d1f;
+}
+
+dropdown:focus-within,
+combobox:focus-within {
+  border-color: #007aff;
+}
+
+/* ── Notebook ── */
+notebook > header {
+  background: transparent;
+  border: none;
+}
+
+notebook > header > tabs > tab {
+  background: transparent;
+  color: #1d1d1f;
+  padding: 4px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+}
+
+notebook > header > tabs > tab:checked {
+  color: #007aff;
+  border-bottom-color: #007aff;
+}
+
+/* ── Scale ── */
+scale trough {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  min-height: 4px;
+}
+
+scale highlight {
+  background: #007aff;
+}
+
+scale slider {
+  background: white;
+  border: 2px solid #007aff;
+  border-radius: 50%;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+/* ── Levelbar ── */
+levelbar block {
+  border-radius: 4px;
+}
+
+levelbar block.low {
+  background: #ff3b30;
+}
+
+levelbar block.high {
+  background: #007aff;
+}
+
+levelbar block.full {
+  background: #34c759;
+}
+
+/* ── List / Row ── */
+list,
+listview {
+  background: transparent;
+  color: #1d1d1f;
+}
+
+row {
+  background: transparent;
+  color: #1d1d1f;
+}
+
+row:selected {
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+}
+
+.view {
+  background: transparent;
+  color: #1d1d1f;
+}
+
+.view:selected {
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+}
+
+/* ── Scrollbar ── */
+scrollbar {
+  background: transparent;
+}
+
+scrollbar slider {
+  background-color: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* ── Settings window overrides ── */
+window.settings-window headerbar label,
+adwpreferenceswindow headerbar label {
+  letter-spacing: 2px !important;
+  font-weight: 800;
+}
+
+.settings-row label {
+  color: #1d1d1f;
+  letter-spacing: 0.3px !important;
+}
+
+adwpreferencesgroup > box > label {
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.7;
+}
+
+adwactionrow label {
+  color: #1d1d1f;
+  letter-spacing: 0.3px !important;
+}
+
+dropdown {
+  background-color: #ffffff;
+  color: #1d1d1f;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+dropdown label {
+  letter-spacing: 0.5px !important;
+}
+
+toast label {
+  color: #1d1d1f;
+  letter-spacing: 0.6px !important;
+}
+
+/* ─── Settings window contrast improvements ───────────────────────── */
+.settings-window label {
+  color: #1d1d1f;
+}
+
+.settings-window .dim-label,
+.settings-window .caption {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.settings-window .success {
+  color: #34c759;
+}
+
+.settings-window .error {
+  color: #ff3b30;
+}
