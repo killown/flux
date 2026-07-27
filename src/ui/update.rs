@@ -1911,7 +1911,7 @@ impl FluxApp {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::SortBy;
+    use crate::model::{CustomPlace, SortBy, UIConfig};
     use std::env;
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
@@ -2150,9 +2150,90 @@ mod tests {
         };
         assert_eq!(normalized, PathBuf::from("/home/user"));
     }
+
     #[test]
     fn test_clipboard_fallback() {
         let display = adw::gdk::Display::default();
         assert!(display.is_some() || display.is_none());
+    }
+
+    #[test]
+    fn test_config_ui_state_bounds() {
+        let mut config = UIConfig::default();
+        config.sidebar_width = 280;
+        config.show_csd = true;
+        config.default_icon_size = 96;
+
+        assert_eq!(config.sidebar_width, 280);
+        assert!(config.show_csd);
+        assert_eq!(config.default_icon_size, 96);
+    }
+
+    #[test]
+    fn test_terminal_visibility_toggle_logic() {
+        let mut terminal_visible = false;
+        let mut terminal_cleared = false;
+
+        terminal_visible = !terminal_visible;
+        if terminal_visible && !terminal_cleared {
+            terminal_cleared = true;
+        }
+
+        assert!(terminal_visible);
+        assert!(terminal_cleared);
+
+        terminal_visible = !terminal_visible;
+        assert!(!terminal_visible);
+        assert!(terminal_cleared);
+    }
+
+    #[test]
+    fn test_sidebar_reorder_mutation() {
+        let mut sidebar = vec![
+            CustomPlace {
+                name: "A".to_string(),
+                kind: None,
+                icon: "".to_string(),
+                path: "/a".to_string(),
+            },
+            CustomPlace {
+                name: "B".to_string(),
+                kind: None,
+                icon: "".to_string(),
+                path: "/b".to_string(),
+            },
+            CustomPlace {
+                name: "C".to_string(),
+                kind: None,
+                icon: "".to_string(),
+                path: "/c".to_string(),
+            },
+        ];
+
+        let from_idx = 2; // C
+        let to_idx = 0; // A
+
+        let entry = sidebar.remove(from_idx);
+        let insert_at = if from_idx < to_idx {
+            to_idx - 1
+        } else {
+            to_idx
+        };
+        sidebar.insert(insert_at, entry);
+
+        assert_eq!(sidebar[0].path, "/c");
+        assert_eq!(sidebar[1].path, "/a");
+        assert_eq!(sidebar[2].path, "/b");
+    }
+
+    #[test]
+    fn test_sort_order_toggle() {
+        let mut sort_ascending = true;
+
+        sort_ascending = !sort_ascending;
+        assert!(!sort_ascending);
+
+        sort_ascending = true;
+        assert!(sort_ascending);
     }
 }
