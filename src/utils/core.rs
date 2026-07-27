@@ -1,4 +1,5 @@
 use crate::ui::constants;
+use crate::utils::media::probe_media_duration;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
@@ -1018,6 +1019,22 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     }
 
     if is_vid {
+        // Compute a sensible seek time using the video duration.
+        let seek_time = if let Some(dur) = probe_media_duration(path) {
+            let dur_secs = dur.as_secs_f64();
+            if dur_secs >= 60.0 {
+                60.0 // at least 1 minute for long videos
+            } else if dur_secs >= 1.0 {
+                (dur_secs * 0.1).max(1.0) // 10% but at least 1s
+            } else {
+                0.0
+            }
+        } else {
+            1.0 // fallback if duration cannot be probed
+        };
+
+        let seek_arg = format!("{:.3}", seek_time); // ffmpeg accepts e.g. "10.500"
+
         let status = Command::new("ffmpeg")
             .arg("-y")
             .arg("-loglevel")
@@ -1025,7 +1042,7 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .arg("-i")
             .arg(path)
             .arg("-ss")
-            .arg("00:00:01.000")
+            .arg(&seek_arg) // use the computed time
             .arg("-vframes")
             .arg("1")
             .arg("-vf")
