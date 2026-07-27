@@ -8,6 +8,7 @@ use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::{gio, glib};
 use relm4::prelude::*;
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 //use vte4::TerminalExt,
 
@@ -962,6 +963,36 @@ impl FluxApp {
                     .set_single_click_activate(self.config.ui.single_click);
                 utils::save_config(&self.config);
             }
+            AppMsg::EnterArchive(archive_path) => {
+                let old_path = std::mem::replace(
+                    &mut self.current_path,
+                    crate::services::archive::build_archive_uri(&archive_path, ""),
+                );
+
+                self.recent_stack
+                    .retain(|p| p != &self.current_path && p != &old_path);
+                self.recent_stack.push_front(old_path.clone());
+                self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+
+                self.filter.clear();
+                self.files.clear_filters();
+                sender.input(AppMsg::CloseSearchSync);
+
+                if self.header_view == constants::VIEW_SEARCH {
+                    self.header_view = "path".to_string();
+                }
+
+                self.history.push(old_path);
+                self.forward_stack.clear();
+
+                self.load_archive(archive_path, String::new(), &sender);
+                self.update_breadcrumbs();
+
+                let view = self.files.view.clone();
+                glib::idle_add_local_once(move || {
+                    view.grab_focus();
+                });
+            }
             //WARN: Change this logic with caution.
             // If the process working directory
             // (CWD) is not synchronized, operations like drag-and-drop or shell commands
@@ -969,6 +1000,44 @@ impl FluxApp {
             // instead of the directory currently displayed to the user.
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
+
+                // archive:// URIs are virtual - intercept before path_valid / is_dir guards.
+                if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+                    if let Some((archive_path, prefix)) =
+                        crate::services::archive::parse_archive_uri(&path_str)
+                    {
+                        if path == self.current_path {
+                            return;
+                        }
+
+                        let old_path = std::mem::replace(&mut self.current_path, path.clone());
+
+                        self.recent_stack.retain(|p| p != &path && p != &old_path);
+                        self.recent_stack.push_front(old_path.clone());
+                        self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+
+                        self.filter.clear();
+                        self.files.clear_filters();
+                        sender.input(AppMsg::CloseSearchSync);
+
+                        if self.header_view == constants::VIEW_SEARCH {
+                            self.header_view = "path".to_string();
+                        }
+
+                        self.history.push(old_path);
+                        self.forward_stack.clear();
+
+                        self.load_archive(archive_path, prefix, &sender);
+                        self.update_breadcrumbs();
+
+                        let view = self.files.view.clone();
+                        glib::idle_add_local_once(move || {
+                            view.grab_focus();
+                        });
+                    }
+                    return;
+                }
+
                 // Explicitly allow root directory and handle edge cases
                 let path_valid = path_str == "/"
                     || path.exists()
@@ -1482,8 +1551,7 @@ impl FluxApp {
                     );
                 }
             }
-            AppMsg::Open | AppMsg::Activate => {
-                // Determine hardware state of the keyboard
+            AppMsg::Open(position) => {
                 let modifiers = gdk::Display::default()
                     .and_then(|d| d.default_seat())
                     .and_then(|s| s.keyboard())
@@ -1497,19 +1565,44 @@ impl FluxApp {
                     return;
                 }
 
-                let selection = self.get_selection();
-                if selection.is_empty() {
+                // connect_activate gives us the exact model position, use it directly
+                // rather than querying the selection model which may be stale.
+                let items: Vec<(PathBuf, bool)> = if let Some(pos) = position {
+                    self.files
+                        .get(pos)
+                        .map(|w| {
+                            let item = w.borrow();
+                            vec![(item.path.clone(), item.is_dir)]
+                        })
+                        .unwrap_or_default()
+                } else {
+                    self.get_selection_with_meta()
+                };
+
+                if items.is_empty() {
                     return;
                 }
 
-                for path in selection {
-                    if path.is_dir() {
-                        sender.input(AppMsg::Navigate(path));
-                        break;
-                    } else {
-                        utils::open_file(path);
-                    }
+                self.activate_items(items, &sender);
+            }
+            AppMsg::Activate => {
+                let modifiers = gdk::Display::default()
+                    .and_then(|d| d.default_seat())
+                    .and_then(|s| s.keyboard())
+                    .map(|k| k.modifier_state())
+                    .unwrap_or(gdk::ModifierType::empty());
+                let is_selecting = modifiers
+                    .intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK);
+                if is_selecting {
+                    return;
                 }
+
+                let items = self.get_selection_with_meta();
+                if items.is_empty() {
+                    return;
+                }
+
+                self.activate_items(items, &sender);
             }
             AppMsg::HandleDrop {
                 source_paths,

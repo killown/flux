@@ -73,7 +73,7 @@ impl FluxApp {
         let sender_clone = sender.clone();
         files
             .view
-            .connect_activate(move |_, _| sender_clone.input(AppMsg::Open));
+            .connect_activate(move |_, position| sender_clone.input(AppMsg::Open(Some(position))));
 
         // 6. Sidebar and Volume Monitoring
         let listbox = gtk::ListBox::default();

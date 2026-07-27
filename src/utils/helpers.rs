@@ -452,9 +452,121 @@ impl FluxApp {
         selected_paths
     }
 
+    /// Returns `(path, is_dir)` pairs for all currently selected items.
+    ///
+    /// Mirrors [`get_selection`] exactly but preserves the `is_dir` flag from
+    /// the [`FileItem`] model. Required when the caller must distinguish virtual
+    /// archive directories (whose paths are `archive://` URIs, never real
+    /// filesystem paths) from regular files without issuing a syscall.
+    pub(crate) fn get_selection_with_meta(&self) -> Vec<(PathBuf, bool)> {
+        let selection_model = match self
+            .files
+            .view
+            .model()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+        {
+            Some(m) => m,
+            None => return Vec::new(),
+        };
+
+        let bitset = selection_model.selection();
+        let mut result = Vec::new();
+
+        if let Some((mut iter, first_idx)) = gtk::BitsetIter::init_first(&bitset) {
+            let mut visual_indices = Vec::new();
+            let mut current = Some(first_idx);
+            while let Some(idx) = current {
+                visual_indices.push(idx);
+                current = iter.next();
+            }
+
+            if self.filter.is_empty() {
+                for idx in visual_indices {
+                    if let Some(wrapper) = self.files.get(idx) {
+                        let item = wrapper.borrow();
+                        result.push((item.path.clone(), item.is_dir));
+                    }
+                }
+            } else {
+                let query_lc = self.filter.to_lowercase();
+                let mut match_count = 0u32;
+
+                for i in 0..self.files.len() {
+                    if let Some(wrapper) = self.files.get(i) {
+                        let item = wrapper.borrow();
+                        if item.name.to_lowercase().contains(&query_lc) {
+                            if visual_indices.contains(&match_count) {
+                                result.push((item.path.clone(), item.is_dir));
+                            }
+                            match_count += 1;
+                        }
+                    }
+                }
+            }
+        }
+        result
+    }
+
     /// Returns the filesystem path of the first currently selected item.
     pub(crate) fn get_selected_path(&self) -> Option<PathBuf> {
         self.get_selection().into_iter().next()
+    }
+
+    /// Dispatches the correct action for each `(path, is_dir)` item pair.
+    ///
+    /// Centralises the routing logic shared by `AppMsg::Open` and `AppMsg::Activate`
+    /// so that both code paths behave identically regardless of how the items were
+    /// resolved (by grid position or by selection model).
+    ///
+    /// # Behaviour
+    /// - `archive://` directory → `Navigate` into the virtual sub-directory.
+    /// - `archive://` file → extract to a `NamedTempFile` and `xdg-open` it.
+    /// - Real directory → `Navigate`.
+    /// - Browsable archive on disk → `EnterArchive`.
+    /// - Any other file → `open_file` (xdg-open).
+    pub(crate) fn activate_items(
+        &self,
+        items: Vec<(PathBuf, bool)>,
+        sender: &relm4::AsyncComponentSender<Self>,
+    ) {
+        for (path, is_dir) in items {
+            let path_str = path.to_string_lossy();
+            if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+                if let Some((archive_path, inner)) =
+                    crate::services::archive::parse_archive_uri(&path_str)
+                {
+                    if is_dir {
+                        sender.input(AppMsg::Navigate(path));
+                    } else {
+                        let sender_clone = sender.clone();
+                        relm4::spawn_blocking(move || {
+                            match crate::services::archive::extract_entry_to_tempfile(
+                                &archive_path,
+                                &inner,
+                            ) {
+                                Ok(tmp) => {
+                                    let tmp_path = tmp.path().to_path_buf();
+                                    tmp.keep().ok();
+                                    crate::utils::open_file(tmp_path);
+                                }
+                                Err(e) => {
+                                    sender_clone.input(AppMsg::ShowToast(e));
+                                }
+                            }
+                        });
+                    }
+                }
+                break;
+            } else if is_dir {
+                sender.input(AppMsg::Navigate(path));
+                break;
+            } else if crate::services::archive::is_browsable_archive(&path) {
+                sender.input(AppMsg::EnterArchive(path));
+                break;
+            } else {
+                crate::utils::open_file(path);
+            }
+        }
     }
 
     /// Registers application-wide keyboard shortcuts with a ShortcutController.

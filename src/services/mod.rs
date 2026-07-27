@@ -5,6 +5,7 @@
 //! generation and metadata extraction.
 
 // 1. Declare the background service modules
+pub mod archive;
 pub mod db;
 pub mod loader;
 pub mod tasks;

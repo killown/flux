@@ -257,7 +257,7 @@ pub fn setup_controllers(
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(keymap.open.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
-            s_open.input(AppMsg::Open);
+            s_open.input(AppMsg::Open(None));
             glib::Propagation::Stop
         })),
     ));

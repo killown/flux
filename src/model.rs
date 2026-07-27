@@ -600,8 +600,18 @@ pub enum AppMsg {
     GoForward,
     /// Reload the current directory from disk.
     Refresh,
+    /// Enter a compressed archive and browse its contents as a virtual directory.
+    ///
+    /// The `PathBuf` is the real on-disk path of the archive file. The app
+    /// synthesises an `archive://` URI internally and delegates rendering to
+    /// `load_archive` in `services/loader.rs`.
+    EnterArchive(PathBuf),
     /// Open all currently selected files or navigate to the selected directory.
-    Open,
+    ///
+    /// `Some(position)` is supplied by `GridView::connect_activate` and addresses
+    /// the item directly without querying the selection model. `None` is used by
+    /// keyboard shortcuts and falls back to `get_selection_with_meta()`.
+    Open(Option<u32>),
     /// Delete all files within the system trash location.
     EmptyTrash,
     #[allow(dead_code)]

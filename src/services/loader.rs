@@ -1,4 +1,5 @@
 use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
+use crate::services::archive;
 use crate::ui::FileItem;
 use crate::utils;
 use adw::prelude::*;
@@ -70,6 +71,16 @@ impl FluxApp {
             self.sort_by = self.config.ui.default_sort;
             self.sort_ascending = true; // Default to ascending if no state exists
             self.current_icon_size = self.config.ui.default_icon_size;
+        }
+
+        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            if let Some((archive_path, prefix)) =
+                crate::services::archive::parse_archive_uri(&path_str)
+            {
+                self.current_path = path;
+                self.load_archive(archive_path, prefix, sender);
+            }
+            return;
         }
 
         if path_str.starts_with("recent:///") {
@@ -286,6 +297,107 @@ impl FluxApp {
 
             self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
         }
+    }
+
+    /// Populates the file grid with the immediate children of `prefix` inside the
+    /// archive located at `archive_path`.
+    ///
+    /// The virtual current path is set to an `archive://` URI so that breadcrumb
+    /// rendering, history management, and the back-button all work identically to
+    /// real directory navigation. No files are extracted to disk.
+    ///
+    /// # Arguments
+    /// * `archive_path` - Real on-disk path of the archive file.
+    /// * `prefix`       - Inner path component being listed (`""` = root level).
+    /// * `sender`       - Component handle for dispatching lifecycle messages.
+    pub fn load_archive(
+        &mut self,
+        archive_path: PathBuf,
+        prefix: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.directory_monitor = None;
+        self.files.clear();
+        let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+
+        self.current_path = archive::build_archive_uri(&archive_path, &prefix);
+
+        let expand_labels = self.config.ui.expand_labels;
+        let sort_strategy = self.sort_by;
+        let sort_ascending = self.sort_ascending;
+        let folders_first = self.config.ui.folders_first;
+
+        match archive::list_archive_entries(&archive_path, &prefix) {
+            Err(e) => {
+                sender.input(AppMsg::ShowToast(e));
+                return;
+            }
+            Ok(entries) => {
+                let mut items =
+                    archive::entries_to_load_contexts(&entries, &archive_path, expand_labels);
+
+                items.par_sort_unstable_by(move |a, b| {
+                    if a.is_dir != b.is_dir {
+                        return if folders_first {
+                            b.is_dir.cmp(&a.is_dir)
+                        } else {
+                            a.is_dir.cmp(&b.is_dir)
+                        };
+                    }
+
+                    let primary_order = match sort_strategy {
+                        SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                        SortBy::Size => a.size.cmp(&b.size),
+                        SortBy::Date => a.mtime.cmp(&b.mtime),
+                        SortBy::Type => {
+                            let ext_a = std::path::Path::new(&a.display_name)
+                                .extension()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("")
+                                .to_lowercase();
+                            let ext_b = std::path::Path::new(&b.display_name)
+                                .extension()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("")
+                                .to_lowercase();
+                            ext_a.cmp(&ext_b)
+                        }
+                    };
+
+                    let tie = if primary_order == std::cmp::Ordering::Equal {
+                        a.sort_name.cmp(&b.sort_name)
+                    } else {
+                        primary_order
+                    };
+
+                    if sort_ascending {
+                        tie
+                    } else {
+                        tie.reverse()
+                    }
+                });
+
+                for item in items {
+                    let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
+                    self.files.append(FileItem {
+                        name: item.display_name.clone(),
+                        icon,
+                        thumbnail: None,
+                        is_dir: item.is_dir,
+                        path: item.target_path,
+                        icon_size: self.current_icon_size,
+                        size: item.size,
+                        is_editing: false,
+                        is_foreign_owner: false,
+                        expand_labels: item.expand_labels,
+                        is_custom_icon: false,
+                    });
+                }
+            }
+        }
+
+        self.update_breadcrumbs();
+        self.spawn_thumbnail_loader(Vec::new(), current_session, sender.clone());
     }
 
     /// Populates the file grid with entries from the GTK recent-files registry.
