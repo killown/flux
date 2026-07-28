@@ -998,21 +998,23 @@ impl FluxApp {
                 prefix,
                 wrong_password,
             } => {
-                let parent = gtk::Application::default()
-                    .active_window()
-                    .expect("No active window");
+                let parent = gtk::Application::default().active_window();
                 let s = sender.clone();
 
-                let dialog = gtk::Dialog::builder()
+                let mut builder = gtk::Dialog::builder()
                     .title(if wrong_password {
                         "Wrong password - try again"
                     } else {
                         "Archive is password-protected"
                     })
-                    .transient_for(&parent)
                     .modal(true)
-                    .use_header_bar(1)
-                    .build();
+                    .use_header_bar(1);
+
+                if let Some(ref p) = parent {
+                    builder = builder.transient_for(p);
+                }
+
+                let dialog = builder.build();
 
                 dialog.add_button("Cancel", gtk::ResponseType::Cancel);
                 dialog.add_button("Unlock", gtk::ResponseType::Ok);
@@ -1028,6 +1030,11 @@ impl FluxApp {
                     .margin_end(12)
                     .build();
 
+                // Auto-focus the entry as soon as the dialog presents
+                entry.connect_map(|e| {
+                    e.grab_focus();
+                });
+
                 if wrong_password {
                     let hint = gtk::Label::builder()
                         .label("Incorrect password.")
@@ -1037,9 +1044,9 @@ impl FluxApp {
                         .build();
                     dialog.content_area().append(&hint);
                 }
+
                 dialog.content_area().append(&entry);
-                dialog.show(); // Keep show() as well
-                dialog.present(); // Ensure it gets focus and appears on top
+                dialog.present();
 
                 let entry_clone = entry.clone();
                 dialog.connect_response(move |dlg, resp| {

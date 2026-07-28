@@ -942,6 +942,30 @@ pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
 /// `Some(texture)` on success, `None` if the file is not visual media, if any
 /// required external tool (`ffmpeg`) is unavailable, or if I/O fails.
 pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
+    let path_str = path.to_string_lossy();
+
+    // ── 0. Virtual Archive Resolution ──────────────────────────────────────────
+    // If this is an archive URI, extract the single file to a temp file first,
+    // then recursively run thumbnailing on the temp file.
+    if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        if let Some((archive_path, inner)) = crate::services::archive::parse_archive_uri(&path_str)
+        {
+            // Extract the media file to /tmp using cached password (if any)
+            let tmp_file = crate::services::archive::extract_entry_to_tempfile(
+                &archive_path,
+                &inner,
+                None, // Pass cached password if your API exposes it here
+            )
+            .ok()?;
+
+            let texture = get_or_create_thumbnail(tmp_file.path());
+            tmp_file.keep().ok(); // Retain temporary file for OS cleanup
+            return texture;
+        }
+        return None;
+    }
+
+    // ── 1. Config & Validation Checks ──────────────────────────────────────────
     // Load config once and check if thumbnails are enabled at all
     let config = load_config();
     if !config.ui.show_thumbnails {

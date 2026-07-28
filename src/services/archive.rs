@@ -563,36 +563,52 @@ fn list_zip(
     let mut zip =
         zip::ZipArchive::new(file).map_err(|e| ArchiveError::Other(format!("ZIP: {e}")))?;
 
+    // 1. If no password was provided, check raw headers for encryption flags
+    if password.is_none() {
+        for i in 0..zip.len() {
+            let is_enc = match zip.by_index_raw(i) {
+                Ok(entry) => entry.is_file() && entry.encrypted(),
+                Err(_) => false,
+            };
+            if is_enc {
+                return Err(ArchiveError::PasswordRequired);
+            }
+        }
+    }
+
+    // 2. We either have a password or the archive is unencrypted: process entries
     let mut seen: HashMap<String, ArchiveEntry> = HashMap::new();
 
     for i in 0..zip.len() {
-        let (raw_name, is_dir, size, mtime) = {
-            let entry = zip
-                .by_index(i)
-                .map_err(|e| ArchiveError::Other(format!("ZIP idx {i}: {e}")))?;
-            if entry.encrypted() {
-                let pwd = password.ok_or(ArchiveError::PasswordRequired)?.as_bytes();
-                drop(entry); // release borrow
-                match zip.by_index_decrypt(i, pwd) {
-                    Ok(e) => {
-                        let n = e.name().replace('\\', "/");
-                        let n = n.trim_end_matches('/').to_owned();
-                        let d = e.is_dir();
-                        let s = e.size();
-                        let t = zip_mtime(&e);
-                        (n, d, s, t)
-                    }
-                    Err(_) => return Err(ArchiveError::WrongPassword),
+        let (raw_name, is_dir, size, mtime) = match password {
+            Some(pwd) => match zip.by_index_decrypt(i, pwd.as_bytes()) {
+                Ok(entry) => {
+                    let n = entry.name().replace('\\', "/");
+                    let n = n.trim_end_matches('/').to_owned();
+                    let d = entry.is_dir();
+                    let s = entry.size();
+                    let t = zip_mtime(&entry);
+                    (n, d, s, t)
                 }
-            } else {
-                let n = entry.name().replace('\\', "/");
-                let n = n.trim_end_matches('/').to_owned();
-                let d = entry.is_dir();
-                let s = entry.size();
-                let t = zip_mtime(&entry);
-                (n, d, s, t)
-            }
+                Err(zip::result::ZipError::UnsupportedArchive(_))
+                | Err(zip::result::ZipError::InvalidPassword) => {
+                    return Err(ArchiveError::WrongPassword);
+                }
+                Err(e) => return Err(ArchiveError::Other(format!("ZIP idx {i}: {e}"))),
+            },
+            None => match zip.by_index_raw(i) {
+                Ok(entry) => {
+                    let n = entry.name().replace('\\', "/");
+                    let n = n.trim_end_matches('/').to_owned();
+                    let d = entry.is_dir();
+                    let s = entry.size();
+                    let t = zip_mtime(&entry);
+                    (n, d, s, t)
+                }
+                Err(e) => return Err(ArchiveError::Other(format!("ZIP idx {i}: {e}"))),
+            },
         };
+
         collect_entry(&mut seen, &raw_name, is_dir, size, mtime, prefix);
     }
 
@@ -607,6 +623,7 @@ fn extract_zip(
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
+
     let mut zip =
         zip::ZipArchive::new(file).map_err(|e| ArchiveError::Other(format!("ZIP: {e}")))?;
 
@@ -614,33 +631,38 @@ fn extract_zip(
         .index_for_name(inner_path)
         .ok_or_else(|| ArchiveError::Other(format!("not found: {inner_path}")))?;
 
-    // Try unencrypted first, zip 8.x errors with UnsupportedArchive for encrypted entries.
-    match zip.by_index(idx) {
-        Ok(mut entry) => {
-            std::io::copy(&mut entry, &mut tmp)
-                .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
-            tmp.flush()
-                .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
-            return Ok(tmp);
+    if let Some(pwd) = password {
+        // Password supplied: try decrypting
+        match zip.by_index_decrypt(idx, pwd.as_bytes()) {
+            Ok(mut entry) => {
+                std::io::copy(&mut entry, &mut tmp)
+                    .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
+                tmp.flush()
+                    .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
+                Ok(tmp)
+            }
+            Err(zip::result::ZipError::UnsupportedArchive(_))
+            | Err(zip::result::ZipError::InvalidPassword) => Err(ArchiveError::WrongPassword),
+            Err(e) => Err(ArchiveError::Other(format!("ZIP decrypt read: {e}"))),
         }
-        Err(zip::result::ZipError::UnsupportedArchive(_)) => {
-            // Entry is encrypted - fall through to by_index_decrypt.
+    } else {
+        // No password supplied: try standard read and catch password requirements
+        match zip.by_index(idx) {
+            Ok(mut entry) => {
+                if entry.encrypted() {
+                    return Err(ArchiveError::PasswordRequired);
+                }
+                std::io::copy(&mut entry, &mut tmp)
+                    .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
+                tmp.flush()
+                    .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
+                Ok(tmp)
+            }
+            Err(zip::result::ZipError::UnsupportedArchive(_))
+            | Err(zip::result::ZipError::InvalidPassword) => Err(ArchiveError::PasswordRequired),
+            Err(e) => Err(ArchiveError::Other(format!("ZIP read: {e}"))),
         }
-        Err(e) => return Err(ArchiveError::Other(format!("ZIP read: {e}"))),
     }
-
-    let pwd = password.ok_or(ArchiveError::PasswordRequired)?.as_bytes();
-    let result = match zip.by_index_decrypt(idx, pwd) {
-        Ok(mut entry) => {
-            std::io::copy(&mut entry, &mut tmp)
-                .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
-            tmp.flush()
-                .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
-            Ok(tmp)
-        }
-        Err(_) => Err(ArchiveError::WrongPassword),
-    };
-    result
 }
 
 // ─── 7-Zip ───────────────────────────────────────────────────────────────────
@@ -664,7 +686,25 @@ fn list_7z(
                 ArchiveError::WrongPassword
             }
         }
-        _ => ArchiveError::Other(e.to_string()),
+        _ => {
+            let msg = e.to_string();
+            let is_pwd_err = msg.contains("Password")
+                || msg.contains("password")
+                || msg.contains("Decrypt")
+                || msg.contains("unexpectedEof")
+                || msg.contains("UnexpectedEof")
+                || msg.contains("failed to fill whole buffer");
+
+            if is_pwd_err {
+                if password.is_none() {
+                    ArchiveError::PasswordRequired
+                } else {
+                    ArchiveError::WrongPassword
+                }
+            } else {
+                ArchiveError::Other(msg)
+            }
+        }
     })?;
 
     let mut seen: HashMap<String, ArchiveEntry> = HashMap::new();
@@ -677,7 +717,6 @@ fn list_7z(
         }
         let is_dir = entry.is_directory;
         let size = entry.size;
-        // NtTime implements Into<SystemTime>, convert to Unix timestamp.
         let mtime = std::time::SystemTime::from(entry.last_modified_date())
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs() as i64)
@@ -709,7 +748,25 @@ fn extract_7z(
                 ArchiveError::WrongPassword
             }
         }
-        _ => ArchiveError::Other(e.to_string()),
+        _ => {
+            let msg = e.to_string();
+            let is_pwd_err = msg.contains("Password")
+                || msg.contains("password")
+                || msg.contains("Decrypt")
+                || msg.contains("unexpectedEof")
+                || msg.contains("UnexpectedEof")
+                || msg.contains("failed to fill whole buffer");
+
+            if is_pwd_err {
+                if password.is_none() {
+                    ArchiveError::PasswordRequired
+                } else {
+                    ArchiveError::WrongPassword
+                }
+            } else {
+                ArchiveError::Other(msg)
+            }
+        }
     })?;
 
     let mut found = false;
@@ -722,7 +779,6 @@ fn extract_7z(
                     found = true;
                     Ok(false) // stop after first match
                 } else {
-                    // Must drain the reader to advance the decoder position.
                     std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
                     Ok(true)
                 }
@@ -730,8 +786,32 @@ fn extract_7z(
         )
         .map_err(|e| match e {
             sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
-            sevenz_rust2::Error::MaybeBadPassword(_) => ArchiveError::WrongPassword,
-            _ => ArchiveError::Other(e.to_string()),
+            sevenz_rust2::Error::MaybeBadPassword(_) => {
+                if password.is_none() {
+                    ArchiveError::PasswordRequired
+                } else {
+                    ArchiveError::WrongPassword
+                }
+            }
+            _ => {
+                let msg = e.to_string();
+                let is_pwd_err = msg.contains("Password")
+                    || msg.contains("password")
+                    || msg.contains("Decrypt")
+                    || msg.contains("unexpectedEof")
+                    || msg.contains("UnexpectedEof")
+                    || msg.contains("failed to fill whole buffer");
+
+                if is_pwd_err {
+                    if password.is_none() {
+                        ArchiveError::PasswordRequired
+                    } else {
+                        ArchiveError::WrongPassword
+                    }
+                } else {
+                    ArchiveError::Other(msg)
+                }
+            }
         })?;
 
     if !found {
@@ -742,7 +822,6 @@ fn extract_7z(
         .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
     Ok(tmp)
 }
-
 // ─── TAR (all compression flavours) ──────────────────────────────────────────
 
 fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, ArchiveError> {
