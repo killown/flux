@@ -719,15 +719,6 @@ impl FluxApp {
     /// * `forced`  - When `true`, directories are copied recursively via `copy_dir_recursive`
     ///   instead of `gio::File::copy_async` (which cannot handle directories).
     /// * `sender`  - Component sender for dispatching progress and completion messages.
-    pub fn perform_paste(
-        &self,
-        files: Vec<gio::File>,
-        is_cut: bool,
-        sender: AsyncComponentSender<Self>,
-    ) {
-        self.perform_paste_inner(files, is_cut, false, sender);
-    }
-
     pub fn perform_paste_inner(
         &self,
         files: Vec<gio::File>,
@@ -742,15 +733,21 @@ impl FluxApp {
             let completed = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
             for file in files {
-                let src = match file.path() {
+                let src = match file.path().or_else(|| {
+                    let uri = file.uri().to_string();
+                    let clean_uri = uri.trim_end_matches('/');
+                    gio::File::for_uri(clean_uri).path()
+                }) {
                     Some(p) => p,
                     None => continue,
                 };
-                let orig_basename = match file.basename() {
-                    Some(b) => b.to_string_lossy().to_string(),
+
+                let orig_basename = match src.file_name() {
+                    Some(f) => f.to_string_lossy().to_string(),
                     None => continue,
                 };
 
+                // Clean temporary extraction filenames (.tmpXyZ.favicon.svg -> favicon.svg)
                 let clean_basename = if orig_basename.starts_with(".tmp") {
                     orig_basename
                         .split_once('.')
@@ -812,6 +809,14 @@ impl FluxApp {
             Self::dispatch_paste_ops(files, is_cut, target_dir, sender);
         }
     }
+    pub fn perform_paste(
+        &self,
+        files: Vec<gio::File>,
+        is_cut: bool,
+        sender: AsyncComponentSender<Self>,
+    ) {
+        self.perform_paste_inner(files, is_cut, false, sender);
+    }
 
     /// Shared dispatch logic for non-conflicting paste operations.
     ///
@@ -831,13 +836,18 @@ impl FluxApp {
         target_dir: PathBuf,
         sender: AsyncComponentSender<Self>,
     ) {
-        let mut conflicts = Vec::new();
+        let mut dir_conflicts = Vec::new();
 
-        for file in &files {
-            if let Some(basename) = file.basename() {
-                let orig_name = basename.to_string_lossy().to_string();
+        let resolved_files: Vec<(PathBuf, String, bool)> = files
+            .into_iter()
+            .filter_map(|file| {
+                let src_path = file.path().or_else(|| {
+                    let uri = file.uri().to_string();
+                    let clean_uri = uri.trim_end_matches('/');
+                    gio::File::for_uri(clean_uri).path()
+                })?;
 
-                // Clean temporary extraction filenames (.tmpXyZ.favicon.svg -> favicon.svg)
+                let orig_name = src_path.file_name()?.to_string_lossy().to_string();
                 let clean_name = if orig_name.starts_with(".tmp") {
                     orig_name
                         .split_once('.')
@@ -848,30 +858,109 @@ impl FluxApp {
                     orig_name
                 };
 
-                let dest = target_dir.join(&clean_name);
+                let is_dir = src_path.is_dir();
+                Some((src_path, clean_name, is_dir))
+            })
+            .collect();
+
+        for (_, name, is_dir) in &resolved_files {
+            if *is_dir {
+                let dest = target_dir.join(name);
                 if dest.exists() && dest.is_dir() {
-                    conflicts.push(clean_name);
+                    dir_conflicts.push(name.clone());
                 }
             }
         }
 
-        if !conflicts.is_empty() {
+        if !dir_conflicts.is_empty() {
+            let gfiles = resolved_files
+                .iter()
+                .map(|(p, _, _)| gio::File::for_path(p))
+                .collect();
+
             sender.input(AppMsg::ConfirmReplacePaste {
-                files,
-                conflicts,
+                files: gfiles,
+                conflicts: dir_conflicts,
                 is_cut,
             });
-        } else {
-            sender.input(AppMsg::PerformPasteForced { files, is_cut });
+            return;
+        }
+
+        let total_files = resolved_files.len();
+        let completed_files = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        for (src_path, clean_name, is_dir) in resolved_files {
+            let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+            let cancellable = gio::Cancellable::new();
+
+            let mut dest = target_dir.join(&clean_name);
+
+            if !is_cut && !is_dir {
+                let mut copy_number = 1;
+                let original_name = clean_name.clone();
+
+                while dest.exists() {
+                    let new_name = match original_name.rfind('.') {
+                        Some(idx) if idx > 0 => {
+                            let (name, ext) = original_name.split_at(idx);
+                            format!("{} (copy {}){}", name, copy_number, ext)
+                        }
+                        _ => format!("{} (copy {})", original_name, copy_number),
+                    };
+                    dest = target_dir.join(new_name);
+                    copy_number += 1;
+                }
+            }
+
+            sender.input(AppMsg::TaskProgress {
+                id: task_id,
+                current: 0,
+                total: 1,
+                total_items: 1,
+                cancellable: cancellable.clone(),
+            });
+
+            let s = sender.clone();
+            let completed_clone = completed_files.clone();
+
+            relm4::spawn_blocking(move || {
+                let result = if is_cut {
+                    gio::File::for_path(&src_path)
+                        .move_(
+                            &gio::File::for_path(&dest),
+                            gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                            gio::Cancellable::NONE,
+                            None,
+                        )
+                        .map_err(|e| e.to_string())
+                } else if is_dir {
+                    copy_dir_recursive(&src_path, &dest).map_err(|e| e.to_string())
+                } else {
+                    std::fs::copy(&src_path, &dest)
+                        .map(|_| ())
+                        .map_err(|e| e.to_string())
+                };
+
+                if let Err(e) = result {
+                    s.input(AppMsg::ShowToast(format!("Copy failed: {}", e)));
+                }
+
+                s.input(AppMsg::TaskCompleted(task_id));
+
+                let count = completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                if count == total_files {
+                    s.input(AppMsg::Refresh);
+                }
+            });
         }
     }
+
     /// Internal helper to populate the clipboard with the current selection.
     ///
     /// Args:
     ///     is_cut: If true, prefixes the text metadata with "cut" to signal a move operation.
-    /// Internal helper to populate the clipboard with the current selection.
     pub fn handle_clipboard_action(&self, is_cut: bool) {
-        let selection = self.get_selection();
+        let selection = self.get_selection_with_meta();
         if selection.is_empty() {
             return;
         }
@@ -879,26 +968,38 @@ impl FluxApp {
         let clipboard = gdk::Display::default().expect("No Display").clipboard();
 
         // 1. Build the standard URI list (text/uri-list).
-        // For archive:// virtual paths, extract to a NamedTempFile first so that
+        // For archive:// virtual paths, extract to a temp location first so that
         // external apps receive a real file:// URI they can act on.
         let mut uri_list = String::new();
-        for path in &selection {
+        for (path, is_dir) in &selection {
             let path_str = path.to_string_lossy();
             let uri = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
                 if let Some((archive_path, inner)) =
                     crate::services::archive::parse_archive_uri(&path_str)
                 {
-                    match crate::services::archive::extract_entry_to_tempfile(
-                        &archive_path,
-                        &inner,
-                        None,
-                    ) {
-                        Ok(tmp) => {
-                            let tmp_path = tmp.path().to_path_buf();
-                            tmp.keep().ok();
-                            gio::File::for_path(&tmp_path).uri().to_string()
+                    let cached_pwd = self.cached_archive_password.as_deref();
+                    if *is_dir {
+                        match crate::services::archive::extract_dir_to_tempdir(
+                            &archive_path,
+                            &inner,
+                            cached_pwd,
+                        ) {
+                            Ok(tmp_dir) => gio::File::for_path(&tmp_dir).uri().to_string(),
+                            Err(_) => continue,
                         }
-                        Err(_) => continue,
+                    } else {
+                        match crate::services::archive::extract_entry_to_tempfile(
+                            &archive_path,
+                            &inner,
+                            cached_pwd,
+                        ) {
+                            Ok(tmp) => {
+                                let tmp_path = tmp.path().to_path_buf();
+                                tmp.keep().ok();
+                                gio::File::for_path(&tmp_path).uri().to_string()
+                            }
+                            Err(_) => continue,
+                        }
                     }
                 } else {
                     continue;
@@ -936,7 +1037,6 @@ impl FluxApp {
 
         clipboard.set_content(Some(&content)).unwrap();
     }
-
     /// Executes a shell command synchronously, blocking until the child process exits.
     ///
     /// Identical to [`run_custom_command`] except it calls `.status()` instead of `.spawn()`,
