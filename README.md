@@ -40,6 +40,24 @@ Most file managers try to do everything. Flux tries to do _one thing_ perfectly:
 - **Asynchronous Heart:** Got a folder with 5,000 high-res wallpapers? Flux won't sweat. It uses a throttled async pipeline to load thumbnails without ever freezing the window.
 - **Shortcut First:** Flux is designed for power users who prefer the keyboard over hunting for tiny icons.
 
+## 📦 Archive & Compressed File Browsing
+
+Flux features an integrated virtual filesystem layer (`/archive://`) that allows you to open, browse, and copy contents out of compressed archives just like normal directories.
+
+### Supported Formats & Capabilities
+
+| Extension | Backend Engine | Password Support |
+| :--- | :--- | :---: |
+| `.zip` | `zip` (deflate, bzip2, zstd, aes) | Yes |
+| `.7z` | `sevenz-rust` (AES256) | Yes |
+| `.rar` | External CLI (`unar` / `unrar`) | Yes |
+| `.tar`, `.tar.gz`, `.tgz` | `tar` + `flate2` | No |
+| `.tar.bz2`, `.tbz2` | `tar` + `bzip2` | No |
+| `.tar.xz`, `.txz` | `tar` + `xz2` | No |
+| `.tar.zst`, `.tzst` | `tar` + `zstd` | No |
+| `.tar.lz4` | `tar` + `lz4_flex` | No |
+| `.gz`, `.bz2`, `.xz`, `.zst`, `.lz4` (standalone) | Streaming decoders | No |
+
 ## ⌨️ Keyboard Shortcut & Input Hub Reference
 
 ### 6.1 Unified Global Bindings
