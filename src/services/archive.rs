@@ -956,6 +956,7 @@ fn collect_entry(
             } else {
                 format!("{}/{}", prefix.trim_end_matches('/'), relative)
             };
+            // Only set is_dir if explicitly flagged as directory AND not a leaf filename
             (relative, is_entry_dir, inner)
         }
     };
@@ -963,13 +964,23 @@ fn collect_entry(
     // Synthesized directory nodes must always have size = 0
     let entry_size = if is_dir { 0 } else { size };
 
-    seen.entry(child_name.clone()).or_insert(ArchiveEntry {
-        name: child_name,
-        is_dir,
-        size: entry_size,
-        mtime,
-        inner_path: child_inner,
-    });
+    seen.entry(child_name.clone())
+        .and_modify(|existing| {
+            // If we encounter a real file payload for a synthesised directory node,
+            // preserve the real entry metadata.
+            if !is_dir {
+                existing.is_dir = false;
+                existing.size = size;
+                existing.mtime = mtime;
+            }
+        })
+        .or_insert(ArchiveEntry {
+            name: child_name,
+            is_dir,
+            size: entry_size,
+            mtime,
+            inner_path: child_inner,
+        });
 }
 
 #[inline]
