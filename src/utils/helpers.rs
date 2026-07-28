@@ -372,6 +372,48 @@ impl FluxApp {
         let mut guard = self.breadcrumbs.guard();
         guard.clear();
 
+        let path_str = self.current_path.to_string_lossy();
+
+        // Handle virtual archive breadcrumbs differently so they show human-readable names
+        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            if let Some((archive_path, inner)) =
+                crate::services::archive::parse_archive_uri(&path_str)
+            {
+                let archive_name = archive_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| "Archive".to_string());
+
+                // Root segment: points to the root of the archive
+                let root_uri = crate::services::archive::build_archive_uri(&archive_path, "");
+                guard.push_back(PathSegment {
+                    name: archive_name,
+                    path: root_uri,
+                });
+
+                // Inner directory segments
+                if !inner.is_empty() {
+                    let mut current_inner = PathBuf::new();
+                    for component in Path::new(&inner).components() {
+                        let name = component.as_os_str().to_string_lossy().to_string();
+                        if name.is_empty() {
+                            continue;
+                        }
+                        current_inner.push(&name);
+                        let segment_uri = crate::services::archive::build_archive_uri(
+                            &archive_path,
+                            &current_inner.to_string_lossy(),
+                        );
+                        guard.push_back(PathSegment {
+                            name,
+                            path: segment_uri,
+                        });
+                    }
+                }
+                return;
+            }
+        }
+
         let mut path_acc = PathBuf::from("/");
         let mut segments = Vec::new();
 
