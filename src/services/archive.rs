@@ -615,6 +615,76 @@ fn list_zip(
     Ok(seen.into_values().collect())
 }
 
+/// Extracts a folder entry and all of its nested contents from an archive into a
+/// temporary directory under `/tmp`.
+///
+/// Returns the `PathBuf` pointing to the extracted root folder.
+#[allow(dead_code)]
+pub fn extract_dir_to_tempdir(
+    archive_path: &std::path::Path,
+    inner_dir: &str,
+    _password: Option<&str>,
+) -> Result<std::path::PathBuf, ArchiveError> {
+    let folder_name = std::path::Path::new(inner_dir)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "folder".to_string());
+
+    let temp_dir = tempfile::Builder::new()
+        .prefix(&format!(".tmp.{}.", folder_name))
+        .tempdir_in(std::env::temp_dir())
+        .map_err(|e| ArchiveError::Other(format!("tempdir creation failed: {e}")))?;
+
+    let dest_dir = temp_dir.path().join(&folder_name);
+    std::fs::create_dir_all(&dest_dir)
+        .map_err(|e| ArchiveError::Other(format!("create_dir_all failed: {e}")))?;
+
+    let prefix = if inner_dir.ends_with('/') {
+        inner_dir.to_string()
+    } else {
+        format!("{}/", inner_dir)
+    };
+
+    let file = std::fs::File::open(archive_path)
+        .map_err(|e| ArchiveError::Other(format!("open archive failed: {e}")))?;
+    let mut archive = zip::ZipArchive::new(file)
+        .map_err(|e| ArchiveError::Other(format!("ZIP parse failed: {e}")))?;
+
+    for i in 0..archive.len() {
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| ArchiveError::Other(format!("read entry failed: {e}")))?;
+        let name = entry.name().to_string();
+
+        if name.starts_with(&prefix) {
+            let relative_path = name.trim_start_matches(&prefix);
+            if relative_path.is_empty() {
+                continue;
+            }
+
+            let out_path = dest_dir.join(relative_path);
+            if entry.is_dir() {
+                std::fs::create_dir_all(&out_path)
+                    .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
+            } else {
+                if let Some(parent) = out_path.parent() {
+                    std::fs::create_dir_all(parent).map_err(|e| {
+                        ArchiveError::Other(format!("create parent dir failed: {e}"))
+                    })?;
+                }
+                let mut outfile = std::fs::File::create(&out_path)
+                    .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
+                std::io::copy(&mut entry, &mut outfile)
+                    .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
+            }
+        }
+    }
+
+    let result_path = dest_dir.clone();
+    std::mem::forget(temp_dir);
+    Ok(result_path)
+}
+
 fn extract_zip(
     archive_path: &Path,
     inner_path: &str,
