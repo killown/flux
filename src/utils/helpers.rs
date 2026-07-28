@@ -540,10 +540,19 @@ impl FluxApp {
                     if is_dir {
                         // Navigating deeper into a virtual archive folder
                         sender.input(AppMsg::Navigate(path));
+                    } else if crate::services::archive::is_browsable_archive(Path::new(&inner)) {
+                        sender.input(AppMsg::EnterArchive(path));
                     } else {
                         // Extracting and launching a file from inside the archive
                         let sender_clone = sender.clone();
                         let cached_pwd = self.cached_archive_password.clone();
+
+                        // Compute parent directory prefix for password re-prompting
+                        let parent_prefix = Path::new(&inner)
+                            .parent()
+                            .and_then(|p| p.to_str())
+                            .unwrap_or("")
+                            .to_string();
 
                         relm4::spawn_blocking(move || {
                             match crate::services::archive::extract_entry_to_tempfile(
@@ -559,14 +568,14 @@ impl FluxApp {
                                 Err(crate::services::archive::ArchiveError::PasswordRequired) => {
                                     sender_clone.input(AppMsg::PromptArchivePassword {
                                         archive_path,
-                                        prefix: inner,
+                                        prefix: parent_prefix.clone(),
                                         wrong_password: false,
                                     });
                                 }
                                 Err(crate::services::archive::ArchiveError::WrongPassword) => {
                                     sender_clone.input(AppMsg::PromptArchivePassword {
                                         archive_path,
-                                        prefix: inner,
+                                        prefix: parent_prefix,
                                         wrong_password: true,
                                     });
                                 }
