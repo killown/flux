@@ -543,6 +543,7 @@ impl FluxApp {
                             match crate::services::archive::extract_entry_to_tempfile(
                                 &archive_path,
                                 &inner,
+                                None,
                             ) {
                                 Ok(tmp) => {
                                     let tmp_path = tmp.path().to_path_buf();
@@ -550,7 +551,7 @@ impl FluxApp {
                                     crate::utils::open_file(tmp_path);
                                 }
                                 Err(e) => {
-                                    sender_clone.input(AppMsg::ShowToast(e));
+                                    sender_clone.input(AppMsg::ShowToast(e.to_string()));
                                 }
                             }
                         });
@@ -984,13 +985,41 @@ impl FluxApp {
 
         let clipboard = gdk::Display::default().expect("No Display").clipboard();
 
-        // 1. Build the standard URI list (text/uri-list)
-        // This is what other applications (Nautilus, Thunar) actually read.
+        // 1. Build the standard URI list (text/uri-list).
+        // For archive:// virtual paths, extract to a NamedTempFile first so that
+        // external apps receive a real file:// URI they can act on.
         let mut uri_list = String::new();
         for path in &selection {
-            let uri = gio::File::for_path(path).uri();
+            let path_str = path.to_string_lossy();
+            let uri = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+                if let Some((archive_path, inner)) =
+                    crate::services::archive::parse_archive_uri(&path_str)
+                {
+                    match crate::services::archive::extract_entry_to_tempfile(
+                        &archive_path,
+                        &inner,
+                        None,
+                    ) {
+                        Ok(tmp) => {
+                            let tmp_path = tmp.path().to_path_buf();
+                            tmp.keep().ok();
+                            gio::File::for_path(&tmp_path).uri().to_string()
+                        }
+                        Err(_) => continue,
+                    }
+                } else {
+                    continue;
+                }
+            } else {
+                gio::File::for_path(path).uri().to_string()
+            };
+
             uri_list.push_str(&uri);
             uri_list.push_str("\r\n");
+        }
+
+        if uri_list.is_empty() {
+            return;
         }
 
         // 2. Build the Flux-internal metadata protocol

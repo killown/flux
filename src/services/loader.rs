@@ -78,7 +78,7 @@ impl FluxApp {
                 crate::services::archive::parse_archive_uri(&path_str)
             {
                 self.current_path = path;
-                self.load_archive(archive_path, prefix, sender);
+                self.load_archive(archive_path, prefix, None, sender);
             }
             return;
         }
@@ -314,6 +314,7 @@ impl FluxApp {
         &mut self,
         archive_path: PathBuf,
         prefix: String,
+        password: Option<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
         self.directory_monitor = None;
@@ -327,8 +328,24 @@ impl FluxApp {
         let sort_ascending = self.sort_ascending;
         let folders_first = self.config.ui.folders_first;
 
-        match archive::list_archive_entries(&archive_path, &prefix) {
-            Err(e) => {
+        match archive::list_archive_entries(&archive_path, &prefix, password.as_deref()) {
+            Err(archive::ArchiveError::PasswordRequired) => {
+                sender.input(AppMsg::PromptArchivePassword {
+                    archive_path,
+                    prefix,
+                    wrong_password: false,
+                });
+                return;
+            }
+            Err(archive::ArchiveError::WrongPassword) => {
+                sender.input(AppMsg::PromptArchivePassword {
+                    archive_path,
+                    prefix,
+                    wrong_password: true,
+                });
+                return;
+            }
+            Err(archive::ArchiveError::Other(e)) => {
                 sender.input(AppMsg::ShowToast(e));
                 return;
             }

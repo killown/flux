@@ -1,6 +1,5 @@
 use crate::ui::keymap::KeyMap;
-use adw::gdk;
-use gtk::gio;
+use gtk::gdk;
 use relm4::factory::FactoryVecDeque;
 use relm4::typed_view::grid::TypedGridView;
 use serde::{Deserialize, Serialize};
@@ -606,6 +605,23 @@ pub enum AppMsg {
     /// synthesises an `archive://` URI internally and delegates rendering to
     /// `load_archive` in `services/loader.rs`.
     EnterArchive(PathBuf),
+    /// Show a password dialog then retry loading the archive.
+    ///
+    /// Triggered by [`ArchiveError::PasswordRequired`] or [`ArchiveError::WrongPassword`]
+    /// from `load_archive`. The dialog dispatches [`AppMsg::LoadArchiveWithPassword`] on
+    /// confirmation.
+    PromptArchivePassword {
+        archive_path: PathBuf,
+        prefix: String,
+        /// `true` when a previous attempt failed - shows an error hint in the dialog.
+        wrong_password: bool,
+    },
+    /// Retry loading an archive after the user supplied a password.
+    LoadArchiveWithPassword {
+        archive_path: PathBuf,
+        prefix: String,
+        password: String,
+    },
     /// Open all currently selected files or navigate to the selected directory.
     ///
     /// `Some(position)` is supplied by `GridView::connect_activate` and addresses

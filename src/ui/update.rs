@@ -985,13 +985,84 @@ impl FluxApp {
                 self.history.push(old_path);
                 self.forward_stack.clear();
 
-                self.load_archive(archive_path, String::new(), &sender);
+                self.load_archive(archive_path, String::new(), None, &sender);
                 self.update_breadcrumbs();
 
                 let view = self.files.view.clone();
                 glib::idle_add_local_once(move || {
                     view.grab_focus();
                 });
+            }
+            AppMsg::PromptArchivePassword {
+                archive_path,
+                prefix,
+                wrong_password,
+            } => {
+                let parent = gtk::Application::default()
+                    .active_window()
+                    .expect("No active window");
+                let s = sender.clone();
+
+                let dialog = gtk::Dialog::builder()
+                    .title(if wrong_password {
+                        "Wrong password - try again"
+                    } else {
+                        "Archive is password-protected"
+                    })
+                    .transient_for(&parent)
+                    .modal(true)
+                    .use_header_bar(1)
+                    .build();
+
+                dialog.add_button("Cancel", gtk::ResponseType::Cancel);
+                dialog.add_button("Unlock", gtk::ResponseType::Ok);
+                dialog.set_default_response(gtk::ResponseType::Ok);
+
+                let entry = gtk::Entry::builder()
+                    .visibility(false)
+                    .placeholder_text("Password")
+                    .activates_default(true)
+                    .margin_top(12)
+                    .margin_bottom(12)
+                    .margin_start(12)
+                    .margin_end(12)
+                    .build();
+
+                if wrong_password {
+                    let hint = gtk::Label::builder()
+                        .label("Incorrect password.")
+                        .css_classes(["error"])
+                        .margin_start(12)
+                        .margin_end(12)
+                        .build();
+                    dialog.content_area().append(&hint);
+                }
+                dialog.content_area().append(&entry);
+                dialog.show(); // Keep show() as well
+                dialog.present(); // Ensure it gets focus and appears on top
+
+                let entry_clone = entry.clone();
+                dialog.connect_response(move |dlg, resp| {
+                    if resp == gtk::ResponseType::Ok {
+                        let password = entry_clone.text().to_string();
+                        if !password.is_empty() {
+                            s.input(AppMsg::LoadArchiveWithPassword {
+                                archive_path: archive_path.clone(),
+                                prefix: prefix.clone(),
+                                password,
+                            });
+                        }
+                    }
+                    dlg.close();
+                });
+            }
+            AppMsg::LoadArchiveWithPassword {
+                archive_path,
+                prefix,
+                password,
+            } => {
+                self.load_archive(archive_path, prefix, Some(password), &sender);
+                self.update_breadcrumbs();
             }
             //WARN: Change this logic with caution.
             // If the process working directory
@@ -1027,7 +1098,7 @@ impl FluxApp {
                         self.history.push(old_path);
                         self.forward_stack.clear();
 
-                        self.load_archive(archive_path, prefix, &sender);
+                        self.load_archive(archive_path, prefix, None, &sender);
                         self.update_breadcrumbs();
 
                         let view = self.files.view.clone();
