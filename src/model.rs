@@ -364,6 +364,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Cached password for accessing encrypted subdirectories within the current archive session.
+    pub cached_archive_password: Option<String>,
     /// The current label for the contextual Recents button.
     pub recents_label: String,
     /// The current tooltip for the contextual Recents button.

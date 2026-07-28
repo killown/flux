@@ -314,7 +314,7 @@ impl FluxApp {
         &mut self,
         archive_path: PathBuf,
         prefix: String,
-        password: Option<String>,
+        mut password: Option<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
         self.directory_monitor = None;
@@ -323,6 +323,10 @@ impl FluxApp {
 
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
+        if password.is_none() {
+            password = self.cached_archive_password.clone();
+        }
+
         let expand_labels = self.config.ui.expand_labels;
         let sort_strategy = self.sort_by;
         let sort_ascending = self.sort_ascending;
@@ -330,29 +334,33 @@ impl FluxApp {
 
         match archive::list_archive_entries(&archive_path, &prefix, password.as_deref()) {
             Err(archive::ArchiveError::PasswordRequired) => {
+                self.cached_archive_password = None;
                 sender.input(AppMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
                     wrong_password: false,
                 });
-                return;
             }
             Err(archive::ArchiveError::WrongPassword) => {
+                self.cached_archive_password = None;
                 sender.input(AppMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
                     wrong_password: true,
                 });
-                return;
             }
             Err(archive::ArchiveError::Other(e)) => {
                 sender.input(AppMsg::ShowToast(e));
-                return;
             }
             Ok(entries) => {
+                if password.is_some() {
+                    self.cached_archive_password = password;
+                }
+
                 let mut items =
                     archive::entries_to_load_contexts(&entries, &archive_path, expand_labels);
 
+                // Sort entries
                 items.par_sort_unstable_by(move |a, b| {
                     if a.is_dir != b.is_dir {
                         return if folders_first {
@@ -394,8 +402,19 @@ impl FluxApp {
                     }
                 });
 
+                let mut media_tasks = Vec::new();
+
                 for item in items {
                     let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
+
+                    // Collect visual media files for thumbnail generation
+                    if !item.is_dir {
+                        let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
+                        if is_img || is_vid {
+                            media_tasks.push((item.display_name.clone(), item.target_path.clone()));
+                        }
+                    }
+
                     self.files.append(FileItem {
                         name: item.display_name.clone(),
                         icon,
@@ -410,11 +429,13 @@ impl FluxApp {
                         is_custom_icon: false,
                     });
                 }
+
+                self.update_breadcrumbs();
+
+                // Pass the extracted media tasks into your existing loader!
+                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
             }
         }
-
-        self.update_breadcrumbs();
-        self.spawn_thumbnail_loader(Vec::new(), current_session, sender.clone());
     }
 
     /// Populates the file grid with entries from the GTK recent-files registry.

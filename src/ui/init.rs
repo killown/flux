@@ -239,6 +239,7 @@ impl FluxApp {
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),
             quick_panel_box: gtk::Box::new(gtk::Orientation::Horizontal, 0),
+            cached_archive_password: None,
         };
 
         // 9. Initial State Population

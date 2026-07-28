@@ -531,24 +531,44 @@ impl FluxApp {
     ) {
         for (path, is_dir) in items {
             let path_str = path.to_string_lossy();
+
+            // 1. Check if we are inside a virtual archive path (/archive://...)
             if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
                 if let Some((archive_path, inner)) =
                     crate::services::archive::parse_archive_uri(&path_str)
                 {
                     if is_dir {
+                        // Navigating deeper into a virtual archive folder
                         sender.input(AppMsg::Navigate(path));
                     } else {
+                        // Extracting and launching a file from inside the archive
                         let sender_clone = sender.clone();
+                        let cached_pwd = self.cached_archive_password.clone();
+
                         relm4::spawn_blocking(move || {
                             match crate::services::archive::extract_entry_to_tempfile(
                                 &archive_path,
                                 &inner,
-                                None,
+                                cached_pwd.as_deref(),
                             ) {
                                 Ok(tmp) => {
                                     let tmp_path = tmp.path().to_path_buf();
                                     tmp.keep().ok();
                                     crate::utils::open_file(tmp_path);
+                                }
+                                Err(crate::services::archive::ArchiveError::PasswordRequired) => {
+                                    sender_clone.input(AppMsg::PromptArchivePassword {
+                                        archive_path,
+                                        prefix: inner,
+                                        wrong_password: false,
+                                    });
+                                }
+                                Err(crate::services::archive::ArchiveError::WrongPassword) => {
+                                    sender_clone.input(AppMsg::PromptArchivePassword {
+                                        archive_path,
+                                        prefix: inner,
+                                        wrong_password: true,
+                                    });
                                 }
                                 Err(e) => {
                                     sender_clone.input(AppMsg::ShowToast(e.to_string()));
@@ -558,13 +578,19 @@ impl FluxApp {
                     }
                 }
                 break;
-            } else if is_dir {
+            }
+            // 2. Regular filesystem directory navigation
+            else if is_dir {
                 sender.input(AppMsg::Navigate(path));
                 break;
-            } else if crate::services::archive::is_browsable_archive(&path) {
+            }
+            // 3. Opening a physical archive file from disk (.7z, .zip, etc.)
+            else if crate::services::archive::is_browsable_archive(&path) {
                 sender.input(AppMsg::EnterArchive(path));
                 break;
-            } else {
+            }
+            // 4. Regular file opening via xdg-open
+            else {
                 crate::utils::open_file(path);
             }
         }
