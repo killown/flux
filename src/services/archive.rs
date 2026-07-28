@@ -655,7 +655,7 @@ fn list_7z(
 
     let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
 
-    let mut reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
+    let reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
         sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
         sevenz_rust2::Error::MaybeBadPassword(_) => {
             if password.is_none() {
@@ -718,13 +718,12 @@ fn extract_7z(
             &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn std::io::Read| {
                 let n = entry.name().replace('\\', "/");
                 if n.trim_end_matches('/') == inner_path {
-                    std::io::copy(r, &mut tmp).map_err(|e| sevenz_rust2::Error::from(e))?;
+                    std::io::copy(r, &mut tmp).map_err(sevenz_rust2::Error::from)?;
                     found = true;
                     Ok(false) // stop after first match
                 } else {
                     // Must drain the reader to advance the decoder position.
-                    std::io::copy(r, &mut std::io::sink())
-                        .map_err(|e| sevenz_rust2::Error::from(e))?;
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
                     Ok(true)
                 }
             },
@@ -882,10 +881,13 @@ fn collect_entry(
         }
     };
 
+    // Synthesized directory nodes must always have size = 0
+    let entry_size = if is_dir { 0 } else { size };
+
     seen.entry(child_name.clone()).or_insert(ArchiveEntry {
         name: child_name,
         is_dir,
-        size,
+        size: entry_size,
         mtime,
         inner_path: child_inner,
     });
@@ -1104,8 +1106,8 @@ mod tests {
             ("archive.tbz2", true),
             ("archive.tar.xz", true),
             ("archive.txz", true),
-            ("archive.7z", false),
-            ("archive.rar", false),
+            ("archive.7z", true),
+            ("archive.rar", true),
             ("file.txt", false),
             ("archive.ZIP", true), // case-insensitive
             ("archive.TAR.GZ", true),
@@ -1121,7 +1123,7 @@ mod tests {
     #[test]
     fn test_list_zip_root() {
         let (_dir, zip_path) = create_test_zip();
-        let entries = list_archive_entries(&zip_path, "").unwrap();
+        let entries = list_archive_entries(&zip_path, "", None).unwrap();
         // Expect: "file1.txt", "dir" (synthesised directory)
         assert_eq!(entries.len(), 2);
         let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
@@ -1136,7 +1138,7 @@ mod tests {
     #[test]
     fn test_list_zip_subdir() {
         let (_dir, zip_path) = create_test_zip();
-        let entries = list_archive_entries(&zip_path, "dir").unwrap();
+        let entries = list_archive_entries(&zip_path, "dir", None).unwrap();
         // Expect: "file2.txt", "sub" (synthesised)
         assert_eq!(entries.len(), 2);
         let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
@@ -1150,7 +1152,7 @@ mod tests {
     #[test]
     fn test_list_zip_nested_subdir() {
         let (_dir, zip_path) = create_test_zip();
-        let entries = list_archive_entries(&zip_path, "dir/sub").unwrap();
+        let entries = list_archive_entries(&zip_path, "dir/sub", None).unwrap();
         // Expect: "file3.txt"
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].name, "file3.txt");
@@ -1162,7 +1164,7 @@ mod tests {
     #[test]
     fn test_list_tar_root() {
         let (_dir, tar_path) = create_test_tar();
-        let entries = list_archive_entries(&tar_path, "").unwrap();
+        let entries = list_archive_entries(&tar_path, "", None).unwrap();
         // Similar to zip: "file1.txt", "dir" (synthesised from dir/file2.txt)
         assert_eq!(entries.len(), 2);
         let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
@@ -1182,7 +1184,7 @@ mod tests {
             encoder.write_all(data).unwrap();
             encoder.finish().unwrap()
         });
-        let entries = list_archive_entries(&path, "").unwrap();
+        let entries = list_archive_entries(&path, "", None).unwrap();
         assert_eq!(entries.len(), 2);
     }
 
@@ -1195,7 +1197,7 @@ mod tests {
             encoder.write_all(data).unwrap();
             encoder.finish().unwrap()
         });
-        let entries = list_archive_entries(&path, "").unwrap();
+        let entries = list_archive_entries(&path, "", None).unwrap();
         assert_eq!(entries.len(), 2);
     }
 
@@ -1207,7 +1209,7 @@ mod tests {
             encoder.write_all(data).unwrap();
             encoder.finish().unwrap()
         });
-        let entries = list_archive_entries(&path, "").unwrap();
+        let entries = list_archive_entries(&path, "", None).unwrap();
         assert_eq!(entries.len(), 2);
     }
 
@@ -1216,28 +1218,26 @@ mod tests {
         let dir = tempdir().unwrap();
         let zip_path = dir.path().join("empty.zip");
         File::create(&zip_path).unwrap(); // empty file, not a valid zip
-        let result = list_archive_entries(&zip_path, "");
+        let result = list_archive_entries(&zip_path, "", None);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_list_archive_nonexistent() {
         let path = Path::new("/nonexistent/file.zip");
-        let result = list_archive_entries(path, "");
+        let result = list_archive_entries(path, "", None);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_list_archive_unsupported_format() {
         let dir = tempdir().unwrap();
-        let path = dir.path().join("file.7z");
+        let path = dir.path().join("file.unsupported");
         fs::write(&path, b"dummy").unwrap();
-        let result = list_archive_entries(&path, "");
+        let result = list_archive_entries(&path, "", None);
         assert!(result.is_err());
-        // The error message may contain "Unsupported archive format" or "7z" or similar.
-        let err = result.unwrap_err();
-        let msg = err.to_string();
-        assert!(msg.contains("7z") || msg.contains("Unsupported format"));
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Unsupported format"));
     }
 
     // ── entries_to_load_contexts ─────────────────────────────────────────────
@@ -1280,7 +1280,7 @@ mod tests {
     #[test]
     fn test_extract_zip_entry() {
         let (_dir, zip_path) = create_test_zip();
-        let tmp = extract_entry_to_tempfile(&zip_path, "file1.txt").unwrap();
+        let tmp = extract_entry_to_tempfile(&zip_path, "file1.txt", None).unwrap();
         let content = fs::read_to_string(tmp.path()).unwrap();
         assert_eq!(content, "Hello");
         // Keep the temp file alive until end of test.
@@ -1290,7 +1290,7 @@ mod tests {
     #[test]
     fn test_extract_zip_entry_in_subdir() {
         let (_dir, zip_path) = create_test_zip();
-        let tmp = extract_entry_to_tempfile(&zip_path, "dir/file2.txt").unwrap();
+        let tmp = extract_entry_to_tempfile(&zip_path, "dir/file2.txt", None).unwrap();
         let content = fs::read_to_string(tmp.path()).unwrap();
         assert_eq!(content, "World");
         tmp.keep().ok();
@@ -1299,7 +1299,7 @@ mod tests {
     #[test]
     fn test_extract_tar_entry() {
         let (_dir, tar_path) = create_test_tar();
-        let tmp = extract_entry_to_tempfile(&tar_path, "file1.txt").unwrap();
+        let tmp = extract_entry_to_tempfile(&tar_path, "file1.txt", None).unwrap();
         let content = fs::read_to_string(tmp.path()).unwrap();
         assert_eq!(content, "Hello");
         tmp.keep().ok();
@@ -1314,7 +1314,7 @@ mod tests {
             encoder.write_all(data).unwrap();
             encoder.finish().unwrap()
         });
-        let tmp = extract_entry_to_tempfile(&path, "file1.txt").unwrap();
+        let tmp = extract_entry_to_tempfile(&path, "file1.txt", None).unwrap();
         let content = fs::read_to_string(tmp.path()).unwrap();
         assert_eq!(content, "Hello");
         tmp.keep().ok();
@@ -1323,21 +1323,20 @@ mod tests {
     #[test]
     fn test_extract_entry_not_found() {
         let (_dir, zip_path) = create_test_zip();
-        let result = extract_entry_to_tempfile(&zip_path, "nonexistent.txt");
+        let result = extract_entry_to_tempfile(&zip_path, "nonexistent.txt", None);
         assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.contains("Entry not found"));
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("not found"));
     }
 
     #[test]
     fn test_extract_from_unsupported_archive() {
         let dir = tempdir().unwrap();
-        let path = dir.path().join("file.7z");
+        let path = dir.path().join("file.unsupported");
         fs::write(&path, b"dummy").unwrap();
-        let result = extract_entry_to_tempfile(&path, "file");
+        let result = extract_entry_to_tempfile(&path, "file", None);
         assert!(result.is_err());
-        let err = result.unwrap_err();
-        // The error message should indicate unsupported format or 7z.
-        assert!(err.contains("7z") || err.contains("Unsupported format"));
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Unsupported format"));
     }
 }
