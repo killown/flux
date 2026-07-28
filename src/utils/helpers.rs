@@ -706,66 +706,6 @@ impl FluxApp {
         }
     }
 
-    /// Initiates a paste operation, intercepting directory conflicts for user confirmation.
-    ///
-    /// Screens the incoming file list against the current directory. If any source
-    /// directory would collide with an existing directory at the destination, a
-    /// `ConfirmReplacePaste` message is dispatched instead of proceeding, which
-    /// presents a `gtk::MessageDialog`. Non-directory conflicts (files) are handled
-    /// silently via the existing `(copy N)` suffix logic inside `dispatch_paste_ops`.
-    ///
-    /// # Arguments
-    ///
-    /// * `files`  - The GIO file list read from the clipboard.
-    /// * `is_cut` - Indicator if the operation is a cut or a copy.
-    /// * `sender` - Component sender for dispatching follow-up messages.
-    pub fn perform_paste(
-        &self,
-        files: Vec<gio::File>,
-        is_cut: bool,
-        sender: AsyncComponentSender<Self>,
-    ) {
-        let target_dir = self.current_path.clone();
-
-        // Abort if any source is an ancestor of (or equal to) the destination
-        for f in &files {
-            if let Some(src) = f.path() {
-                if target_dir.starts_with(&src) {
-                    sender.input(AppMsg::ShowToast(
-                        "Cannot paste a folder into itself or one of its subfolders.".into(),
-                    ));
-                    return;
-                }
-            }
-        }
-
-        // Directory collision detection applies to copy only, cut passes OVERWRITE natively.
-        let conflicts: Vec<String> = if !is_cut {
-            files
-                .iter()
-                .filter_map(|f| f.basename())
-                .filter(|name| {
-                    let dest = target_dir.join(name);
-                    dest.exists() && dest.is_dir()
-                })
-                .map(|name| name.to_string_lossy().into_owned())
-                .collect()
-        } else {
-            Vec::new()
-        };
-
-        if !conflicts.is_empty() {
-            sender.input(AppMsg::ConfirmReplacePaste {
-                files,
-                conflicts,
-                is_cut,
-            });
-            return;
-        }
-
-        Self::dispatch_paste_ops(files, is_cut, target_dir, sender);
-    }
-
     /// Executes paste operations unconditionally after the user confirms directory replacement.
     ///
     /// For directory sources, falls back to a blocking recursive copy/move on a thread-pool
@@ -779,6 +719,15 @@ impl FluxApp {
     /// * `forced`  - When `true`, directories are copied recursively via `copy_dir_recursive`
     ///   instead of `gio::File::copy_async` (which cannot handle directories).
     /// * `sender`  - Component sender for dispatching progress and completion messages.
+    pub fn perform_paste(
+        &self,
+        files: Vec<gio::File>,
+        is_cut: bool,
+        sender: AsyncComponentSender<Self>,
+    ) {
+        self.perform_paste_inner(files, is_cut, false, sender);
+    }
+
     pub fn perform_paste_inner(
         &self,
         files: Vec<gio::File>,
@@ -797,11 +746,22 @@ impl FluxApp {
                     Some(p) => p,
                     None => continue,
                 };
-                let basename = match file.basename() {
-                    Some(b) => b,
+                let orig_basename = match file.basename() {
+                    Some(b) => b.to_string_lossy().to_string(),
                     None => continue,
                 };
-                let dest = target_dir.join(&basename);
+
+                let clean_basename = if orig_basename.starts_with(".tmp") {
+                    orig_basename
+                        .split_once('.')
+                        .and_then(|(_, rest)| rest.split_once('.'))
+                        .map(|(_, real)| real.to_string())
+                        .unwrap_or(orig_basename)
+                } else {
+                    orig_basename
+                };
+
+                let dest = target_dir.join(&clean_basename);
                 let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
                 let cancellable = gio::Cancellable::new();
 
@@ -827,8 +787,12 @@ impl FluxApp {
                                 None,
                             )
                             .map_err(|e| e.to_string())
-                    } else {
+                    } else if src.is_dir() {
                         copy_dir_recursive(&src, &dest).map_err(|e| e.to_string())
+                    } else {
+                        std::fs::copy(&src, &dest)
+                            .map(|_| ())
+                            .map_err(|e| e.to_string())
                     };
 
                     if let Err(e) = result {
@@ -861,150 +825,44 @@ impl FluxApp {
     /// * `is_cut`     - `true` for move, `false` for copy.
     /// * `target_dir` - The destination directory path.
     /// * `sender`     - Component sender for progress and completion messages.
-    fn dispatch_paste_ops(
+    pub fn dispatch_paste_ops(
         files: Vec<gio::File>,
         is_cut: bool,
-        target_dir: std::path::PathBuf,
+        target_dir: PathBuf,
         sender: AsyncComponentSender<Self>,
     ) {
-        let total_files = files.len();
-        let completed_files = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let mut conflicts = Vec::new();
 
-        for file in files {
-            let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
-            let cancellable = gio::Cancellable::new();
+        for file in &files {
+            if let Some(basename) = file.basename() {
+                let orig_name = basename.to_string_lossy().to_string();
 
-            let basename = file.basename().expect("File must have a name");
-            let mut dest = target_dir.join(&basename);
+                // Clean temporary extraction filenames (.tmpXyZ.favicon.svg -> favicon.svg)
+                let clean_name = if orig_name.starts_with(".tmp") {
+                    orig_name
+                        .split_once('.')
+                        .and_then(|(_, rest)| rest.split_once('.'))
+                        .map(|(_, real)| real.to_string())
+                        .unwrap_or(orig_name)
+                } else {
+                    orig_name
+                };
 
-            let src_path = file.path();
-            let is_dir = src_path.as_deref().is_some_and(|p| p.is_dir());
-
-            if !is_cut {
-                let mut copy_number = 1;
-                let original_name = basename.to_string_lossy().into_owned();
-
-                while dest.exists() {
-                    let new_name = match original_name.rfind('.') {
-                        Some(idx) if idx > 0 && !is_dir => {
-                            let (name, ext) = original_name.split_at(idx);
-                            format!("{} (copy {}){}", name, copy_number, ext)
-                        }
-                        _ => format!("{} (copy {})", original_name, copy_number),
-                    };
-                    dest = target_dir.join(new_name);
-                    copy_number += 1;
+                let dest = target_dir.join(&clean_name);
+                if dest.exists() && dest.is_dir() {
+                    conflicts.push(clean_name);
                 }
             }
+        }
 
-            if is_dir {
-                let Some(src) = src_path else { continue };
-                let s = sender.clone();
-                let completed_clone = completed_files.clone();
-
-                sender.input(AppMsg::TaskProgress {
-                    id: task_id,
-                    current: 0,
-                    total: 1,
-                    total_items: 1,
-                    cancellable: cancellable.clone(),
-                });
-
-                relm4::spawn_blocking(move || {
-                    let result = if is_cut {
-                        gio::File::for_path(&src)
-                            .move_(
-                                &gio::File::for_path(&dest),
-                                gio::FileCopyFlags::OVERWRITE
-                                    | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
-                                gio::Cancellable::NONE,
-                                None,
-                            )
-                            .map_err(|e| e.to_string())
-                    } else {
-                        copy_dir_recursive(&src, &dest).map_err(|e| e.to_string())
-                    };
-
-                    if let Err(e) = result {
-                        s.input(AppMsg::ShowToast(format!("Copy failed: {}", e)));
-                    }
-
-                    s.input(AppMsg::TaskCompleted(task_id));
-
-                    let count =
-                        completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-                    if count == total_files {
-                        s.input(AppMsg::Refresh);
-                    }
-                });
-
-                continue;
-            }
-
-            let dest_file = gio::File::for_path(dest);
-
-            // Register immediately so the status bar appears before the first byte is transferred
-            sender.input(AppMsg::TaskProgress {
-                id: task_id,
-                current: 0,
-                total: 1,
-                total_items: 1,
-                cancellable: cancellable.clone(),
+        if !conflicts.is_empty() {
+            sender.input(AppMsg::ConfirmReplacePaste {
+                files,
+                conflicts,
+                is_cut,
             });
-
-            let p_sender = sender.clone();
-            let p_cancellable = cancellable.clone();
-            let progress_callback = move |current: i64, total: i64| {
-                if total > 0 {
-                    p_sender.input(AppMsg::TaskProgress {
-                        id: task_id,
-                        current: current as u64,
-                        total: total as u64,
-                        total_items: 1,
-                        cancellable: p_cancellable.clone(),
-                    });
-                }
-            };
-
-            let c_sender = sender.clone();
-            let completed_clone = completed_files.clone();
-            let finish_callback = move |res: Result<(), glib::Error>| {
-                if let Err(e) = res {
-                    // Cancelled operations produce an error, suppress the noise for that case.
-                    if !e.matches(gio::IOErrorEnum::Cancelled) {
-                        eprintln!("Operation error: {}", e);
-                        c_sender.input(AppMsg::ShowToast(format!("Copy failed: {}", e.message())));
-                    }
-                }
-
-                c_sender.input(AppMsg::TaskCompleted(task_id));
-
-                let count = completed_clone.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-
-                if count == total_files {
-                    c_sender.input(AppMsg::Refresh);
-                }
-            };
-
-            if is_cut {
-                file.move_async(
-                    &dest_file,
-                    gio::FileCopyFlags::OVERWRITE,
-                    glib::Priority::DEFAULT,
-                    Some(&cancellable),
-                    Some(Box::new(progress_callback)),
-                    finish_callback,
-                );
-            } else {
-                file.copy_async(
-                    &dest_file,
-                    gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::TARGET_DEFAULT_PERMS,
-                    glib::Priority::DEFAULT,
-                    Some(&cancellable),
-                    Some(Box::new(progress_callback)),
-                    finish_callback,
-                );
-            }
+        } else {
+            sender.input(AppMsg::PerformPasteForced { files, is_cut });
         }
     }
     /// Internal helper to populate the clipboard with the current selection.
