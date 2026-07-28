@@ -12,7 +12,7 @@
 //! | `.tar.xz`, `.txz`                  | `tar` + `xz2`    | ✗        |
 //! | `.tar.zst`, `.tzst`                | `tar` + `zstd`   | ✗        |
 //! | `.tar.lz4`                         | `tar` + `lz4`    | ✗        |
-//! | `.7z`                              | `sevenz-rust`    | ✓        |
+//! | `.7z`                              | `sevenz-rust2`   | ✓        |
 //! | `.gz` (standalone)                 | `flate2`         | ✗        |
 //! | `.bz2` (standalone)                | `bzip2`          | ✗        |
 //! | `.xz` (standalone)                 | `xz2`            | ✗        |
@@ -24,7 +24,7 @@ use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 
 use crate::model::FileLoadContext;
-use sevenz_rust::{Archive, Password};
+use sevenz_rust2::{ArchiveReader, Password};
 
 // ─── URI scheme ───────────────────────────────────────────────────────────────
 
@@ -650,44 +650,40 @@ fn list_7z(
     prefix: &str,
     password: Option<&str>,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
-    let mut file =
+    let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 
-    let file_size = file
-        .metadata()
-        .map_err(|e| ArchiveError::Other(format!("metadata: {e}")))?
-        .len();
+    let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
 
-    let password_bytes: Vec<u8> = password
-        .map(|p| p.encode_utf16().flat_map(|c| c.to_le_bytes()).collect())
-        .unwrap_or_default();
-
-    let archive = Archive::read(&mut file, file_size, &password_bytes).map_err(|e| {
-        let msg = e.to_string();
-        if msg.contains("password") || msg.contains("decrypt") || msg.contains("Wrong") {
+    let mut reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
+        sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
+        sevenz_rust2::Error::MaybeBadPassword(_) => {
             if password.is_none() {
                 ArchiveError::PasswordRequired
             } else {
                 ArchiveError::WrongPassword
             }
-        } else {
-            ArchiveError::Other(msg)
         }
+        _ => ArchiveError::Other(e.to_string()),
     })?;
 
     let mut seen: HashMap<String, ArchiveEntry> = HashMap::new();
 
-    for entry in &archive.files {
+    for entry in &reader.archive().files.clone() {
         let raw_name = entry.name().replace('\\', "/");
-        let raw_name = raw_name.trim_end_matches('/');
-        let is_dir = entry.is_directory();
-        let size = entry.size();
+        let raw_name_trimmed = raw_name.trim_end_matches('/');
+        if raw_name_trimmed.is_empty() {
+            continue;
+        }
+        let is_dir = entry.is_directory;
+        let size = entry.size;
+        // NtTime implements Into<SystemTime>, convert to Unix timestamp.
+        let mtime = std::time::SystemTime::from(entry.last_modified_date())
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
 
-        // We can't reliably get the mtime from FileTime due to private fields,
-        // so we set it to 0. This is a known limitation for 7z archives.
-        let mtime = 0;
-
-        collect_entry(&mut seen, raw_name, is_dir, size, mtime, prefix);
+        collect_entry(&mut seen, raw_name_trimmed, is_dir, size, mtime, prefix);
     }
 
     Ok(seen.into_values().collect())
@@ -699,29 +695,49 @@ fn extract_7z(
     password: Option<&str>,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
-    let mut file =
+    let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 
-    let password_obj = password.map(Password::from).unwrap_or_else(Password::empty);
+    let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
 
-    // Rewind the file to the beginning so the extractor can read the whole archive.
-    file.rewind()
-        .map_err(|e| ArchiveError::Other(format!("rewind: {e}")))?;
-
-    // Use the callback-based extractor to write just the matching entry into the temp file.
-    sevenz_rust::decompress_with_extract_fn_and_password(
-        &mut file,
-        std::path::Path::new(""),
-        password_obj,
-        |e, reader, _| {
-            let n = e.name().replace('\\', "/");
-            if n.trim_end_matches('/') == inner_path {
-                std::io::copy(reader, &mut tmp).map_err(sevenz_rust::Error::io)?;
+    let mut reader = ArchiveReader::new(file, pwd.clone()).map_err(|e| match e {
+        sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
+        sevenz_rust2::Error::MaybeBadPassword(_) => {
+            if password.is_none() {
+                ArchiveError::PasswordRequired
+            } else {
+                ArchiveError::WrongPassword
             }
-            Ok(true)
-        },
-    )
-    .map_err(|e| ArchiveError::Other(format!("7z extract: {e}")))?;
+        }
+        _ => ArchiveError::Other(e.to_string()),
+    })?;
+
+    let mut found = false;
+    reader
+        .for_each_entries(
+            &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn std::io::Read| {
+                let n = entry.name().replace('\\', "/");
+                if n.trim_end_matches('/') == inner_path {
+                    std::io::copy(r, &mut tmp).map_err(|e| sevenz_rust2::Error::from(e))?;
+                    found = true;
+                    Ok(false) // stop after first match
+                } else {
+                    // Must drain the reader to advance the decoder position.
+                    std::io::copy(r, &mut std::io::sink())
+                        .map_err(|e| sevenz_rust2::Error::from(e))?;
+                    Ok(true)
+                }
+            },
+        )
+        .map_err(|e| match e {
+            sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
+            sevenz_rust2::Error::MaybeBadPassword(_) => ArchiveError::WrongPassword,
+            _ => ArchiveError::Other(e.to_string()),
+        })?;
+
+    if !found {
+        return Err(ArchiveError::Other(format!("not found: {inner_path}")));
+    }
 
     tmp.flush()
         .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
