@@ -61,6 +61,7 @@ fn pty_is_raw(fd: libc::c_int) -> bool {
 }
 
 pub struct TerminalState {
+    pub cleaned_up: bool,
     pub grid: Vec<Vec<Cell>>,
     pub cursor_x: usize,
     pub cursor_y: usize,
@@ -147,6 +148,7 @@ impl TerminalState {
         let fg = gtk::gdk::RGBA::new(0.9, 0.9, 0.9, 1.0);
         let bg = gtk::gdk::RGBA::new(0.1, 0.1, 0.1, 1.0);
         Self {
+            cleaned_up: false,
             grid,
             cursor_x: 0,
             cursor_y: 0,
@@ -990,6 +992,44 @@ impl Clone for Terminal {
 }
 
 impl Terminal {
+    /// Kills the shell process and cleans up the PTY.
+    /// Safe to call multiple times, does nothing if no shell is running.
+    pub fn kill_shell(&self) {
+        let mut state = match self.state.lock() {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+
+        if state.shell_pid.is_none() {
+            return;
+        }
+
+        // Send SIGTERM to the shell
+        if let Some(pid) = state.shell_pid.take() {
+            unsafe {
+                libc::kill(pid, libc::SIGTERM);
+            }
+        }
+
+        // Close the PTY master file descriptor
+        if let Some(fd) = state.pty_master_fd.take() {
+            unsafe {
+                libc::close(fd);
+            }
+        }
+        state.pty_fd = None;
+
+        // Clear the grid and scrollback so old output doesn't reappear
+        let cols = state.cols;
+        let rows = state.rows;
+        state.grid = (0..rows).map(|_| vec![Cell::blank(); cols]).collect();
+        state.scrollback.clear();
+        state.scroll_offset = 0;
+        state.cursor_x = 0;
+        state.cursor_y = 0;
+        state.pending_wrap = false;
+    }
+
     pub fn new(config: &TerminalConfig) -> Self {
         let drawing_area = DrawingArea::new();
         drawing_area.set_vexpand(true);
@@ -1640,35 +1680,13 @@ impl Terminal {
         // fallback 80x24 size. connect_size_allocate fires once the pane is
         // actually shown and GTK has assigned real pixel dimensions.
         let term_clone = term.clone();
-        let spawned = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let config_height_lines = config.height;
 
         term.drawing_area.connect_map(move |area| {
-            if !spawned.swap(true, std::sync::atomic::Ordering::SeqCst) {
-                let mut t = term_clone.clone();
-                glib::idle_add_local_once(move || {
-                    t.spawn_async(
-                        0,
-                        None,
-                        &[],
-                        &[],
-                        0,
-                        || {},
-                        -1,
-                        None,
-                        |result| {
-                            if let Err(e) = result {
-                                eprintln!("Failed to spawn terminal shell: {}", e);
-                            }
-                        },
-                    );
-                });
-            }
-
-            // Defer paned position adjustment until GTK completes layout allocation for the panel
             let area_clone = area.clone();
             let state_clone = term_clone.state.clone();
 
+            // Defer paned position adjustment until GTK completes layout allocation for the panel
             glib::idle_add_local_once(move || {
                 if let Some(paned) = area_clone
                     .ancestor(gtk::Paned::static_type())
@@ -2109,6 +2127,7 @@ impl Terminal {
 
         {
             let mut state = self.state.lock().unwrap();
+            state.cleaned_up = false;
             state.pty_master_fd = Some(master_fd);
             state.cols = cols;
             state.rows = rows;
@@ -2184,6 +2203,37 @@ impl Terminal {
                 )));
             }
         }
+    }
+}
+
+impl Drop for Terminal {
+    fn drop(&mut self) {
+        // Only clean up if we are the last reference
+        if Arc::strong_count(&self.state) > 1 {
+            return;
+        }
+
+        let mut state = match self.state.lock() {
+            Ok(s) => s,
+            Err(_) => return,
+        };
+
+        if state.cleaned_up {
+            return;
+        }
+        state.cleaned_up = true;
+
+        if let Some(pid) = state.shell_pid.take() {
+            unsafe {
+                libc::kill(pid, libc::SIGTERM);
+            }
+        }
+        if let Some(fd) = state.pty_master_fd.take() {
+            unsafe {
+                libc::close(fd);
+            }
+        }
+        state.pty_fd = None;
     }
 }
 

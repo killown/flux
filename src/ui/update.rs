@@ -606,6 +606,7 @@ impl FluxApp {
                 self.terminal_visible = !self.terminal_visible;
 
                 if self.terminal_visible {
+                    // --- Show terminal ---
                     if !self.terminal_cleared {
                         self.terminal_cleared = true;
                     }
@@ -656,6 +657,11 @@ impl FluxApp {
                         // send SIGWINCH so fish re-reads the correct $LINES/$COLUMNS.
                         term.send_sigwinch();
                     });
+                } else {
+                    // --- Hide terminal: kill the shell and reset flags ---
+                    self.terminal.kill_shell();
+                    self.terminal_spawned = false;
+                    self.terminal_cleared = false;
                 }
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
