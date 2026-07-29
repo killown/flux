@@ -183,27 +183,16 @@ impl FluxApp {
             terminal.add_controller(&middle_click);
         }
 
-        // Spawn the user's default shell
-        let mut terminal_to_spawn = terminal.clone();
-        let startup_path_buf = start_path.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(500), move || {
-            let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-            terminal_to_spawn.spawn_async(
-                0,
-                Some(startup_path_buf.to_str().unwrap_or("/")),
-                &[&shell],
-                &[],
-                0,
-                || {},
-                -1,
-                None,
-                move |result| {
-                    if let Err(e) = result {
-                        eprintln!("Failed to spawn shell: {}", e);
-                    }
-                },
-            );
-            glib::ControlFlow::Break
+        let term_for_shutdown = terminal.clone();
+        root.connect_close_request(move |_| {
+            term_for_shutdown.kill_shell();
+            glib::Propagation::Proceed
+        });
+
+        let app = relm4::main_adw_application();
+        let term_for_app_shutdown = terminal.clone();
+        app.connect_shutdown(move |_| {
+            term_for_app_shutdown.kill_shell();
         });
 
         // 8. Model Assembly
