@@ -1,0 +1,90 @@
+[package]
+name = "flux-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+serde_json = "1.0.151"
+tempfile = "3"
+toml = "1.0"
+url = "2.5.8"
+
+[dependencies.flux]
+path = ".."
+
+[[bin]]
+name = "fuzz_menu_parser"
+path = "fuzz_targets/fuzz_menu_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_config_toml"
+path = "fuzz_targets/fuzz_config_toml.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_path_expansion"
+path = "fuzz_targets/fuzz_path_expansion.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_media_dimensions"
+path = "fuzz_targets/fuzz_media_dimensions.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_media_duration"
+path = "fuzz_targets/fuzz_media_duration.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_query_filter"
+path = "fuzz_targets/fuzz_query_filter.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_color_parser"
+path = "fuzz_targets/fuzz_color_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_url_parser"
+path = "fuzz_targets/fuzz_url_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_keybinding_parser"
+path = "fuzz_targets/fuzz_keybinding_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_theme_deserializer"
+path = "fuzz_targets/fuzz_theme_deserializer.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_menu_dsl"
+path = "fuzz_targets/fuzz_menu_dsl.rs"
+test = false
+doc = false

@@ -55,3 +55,7 @@ tempfile = "3"
 [[bin]]
 name = "flux-fm"
 path = "src/main.rs"
+
+[lib]
+name = "flux"
+path = "src/lib.rs"

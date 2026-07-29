@@ -2,6 +2,11 @@ use std::env;
 use std::process::Command;
 
 fn main() {
+    // Skip if we are running under cargo-fuzz
+    if std::env::var("CARGO_CFG_FUZZING").is_ok() {
+        return;
+    }
+
     let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
 
     // Skip automations if we are building a package (e.g., Arch PKGBUILD)
