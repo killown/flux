@@ -51,7 +51,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p", "Joining videos..."
 "󰽰      Media Edit > Cut Video" => "video/all", "python $HOME/.local/share/flux/scripts/video_cutter.py %p", "Opening Video Cutter..."
 "󰽰      Media Edit > Mix Audio" => "audio/", "python3 $HOME/.local/share/flux/scripts/mix_audio.py %p", "Mixing audio..."
-"󰽰      Media Edit > Merge Video + Audio" => "video/all+audio/all", "python $HOME/.local/share/flux/scripts/join_mp4_mp3.py %p", "Merging media..."
+"󰽰      Media Edit > Merge Video + Audio" => "video/all+audio/all", "python3 $HOME/.local/share/flux/scripts/join_mp4_mp3.py %p", "Merging media..."
 
 # --- Media Convert ---
 "󰽰      Media Convert > To MP4" => "video/all", "ffmpeg -i %p -codec copy %p.mp4", "Converting to MP4..."
@@ -653,22 +653,22 @@ fn read_font_family(path: &Path) -> Option<String> {
     if data.len() < 12 {
         return None;
     }
-    let num_tables = u16::from_be_bytes([data[4], data[5]]) as usize;
+    let num_tables = u16::from_be_bytes([*data.get(4)?, *data.get(5)?]) as usize;
     let dir_start = 12usize;
 
     let mut name_offset = None;
     for i in 0..num_tables {
-        let base = dir_start + i * 16;
-        if base + 16 > data.len() {
+        let base = dir_start.checked_add(i.checked_mul(16)?)?;
+        if base.checked_add(16)? > data.len() {
             break;
         }
-        let tag = &data[base..base + 4];
+        let tag = data.get(base..base + 4)?;
         if tag == b"name" {
             let offset = u32::from_be_bytes([
-                data[base + 8],
-                data[base + 9],
-                data[base + 10],
-                data[base + 11],
+                *data.get(base + 8)?,
+                *data.get(base + 9)?,
+                *data.get(base + 10)?,
+                *data.get(base + 11)?,
             ]) as usize;
             name_offset = Some(offset);
             break;
@@ -676,13 +676,14 @@ fn read_font_family(path: &Path) -> Option<String> {
     }
 
     let name_base = name_offset?;
-    if name_base + 6 > data.len() {
+    if name_base.checked_add(6)? > data.len() {
         return None;
     }
 
-    let count = u16::from_be_bytes([data[name_base + 2], data[name_base + 3]]) as usize;
-    let string_offset = u16::from_be_bytes([data[name_base + 4], data[name_base + 5]]) as usize;
-    let storage = name_base + string_offset;
+    let count = u16::from_be_bytes([*data.get(name_base + 2)?, *data.get(name_base + 3)?]) as usize;
+    let string_offset =
+        u16::from_be_bytes([*data.get(name_base + 4)?, *data.get(name_base + 5)?]) as usize;
+    let storage = name_base.checked_add(string_offset)?;
 
     // Scan name records (12 bytes each) for nameID=1 (Family), platformID=3 (Windows), encodingID=1 (Unicode BMP).
     // Fall back to platformID=1 (Mac) if no Windows record found.
@@ -690,26 +691,26 @@ fn read_font_family(path: &Path) -> Option<String> {
     let mut family_mac: Option<String> = None;
 
     for i in 0..count {
-        let rec = name_base + 6 + i * 12;
-        if rec + 12 > data.len() {
+        let rec = name_base.checked_add(6)?.checked_add(i.checked_mul(12)?)?;
+        if rec.checked_add(12)? > data.len() {
             break;
         }
-        let platform_id = u16::from_be_bytes([data[rec], data[rec + 1]]);
-        let encoding_id = u16::from_be_bytes([data[rec + 2], data[rec + 3]]);
-        let name_id = u16::from_be_bytes([data[rec + 6], data[rec + 7]]);
-        let length = u16::from_be_bytes([data[rec + 8], data[rec + 9]]) as usize;
-        let offset = u16::from_be_bytes([data[rec + 10], data[rec + 11]]) as usize;
+        let platform_id = u16::from_be_bytes([*data.get(rec)?, *data.get(rec + 1)?]);
+        let encoding_id = u16::from_be_bytes([*data.get(rec + 2)?, *data.get(rec + 3)?]);
+        let name_id = u16::from_be_bytes([*data.get(rec + 6)?, *data.get(rec + 7)?]);
+        let length = u16::from_be_bytes([*data.get(rec + 8)?, *data.get(rec + 9)?]) as usize;
+        let offset = u16::from_be_bytes([*data.get(rec + 10)?, *data.get(rec + 11)?]) as usize;
 
         if name_id != 1 {
             continue;
         }
 
-        let start = storage + offset;
-        let end = start + length;
+        let start = storage.checked_add(offset)?;
+        let end = start.checked_add(length)?;
         if end > data.len() {
             continue;
         }
-        let raw = &data[start..end];
+        let raw = data.get(start..end)?;
 
         if platform_id == 3 && encoding_id == 1 && family_win.is_none() {
             // UTF-16 BE
