@@ -349,7 +349,7 @@ path = "~"
 }
 
 /// Parses the right-hand side of a menu config line into (mime, command, optional_toast).
-fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
+pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
     let input = input.trim();
 
     let remainder = input.strip_prefix('"')?;
