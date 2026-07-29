@@ -90,10 +90,18 @@ impl FluxApp {
 
         let volume_monitor = gio::VolumeMonitor::get();
         let s_added = sender.clone();
-        volume_monitor.connect_mount_added(move |_, _| s_added.input(AppMsg::RefreshSidebar));
-
         let s_removed = sender.clone();
-        volume_monitor.connect_mount_removed(move |_, _| s_removed.input(AppMsg::RefreshSidebar));
+        let vol_mon_clone = volume_monitor.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+            let s_added_inner = s_added.clone();
+            vol_mon_clone
+                .connect_mount_added(move |_, _| s_added_inner.input(AppMsg::RefreshSidebar));
+
+            let s_removed_inner = s_removed.clone();
+            vol_mon_clone
+                .connect_mount_removed(move |_, _| s_removed_inner.input(AppMsg::RefreshSidebar));
+            glib::ControlFlow::Break
+        });
 
         // 7. Breadcrumb Setup (Returned for local_ref)
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -102,7 +110,7 @@ impl FluxApp {
             .forward(sender.input_sender(), AppMsg::Navigate);
 
         // Terminal setup using custom terminal implementation from services
-        let mut terminal = crate::services::terminal::Terminal::new(&config.ui.terminal);
+        let terminal = crate::services::terminal::Terminal::new(&config.ui.terminal);
         terminal.apply_theme(&config.ui.terminal);
         terminal.connect_theme_changes(config.ui.terminal.clone());
 
@@ -176,23 +184,27 @@ impl FluxApp {
         }
 
         // Spawn the user's default shell
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-        let _terminal_clone = terminal.clone();
-        terminal.spawn_async(
-            0,
-            Some(start_path.to_str().unwrap_or("/")),
-            &[&shell],
-            &[],
-            0,
-            || {},
-            -1,
-            None,
-            move |result| {
-                if let Err(e) = result {
-                    eprintln!("Failed to spawn shell: {}", e);
-                }
-            },
-        );
+        let mut terminal_to_spawn = terminal.clone();
+        let startup_path_buf = start_path.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(500), move || {
+            let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+            terminal_to_spawn.spawn_async(
+                0,
+                Some(startup_path_buf.to_str().unwrap_or("/")),
+                &[&shell],
+                &[],
+                0,
+                || {},
+                -1,
+                None,
+                move |result| {
+                    if let Err(e) = result {
+                        eprintln!("Failed to spawn shell: {}", e);
+                    }
+                },
+            );
+            glib::ControlFlow::Break
+        });
 
         // 8. Model Assembly
         let mut model = FluxApp {
@@ -231,6 +243,7 @@ impl FluxApp {
             pending_toasts: std::collections::HashMap::new(),
             terminal,
             terminal_visible: false,
+            terminal_spawned: false,
             terminal_cleared: false,
             terminal_paned: None,
             sidebar_visible: config.ui.sidebar_visible,
@@ -262,11 +275,15 @@ impl FluxApp {
         }
         model.refresh_sidebar();
 
-        // Throttled task queue UI refresh, fires every 100ms, updates status bar only.
+        // Throttled task queue UI refresh, deferred by 150ms, updates status bar only.
         let tick_sender = sender.clone();
-        gtk::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-            tick_sender.input(AppMsg::TaskQueueTick);
-            glib::ControlFlow::Continue
+        glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+            let sender_inner = tick_sender.clone();
+            gtk::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+                sender_inner.input(AppMsg::TaskQueueTick);
+                glib::ControlFlow::Continue
+            });
+            glib::ControlFlow::Break
         });
 
         // 10. Global Action Registration

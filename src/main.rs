@@ -263,10 +263,12 @@ fn main() {
         }
 
         StartupAction::Launch(start_path) => {
-            glib::idle_add_local_once(|| {
+            // Defer non-critical CSS/Theme loading and dependency checks by 150ms
+            glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
                 load_custom_css();
                 setup_config_watcher();
                 std::thread::spawn(crate::utils::deps::check_optional_deps);
+                glib::ControlFlow::Break
             });
 
             // --- MAIN APP HANDLER ---
