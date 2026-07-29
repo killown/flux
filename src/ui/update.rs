@@ -604,12 +604,36 @@ impl FluxApp {
             }
             AppMsg::ToggleTerminal => {
                 self.terminal_visible = !self.terminal_visible;
+
                 if self.terminal_visible {
                     if !self.terminal_cleared {
                         self.terminal_cleared = true;
                     }
 
-                    if let Some(dir) = self.current_path.to_str() {
+                    if !self.terminal_spawned {
+                        self.terminal_spawned = true;
+
+                        let shell =
+                            std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
+                        let startup_path = self.current_path.to_str().unwrap_or("/").to_string();
+                        let mut term_clone = self.terminal.clone();
+
+                        term_clone.spawn_async(
+                            0,
+                            Some(&startup_path),
+                            &[&shell],
+                            &[],
+                            0,
+                            || {},
+                            -1,
+                            None,
+                            move |result| {
+                                if let Err(e) = result {
+                                    eprintln!("Failed to spawn shell: {}", e);
+                                }
+                            },
+                        );
+                    } else if let Some(dir) = self.current_path.to_str() {
                         self.terminal.respawn(dir);
                     }
 

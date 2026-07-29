@@ -378,6 +378,8 @@ pub struct FluxApp {
     pub terminal_cleared: bool,
     /// The embedded VTE terminal widget.
     pub terminal: crate::services::terminal::Terminal,
+    /// Tracks whether the terminal's PTY shell process has been spawned.
+    pub terminal_spawned: bool,
     /// Whether the terminal panel is currently visible.
     pub terminal_visible: bool,
     /// Indicates whether a background file system operation or directory reload is currently in progress.
