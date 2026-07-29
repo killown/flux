@@ -629,9 +629,50 @@ fn list_zip(
 pub fn extract_dir_to_tempdir(
     archive_path: &std::path::Path,
     inner_dir: &str,
-    _password: Option<&str>,
+    password: Option<&str>,
 ) -> Result<std::path::PathBuf, ArchiveError> {
-    let folder_name = std::path::Path::new(inner_dir)
+    let name_lc = lc_name(archive_path);
+
+    if name_lc.ends_with(".zip") {
+        extract_dir_zip(archive_path, inner_dir, password)
+    } else if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+        extract_dir_tar(
+            flate2::read::GzDecoder::new(open_buf(archive_path)?),
+            inner_dir,
+        )
+    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+        extract_dir_tar(
+            bzip2::read::BzDecoder::new(open_buf(archive_path)?),
+            inner_dir,
+        )
+    } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+        extract_dir_tar(
+            xz2::read::XzDecoder::new(open_buf(archive_path)?),
+            inner_dir,
+        )
+    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+        let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
+            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+        extract_dir_tar(dec, inner_dir)
+    } else if name_lc.ends_with(".tar.lz4") {
+        extract_dir_tar(
+            lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?),
+            inner_dir,
+        )
+    } else if name_lc.ends_with(".tar") {
+        extract_dir_tar(open_buf(archive_path)?, inner_dir)
+    } else if name_lc.ends_with(".7z") {
+        extract_dir_7z(archive_path, inner_dir, password)
+    } else {
+        Err(ArchiveError::Other(format!(
+            "Unsupported format for directory extraction: {}",
+            archive_path.display()
+        )))
+    }
+}
+
+fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
+    let folder_name = Path::new(inner_dir)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "folder".to_string());
@@ -645,11 +686,17 @@ pub fn extract_dir_to_tempdir(
     std::fs::create_dir_all(&dest_dir)
         .map_err(|e| ArchiveError::Other(format!("create_dir_all failed: {e}")))?;
 
-    let prefix = if inner_dir.ends_with('/') {
-        inner_dir.to_string()
-    } else {
-        format!("{}/", inner_dir)
-    };
+    Ok((temp_dir, dest_dir))
+}
+
+fn extract_dir_zip(
+    archive_path: &Path,
+    inner_dir: &str,
+    password: Option<&str>,
+) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+
+    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
 
     let file = std::fs::File::open(archive_path)
         .map_err(|e| ArchiveError::Other(format!("open archive failed: {e}")))?;
@@ -657,38 +704,165 @@ pub fn extract_dir_to_tempdir(
         .map_err(|e| ArchiveError::Other(format!("ZIP parse failed: {e}")))?;
 
     for i in 0..archive.len() {
-        let mut entry = archive
-            .by_index(i)
-            .map_err(|e| ArchiveError::Other(format!("read entry failed: {e}")))?;
-        let name = entry.name().to_string();
-
-        if name.starts_with(&prefix) {
-            let relative_path = name.trim_start_matches(&prefix);
-            if relative_path.is_empty() {
-                continue;
-            }
-
-            let out_path = dest_dir.join(relative_path);
-            if entry.is_dir() {
-                std::fs::create_dir_all(&out_path)
-                    .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
-            } else {
-                if let Some(parent) = out_path.parent() {
-                    std::fs::create_dir_all(parent).map_err(|e| {
-                        ArchiveError::Other(format!("create parent dir failed: {e}"))
-                    })?;
+        let (name, is_dir, mut reader): (String, bool, Box<dyn Read>) = match password {
+            Some(pwd) => match archive.by_index_decrypt(i, pwd.as_bytes()) {
+                Ok(e) => {
+                    let n = e.name().replace('\\', "/");
+                    let d = e.is_dir();
+                    (n, d, Box::new(e))
                 }
-                let mut outfile = std::fs::File::create(&out_path)
-                    .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
-                std::io::copy(&mut entry, &mut outfile)
-                    .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
+                Err(zip::result::ZipError::InvalidPassword)
+                | Err(zip::result::ZipError::UnsupportedArchive(_)) => {
+                    return Err(ArchiveError::WrongPassword)
+                }
+                Err(e) => return Err(ArchiveError::Other(format!("ZIP idx {i}: {e}"))),
+            },
+            None => match archive.by_index(i) {
+                Ok(e) => {
+                    let n = e.name().replace('\\', "/");
+                    let d = e.is_dir();
+                    (n, d, Box::new(e))
+                }
+                Err(e) => return Err(ArchiveError::Other(format!("ZIP idx {i}: {e}"))),
+            },
+        };
+
+        if !name.starts_with(&prefix) {
+            continue;
+        }
+        let relative = name.trim_start_matches(prefix.as_str());
+        if relative.is_empty() {
+            continue;
+        }
+
+        let out_path = dest_dir.join(relative);
+        if is_dir {
+            std::fs::create_dir_all(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
             }
+            let mut outfile = std::fs::File::create(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
+            std::io::copy(&mut reader, &mut outfile)
+                .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
         }
     }
 
-    let result_path = dest_dir.clone();
+    let result = dest_dir.clone();
     std::mem::forget(temp_dir);
-    Ok(result_path)
+    Ok(result)
+}
+
+fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+
+    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+
+    let mut archive = tar::Archive::new(reader);
+    for entry in archive
+        .entries()
+        .map_err(|e| ArchiveError::Other(format!("TAR: {e}")))?
+    {
+        let mut entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
+        let raw_path = entry
+            .path()
+            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
+            .to_string_lossy()
+            .replace('\\', "/");
+
+        if !raw_path.starts_with(&prefix) {
+            continue;
+        }
+        let relative = raw_path.trim_start_matches(prefix.as_str());
+        if relative.is_empty() {
+            continue;
+        }
+
+        let out_path = dest_dir.join(relative);
+        let is_dir = entry.header().entry_type().is_dir();
+
+        if is_dir {
+            std::fs::create_dir_all(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
+            }
+            let mut outfile = std::fs::File::create(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
+            std::io::copy(&mut entry, &mut outfile)
+                .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
+        }
+    }
+
+    let result = dest_dir.clone();
+    std::mem::forget(temp_dir);
+    Ok(result)
+}
+
+fn extract_dir_7z(
+    archive_path: &Path,
+    inner_dir: &str,
+    password: Option<&str>,
+) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+
+    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+
+    let file =
+        std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
+    let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
+    let mut reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
+        sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
+        sevenz_rust2::Error::MaybeBadPassword(_) => {
+            if password.is_none() {
+                ArchiveError::PasswordRequired
+            } else {
+                ArchiveError::WrongPassword
+            }
+        }
+        _ => ArchiveError::Other(e.to_string()),
+    })?;
+
+    reader
+        .for_each_entries(
+            &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn Read| {
+                let raw = entry.name().replace('\\', "/");
+                if !raw.starts_with(&prefix) {
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                    return Ok(true);
+                }
+                let relative = raw.trim_start_matches(prefix.as_str());
+                if relative.is_empty() {
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                    return Ok(true);
+                }
+
+                let out_path = dest_dir.join(relative);
+                if entry.is_directory {
+                    std::fs::create_dir_all(&out_path).ok();
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                } else {
+                    if let Some(parent) = out_path.parent() {
+                        std::fs::create_dir_all(parent).ok();
+                    }
+                    let mut outfile = std::fs::File::create(&out_path).map_err(|e| {
+                        sevenz_rust2::Error::from(std::io::Error::other(e.to_string()))
+                    })?;
+                    std::io::copy(r, &mut outfile).map_err(sevenz_rust2::Error::from)?;
+                }
+                Ok(true)
+            },
+        )
+        .map_err(|e| ArchiveError::Other(e.to_string()))?;
+
+    let result = dest_dir.clone();
+    std::mem::forget(temp_dir);
+    Ok(result)
 }
 
 fn extract_zip(
