@@ -449,7 +449,6 @@ name = "flux"
 version = "0.1.0"
 dependencies = [
  "bzip2 0.4.4",
- "cairo-rs 0.22.0",
  "chrono",
  "dirs",
  "flate2",

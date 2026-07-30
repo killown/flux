@@ -1028,6 +1028,7 @@ impl FluxApp {
                 prefix,
                 wrong_password,
             } => {
+                self.archive_locked = true;
                 let parent = gtk::Application::default().active_window();
                 let s = sender.clone();
 
@@ -1091,6 +1092,7 @@ impl FluxApp {
                 prefix,
                 password,
             } => {
+                self.archive_locked = false;
                 self.load_archive(archive_path, prefix, Some(password), &sender);
                 self.update_breadcrumbs();
             }
@@ -1168,6 +1170,7 @@ impl FluxApp {
                     || path_str.starts_with(constants::TRASH_URI)
                     || path_str.starts_with(constants::RECENT_URI)
                 {
+                    self.archive_locked = false;
                     let old_path = std::mem::replace(&mut self.current_path, path.clone());
                     // Synchronize the physical process working directory with the application state.
                     // This ensures std::fs operations and spawned child processes resolve
