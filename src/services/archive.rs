@@ -1411,7 +1411,7 @@ fn list_iso(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, Arch
 
     // Pure ISO 9660 path.
     let mut iso = iso9660_simple::ISO9660::from_device(IsoFileDevice(file))
-        .ok_or_else(|| ArchiveError::Other("failed to parse ISO image".into()))?;
+        .ok_or_else(|| ArchiveError::Other(crate::i18n::tr("failed to parse ISO image")))?;
 
     let root_lba = {
         let r = iso.root().lba.get() as usize;
@@ -1503,7 +1503,7 @@ fn extract_iso(
     }
 
     let mut iso = iso9660_simple::ISO9660::from_device(IsoFileDevice(file))
-        .ok_or_else(|| ArchiveError::Other(crate::i18n::tr("failed to parse ISO image").into()))?;
+        .ok_or_else(|| ArchiveError::Other(crate::i18n::tr("failed to parse ISO image")))?;
 
     let root_lba = iso.root().lba.get() as usize;
     let mut target_entry = None;
