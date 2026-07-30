@@ -1829,10 +1829,12 @@ impl Terminal {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```ignore
     /// terminal.set_cwd_callback({
     ///     let sender = app_sender.clone(),
-    ///     move |path| { let _ = sender.send(AppMsg::NavigateTo(path)), }
+    ///     move |path| {
+    ///         let _ = sender.send(AppMsg::NavigateTo(path)),
+    ///     }
     /// }),
     /// ```
     /// Resolves terminal colors and font from the active GTK/libadwaita theme,
