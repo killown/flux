@@ -122,8 +122,10 @@ pub enum ArchiveError {
 impl std::fmt::Display for ArchiveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ArchiveError::PasswordRequired => write!(f, "Archive is password-protected"),
-            ArchiveError::WrongPassword => write!(f, "Incorrect password"),
+            ArchiveError::PasswordRequired => {
+                write!(f, "{}", crate::i18n::tr("Archive is password-protected"))
+            }
+            ArchiveError::WrongPassword => write!(f, "{}", crate::i18n::tr("Incorrect password")),
             ArchiveError::Other(msg) => write!(f, "{msg}"),
         }
     }
@@ -354,9 +356,9 @@ fn list_rar(
     password: Option<&str>,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
     let tool = rar_tool().ok_or_else(|| {
-        ArchiveError::Other(
-            "RAR support requires 'unar' or 'unrar' (install via your package manager)".to_owned(),
-        )
+        ArchiveError::Other(crate::i18n::tr(
+            "RAR support requires 'unar' or 'unrar' (install via your package manager)",
+        ))
     })?;
 
     let mut cmd = std::process::Command::new(tool);
@@ -1473,7 +1475,8 @@ fn list_iso_udf(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, 
         .output()
         .map_err(|e| {
             ArchiveError::Other(format!(
-                "7z spawn: {e}. Install p7zip-full (apt) or p7zip (pacman)."
+                "{}: {e}",
+                crate::i18n::tr("7z spawn error. Install p7zip-full (apt) or p7zip (pacman).")
             ))
         })?;
 
@@ -1500,7 +1503,7 @@ fn extract_iso(
     }
 
     let mut iso = iso9660_simple::ISO9660::from_device(IsoFileDevice(file))
-        .ok_or_else(|| ArchiveError::Other("failed to parse ISO image".into()))?;
+        .ok_or_else(|| ArchiveError::Other(crate::i18n::tr("failed to parse ISO image").into()))?;
 
     let root_lba = iso.root().lba.get() as usize;
     let mut target_entry = None;

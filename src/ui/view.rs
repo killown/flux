@@ -423,12 +423,12 @@ impl SimpleAsyncComponent for FluxApp {
                                         },
 
                                         gtk::Label {
-                                            set_label: "Archive is password-protected",
+                                            set_label: &crate::i18n::tr("Archive is password-protected"),
                                             add_css_class: "title-3",
                                         },
 
                                         gtk::Label {
-                                            set_label: "Enter the password to browse its contents.",
+                                            set_label: &crate::i18n::tr("Enter the password to browse its contents."),
                                             add_css_class: "dim-label",
                                         },
                                     },

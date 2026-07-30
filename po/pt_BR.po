@@ -913,3 +913,32 @@ msgstr "Decorações do lado do cliente"
 #: src/ui/settings.rs:???
 msgid "Show window controls in the header bar"
 msgstr "Mostrar controles da janela na barra de cabeçalho"
+
+#: src/ui/update.rs:1039
+msgid "Wrong Password"
+msgstr "Senha incorreta"
+
+#: src/services/archive.rs:121
+msgid "Incorrect password"
+msgstr "Senha incorreta"
+
+#: src/services/archive.rs:120 src/ui/update.rs:1041 src/ui/view.rs:305
+msgid "Archive is password-protected"
+msgstr "O arquivo está protegido por senha"
+
+#: src/ui/update.rs:1046
+msgid "The password you entered was incorrect. Please try again."
+msgstr "A senha digitada está incorreta. Tente novamente."
+
+#: src/ui/update.rs:1048
+msgid "This archive is encrypted. Enter the password to browse its contents."
+msgstr "Este arquivo está criptografado. Digite a senha para navegar pelo seu conteúdo."
+
+#: src/ui/view.rs:309
+msgid "Enter the password to browse its contents."
+msgstr "Digite a senha para navegar pelo seu conteúdo."
+
+#: src/ui/update.rs:1053
+msgid "Unlock"
+msgstr "Desbloquear"
+

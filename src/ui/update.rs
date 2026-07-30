@@ -1032,26 +1032,32 @@ impl FluxApp {
                 let parent = gtk::Application::default().active_window();
                 let s = sender.clone();
 
+                let title = if wrong_password {
+                    crate::i18n::tr("Wrong Password")
+                } else {
+                    crate::i18n::tr("Archive is password-protected")
+                };
+
                 let dialog = gtk::MessageDialog::new(
                     parent.as_ref(),
                     gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
                     gtk::MessageType::Question,
                     gtk::ButtonsType::None,
-                    if wrong_password {
-                        "Wrong Password"
-                    } else {
-                        "Archive is Password-Protected"
-                    },
+                    &title,
                 );
 
-                dialog.set_secondary_text(Some(if wrong_password {
-                    "The password you entered was incorrect. Please try again."
+                let secondary = if wrong_password {
+                    crate::i18n::tr("The password you entered was incorrect. Please try again.")
                 } else {
-                    "This archive is encrypted. Enter the password to browse its contents."
-                }));
+                    crate::i18n::tr(
+                        "This archive is encrypted. Enter the password to browse its contents.",
+                    )
+                };
+                dialog.set_secondary_text(Some(&secondary));
 
-                dialog.add_button("Cancel", gtk::ResponseType::Cancel);
-                let unlock_btn = dialog.add_button("Unlock", gtk::ResponseType::Ok);
+                dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+                let unlock_btn =
+                    dialog.add_button(&crate::i18n::tr("Unlock"), gtk::ResponseType::Ok);
                 unlock_btn.style_context().add_class("suggested-action");
                 dialog.set_default_response(gtk::ResponseType::Ok);
 
