@@ -1031,49 +1031,42 @@ impl FluxApp {
                 let parent = gtk::Application::default().active_window();
                 let s = sender.clone();
 
-                let mut builder = gtk::Dialog::builder()
-                    .title(if wrong_password {
-                        "Wrong password - try again"
+                let dialog = gtk::MessageDialog::new(
+                    parent.as_ref(),
+                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                    gtk::MessageType::Question,
+                    gtk::ButtonsType::None,
+                    if wrong_password {
+                        "Wrong Password"
                     } else {
-                        "Archive is password-protected"
-                    })
-                    .modal(true)
-                    .use_header_bar(1);
+                        "Archive is Password-Protected"
+                    },
+                );
 
-                if let Some(ref p) = parent {
-                    builder = builder.transient_for(p);
-                }
-
-                let dialog = builder.build();
+                dialog.set_secondary_text(Some(if wrong_password {
+                    "The password you entered was incorrect. Please try again."
+                } else {
+                    "This archive is encrypted. Enter the password to browse its contents."
+                }));
 
                 dialog.add_button("Cancel", gtk::ResponseType::Cancel);
-                dialog.add_button("Unlock", gtk::ResponseType::Ok);
+                let unlock_btn = dialog.add_button("Unlock", gtk::ResponseType::Ok);
+                unlock_btn.style_context().add_class("suggested-action");
                 dialog.set_default_response(gtk::ResponseType::Ok);
 
-                let entry = gtk::Entry::builder()
-                    .visibility(false)
-                    .placeholder_text("Password")
+                let entry = gtk::PasswordEntry::builder()
+                    .show_peek_icon(true)
                     .activates_default(true)
-                    .margin_top(12)
-                    .margin_bottom(12)
-                    .margin_start(12)
-                    .margin_end(12)
+                    .margin_top(8)
+                    .margin_bottom(4)
+                    .margin_start(16)
+                    .margin_end(16)
                     .build();
 
                 // Auto-focus the entry as soon as the dialog presents
                 entry.connect_map(|e| {
                     e.grab_focus();
                 });
-
-                if wrong_password {
-                    let hint = gtk::Label::builder()
-                        .label("Incorrect password.")
-                        .css_classes(["error"])
-                        .margin_start(12)
-                        .margin_end(12)
-                        .build();
-                    dialog.content_area().append(&hint);
-                }
 
                 dialog.content_area().append(&entry);
                 dialog.present();
