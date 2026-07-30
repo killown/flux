@@ -714,6 +714,7 @@ fn read_font_family(path: &Path) -> Option<String> {
 
         if platform_id == 3 && encoding_id == 1 && family_win.is_none() {
             // UTF-16 BE
+            #[allow(clippy::chunks_exact_to_as_chunks)]
             let chars: Vec<u16> = raw
                 .chunks_exact(2)
                 .map(|b| u16::from_be_bytes([b[0], b[1]]))
