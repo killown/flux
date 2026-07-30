@@ -361,44 +361,77 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_orientation: gtk::Orientation::Vertical,
                                 set_vexpand: true,
 
-                                #[name = "grid_scroller"]
-                                gtk::ScrolledWindow {
+                                #[name = "grid_overlay"]
+                                gtk::Overlay {
                                     set_vexpand: true,
-                                /// Scroll event controller for UI zooming (Ctrl + Scroll).
-                                add_controller = gtk::EventControllerScroll {
-                                    set_flags: gtk::EventControllerScrollFlags::VERTICAL,
-                                    set_propagation_phase: gtk::PropagationPhase::Capture,
-                                    connect_scroll[sender] => move |ctrl, _, dy| {
-                                        let modifiers = ctrl.current_event_state();
-                                        if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
-                                            sender.input(AppMsg::Zoom(dy));
-                                            return glib::Propagation::Stop;
-                                        }
-                                        glib::Propagation::Proceed
-                                    }
-                                },
 
-                                /// Secondary click controller for context menu spawning.
-                                add_controller = gtk::GestureClick {
-                                    set_button: 3,
-                                    connect_pressed[sender] => move |gesture, _, x, y| {
-                                        if let Some(widget) = gesture.widget() {
-                                            let mut picked_path = None;
-                                            if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
-                                                let mut current: Option<gtk::Widget> = Some(picked);
-                                                while let Some(w) = current {
-                                                    let name = w.widget_name().to_string();
-                                                    if name.starts_with("/") || name.starts_with("trash://") {
-                                                        picked_path = Some(PathBuf::from(name));
-                                                        break;
+                                    #[name = "grid_scroller"]
+                                    gtk::ScrolledWindow {
+                                        set_vexpand: true,
+                                        /// Scroll event controller for UI zooming (Ctrl + Scroll).
+                                        add_controller = gtk::EventControllerScroll {
+                                            set_flags: gtk::EventControllerScrollFlags::VERTICAL,
+                                            set_propagation_phase: gtk::PropagationPhase::Capture,
+                                            connect_scroll[sender] => move |ctrl, _, dy| {
+                                                let modifiers = ctrl.current_event_state();
+                                                if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                                                    sender.input(AppMsg::Zoom(dy));
+                                                    return glib::Propagation::Stop;
+                                                }
+                                                glib::Propagation::Proceed
+                                            }
+                                        },
+
+                                        /// Secondary click controller for context menu spawning.
+                                        add_controller = gtk::GestureClick {
+                                            set_button: 3,
+                                            connect_pressed[sender] => move |gesture, _, x, y| {
+                                                if let Some(widget) = gesture.widget() {
+                                                    let mut picked_path = None;
+                                                    if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
+                                                        let mut current: Option<gtk::Widget> = Some(picked);
+                                                        while let Some(w) = current {
+                                                            let name = w.widget_name().to_string();
+                                                            if name.starts_with("/") || name.starts_with("trash://") {
+                                                                picked_path = Some(PathBuf::from(name));
+                                                                break;
+                                                            }
+                                                            current = w.parent();
+                                                        }
                                                     }
-                                                    current = w.parent();
+                                                    sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
                                                 }
                                             }
-                                            sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
-                                        }
-                                    }
-                                },
+                                        },
+                                    },
+
+                                    /// Lock overlay shown when the current archive requires a password.
+                                    add_overlay = &gtk::Box {
+                                        set_orientation: gtk::Orientation::Vertical,
+                                        set_halign: gtk::Align::Center,
+                                        set_valign: gtk::Align::Center,
+                                        set_spacing: 12,
+                                        set_margin_all: 24,
+                                        set_can_target: false,
+                                        #[watch]
+                                        set_visible: model.archive_locked,
+
+                                        gtk::Image {
+                                            set_icon_name: Some("changes-prevent-symbolic"),
+                                            set_pixel_size: 64,
+                                            add_css_class: "dim-label",
+                                        },
+
+                                        gtk::Label {
+                                            set_label: "Archive is password-protected",
+                                            add_css_class: "title-3",
+                                        },
+
+                                        gtk::Label {
+                                            set_label: "Enter the password to browse its contents.",
+                                            add_css_class: "dim-label",
+                                        },
+                                    },
                                 },
 
                                 // Quick-list tab bar, hidden until at least one folder is pinned.
@@ -560,9 +593,7 @@ impl SimpleAsyncComponent for FluxApp {
         widgets
             .sidebar_container
             .set_child(Some(model.sidebar.widget()));
-        model
-            .context_menu_popover
-            .set_parent(&widgets.grid_scroller);
+        model.context_menu_popover.set_parent(&widgets.grid_overlay);
 
         // Store sidebar widget reference for toggling
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());

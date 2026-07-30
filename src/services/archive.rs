@@ -148,6 +148,10 @@ pub struct ArchiveEntry {
     pub mtime: i64,
     /// Full inner path relative to the archive root, used to build child URIs.
     pub inner_path: String,
+    /// True when the entry belongs to a password-protected archive that has not
+    /// yet been unlocked (i.e. listed without a password).
+    #[allow(dead_code)]
+    pub is_encrypted: bool,
 }
 
 /// Lists immediate children of `prefix` inside the archive at `archive_path`.
@@ -431,7 +435,7 @@ fn parse_unar_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, Archiv
             .and_then(|s| s.trim().parse().ok())
             .unwrap_or(0);
         let is_dir = size == 0 && raw_name.contains('/');
-        collect_entry(seen, raw_name, is_dir, size, 0, prefix);
+        collect_entry(seen, raw_name, is_dir, size, 0, prefix, false);
     }
 }
 
@@ -465,7 +469,7 @@ fn parse_unrar_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, Archi
             .nth(1)
             .and_then(|s| s.parse().ok())
             .unwrap_or(0);
-        collect_entry(seen, &raw_name, is_dir, size, 0, prefix);
+        collect_entry(seen, &raw_name, is_dir, size, 0, prefix, false);
     }
 }
 
@@ -615,7 +619,7 @@ fn list_zip(
             },
         };
 
-        collect_entry(&mut seen, &raw_name, is_dir, size, mtime, prefix);
+        collect_entry(&mut seen, &raw_name, is_dir, size, mtime, prefix, false);
     }
 
     Ok(seen.into_values().collect())
@@ -972,7 +976,15 @@ fn list_7z(
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
-        collect_entry(&mut seen, raw_name_trimmed, is_dir, size, mtime, prefix);
+        collect_entry(
+            &mut seen,
+            raw_name_trimmed,
+            is_dir,
+            size,
+            mtime,
+            prefix,
+            false,
+        );
     }
 
     Ok(seen.into_values().collect())
@@ -1093,7 +1105,7 @@ fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, Archi
         let is_dir = header.entry_type().is_dir();
         let size = header.size().unwrap_or(0);
         let mtime = header.mtime().unwrap_or(0) as i64;
-        collect_entry(&mut seen, raw_name, is_dir, size, mtime, prefix);
+        collect_entry(&mut seen, raw_name, is_dir, size, mtime, prefix, false);
     }
 
     Ok(seen.into_values().collect())
@@ -1154,6 +1166,7 @@ fn single_file_listing(
             })
             .unwrap_or(0),
         inner_path: inner_name.to_owned(),
+        is_encrypted: false,
     }])
 }
 
@@ -1179,6 +1192,7 @@ fn collect_entry(
     size: u64,
     mtime: i64,
     prefix: &str,
+    is_encrypted: bool,
 ) {
     let relative = if prefix.is_empty() {
         raw_name.to_owned()
@@ -1230,6 +1244,7 @@ fn collect_entry(
             size: entry_size,
             mtime,
             inner_path: child_inner,
+            is_encrypted,
         });
 }
 
@@ -1324,7 +1339,15 @@ fn parse_7z_iso_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, Arch
         if path.is_empty() {
             return;
         }
-        collect_entry(seen, path, is_dir, size, mtime, pfx.trim_end_matches('/'));
+        collect_entry(
+            seen,
+            path,
+            is_dir,
+            size,
+            mtime,
+            pfx.trim_end_matches('/'),
+            false,
+        );
     };
 
     for line in stdout.lines() {
@@ -1430,7 +1453,7 @@ fn list_iso(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, Arch
             let size = entry.file_size() as u64;
             let child_lba = entry.record.lba.get() as usize;
 
-            collect_entry(seen, &inner_path, is_dir, size, 0, prefix);
+            collect_entry(seen, &inner_path, is_dir, size, 0, prefix, false);
 
             if is_dir && child_lba != lba && child_lba != 0 {
                 walk_iso(iso, child_lba, &inner_path, prefix, seen);
@@ -1907,6 +1930,7 @@ mod tests {
                 size: 123,
                 mtime: 456,
                 inner_path: "file.txt".to_string(),
+                is_encrypted: false,
             },
             ArchiveEntry {
                 name: "sub".to_string(),
@@ -1914,6 +1938,7 @@ mod tests {
                 size: 0,
                 mtime: 0,
                 inner_path: "sub".to_string(),
+                is_encrypted: false,
             },
         ];
         let archive_path = Path::new("/home/user/archive.zip");
