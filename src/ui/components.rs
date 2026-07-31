@@ -4,13 +4,14 @@ use crate::model::PathSegment;
 use crate::ui::constants;
 use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
-use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
 use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 /// Data model representing a file or directory entry in the application grid.
 #[derive(Debug, Clone)]
@@ -30,6 +31,9 @@ pub struct FileItem {
     /// Whether this icon was set by the user via F3 (custom folder icon).
     /// Used to determine if we should fall back to default when icon missing from theme.
     pub is_custom_icon: bool,
+    /// Shared cell holding the current path for this item.
+    /// Updated in `bind()` and read by the right‑click gesture.
+    pub active_path: Rc<RefCell<Option<PathBuf>>>,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -78,10 +82,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             let widget = target.widget().unwrap();
             let sender = crate::model::SENDER.get();
 
+            // Retrieve the active_path cell from widget data (stored as Rc)
             let dest_path_opt: Option<PathBuf> = unsafe {
                 widget
-                    .data::<PathBuf>("file_path")
-                    .map(|p| p.as_ref().clone())
+                    .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
+                    .map(|ptr| ptr.as_ref().clone())
+                    .and_then(|rc| rc.borrow().clone())
             };
 
             let mut source_paths = Vec::new();
@@ -133,7 +139,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         if let Some(s) = sender.get() {
                             let widget = gesture.widget().unwrap();
                             let path_opt: Option<PathBuf> = unsafe {
-                                widget.data::<PathBuf>("file_path").map(|p| p.as_ref().expand_tilde())
+                                widget
+                                    .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
+                                    .map(|ptr| ptr.as_ref().clone())
+                                    .and_then(|rc| rc.borrow().clone())
                             };
 
                             if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
@@ -157,11 +166,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             if let Some(s) = sender.get() {
                                 let widget = gesture.widget().unwrap();
 
-                                // Extract and resolve the path immediately to prevent double-expansion bugs
+                                // Extract the path from the shared cell
                                 let path_opt: Option<PathBuf> = unsafe {
-                                    widget.data::<PathBuf>("file_path").map(|p| {
-                                        p.as_ref().expand_tilde()
-                                    })
+                                    widget
+                                        .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
+                                        .map(|ptr| ptr.as_ref().clone())
+                                        .and_then(|rc| rc.borrow().clone())
                                 };
 
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
@@ -242,7 +252,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
                             if let Some(s) = sender.get() {
                                 let old_path_opt: Option<PathBuf> = unsafe {
-                                    root.data::<PathBuf>("file_path").map(|p| p.as_ref().clone())
+                                    root
+                                        .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
+                                        .map(|ptr| ptr.as_ref().clone())
+                                        .and_then(|rc| rc.borrow().clone())
                                 };
                                 if let Some(old_path) = old_path_opt {
                                     let new_name = entry.text().to_string();
@@ -351,8 +364,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             gdk::DragAction::empty()
         });
 
+        // Update the shared cell with the current path so gestures can read it
+        *self.active_path.borrow_mut() = Some(self.path.clone());
+
+        // Store a clone of the Rc in the widget data so gestures can access the cell
         unsafe {
-            root.set_data("file_path", self.path.clone());
+            root.set_data("active_path_cell", self.active_path.clone());
         }
     }
 }

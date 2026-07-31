@@ -81,7 +81,14 @@ pub fn setup_controllers(
                     let mut current: Option<gtk::Widget> = Some(picked);
                     while let Some(w) = current {
                         let name = w.widget_name().to_string();
-                        if name.starts_with("/") || name.starts_with("trash://") {
+                        if name.starts_with('/')
+                            || name.starts_with("trash://")
+                            || name.starts_with("smb://")
+                            || name.starts_with("sftp://")
+                            || name.starts_with("ftp://")
+                            || name.starts_with("nfs://")
+                            || name.starts_with("archive://")
+                        {
                             let path = std::path::PathBuf::from(&name);
                             if crate::utils::helpers::open_new_instance(&path) {
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
@@ -391,7 +398,14 @@ fn setup_deselect_on_background_click(
                         None => break false,
                         Some(ref w) => {
                             let name = w.widget_name().to_string();
-                            if name.starts_with('/') || name.starts_with("trash://") {
+                            if name.starts_with('/')
+                                || name.starts_with("trash://")
+                                || name.starts_with("smb://")
+                                || name.starts_with("sftp://")
+                                || name.starts_with("ftp://")
+                                || name.starts_with("nfs://")
+                                || name.starts_with("archive://")
+                            {
                                 break true;
                             }
                             current = w.parent();

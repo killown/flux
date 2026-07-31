@@ -268,46 +268,51 @@ path = "~"
         let _ = fs::write(&config_path, default_toml);
     }
 
-    let mut config: crate::model::Config = fs::read_to_string(&config_path)
-        .ok()
-        .and_then(|content| toml::from_str(&content).ok())
-        .unwrap_or_else(|| crate::model::Config {
-            ui: crate::model::UIConfig {
-                default_icon_size: 128,
-                startup_window_width: crate::ui::constants::DEFAULT_WIDTH,
+    let config_content = match fs::read_to_string(&config_path) {
+        Ok(content) => content,
+        Err(_) => String::new(),
+    };
 
-                startup_window_height: crate::ui::constants::DEFAULT_HEIGHT,
-                single_click: false,
-                show_csd: true,
-                sidebar_width: 240,
-                show_xdg_dirs: false,
-                current_folders_first: std::collections::HashMap::new(),
-
-                default_sort: crate::model::SortBy::Name,
-                folder_sort: std::collections::HashMap::new(),
-                folder_icon_size: std::collections::HashMap::new(),
-                show_hidden_by_default: false,
-                device_renames: std::collections::HashMap::new(),
-                folders_first: true,
-
-                theme: Some("default".to_string()),
-                start_maximized: true,
-                max_width_chars: 20,
-                grid_spacing: 10,
-                ascending: true,
-                expand_labels: false,
-                folder_icons: std::collections::HashMap::new(),
-                terminal: TerminalConfig::default(),
-                sidebar_visible: true,
-                show_recents: true,
-                recents_row: 0,
-                show_thumbnails: true,
-                thumbnail_types: crate::model::ThumbnailTypes::default(),
-            },
-            sidebar: vec![],
-            shortcuts: crate::model::ShortcutsConfig::default(),
-        });
-
+    let mut config: crate::model::Config = match toml::from_str(&config_content) {
+        Ok(parsed) => parsed,
+        Err(e) => {
+            eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
+            crate::model::Config {
+                ui: crate::model::UIConfig {
+                    default_icon_size: 128,
+                    startup_window_width: crate::ui::constants::DEFAULT_WIDTH,
+                    startup_window_height: crate::ui::constants::DEFAULT_HEIGHT,
+                    single_click: false,
+                    show_csd: true,
+                    sidebar_width: 240,
+                    show_xdg_dirs: false,
+                    current_folders_first: std::collections::HashMap::new(),
+                    default_sort: crate::model::SortBy::Name,
+                    folder_sort: std::collections::HashMap::new(),
+                    folder_icon_size: std::collections::HashMap::new(),
+                    show_hidden_by_default: false,
+                    device_renames: std::collections::HashMap::new(),
+                    folders_first: true,
+                    theme: Some("default".to_string()),
+                    start_maximized: true,
+                    max_width_chars: 20,
+                    grid_spacing: 10,
+                    ascending: true,
+                    expand_labels: false,
+                    folder_icons: std::collections::HashMap::new(),
+                    terminal: TerminalConfig::default(),
+                    sidebar_visible: true,
+                    show_recents: true,
+                    recents_row: 0,
+                    show_thumbnails: true,
+                    thumbnail_types: crate::model::ThumbnailTypes::default(),
+                },
+                sidebar: vec![],
+                shortcuts: crate::model::ShortcutsConfig::default(),
+                network_bookmarks: vec![],
+            }
+        }
+    };
     let mut changed = false;
 
     config.ui.folder_sort.retain(|path_str, _| {
@@ -441,31 +446,119 @@ pub fn get_icon_for_path_with_override(
         return gio::Icon::for_string("folder").unwrap();
     }
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
-    let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+
+    // For network URIs, content_type_guess may fail, fall back to extension.
+    let content_type = if crate::services::network::is_network_uri(path) {
+        if let Some(mime) = guess_mime_from_extension(&filename) {
+            mime
+        } else {
+            "application/octet-stream".to_string()
+        }
+    } else {
+        let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+        ct.to_string()
+    };
 
     adw::gio::content_type_get_icon(&content_type)
 }
 
 pub fn get_mime_type(path: &Path) -> String {
+    let path_str = path.to_string_lossy();
+
+    if crate::services::network::is_network_uri(path) {
+        if path_str.ends_with('/') {
+            return "inode/directory".to_string();
+        }
+
+        let filename = path.file_name().unwrap_or_default().to_string_lossy();
+        if filename.is_empty() {
+            return "inode/directory".to_string();
+        }
+
+        let (content_type, _) = gio::content_type_guess(Some(filename.as_ref()), None);
+        let ct = content_type.to_string();
+
+        if ct == "inode/directory" {
+            return guess_mime_from_extension(&filename)
+                .unwrap_or_else(|| "application/octet-stream".to_string());
+        }
+        return ct;
+    }
+
     if path.is_dir() {
         return "inode/directory".to_string();
     }
 
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
     let mut sniff_buffer = [0u8; 4096];
-
     let data_slice = if let Ok(mut file) = fs::File::open(path) {
         if let Ok(count) = file.read(&mut sniff_buffer) {
-            &sniff_buffer[..count]
+            Some(&sniff_buffer[..count])
         } else {
-            &[]
+            None
         }
     } else {
-        &[]
+        None
     };
 
-    let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), data_slice);
-    content_type.to_string()
+    let (content_type, _) = gio::content_type_guess(Some(filename.as_ref()), data_slice);
+    let ct = content_type.to_string();
+
+    if ct == "inode/directory" && path.is_file() {
+        return guess_mime_from_extension(&filename)
+            .unwrap_or_else(|| "application/octet-stream".to_string());
+    }
+
+    ct
+}
+
+fn guess_mime_from_extension(filename: &str) -> Option<String> {
+    let ext = std::path::Path::new(filename).extension()?.to_str()?;
+    let mime = match ext.to_lowercase().as_str() {
+        "txt" | "log" => "text/plain",
+        "csv" => "text/csv",
+        "json" => "application/json",
+        "xml" => "application/xml",
+        "html" | "htm" => "text/html",
+        "css" => "text/css",
+        "js" | "mjs" => "application/javascript",
+        "py" => "text/x-python",
+        "rs" => "text/x-rust",
+        "c" | "h" => "text/x-c",
+        "cpp" | "hpp" => "text/x-c++",
+        "jpg" | "jpeg" => "image/jpeg",
+        "png" => "image/png",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "svg" => "image/svg+xml",
+        "bmp" => "image/bmp",
+        "tiff" | "tif" => "image/tiff",
+        "pdf" => "application/pdf",
+        "zip" => "application/zip",
+        "tar" => "application/x-tar",
+        "gz" => "application/gzip",
+        "bz2" => "application/x-bzip2",
+        "xz" => "application/x-xz",
+        "7z" => "application/x-7z-compressed",
+        "rar" => "application/x-rar",
+        "mp3" => "audio/mpeg",
+        "ogg" => "audio/ogg",
+        "wav" => "audio/wav",
+        "flac" => "audio/flac",
+        "mp4" => "video/mp4",
+        "mkv" => "video/x-matroska",
+        "webm" => "video/webm",
+        "avi" => "video/x-msvideo",
+        "mov" => "video/quicktime",
+        "doc" => "application/msword",
+        "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "xls" => "application/vnd.ms-excel",
+        "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "ppt" => "application/vnd.ms-powerpoint",
+        "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        _ => "application/octet-stream",
+    };
+    Some(mime.to_string())
 }
 
 pub fn is_visual_media(path: &Path) -> (bool, bool) {
@@ -486,14 +579,26 @@ pub fn expand_path(path: &str) -> PathBuf {
 }
 
 pub fn open_file(path: PathBuf) {
-    let file = adw::gio::File::for_path(&path);
-    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+    let path_str = path.to_string_lossy();
 
-    let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
-    if let Some(app_info) = adw::gio::AppInfo::default_for_type(&content_type, false) {
-        let _ = app_info.launch(&[file], None::<&adw::gio::AppLaunchContext>);
+    // Determine if this is a network URI
+    let file = if crate::services::network::is_network_uri(&path) {
+        gio::File::for_uri(&path_str)
     } else {
-        let _ = Command::new("xdg-open").arg(path).spawn();
+        gio::File::for_path(&path)
+    };
+
+    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+    let (content_type, _) = gio::content_type_guess(Some(filename.as_ref()), None);
+    if let Some(app_info) = gio::AppInfo::default_for_type(&content_type, false) {
+        let _ = app_info.launch(&[file], None::<&gio::AppLaunchContext>);
+    } else {
+        // Fallback: if we have a URI, use xdg-open with the URI, else the path
+        if crate::services::network::is_network_uri(&path) {
+            let _ = Command::new("xdg-open").arg(&*path_str).spawn();
+        } else {
+            let _ = Command::new("xdg-open").arg(path).spawn();
+        }
     }
 }
 

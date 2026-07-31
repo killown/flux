@@ -30,6 +30,12 @@ impl StateManager {
                 icon_size INTEGER,
                 folders_first BOOLEAN
             );
+
+            CREATE TABLE IF NOT EXISTS location_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uri TEXT UNIQUE NOT NULL,
+                timestamp INTEGER NOT NULL
+            );
         ",
         )?;
 
@@ -58,6 +64,12 @@ impl StateManager {
                 sort_reversed BOOLEAN,
                 icon_size INTEGER,
                 folders_first BOOLEAN
+            );
+
+            CREATE TABLE IF NOT EXISTS location_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uri TEXT UNIQUE NOT NULL,
+                timestamp INTEGER NOT NULL
             );
             ",
         )?;
@@ -148,6 +160,55 @@ impl StateManager {
             let _ = conn.execute("VACUUM", []);
         }
 
+        Ok(())
+    }
+
+    /// Adds or updates a URI in location history, keeping the maximum size capped at 10000.
+    pub fn add_location(&self, uri: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        let now = chrono::Utc::now().timestamp();
+
+        conn.execute(
+            "INSERT INTO location_history (uri, timestamp) VALUES (?1, ?2)
+             ON CONFLICT(uri) DO UPDATE SET timestamp = ?2",
+            params![uri, now],
+        )?;
+
+        conn.execute(
+            "DELETE FROM location_history WHERE id NOT IN (
+                SELECT id FROM location_history ORDER BY timestamp DESC LIMIT 10000
+            )",
+            [],
+        )?;
+
+        Ok(())
+    }
+
+    /// Deletes a specific URI from the location history.
+    pub fn remove_location(&self, uri: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM location_history WHERE uri = ?1", params![uri])?;
+        Ok(())
+    }
+
+    /// Retrieves location history ordered by most recent first.
+    #[allow(dead_code)]
+    pub fn get_location_history(&self) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT uri FROM location_history ORDER BY timestamp DESC")?;
+
+        let iter = stmt.query_map([], |row| row.get(0))?;
+        let mut history = Vec::new();
+        for uri in iter {
+            history.push(uri?);
+        }
+        Ok(history)
+    }
+
+    /// Clears all entries from the location history.
+    pub fn clear_location_history(&self) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM location_history", [])?;
         Ok(())
     }
 }
@@ -254,5 +315,22 @@ mod tests {
         assert!(manager.get_view(&real_dir).unwrap().is_some());
 
         assert!(manager.get_view(&fake_dir).unwrap().is_none());
+    }
+
+    #[test]
+    fn test_location_history() {
+        let (manager, _temp_dir) = create_test_db();
+
+        manager.add_location("smb://server/share").unwrap();
+        manager.add_location("sftp://localhost").unwrap();
+        manager.add_location("smb://server/share").unwrap(); // duplicate update test
+
+        let history = manager.get_location_history().unwrap();
+        assert_eq!(history.len(), 2);
+        assert_eq!(history[0], "smb://server/share"); // most recent first
+
+        manager.clear_location_history().unwrap();
+        let empty_history = manager.get_location_history().unwrap();
+        assert!(empty_history.is_empty());
     }
 }

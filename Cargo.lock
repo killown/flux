@@ -448,6 +448,7 @@ dependencies = [
 name = "flux"
 version = "0.1.0"
 dependencies = [
+ "bitflags",
  "bzip2 0.4.4",
  "chrono",
  "dirs",

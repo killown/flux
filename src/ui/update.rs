@@ -8,7 +8,10 @@ use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::{gio, glib};
 use relm4::prelude::*;
+use relm4::RelmRemoveAllExt;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::sync::atomic::Ordering;
 //use vte4::TerminalExt,
 
@@ -522,9 +525,17 @@ impl FluxApp {
                     let selection = selection_model.selection();
                     let mut target_idx = None;
 
+                    // Normalize target path: remove trailing slash
+                    let target_normalized = target_path
+                        .to_string_lossy()
+                        .trim_end_matches('/')
+                        .to_string();
+
                     for i in 0..self.files.len() {
                         if let Some(wrapper) = self.files.get(i) {
-                            if &wrapper.borrow().path == target_path {
+                            let item_path = wrapper.borrow().path.to_string_lossy().to_string();
+                            let item_normalized = item_path.trim_end_matches('/').to_string();
+                            if item_normalized == target_normalized {
                                 target_idx = Some(i);
                                 break;
                             }
@@ -753,6 +764,50 @@ impl FluxApp {
                                 }
                                 ("win.add-to-quick-list".to_string(), "add-to-quick-list")
                             }
+                            "builtin::delete" => {
+                                let action = gio::SimpleAction::new("delete-selection", None);
+                                let s = sender.clone();
+                                action.connect_activate(move |_, _| {
+                                    s.input(AppMsg::Delete);
+                                });
+                                self.action_group.add_action(&action);
+                                ("win.delete-selection".to_string(), "delete-selection")
+                            }
+                            "builtin::new_folder" => {
+                                // Use the clicked path, or fallback to the current directory
+                                let target =
+                                    path.clone().unwrap_or_else(|| self.current_path.clone());
+                                let target_clone = target.clone();
+
+                                // Create a new action that will be triggered when the menu item is clicked
+                                let action = gio::SimpleAction::new("new-folder", None);
+                                let s = sender.clone();
+                                action.connect_activate(move |_, _| {
+                                    let path_str = target_clone.to_string_lossy();
+                                    if crate::services::network::is_network_uri(&target_clone) {
+                                        // Network directory creation (SMB, SFTP, etc.)
+                                        let uri = format!(
+                                            "{}/New-Folder",
+                                            path_str.trim_end_matches('/')
+                                        );
+                                        let _ = crate::services::network::create_network_directory(
+                                            &uri, None,
+                                        );
+                                    } else {
+                                        // Local filesystem
+                                        let target_dir = target_clone.join("New-Folder");
+                                        let _ = std::fs::create_dir(&target_dir);
+                                    }
+                                    // Refresh the view to show the new folder
+                                    s.input(AppMsg::Refresh);
+                                });
+
+                                // Register the action in the window's action group (prefix "win")
+                                self.action_group.add_action(&action);
+
+                                // Return the full action name and lookup name
+                                ("win.new-folder".to_string(), "new-folder")
+                            }
                             "builtin::open_with" => {
                                 let open_with_menu = gio::Menu::new();
                                 let apps = gio::AppInfo::all_for_type(&mime);
@@ -771,9 +826,7 @@ impl FluxApp {
                                     open_with_menu.append_item(&item);
                                 }
 
-                                // Explicitly create the item and set the label to preserve spacing
                                 let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
-                                // Using \u{a0} (Non-breaking space) to prevent GTK from collapsing the gap
                                 let spaced_label = "󰱝\u{a0} \u{a0} \u{a0} Open With...".to_string();
                                 menu_item.set_label(Some(&spaced_label));
 
@@ -978,6 +1031,423 @@ impl FluxApp {
                     }
                 }
             }
+            AppMsg::PromptNetworkCredentials {
+                uri,
+                message,
+                flags,
+                auth_failed,
+            } => {
+                let parent = gtk::Application::default().active_window();
+                let s = sender.clone();
+
+                let title = if auth_failed {
+                    crate::i18n::tr("Authentication Failed")
+                } else {
+                    crate::i18n::tr("Network Credentials Required")
+                };
+
+                let dialog = gtk::MessageDialog::new(
+                    parent.as_ref(),
+                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                    gtk::MessageType::Question,
+                    gtk::ButtonsType::None,
+                    &title,
+                );
+
+                dialog.set_secondary_text(Some(&message));
+
+                dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+                let connect_btn =
+                    dialog.add_button(&crate::i18n::tr("Connect"), gtk::ResponseType::Ok);
+                connect_btn.style_context().add_class("suggested-action");
+                dialog.set_default_response(gtk::ResponseType::Ok);
+
+                let content = dialog.content_area();
+
+                let user_entry = gtk::Entry::builder()
+                    .placeholder_text(crate::i18n::tr("Username"))
+                    .margin_top(8)
+                    .margin_bottom(4)
+                    .margin_start(16)
+                    .margin_end(16)
+                    .build();
+
+                let pwd_entry = gtk::PasswordEntry::builder()
+                    .show_peek_icon(true)
+                    .activates_default(true)
+                    .margin_top(4)
+                    .margin_bottom(4)
+                    .margin_start(16)
+                    .margin_end(16)
+                    .build();
+
+                let domain_entry = gtk::Entry::builder()
+                    .placeholder_text(crate::i18n::tr("Domain (optional)"))
+                    .margin_top(4)
+                    .margin_bottom(8)
+                    .margin_start(16)
+                    .margin_end(16)
+                    .build();
+
+                if flags.contains(crate::services::network::NetworkAuthFlags::USERNAME) {
+                    content.append(&user_entry);
+                }
+                if flags.contains(crate::services::network::NetworkAuthFlags::PASSWORD) {
+                    content.append(&pwd_entry);
+                }
+                if flags.contains(crate::services::network::NetworkAuthFlags::DOMAIN) {
+                    content.append(&domain_entry);
+                }
+
+                user_entry.connect_map(|e| {
+                    e.grab_focus();
+                });
+
+                dialog.present();
+
+                let user_clone = user_entry.clone();
+                let pwd_clone = pwd_entry.clone();
+                let domain_clone = domain_entry.clone();
+
+                dialog.connect_response(move |dlg, resp| {
+                    if resp == gtk::ResponseType::Ok {
+                        let username = user_clone.text().to_string();
+                        let password = pwd_clone.text().to_string();
+                        let domain = domain_clone.text().to_string();
+
+                        let credentials = crate::services::network::NetworkCredentials {
+                            username: if username.is_empty() {
+                                None
+                            } else {
+                                Some(username)
+                            },
+                            password: if password.is_empty() {
+                                None
+                            } else {
+                                Some(password)
+                            },
+                            domain: if domain.is_empty() {
+                                None
+                            } else {
+                                Some(domain)
+                            },
+                            anonymous: false,
+                        };
+
+                        s.input(AppMsg::ConnectToServer {
+                            uri: uri.clone(),
+                            credentials: Some(credentials),
+                        });
+                    }
+                    dlg.close();
+                });
+            }
+            AppMsg::PromptLocationDialog => {
+                let window = gtk::Application::default().active_window();
+                let s = sender.clone();
+                let state_db = self.state_db.clone();
+                let current_path_str = self.current_path.to_string_lossy().to_string();
+
+                let dialog = gtk::MessageDialog::new(
+                    window.as_ref(),
+                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                    gtk::MessageType::Other,
+                    gtk::ButtonsType::None,
+                    &crate::i18n::tr("Enter Location"),
+                );
+
+                dialog.set_secondary_text(Some(&crate::i18n::tr(
+                    "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):",
+                )));
+
+                dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+                let go_btn = dialog.add_button(&crate::i18n::tr("Connect"), gtk::ResponseType::Ok);
+                go_btn.style_context().add_class("suggested-action");
+                dialog.set_default_response(gtk::ResponseType::Ok);
+
+                let content_area = dialog.content_area();
+
+                let vbox = gtk::Box::builder()
+                    .orientation(gtk::Orientation::Vertical)
+                    .spacing(8)
+                    .margin_top(12)
+                    .margin_bottom(12)
+                    .margin_start(16)
+                    .margin_end(16)
+                    .build();
+
+                let entry = gtk::Entry::builder()
+                    .text(&current_path_str)
+                    .activates_default(true)
+                    .build();
+
+                entry.select_region(0, -1);
+                entry.connect_map(|e| {
+                    e.grab_focus();
+                });
+
+                // Suggestion list box for history autocomplete
+                let history_list = gtk::ListBox::builder()
+                    .selection_mode(gtk::SelectionMode::Single)
+                    .visible(false)
+                    .build();
+
+                let scrolled_history = gtk::ScrolledWindow::builder()
+                    .child(&history_list)
+                    .max_content_height(150)
+                    .propagate_natural_height(true)
+                    .visible(false)
+                    .build();
+
+                // Clear history button
+                let clear_history_btn = gtk::Button::builder()
+                    .label(&crate::i18n::tr("Clear History"))
+                    .halign(gtk::Align::End)
+                    .build();
+
+                let db_for_clear = state_db.clone();
+                let history_list_clone = history_list.clone();
+                let scrolled_clone = scrolled_history.clone();
+                clear_history_btn.connect_clicked(move |_| {
+                    let _ = db_for_clear.clear_location_history();
+                    history_list_clone.remove_all();
+                    scrolled_clone.set_visible(false);
+                });
+
+                // Helper closure to query and populate history suggestions
+                let db_for_populate = state_db.clone();
+                let populate_history = {
+                    let history_list_p = history_list.clone();
+                    let scrolled_p = scrolled_history.clone();
+                    let db_for_delete = state_db.clone();
+
+                    move |filter: &str| {
+                        history_list_p.remove_all();
+                        if let Ok(history) = db_for_populate.get_location_history() {
+                            let filter_lc = filter.to_lowercase();
+                            let mut count = 0;
+                            for uri in history {
+                                if filter.is_empty() || uri.to_lowercase().contains(&filter_lc) {
+                                    // Row container box
+                                    let row_box = gtk::Box::builder()
+                                        .orientation(gtk::Orientation::Horizontal)
+                                        .spacing(6)
+                                        .margin_start(4)
+                                        .margin_end(8)
+                                        .margin_top(4)
+                                        .margin_bottom(4)
+                                        .build();
+
+                                    let delete_btn = gtk::Button::builder()
+                                        .icon_name("window-close-symbolic")
+                                        .valign(gtk::Align::Center)
+                                        .css_classes(vec!["flat".to_string()])
+                                        .build();
+
+                                    let row_label = gtk::Label::builder()
+                                        .label(&uri)
+                                        .xalign(0.0)
+                                        .hexpand(true)
+                                        .ellipsize(pango::EllipsizeMode::Middle)
+                                        .build();
+
+                                    let uri_to_delete = uri.clone();
+                                    let db_del = db_for_delete.clone();
+                                    let list_ref = history_list_p.clone();
+                                    let row_box_ref = row_box.clone();
+
+                                    delete_btn.connect_clicked(move |_| {
+                                        let _ = db_del.remove_location(&uri_to_delete);
+                                        if let Some(parent) = row_box_ref.parent() {
+                                            list_ref.remove(&parent);
+                                        }
+                                    });
+
+                                    row_box.append(&delete_btn);
+                                    row_box.append(&row_label);
+
+                                    // Wrap each row inside a ListBoxRow so GTK can select and activate it properly!
+                                    let row = gtk::ListBoxRow::new();
+                                    row.set_child(Some(&row_box));
+                                    history_list_p.append(&row);
+
+                                    count += 1;
+                                    if count >= 100 {
+                                        break;
+                                    }
+                                }
+                            }
+                            let has_items = count > 0;
+                            history_list_p.set_visible(has_items);
+                            scrolled_p.set_visible(has_items);
+                        }
+                    }
+                };
+                let populate_clone = populate_history.clone();
+                entry.connect_changed(move |e| {
+                    populate_clone(&e.text());
+                });
+
+                // Trigger suggestion dropdown on Down arrow key press
+                let key_controller = gtk::EventControllerKey::new();
+                let populate_key = populate_history.clone();
+                let entry_key = entry.clone();
+                let scrolled_key = scrolled_history.clone();
+
+                key_controller.connect_key_pressed(move |_, keyval, _, _| {
+                    if keyval == gdk::Key::Down {
+                        populate_key(&entry_key.text());
+                        return glib::Propagation::Stop;
+                    } else if keyval == gdk::Key::Escape {
+                        scrolled_key.set_visible(false);
+                        return glib::Propagation::Stop;
+                    }
+                    glib::Propagation::Proceed
+                });
+                entry.add_controller(key_controller);
+
+                // Populate entry when clicking a history suggestion row
+                let entry_select = entry.clone();
+                let scrolled_select = scrolled_history.clone();
+                history_list.connect_row_activated(move |_, row| {
+                    if let Some(row_box) = row.child().and_downcast::<gtk::Box>() {
+                        if let Some(label) = row_box.last_child().and_downcast::<gtk::Label>() {
+                            entry_select.set_text(&label.text());
+                            scrolled_select.set_visible(false);
+                            entry_select.grab_focus();
+                        }
+                    }
+                });
+
+                vbox.append(&entry);
+                vbox.append(&scrolled_history);
+                vbox.append(&clear_history_btn);
+                content_area.append(&vbox);
+                dialog.present();
+
+                let entry_clone = entry.clone();
+                let db_submit = state_db.clone();
+
+                dialog.connect_response(move |dlg, resp| {
+                    if resp == gtk::ResponseType::Ok {
+                        let text = entry_clone.text().to_string();
+                        let trimmed = text.trim();
+                        if !trimmed.is_empty() {
+                            let _ = db_submit.add_location(trimmed);
+
+                            if crate::services::network::is_network_uri(std::path::Path::new(
+                                trimmed,
+                            )) || trimmed.starts_with(crate::services::archive::ARCHIVE_URI)
+                                || trimmed.starts_with("trash:///")
+                                || trimmed.starts_with("recent:///")
+                            {
+                                s.input(AppMsg::Navigate(PathBuf::from(trimmed)));
+                            } else {
+                                let expanded = utils::expand_path(trimmed);
+                                s.input(AppMsg::Navigate(expanded));
+                            }
+                        }
+                    }
+                    dlg.close();
+                });
+            }
+            AppMsg::NetworkLoaded { uri, contexts } => {
+                // Guard against stale results from a cancelled navigation.
+                if self.current_path != std::path::Path::new(&uri) {
+                    return;
+                }
+
+                self.files.clear();
+                for item in contexts {
+                    let icon = if item.is_dir {
+                        item.custom_icon
+                            .as_deref()
+                            .and_then(|n| gtk::gio::Icon::for_string(n).ok())
+                            .unwrap_or_else(|| {
+                                crate::utils::get_icon_for_path(&item.target_path, item.is_dir)
+                            })
+                    } else {
+                        crate::utils::get_icon_for_path(&item.target_path, item.is_dir)
+                    };
+
+                    self.files.append(crate::ui::FileItem {
+                        name: item.display_name.clone(),
+                        icon,
+                        thumbnail: None,
+                        is_dir: item.is_dir,
+                        path: item.target_path,
+                        icon_size: self.current_icon_size,
+                        size: item.size,
+                        is_editing: false,
+                        is_foreign_owner: false,
+                        expand_labels: item.expand_labels,
+                        is_custom_icon: item.custom_icon.is_some(),
+                        active_path: Rc::new(RefCell::new(None)),
+                    });
+                }
+                self.update_breadcrumbs();
+            }
+
+            AppMsg::ConnectToServer { uri, credentials } => {
+                self.history.push(self.current_path.clone());
+                self.forward_stack.clear();
+                self.load_network(&uri, credentials, sender);
+            }
+
+            AppMsg::UnmountNetwork(uri) => {
+                let sender_clone = sender.clone();
+                tokio::task::spawn_blocking(move || {
+                    if let Err(e) = crate::services::network::unmount_network_location(&uri) {
+                        sender_clone.input(AppMsg::ShowToast(e.to_string()));
+                    } else {
+                        sender_clone.input(AppMsg::RefreshNetworkSidebar);
+                    }
+                });
+            }
+
+            AppMsg::AddNetworkBookmark { name, uri } => {
+                let bookmark = crate::services::network::NetworkBookmark::new(name, uri);
+                if !self
+                    .config
+                    .network_bookmarks
+                    .iter()
+                    .any(|b| b.uri == bookmark.uri)
+                {
+                    self.config.network_bookmarks.push(bookmark);
+                    crate::utils::save_config(&self.config);
+                    sender.input(AppMsg::RefreshSidebar);
+                }
+            }
+
+            AppMsg::RemoveNetworkBookmark(uri) => {
+                self.config.network_bookmarks.retain(|b| b.uri != uri);
+                crate::utils::save_config(&self.config);
+                sender.input(AppMsg::RefreshSidebar);
+            }
+
+            AppMsg::RefreshNetworkSidebar => {
+                sender.input(AppMsg::RefreshSidebar);
+
+                while let Some(child) = self.network_section.first_child() {
+                    self.network_section.remove(&child);
+                }
+
+                let fresh_section = crate::ui::sidebar_network::build_network_section(
+                    &self.config.network_bookmarks,
+                    sender.input_sender().clone(),
+                );
+
+                while let Some(child) = fresh_section.first_child() {
+                    fresh_section.remove(&child);
+                    self.network_section.append(&child);
+                }
+            }
+
+            AppMsg::NavigateNetwork => {
+                self.history.push(self.current_path.clone());
+                self.forward_stack.clear();
+                self.load_network(crate::services::network::NETWORK_ROOT_URI, None, sender);
+            }
             AppMsg::ToggleSidebar => {
                 self.sidebar_visible = !self.sidebar_visible;
                 self.config.ui.sidebar_visible = self.sidebar_visible;
@@ -1109,6 +1579,34 @@ impl FluxApp {
             // instead of the directory currently displayed to the user.
             AppMsg::Navigate(path) => {
                 let path_str = path.to_string_lossy();
+
+                // Intercept Network URIs (smb://, sftp://, network:///, etc.)
+                if crate::services::network::is_network_uri(&path) {
+                    if path == self.current_path {
+                        return;
+                    }
+
+                    let old_path = std::mem::replace(&mut self.current_path, path.clone());
+
+                    self.recent_stack.retain(|p| p != &path && p != &old_path);
+                    self.recent_stack.push_front(old_path.clone());
+                    self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+
+                    self.filter.clear();
+                    self.files.clear_filters();
+                    sender.input(AppMsg::CloseSearchSync);
+
+                    if self.header_view == constants::VIEW_SEARCH {
+                        self.header_view = "path".to_string();
+                    }
+
+                    self.history.push(old_path);
+                    self.forward_stack.clear();
+
+                    self.load_network(&path_str, None, sender);
+                    self.update_breadcrumbs();
+                    return;
+                }
 
                 // archive:// URIs are virtual - intercept before path_valid / is_dir guards.
                 if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
@@ -1555,7 +2053,13 @@ impl FluxApp {
             AppMsg::Refresh => {
                 self.is_loading = true;
                 let p = self.current_path.clone();
-                self.load_path(p, &sender);
+                let path_str = p.to_string_lossy();
+
+                if crate::services::network::is_network_uri(&p) {
+                    self.load_network(&path_str, None, sender);
+                } else {
+                    self.load_path(p, &sender);
+                }
             }
             AppMsg::FileDeleted(path) => {
                 if let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) {
@@ -1602,6 +2106,7 @@ impl FluxApp {
                                 is_foreign_owner: false,
                                 expand_labels: self.config.ui.expand_labels,
                                 is_custom_icon: false,
+                                active_path: Rc::new(RefCell::new(None)),
                             };
                             self.files.append(item);
 
@@ -1623,42 +2128,216 @@ impl FluxApp {
                 }
             }
             AppMsg::Delete => {
-                let selection = self.get_selection();
+                let mut selection = self.get_selection();
+
                 if selection.is_empty() {
+                    if let Some(active) = &self.active_item_path {
+                        selection.push(active.clone());
+                    }
+                }
+
+                if selection.is_empty() {
+                    eprintln!("[Delete] no selection and no active_item_path, bailing");
                     return;
                 }
 
+                eprintln!("[Delete] {} item(s) selected", selection.len());
+
                 let sender_clone = sender.clone();
                 for path in selection {
-                    let file = gio::File::for_path(path);
+                    let path_str = path.to_string_lossy().into_owned();
+                    let is_network = crate::services::network::is_network_uri(&path);
+
+                    eprintln!(
+                        "[Delete] path={:?} is_network={} contains_scheme={}",
+                        path_str,
+                        is_network,
+                        path_str.contains("://")
+                    );
+
+                    let file = if path_str.contains("://") {
+                        gio::File::for_uri(&path_str)
+                    } else {
+                        gio::File::for_path(&path)
+                    };
+
                     let s = sender_clone.clone();
 
-                    // GIO Move to Trash logic
-                    file.trash_async(
-                        glib::Priority::DEFAULT,
-                        gio::Cancellable::NONE,
-                        move |res| {
-                            match res {
-                                Ok(_) => {
-                                    // Refresh the view to remove deleted items from UI
-                                    s.input(AppMsg::Refresh);
+                    if is_network {
+                        eprintln!("[Delete] network path → skipping trash, using GLib-context delete_recursive");
+                        let file_clone = file.clone();
+                        glib::MainContext::default().spawn_local(async move {
+                            fn delete_recursive(f: &gio::File) -> Result<(), glib::Error> {
+                                let uri = f.uri().to_string();
+                                eprintln!("[delete_recursive] entering uri={:?}", uri);
+
+                                let info = f.query_info(
+                                    "standard::type",
+                                    gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
+                                    gio::Cancellable::NONE,
+                                );
+
+                                match info {
+                                    Err(ref e) => {
+                                        eprintln!(
+                                            "[delete_recursive] query_info failed uri={:?} err={:?}",
+                                            uri, e.message()
+                                        );
+                                    }
+                                    Ok(ref info) => {
+                                        eprintln!(
+                                            "[delete_recursive] file_type={:?} uri={:?}",
+                                            info.file_type(), uri
+                                        );
+                                        if info.file_type() == gio::FileType::Directory {
+                                            match f.enumerate_children(
+                                                "standard::name",
+                                                gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
+                                                gio::Cancellable::NONE,
+                                            ) {
+                                                Err(ref e) => {
+                                                    eprintln!(
+                                                        "[delete_recursive] enumerate_children failed uri={:?} err={:?}",
+                                                        uri, e.message()
+                                                    );
+                                                }
+                                                Ok(enumerator) => {
+                                                    for child_info in enumerator.flatten() {
+                                                        let child = f.child(child_info.name());
+                                                        eprintln!(
+                                                            "[delete_recursive] recursing into child={:?}",
+                                                            child.uri().to_string()
+                                                        );
+                                                        delete_recursive(&child)?;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
 
+                                eprintln!("[delete_recursive] calling f.delete() uri={:?}", uri);
+                                let res = f.delete(gio::Cancellable::NONE);
+                                eprintln!(
+                                    "[delete_recursive] f.delete() result={} uri={:?}",
+                                    res.as_ref().map(|_| "ok").unwrap_or("err"),
+                                    uri
+                                );
+                                res?;
+                                Ok(())
+                            }
+
+                            eprintln!("[Delete] spawned GLib task for uri={:?}", file_clone.uri().to_string());
+                            match delete_recursive(&file_clone) {
+                                Ok(()) => {
+                                    eprintln!("[Delete] delete_recursive succeeded, sending Refresh");
+                                    s.input(AppMsg::Refresh);
+                                }
                                 Err(e) => {
-                                    let msg = e.message().to_string();
-                                    if msg.contains("Permission denied")
-                                        || msg.contains("Operation not permitted")
+                                    eprintln!(
+                                        "[Delete] delete_recursive failed uri={:?} gio_kind={:?} msg={:?}",
+                                        file_clone.uri().to_string(),
+                                        e.kind::<gio::IOErrorEnum>(),
+                                        e.message()
+                                    );
+                                    if e.message().contains("Permission denied")
+                                        || e.message().contains("Operation not permitted")
                                     {
                                         s.input(AppMsg::ShowToast(
-                                            "Permission denied: Cannot move item to trash.".into(),
+                                            "Permission denied: Cannot delete item.".into(),
                                         ));
                                     } else {
-                                        s.input(AppMsg::ShowToast(format!("Trash error: {}", e)));
+                                        s.input(AppMsg::ShowToast(format!("Deletion error: {e}")));
                                     }
                                 }
                             }
-                        },
-                    );
+                        });
+                    } else {
+                        eprintln!("[Delete] local path → attempting trash_async");
+                        let file_for_fallback = file.clone();
+                        file.trash_async(
+                            glib::Priority::DEFAULT,
+                            gio::Cancellable::NONE,
+                            move |res| {
+                                match res {
+                                    Ok(_) => {
+                                        eprintln!("[Delete] trash_async succeeded, sending Refresh");
+                                        s.input(AppMsg::Refresh);
+                                    }
+                                    Err(trash_err) => {
+                                        eprintln!(
+                                            "[Delete] trash_async failed gio_kind={:?} msg={:?}, falling back to delete_recursive",
+                                            trash_err.kind::<gio::IOErrorEnum>(),
+                                            trash_err.message()
+                                        );
+                                        let s_inner = s.clone();
+                                        relm4::spawn_blocking(move || {
+                                            fn delete_recursive(
+                                                f: &gio::File,
+                                            ) -> Result<(), glib::Error>
+                                            {
+                                                let uri = f.uri().to_string();
+                                                eprintln!("[delete_recursive/local] entering uri={:?}", uri);
+                                                if let Ok(info) = f.query_info(
+                                                    "standard::type",
+                                                    gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
+                                                    gio::Cancellable::NONE,
+                                                ) {
+                                                    eprintln!(
+                                                        "[delete_recursive/local] file_type={:?} uri={:?}",
+                                                        info.file_type(), uri
+                                                    );
+                                                    if info.file_type() == gio::FileType::Directory {
+                                                        if let Ok(enumerator) = f.enumerate_children(
+                                                            "standard::name",
+                                                            gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
+                                                            gio::Cancellable::NONE,
+                                                        ) {
+                                                            for child_info in enumerator.flatten() {
+                                                                let child = f.child(child_info.name());
+                                                                delete_recursive(&child)?;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                eprintln!("[delete_recursive/local] calling f.delete() uri={:?}", uri);
+                                                f.delete(gio::Cancellable::NONE)?;
+                                                Ok(())
+                                            }
+
+                                            match delete_recursive(&file_for_fallback) {
+                                                Ok(()) => {
+                                                    eprintln!("[Delete] fallback delete_recursive succeeded");
+                                                    s_inner.input(AppMsg::Refresh);
+                                                }
+                                                Err(e) => {
+                                                    eprintln!(
+                                                        "[Delete] fallback delete_recursive failed gio_kind={:?} msg={:?}",
+                                                        e.kind::<gio::IOErrorEnum>(),
+                                                        e.message()
+                                                    );
+                                                    if e.message().contains("Permission denied")
+                                                        || e.message().contains("Operation not permitted")
+                                                    {
+                                                        s_inner.input(AppMsg::ShowToast(
+                                                            "Permission denied: Cannot delete item."
+                                                                .into(),
+                                                        ));
+                                                    } else {
+                                                        s_inner.input(AppMsg::ShowToast(format!(
+                                                            "Deletion error: {}",
+                                                            e
+                                                        )));
+                                                    }
+                                                }
+                                            }
+                                        });
+                                        let _ = trash_err;
+                                    }
+                                }
+                            },
+                        );
+                    }
                 }
             }
             AppMsg::Open(position) => {
