@@ -13,6 +13,7 @@ pub mod view;
 pub use settings::SettingsWindow;
 pub mod menu_editor;
 pub use components::SidebarMsg;
+pub mod network_dialogs;
 pub mod sidebar_network;
 
 // --- 2. Existing Submodules ---

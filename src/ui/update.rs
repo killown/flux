@@ -1037,110 +1037,15 @@ impl FluxApp {
                 flags,
                 auth_failed,
             } => {
-                let parent = gtk::Application::default().active_window();
-                let s = sender.clone();
-
-                let title = if auth_failed {
-                    crate::i18n::tr("Authentication Failed")
-                } else {
-                    crate::i18n::tr("Network Credentials Required")
-                };
-
-                let dialog = gtk::MessageDialog::new(
-                    parent.as_ref(),
-                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-                    gtk::MessageType::Question,
-                    gtk::ButtonsType::None,
-                    &title,
+                let window = gtk::Application::default().active_window().unwrap();
+                crate::ui::network_dialogs::show_credentials_dialog(
+                    &window,
+                    uri,
+                    message,
+                    flags,
+                    auth_failed,
+                    sender.input_sender().clone(),
                 );
-
-                dialog.set_secondary_text(Some(&message));
-
-                dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-                let connect_btn =
-                    dialog.add_button(&crate::i18n::tr("Connect"), gtk::ResponseType::Ok);
-                connect_btn.style_context().add_class("suggested-action");
-                dialog.set_default_response(gtk::ResponseType::Ok);
-
-                let content = dialog.content_area();
-
-                let user_entry = gtk::Entry::builder()
-                    .placeholder_text(crate::i18n::tr("Username"))
-                    .margin_top(8)
-                    .margin_bottom(4)
-                    .margin_start(16)
-                    .margin_end(16)
-                    .build();
-
-                let pwd_entry = gtk::PasswordEntry::builder()
-                    .show_peek_icon(true)
-                    .activates_default(true)
-                    .margin_top(4)
-                    .margin_bottom(4)
-                    .margin_start(16)
-                    .margin_end(16)
-                    .build();
-
-                let domain_entry = gtk::Entry::builder()
-                    .placeholder_text(crate::i18n::tr("Domain (optional)"))
-                    .margin_top(4)
-                    .margin_bottom(8)
-                    .margin_start(16)
-                    .margin_end(16)
-                    .build();
-
-                if flags.contains(crate::services::network::NetworkAuthFlags::USERNAME) {
-                    content.append(&user_entry);
-                }
-                if flags.contains(crate::services::network::NetworkAuthFlags::PASSWORD) {
-                    content.append(&pwd_entry);
-                }
-                if flags.contains(crate::services::network::NetworkAuthFlags::DOMAIN) {
-                    content.append(&domain_entry);
-                }
-
-                user_entry.connect_map(|e| {
-                    e.grab_focus();
-                });
-
-                dialog.present();
-
-                let user_clone = user_entry.clone();
-                let pwd_clone = pwd_entry.clone();
-                let domain_clone = domain_entry.clone();
-
-                dialog.connect_response(move |dlg, resp| {
-                    if resp == gtk::ResponseType::Ok {
-                        let username = user_clone.text().to_string();
-                        let password = pwd_clone.text().to_string();
-                        let domain = domain_clone.text().to_string();
-
-                        let credentials = crate::services::network::NetworkCredentials {
-                            username: if username.is_empty() {
-                                None
-                            } else {
-                                Some(username)
-                            },
-                            password: if password.is_empty() {
-                                None
-                            } else {
-                                Some(password)
-                            },
-                            domain: if domain.is_empty() {
-                                None
-                            } else {
-                                Some(domain)
-                            },
-                            anonymous: false,
-                        };
-
-                        s.input(AppMsg::ConnectToServer {
-                            uri: uri.clone(),
-                            credentials: Some(credentials),
-                        });
-                    }
-                    dlg.close();
-                });
             }
             AppMsg::PromptLocationDialog => {
                 let window = gtk::Application::default().active_window();
