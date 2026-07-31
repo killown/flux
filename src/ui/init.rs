@@ -285,6 +285,13 @@ impl FluxApp {
         });
         app.add_action(&reload_action);
 
+        // ── Register Connect to Server action ──
+        crate::ui::network_dialogs::register_connect_action(
+            &app,
+            root,
+            sender.input_sender().clone(),
+        );
+
         // Stateful radio action: GIO compares each menu item's target against this
         // action's state and renders a native radio checkmark on the matching item.
         let sort_field_action = gio::SimpleAction::new_stateful(
