@@ -77,31 +77,30 @@ impl FluxApp {
 
         // 6. Sidebar and Volume Monitoring
         let listbox = gtk::ListBox::default();
-        let sidebar =
-            FactoryVecDeque::builder()
-                .launch(listbox)
-                .forward(sender.input_sender(), |msg| match msg {
-                    crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
-                    crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
-                    crate::ui::SidebarMsg::Reorder { from, to } => {
-                        AppMsg::ReorderSidebar { from, to }
-                    }
-                });
+        let sidebar = FactoryVecDeque::builder().launch(listbox.clone()).forward(
+            sender.input_sender(),
+            |msg| match msg {
+                crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
+                crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
+                crate::ui::SidebarMsg::Reorder { from, to } => AppMsg::ReorderSidebar { from, to },
+            },
+        );
 
         let volume_monitor = gio::VolumeMonitor::get();
-        let s_added = sender.clone();
-        let s_removed = sender.clone();
-        let vol_mon_clone = volume_monitor.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
-            let s_added_inner = s_added.clone();
-            vol_mon_clone
-                .connect_mount_added(move |_, _| s_added_inner.input(AppMsg::RefreshSidebar));
+        crate::ui::sidebar_network::connect_volume_monitor_signals(sender.input_sender().clone());
 
-            let s_removed_inner = s_removed.clone();
-            vol_mon_clone
-                .connect_mount_removed(move |_, _| s_removed_inner.input(AppMsg::RefreshSidebar));
-            glib::ControlFlow::Break
-        });
+        let network_section = crate::ui::sidebar_network::build_network_section(
+            &config.network_bookmarks,
+            sender.input_sender().clone(),
+        );
+
+        let sidebar_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        sidebar_container.append(&listbox);
+        sidebar_container.append(&network_section);
+
+        let sidebar_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        sidebar_container.append(sidebar.widget());
+        sidebar_container.append(&network_section);
 
         // 7. Breadcrumb Setup (Returned for local_ref)
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -236,13 +235,14 @@ impl FluxApp {
             terminal_cleared: false,
             terminal_paned: None,
             sidebar_visible: config.ui.sidebar_visible,
-            sidebar_widget: None,
+            sidebar_widget: Some(sidebar_container.upcast()),
             recents_has_selection: false,
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),
             quick_panel_box: gtk::Box::new(gtk::Orientation::Horizontal, 0),
             cached_archive_password: None,
             archive_locked: false,
+            network_section,
         };
 
         // 9. Initial State Population
@@ -346,7 +346,6 @@ impl FluxApp {
     ///
     /// Uses GIO menu sections for visual grouping. Each `detailed_action` string
     /// references an `app.*` action registered in `main.rs::setup_shortcuts`.
-    /// Constructs the `gio::Menu` model for the main hamburger popover.
     pub(crate) fn build_main_menu() -> gtk::gio::Menu {
         let menu = gtk::gio::Menu::new();
 

@@ -590,11 +590,14 @@ impl SimpleAsyncComponent for FluxApp {
 
         // Map widgets that were not part of the view macro directly
         widgets.grid_scroller.set_child(Some(&model.files.view));
-        widgets
-            .sidebar_container
-            .set_child(Some(model.sidebar.widget()));
-        model.context_menu_popover.set_parent(&widgets.grid_overlay);
 
+        // Wrap both the standard sidebar list and the network section together
+        let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        sidebar_wrapper.append(model.sidebar.widget());
+        sidebar_wrapper.append(&model.network_section);
+        widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
+
+        model.context_menu_popover.set_parent(&widgets.grid_overlay);
         // Store sidebar widget reference for toggling
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
 

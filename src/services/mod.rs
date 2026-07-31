@@ -8,6 +8,7 @@
 pub mod archive;
 pub mod db;
 pub mod loader;
+pub mod network;
 pub mod tasks;
 pub mod terminal;
 pub mod thumbnails;

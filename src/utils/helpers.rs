@@ -662,6 +662,7 @@ impl FluxApp {
             ("<Control>x", AppMsg::Cut),
             ("<Control>v", AppMsg::Paste),
             ("Delete", AppMsg::Delete),
+            ("<Control>l", AppMsg::PromptLocationDialog),
         ];
 
         for (trigger_str, msg) in shortcuts {

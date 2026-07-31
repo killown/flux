@@ -6,7 +6,9 @@ use adw::prelude::*;
 use gtk::gio;
 use rayon::prelude::*;
 use relm4::prelude::*;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
 /// Returns `(is_image, is_video)` by extension only - zero I/O, safe to call inside
@@ -127,7 +129,7 @@ impl FluxApp {
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         let attributes =
-            "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
+            "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid,standard::content-type";
 
         if let Ok(enumerator) = root.enumerate_children(
             attributes,
@@ -286,6 +288,7 @@ impl FluxApp {
                     is_foreign_owner: item.is_foreign_owner,
                     expand_labels: item.expand_labels,
                     is_custom_icon: item.custom_icon.is_some(),
+                    active_path: Rc::new(RefCell::new(None)),
                 });
 
                 if let Some(abs_path) = item.thumbnail_path {
@@ -297,6 +300,54 @@ impl FluxApp {
 
             self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
         }
+    }
+    /// Asynchronously lists a network location via GVFS and dispatches the result.
+    pub fn load_network(
+        &mut self,
+        uri: &str,
+        credentials: Option<crate::services::network::NetworkCredentials>,
+        sender: relm4::AsyncComponentSender<Self>,
+    ) {
+        let uri_str = uri.to_string();
+        let expand_labels = self.config.ui.expand_labels;
+
+        relm4::spawn_blocking(move || {
+            match crate::services::network::list_network_entries(&uri_str, credentials.as_ref()) {
+                Ok(entries) => {
+                    let contexts =
+                        crate::services::network::entries_to_load_contexts(&entries, expand_labels);
+                    sender.input(AppMsg::NetworkLoaded {
+                        uri: uri_str,
+                        contexts,
+                    });
+                }
+                Err(crate::services::network::NetworkError::CredentialsRequired {
+                    message,
+                    flags,
+                }) => {
+                    sender.input(AppMsg::PromptNetworkCredentials {
+                        uri: uri_str,
+                        message,
+                        flags,
+                        auth_failed: false,
+                    });
+                }
+                Err(crate::services::network::NetworkError::AuthFailed) => {
+                    sender.input(AppMsg::PromptNetworkCredentials {
+                        uri: uri_str,
+                        message: crate::i18n::tr(
+                            "Authentication failed. Please check your credentials.",
+                        ),
+                        flags: crate::services::network::NetworkAuthFlags::USERNAME
+                            | crate::services::network::NetworkAuthFlags::PASSWORD,
+                        auth_failed: true,
+                    });
+                }
+                Err(e) => {
+                    sender.input(AppMsg::ShowToast(e.to_string()));
+                }
+            }
+        });
     }
 
     /// Populates the file grid with the immediate children of `prefix` inside the
@@ -427,6 +478,7 @@ impl FluxApp {
                         is_foreign_owner: false,
                         expand_labels: item.expand_labels,
                         is_custom_icon: false,
+                        active_path: Rc::new(RefCell::new(None)),
                     });
                 }
 
@@ -524,6 +576,7 @@ impl FluxApp {
                 is_foreign_owner: false,
                 expand_labels: self.config.ui.expand_labels,
                 is_custom_icon: false,
+                active_path: Rc::new(RefCell::new(None)),
             });
         }
 
