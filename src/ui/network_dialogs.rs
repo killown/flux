@@ -142,7 +142,7 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
         .placeholder_text("server.example.com")
         .build();
     let host_row = adw::ActionRow::builder()
-        .title(&crate::i18n::tr("Server Address"))
+        .title(crate::i18n::tr("Server Address"))
         .activatable_widget(&host_entry)
         .build();
     host_row.add_suffix(&host_entry);
@@ -151,10 +151,10 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
     // Port
     let port_entry = gtk::Entry::builder()
         .input_purpose(gtk::InputPurpose::Digits)
-        .placeholder_text(&crate::i18n::tr("optional"))
+        .placeholder_text(crate::i18n::tr("optional"))
         .build();
     let port_row = adw::ActionRow::builder()
-        .title(&crate::i18n::tr("Port"))
+        .title(crate::i18n::tr("Port"))
         .activatable_widget(&port_entry)
         .build();
     port_row.add_suffix(&port_entry);
@@ -162,10 +162,10 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
 
     // Path / Share
     let path_entry = gtk::Entry::builder()
-        .placeholder_text(&crate::i18n::tr("optional"))
+        .placeholder_text(crate::i18n::tr("optional"))
         .build();
     let path_row = adw::ActionRow::builder()
-        .title(&crate::i18n::tr("Share / Path"))
+        .title(crate::i18n::tr("Share / Path"))
         .activatable_widget(&path_entry)
         .build();
     path_row.add_suffix(&path_entry);
@@ -173,10 +173,10 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
 
     // Username
     let user_entry = gtk::Entry::builder()
-        .placeholder_text(&crate::i18n::tr("optional"))
+        .placeholder_text(crate::i18n::tr("optional"))
         .build();
     let user_row = adw::ActionRow::builder()
-        .title(&crate::i18n::tr("Username"))
+        .title(crate::i18n::tr("Username"))
         .activatable_widget(&user_entry)
         .build();
     user_row.add_suffix(&user_entry);
@@ -375,7 +375,7 @@ pub fn show_credentials_dialog(
         let sw = gtk::Switch::new();
         anon_switch = Some(sw.clone());
         let row = adw::ActionRow::builder()
-            .title(&crate::i18n::tr("Connect anonymously"))
+            .title(crate::i18n::tr("Connect anonymously"))
             .activatable_widget(&sw)
             .build();
         row.add_suffix(&sw);
@@ -384,11 +384,11 @@ pub fn show_credentials_dialog(
 
     if flags.contains(NetworkAuthFlags::USERNAME) {
         let entry = gtk::Entry::builder()
-            .placeholder_text(&crate::i18n::tr("Username"))
+            .placeholder_text(crate::i18n::tr("Username"))
             .build();
         username_entry = Some(entry.clone());
         let row = adw::ActionRow::builder()
-            .title(&crate::i18n::tr("Username"))
+            .title(crate::i18n::tr("Username"))
             .activatable_widget(&entry)
             .build();
         row.add_suffix(&entry);
@@ -397,11 +397,11 @@ pub fn show_credentials_dialog(
 
     if flags.contains(NetworkAuthFlags::DOMAIN) {
         let entry = gtk::Entry::builder()
-            .placeholder_text(&crate::i18n::tr("Domain"))
+            .placeholder_text(crate::i18n::tr("Domain"))
             .build();
         domain_entry = Some(entry.clone());
         let row = adw::ActionRow::builder()
-            .title(&crate::i18n::tr("Domain"))
+            .title(crate::i18n::tr("Domain"))
             .activatable_widget(&entry)
             .build();
         row.add_suffix(&entry);
@@ -410,12 +410,12 @@ pub fn show_credentials_dialog(
 
     if flags.contains(NetworkAuthFlags::PASSWORD) {
         let entry = gtk::PasswordEntry::builder()
-            .placeholder_text(&crate::i18n::tr("Password"))
+            .placeholder_text(crate::i18n::tr("Password"))
             .show_peek_icon(true)
             .build();
         password_entry = Some(entry.clone());
         let row = adw::ActionRow::builder()
-            .title(&crate::i18n::tr("Password"))
+            .title(crate::i18n::tr("Password"))
             .activatable_widget(&entry)
             .build();
         row.add_suffix(&entry);
