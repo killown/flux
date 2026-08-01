@@ -76,6 +76,20 @@ impl SimpleComponent for HelpWindow {
                             add_css_class: "keycap",
                         },
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open location dialog"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + L",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Connect to server"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Shift + L",
+                            add_css_class: "keycap",
+                        },
+                    },
                 },
             },
 
