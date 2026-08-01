@@ -1058,7 +1058,7 @@ impl FluxApp {
                     gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
                     gtk::MessageType::Other,
                     gtk::ButtonsType::None,
-                    &crate::i18n::tr("Enter Location"),
+                    crate::i18n::tr("Enter Location"),
                 );
 
                 dialog.set_secondary_text(Some(&crate::i18n::tr(
@@ -1106,7 +1106,7 @@ impl FluxApp {
 
                 // Clear history button
                 let clear_history_btn = gtk::Button::builder()
-                    .label(&crate::i18n::tr("Clear History"))
+                    .label(crate::i18n::tr("Clear History"))
                     .halign(gtk::Align::End)
                     .build();
 
