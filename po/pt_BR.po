@@ -942,3 +942,114 @@ msgstr "Digite a senha para navegar pelo seu conteúdo."
 msgid "Unlock"
 msgstr "Desbloquear"
 
+#: src/ui/help.rs:???
+msgid "flux - Keyboard Shortcuts"
+msgstr "flux - Atalhos de teclado"
+
+#: src/ui/help.rs:???
+msgid "Open location dialog"
+msgstr "Abrir diálogo de localização"
+
+#: src/ui/help.rs:???
+msgid "Connect to server"
+msgstr "Conectar ao servidor"
+
+#: src/ui/settings.rs:???
+msgid "Recents Position"
+msgstr "Posição dos Recentes"
+
+#: src/ui/settings.rs:???
+msgid "Row index of Recents in the sidebar (0 = top)"
+msgstr "Índice da linha dos Recentes na barra lateral (0 = topo)"
+
+#: src/ui/update.rs:???
+msgid "Enter Location"
+msgstr "Digitar localização"
+
+#: src/ui/update.rs:???
+msgid "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):"
+msgstr "Digite um caminho local ou URI de rede (ex.: smb://servidor/compartilhamento, sftp://host, /home):"
+
+#: src/ui/update.rs:??? src/ui/network_dialogs.rs:???
+msgid "Connect"
+msgstr "Conectar"
+
+#: src/ui/update.rs:???
+msgid "Clear History"
+msgstr "Limpar histórico"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Connect to Server"
+msgstr "Conectar ao servidor"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Authentication Required"
+msgstr "Autenticação necessária"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Incorrect credentials. Please try again."
+msgstr "Credenciais incorretas. Tente novamente."
+
+#: src/ui/network_dialogs.rs:???
+msgid "Connect anonymously"
+msgstr "Conectar anonimamente"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Username"
+msgstr "Nome de usuário"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Domain"
+msgstr "Domínio"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Password"
+msgstr "Senha"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Protocol"
+msgstr "Protocolo"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Server Address"
+msgstr "Endereço do servidor"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Port"
+msgstr "Porta"
+
+#: src/ui/network_dialogs.rs:???
+msgid "Share / Path"
+msgstr "Compartilhamento / Caminho"
+
+#: src/ui/sidebar_network.rs:???
+msgid "Connected Servers"
+msgstr "Servidores conectados"
+
+#: src/services/network.rs:???
+msgid "Credentials required"
+msgstr "Credenciais necessárias"
+
+#: src/services/network.rs:???
+msgid "Authentication failed"
+msgstr "Falha na autenticação"
+
+#: src/services/network.rs:???
+msgid "Host unreachable"
+msgstr "Host inacessível"
+
+#: src/services/network.rs:???
+msgid "GVFS unavailable"
+msgstr "GVFS indisponível"
+
+#: src/services/archive.rs:???
+msgid "failed to parse ISO image"
+msgstr "falha ao analisar imagem ISO"
+
+#: src/services/archive.rs:???
+msgid "7z spawn error. Install p7zip-full (apt) or p7zip (pacman)."
+msgstr "Erro ao executar 7z. Instale p7zip-full (apt) ou p7zip (pacman)."
+
+#: src/services/archive.rs:???
+msgid "RAR support requires 'unar' or 'unrar' (install via your package manager)"
+msgstr "O suporte a RAR requer 'unar' ou 'unrar' (instale via seu gerenciador de pacotes)"
