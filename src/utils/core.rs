@@ -268,10 +268,7 @@ path = "~"
         let _ = fs::write(&config_path, default_toml);
     }
 
-    let config_content = match fs::read_to_string(&config_path) {
-        Ok(content) => content,
-        Err(_) => String::new(),
-    };
+    let config_content = fs::read_to_string(&config_path).unwrap_or_default();
 
     let mut config: crate::model::Config = match toml::from_str(&config_content) {
         Ok(parsed) => parsed,
