@@ -54,8 +54,17 @@ impl FluxApp {
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        self.directory_monitor = None;
         let path_str = path.to_string_lossy().to_string();
+
+        // Network URIs must go through load_network, gio::File::for_path and
+        // std::fs have no URI awareness and will silently produce an empty listing.
+        if crate::services::network::is_network_uri(&path) {
+            self.current_path = path.clone();
+            self.load_network(&path_str, None, sender.clone());
+            return;
+        }
+
+        self.directory_monitor = None;
         let mut folders_first = self.config.ui.folders_first;
 
         // Load persistent folder state from SQLite before scanning
@@ -66,12 +75,12 @@ impl FluxApp {
                 "Type" => SortBy::Type,
                 _ => SortBy::Name,
             };
-            self.sort_ascending = !rev; // Restore sort order from 'reversed' DB field
+            self.sort_ascending = !rev;
             self.current_icon_size = size as i32;
             folders_first = ff;
         } else {
             self.sort_by = self.config.ui.default_sort;
-            self.sort_ascending = true; // Default to ascending if no state exists
+            self.sort_ascending = true;
             self.current_icon_size = self.config.ui.default_icon_size;
         }
 
@@ -136,7 +145,6 @@ impl FluxApp {
             gio::FileQueryInfoFlags::NONE,
             gio::Cancellable::NONE,
         ) {
-            // Extract immutable state from GObjects on the main thread to enable parallel processing.
             let raw_data: Vec<(String, String, bool, u64, i64, u32)> = enumerator
                 .flatten()
                 .map(|info| {
@@ -148,7 +156,6 @@ impl FluxApp {
                         info.modification_date_time()
                             .map(|dt| dt.to_unix())
                             .unwrap_or(0),
-                        // attribute_uint32 returns 0 if the attribute is absent (e.g. trash:// URIs)
                         info.attribute_uint32("unix::uid"),
                     )
                 })
@@ -159,7 +166,6 @@ impl FluxApp {
             let sort_ascending = self.sort_ascending;
             let is_trash = path_str.starts_with("trash://");
 
-            // SAFETY: getuid() is always safe, it never fails.
             let current_uid: u32 = unsafe { libc::getuid() };
 
             let config_folder_icons = self.config.ui.folder_icons.clone();
@@ -200,9 +206,6 @@ impl FluxApp {
                         mtime,
                         is_dir,
                         thumbnail_path,
-                        // uid == 0 from GIO means the attribute was unavailable (virtual paths).
-                        // For real filesystems uid 0 is root, which is legitimately foreign.
-                        // The trash:// guard prevents false positives on virtual entries.
                         is_foreign_owner: !is_trash && uid != current_uid,
                         expand_labels: self.config.ui.expand_labels,
                         custom_icon,
@@ -216,16 +219,14 @@ impl FluxApp {
             }
 
             items.par_sort_unstable_by(move |a, b| {
-                // 1. Folders First Logic
                 if a.is_dir != b.is_dir {
                     return if folders_first {
-                        b.is_dir.cmp(&a.is_dir) // Directories first
+                        b.is_dir.cmp(&a.is_dir)
                     } else {
-                        a.is_dir.cmp(&b.is_dir) // Files first or mixed (depending on strategy)
+                        a.is_dir.cmp(&b.is_dir)
                     };
                 }
 
-                // 2. Primary Sort Strategy
                 let primary_order = match sort_strategy {
                     SortBy::Name => a
                         .display_name
@@ -250,7 +251,6 @@ impl FluxApp {
                     }
                 };
 
-                // 3. Tie-Breaker: If primary sort is equal, sort by Name
                 let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
                     a.display_name
                         .to_lowercase()

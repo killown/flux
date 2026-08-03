@@ -384,14 +384,12 @@ impl FluxApp {
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| "Archive".to_string());
 
-                // Root segment: points to the root of the archive
                 let root_uri = crate::services::archive::build_archive_uri(&archive_path, "");
                 guard.push_back(PathSegment {
                     name: archive_name,
                     path: root_uri,
                 });
 
-                // Inner directory segments
                 if !inner.is_empty() {
                     let mut current_inner = PathBuf::new();
                     for component in Path::new(&inner).components() {
@@ -414,10 +412,42 @@ impl FluxApp {
             }
         }
 
+        // Network URIs (ftp://, smb://, sftp://, etc.) cannot be decomposed via
+        // PathBuf::components, the stdlib has no URI awareness and will mangle
+        // the scheme double-slash into bogus local paths. Split on '/' manually
+        // and reconstruct each breadcrumb as a well-formed URI.
+        if crate::services::network::is_network_uri(&self.current_path) {
+            let uri = path_str.trim_end_matches('/');
+
+            if let Some((before, after_scheme)) = uri.split_once("://") {
+                let slash_pos = after_scheme.find('/');
+                let authority = &after_scheme[..slash_pos.unwrap_or(after_scheme.len())];
+                let scheme = before;
+
+                let root_uri = format!("{}://{}", scheme, authority);
+                guard.push_back(PathSegment {
+                    name: authority.to_string(),
+                    path: PathBuf::from(&root_uri),
+                });
+
+                if let Some(path_part) = slash_pos.map(|p| &after_scheme[p + 1..]) {
+                    let mut acc = root_uri.clone();
+                    for segment in path_part.split('/').filter(|s| !s.is_empty()) {
+                        acc.push('/');
+                        acc.push_str(segment);
+                        guard.push_back(PathSegment {
+                            name: segment.to_string(),
+                            path: PathBuf::from(&acc),
+                        });
+                    }
+                }
+            }
+            return;
+        }
+
         let mut path_acc = PathBuf::from("/");
         let mut segments = Vec::new();
 
-        // Always add Root/Home
         for component in self.current_path.components() {
             let name = component.as_os_str().to_string_lossy().to_string();
             if name == "/" || name.is_empty() {
@@ -431,7 +461,6 @@ impl FluxApp {
             });
         }
 
-        // Slice to N latest (e.g., 4 or 5)
         let max_visible = constants::MAX_BREADCRUMBS;
         let skip = segments.len().saturating_sub(max_visible);
 

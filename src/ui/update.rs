@@ -1897,19 +1897,34 @@ impl FluxApp {
             AppMsg::GoBack => {
                 if let Some(prev) = self.history.pop() {
                     self.forward_stack.push(self.current_path.clone());
-                    self.load_path(prev, &sender);
+                    if crate::services::network::is_network_uri(&prev) {
+                        self.current_path = prev.clone();
+                        self.load_network(&prev.to_string_lossy(), None, sender);
+                    } else {
+                        self.load_path(prev, &sender);
+                    }
                     self.update_breadcrumbs();
                 } else if let Some(parent) = self.current_path.parent() {
                     let parent_path = parent.to_path_buf();
                     self.forward_stack.push(self.current_path.clone());
-                    self.load_path(parent_path, &sender);
+                    if crate::services::network::is_network_uri(&parent_path) {
+                        self.current_path = parent_path.clone();
+                        self.load_network(&parent_path.to_string_lossy(), None, sender);
+                    } else {
+                        self.load_path(parent_path, &sender);
+                    }
                     self.update_breadcrumbs();
                 }
             }
             AppMsg::GoForward => {
                 if let Some(next) = self.forward_stack.pop() {
                     self.history.push(self.current_path.clone());
-                    self.load_path(next, &sender);
+                    if crate::services::network::is_network_uri(&next) {
+                        self.current_path = next.clone();
+                        self.load_network(&next.to_string_lossy(), None, sender);
+                    } else {
+                        self.load_path(next, &sender);
+                    }
                     self.update_breadcrumbs();
                 }
             }
