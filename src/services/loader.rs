@@ -138,7 +138,7 @@ impl FluxApp {
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         let attributes =
-            "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid,standard::content-type";
+            "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
 
         if let Ok(enumerator) = root.enumerate_children(
             attributes,
