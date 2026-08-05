@@ -774,39 +774,22 @@ impl FluxApp {
                                 ("win.delete-selection".to_string(), "delete-selection")
                             }
                             "builtin::new_folder" => {
-                                // Use the clicked path, or fallback to the current directory
-                                let target =
-                                    path.clone().unwrap_or_else(|| self.current_path.clone());
-                                let target_clone = target.clone();
-
-                                // Create a new action that will be triggered when the menu item is clicked
                                 let action = gio::SimpleAction::new("new-folder", None);
                                 let s = sender.clone();
                                 action.connect_activate(move |_, _| {
-                                    let path_str = target_clone.to_string_lossy();
-                                    if crate::services::network::is_network_uri(&target_clone) {
-                                        // Network directory creation (SMB, SFTP, etc.)
-                                        let uri = format!(
-                                            "{}/New-Folder",
-                                            path_str.trim_end_matches('/')
-                                        );
-                                        let _ = crate::services::network::create_network_directory(
-                                            &uri, None,
-                                        );
-                                    } else {
-                                        // Local filesystem
-                                        let target_dir = target_clone.join("New-Folder");
-                                        let _ = std::fs::create_dir(&target_dir);
-                                    }
-                                    // Refresh the view to show the new folder
-                                    s.input(AppMsg::Refresh);
+                                    s.input(AppMsg::PromptNewFolder);
                                 });
-
-                                // Register the action in the window's action group (prefix "win")
                                 self.action_group.add_action(&action);
-
-                                // Return the full action name and lookup name
                                 ("win.new-folder".to_string(), "new-folder")
+                            }
+                            "builtin::new_file" => {
+                                let action = gio::SimpleAction::new("new-file", None);
+                                let s = sender.clone();
+                                action.connect_activate(move |_, _| {
+                                    s.input(AppMsg::PromptNewFile);
+                                });
+                                self.action_group.add_action(&action);
+                                ("win.new-file".to_string(), "new-file")
                             }
                             "builtin::open_with" => {
                                 let open_with_menu = gio::Menu::new();
@@ -1046,6 +1029,156 @@ impl FluxApp {
                     auth_failed,
                     sender.input_sender().clone(),
                 );
+            }
+            AppMsg::PromptNewFolder => {
+                let window = gtk::Application::default().active_window();
+                let current_path = self.current_path.clone();
+                let s = sender.clone();
+
+                let dialog = gtk::MessageDialog::new(
+                    window.as_ref(),
+                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                    gtk::MessageType::Other,
+                    gtk::ButtonsType::None,
+                    crate::i18n::tr("New Folder"),
+                );
+                dialog
+                    .set_secondary_text(Some(&crate::i18n::tr("Enter a name for the new folder:")));
+                dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+                let create_btn =
+                    dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
+                create_btn.style_context().add_class("suggested-action");
+                dialog.set_default_response(gtk::ResponseType::Ok);
+
+                let entry = gtk::Entry::builder()
+                    .text("New Folder")
+                    .activates_default(true)
+                    .build();
+                entry.select_region(0, -1);
+                entry.connect_map(|e| {
+                    e.grab_focus();
+                });
+
+                dialog.content_area().append(&entry);
+
+                dialog.connect_response(move |dlg, response| {
+                    if response == gtk::ResponseType::Ok {
+                        let name = entry.text().to_string();
+                        let name = name.trim();
+                        if !name.is_empty() {
+                            if crate::services::network::is_network_uri(&current_path) {
+                                let uri = format!(
+                                    "{}/{}",
+                                    current_path.to_string_lossy().trim_end_matches('/'),
+                                    name
+                                );
+                                let file = gtk::gio::File::for_uri(&uri);
+                                if file.query_exists(gtk::gio::Cancellable::NONE) {
+                                    s.input(AppMsg::ShowToast(crate::i18n::tr(
+                                        "Directory or file already exists",
+                                    )));
+                                } else {
+                                    let _ = crate::services::network::create_network_directory(
+                                        &uri, None,
+                                    );
+                                    s.input(AppMsg::Navigate(PathBuf::from(uri)));
+                                }
+                            } else {
+                                let folder_path = current_path.join(name);
+                                if folder_path.exists() {
+                                    s.input(AppMsg::ShowToast(crate::i18n::tr(
+                                        "Directory or file already exists",
+                                    )));
+                                } else if std::fs::create_dir(&folder_path).is_ok() {
+                                    s.input(AppMsg::Navigate(folder_path));
+                                }
+                            }
+                        }
+                    }
+                    dlg.close();
+                });
+
+                dialog.present();
+            }
+            AppMsg::PromptNewFile => {
+                let window = gtk::Application::default().active_window();
+                let current_path = self.current_path.clone();
+                let s = sender.clone();
+
+                let dialog = gtk::MessageDialog::new(
+                    window.as_ref(),
+                    gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+                    gtk::MessageType::Other,
+                    gtk::ButtonsType::None,
+                    crate::i18n::tr("New File"),
+                );
+                dialog.set_secondary_text(Some(&crate::i18n::tr("Enter a name for the new file:")));
+                dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+                let create_btn =
+                    dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
+                create_btn.style_context().add_class("suggested-action");
+                dialog.set_default_response(gtk::ResponseType::Ok);
+
+                let entry = gtk::Entry::builder()
+                    .text("new_file.txt")
+                    .activates_default(true)
+                    .build();
+                entry.select_region(0, -1);
+                entry.connect_map(|e| {
+                    e.grab_focus();
+                });
+
+                dialog.content_area().append(&entry);
+
+                dialog.connect_response(move |dlg, response| {
+                    if response == gtk::ResponseType::Ok {
+                        let name = entry.text().to_string();
+                        let name = name.trim();
+                        if !name.is_empty() {
+                            if crate::services::network::is_network_uri(&current_path) {
+                                let uri = format!(
+                                    "{}/{}",
+                                    current_path.to_string_lossy().trim_end_matches('/'),
+                                    name
+                                );
+                                let file = gtk::gio::File::for_uri(&uri);
+                                if file.query_exists(gtk::gio::Cancellable::NONE) {
+                                    s.input(AppMsg::ShowToast(crate::i18n::tr(
+                                        "Directory or file already exists",
+                                    )));
+                                } else {
+                                    // Create an empty file by writing zero bytes via GIO
+                                    if let Ok(stream) = file.create(
+                                        gtk::gio::FileCreateFlags::NONE,
+                                        gtk::gio::Cancellable::NONE,
+                                    ) {
+                                        let _ = stream.close(gtk::gio::Cancellable::NONE);
+                                        crate::utils::open_file(PathBuf::from(uri));
+                                    }
+                                    s.input(AppMsg::Refresh);
+                                }
+                            } else {
+                                let file_path = current_path.join(name);
+                                if file_path.exists() {
+                                    s.input(AppMsg::ShowToast(crate::i18n::tr(
+                                        "Directory or file already exists",
+                                    )));
+                                } else {
+                                    let mut options = std::fs::OpenOptions::new();
+                                    options.write(true).create_new(true);
+
+                                    if options.open(&file_path).is_ok() {
+                                        crate::utils::open_file(file_path);
+                                        s.input(AppMsg::Refresh);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    dlg.close();
+                });
+
+                dialog.present();
             }
             AppMsg::PromptLocationDialog => {
                 let window = gtk::Application::default().active_window();
