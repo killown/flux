@@ -45,7 +45,8 @@ pub fn ensure_config_file() -> PathBuf {
 "󰨞      Open in VSCode" => "text/all, application/all", "code %p"
 "󰋽      File Properties" => "file", "flux-fm --file-properties %p"
 "󰋊      Folder Info" => "directory", "baobab %p"
-"󰉋      New Folder" => "directory", "mkdir %p/New-Folder", "Folder created"
+"󰉋      New Folder" => "directory", "builtin::new_folder", "Folder created"
+"󰈔      New File" => "directory", "builtin::new_file", "File created"
 
 # --- Media Edit ---
 "󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p", "Joining videos..."

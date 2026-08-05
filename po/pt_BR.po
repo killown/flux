@@ -1053,3 +1053,23 @@ msgstr "Erro ao executar 7z. Instale p7zip-full (apt) ou p7zip (pacman)."
 #: src/services/archive.rs:???
 msgid "RAR support requires 'unar' or 'unrar' (install via your package manager)"
 msgstr "O suporte a RAR requer 'unar' ou 'unrar' (instale via seu gerenciador de pacotes)"
+
+#: src/ui/update.rs:982
+msgid "New Folder"
+msgstr "Nova Pasta"
+
+#: src/ui/update.rs:985
+msgid "Enter a name for the new folder:"
+msgstr "Digite um nome para a nova pasta:"
+
+#: src/ui/update.rs:1028
+msgid "New File"
+msgstr "Novo Arquivo"
+
+#: src/ui/update.rs:1030
+msgid "Enter a name for the new file:"
+msgstr "Digite um nome para o novo arquivo:"
+
+#: src/ui/update.rs:987 src/ui/update.rs:1032
+msgid "Create"
+msgstr "Criar"

@@ -464,6 +464,16 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Presents a modal GTK dialog allowing the user to type a name for a new
+    /// folder to be created inside the current directory.
+    ///
+    /// Works for both local filesystem paths and network URIs (SMB, SFTP, FTP).
+    PromptNewFolder,
+    /// Presents a modal GTK dialog allowing the user to type a name for a new
+    /// empty file to be created inside the current directory.
+    ///
+    /// Works for both local filesystem paths and network URIs (SMB, SFTP, FTP).
+    PromptNewFile,
     /// Opens the "Go to Location" path/URI entry dialog (Ctrl+L).
     ///
     /// Presents a modal GTK dialog allowing the user to type or paste a local
