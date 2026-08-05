@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-import sys
-import subprocess
+"""Convert images and office documents into PDF format using img2pdf, ImageMagick, or LibreOffice."""
+
 import os
+import subprocess
+import sys
 
 
-def main():
+def main() -> None:
+    """Process command-line file arguments and convert supported formats to PDF."""
     if len(sys.argv) < 2:
         print("No files selected.")
         sys.exit(1)
@@ -39,15 +42,18 @@ def main():
 
     elif ext in docs_ext:
         for file in files:
+            # Get absolute directory path to prevent issues with empty string ""
+            out_dir = os.path.abspath(os.path.dirname(file))
+
             subprocess.run(
                 [
                     "libreoffice",
                     "--headless",
                     "--convert-to",
-                    "pdf",
+                    "pdf:writer_pdf_Export",  # Force the exact Writer PDF filter without code interpretation
                     file,
                     "--outdir",
-                    os.path.dirname(file),
+                    out_dir,
                 ]
             )
         print("Documents converted to PDF!")
