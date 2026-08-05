@@ -42,6 +42,11 @@ listview {
   transform: translateY(-1px);
 }
 
+.sidebar-drop-target {
+  background-color: alpha(@accent_color, 0.15);
+  border-top: 2px solid @accent_color;
+}
+
 .sidebar-mount {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);

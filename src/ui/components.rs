@@ -379,7 +379,18 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 pub enum SidebarMsg {
     Navigate(PathBuf),
     Remove(PathBuf),
-    Reorder { from: PathBuf, to: PathBuf },
+    Reorder {
+        from: PathBuf,
+        to: PathBuf,
+    },
+    /// A folder was dragged from the grid and dropped onto the row at `before`.
+    ///
+    /// `path` is the folder being pinned, `before` is the path of the row it
+    /// was dropped on, used by the update handler to determine insertion index.
+    PinAt {
+        path: PathBuf,
+        before: PathBuf,
+    },
 }
 
 /// Simple model for a pinned sidebar location.
@@ -540,6 +551,29 @@ impl FactoryComponent for SidebarPlace {
                         }
                     }
                     true
+                },
+            },
+
+            // Drop target: accept folders dragged from the file grid and pin at this position
+            add_controller = gtk::DropTarget {
+                set_actions: gdk::DragAction::COPY | gdk::DragAction::MOVE,
+                set_types: &[gdk::FileList::static_type()],
+                connect_drop[sender, path = self.path.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
+                    if is_label { return false; }
+                    if let Ok(file_list) = value.get::<gdk::FileList>() {
+                        for gfile in file_list.files() {
+                            if let Some(folder) = gfile.path() {
+                                if folder.is_dir() {
+                                    let _ = sender.output(SidebarMsg::PinAt {
+                                        path: folder,
+                                        before: path.clone(),
+                                    });
+                                }
+                            }
+                        }
+                        return true;
+                    }
+                    false
                 },
             },
 
