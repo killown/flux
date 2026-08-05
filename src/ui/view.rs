@@ -44,6 +44,7 @@ impl SimpleAsyncComponent for FluxApp {
                     #[watch]
                     set_visible: model.sidebar_visible,
 
+
                     #[name = "sidebar_container"]
                     gtk::ScrolledWindow {
                         set_vexpand: true,

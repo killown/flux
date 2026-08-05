@@ -636,6 +636,12 @@ pub enum AppMsg {
     AddToSidebarPermanent,
     /// Reorder a custom sidebar entry: move `from` path to the position currently held by `to`.
     ReorderSidebar { from: PathBuf, to: PathBuf },
+    /// Pin `path` into the sidebar immediately before the row whose config path matches `before`.
+    ///
+    /// Emitted when a folder is dragged from the grid and dropped onto a specific sidebar row.
+    /// If `before` is not found (e.g. a section label or unmapped mount), appends to the end
+    /// of the user-defined sidebar entries.
+    PinFolderAt { path: PathBuf, before: PathBuf },
     /// Open the keyboard shortcuts and help overlay.
     ShowHelp,
     /// Handle a Drag-and-Drop move/copy operation for multiple items.

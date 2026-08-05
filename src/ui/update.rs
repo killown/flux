@@ -81,18 +81,17 @@ impl FluxApp {
                 let path = self
                     .get_selected_path()
                     .unwrap_or_else(|| self.current_path.clone());
-                let path_str = path.to_string_lossy().to_string();
+                let expanded_path = crate::utils::expand_path(&path.to_string_lossy());
+                let path_str = expanded_path.to_string_lossy().to_string();
 
-                let already_exists = self.config.sidebar.iter().any(|entry| {
-                    let expanded = if entry.path.starts_with('~') {
-                        let home = dirs::home_dir().unwrap_or_default();
-                        entry.path.replacen('~', &home.to_string_lossy(), 1)
-                    } else {
-                        entry.path.clone()
-                    };
-                    expanded == path_str
+                let existing_idx = self.config.sidebar.iter().position(|entry| {
+                    let expanded = crate::utils::expand_path(&entry.path);
+                    expanded.to_string_lossy() == path_str
                 });
-                if !already_exists {
+
+                if let Some(idx) = existing_idx {
+                    self.config.sidebar.remove(idx);
+                } else {
                     let name = path
                         .file_name()
                         .map(|n| n.to_string_lossy().into_owned())
@@ -106,9 +105,9 @@ impl FluxApp {
                             path: path_str,
                         },
                     );
-                    utils::save_config(&self.config);
-                    self.refresh_sidebar();
                 }
+                utils::save_config(&self.config);
+                self.refresh_sidebar();
             }
             AppMsg::ReorderSidebar { from, to } => {
                 let home = dirs::home_dir().unwrap_or_default();
@@ -142,6 +141,54 @@ impl FluxApp {
                     utils::save_config(&self.config);
                     self.refresh_sidebar();
                 }
+            }
+            AppMsg::PinFolderAt { path, before } => {
+                let home = dirs::home_dir().unwrap_or_default();
+                let home_str = home.to_string_lossy();
+                let path_str = path.to_string_lossy().to_string();
+                let before_str = before.to_string_lossy().to_string();
+
+                let resolve = |entry_path: &str| -> String {
+                    if entry_path.starts_with('~') {
+                        entry_path.replacen('~', &home_str, 1)
+                    } else {
+                        entry_path.to_owned()
+                    }
+                };
+
+                // No-op if already pinned
+                let already = self
+                    .config
+                    .sidebar
+                    .iter()
+                    .any(|e| resolve(&e.path) == path_str);
+                if already {
+                    return;
+                }
+
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| path_str.clone());
+
+                let new_entry = crate::model::CustomPlace {
+                    name,
+                    kind: None,
+                    icon: "folder-symbolic".to_string(),
+                    path: path_str,
+                };
+
+                // Insert before the row the folder was dropped on, fall back to appending.
+                let insert_at = self
+                    .config
+                    .sidebar
+                    .iter()
+                    .position(|e| resolve(&e.path) == before_str)
+                    .unwrap_or(self.config.sidebar.len());
+
+                self.config.sidebar.insert(insert_at, new_entry);
+                utils::save_config(&self.config);
+                self.refresh_sidebar();
             }
             AppMsg::SetSingleClick(val) => {
                 self.config.ui.single_click = val;

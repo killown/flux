@@ -42,6 +42,7 @@ pub fn ensure_config_file() -> PathBuf {
 
 # --- Navigation & System ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
+"󰋜      Toggle Pin" => "directory", "builtin::toggle_pin", "Sidebar updated"
 "󰨞      Open in VSCode" => "text/all, application/all", "code %p"
 "󰋽      File Properties" => "file", "flux-fm --file-properties %p"
 "󰋊      Folder Info" => "directory", "baobab %p"

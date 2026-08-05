@@ -763,17 +763,35 @@ impl FluxApp {
 
         // 6. Dynamic Context Menu Actions (Shell Commands)
         for action_def in &self.menu_actions {
-            // Skip builtins as they are handled by the explicit actions above
-            if action_def.command.starts_with("builtin::") {
-                continue;
-            }
-
-            let cmd_clone = action_def.command.clone();
+            let cmd = action_def.command.clone();
             let sender_clone = sender.clone();
             let action = gio::SimpleAction::new(&action_def.action_name, None);
+
             action.connect_activate(move |_, _| {
-                sender_clone.input(AppMsg::ExecuteCommand(cmd_clone.clone()));
+                if let Some(builtin) = cmd.strip_prefix("builtin::") {
+                    match builtin {
+                        "toggle_pin" | "add_to_sidebar_permanent" => {
+                            sender_clone.input(AppMsg::AddToSidebarPermanent);
+                        }
+                        "copy" => {
+                            sender_clone.input(AppMsg::Copy);
+                        }
+                        "cut" => {
+                            sender_clone.input(AppMsg::Cut);
+                        }
+                        "paste" => {
+                            sender_clone.input(AppMsg::Paste);
+                        }
+                        "add_to_quick_list" => {
+                            sender_clone.input(AppMsg::AddExclusive(None));
+                        }
+                        _ => {}
+                    }
+                } else {
+                    sender_clone.input(AppMsg::ExecuteCommand(cmd.clone()));
+                }
             });
+
             self.action_group.add_action(&action);
         }
     }
