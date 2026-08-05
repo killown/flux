@@ -1054,22 +1054,26 @@ msgstr "Erro ao executar 7z. Instale p7zip-full (apt) ou p7zip (pacman)."
 msgid "RAR support requires 'unar' or 'unrar' (install via your package manager)"
 msgstr "O suporte a RAR requer 'unar' ou 'unrar' (instale via seu gerenciador de pacotes)"
 
-#: src/ui/update.rs:982
+#: src/ui/update.rs:1033
 msgid "New Folder"
 msgstr "Nova Pasta"
 
-#: src/ui/update.rs:985
-msgid "Enter a name for the new folder:"
-msgstr "Digite um nome para a nova pasta:"
+#: src/ui/update.rs:1035
+msgid "Enter folder name(s), separated by commas for batch creation:"
+msgstr "Digite o(s) nome(s) da(s) pasta(s), separados por vírgula para criação em lote:"
 
-#: src/ui/update.rs:1028
+#: src/ui/update.rs:1083
 msgid "New File"
 msgstr "Novo Arquivo"
 
-#: src/ui/update.rs:1030
-msgid "Enter a name for the new file:"
-msgstr "Digite um nome para o novo arquivo:"
+#: src/ui/update.rs:1085
+msgid "Enter file name(s), separated by commas for batch creation:"
+msgstr "Digite o(s) nome(s) do(s) arquivo(s), separados por vírgula para criação em lote:"
 
-#: src/ui/update.rs:987 src/ui/update.rs:1032
+#: src/ui/update.rs:1038 src/ui/update.rs:1088
 msgid "Create"
 msgstr "Criar"
+
+#: src/ui/update.rs:1063 src/ui/update.rs:1069 src/ui/update.rs:1113 src/ui/update.rs:1123
+msgid "Directory or file already exists"
+msgstr "O diretório ou arquivo já existe"
