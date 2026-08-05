@@ -124,11 +124,13 @@ Everything is managed via `~/.config/flux/config.toml`. Want to add a custom fol
 ## Extra Themes
 
 <img width="1080" height="608" alt="demo" src="https://github.com/user-attachments/assets/b4ca8e9c-ec4b-47bf-a560-be88086df10e" />
-   ```bash
-    git clone https://github.com/killown/flux-themes.git
-    cd flux-themes
-    cp themes/* ~/.local/share/flux/themes
-  ```
+
+```bash
+git clone https://github.com/killown/flux-themes.git
+cd flux-themes
+mkdir -p ~/.local/share/flux/themes
+cp themes/* ~/.local/share/flux/themes/
+```
 
 ## Tech Stack
 
