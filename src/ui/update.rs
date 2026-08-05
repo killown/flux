@@ -1042,8 +1042,9 @@ impl FluxApp {
                     gtk::ButtonsType::None,
                     crate::i18n::tr("New Folder"),
                 );
-                dialog
-                    .set_secondary_text(Some(&crate::i18n::tr("Enter a name for the new folder:")));
+                dialog.set_secondary_text(Some(&crate::i18n::tr(
+                    "Enter folder name(s), separated by commas for batch creation:",
+                )));
                 dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
                 let create_btn =
                     dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
@@ -1063,9 +1064,15 @@ impl FluxApp {
 
                 dialog.connect_response(move |dlg, response| {
                     if response == gtk::ResponseType::Ok {
-                        let name = entry.text().to_string();
-                        let name = name.trim();
-                        if !name.is_empty() {
+                        let input = entry.text().to_string();
+                        let names: Vec<String> = input
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+
+                        if names.len() == 1 {
+                            let name = &names[0];
                             if crate::services::network::is_network_uri(&current_path) {
                                 let uri = format!(
                                     "{}/{}",
@@ -1077,10 +1084,11 @@ impl FluxApp {
                                     s.input(AppMsg::ShowToast(crate::i18n::tr(
                                         "Directory or file already exists",
                                     )));
-                                } else {
-                                    let _ = crate::services::network::create_network_directory(
-                                        &uri, None,
-                                    );
+                                } else if crate::services::network::create_network_directory(
+                                    &uri, None,
+                                )
+                                .is_ok()
+                                {
                                     s.input(AppMsg::Navigate(PathBuf::from(uri)));
                                 }
                             } else {
@@ -1093,6 +1101,42 @@ impl FluxApp {
                                     s.input(AppMsg::Navigate(folder_path));
                                 }
                             }
+                        } else if names.len() > 1 {
+                            let mut created_count = 0;
+                            let is_network =
+                                crate::services::network::is_network_uri(&current_path);
+
+                            for name in &names {
+                                if is_network {
+                                    let uri = format!(
+                                        "{}/{}",
+                                        current_path.to_string_lossy().trim_end_matches('/'),
+                                        name
+                                    );
+                                    let file = gtk::gio::File::for_uri(&uri);
+                                    if !file.query_exists(gtk::gio::Cancellable::NONE)
+                                        && crate::services::network::create_network_directory(
+                                            &uri, None,
+                                        )
+                                        .is_ok()
+                                    {
+                                        created_count += 1;
+                                    }
+                                } else {
+                                    let folder_path = current_path.join(name);
+                                    if !folder_path.exists()
+                                        && std::fs::create_dir(&folder_path).is_ok()
+                                    {
+                                        created_count += 1;
+                                    }
+                                }
+                            }
+
+                            s.input(AppMsg::Refresh);
+                            s.input(AppMsg::ShowToast(format!(
+                                "Created {} folders",
+                                created_count
+                            )));
                         }
                     }
                     dlg.close();
@@ -1112,7 +1156,9 @@ impl FluxApp {
                     gtk::ButtonsType::None,
                     crate::i18n::tr("New File"),
                 );
-                dialog.set_secondary_text(Some(&crate::i18n::tr("Enter a name for the new file:")));
+                dialog.set_secondary_text(Some(&crate::i18n::tr(
+                    "Enter file name(s), separated by commas for batch creation:",
+                )));
                 dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
                 let create_btn =
                     dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
@@ -1132,9 +1178,15 @@ impl FluxApp {
 
                 dialog.connect_response(move |dlg, response| {
                     if response == gtk::ResponseType::Ok {
-                        let name = entry.text().to_string();
-                        let name = name.trim();
-                        if !name.is_empty() {
+                        let input = entry.text().to_string();
+                        let names: Vec<String> = input
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+
+                        if names.len() == 1 {
+                            let name = &names[0];
                             if crate::services::network::is_network_uri(&current_path) {
                                 let uri = format!(
                                     "{}/{}",
@@ -1146,15 +1198,12 @@ impl FluxApp {
                                     s.input(AppMsg::ShowToast(crate::i18n::tr(
                                         "Directory or file already exists",
                                     )));
-                                } else {
-                                    // Create an empty file by writing zero bytes via GIO
-                                    if let Ok(stream) = file.create(
-                                        gtk::gio::FileCreateFlags::NONE,
-                                        gtk::gio::Cancellable::NONE,
-                                    ) {
-                                        let _ = stream.close(gtk::gio::Cancellable::NONE);
-                                        crate::utils::open_file(PathBuf::from(uri));
-                                    }
+                                } else if let Ok(stream) = file.create(
+                                    gtk::gio::FileCreateFlags::NONE,
+                                    gtk::gio::Cancellable::NONE,
+                                ) {
+                                    let _ = stream.close(gtk::gio::Cancellable::NONE);
+                                    crate::utils::open_file(PathBuf::from(uri));
                                     s.input(AppMsg::Refresh);
                                 }
                             } else {
@@ -1163,16 +1212,57 @@ impl FluxApp {
                                     s.input(AppMsg::ShowToast(crate::i18n::tr(
                                         "Directory or file already exists",
                                     )));
-                                } else {
-                                    let mut options = std::fs::OpenOptions::new();
-                                    options.write(true).create_new(true);
+                                } else if std::fs::OpenOptions::new()
+                                    .write(true)
+                                    .create_new(true)
+                                    .open(&file_path)
+                                    .is_ok()
+                                {
+                                    crate::utils::open_file(file_path);
+                                    s.input(AppMsg::Refresh);
+                                }
+                            }
+                        } else if names.len() > 1 {
+                            let mut created_count = 0;
+                            let is_network =
+                                crate::services::network::is_network_uri(&current_path);
 
-                                    if options.open(&file_path).is_ok() {
-                                        crate::utils::open_file(file_path);
-                                        s.input(AppMsg::Refresh);
+                            for name in &names {
+                                if is_network {
+                                    let uri = format!(
+                                        "{}/{}",
+                                        current_path.to_string_lossy().trim_end_matches('/'),
+                                        name
+                                    );
+                                    let file = gtk::gio::File::for_uri(&uri);
+                                    if !file.query_exists(gtk::gio::Cancellable::NONE) {
+                                        if let Ok(stream) = file.create(
+                                            gtk::gio::FileCreateFlags::NONE,
+                                            gtk::gio::Cancellable::NONE,
+                                        ) {
+                                            let _ = stream.close(gtk::gio::Cancellable::NONE);
+                                            created_count += 1;
+                                        }
+                                    }
+                                } else {
+                                    let file_path = current_path.join(name);
+                                    if !file_path.exists()
+                                        && std::fs::OpenOptions::new()
+                                            .write(true)
+                                            .create_new(true)
+                                            .open(&file_path)
+                                            .is_ok()
+                                    {
+                                        created_count += 1;
                                     }
                                 }
                             }
+
+                            s.input(AppMsg::Refresh);
+                            s.input(AppMsg::ShowToast(format!(
+                                "Created {} files",
+                                created_count
+                            )));
                         }
                     }
                     dlg.close();
