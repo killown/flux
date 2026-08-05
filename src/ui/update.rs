@@ -2525,16 +2525,37 @@ impl FluxApp {
                     return;
                 }
 
-                // connect_activate gives us the exact model position, use it directly
-                // rather than querying the selection model which may be stale.
+                // connect_activate gives us the visual position in the filtered model.
+                // When a filter is active, self.files.get(pos) indexes the unfiltered
+                // backing store and returns the wrong item. Walk the store counting
+                // only matched entries to map the visual index to the real item.
                 let items: Vec<(PathBuf, bool)> = if let Some(pos) = position {
-                    self.files
-                        .get(pos)
-                        .map(|w| {
-                            let item = w.borrow();
-                            vec![(item.path.clone(), item.is_dir)]
-                        })
-                        .unwrap_or_default()
+                    if self.filter.is_empty() {
+                        self.files
+                            .get(pos)
+                            .map(|w| {
+                                let item = w.borrow();
+                                vec![(item.path.clone(), item.is_dir)]
+                            })
+                            .unwrap_or_default()
+                    } else {
+                        let query_lc = self.filter.to_lowercase();
+                        let mut match_count = 0u32;
+                        let mut found = None;
+                        for i in 0..self.files.len() {
+                            if let Some(wrapper) = self.files.get(i) {
+                                let item = wrapper.borrow();
+                                if item.name.to_lowercase().contains(&query_lc) {
+                                    if match_count == pos {
+                                        found = Some((item.path.clone(), item.is_dir));
+                                        break;
+                                    }
+                                    match_count += 1;
+                                }
+                            }
+                        }
+                        found.map(|f| vec![f]).unwrap_or_default()
+                    }
                 } else {
                     self.get_selection_with_meta()
                 };
