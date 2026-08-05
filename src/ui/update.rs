@@ -187,6 +187,7 @@ impl FluxApp {
                     .unwrap_or(self.config.sidebar.len());
 
                 self.config.sidebar.insert(insert_at, new_entry);
+
                 utils::save_config(&self.config);
                 self.refresh_sidebar();
             }
@@ -469,11 +470,9 @@ impl FluxApp {
                     self.header_view = constants::VIEW_SEARCH.to_string();
                 }
 
-                // Store current selection before filtering
-                let selected_paths = self.get_selection();
-
                 self.filter = query.clone();
                 let query_lc = query.to_lowercase();
+                self.search_just_opened = false;
 
                 self.files.clear_filters();
                 if !query_lc.is_empty() {
@@ -482,39 +481,21 @@ impl FluxApp {
                         .add_filter(move |item| item.name.to_lowercase().contains(&filter_str));
                 }
 
-                // Restore selection if possible
-                if !query_lc.is_empty() && !selected_paths.is_empty() {
-                    if let Some(model) = self
-                        .files
-                        .view
-                        .model()
-                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                    {
-                        // Iterate through all visible items after filtering
-                        for idx in 0..self.files.len() {
-                            if let Some(item) = self.files.get(idx) {
-                                let path = item.borrow().path.clone();
-                                if selected_paths.contains(&path) {
-                                    // idx is u32, no cast needed
-                                    model.select_item(idx, true);
-                                    break;
-                                }
+                // Defer selection until the next GLib iteration so the filter
+                // model has finished updating its item count.
+                if !query_lc.is_empty() {
+                    let view = self.files.view.clone();
+                    glib::idle_add_local_once(move || {
+                        if let Some(model) = view
+                            .model()
+                            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                        {
+                            model.unselect_all();
+                            if model.n_items() > 0 {
+                                model.select_item(0, true);
                             }
                         }
-                    }
-                } else if !query_lc.is_empty() && self.search_just_opened {
-                    // Only auto-select if filter just opened and no selection
-                    if let Some(model) = self
-                        .files
-                        .view
-                        .model()
-                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                    {
-                        if model.n_items() > 0 && self.get_selection().is_empty() {
-                            model.select_item(0, true);
-                        }
-                    }
-                    self.search_just_opened = false;
+                    });
                 }
             }
             AppMsg::SearchInput(c) => {
