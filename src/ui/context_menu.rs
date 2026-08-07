@@ -80,6 +80,18 @@ impl FluxApp {
                     "builtin::copy" => ("win.copy".to_string(), "copy"),
                     "builtin::cut" => ("win.cut".to_string(), "cut"),
                     "builtin::paste" => ("win.paste".to_string(), "paste"),
+                    "builtin::rename" => {
+                        let action = gio::SimpleAction::new("rename-item", None);
+                        let s = sender.clone();
+                        let target = path.clone();
+                        action.connect_activate(move |_, _| {
+                            if let Some(ref p) = target {
+                                s.input(AppMsg::StartRename(p.clone()));
+                            }
+                        });
+                        self.action_group.add_action(&action);
+                        ("win.rename-item".to_string(), "rename-item")
+                    }
                     "builtin::add_to_quick_list" => {
                         if let Some(ref target) = path {
                             let quick_action = gio::SimpleAction::new("add-to-quick-list", None);

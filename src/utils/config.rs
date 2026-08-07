@@ -35,6 +35,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰆏      Copy" => "all", "builtin::copy", "Copied to clipboard"
 "󰆐      Cut" => "all", "builtin::cut", "Cut to clipboard"
 "󰏊      Paste" => "all", "builtin::paste", "Pasted items"
+"󰑕      Rename" => "all", "builtin::rename"
 "󰱝      Open With..." => "file", "builtin::open_with"
 "󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
 "󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
