@@ -31,6 +31,9 @@ pub struct FileItem {
     /// Whether this icon was set by the user via F3 (custom folder icon).
     /// Used to determine if we should fall back to default when icon missing from theme.
     pub is_custom_icon: bool,
+    /// When true the item renders as a compact horizontal row instead of the
+    /// default vertical card (icon top, label bottom).
+    pub is_list_mode: bool,
     /// Shared cell holding the current path for this item.
     /// Updated in `bind()` and read by the right‑click gesture.
     pub active_path: Rc<RefCell<Option<PathBuf>>>,
@@ -287,15 +290,67 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         widgets.label.set_label(&self.name);
-        widgets.icon_widget.set_pixel_size(self.icon_size);
 
-        if self.expand_labels {
-            widgets.label.set_wrap(true);
-            widgets.label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
-            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::None);
-        } else {
+        if self.is_list_mode {
+            // Compact horizontal row: small icon on the left, filename fills the rest.
+            root.set_orientation(gtk::Orientation::Horizontal);
+            root.set_halign(gtk::Align::Fill);
+            root.set_hexpand(true);
+            root.set_spacing(8);
+            widgets.icon_widget.set_pixel_size(32);
+            widgets.icon_widget.set_valign(gtk::Align::Center);
+            widgets.icon_widget.set_halign(gtk::Align::Start);
+            widgets.label.set_halign(gtk::Align::Start);
+            widgets.label.set_hexpand(true);
+            widgets.label.set_justify(gtk::Justification::Left);
+            widgets.label.set_max_width_chars(-1);
+            widgets.label.set_width_chars(-1);
+            widgets
+                .label
+                .set_ellipsize(gtk::pango::EllipsizeMode::Middle);
             widgets.label.set_wrap(false);
-            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
+
+            // Make the Stack fill horizontally so its children can expand.
+            widgets.stack.set_halign(gtk::Align::Fill);
+            widgets.stack.set_hexpand(true);
+
+            // Get the label container (the Box inside the Stack) and make it fill.
+            if let Some(label_box) = widgets.stack.child_by_name(constants::VIEW_LABEL) {
+                if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
+                    box_widget.set_halign(gtk::Align::Fill);
+                    box_widget.set_hexpand(true);
+                    // Also ensure the label inside that box is left-aligned (already set).
+                }
+            }
+        } else {
+            root.set_orientation(gtk::Orientation::Vertical);
+            root.set_halign(gtk::Align::Center);
+            root.set_spacing(0);
+            widgets.icon_widget.set_pixel_size(self.icon_size);
+            widgets.icon_widget.set_valign(gtk::Align::End);
+            widgets.icon_widget.set_halign(gtk::Align::Center);
+            widgets.label.set_halign(gtk::Align::Center);
+            widgets.label.set_hexpand(false);
+            widgets.label.set_justify(gtk::Justification::Center);
+
+            if self.expand_labels {
+                widgets.label.set_wrap(true);
+                widgets.label.set_wrap_mode(gtk::pango::WrapMode::WordChar);
+                widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::None);
+            } else {
+                widgets.label.set_wrap(false);
+                widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
+            }
+
+            // Reset Stack alignment for grid mode (centered).
+            widgets.stack.set_halign(gtk::Align::Center);
+            widgets.stack.set_hexpand(false);
+            if let Some(label_box) = widgets.stack.child_by_name(constants::VIEW_LABEL) {
+                if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
+                    box_widget.set_halign(gtk::Align::Center);
+                    box_widget.set_hexpand(false);
+                }
+            }
         }
 
         // Set the widget name to the absolute path so the app.rs controller can find it
@@ -321,6 +376,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             gtk::glib::idle_add_local_once(move || {
                 entry.grab_focus();
             });
+        } else {
+            // Ensure the label is visible when not editing.
+            widgets.stack.set_visible_child_name(constants::VIEW_LABEL);
         }
 
         if let Some(ref texture) = self.thumbnail {

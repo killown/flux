@@ -16,6 +16,19 @@ use std::sync::atomic::Ordering;
 //use vte4::TerminalExt,
 
 impl FluxApp {
+    pub fn reset_from_content_search(&mut self) {
+        if let Some(cancellable) = self.content_search_cancellable.take() {
+            cancellable.cancel();
+        }
+        self.is_content_searching = false;
+        self.load_id.fetch_add(1, Ordering::SeqCst);
+        self.filter.clear();
+        self.search_just_opened = false;
+        self.is_list_mode = self.saved_list_mode;
+        self.files.view.set_max_columns(self.saved_max_columns);
+        self.files.clear();
+        self.sync_list_mode();
+    }
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
             AppMsg::RefreshSidebar => {
@@ -410,6 +423,19 @@ impl FluxApp {
                 utils::save_config(&self.config);
                 sender.input(AppMsg::Refresh);
             }
+            AppMsg::ToggleListMode => {
+                self.is_list_mode = !self.is_list_mode;
+                self.config.default_list_mode = self.is_list_mode;
+                utils::save_config(&self.config);
+                if self.is_list_mode {
+                    self.files.view.set_min_columns(1);
+                    self.files.view.set_max_columns(1);
+                } else {
+                    self.files.view.set_min_columns(1);
+                    self.files.view.set_max_columns(20);
+                }
+                self.sync_list_mode();
+            }
             AppMsg::ToggleSortOrder => {
                 self.sort_ascending = !self.sort_ascending;
                 let _ = self.state_db.save_view(
@@ -462,41 +488,269 @@ impl FluxApp {
                 self.search_just_opened = false;
             }
             AppMsg::UpdateFilter(query) => {
-                if self.filter == query && !self.search_just_opened {
+                if query.is_empty() && self.search_just_opened {
+                    self.search_just_opened = false;
+                    return;
+                }
+                let query_lc = query.to_lowercase();
+                if query_lc.is_empty() {
+                    if self.is_content_searching {
+                        self.reset_from_content_search();
+                        sender.input(AppMsg::Refresh);
+                    } else {
+                        self.files.clear_filters();
+                    }
                     return;
                 }
 
-                if self.header_view != constants::VIEW_SEARCH && !query.is_empty() {
-                    self.header_view = constants::VIEW_SEARCH.to_string();
+                // 2. Non-empty query: check if it starts with ':' and we're not already searching contents
+                if query_lc.starts_with(":") {
+                    let search_term = query_lc.trim_start_matches(":").trim().to_string();
+                    if search_term.len() >= 3 && !self.is_content_searching {
+                        if !self.search_saved_layout {
+                            self.saved_list_mode = self.is_list_mode;
+                            self.saved_max_columns = self.files.view.max_columns();
+                            self.search_saved_layout = true;
+                        }
+                        self.is_list_mode = true;
+                        self.files.view.set_min_columns(1);
+                        self.files.view.set_max_columns(1);
+                        sender.input(AppMsg::StartContentSearch(search_term));
+                    }
+                    return;
                 }
 
+                // 3. Normal filename filtering (either we're not in content search,
+                //    or we are in content search but the query doesn't start with ':')
+                //    In content-search mode, this will filter the already-displayed results
+                //    based on their name field (which contains the match line).
                 self.filter = query.clone();
-                let query_lc = query.to_lowercase();
-                self.search_just_opened = false;
-
                 self.files.clear_filters();
-                if !query_lc.is_empty() {
-                    let filter_str = query_lc.clone();
-                    self.files
-                        .add_filter(move |item| item.name.to_lowercase().contains(&filter_str));
+                let filter_text = query_lc.clone();
+                self.files
+                    .add_filter(move |item| item.name.to_lowercase().contains(&filter_text));
+
+                let view = self.files.view.clone();
+                glib::idle_add_local_once(move || {
+                    if let Some(model) = view
+                        .model()
+                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                    {
+                        model.unselect_all();
+                        if model.n_items() > 0 {
+                            model.select_item(0, true);
+                        }
+                    }
+                });
+            }
+            AppMsg::StartContentSearch(term) => {
+                // Guard against empty search terms to prevent matching every line
+                if term.trim().is_empty() {
+                    return;
                 }
 
-                // Defer selection until the next GLib iteration so the filter
-                // model has finished updating its item count.
-                if !query_lc.is_empty() {
-                    let view = self.files.view.clone();
-                    glib::idle_add_local_once(move || {
-                        if let Some(model) = view
-                            .model()
-                            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                // Cancel any previous search
+                if let Some(cancellable) = self.content_search_cancellable.take() {
+                    cancellable.cancel();
+                }
+                self.is_content_searching = true;
+                self.files.clear();
+                self.filter.clear();
+
+                let cancellable = gio::Cancellable::new();
+                self.content_search_cancellable = Some(cancellable.clone());
+
+                let session_id = crate::utils::helpers::NEXT_TASK_ID
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                self.load_id
+                    .store(session_id, std::sync::atomic::Ordering::SeqCst);
+
+                let current_dir = self.current_path.clone();
+                let sender = sender.clone();
+                let term_lc = term.to_lowercase();
+                let load_id = self.load_id.clone();
+
+                relm4::spawn_blocking(move || {
+                    fn walk(
+                        dir: &gio::File,
+                        term_lc: &str,
+                        cancellable: &gio::Cancellable,
+                        session_id: u64,
+                        sender: &relm4::AsyncComponentSender<FluxApp>,
+                        load_id: &std::sync::atomic::AtomicU64,
+                    ) {
+                        if load_id.load(std::sync::atomic::Ordering::Acquire) != session_id
+                            || cancellable.is_cancelled()
                         {
-                            model.unselect_all();
-                            if model.n_items() > 0 {
-                                model.select_item(0, true);
+                            return;
+                        }
+
+                        // Skip system paths that often block
+                        if let Some(path) = dir.path() {
+                            let s = path.to_string_lossy();
+                            if s.starts_with("/proc/")
+                                || s.starts_with("/sys/")
+                                || s.starts_with("/dev/")
+                            {
+                                return;
                             }
                         }
-                    });
+
+                        let enumerator = match dir.enumerate_children(
+                            "standard::name,standard::type,standard::content-type",
+                            gio::FileQueryInfoFlags::NONE,
+                            Some(cancellable),
+                        ) {
+                            Ok(e) => e,
+                            Err(_) => return,
+                        };
+
+                        while let Ok(Some(info)) = enumerator.next_file(Some(cancellable)) {
+                            if load_id.load(std::sync::atomic::Ordering::Acquire) != session_id
+                                || cancellable.is_cancelled()
+                            {
+                                break;
+                            }
+
+                            let child = dir.child(info.name());
+                            let file_type = info.file_type();
+
+                            // Skip symlinks to avoid cycles
+                            if file_type == gio::FileType::SymbolicLink {
+                                continue;
+                            }
+
+                            if file_type == gio::FileType::Directory {
+                                walk(&child, term_lc, cancellable, session_id, sender, load_id);
+                                continue;
+                            }
+
+                            // Only regular files
+                            if file_type != gio::FileType::Regular {
+                                continue;
+                            }
+
+                            // Optional MIME filter
+                            if let Some(content_type) = info.content_type() {
+                                let mime = content_type.to_string();
+                                if !mime.starts_with("text/")
+                                    && !mime.contains("json")
+                                    && !mime.contains("xml")
+                                {
+                                    continue;
+                                }
+                            }
+
+                            if let Some(path) = child.path() {
+                                // Read directly on the background thread pool.
+                                let content = match std::fs::read_to_string(&path) {
+                                    Ok(c) => c,
+                                    Err(_) => continue, // Skip unreadable/binary files
+                                };
+
+                                for (line_number, line) in content.lines().enumerate() {
+                                    // Check cancellation before each line
+                                    if load_id.load(std::sync::atomic::Ordering::Acquire)
+                                        != session_id
+                                        || cancellable.is_cancelled()
+                                    {
+                                        break;
+                                    }
+                                    if line.to_lowercase().contains(term_lc) {
+                                        if load_id.load(std::sync::atomic::Ordering::Acquire)
+                                            == session_id
+                                            && !cancellable.is_cancelled()
+                                        {
+                                            sender.input(AppMsg::ContentSearchResult {
+                                                path: path.clone(),
+                                                line: line.trim().to_string(),
+                                                line_number: line_number + 1,
+                                                session: session_id,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    walk(
+                        &gio::File::for_path(&current_dir),
+                        &term_lc,
+                        &cancellable,
+                        session_id,
+                        &sender,
+                        &load_id,
+                    );
+
+                    // Only send completion if still active
+                    if !cancellable.is_cancelled()
+                        && load_id.load(std::sync::atomic::Ordering::Acquire) == session_id
+                    {
+                        sender.input(AppMsg::ContentSearchDone {
+                            session: session_id,
+                        });
+                    }
+                });
+            }
+            AppMsg::CancelContentSearch => {
+                sender.input(AppMsg::Refresh);
+                self.reset_from_content_search();
+            }
+            AppMsg::ContentSearchResult {
+                path,
+                line,
+                line_number,
+                session,
+            } => {
+                if self.load_id.load(std::sync::atomic::Ordering::SeqCst) != session {
+                    return;
                 }
+
+                let icon = utils::get_icon_for_path(&path, false);
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_default();
+
+                let display_name = format!("{}:{}  {}", name, line_number, line);
+
+                self.files.append(crate::ui::FileItem {
+                    name: display_name,
+                    icon,
+                    thumbnail: None,
+                    is_dir: false,
+                    path,
+                    icon_size: self.current_icon_size,
+                    size: 0,
+                    is_editing: false,
+                    is_foreign_owner: false,
+                    expand_labels: false,
+                    is_list_mode: true,
+                    is_custom_icon: false,
+                    active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
+                });
+            }
+            AppMsg::ContentSearchDone { session } => {
+                if self.load_id.load(std::sync::atomic::Ordering::SeqCst) != session {
+                    return;
+                }
+                self.is_loading = false;
+                self.is_content_searching = false;
+                self.content_search_cancellable = None;
+
+                let view = self.files.view.clone();
+                glib::idle_add_local_once(move || {
+                    if let Some(model) = view
+                        .model()
+                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                    {
+                        model.unselect_all();
+                        if model.n_items() > 0 {
+                            model.select_item(0, true);
+                        }
+                    }
+                });
             }
             AppMsg::SearchInput(c) => {
                 self.search_just_opened = true;
@@ -530,12 +784,22 @@ impl FluxApp {
                 }
             }
             AppMsg::SwitchHeader(view_name) => {
+                if self.header_view == constants::VIEW_SEARCH && self.is_content_searching {
+                    self.reset_from_content_search();
+                } else if self.header_view == constants::VIEW_SEARCH
+                    && !self.is_content_searching
+                    && self.is_list_mode != self.saved_list_mode
+                {
+                    self.is_list_mode = self.saved_list_mode;
+                    self.files.view.set_max_columns(self.saved_max_columns);
+                    self.sync_list_mode();
+                    self.search_saved_layout = false;
+                }
                 self.header_view = view_name;
                 if self.header_view != constants::VIEW_SEARCH {
-                    self.filter = String::new();
+                    self.filter.clear();
                     self.search_just_opened = true;
                     self.files.clear_filters();
-                    sender.input(AppMsg::UpdateFilter(String::new()));
                 }
             }
             AppMsg::ShowHelp => {
@@ -1313,8 +1577,8 @@ impl FluxApp {
                 );
 
                 dialog.set_secondary_text(Some(&crate::i18n::tr(
-                    "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):",
-                )));
+                        "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):",
+                    )));
 
                 dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
                 let go_btn = dialog.add_button(&crate::i18n::tr("Connect"), gtk::ResponseType::Ok);
@@ -1537,6 +1801,7 @@ impl FluxApp {
                         is_editing: false,
                         is_foreign_owner: false,
                         expand_labels: item.expand_labels,
+                        is_list_mode: self.is_list_mode,
                         is_custom_icon: item.custom_icon.is_some(),
                         active_path: Rc::new(RefCell::new(None)),
                     });
@@ -1734,6 +1999,9 @@ impl FluxApp {
             // may resolve relative paths incorrectly, moving files to previous locations
             // instead of the directory currently displayed to the user.
             AppMsg::Navigate(path) => {
+                if self.is_content_searching {
+                    self.reset_from_content_search();
+                }
                 let path_str = path.to_string_lossy();
 
                 // Intercept Network URIs (smb://, sftp://, network:///, etc.)
@@ -2146,6 +2414,9 @@ impl FluxApp {
                 }
             }
             AppMsg::GoBack => {
+                if self.is_content_searching {
+                    self.reset_from_content_search();
+                }
                 if let Some(prev) = self.history.pop() {
                     self.forward_stack.push(self.current_path.clone());
                     if crate::services::network::is_network_uri(&prev) {
@@ -2168,6 +2439,9 @@ impl FluxApp {
                 }
             }
             AppMsg::GoForward => {
+                if self.is_content_searching {
+                    self.reset_from_content_search();
+                }
                 if let Some(next) = self.forward_stack.pop() {
                     self.history.push(self.current_path.clone());
                     if crate::services::network::is_network_uri(&next) {
@@ -2276,6 +2550,7 @@ impl FluxApp {
                                 is_editing: false,
                                 is_foreign_owner: false,
                                 expand_labels: self.config.ui.expand_labels,
+                                is_list_mode: self.is_list_mode,
                                 is_custom_icon: false,
                                 active_path: Rc::new(RefCell::new(None)),
                             };

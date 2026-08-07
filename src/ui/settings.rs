@@ -474,6 +474,19 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Default Layout"),
+                        set_subtitle: &tr("Start with grid view (off) or list view (on)"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.default_list_mode,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |_switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::ToggleListMode);
+                                }
+                            }
+                        }
+                    },
                 },
 
                 add = &adw::PreferencesGroup {

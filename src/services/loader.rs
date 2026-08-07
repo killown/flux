@@ -34,6 +34,7 @@ fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
         _ => (false, false),
     }
 }
+
 impl FluxApp {
     /// Synchronizes the application view with the filesystem state at the provided path.
     ///
@@ -287,6 +288,7 @@ impl FluxApp {
                     is_editing: false,
                     is_foreign_owner: item.is_foreign_owner,
                     expand_labels: item.expand_labels,
+                    is_list_mode: self.is_list_mode,
                     is_custom_icon: item.custom_icon.is_some(),
                     active_path: Rc::new(RefCell::new(None)),
                 });
@@ -477,6 +479,7 @@ impl FluxApp {
                         is_editing: false,
                         is_foreign_owner: false,
                         expand_labels: item.expand_labels,
+                        is_list_mode: self.is_list_mode,
                         is_custom_icon: false,
                         active_path: Rc::new(RefCell::new(None)),
                     });
@@ -575,6 +578,7 @@ impl FluxApp {
                 is_editing: false,
                 is_foreign_owner: false,
                 expand_labels: self.config.ui.expand_labels,
+                is_list_mode: self.is_list_mode,
                 is_custom_icon: false,
                 active_path: Rc::new(RefCell::new(None)),
             });

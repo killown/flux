@@ -309,6 +309,7 @@ path = "~"
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),
                 network_bookmarks: vec![],
+                default_list_mode: false,
             }
         }
     };
