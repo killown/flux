@@ -163,10 +163,14 @@ impl FluxApp {
             }
             AppMsg::UpdateFilter(query) => self.handle_update_filter(query, &sender),
             AppMsg::SetExtensionFilter(patterns) => {
-                self.extension_filter = if patterns.is_empty() {
+                let expanded: Vec<String> = patterns
+                    .iter()
+                    .flat_map(|p| crate::utils::glob::expand_mime_category(p))
+                    .collect();
+                self.extension_filter = if expanded.is_empty() {
                     None
                 } else {
-                    Some(patterns)
+                    Some(expanded)
                 };
                 sender.input(AppMsg::Refresh);
             }
