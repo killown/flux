@@ -1122,9 +1122,10 @@ msgstr "Digite :term para pesquisar em todos os arquivos, ou :.ext:term para fil
 msgid "Filter by Pattern"
 msgstr "Filtrar por Padrão"
 
+
 #: src/ui/view.rs
-msgid "Patterns: *.py, a*.rs, report??.pdf"
-msgstr "Padrões: *.py, a*.rs, report??.pdf"
+msgid "Patterns: *.py, image/*, audio/*"
+msgstr "Padrões: *.py, image/*, audio/*"
 
 #: src/ui/view.rs
 msgid "Clear filter"
