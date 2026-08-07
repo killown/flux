@@ -449,6 +449,13 @@ pub struct FluxApp {
     pub _volume_monitor: gio::VolumeMonitor,
     /// Current search/filter string.
     pub filter: String,
+    /// Session-scoped glob pattern allowlist for persistent navigation filtering.
+    ///
+    /// When `Some`, only files whose lowercased filename matches at least one
+    /// pattern are rendered in the grid. Directories always pass through.
+    /// Patterns support shell glob syntax: `*` = any sequence, `?` = one char.
+    /// The filter is never written to disk and resets to `None` on exit.
+    pub extension_filter: Option<Vec<String>>,
     /// When true the file grid renders items as compact horizontal rows
     /// (small icon + filename) instead of the default vertical card layout.
     pub is_list_mode: bool,
@@ -687,6 +694,18 @@ pub enum AppMsg {
     CycleFolderPriority,
     /// Update the string used to filter the current view.
     UpdateFilter(String),
+    /// Persist a new set of glob patterns as the session-scoped navigation filter.
+    ///
+    /// Patterns use shell glob syntax (`*`, `?`) and are matched case-insensitively
+    /// against each file's full name (not just its extension), allowing patterns
+    /// like `*.py`, `a*`, or `report??.pdf`. An empty `Vec` is treated the same
+    /// as [`AppMsg::ClearExtensionFilter`].
+    SetExtensionFilter(Vec<String>),
+    /// Removes all active session-scoped navigation filter patterns.
+    ///
+    /// Equivalent to `SetExtensionFilter(vec![])`. Directories are always visible
+    /// regardless of filter state, clearing restores files to their unfiltered listing.
+    ClearExtensionFilter,
     /// Signal that a thumbnail has been successfully generated.
     /// A file matched a content search query. Carries the path, the matching
     /// line text, and the session id for stale-result rejection.

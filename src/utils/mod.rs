@@ -6,6 +6,7 @@
 // 1. Internal submodules
 pub mod config;
 pub mod deps;
+pub mod glob;
 pub mod helpers;
 pub mod media;
 pub mod path;

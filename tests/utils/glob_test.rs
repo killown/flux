@@ -1,0 +1,47 @@
+use flux::utils::glob::glob_match;
+
+#[test]
+fn exact_match() {
+    assert!(glob_match("foo.rs", "foo.rs"));
+    assert!(!glob_match("foo.rs", "bar.rs"));
+}
+
+#[test]
+fn star_suffix() {
+    assert!(glob_match("*.py", "main.py"));
+    assert!(glob_match("*.py", ".py"));
+    assert!(!glob_match("*.py", "main.rs"));
+}
+
+#[test]
+fn star_prefix() {
+    assert!(glob_match("main*", "main.rs"));
+    assert!(glob_match("main*", "main"));
+    assert!(!glob_match("main*", "other.rs"));
+}
+
+#[test]
+fn question_mark() {
+    assert!(glob_match("a?b", "axb"));
+    assert!(!glob_match("a?b", "ab"));
+    assert!(!glob_match("a?b", "axxb"));
+}
+
+#[test]
+fn star_only_matches_anything() {
+    assert!(glob_match("*", "anything"));
+    assert!(glob_match("*", ""));
+}
+
+#[test]
+fn multiple_stars() {
+    assert!(glob_match("a*b*c", "aXbYc"));
+    assert!(glob_match("a**c", "ac"));
+}
+
+#[test]
+fn combined() {
+    assert!(glob_match("a*.py", "app.py"));
+    assert!(glob_match("a*.py", "a.py"));
+    assert!(!glob_match("a*.py", "b.py"));
+}

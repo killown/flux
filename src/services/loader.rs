@@ -170,12 +170,27 @@ impl FluxApp {
             let current_uid: u32 = unsafe { libc::getuid() };
 
             let config_folder_icons = self.config.ui.folder_icons.clone();
+            // Clone once so the Rayon closure can own it without borrowing `self`.
+            let extension_filter = self.extension_filter.clone();
 
             let mut items: Vec<FileLoadContext> = raw_data
                 .into_par_iter()
                 .filter_map(|(name, display_name, is_dir, size, mtime, uid)| {
                     if !show_hidden && name.starts_with('.') {
                         return None;
+                    }
+
+                    // Session-scoped glob filter, directories always pass through.
+                    if !is_dir {
+                        if let Some(ref patterns) = extension_filter {
+                            let name_lc = display_name.to_lowercase();
+                            let matched = patterns
+                                .iter()
+                                .any(|p| crate::utils::glob::glob_match(p, &name_lc));
+                            if !matched {
+                                return None;
+                            }
+                        }
                     }
 
                     let target_path = if is_trash {
@@ -413,6 +428,19 @@ impl FluxApp {
                 let mut items =
                     archive::entries_to_load_contexts(&entries, &archive_path, expand_labels);
 
+                let extension_filter = self.extension_filter.clone();
+                if let Some(ref patterns) = extension_filter {
+                    items.retain(|item| {
+                        if item.is_dir {
+                            return true;
+                        }
+                        let name_lc = item.display_name.to_lowercase();
+                        patterns
+                            .iter()
+                            .any(|p| crate::utils::glob::glob_match(p, &name_lc))
+                    });
+                }
+
                 // Sort entries
                 items.par_sort_unstable_by(move |a, b| {
                     if a.is_dir != b.is_dir {
@@ -560,6 +588,20 @@ impl FluxApp {
                 .unwrap_or_else(|| href.clone());
 
             let is_dir = path.is_dir();
+
+            // Session-scoped glob filter for recents view.
+            if !is_dir {
+                if let Some(ref patterns) = self.extension_filter {
+                    let name_lc = display_name.to_lowercase();
+                    let matched = patterns
+                        .iter()
+                        .any(|p| crate::utils::glob::glob_match(p, &name_lc));
+                    if !matched {
+                        continue;
+                    }
+                }
+            }
+
             let icon = utils::get_icon_for_path(&path, is_dir);
 
             let (is_img, is_vid) = is_visual_media_by_ext(&path);

@@ -255,3 +255,35 @@ scrollbar.vertical slider:hover {
   color: alpha(@warning_color, 0.8);
   -gtk-icon-size: 12px;
 }
+
+/* ── Session Navigation Filter ──────────────────────────────────────────── */
+
+.flux-filter-bar {
+  background-color: alpha(@accent_bg_color, 0.08);
+  border-bottom: 1px solid alpha(@borders, 0.5);
+  min-height: 32px;
+}
+
+.flux-filter-chip {
+  background-color: alpha(@accent_bg_color, 0.18);
+  border: 1px solid alpha(@accent_color, 0.35);
+  border-radius: 999px;
+  padding: 2px 4px 2px 8px;
+  min-height: 24px;
+}
+
+.flux-filter-chip label {
+  font-size: 0.85em;
+  color: @accent_fg_color;
+}
+
+.flux-filter-chip button {
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.flux-filter-chip button:hover {
+  opacity: 1;
+}
