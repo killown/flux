@@ -1077,3 +1077,43 @@ msgstr "Criar"
 #: src/ui/update.rs:1063 src/ui/update.rs:1069 src/ui/update.rs:1113 src/ui/update.rs:1123
 msgid "Directory or file already exists"
 msgstr "O diretório ou arquivo já existe"
+
+#: src/ui/help.rs:???
+msgid "Content Search"
+msgstr "Pesquisa de conteúdo"
+
+#: src/ui/help.rs:???
+msgid "Search inside file contents (not just filenames)"
+msgstr "Pesquisar dentro do conteúdo dos arquivos (não apenas nos nomes)"
+
+#: src/ui/help.rs:???
+msgid "Start content search"
+msgstr "Iniciar pesquisa de conteúdo"
+
+#: src/ui/help.rs:???
+msgid "Type colon (:) then at least 3 characters in the search bar"
+msgstr "Digite dois pontos (:) e pelo menos 3 caracteres na barra de pesquisa"
+
+#: src/ui/help.rs:???
+msgid "Cancel content search"
+msgstr "Cancelar pesquisa de conteúdo"
+
+#: src/ui/help.rs:???
+msgid "Press Escape while in search view"
+msgstr "Pressione Escape enquanto estiver na visualização de pesquisa"
+
+#: src/ui/settings.rs:???
+msgid "Default Layout"
+msgstr "Layout padrão"
+
+#: src/ui/settings.rs:???
+msgid "Start with grid view (off) or list view (on)"
+msgstr "Iniciar com visualização em grade (desligado) ou em lista (ligado)"
+
+#: src/ui/view.rs:???
+msgid "Toggle List Mode"
+msgstr "Alternar modo lista"
+
+#: src/ui/help.rs:???
+msgid "Type :term to search all files, or :.ext:term to filter by extension"
+msgstr "Digite :term para pesquisar em todos os arquivos, ou :.ext:term para filtrar por extensão"
