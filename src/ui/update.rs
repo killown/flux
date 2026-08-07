@@ -2066,9 +2066,6 @@ impl FluxApp {
             // may resolve relative paths incorrectly, moving files to previous locations
             // instead of the directory currently displayed to the user.
             AppMsg::Navigate(path) => {
-                if self.is_content_searching {
-                    self.reset_from_content_search();
-                }
                 let path_str = path.to_string_lossy();
 
                 // Intercept Network URIs (smb://, sftp://, network:///, etc.)
@@ -2158,6 +2155,8 @@ impl FluxApp {
                 if path == self.current_path {
                     return;
                 }
+
+                self.reset_from_content_search();
 
                 // Validate path existence (except for virtual trash URI)
                 // Only proceed if the target is a directory/trash and different from current location
@@ -2481,9 +2480,7 @@ impl FluxApp {
                 }
             }
             AppMsg::GoBack => {
-                if self.is_content_searching {
-                    self.reset_from_content_search();
-                }
+                self.reset_from_content_search();
                 if let Some(prev) = self.history.pop() {
                     self.forward_stack.push(self.current_path.clone());
                     if crate::services::network::is_network_uri(&prev) {
@@ -2506,9 +2503,7 @@ impl FluxApp {
                 }
             }
             AppMsg::GoForward => {
-                if self.is_content_searching {
-                    self.reset_from_content_search();
-                }
+                self.reset_from_content_search();
                 if let Some(next) = self.forward_stack.pop() {
                     self.history.push(self.current_path.clone());
                     if crate::services::network::is_network_uri(&next) {
