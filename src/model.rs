@@ -480,7 +480,11 @@ pub struct FluxApp {
 #[allow(dead_code)]
 pub enum AppMsg {
     /// Initiates a deep content search within the current directory.
-    StartContentSearch(String),
+    /// Syntax: `:term` to search all files, or `:.ext:term` to filter by extension
+    /// (e.g., `:.rs:hello` for `.rs` files). Multiple extensions can be comma‑separated
+    /// (e.g., `:.rs,py:hello`). `term` must be at least 3 characters.
+    /// The second argument is the optional extension filter (without the dot).
+    StartContentSearch(String, Option<String>),
     /// Cancels any in-flight content search.
     CancelContentSearch,
     /// Presents a modal GTK dialog allowing the user to type a name for a new

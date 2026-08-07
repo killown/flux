@@ -503,27 +503,56 @@ impl FluxApp {
                     return;
                 }
 
-                // 2. Non-empty query: check if it starts with ':' and we're not already searching contents
+                // Check for content search trigger: starts with ':' and contains a second ':'
                 if query_lc.starts_with(":") {
-                    let search_term = query_lc.trim_start_matches(":").trim().to_string();
-                    if search_term.len() >= 3 && !self.is_content_searching {
-                        if !self.search_saved_layout {
-                            self.saved_list_mode = self.is_list_mode;
-                            self.saved_max_columns = self.files.view.max_columns();
-                            self.search_saved_layout = true;
+                    let rest = &query_lc[1..]; // remove leading colon
+
+                    if let Some(second_col_pos) = rest.find(':') {
+                        // Format: :something:term
+                        let ext_part = rest[..second_col_pos].trim();
+                        let term_part = rest[second_col_pos + 1..].trim();
+
+                        if term_part.len() >= 3 && !self.is_content_searching {
+                            let ext_filter = if ext_part.starts_with('.') && ext_part.len() > 1 {
+                                Some(ext_part[1..].trim().to_string())
+                            } else {
+                                None
+                            };
+
+                            // Save layout and start search
+                            if !self.search_saved_layout {
+                                self.saved_list_mode = self.is_list_mode;
+                                self.saved_max_columns = self.files.view.max_columns();
+                                self.search_saved_layout = true;
+                            }
+                            self.is_list_mode = true;
+                            self.files.view.set_min_columns(1);
+                            self.files.view.set_max_columns(1);
+                            sender.input(AppMsg::StartContentSearch(
+                                term_part.to_string(),
+                                ext_filter,
+                            ));
                         }
-                        self.is_list_mode = true;
-                        self.files.view.set_min_columns(1);
-                        self.files.view.set_max_columns(1);
-                        sender.input(AppMsg::StartContentSearch(search_term));
+                    } else {
+                        // No second colon: treat whole rest as term, but only if it doesn't start with '.'
+                        let term = rest.trim();
+                        if !term.starts_with('.') && term.len() >= 3 && !self.is_content_searching {
+                            // Save layout and start search without filter
+                            if !self.search_saved_layout {
+                                self.saved_list_mode = self.is_list_mode;
+                                self.saved_max_columns = self.files.view.max_columns();
+                                self.search_saved_layout = true;
+                            }
+                            self.is_list_mode = true;
+                            self.files.view.set_min_columns(1);
+                            self.files.view.set_max_columns(1);
+                            sender.input(AppMsg::StartContentSearch(term.to_string(), None));
+                        }
                     }
                     return;
                 }
 
-                // 3. Normal filename filtering (either we're not in content search,
-                //    or we are in content search but the query doesn't start with ':')
-                //    In content-search mode, this will filter the already-displayed results
-                //    based on their name field (which contains the match line).
+                // Normal filename filtering
                 self.filter = query.clone();
                 self.files.clear_filters();
                 let filter_text = query_lc.clone();
@@ -543,7 +572,7 @@ impl FluxApp {
                     }
                 });
             }
-            AppMsg::StartContentSearch(term) => {
+            AppMsg::StartContentSearch(term, ext_filter) => {
                 // Guard against empty search terms to prevent matching every line
                 if term.trim().is_empty() {
                     return;
@@ -570,7 +599,16 @@ impl FluxApp {
                 let term_lc = term.to_lowercase();
                 let load_id = self.load_id.clone();
 
+                // Parse extension filter once, outside the walk.
+                let allowed_exts: Option<Vec<String>> = ext_filter.as_ref().map(|s| {
+                    s.split(',')
+                        .map(|part| part.trim().to_lowercase())
+                        .filter(|s| !s.is_empty())
+                        .collect()
+                });
+
                 relm4::spawn_blocking(move || {
+                    // Recursive walk function now takes the allowed extensions as a reference.
                     fn walk(
                         dir: &gio::File,
                         term_lc: &str,
@@ -578,6 +616,7 @@ impl FluxApp {
                         session_id: u64,
                         sender: &relm4::AsyncComponentSender<FluxApp>,
                         load_id: &std::sync::atomic::AtomicU64,
+                        allowed_exts: &Option<Vec<String>>,
                     ) {
                         if load_id.load(std::sync::atomic::Ordering::Acquire) != session_id
                             || cancellable.is_cancelled()
@@ -621,13 +660,39 @@ impl FluxApp {
                             }
 
                             if file_type == gio::FileType::Directory {
-                                walk(&child, term_lc, cancellable, session_id, sender, load_id);
+                                walk(
+                                    &child,
+                                    term_lc,
+                                    cancellable,
+                                    session_id,
+                                    sender,
+                                    load_id,
+                                    allowed_exts,
+                                );
                                 continue;
                             }
 
                             // Only regular files
                             if file_type != gio::FileType::Regular {
                                 continue;
+                            }
+
+                            // ---- Extension filter ----
+                            // If an extension filter is provided, check that the file's extension is in the list.
+                            if let Some(ref exts) = allowed_exts {
+                                if let Some(path) = child.path() {
+                                    let file_ext = path
+                                        .extension()
+                                        .and_then(|e| e.to_str())
+                                        .map(|s| s.to_lowercase())
+                                        .unwrap_or_default();
+                                    if !exts.is_empty() && !exts.contains(&file_ext) {
+                                        continue; // skip this file
+                                    }
+                                } else {
+                                    // No path? skip if filter is active (can't determine extension).
+                                    continue;
+                                }
                             }
 
                             // Optional MIME filter
@@ -668,6 +733,7 @@ impl FluxApp {
                                                 session: session_id,
                                             });
                                         }
+                                        break;
                                     }
                                 }
                             }
@@ -681,6 +747,7 @@ impl FluxApp {
                         session_id,
                         &sender,
                         &load_id,
+                        &allowed_exts,
                     );
 
                     // Only send completion if still active
