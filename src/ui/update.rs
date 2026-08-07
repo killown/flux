@@ -3,6 +3,7 @@ use crate::model::{AppMsg, FluxApp, SortBy};
 use crate::ui::constants;
 use crate::ui::FileProperties;
 use crate::utils;
+use crate::utils::search::parse_content_search_query;
 use adw::gdk;
 use adw::gio::prelude::*;
 use adw::prelude::*;
@@ -505,20 +506,8 @@ impl FluxApp {
 
                 // Check for content search trigger: starts with ':' and contains a second ':'
                 if query_lc.starts_with(":") {
-                    let rest = &query_lc[1..]; // remove leading colon
-
-                    if let Some(second_col_pos) = rest.find(':') {
-                        // Format: :something:term
-                        let ext_part = rest[..second_col_pos].trim();
-                        let term_part = rest[second_col_pos + 1..].trim();
-
-                        if term_part.len() >= 3 && !self.is_content_searching {
-                            let ext_filter = if ext_part.starts_with('.') && ext_part.len() > 1 {
-                                Some(ext_part[1..].trim().to_string())
-                            } else {
-                                None
-                            };
-
+                    if let Some((term, ext_filter)) = parse_content_search_query(&query) {
+                        if !self.is_content_searching {
                             // Save layout and start search
                             if !self.search_saved_layout {
                                 self.saved_list_mode = self.is_list_mode;
@@ -528,25 +517,7 @@ impl FluxApp {
                             self.is_list_mode = true;
                             self.files.view.set_min_columns(1);
                             self.files.view.set_max_columns(1);
-                            sender.input(AppMsg::StartContentSearch(
-                                term_part.to_string(),
-                                ext_filter,
-                            ));
-                        }
-                    } else {
-                        // No second colon: treat whole rest as term, but only if it doesn't start with '.'
-                        let term = rest.trim();
-                        if !term.starts_with('.') && term.len() >= 3 && !self.is_content_searching {
-                            // Save layout and start search without filter
-                            if !self.search_saved_layout {
-                                self.saved_list_mode = self.is_list_mode;
-                                self.saved_max_columns = self.files.view.max_columns();
-                                self.search_saved_layout = true;
-                            }
-                            self.is_list_mode = true;
-                            self.files.view.set_min_columns(1);
-                            self.files.view.set_max_columns(1);
-                            sender.input(AppMsg::StartContentSearch(term.to_string(), None));
+                            sender.input(AppMsg::StartContentSearch(term, ext_filter));
                         }
                     }
                     return;

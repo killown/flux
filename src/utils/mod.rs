@@ -9,6 +9,7 @@ pub mod deps;
 pub(crate) mod helpers;
 pub mod media;
 mod path;
+pub mod search;
 
 // 2. Public Re-exports
 // This allows the rest of the app to use `utils::resolve` instead of `utils::path::resolve`.

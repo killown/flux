@@ -445,11 +445,10 @@ impl FluxApp {
             // Everything after that is the path portion to segment.
             let uri = path_str.trim_end_matches('/');
 
-            if let Some(after_scheme) = uri.splitn(2, "://").nth(1) {
+            if let Some((scheme, after_scheme)) = uri.split_once("://") {
                 // after_scheme = "host:port/dir/subdir"
                 let slash_pos = after_scheme.find('/');
                 let authority = &after_scheme[..slash_pos.unwrap_or(after_scheme.len())];
-                let scheme = uri.splitn(2, "://").next().unwrap_or("network");
 
                 // Root breadcrumb: just scheme://authority
                 let root_uri = format!("{}://{}", scheme, authority);
