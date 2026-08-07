@@ -145,18 +145,17 @@ pub fn start_content_search(
                         {
                             break;
                         }
-                        if line.to_lowercase().contains(term_lc) {
-                            if load_id.load(Ordering::Acquire) == session_id
-                                && !cancellable.is_cancelled()
-                            {
-                                sender.input(AppMsg::ContentSearchResult {
-                                    path: path.clone(),
-                                    line: line.trim().to_string(),
-                                    line_number: line_number + 1,
-                                    session: session_id,
-                                });
-                            }
-                            break;
+                        if line.to_lowercase().contains(term_lc)
+                            && load_id.load(Ordering::Acquire) == session_id
+                            && !cancellable.is_cancelled()
+                        {
+                            sender.input(AppMsg::ContentSearchResult {
+                                path: path.clone(),
+                                line: line.trim().to_string(),
+                                line_number: line_number + 1,
+                                session: session_id,
+                            });
+                            //break <- add break back if you want search content to only look once per file.
                         }
                     }
                 }
