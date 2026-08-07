@@ -4,16 +4,16 @@
 //! operations, and shell command execution.
 
 // 1. Internal submodules
-mod core;
+pub mod config;
 pub mod deps;
-pub(crate) mod helpers;
+pub mod helpers;
 pub mod media;
-mod path;
+pub mod path;
 pub mod search;
 
 // 2. Public Re-exports
 // This allows the rest of the app to use `utils::resolve` instead of `utils::path::resolve`.
-pub use core::*;
+pub use config::*;
 pub use path::PathExt;
 
 /// System-level configuration constants for utilities.

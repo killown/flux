@@ -6,12 +6,14 @@
 
 // 1. Declare the background service modules
 pub mod archive;
+pub mod content_search;
 pub mod db;
 pub mod loader;
 pub mod network;
 pub mod tasks;
 pub mod terminal;
 pub mod thumbnails;
+pub mod trash;
 
 /// Service-level constants, such as cache limits or thread counts.
 pub mod constants {

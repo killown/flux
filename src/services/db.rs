@@ -8,6 +8,41 @@ pub struct StateManager {
 }
 
 impl StateManager {
+    /// Creates a StateManager with a specific database path (useful for testing).
+    #[allow(dead_code)]
+    pub fn new_with_path(db_path: &Path) -> Result<Self> {
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+        }
+
+        let conn = Connection::open(db_path)?;
+
+        conn.execute_batch(
+            "
+            PRAGMA journal_mode = WAL;
+            PRAGMA synchronous = NORMAL;
+            CREATE TABLE IF NOT EXISTS folder_settings (
+                path TEXT PRIMARY KEY,
+                sort_col TEXT,
+                sort_reversed BOOLEAN,
+                icon_size INTEGER,
+                folders_first BOOLEAN
+            );
+
+            CREATE TABLE IF NOT EXISTS location_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uri TEXT UNIQUE NOT NULL,
+                timestamp INTEGER NOT NULL
+            );
+            ",
+        )?;
+
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
+    }
+
     /// Initializes the database in the user's local data directory.
     pub fn new() -> Result<Self> {
         let data_dir = dirs::data_dir()
@@ -37,41 +72,6 @@ impl StateManager {
                 timestamp INTEGER NOT NULL
             );
         ",
-        )?;
-
-        Ok(Self {
-            conn: Mutex::new(conn),
-        })
-    }
-
-    /// Creates a StateManager with a specific database path (useful for testing).
-    #[cfg(test)]
-    pub fn new_with_path(db_path: &std::path::Path) -> Result<Self> {
-        if let Some(parent) = db_path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
-        }
-
-        let conn = Connection::open(db_path)?;
-
-        conn.execute_batch(
-            "
-            PRAGMA journal_mode = WAL;
-            PRAGMA synchronous = NORMAL;
-            CREATE TABLE IF NOT EXISTS folder_settings (
-                path TEXT PRIMARY KEY,
-                sort_col TEXT,
-                sort_reversed BOOLEAN,
-                icon_size INTEGER,
-                folders_first BOOLEAN
-            );
-
-            CREATE TABLE IF NOT EXISTS location_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                uri TEXT UNIQUE NOT NULL,
-                timestamp INTEGER NOT NULL
-            );
-            ",
         )?;
 
         Ok(Self {
@@ -216,121 +216,5 @@ impl StateManager {
 impl std::fmt::Debug for StateManager {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("StateManager").finish()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::path::PathBuf;
-
-    fn create_test_db() -> (StateManager, tempfile::TempDir) {
-        // Create a temporary directory that will be deleted when dropped
-        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
-        let db_path = temp_dir.path().join("test_state.db");
-
-        let manager = StateManager::new_with_path(&db_path).expect("Failed to create test DB");
-        (manager, temp_dir)
-    }
-
-    #[test]
-    fn test_save_and_get_view() {
-        let (manager, _temp_dir) = create_test_db();
-        let path = PathBuf::from("/home/user/downloads");
-
-        manager.save_view(&path, "Date", true, 64, false).unwrap();
-
-        let result = manager.get_view(&path).unwrap().unwrap();
-
-        assert_eq!(result.0, "Date");
-        assert!(result.1);
-        assert_eq!(result.2, 64);
-        assert!(!result.3);
-    }
-
-    #[test]
-    fn test_get_nonexistent_view() {
-        let (manager, _temp_dir) = create_test_db();
-        let path = PathBuf::from("/nonexistent/path");
-
-        let result = manager.get_view(&path).unwrap();
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_update_existing_view() {
-        let (manager, _temp_dir) = create_test_db();
-        let path = PathBuf::from("/home/user/Downloads");
-
-        manager.save_view(&path, "Date", true, 64, false).unwrap();
-
-        manager.save_view(&path, "Size", false, 256, true).unwrap();
-
-        let result = manager.get_view(&path).unwrap().unwrap();
-        assert_eq!(result.0, "Size");
-        assert_eq!(result.1, false);
-        assert_eq!(result.2, 256);
-        assert_eq!(result.3, true);
-    }
-
-    #[test]
-    fn test_rename_path() {
-        let (manager, _temp_dir) = create_test_db();
-        let old_path = PathBuf::from("/home/user/OldName");
-        let new_path = PathBuf::from("/home/user/NewName");
-
-        manager
-            .save_view(&old_path, "Name", false, 128, true)
-            .unwrap();
-
-        manager.rename_path(&old_path, &new_path).unwrap();
-
-        assert!(manager.get_view(&old_path).unwrap().is_none());
-
-        let result = manager.get_view(&new_path).unwrap().unwrap();
-        assert_eq!(result.0, "Name");
-    }
-
-    #[test]
-    fn test_scrub_orphans() {
-        let (manager, temp_dir) = create_test_db();
-
-        let real_dir = temp_dir.path().join("real_folder");
-        std::fs::create_dir(&real_dir).unwrap();
-
-        let fake_dir = temp_dir.path().join("fake_folder");
-
-        manager
-            .save_view(&real_dir, "Name", false, 128, true)
-            .unwrap();
-        manager
-            .save_view(&fake_dir, "Date", true, 64, false)
-            .unwrap();
-
-        assert!(manager.get_view(&real_dir).unwrap().is_some());
-        assert!(manager.get_view(&fake_dir).unwrap().is_some());
-
-        manager.scrub_orphans().unwrap();
-
-        assert!(manager.get_view(&real_dir).unwrap().is_some());
-
-        assert!(manager.get_view(&fake_dir).unwrap().is_none());
-    }
-
-    #[test]
-    fn test_location_history() {
-        let (manager, _temp_dir) = create_test_db();
-
-        manager.add_location("smb://server/share").unwrap();
-        manager.add_location("sftp://localhost").unwrap();
-        manager.add_location("smb://server/share").unwrap(); // duplicate update test
-
-        let history = manager.get_location_history().unwrap();
-        assert_eq!(history.len(), 2);
-        assert_eq!(history[0], "smb://server/share"); // most recent first
-
-        manager.clear_location_history().unwrap();
-        let empty_history = manager.get_location_history().unwrap();
-        assert!(empty_history.is_empty());
     }
 }
