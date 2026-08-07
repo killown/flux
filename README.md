@@ -91,9 +91,10 @@ The following table details the core hotkey mappings defined across `src/ui/inpu
 
 | Key Combination       | Message Reference / Operation Target | Functional System Description                                                           |
 | :-------------------- | :----------------------------------- | :-------------------------------------------------------------------------------------- |
-| `F1`                  | `AppMsg::ShowHelp`                   | Opens the graphical keyboard shortcut overlay window.                                   |
+| `F1`                  | `AppMsg::ShowHelp`                   | Opens the graphical keyboard shortcut reference window.                                 |
 | `F2`                  | `AppMsg::TriggerRenameSelection`     | Puts the selected item into inline name editing mode.                                   |
-| `F3`                  | `AppMsg::ShowIconPicker`             | Opens a custom icon picker dialog for the current directory.                            |
+| `F3`                  | `AppMsg::TriggerIconPicker`          | Opens a custom icon picker dialog for the selected directory.                           |
+| `Ctrl + F3`           | `AppMsg::TriggerResetIcon`           | Resets the selected directory's icon back to the system default.                        |
 | `F4`                  | `AppMsg::ToggleTerminal`             | Toggles the visibility of the embedded virtual terminal panel.                          |
 | `F5`                  | `AppMsg::Refresh`                    | Forces a full reload of the current directory from disk.                                |
 | `F8`                  | `AppMsg::ToggleSidebar`              | Toggles the left navigation sidebar tray.                                               |
@@ -101,19 +102,55 @@ The following table details the core hotkey mappings defined across `src/ui/inpu
 | `F10`                 | `app.open-settings`                  | Launches the central preference settings interface panel.                               |
 | `Return` / `KP_Enter` | `AppMsg::Activate`                   | Opens selected files or navigates into selected folders.                                |
 | `Backspace`           | `AppMsg::GoBack`                     | Navigates back one step in the directory history log.                                   |
+| `Alt + Left`          | `AppMsg::GoBack`                     | Navigates back one step in the directory history log.                                   |
 | `Alt + Right`         | `AppMsg::GoForward`                  | Moves forward one step in the directory history stack.                                  |
-| `Ctrl + f`            | `AppMsg::SwitchHeader("search")`     | Focuses the entry line and switches the interface to filtering mode.                    |
-| `Ctrl + h`            | `AppMsg::ToggleHidden`               | Toggles the visibility of hidden files and folders.                                     |
-| `Ctrl + s`            | `AppMsg::CycleSort`                  | Rotates through the available sorting criteria.                                         |
-| `Ctrl + Shift + s`    | `AppMsg::ToggleSortOrder`            | Toggles between ascending and descending sort order.                                    |
-| `Shift + s`           | `AppMsg::CycleFolderPriority`        | Toggles whether folders are grouped above files when sorting.                           |
+| `/`                   | `AppMsg::Navigate("/")`              | Jumps directly to the filesystem root.                                                  |
+| `Ctrl + N`            | `app.new-window`                     | Opens a new Flux window instance.                                                       |
+| `Ctrl + C`            | `AppMsg::Copy`                       | Copies the selected items to the clipboard.                                             |
+| `Ctrl + X`            | `AppMsg::Cut`                        | Cuts the selected items to the clipboard.                                               |
+| `Ctrl + V`            | `AppMsg::Paste`                      | Pastes clipboard items into the current directory.                                      |
+| `Delete`              | `AppMsg::Delete`                     | Moves selected items to trash.                                                          |
+| `Ctrl + F`            | `AppMsg::SwitchHeader("search")`     | Focuses the search entry and switches the header to filename filtering mode.            |
+| `Ctrl + H`            | `AppMsg::ToggleHidden`               | Toggles the visibility of hidden files and folders.                                     |
+| `Ctrl + I`            | `AppMsg::TriggerRenameSelection`     | Opens inline rename for the selected item (same as F2).                                 |
+| `Ctrl + S`            | `AppMsg::CycleSort`                  | Rotates through the available sorting criteria.                                         |
+| `Ctrl + Shift + S`    | `AppMsg::ToggleSortOrder`            | Toggles between ascending and descending sort order.                                    |
+| `Shift + S`           | `AppMsg::CycleFolderPriority`        | Toggles whether folders are grouped above files when sorting.                           |
+| `Ctrl + L`            | `AppMsg::PromptLocationDialog`       | Opens the "Go to Location" dialog to type a path or network URI.                        |
+| `Ctrl + Shift + L`    | `app.connect-to-server`              | Opens the "Connect to Server" dialog for mounting remote shares (SMB, SFTP, FTP, etc.). |
 | `Insert`              | `AppMsg::AddExclusive(None)`         | Adds the selected path to the temporary quick list cache.                               |
-| `Tab`                 | `AppMsg::NextExclusive`              | Cycles forward to the next folder in the temporary quick list.                          |
-| `Ctrl + Tab`          | `AppMsg::PrevExclusive`              | Cycles backward to the previous folder in the temporary quick list.                     |
 | `Ctrl + Insert`       | `AppMsg::AddToSidebarPermanent`      | Pins the current directory to the configuration bookmarks permanently.                  |
-| `Ctrl + Delete`       | `AppMsg::ClearExclusive`             | Clears all entries from the temporary quick list cache.                                 |
-| `Ctrl + l`            | `AppMsg::PromptLocationDialog`       | Opens the "Go to Location" dialog to type a path or network URI.                        |
-| `Ctrl + Shift + l`    | `app.connect-to-server`              | Opens the "Connect to Server" dialog for mounting remote shares (SMB, SFTP, FTP, etc.). |
+| `Tab`                 | `AppMsg::NextExclusive`              | Cycles forward to the next folder in the temporary quick list.                          |
+| `Ctrl + Page Down`    | `AppMsg::NextExclusive`              | Cycles forward to the next folder in the temporary quick list.                          |
+| `Ctrl + Page Up`      | `AppMsg::PrevExclusive`              | Cycles backward to the previous folder in the temporary quick list.                     |
+| `Ctrl + End`          | `AppMsg::ClearExclusive`             | Clears all entries from the temporary quick list cache.                                 |
+
+## 🔍 Session Filter
+
+The filter bar lets you narrow the current directory to only matching files without leaving it. It is session-scoped - never written to disk - and resets when you navigate away or dismiss it.
+
+**Activating:** click the funnel icon in the header bar, or press the button to toggle the `VIEW_FILTER` stack child.
+
+**Syntax:** type one or more patterns separated by commas. Patterns support shell glob syntax:
+
+| Pattern        | Matches                               |
+| :------------- | :------------------------------------ |
+| `*.py`         | any file ending in `.py`              |
+| `report??.pdf` | `report` + exactly two chars + `.pdf` |
+| `main*`        | any file starting with `main`         |
+| `*`            | everything                            |
+
+**MIME-category shorthands** expand automatically to their concrete extension lists:
+
+| Shorthand | Expands to                                                            |
+| :-------- | :-------------------------------------------------------------------- |
+| `image/*` | jpg, jpeg, png, gif, webp, avif, heic, heif, bmp, tiff, tif, jxl, svg |
+| `video/*` | mp4, mkv, webm, avi, mov, flv, wmv, m4v, mpg, mpeg, ts, ogv           |
+| `audio/*` | mp3, flac, ogg, opus, wav, aac, m4a, wma, aiff                        |
+| `font/*`  | ttf, otf, woff, woff2, ttc                                            |
+| `doc/*`   | pdf, doc, docx, odt, txt, md, epub                                    |
+
+You can mix shorthands and globs freely: `image/*, *.pdf` shows all images and PDFs together. Directories always pass through regardless of the active filter.
 
 ## Configuration & Customization
 
