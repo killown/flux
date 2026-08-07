@@ -7,14 +7,28 @@
 pub mod init;
 pub mod inputs;
 pub mod keymap;
+pub mod location_dialog;
 pub mod settings;
 pub mod update;
 pub mod view;
 pub use settings::SettingsWindow;
 pub mod menu_editor;
 pub use components::SidebarMsg;
+pub mod app_action_ops;
+pub mod config_handlers;
+pub mod context_menu;
+pub mod dialogs;
+pub mod file_ops;
+pub mod navigation;
 pub mod network_dialogs;
+pub mod remote_ops;
+pub mod search_handlers;
 pub mod sidebar_network;
+pub mod sidebar_ops;
+pub mod task_ops;
+pub mod terminal_ops;
+pub mod view_ops;
+pub mod watcher_ops;
 
 // --- 2. Existing Submodules ---
 mod components;
