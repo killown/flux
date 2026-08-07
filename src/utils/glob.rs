@@ -45,3 +45,35 @@ pub fn glob_match(pattern: &str, name: &str) -> bool {
     }
     dp[pl][nl]
 }
+
+/// Expands a MIME-category shorthand into concrete extension glob patterns.
+///
+/// Recognised shorthands (case-insensitive):
+/// - `image/*`  → all image extensions
+/// - `video/*`  → all video extensions  
+/// - `audio/*`  → all audio extensions
+/// - `font/*`   → all font extensions
+/// - `doc/*`    → common document extensions
+///
+/// Any other pattern is returned as-is in a single-element Vec.
+pub fn expand_mime_category(pattern: &str) -> Vec<String> {
+    let exts: &[&str] = match pattern.to_lowercase().as_str() {
+        "image/*" => &[
+            "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp", "*.avif", "*.heic", "*.heif", "*.bmp",
+            "*.tiff", "*.tif", "*.jxl", "*.svg",
+        ],
+        "video/*" => &[
+            "*.mp4", "*.mkv", "*.webm", "*.avi", "*.mov", "*.flv", "*.wmv", "*.m4v", "*.mpg",
+            "*.mpeg", "*.ts", "*.ogv",
+        ],
+        "audio/*" => &[
+            "*.mp3", "*.flac", "*.ogg", "*.opus", "*.wav", "*.aac", "*.m4a", "*.wma", "*.aiff",
+        ],
+        "font/*" => &["*.ttf", "*.otf", "*.woff", "*.woff2", "*.ttc"],
+        "doc/*" => &[
+            "*.pdf", "*.doc", "*.docx", "*.odt", "*.txt", "*.md", "*.epub",
+        ],
+        _ => return vec![pattern.to_string()],
+    };
+    exts.iter().map(|s| s.to_string()).collect()
+}

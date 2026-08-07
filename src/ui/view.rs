@@ -286,7 +286,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_hexpand: false,
                                         set_halign: gtk::Align::Center,
                                         set_width_request: constants::SEARCH_ENTRY_WIDTH_REQUEST,
-                                        set_placeholder_text: Some(&tr("Patterns: *.py, a*.rs, report??.pdf")),
+                                        set_placeholder_text: Some(&tr("Patterns: *.py, image/*, audio/*")),
                                         set_secondary_icon_name: Some("edit-clear-symbolic"),
                                         set_secondary_icon_tooltip_text: Some(&tr("Clear filter")),
 
