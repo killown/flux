@@ -274,6 +274,57 @@ impl SimpleAsyncComponent for FluxApp {
                                         connect_clicked => AppMsg::CancelContentSearch,
                                     },
                                 } -> { set_name: constants::VIEW_SEARCH },
+
+                                // Filter entry child, user types one or more glob patterns separated by comma.
+                                // Committing (Enter) or pressing Escape exits back to VIEW_PATH.
+                                add_child = &gtk::Box {
+                                    set_orientation: gtk::Orientation::Horizontal,
+                                    set_spacing: constants::HEADER_BTN_SPACING,
+                                    set_halign: gtk::Align::Center,
+
+                                    append = &gtk::Entry {
+                                        set_hexpand: false,
+                                        set_halign: gtk::Align::Center,
+                                        set_width_request: constants::SEARCH_ENTRY_WIDTH_REQUEST,
+                                        set_placeholder_text: Some(&tr("Patterns: *.py, a*.rs, report??.pdf")),
+                                        set_secondary_icon_name: Some("edit-clear-symbolic"),
+                                        set_secondary_icon_tooltip_text: Some(&tr("Clear filter")),
+
+                                        connect_map => |e| { e.grab_focus(); },
+
+                                        connect_icon_press[sender] => move |_, pos| {
+                                            if pos == gtk::EntryIconPosition::Secondary {
+                                                sender.input(AppMsg::ClearExtensionFilter);
+                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                            }
+                                        },
+
+                                        connect_activate[sender] => move |entry| {
+                                            let raw = entry.text().to_string();
+                                            let patterns: Vec<String> = raw
+                                                .split(',')
+                                                .map(|p| p.trim().to_lowercase())
+                                                .filter(|p| !p.is_empty())
+                                                .collect();
+                                            if patterns.is_empty() {
+                                                sender.input(AppMsg::ClearExtensionFilter);
+                                            } else {
+                                                sender.input(AppMsg::SetExtensionFilter(patterns));
+                                            }
+                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                        },
+
+                                        add_controller = gtk::EventControllerKey {
+                                            connect_key_pressed[sender] => move |_, keyval, _, _| {
+                                                if keyval == gdk::Key::Escape {
+                                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                                    return glib::Propagation::Stop;
+                                                }
+                                                glib::Propagation::Proceed
+                                            }
+                                        },
+                                    },
+                                } -> { set_name: constants::VIEW_FILTER },
                             },
 
                             /// Destructive action button to purge the Trash directory.
@@ -346,6 +397,25 @@ impl SimpleAsyncComponent for FluxApp {
                                 connect_clicked => AppMsg::ToggleListMode,
                             },
 
+                            // Filter toggle button, opens the VIEW_FILTER stack child.
+                            // Active state tracks whether any patterns are set.
+                            pack_end = &gtk::ToggleButton {
+                                set_icon_name: constants::ICON_FILTER,
+                                set_tooltip_text: Some(&tr("Filter by Pattern")),
+                                add_css_class: "flat",
+                                #[watch]
+                                set_active: model.extension_filter.is_some(),
+                                connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                                connect_clicked[sender] => move |btn| {
+                                    if btn.is_active() {
+                                        sender.input(AppMsg::SwitchHeader(constants::VIEW_FILTER.to_string()));
+                                    } else {
+                                        sender.input(AppMsg::ClearExtensionFilter);
+                                        sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                    }
+                                },
+                            },
+
                             /// Visual indicator of the current active sorting mode.
                             pack_end = &gtk::Box {
                                 set_orientation: gtk::Orientation::Horizontal,
@@ -374,6 +444,35 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_label: &model.sort_status(),
                                 }
                             },
+                        },
+
+                        // Filter chip bar, slides in below the header when patterns are active.
+                        gtk::Revealer {
+                            set_transition_type: gtk::RevealerTransitionType::SlideDown,
+                            set_transition_duration: 150,
+                            #[watch]
+                            set_reveal_child: model.extension_filter.is_some(),
+                            #[watch]
+                            set_visible: model.extension_filter.is_some(),
+
+                            #[name = "filter_bar"]
+                            gtk::Box {
+                                set_orientation: gtk::Orientation::Horizontal,
+                                set_spacing: 6,
+                                set_margin_start: 8,
+                                set_margin_end: 8,
+                                set_margin_top: 4,
+                                set_margin_bottom: 4,
+                                add_css_class: constants::FILTER_BAR_CSS_CLASS,
+
+                                gtk::Label {
+                                    set_label: &tr("Filter:"),
+                                    add_css_class: "caption",
+                                    set_opacity: 0.6,
+                                },
+                                // Chips are built imperatively in update.rs via rebuild_filter_bar()
+                                // whenever SetExtensionFilter / ClearExtensionFilter is handled.
+                            }
                         },
 
                         /// Main scrollable viewport for the file grid.

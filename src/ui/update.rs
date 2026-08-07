@@ -162,6 +162,18 @@ impl FluxApp {
                 self.search_just_opened = false;
             }
             AppMsg::UpdateFilter(query) => self.handle_update_filter(query, &sender),
+            AppMsg::SetExtensionFilter(patterns) => {
+                self.extension_filter = if patterns.is_empty() {
+                    None
+                } else {
+                    Some(patterns)
+                };
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::ClearExtensionFilter => {
+                self.extension_filter = None;
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::StartContentSearch(term, ext_filter) => {
                 crate::services::content_search::start_content_search(
                     self, term, ext_filter, sender,

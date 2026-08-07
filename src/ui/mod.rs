@@ -66,6 +66,9 @@ pub mod constants {
     pub const VIEW_ENTRY: &str = "entry";
     pub const VIEW_SEARCH: &str = "search";
     pub const VIEW_LABEL: &str = "label";
+    pub const VIEW_FILTER: &str = "filter";
+    pub const ICON_FILTER: &str = "view-filter-symbolic";
+    pub const FILTER_BAR_CSS_CLASS: &str = "flux-filter-bar";
 
     // Thumbnails
     pub const CACHED_THUMBNAIL_SIZE: i32 = 512;

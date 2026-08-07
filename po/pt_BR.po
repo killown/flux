@@ -1117,3 +1117,19 @@ msgstr "Alternar modo lista"
 #: src/ui/help.rs:???
 msgid "Type :term to search all files, or :.ext:term to filter by extension"
 msgstr "Digite :term para pesquisar em todos os arquivos, ou :.ext:term para filtrar por extensão"
+
+#: src/ui/view.rs
+msgid "Filter by Pattern"
+msgstr "Filtrar por Padrão"
+
+#: src/ui/view.rs
+msgid "Patterns: *.py, a*.rs, report??.pdf"
+msgstr "Padrões: *.py, a*.rs, report??.pdf"
+
+#: src/ui/view.rs
+msgid "Clear filter"
+msgstr "Limpar filtro"
+
+#: src/ui/view.rs
+msgid "Filter:"
+msgstr "Filtro:"

@@ -224,6 +224,7 @@ impl FluxApp {
             config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),
+            extension_filter: None,
             is_list_mode: false,
             header_view: constants::VIEW_PATH.to_string(),
             recent_stack: std::collections::VecDeque::with_capacity(
