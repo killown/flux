@@ -136,6 +136,7 @@ impl FluxApp {
 
         if is_editable && (header_view == "search" || header_view == "entry") {
             if keyval == gdk::Key::Escape {
+                sender.input(AppMsg::CancelContentSearch);
                 sender.input(AppMsg::UpdateFilter(String::new()));
                 sender.input(AppMsg::SwitchHeader("path".to_string()));
                 return glib::Propagation::Stop;
@@ -146,10 +147,15 @@ impl FluxApp {
         // 3. Global Capture (Type-to-search)
         // Only triggers when no modifiers (like Ctrl or Shift) are held,
         // allowing modifiers to be used for native multi-selection expansion.
-        if modifiers.is_empty() {
+        // Allow unmodified keys (letters/numbers) AND Shift+key (for symbols)
+        let forbidden = gdk::ModifierType::CONTROL_MASK
+            | gdk::ModifierType::ALT_MASK
+            | gdk::ModifierType::SUPER_MASK;
+
+        if !modifiers.intersects(forbidden) {
             if let Some(c) = keyval.to_unicode() {
-                // Only trigger type-to-search for alphanumeric characters
-                if c.is_ascii_alphanumeric() {
+                // Only capture alphanumerics OR our chosen trigger characters
+                if c.is_ascii_alphanumeric() || c == ':' || c == '<' {
                     sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
                     sender.input(AppMsg::SearchInput(c));
                     return glib::Propagation::Stop;
@@ -178,6 +184,24 @@ impl FluxApp {
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,
+        }
+    }
+
+    /// Propagates the current `is_list_mode` flag to every `FileItem` in the grid.
+    ///
+    /// Must be called after toggling list mode so `bind()` re-renders each item
+    /// with the correct orientation and icon size.
+    pub fn sync_list_mode(&mut self) {
+        let mode = self.is_list_mode;
+        for i in 0..self.files.len() {
+            if let Some(wrapper) = self.files.get(i) {
+                let mut item = wrapper.borrow().clone();
+                if item.is_list_mode != mode {
+                    item.is_list_mode = mode;
+                    self.files.remove(i);
+                    self.files.insert(i, item);
+                }
+            }
         }
     }
 
@@ -413,23 +437,28 @@ impl FluxApp {
         }
 
         // Network URIs (ftp://, smb://, sftp://, etc.) cannot be decomposed via
-        // PathBuf::components, the stdlib has no URI awareness and will mangle
+        // PathBuf::components - the stdlib has no URI awareness and will mangle
         // the scheme double-slash into bogus local paths. Split on '/' manually
         // and reconstruct each breadcrumb as a well-formed URI.
         if crate::services::network::is_network_uri(&self.current_path) {
+            // Locate the scheme+authority prefix ("ftp://host:port", "smb://host", …)
+            // Everything after that is the path portion to segment.
             let uri = path_str.trim_end_matches('/');
 
-            if let Some((before, after_scheme)) = uri.split_once("://") {
+            if let Some(after_scheme) = uri.splitn(2, "://").nth(1) {
+                // after_scheme = "host:port/dir/subdir"
                 let slash_pos = after_scheme.find('/');
                 let authority = &after_scheme[..slash_pos.unwrap_or(after_scheme.len())];
-                let scheme = before;
+                let scheme = uri.splitn(2, "://").next().unwrap_or("network");
 
+                // Root breadcrumb: just scheme://authority
                 let root_uri = format!("{}://{}", scheme, authority);
                 guard.push_back(PathSegment {
                     name: authority.to_string(),
                     path: PathBuf::from(&root_uri),
                 });
 
+                // Remaining path segments, each building on the previous
                 if let Some(path_part) = slash_pos.map(|p| &after_scheme[p + 1..]) {
                     let mut acc = root_uri.clone();
                     for segment in path_part.split('/').filter(|s| !s.is_empty()) {
@@ -763,35 +792,17 @@ impl FluxApp {
 
         // 6. Dynamic Context Menu Actions (Shell Commands)
         for action_def in &self.menu_actions {
-            let cmd = action_def.command.clone();
+            // Skip builtins as they are handled by the explicit actions above
+            if action_def.command.starts_with("builtin::") {
+                continue;
+            }
+
+            let cmd_clone = action_def.command.clone();
             let sender_clone = sender.clone();
             let action = gio::SimpleAction::new(&action_def.action_name, None);
-
             action.connect_activate(move |_, _| {
-                if let Some(builtin) = cmd.strip_prefix("builtin::") {
-                    match builtin {
-                        "toggle_pin" | "add_to_sidebar_permanent" => {
-                            sender_clone.input(AppMsg::AddToSidebarPermanent);
-                        }
-                        "copy" => {
-                            sender_clone.input(AppMsg::Copy);
-                        }
-                        "cut" => {
-                            sender_clone.input(AppMsg::Cut);
-                        }
-                        "paste" => {
-                            sender_clone.input(AppMsg::Paste);
-                        }
-                        "add_to_quick_list" => {
-                            sender_clone.input(AppMsg::AddExclusive(None));
-                        }
-                        _ => {}
-                    }
-                } else {
-                    sender_clone.input(AppMsg::ExecuteCommand(cmd.clone()));
-                }
+                sender_clone.input(AppMsg::ExecuteCommand(cmd_clone.clone()));
             });
-
             self.action_group.add_action(&action);
         }
     }

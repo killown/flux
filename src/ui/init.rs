@@ -69,6 +69,8 @@ impl FluxApp {
         }
         files.view.set_max_columns(20);
         files.view.set_min_columns(1);
+        files.view.set_halign(gtk::Align::Fill);
+        files.view.set_hexpand(true);
 
         let sender_clone = sender.clone();
         files
@@ -222,6 +224,7 @@ impl FluxApp {
             config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),
+            is_list_mode: false,
             header_view: constants::VIEW_PATH.to_string(),
             recent_stack: std::collections::VecDeque::with_capacity(
                 constants::RECENT_STACK_CAPACITY,
@@ -246,6 +249,11 @@ impl FluxApp {
             cached_archive_password: None,
             archive_locked: false,
             network_section,
+            is_content_searching: false,
+            content_search_cancellable: None,
+            saved_list_mode: false,
+            saved_max_columns: 20,
+            search_saved_layout: false,
         };
 
         // 9. Initial State Population

@@ -123,6 +123,8 @@ pub struct Config {
     pub shortcuts: ShortcutsConfig,
     #[serde(default)]
     pub network_bookmarks: Vec<crate::services::network::NetworkBookmark>,
+    #[serde(default)]
+    pub default_list_mode: bool,
 }
 
 /// Available sorting criteria for the file view.
@@ -366,6 +368,16 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    // Search state for content search mode.
+    pub search_saved_layout: bool,
+    /// Maximum grid columns before content search, restored when search ends.
+    pub saved_max_columns: u32,
+    /// The user's preferred list‑mode state before a content search forced it to `true`.
+    pub saved_list_mode: bool,
+    /// Indicates if an active content search is currently running.
+    pub is_content_searching: bool,
+    /// Token to cancel the currently active content search operation.
+    pub content_search_cancellable: Option<gio::Cancellable>,
     pub network_section: gtk::Box,
     /// True while the current archive path requires a password that has not yet been supplied.
     pub archive_locked: bool,
@@ -437,6 +449,9 @@ pub struct FluxApp {
     pub _volume_monitor: gio::VolumeMonitor,
     /// Current search/filter string.
     pub filter: String,
+    /// When true the file grid renders items as compact horizontal rows
+    /// (small icon + filename) instead of the default vertical card layout.
+    pub is_list_mode: bool,
     /// Current active header bar state (e.g., "path", "search", "entry").
     pub header_view: String,
     /// Reactive string containing selection counts and sizes for the status bar.
@@ -464,6 +479,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Initiates a deep content search within the current directory.
+    StartContentSearch(String),
+    /// Cancels any in-flight content search.
+    CancelContentSearch,
     /// Presents a modal GTK dialog allowing the user to type a name for a new
     /// folder to be created inside the current directory.
     ///
@@ -656,6 +675,8 @@ pub enum AppMsg {
     },
     /// Toggle visibility of dotfiles and hidden items.
     ToggleHidden,
+    /// Switch between grid card layout and compact list layout.
+    ToggleListMode,
     /// Rotate through available sorting methods.
     CycleSort,
     /// Toggle between "Folders First" and mixed sorting.
@@ -663,6 +684,17 @@ pub enum AppMsg {
     /// Update the string used to filter the current view.
     UpdateFilter(String),
     /// Signal that a thumbnail has been successfully generated.
+    /// A file matched a content search query. Carries the path, the matching
+    /// line text, and the session id for stale-result rejection.
+    ContentSearchResult {
+        path: PathBuf,
+        line: String,
+        line_number: usize,
+        session: u64,
+    },
+    /// The content search walk finished (or was cancelled). Used to clear the
+    /// loading indicator and select the first result.
+    ContentSearchDone { session: u64 },
     ThumbnailReady {
         name: String,
         texture: gdk::Texture,

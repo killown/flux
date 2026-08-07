@@ -29,7 +29,7 @@ impl SimpleAsyncComponent for FluxApp {
             #[watch]
             set_decorated: model.config.ui.show_csd,
 
-            // --- UI LAYOUT ---
+            /// UI LAYOUT
             gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_hexpand: true,
@@ -43,7 +43,6 @@ impl SimpleAsyncComponent for FluxApp {
                     add_css_class: constants::SIDEBAR_CSS_CLASS,
                     #[watch]
                     set_visible: model.sidebar_visible,
-
 
                     #[name = "sidebar_container"]
                     gtk::ScrolledWindow {
@@ -76,7 +75,6 @@ impl SimpleAsyncComponent for FluxApp {
                                 connect_clicked => AppMsg::GoForward,
                                 #[watch] set_sensitive: !model.forward_stack.is_empty(),
                                 connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-
                             },
 
                             /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
@@ -118,8 +116,7 @@ impl SimpleAsyncComponent for FluxApp {
                                             connect_key_pressed => move |ctrl, keyval, _, _| {
                                                 let widget = ctrl.widget().unwrap();
                                                 let b = widget.downcast_ref::<gtk::Box>().unwrap();
-                                                // Walk children to find the one that currently owns GTK focus,
-                                                // focus_child() is only a layout routing hint and may be stale.
+
                                                 let mut focused: Option<gtk::Widget> = None;
                                                 let mut child = b.first_child();
                                                 while let Some(w) = child {
@@ -185,8 +182,6 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                                     set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
 
-                                    // Populate once when the entry is mapped (i.e. when the user
-                                    // switches to path-entry mode), not on every model update.
                                     connect_map[current_path = model.current_path.clone()] => move |entry| {
                                         entry.set_text(&current_path.to_string_lossy());
                                         let pos = entry.text_length() as i32;
@@ -205,7 +200,6 @@ impl SimpleAsyncComponent for FluxApp {
                                     connect_activate[sender] => move |entry| {
                                         let path_str = entry.text().to_string();
                                         if !path_str.is_empty() {
-                                            // Use expand_path for consistent path normalization (handles ~, absolute paths, etc.)
                                             let normalized_path = crate::utils::expand_path(&path_str);
                                             sender.input(AppMsg::Navigate(normalized_path));
                                         }
@@ -213,46 +207,71 @@ impl SimpleAsyncComponent for FluxApp {
                                     },
                                 } -> { set_name: constants::VIEW_ENTRY },
 
-                                /// Filtering and search input field.
-                                add_child = &gtk::SearchEntry {
-                                    set_hexpand: false,
+                                /// Content search layout container
+                                add_child = &gtk::Box {
+                                    set_orientation: gtk::Orientation::Horizontal,
+                                    set_spacing: constants::HEADER_BTN_SPACING,
                                     set_halign: gtk::Align::Center,
-                                    set_width_request: constants::SEARCH_ENTRY_WIDTH_REQUEST,
-                                    #[track = "model.search_just_opened"]
-                                    set_text: &model.filter,
-                                    add_controller = gtk::EventControllerKey {
-                                        connect_key_pressed[sender] => move |_, keyval, _, _| {
-                                            if keyval == gdk::Key::Escape {
-                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
-                                                return glib::Propagation::Stop;
+
+                                    /// Filtering and search input field.
+                                    append = &gtk::SearchEntry {
+                                        set_hexpand: false,
+                                        set_width_request: constants::SEARCH_ENTRY_WIDTH_REQUEST,
+                                        #[track = "model.search_just_opened"]
+                                        set_text: &model.filter,
+                                        add_controller = gtk::EventControllerKey {
+                                            connect_key_pressed[sender] => move |_, keyval, _, _| {
+                                                if keyval == gdk::Key::Escape {
+                                                    sender.input(AppMsg::CancelContentSearch);
+                                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                                    return glib::Propagation::Stop;
+                                                }
+                                                glib::Propagation::Proceed
                                             }
-                                            glib::Propagation::Proceed
-                                        }
+                                        },
+                                        connect_activate[sender] => move |_| {
+                                            sender.input(AppMsg::Activate);
+                                        },
+                                        connect_search_changed[sender] => move |entry| {
+                                            sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
+                                        },
+                                        connect_map[sender] => move |e| {
+                                            e.grab_focus();
+                                            let e_ptr = e.clone();
+                                            let s_clone = sender.clone();
+                                            glib::idle_add_local_once(move || {
+                                                let pos = e_ptr.text().chars().count() as i32;
+                                                e_ptr.set_position(pos);
+                                                e_ptr.select_region(pos, pos);
+                                                s_clone.input(AppMsg::CloseSearchSync);
+                                            });
+                                        },
+                                        connect_stop_search[sender] => move |_| {
+                                            sender.input(AppMsg::CancelContentSearch);
+                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                        },
+                                        add_controller = gtk::GestureClick {
+                                            connect_pressed[sender] => move |_, _, _, _| {
+                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
+                                            }
+                                        },
                                     },
-                                    connect_activate[sender] => move |_| {
-                                        sender.input(AppMsg::Activate);
+
+                                    /// Activity indicator for content search.
+                                    append = &gtk::Spinner {
+                                        #[watch]
+                                        set_spinning: model.is_content_searching,
+                                        #[watch]
+                                        set_visible: model.is_content_searching,
                                     },
-                                    connect_search_changed[sender] => move |entry| {
-                                        sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
-                                    },
-                                    connect_map[sender] => move |e| {
-                                        e.grab_focus();
-                                        let e_ptr = e.clone();
-                                        let s_clone = sender.clone();
-                                        glib::idle_add_local_once(move || {
-                                            let pos = e_ptr.text().chars().count() as i32;
-                                            e_ptr.set_position(pos);
-                                            e_ptr.select_region(pos, pos);
-                                            s_clone.input(AppMsg::CloseSearchSync);
-                                        });
-                                    },
-                                    connect_stop_search[sender] => move |_| {
-                                        sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
-                                    },
-                                    add_controller = gtk::GestureClick {
-                                        connect_pressed[sender] => move |_, _, _, _| {
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
-                                        }
+
+                                    /// Cancellation button for content search operations.
+                                    append = &gtk::Button {
+                                        set_icon_name: "process-stop-symbolic",
+                                        add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
+                                        #[watch]
+                                        set_visible: model.is_content_searching,
+                                        connect_clicked => AppMsg::CancelContentSearch,
                                     },
                                 } -> { set_name: constants::VIEW_SEARCH },
                             },
@@ -279,7 +298,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 }
                             },
 
-                            // ── Contextual button for Recents ───────────────────────────────
+                            /// Contextual button for Recents
                             pack_end = &gtk::Button {
                                 #[watch]
                                 set_visible: model.current_path.to_string_lossy() == constants::RECENT_URI,
@@ -316,6 +335,17 @@ impl SimpleAsyncComponent for FluxApp {
                                 }
                             },
 
+                            /// Toggle between grid card layout and compact list layout.
+                            pack_end = &gtk::ToggleButton {
+                                #[watch]
+                                set_active: model.is_list_mode,
+                                set_icon_name: "view-list-symbolic",
+                                set_tooltip_text: Some(&tr("Toggle List Mode")),
+                                add_css_class: "flat",
+                                connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                                connect_clicked => AppMsg::ToggleListMode,
+                            },
+
                             /// Visual indicator of the current active sorting mode.
                             pack_end = &gtk::Box {
                                 set_orientation: gtk::Orientation::Horizontal,
@@ -325,10 +355,8 @@ impl SimpleAsyncComponent for FluxApp {
                                 add_css_class: constants::SORT_CONTAINER_CLASS,
 
                                 add_controller = gtk::GestureClick {
-                                    // Claim the event on press to prevent double-click propagation
                                     set_propagation_phase: gtk::PropagationPhase::Capture,
                                     connect_pressed[sender] => move |gesture, _, _, _| {
-                                        // Stop the event from propagating further (e.g., to window maximization logic)
                                         gesture.set_state(gtk::EventSequenceState::Claimed);
                                         sender.input(AppMsg::CycleSort);
                                     }
@@ -369,6 +397,8 @@ impl SimpleAsyncComponent for FluxApp {
                                     #[name = "grid_scroller"]
                                     gtk::ScrolledWindow {
                                         set_vexpand: true,
+                                        set_hexpand: true,
+                                        set_halign: gtk::Align::Fill,
                                         /// Scroll event controller for UI zooming (Ctrl + Scroll).
                                         add_controller = gtk::EventControllerScroll {
                                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -435,8 +465,6 @@ impl SimpleAsyncComponent for FluxApp {
                                     },
                                 },
 
-                                // Quick-list tab bar, hidden until at least one folder is pinned.
-                                // Rendered at the bottom of the grid area, centered horizontally.
                                 gtk::Revealer {
                                     set_transition_type: gtk::RevealerTransitionType::SlideUp,
                                     set_transition_duration: 150,
@@ -477,22 +505,17 @@ impl SimpleAsyncComponent for FluxApp {
                             },
 
                             /// Global drop handler for cross-instance and external file transfers.
-                            ///
-                            /// Listens for `text/uri-list` data (via `gdk::FileList`) to bridge independent
-                            /// application processes that do not share a memory space.
                             add_controller = gtk::DropTarget {
                                 set_types: &[gdk::FileList::static_type()],
                                 set_actions: gdk::DragAction::MOVE | gdk::DragAction::COPY,
 
                                 connect_drop[sender, current_path = model.current_path.clone()] => move |gesture, value, x, y| {
-                                    // 1. Force extraction of the file list
                                     if let Ok(file_list) = value.get::<gdk::FileList>() {
                                         let source_paths: Vec<PathBuf> = file_list.files()
                                             .iter()
                                             .map(|f| f.path().unwrap_or_default())
                                             .collect();
 
-                                        // 2. Logic to determine destination
                                         let mut dest_path = current_path.clone();
                                         if let Some(widget) = gesture.widget() {
                                             if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
@@ -509,7 +532,6 @@ impl SimpleAsyncComponent for FluxApp {
                                             }
                                         }
 
-                                        // 3. Trigger the external drop handler
                                         sender.input(AppMsg::HandleExternalDrop { source_paths, dest_path });
                                         return true;
                                     }
@@ -554,7 +576,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_label: &model.selection_status,
                                 add_css_class: "caption",
                                 set_halign: gtk::Align::End,
-                                set_hexpand: true, // This pushes the label to the right
+                                set_hexpand: true,
                             }
                         }
                     }
@@ -568,14 +590,6 @@ impl SimpleAsyncComponent for FluxApp {
     }
 
     /// Initializes the Flux application component, setting up state, UI widgets, and system monitors.
-    ///
-    /// Args:
-    ///     start_path: The initial filesystem path to load upon startup.
-    ///     root: The root widget of the component.
-    ///     sender: The communication channel for sending messages to the component.
-    ///
-    /// Returns:
-    ///     The initialized model and widgets encapsulated in `ComponentParts`.
     async fn init(
         start_path: Self::Init,
         root: Self::Root,
@@ -589,31 +603,25 @@ impl SimpleAsyncComponent for FluxApp {
         let main_menu = Self::build_main_menu();
         widgets.main_menu_popover.set_menu_model(Some(&main_menu));
 
-        // Map widgets that were not part of the view macro directly
         widgets.grid_scroller.set_child(Some(&model.files.view));
 
-        // Wrap both the standard sidebar list and the network section together
         let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
         sidebar_wrapper.append(model.sidebar.widget());
         sidebar_wrapper.append(&model.network_section);
         widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
 
         model.context_menu_popover.set_parent(&widgets.grid_overlay);
-        // Store sidebar widget reference for toggling
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
 
-        // Store the paned reference in the model
         model.terminal_paned = Some(widgets.main_paned.clone());
 
         if let Some(paned) = &model.terminal_paned {
             let sender_clone = sender.clone();
             paned.connect_notify(Some("position"), move |paned, _| {
-                // Calculate terminal height from paned position
                 let height = paned.height();
                 let position = paned.position();
                 let terminal_height = height - position;
 
-                // Convert pixels to character lines (roughly divide by 24)
                 let terminal_lines = terminal_height / 24;
                 if terminal_lines > 0 {
                     sender_clone.input(AppMsg::SetTerminalHeight(terminal_lines));
@@ -640,8 +648,6 @@ impl SimpleAsyncComponent for FluxApp {
             root.maximize();
         }
 
-        // The terminal is already initialized in init_components
-        // We just need to get the terminal widget from the model
         let terminal_widget = model.terminal.drawing_area.clone();
         let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         terminal_box.append(&terminal_widget);
