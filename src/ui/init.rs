@@ -255,6 +255,7 @@ impl FluxApp {
             saved_list_mode: false,
             saved_max_columns: 20,
             search_saved_layout: false,
+            transfer_dialog: None,
         };
 
         // 9. Initial State Population

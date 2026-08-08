@@ -480,6 +480,11 @@ pub struct FluxApp {
     /// Populated imperatively by `RebuildQuickPanel` whenever `exclusive_list` changes.
     /// Lives outside the relm4 view macro so it can be mutated freely from `update.rs`.
     pub quick_panel_box: gtk::Box,
+    /// Handle to the active file-transfer progress dialog, if open.
+    ///
+    /// `None` while no dialog is showing, `Some` while at least one transfer
+    /// is active and the dialog threshold has been reached.
+    pub transfer_dialog: Option<crate::ui::transfer_dialog::TransferDialogHandle>,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
@@ -798,6 +803,8 @@ pub enum AppMsg {
     /// Report progress for a specific background operation slot.
     TaskProgress {
         id: u64,
+        /// Human-readable description (filename or "N files").
+        label: String,
         current: u64,
         total: u64,
         total_items: usize,
@@ -812,6 +819,17 @@ pub enum AppMsg {
     CancelAllTasks,
     /// Throttled tick to refresh the status bar from the task queue.
     TaskQueueTick,
+    /// Open the transfer progress dialog (idempotent - no-op if already open
+    /// or if the queue drained before the message was processed).
+    ShowTransferDialog,
+    /// Show the dialog only when task `id` is still active.
+    ///
+    /// Dispatched by the 2-second delay timer in `paste_ops.rs`, prevents
+    /// opening an empty dialog when a fast copy already completed.
+    ShowTransferDialogIfActive(u64),
+    /// The transfer dialog window was closed (by the user or because the
+    /// queue drained).  Clears `FluxApp::transfer_dialog`.
+    TransferDialogClosed,
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
     /// Delivers the result of an async media duration probe for status bar display.
