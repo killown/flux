@@ -697,6 +697,11 @@ impl FluxApp {
                 sender.input(AppMsg::EnterArchive(path));
                 break;
             }
+            // 3.5. LUKS encrypted image file - probe magic bytes, prompt passphrase
+            else if crate::services::luks::is_luks_image(&path) {
+                sender.input(AppMsg::UnlockLuksImage { path });
+                break;
+            }
             // 4. Regular file opening via xdg-open
             else {
                 crate::utils::open_file(path);
