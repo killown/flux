@@ -106,6 +106,12 @@ impl FluxApp {
             AppMsg::GoBack => self.handle_go_back(&sender),
             AppMsg::GoForward => self.handle_go_forward(&sender),
             AppMsg::EnterArchive(archive_path) => self.handle_enter_archive(archive_path, &sender),
+            AppMsg::ArchiveLoaded {
+                archive_path,
+                prefix,
+                password,
+                result,
+            } => self.handle_archive_loaded(archive_path, prefix, password, result, &sender),
             AppMsg::PromptArchivePassword {
                 archive_path,
                 prefix,

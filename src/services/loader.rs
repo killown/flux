@@ -55,6 +55,7 @@ impl FluxApp {
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        self.is_loading = true;
         let path_str = path.to_string_lossy().to_string();
 
         // Network URIs must go through load_network, gio::File::for_path and
@@ -317,7 +318,10 @@ impl FluxApp {
 
             self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
         }
+
+        self.is_loading = false;
     }
+
     /// Asynchronously lists a network location via GVFS and dispatches the result.
     pub fn load_network(
         &mut self,
@@ -387,7 +391,8 @@ impl FluxApp {
     ) {
         self.directory_monitor = None;
         self.files.clear();
-        let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        self.is_loading = true;
+        self.load_id.fetch_add(1, Ordering::SeqCst);
 
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
@@ -395,12 +400,40 @@ impl FluxApp {
             password = self.cached_archive_password.clone();
         }
 
+        let archive_path_c = archive_path.clone();
+        let prefix_c = prefix.clone();
+        let password_c = password.clone();
+        let sender_c = sender.clone();
+
+        relm4::spawn_blocking(move || {
+            let result =
+                archive::list_archive_entries(&archive_path_c, &prefix_c, password_c.as_deref());
+
+            sender_c.input(AppMsg::ArchiveLoaded {
+                archive_path: archive_path_c,
+                prefix: prefix_c,
+                password: password_c,
+                result,
+            });
+        });
+    }
+
+    pub fn handle_archive_loaded(
+        &mut self,
+        archive_path: PathBuf,
+        prefix: String,
+        password: Option<String>,
+        result: Result<Vec<archive::ArchiveEntry>, archive::ArchiveError>,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.is_loading = false; // <--- Mark loading as finished
+        let current_session = self.load_id.load(Ordering::SeqCst);
         let expand_labels = self.config.ui.expand_labels;
         let sort_strategy = self.sort_by;
         let sort_ascending = self.sort_ascending;
         let folders_first = self.config.ui.folders_first;
 
-        match archive::list_archive_entries(&archive_path, &prefix, password.as_deref()) {
+        match result {
             Err(archive::ArchiveError::PasswordRequired) => {
                 self.cached_archive_password = None;
                 sender.input(AppMsg::PromptArchivePassword {
@@ -514,8 +547,6 @@ impl FluxApp {
                 }
 
                 self.update_breadcrumbs();
-
-                // Pass the extracted media tasks into your existing loader!
                 self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
             }
         }

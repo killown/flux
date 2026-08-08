@@ -109,7 +109,7 @@ fn matches_extension(path: &Path, exts: &[&str]) -> bool {
 // ─── Error type ───────────────────────────────────────────────────────────────
 
 /// Error returned by listing/extraction operations.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ArchiveError {
     /// The archive is encrypted and requires a password.
     PasswordRequired,
