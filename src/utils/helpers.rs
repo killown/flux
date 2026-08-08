@@ -837,6 +837,13 @@ impl FluxApp {
             let total_files = files.len();
             let completed = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
+            // Pre-scan total bytes so the dialog denominator is correct from the start.
+            let total_bytes: u64 = files
+                .iter()
+                .filter_map(|f| f.path())
+                .map(|p| crate::utils::helpers::scan_total_bytes(&p))
+                .sum();
+
             for file in files {
                 let src = match file.path().or_else(|| {
                     let uri = file.uri().to_string();
@@ -869,14 +876,29 @@ impl FluxApp {
 
                 sender.input(AppMsg::TaskProgress {
                     id: task_id,
+                    label: clean_basename.clone(),
                     current: 0,
-                    total: 1,
-                    total_items: 1,
+                    total: total_bytes.max(1),
+                    total_items: total_files,
                     cancellable: cancellable.clone(),
                 });
 
+                // Show dialog immediately for large / multi-file operations.
+                if total_files >= 5 || total_bytes >= 32 * 1_024 * 1_024 {
+                    sender.input(AppMsg::ShowTransferDialog);
+                }
+
                 let s = sender.clone();
                 let completed_clone = completed.clone();
+                let cancel = cancellable.clone();
+                let task_id_delay = task_id;
+                {
+                    let s_delay = s.clone();
+                    relm4::spawn(async move {
+                        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                        s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id_delay));
+                    });
+                }
 
                 relm4::spawn_blocking(move || {
                     let result = if is_cut {
@@ -885,20 +907,36 @@ impl FluxApp {
                                 &gio::File::for_path(&dest),
                                 gio::FileCopyFlags::OVERWRITE
                                     | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
-                                gio::Cancellable::NONE,
+                                Some(&cancel),
                                 None,
                             )
                             .map_err(|e| e.to_string())
                     } else if src.is_dir() {
-                        copy_dir_recursive(&src, &dest).map_err(|e| e.to_string())
+                        crate::utils::helpers::copy_dir_recursive_progress(
+                            &src,
+                            &dest,
+                            &cancel,
+                            task_id,
+                            s.input_sender(),
+                        )
+                        .map_err(|e| e.to_string())
                     } else {
-                        std::fs::copy(&src, &dest)
-                            .map(|_| ())
-                            .map_err(|e| e.to_string())
+                        crate::utils::helpers::copy_file_progress(
+                            &src,
+                            &dest,
+                            &cancel,
+                            task_id,
+                            s.input_sender(),
+                        )
+                        .map_err(|e| e.to_string())
                     };
 
                     if let Err(e) = result {
-                        s.input(AppMsg::ShowToast(format!("Copy failed: {}", e)));
+                        if !e.contains("cancelled") && !e.contains("Cancelled") {
+                            let template = crate::i18n::tr("Copy failed: {}");
+                            let msg = template.replace("{}", &e);
+                            s.input(AppMsg::ShowToast(msg));
+                        }
                     }
 
                     s.input(AppMsg::TaskCompleted(task_id));
@@ -914,6 +952,7 @@ impl FluxApp {
             Self::dispatch_paste_ops(files, is_cut, target_dir, sender);
         }
     }
+
     pub fn perform_paste(
         &self,
         files: Vec<gio::File>,
@@ -925,16 +964,10 @@ impl FluxApp {
 
     /// Shared dispatch logic for non-conflicting paste operations.
     ///
-    /// Handles both copy and cut (move) using GIO async APIs with per-byte progress
-    /// callbacks feeding the task queue. Only called for paths where no directory
-    /// conflict exists, conflicting directories go through `perform_paste_inner`.
-    ///
-    /// # Arguments
-    ///
-    /// * `files`      - GIO file list to operate on.
-    /// * `is_cut`     - `true` for move, `false` for copy.
-    /// * `target_dir` - The destination directory path.
-    /// * `sender`     - Component sender for progress and completion messages.
+    /// Handles both copy and cut (move) using GIO async APIs with per-byte
+    /// progress callbacks feeding the task queue. Only called for paths where
+    /// no directory conflict exists, conflicting directories go through
+    /// `perform_paste_inner(forced=true)`.
     pub fn dispatch_paste_ops(
         files: Vec<gio::File>,
         is_cut: bool,
@@ -992,6 +1025,13 @@ impl FluxApp {
         }
 
         let total_files = resolved_files.len();
+
+        // Pre-scan total bytes before spawning any I/O.
+        let total_bytes: u64 = resolved_files
+            .iter()
+            .map(|(p, _, _)| crate::utils::helpers::scan_total_bytes(p))
+            .sum();
+
         let completed_files = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
         for (src_path, clean_name, is_dir) in resolved_files {
@@ -1019,14 +1059,29 @@ impl FluxApp {
 
             sender.input(AppMsg::TaskProgress {
                 id: task_id,
+                label: clean_name.clone(),
                 current: 0,
-                total: 1,
-                total_items: 1,
+                total: total_bytes.max(1),
+                total_items: total_files,
                 cancellable: cancellable.clone(),
             });
 
+            // Immediate threshold check.
+            if total_files >= 5 || total_bytes >= 32 * 1_024 * 1_024 {
+                sender.input(AppMsg::ShowTransferDialog);
+            }
+
             let s = sender.clone();
             let completed_clone = completed_files.clone();
+            let cancel = cancellable.clone();
+            let task_id_delay = task_id;
+            {
+                let s_delay = s.clone();
+                relm4::spawn(async move {
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                    s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id_delay));
+                });
+            }
 
             relm4::spawn_blocking(move || {
                 let result = if is_cut {
@@ -1034,20 +1089,36 @@ impl FluxApp {
                         .move_(
                             &gio::File::for_path(&dest),
                             gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
-                            gio::Cancellable::NONE,
+                            Some(&cancel),
                             None,
                         )
                         .map_err(|e| e.to_string())
                 } else if is_dir {
-                    copy_dir_recursive(&src_path, &dest).map_err(|e| e.to_string())
+                    crate::utils::helpers::copy_dir_recursive_progress(
+                        &src_path,
+                        &dest,
+                        &cancel,
+                        task_id,
+                        s.input_sender(),
+                    )
+                    .map_err(|e| e.to_string())
                 } else {
-                    std::fs::copy(&src_path, &dest)
-                        .map(|_| ())
-                        .map_err(|e| e.to_string())
+                    crate::utils::helpers::copy_file_progress(
+                        &src_path,
+                        &dest,
+                        &cancel,
+                        task_id,
+                        s.input_sender(),
+                    )
+                    .map_err(|e| e.to_string())
                 };
 
                 if let Err(e) = result {
-                    s.input(AppMsg::ShowToast(format!("Copy failed: {}", e)));
+                    if !e.contains("cancelled") && !e.contains("Cancelled") {
+                        let template = crate::i18n::tr("Copy failed: {}");
+                        let msg = template.replace("{}", &e);
+                        s.input(AppMsg::ShowToast(msg));
+                    }
                 }
 
                 s.input(AppMsg::TaskCompleted(task_id));
@@ -1059,7 +1130,6 @@ impl FluxApp {
             });
         }
     }
-
     /// Internal helper to populate the clipboard with the current selection.
     ///
     /// Args:
@@ -1194,6 +1264,7 @@ impl FluxApp {
 ///
 /// Returns `Err` on any I/O failure encountered during directory creation,
 /// entry enumeration, or file copying.
+#[allow(dead_code)]
 pub fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
     if src == dst {
         return Ok(());
@@ -1241,4 +1312,136 @@ pub fn normalize_uri(uri: &str) -> String {
 #[allow(dead_code)]
 pub fn is_recursive_paste(src: &Path, dest_dir: &Path) -> bool {
     dest_dir.starts_with(src)
+}
+
+/// Synchronously walks a path and sums its total size in bytes.
+///
+/// Used to populate the dialog denominator before I/O begins. Non-fatal:
+/// unreadable entries are silently skipped.
+pub fn scan_total_bytes(path: &std::path::Path) -> u64 {
+    if path.is_file() {
+        return std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+    }
+    if path.is_dir() {
+        let mut total = 0u64;
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                total += scan_total_bytes(&entry.path());
+            }
+        }
+        return total;
+    }
+    0
+}
+
+/// Copies a single file via `gio::File::copy`, emitting `AppMsg::TaskProgress`
+/// on each byte-level GIO callback.
+///
+/// The `cancellable` passed here is the same token registered in the task queue,
+/// so cancelling via the transfer dialog actually aborts the I/O.
+pub fn copy_file_progress(
+    src: &std::path::Path,
+    dest: &std::path::Path,
+    cancellable: &gtk::gio::Cancellable,
+    task_id: u64,
+    sender: &relm4::Sender<crate::model::AppMsg>,
+) -> Result<(), gtk::glib::Error> {
+    use gtk::gio::prelude::*;
+    let src_file = gtk::gio::File::for_path(src);
+    let dst_file = gtk::gio::File::for_path(dest);
+    let label = src
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_default();
+
+    let s = sender.clone();
+    let lbl = label.clone();
+    let c = cancellable.clone();
+
+    src_file.copy(
+        &dst_file,
+        gtk::gio::FileCopyFlags::OVERWRITE | gtk::gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+        Some(cancellable),
+        Some(&mut Box::new(move |current, total| {
+            let _ = s.send(crate::model::AppMsg::TaskProgress {
+                id: task_id,
+                label: lbl.clone(),
+                current: current as u64,
+                total: total as u64,
+                total_items: 1,
+                cancellable: c.clone(),
+            });
+        })),
+    )
+}
+
+/// Recursively copies a directory, threading the *same* cancellable through
+/// every nested `gio::File::copy` call.
+///
+/// This ensures that cancelling via the transfer dialog actually aborts
+/// in-progress directory copies (the old `copy_dir_recursive` used
+/// `gio::Cancellable::NONE`, making cancellation a no-op).
+pub fn copy_dir_recursive_progress(
+    src: &std::path::Path,
+    dest: &std::path::Path,
+    cancellable: &gtk::gio::Cancellable,
+    task_id: u64,
+    sender: &relm4::Sender<crate::model::AppMsg>,
+) -> std::io::Result<()> {
+    use gtk::gio::prelude::*;
+
+    if src == dest {
+        return Ok(());
+    }
+    if !dest.exists() {
+        std::fs::create_dir_all(dest)?;
+    }
+
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+
+        // Honour cancellation between files so we stop promptly.
+        if cancellable.is_cancelled() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Interrupted,
+                "cancelled",
+            ));
+        }
+
+        let child_src = entry.path();
+        let child_dest = dest.join(entry.file_name());
+        let file_type = entry.file_type()?;
+
+        if file_type.is_dir() {
+            copy_dir_recursive_progress(&child_src, &child_dest, cancellable, task_id, sender)?;
+        } else {
+            let label = child_src
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let s = sender.clone();
+            let lbl = label.clone();
+            let c = cancellable.clone();
+
+            gtk::gio::File::for_path(&child_src)
+                .copy(
+                    &gtk::gio::File::for_path(&child_dest),
+                    gtk::gio::FileCopyFlags::OVERWRITE | gtk::gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                    Some(cancellable),
+                    Some(&mut Box::new(move |current, total| {
+                        let _ = s.send(crate::model::AppMsg::TaskProgress {
+                            id: task_id,
+                            label: lbl.clone(),
+                            current: current as u64,
+                            total: total as u64,
+                            total_items: 1,
+                            cancellable: c.clone(),
+                        });
+                    })),
+                )
+                .map_err(|e| std::io::Error::other(e.to_string()))?;
+        }
+    }
+
+    Ok(())
 }

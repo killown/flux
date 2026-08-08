@@ -668,6 +668,17 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_width_request: 150,
                             },
 
+                            /// ─── Show Progress button ────────────────────────────────
+                            gtk::Button {
+                                #[watch]
+                                set_visible: model.show_transfer_button(),
+                                set_icon_name: "dialog-information-symbolic",
+                                set_label: crate::i18n::tr(" Show Progress").as_str(),
+                                set_tooltip_text: Some(crate::i18n::tr("Open transfer progress dialog").as_str()),
+                                add_css_class: "flat",
+                                connect_clicked => AppMsg::ShowTransferDialog,
+                            },
+
                             /// Cancel button, visible only while transfers are in flight.
                             gtk::Button {
                                 #[watch]

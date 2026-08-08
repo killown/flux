@@ -303,15 +303,21 @@ impl FluxApp {
             // Task Operations
             AppMsg::TaskProgress {
                 id,
+                label,
                 current,
                 total,
                 total_items,
                 cancellable,
-            } => self.handle_task_progress(id, current, total, total_items, cancellable),
+            } => self.handle_task_progress(id, label, current, total, total_items, cancellable),
             AppMsg::TaskCompleted(id) => self.handle_task_completed(id),
             AppMsg::CancelTask(id) => self.handle_cancel_task(id, &sender),
             AppMsg::CancelAllTasks => self.handle_cancel_all_tasks(&sender),
             AppMsg::TaskQueueTick => self.handle_task_queue_tick(&sender),
+            AppMsg::ShowTransferDialog => self.handle_show_transfer_dialog(),
+            AppMsg::ShowTransferDialogIfActive(id) => {
+                self.handle_show_transfer_dialog_if_active(id)
+            }
+            AppMsg::TransferDialogClosed => self.handle_transfer_dialog_closed(),
             AppMsg::Refresh => self.handle_refresh_path(&sender),
             AppMsg::RestoreItem(_) => {
                 sender.input(AppMsg::Refresh);

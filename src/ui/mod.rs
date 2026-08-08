@@ -27,6 +27,7 @@ pub mod sidebar_network;
 pub mod sidebar_ops;
 pub mod task_ops;
 pub mod terminal_ops;
+pub mod transfer_dialog;
 pub mod view_ops;
 pub mod watcher_ops;
 

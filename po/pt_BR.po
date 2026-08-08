@@ -1150,3 +1150,23 @@ msgstr "Volume montado."
 #: src/services/luks.rs:163
 msgid "Wrong passphrase."
 msgstr "Senha incorreta."
+
+#: src/ui/transfer_dialog.rs:???
+msgid "File Transfer"
+msgstr "Transferência de Arquivos"
+
+#: src/ui/view.rs:???
+msgid " Show Progress"
+msgstr "Mostrar Progresso"
+
+#: src/ui/view.rs:???
+msgid "Open transfer progress dialog"
+msgstr "Abrir diálogo de progresso de transferência"
+
+#: src/ui/transfer_dialog.rs:??? (adjust line number)
+msgid "- {} remaining"
+msgstr "- {} restante"
+
+#: src/utils/helpers.rs:??? (adjust line number)
+msgid "Copy failed: {}"
+msgstr "Falha ao copiar: {}"

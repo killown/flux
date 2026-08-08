@@ -49,3 +49,28 @@ fn test_refresh_path_network_uri_routing() {
     assert!(!flux::services::network::is_network_uri(&local_path));
     assert!(flux::services::network::is_network_uri(&network_uri));
 }
+
+#[test]
+fn test_show_transfer_button_condition() {
+    use flux::services::tasks::TaskQueue;
+    use std::sync::Arc;
+
+    let queue = Arc::new(TaskQueue::default());
+    let cancellable = gtk::gio::Cancellable::new();
+    queue.update(1, "test".to_string(), 0, 100, 1, cancellable);
+
+    let has_tasks = queue.summary().is_some();
+    let dialog_open = false;
+
+    let button_visible = has_tasks && !dialog_open;
+    assert!(button_visible);
+
+    let dialog_open = true;
+    let button_visible2 = has_tasks && !dialog_open;
+    assert!(!button_visible2);
+
+    queue.remove(1);
+    let has_tasks = queue.summary().is_some();
+    let button_visible3 = has_tasks && !dialog_open;
+    assert!(!button_visible3);
+}
