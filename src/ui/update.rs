@@ -267,7 +267,11 @@ impl FluxApp {
             }
 
             // Remote Operations
-            AppMsg::NetworkLoaded { uri, contexts } => self.handle_network_loaded(uri, contexts),
+            AppMsg::NetworkLoaded {
+                uri,
+                load_id,
+                contexts,
+            } => self.handle_network_loaded(uri, load_id, contexts),
             AppMsg::ConnectToServer { uri, credentials } => {
                 self.handle_connect_to_server(uri, credentials, &sender)
             }

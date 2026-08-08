@@ -528,6 +528,9 @@ pub enum AppMsg {
     /// the GTK main thread can populate the grid without touching GIO directly.
     NetworkLoaded {
         uri: String,
+        /// Session identifier captured at spawn time, used to discard results
+        /// from background tasks that were superseded by a subsequent navigation.
+        load_id: u64,
         contexts: Vec<crate::model::FileLoadContext>,
     },
     /// Navigate to the `network:///` GIO location that lists visible network neighbours.
