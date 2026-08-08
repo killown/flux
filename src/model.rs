@@ -486,6 +486,16 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Delivers the result of an async archive directory listing.
+    ArchiveLoaded {
+        archive_path: PathBuf,
+        prefix: String,
+        password: Option<String>,
+        result: Result<
+            Vec<crate::services::archive::ArchiveEntry>,
+            crate::services::archive::ArchiveError,
+        >,
+    },
     /// Initiates a deep content search within the current directory.
     /// Syntax: `:term` to search all files, or `:.ext:term` to filter by extension
     /// (e.g., `:.rs:hello` for `.rs` files). Multiple extensions can be comma‑separated

@@ -562,6 +562,17 @@ impl SimpleAsyncComponent for FluxApp {
                                             add_css_class: "dim-label",
                                         },
                                     },
+
+                                    /// Loading overlay spinner for slow directories/archives.
+                                    add_overlay = &gtk::Spinner {
+                                        set_halign: gtk::Align::Center,
+                                        set_valign: gtk::Align::Center,
+                                        set_size_request: (48, 48),
+                                        #[watch]
+                                        set_spinning: model.is_loading,
+                                        #[watch]
+                                        set_visible: model.is_loading,
+                                    },
                                 },
 
                                 gtk::Revealer {
