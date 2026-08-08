@@ -58,6 +58,16 @@ Flux features an integrated virtual filesystem layer (`/archive://`) that allows
 | `.tar.lz4`                                        | `tar` + `lz4_flex`                |        No        |
 | `.gz`, `.bz2`, `.xz`, `.zst`, `.lz4` (standalone) | Streaming decoders                |        No        |
 
+## 🔒 Encrypted Volumes (LUKS)
+
+Flux provides built-in support for unlocking and mounting LUKS-encrypted drives and container files.
+
+- **Seamless Prompting:** Attempting to open a LUKS-encrypted partition or image triggers an integrated passphrase dialog.
+- **Auto-Mounting:** Once authenticated, the decrypted volume is mounted automatically and appears under your sidebar locations.
+- **Eject & Lock:** Unmounting a LUKS volume automatically locks the encrypted container.
+
+> **Prerequisite:** Ensure `cryptsetup` and `udisks2` are installed on your system.
+
 ## 🌐 Network Browsing
 
 Flux integrates with **GVFS** (GNOME Virtual File System) to provide seamless access to remote servers and network shares. You can browse SMB (Windows shares), SFTP, FTP, WebDAV, NFS, and more directly from the file manager.
