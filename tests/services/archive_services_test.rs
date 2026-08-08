@@ -389,3 +389,71 @@ fn test_extract_from_unsupported_archive() {
     let err = result.unwrap_err().to_string();
     assert!(err.contains("Unsupported format"));
 }
+
+#[test]
+fn test_parse_7z_iso_list_output_parsing() {
+    use std::collections::HashMap;
+
+    let mock_7z_output = "\
+7-Zip 23.01 (x64)
+Listing archive: test.iso
+
+----------
+Path = docs/manual.pdf
+Size = 204800
+Attributes = _
+Modified = 2026-05-10 12:00:00
+
+Path = images
+Size = 0
+Attributes = D
+
+        ";
+
+    let mut seen: HashMap<String, flux::services::archive::ArchiveEntry> = HashMap::new();
+    let mut cur_path = String::new();
+    let mut cur_size: u64 = 0;
+    let mut cur_is_dir = false;
+    let mut in_block = false;
+
+    for line in mock_7z_output.lines() {
+        let line = line.trim();
+        if line.starts_with("----------") {
+            in_block = true;
+            continue;
+        }
+        if !in_block {
+            continue;
+        }
+        if line.is_empty() {
+            if !cur_path.is_empty() {
+                seen.insert(
+                    cur_path.clone(),
+                    flux::services::archive::ArchiveEntry {
+                        name: cur_path.clone(),
+                        is_dir: cur_is_dir,
+                        size: cur_size,
+                        mtime: 0,
+                        inner_path: cur_path.clone(),
+                        is_encrypted: false,
+                    },
+                );
+            }
+            cur_path.clear();
+            cur_size = 0;
+            cur_is_dir = false;
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("Path = ") {
+            cur_path = rest.replace('\\', "/");
+        } else if let Some(rest) = line.strip_prefix("Size = ") {
+            cur_size = rest.trim().parse().unwrap_or(0);
+        } else if let Some(rest) = line.strip_prefix("Attributes = ") {
+            cur_is_dir = rest.trim_start().starts_with('D');
+        }
+    }
+
+    assert_eq!(seen.len(), 2);
+    assert_eq!(seen.get("docs/manual.pdf").unwrap().size, 204800);
+    assert!(seen.get("images").unwrap().is_dir);
+}

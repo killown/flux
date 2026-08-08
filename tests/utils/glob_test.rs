@@ -45,3 +45,27 @@ fn combined() {
     assert!(glob_match("a*.py", "a.py"));
     assert!(!glob_match("a*.py", "b.py"));
 }
+
+#[test]
+fn test_expand_mime_category_shorthands() {
+    use flux::utils::glob::expand_mime_category;
+
+    let images = expand_mime_category("image/*");
+    assert!(images.contains(&"*.jpg".to_string()));
+    assert!(images.contains(&"*.png".to_string()));
+    assert!(images.contains(&"*.svg".to_string()));
+
+    let videos = expand_mime_category("video/*");
+    assert!(videos.contains(&"*.mp4".to_string()));
+    assert!(videos.contains(&"*.mkv".to_string()));
+
+    let docs = expand_mime_category("doc/*");
+    assert!(docs.contains(&"*.pdf".to_string()));
+    assert!(docs.contains(&"*.docx".to_string()));
+
+    // Pass-through for plain globs
+    assert_eq!(
+        expand_mime_category("*.custom"),
+        vec!["*.custom".to_string()]
+    );
+}
