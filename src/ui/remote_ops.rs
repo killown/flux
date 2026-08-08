@@ -5,16 +5,14 @@ use adw::prelude::*;
 use relm4::prelude::*;
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_network_loaded(
         &mut self,
-        _uri: String,
-        load_id: u64,
+        uri: String,
         contexts: Vec<crate::model::FileLoadContext>,
     ) {
-        if load_id != self.load_id.load(Ordering::SeqCst) {
+        if self.current_path != std::path::Path::new(&uri) {
             return;
         }
 

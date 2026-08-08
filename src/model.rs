@@ -486,6 +486,14 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Dispatched when a LUKS image file is double-clicked and confirmed as LUKS.
+    UnlockLuksImage { path: PathBuf },
+
+    /// Dispatched by the background thread after successful unlock + mount.
+    LuksMounted {
+        image_path: PathBuf,
+        mount_point: PathBuf,
+    },
     /// Delivers the result of an async archive directory listing.
     ArchiveLoaded {
         archive_path: PathBuf,
@@ -528,9 +536,6 @@ pub enum AppMsg {
     /// the GTK main thread can populate the grid without touching GIO directly.
     NetworkLoaded {
         uri: String,
-        /// Session identifier captured at spawn time, used to discard results
-        /// from background tasks that were superseded by a subsequent navigation.
-        load_id: u64,
         contexts: Vec<crate::model::FileLoadContext>,
     },
     /// Navigate to the `network:///` GIO location that lists visible network neighbours.
