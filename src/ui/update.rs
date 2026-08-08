@@ -267,11 +267,7 @@ impl FluxApp {
             }
 
             // Remote Operations
-            AppMsg::NetworkLoaded {
-                uri,
-                load_id,
-                contexts,
-            } => self.handle_network_loaded(uri, load_id, contexts),
+            AppMsg::NetworkLoaded { uri, contexts } => self.handle_network_loaded(uri, contexts),
             AppMsg::ConnectToServer { uri, credentials } => {
                 self.handle_connect_to_server(uri, credentials, &sender)
             }
@@ -322,6 +318,18 @@ impl FluxApp {
             }
             AppMsg::ShowToast(msg) => {
                 self.toast_overlay.add_toast(adw::Toast::new(&msg));
+            }
+
+            // Mount Operations
+            AppMsg::UnlockLuksImage { path } => {
+                self.show_luks_passphrase_dialog(path, &sender);
+            }
+            AppMsg::LuksMounted {
+                image_path: _,
+                mount_point,
+            } => {
+                sender.input(AppMsg::Navigate(mount_point));
+                sender.input(AppMsg::ShowToast(crate::i18n::tr("Volume mounted.")));
             }
         }
     }
