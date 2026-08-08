@@ -7,4 +7,5 @@ mod services {
     mod state_manager_test;
     mod task_queue_test;
     mod terminal_emulator_test;
+    mod thumbnails_test;
 }
