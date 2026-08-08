@@ -9,6 +9,7 @@ pub mod archive;
 pub mod content_search;
 pub mod db;
 pub mod loader;
+pub mod luks;
 pub mod network;
 pub mod tasks;
 pub mod terminal;

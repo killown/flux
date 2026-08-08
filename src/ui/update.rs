@@ -319,6 +319,18 @@ impl FluxApp {
             AppMsg::ShowToast(msg) => {
                 self.toast_overlay.add_toast(adw::Toast::new(&msg));
             }
+
+            // Mount Operations
+            AppMsg::UnlockLuksImage { path } => {
+                self.show_luks_passphrase_dialog(path, &sender);
+            }
+            AppMsg::LuksMounted {
+                image_path: _,
+                mount_point,
+            } => {
+                sender.input(AppMsg::Navigate(mount_point));
+                sender.input(AppMsg::ShowToast(crate::i18n::tr("Volume mounted.")));
+            }
         }
     }
 }

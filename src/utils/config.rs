@@ -1205,9 +1205,38 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     None
 }
+
+/// Helper: Resolves the original image filename if `dev_node` is a LUKS mapper backed by a loop device.
+fn resolve_luks_loop_name(_dev_node: &str) -> Option<String> {
+    // Check if sysfs knows which loop device backs this mapper/dm node
+    if let Ok(entries) = fs::read_dir("/sys/block") {
+        for entry in entries.flatten() {
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+            if !name_str.starts_with("loop") {
+                continue;
+            }
+
+            // Read the backing file for the loop device
+            let backing_path = format!("/sys/block/{name_str}/loop/backing_file");
+            if let Ok(backing) = fs::read_to_string(backing_path) {
+                let backing_trimmed = backing.trim();
+                let backing_path_buf = PathBuf::from(backing_trimmed);
+
+                // Ensure it's a LUKS image
+                if crate::services::luks::is_luks_image(&backing_path_buf) {
+                    return backing_path_buf
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     let mut mounts = Vec::new();
-
     let home_dir = dirs::home_dir().unwrap_or_default();
 
     if let Ok(content) = fs::read_to_string("/proc/self/mounts") {
@@ -1215,8 +1244,8 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
             let parts: Vec<&str> = line.split_whitespace().collect();
 
             if parts.len() >= 3 {
-                let path_str = parts[1];
-
+                let dev_node = parts[0]; // e.g., /dev/dm-1 or /dev/mapper/luks-...
+                let path_str = parts[1]; // e.g., /run/media/neo/b41cf1d7-...
                 let fs_type = parts[2];
                 let path = PathBuf::from(path_str);
 
@@ -1231,12 +1260,18 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
                         continue;
                     }
 
-                    if let Some(name) = path.file_name() {
-                        let display_name = name.to_string_lossy().to_string();
+                    // Check if this mount originates from a LUKS loop backing file
+                    let mut display_name = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_default();
 
-                        if !mounts.iter().any(|(_, p)| p == &path) {
-                            mounts.push((display_name, path));
-                        }
+                    if let Some(luks_name) = resolve_luks_loop_name(dev_node) {
+                        display_name = luks_name;
+                    }
+
+                    if !mounts.iter().any(|(_, p)| p == &path) {
+                        mounts.push((display_name, path));
                     }
                 }
             }

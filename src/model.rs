@@ -486,6 +486,14 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Dispatched when a LUKS image file is double-clicked and confirmed as LUKS.
+    UnlockLuksImage { path: PathBuf },
+
+    /// Dispatched by the background thread after successful unlock + mount.
+    LuksMounted {
+        image_path: PathBuf,
+        mount_point: PathBuf,
+    },
     /// Delivers the result of an async archive directory listing.
     ArchiveLoaded {
         archive_path: PathBuf,
