@@ -74,28 +74,6 @@ fn test_expand_tilde_lone_tilde() {
 }
 
 #[test]
-fn test_copy_dir_recursive_merging() {
-    use flux::utils::helpers::copy_dir_recursive;
-    use tempfile::tempdir;
-
-    let src_dir = tempdir().unwrap();
-    let dst_dir = tempdir().unwrap();
-
-    let src_sub = src_dir.path().join("sub");
-    std::fs::create_dir(&src_sub).unwrap();
-    std::fs::write(src_sub.join("a.txt"), b"data A").unwrap();
-
-    let dst_sub = dst_dir.path().join("sub");
-    std::fs::create_dir(&dst_sub).unwrap();
-    std::fs::write(dst_sub.join("b.txt"), b"data B").unwrap();
-
-    copy_dir_recursive(src_dir.path(), dst_dir.path()).unwrap();
-
-    assert!(dst_sub.join("a.txt").exists());
-    assert!(dst_sub.join("b.txt").exists());
-}
-
-#[test]
 fn test_run_custom_command_placeholder_escaping() {
     let file_path = PathBuf::from("/tmp/folder with spaces/file'name.txt");
     let cmd_template = "echo %p %d %f";

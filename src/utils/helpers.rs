@@ -34,28 +34,6 @@ impl FluxApp {
         gtk::glib::Variant::from(if self.sort_ascending { "asc" } else { "desc" })
     }
 
-    /// Synchronizes both stateful sort GIO actions with the current model state.
-    ///
-    /// Must be called after any mutation of `sort_by` or `sort_ascending` so the
-    /// hamburger menu renders the correct radio checkmark even when the sort is
-    /// changed via keyboard shortcut rather than the menu itself.
-    #[allow(dead_code)]
-    pub fn sync_sort_menu_state(&self) {
-        let app = relm4::main_adw_application();
-        if let Some(action) = app
-            .lookup_action("sort-field")
-            .and_then(|a| a.downcast::<gio::SimpleAction>().ok())
-        {
-            action.set_state(&self.sort_by.as_action_state());
-        }
-        if let Some(action) = app
-            .lookup_action("sort-direction")
-            .and_then(|a| a.downcast::<gio::SimpleAction>().ok())
-        {
-            action.set_state(&self.sort_direction_state());
-        }
-    }
-
     /// Constructs and presents the About window for the Flux file manager.
     ///
     /// Uses [`gtk::AboutDialog`] to display application metadata, version, and
@@ -1253,37 +1231,6 @@ impl FluxApp {
     }
 }
 
-/// Recursively copies a directory tree from `src` to `dst`.
-///
-/// If `dst` already exists, the contents of `src` are merged into it
-/// matching the "Replace" behaviour the user confirms in the conflict dialog.
-/// Existing files at the destination are overwritten, files absent from `src`
-/// are left untouched.
-///
-/// # Errors
-///
-/// Returns `Err` on any I/O failure encountered during directory creation,
-/// entry enumeration, or file copying.
-#[allow(dead_code)]
-pub fn copy_dir_recursive(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
-    if src == dst {
-        return Ok(());
-    }
-    if !dst.exists() {
-        std::fs::create_dir_all(dst)?;
-    }
-    for entry in std::fs::read_dir(src)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
-        if file_type.is_dir() {
-            copy_dir_recursive(&entry.path(), &dst.join(entry.file_name()))?;
-        } else {
-            std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
 /// Spawns a new application instance rooted at `path`.
 ///
 /// Uses the running executable path rather than a hardcoded binary name so
@@ -1299,13 +1246,6 @@ pub fn open_new_instance(path: &std::path::Path) -> bool {
         return false;
     };
     std::process::Command::new(exe).arg(path).spawn().is_ok()
-}
-
-/// Normalizes a URI string by removing trailing carriage returns and slashes.
-/// This prevents GIO from failing to resolve paths from cross-instance clipboards.
-#[allow(dead_code)]
-pub fn normalize_uri(uri: &str) -> String {
-    uri.trim_end_matches('\r').trim_end_matches('/').to_string()
 }
 
 /// Checks if a paste operation is recursive (pasting a folder into itself or a subfolder).
