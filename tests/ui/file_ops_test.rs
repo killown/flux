@@ -94,3 +94,18 @@ fn test_command_template_paths_arg_formatting() {
 
     assert_eq!(paths_arg, "'/tmp/file1.txt' '/tmp/file with spaces.txt'");
 }
+
+#[test]
+fn test_is_recursive_paste_detection() {
+    use std::path::Path;
+
+    let is_recursive_paste = |src: &Path, dest_dir: &Path| -> bool { dest_dir.starts_with(src) };
+
+    let parent = Path::new("/home/user/Documents");
+    let child = Path::new("/home/user/Documents/Projects/Flux");
+    let unrelated = Path::new("/home/user/Downloads");
+
+    assert!(is_recursive_paste(parent, child));
+    assert!(!is_recursive_paste(child, parent));
+    assert!(!is_recursive_paste(parent, unrelated));
+}

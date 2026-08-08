@@ -72,3 +72,46 @@ fn test_expand_tilde_lone_tilde() {
         env::set_var("HOME", home);
     }
 }
+
+#[test]
+fn test_copy_dir_recursive_merging() {
+    use flux::utils::helpers::copy_dir_recursive;
+    use tempfile::tempdir;
+
+    let src_dir = tempdir().unwrap();
+    let dst_dir = tempdir().unwrap();
+
+    let src_sub = src_dir.path().join("sub");
+    std::fs::create_dir(&src_sub).unwrap();
+    std::fs::write(src_sub.join("a.txt"), b"data A").unwrap();
+
+    let dst_sub = dst_dir.path().join("sub");
+    std::fs::create_dir(&dst_sub).unwrap();
+    std::fs::write(dst_sub.join("b.txt"), b"data B").unwrap();
+
+    copy_dir_recursive(src_dir.path(), dst_dir.path()).unwrap();
+
+    assert!(dst_sub.join("a.txt").exists());
+    assert!(dst_sub.join("b.txt").exists());
+}
+
+#[test]
+fn test_run_custom_command_placeholder_escaping() {
+    let file_path = PathBuf::from("/tmp/folder with spaces/file'name.txt");
+    let cmd_template = "echo %p %d %f";
+
+    let path_str = file_path.to_string_lossy();
+    let parent = file_path.parent().unwrap_or(&file_path).to_string_lossy();
+    let filename = file_path.file_name().unwrap_or_default().to_string_lossy();
+
+    let p_arg = format!("'{}'", path_str.replace('\'', "'\\''"));
+    let d_arg = format!("'{}'", parent.replace('\'', "'\\''"));
+    let f_arg = format!("'{}'", filename.replace('\'', "'\\''"));
+
+    let final_cmd = cmd_template
+        .replace("%p", &p_arg)
+        .replace("%d", &d_arg)
+        .replace("%f", &f_arg);
+
+    assert!(final_cmd.contains("'/tmp/folder with spaces/file'\\''name.txt'"));
+}

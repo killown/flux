@@ -138,3 +138,39 @@ fn test_network_auth_flags_bits() {
     assert!(flags.contains(NetworkAuthFlags::PASSWORD));
     assert!(!flags.contains(NetworkAuthFlags::DOMAIN));
 }
+
+#[test]
+fn test_classify_enum_error_mapping() {
+    let perm_err =
+        gtk::glib::Error::new(gtk::gio::IOErrorEnum::PermissionDenied, "Permission denied");
+    let net_err = flux::services::network::NetworkError::from(perm_err);
+    assert!(matches!(
+        net_err,
+        flux::services::network::NetworkError::AuthFailed
+    ));
+
+    let host_err = gtk::glib::Error::new(gtk::gio::IOErrorEnum::HostNotFound, "Host unreachable");
+    let net_err2 = flux::services::network::NetworkError::from(host_err);
+    assert!(matches!(
+        net_err2,
+        flux::services::network::NetworkError::HostUnreachable(_)
+    ));
+}
+
+#[test]
+fn test_uri_display_name_stripping() {
+    let uri_display_name = |uri: &str| -> String {
+        let without_scheme = uri.split("://").nth(1).unwrap_or(uri).trim_end_matches('/');
+        if without_scheme.is_empty() {
+            return "".to_owned();
+        }
+        without_scheme.to_owned()
+    };
+
+    assert_eq!(
+        uri_display_name("smb://192.168.1.1/share/"),
+        "192.168.1.1/share"
+    );
+    assert_eq!(uri_display_name("sftp://example.com/"), "example.com");
+    assert_eq!(uri_display_name("smb://"), "");
+}
