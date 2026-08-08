@@ -491,6 +491,9 @@ pub enum AppMsg {
         archive_path: PathBuf,
         prefix: String,
         password: Option<String>,
+        /// Session identifier captured at spawn time, used to discard results
+        /// from background tasks that were superseded by a subsequent navigation.
+        load_id: u64,
         result: Result<
             Vec<crate::services::archive::ArchiveEntry>,
             crate::services::archive::ArchiveError,
