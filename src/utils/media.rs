@@ -7,18 +7,14 @@
 use std::path::Path;
 use std::time::Duration;
 
-/// Probes a media file for its total stream duration without blocking the
-/// calling thread.
+/// Probes a media file for its total stream duration asynchronously without blocking the
+/// thread pool worker.
 ///
-/// Runs `ffprobe` as a subprocess and parses its machine-readable stdout.
+/// Runs `ffprobe` as a Tokio child process and parses its stdout.
 /// Returns `None` if the file is not a valid media container, if `ffprobe`
 /// is not installed, or if the output cannot be parsed.
-///
-/// # Arguments
-///
-/// * `path` - Absolute path to the audio or video file to inspect.
-pub fn probe_media_duration(path: &Path) -> Option<Duration> {
-    let output = std::process::Command::new("ffprobe")
+pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
+    let output = tokio::process::Command::new("ffprobe")
         .args([
             "-v",
             "error",
@@ -29,6 +25,7 @@ pub fn probe_media_duration(path: &Path) -> Option<Duration> {
         ])
         .arg(path)
         .output()
+        .await
         .ok()?;
 
     if !output.status.success() {

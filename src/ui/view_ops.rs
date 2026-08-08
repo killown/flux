@@ -106,8 +106,12 @@ impl FluxApp {
                         };
 
                         if mime.starts_with("audio/") || mime.starts_with("video/") {
-                            let dur = crate::utils::media::probe_media_duration(&path);
-                            s.input(AppMsg::MediaDurationReady(dur));
+                            let path_c = path.clone();
+                            let s_c = s.clone();
+                            relm4::spawn(async move {
+                                let dur = crate::utils::media::probe_media_duration(&path_c).await;
+                                s_c.input(AppMsg::MediaDurationReady(dur));
+                            });
                         }
 
                         s.input(AppMsg::FileMetaReady { mime, dimensions });
