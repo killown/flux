@@ -331,6 +331,7 @@ impl FluxApp {
     ) {
         let uri_str = uri.to_string();
         let expand_labels = self.config.ui.expand_labels;
+        let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         relm4::spawn_blocking(move || {
             match crate::services::network::list_network_entries(&uri_str, credentials.as_ref()) {
@@ -339,6 +340,7 @@ impl FluxApp {
                         crate::services::network::entries_to_load_contexts(&entries, expand_labels);
                     sender.input(AppMsg::NetworkLoaded {
                         uri: uri_str,
+                        load_id: session_id,
                         contexts,
                     });
                 }
@@ -370,7 +372,6 @@ impl FluxApp {
             }
         });
     }
-
     /// Populates the file grid with the immediate children of `prefix` inside the
     /// archive located at `archive_path`.
     ///
