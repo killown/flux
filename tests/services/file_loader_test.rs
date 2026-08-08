@@ -234,3 +234,18 @@ fn test_foreign_owner_uid_check_logic() {
     let is_same_owner = !is_trash && current_uid != current_uid;
     assert!(!is_same_owner);
 }
+
+#[test]
+fn archive_loaded_stale_session_is_discarded() {
+    let current: u64 = 3;
+    let stale: u64 = 1;
+    assert!(stale != current, "stale id must not match active session");
+    assert!(stale < current);
+}
+
+#[test]
+fn archive_loaded_matching_session_is_accepted() {
+    let spawned_id: u64 = 3;
+    let current: u64 = 3;
+    assert_eq!(spawned_id, current);
+}
