@@ -1049,7 +1049,7 @@ pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
 ///
 /// `Some(texture)` on success, `None` if the file is not visual media, if any
 /// required external tool (`ffmpeg`) is unavailable, or if I/O fails.
-pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
+pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let path_str = path.to_string_lossy();
 
     // ── 0. Virtual Archive Resolution ──────────────────────────────────────────
@@ -1059,14 +1059,14 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         if let Some((archive_path, inner)) = crate::services::archive::parse_archive_uri(&path_str)
         {
             // Extract the media file to /tmp using cached password (if any)
-            let tmp_file = crate::services::archive::extract_entry_to_tempfile(
-                &archive_path,
-                &inner,
-                None, // Pass cached password if your API exposes it here
-            )
+            let tmp_file = tokio::task::spawn_blocking(move || {
+                crate::services::archive::extract_entry_to_tempfile(&archive_path, &inner, None)
+            })
+            .await
+            .ok()?
             .ok()?;
 
-            let texture = get_or_create_thumbnail(tmp_file.path());
+            let texture = Box::pin(get_or_create_thumbnail(tmp_file.path())).await;
             tmp_file.keep().ok(); // Retain temporary file for OS cleanup
             return texture;
         }
@@ -1089,14 +1089,22 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         if !config.ui.thumbnail_types.pdfs {
             return None;
         }
-        return pdf_thumbnail(path, &cache_path);
+        let cache_p = cache_path.clone();
+        let path_p = path.to_path_buf();
+        return tokio::task::spawn_blocking(move || pdf_thumbnail(&path_p, &cache_p))
+            .await
+            .ok()?;
     }
 
     if is_font(path) {
         if !config.ui.thumbnail_types.fonts {
             return None;
         }
-        return font_thumbnail(path, &cache_path);
+        let cache_p = cache_path.clone();
+        let path_p = path.to_path_buf();
+        return tokio::task::spawn_blocking(move || font_thumbnail(&path_p, &cache_p))
+            .await
+            .ok()?;
     }
 
     let (is_img, is_vid) = is_visual_media(path);
@@ -1114,9 +1122,9 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         return None;
     }
 
-    fs::create_dir_all(&cache_dir).ok()?;
+    tokio::fs::create_dir_all(&cache_dir).await.ok()?;
 
-    let source_meta = fs::metadata(path).ok();
+    let source_meta = tokio::fs::metadata(path).await.ok();
 
     // Only check cache if the type is enabled
     if cache_path.exists() {
@@ -1130,29 +1138,35 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             return gdk::Texture::from_file(&file).ok();
         }
 
-        let _ = fs::remove_file(&cache_path);
+        let _ = tokio::fs::remove_file(&cache_path).await;
     }
 
     if is_img {
-        match gdk_pixbuf::Pixbuf::from_file_at_scale(
-            path,
-            constants::CACHED_THUMBNAIL_SIZE,
-            constants::CACHED_THUMBNAIL_SIZE,
-            true,
-        ) {
-            Ok(pixbuf) => {
-                if let Some(path_str) = cache_path.to_str() {
-                    let _ = pixbuf.savev(path_str, "png", &[]);
+        let path_buf = path.to_path_buf();
+        let cache_p = cache_path.clone();
+        return tokio::task::spawn_blocking(move || {
+            match gdk_pixbuf::Pixbuf::from_file_at_scale(
+                &path_buf,
+                constants::CACHED_THUMBNAIL_SIZE,
+                constants::CACHED_THUMBNAIL_SIZE,
+                true,
+            ) {
+                Ok(pixbuf) => {
+                    if let Some(path_str) = cache_p.to_str() {
+                        let _ = pixbuf.savev(path_str, "png", &[]);
+                    }
+                    Some(gdk::Texture::for_pixbuf(&pixbuf))
                 }
-                return Some(gdk::Texture::for_pixbuf(&pixbuf));
+                Err(_) => None,
             }
-            Err(_) => return None,
-        }
+        })
+        .await
+        .ok()?;
     }
 
     if is_vid {
         // Compute a sensible seek time using the video duration.
-        let seek_time = if let Some(dur) = probe_media_duration(path) {
+        let seek_time = if let Some(dur) = probe_media_duration(path).await {
             let dur_secs = dur.as_secs_f64();
             if dur_secs >= 60.0 {
                 60.0 // at least 1 minute for long videos
@@ -1167,7 +1181,7 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
         let seek_arg = format!("{:.3}", seek_time); // ffmpeg accepts e.g. "10.500"
 
-        let status = Command::new("ffmpeg")
+        let status = tokio::process::Command::new("ffmpeg")
             .arg("-y")
             .arg("-loglevel")
             .arg("panic")
@@ -1180,7 +1194,8 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .arg("-vf")
             .arg(format!("scale={}:-1", constants::CACHED_THUMBNAIL_SIZE))
             .arg(&cache_path)
-            .status();
+            .status()
+            .await;
 
         if matches!(status, Ok(s) if s.success() && cache_path.exists()) {
             let file = adw::gio::File::for_path(&cache_path);
@@ -1190,7 +1205,6 @@ pub fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     None
 }
-
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     let mut mounts = Vec::new();
 

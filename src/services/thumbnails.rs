@@ -42,16 +42,13 @@ impl FluxApp {
                 let handle = tokio::spawn(async move {
                     let _permit = sem_clone.acquire().await.unwrap();
 
-                    let result = tokio::task::spawn_blocking(move || {
-                        utils::get_or_create_thumbnail(&task_path)
-                    })
-                    .await;
+                    let texture = utils::get_or_create_thumbnail(&task_path).await;
 
                     if inner_session.load(Ordering::Acquire) != session_id {
                         return;
                     }
 
-                    if let Ok(Some(texture)) = result {
+                    if let Some(texture) = texture {
                         if inner_session.load(Ordering::Acquire) == session_id {
                             inner_sender.input(AppMsg::ThumbnailReady {
                                 name: task_name,
