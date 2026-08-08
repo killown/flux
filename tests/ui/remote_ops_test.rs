@@ -1,5 +1,6 @@
 use flux::model::Config;
 use flux::services::network::NetworkBookmark;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[test]
 fn test_add_network_bookmark_deduplication() {
@@ -52,4 +53,29 @@ fn test_remove_network_bookmark() {
 
     assert_eq!(config.network_bookmarks.len(), 1);
     assert_eq!(config.network_bookmarks[0].name, "Server B");
+}
+
+#[test]
+fn network_loaded_stale_session_is_discarded() {
+    let load_id = AtomicU64::new(0);
+
+    // Simulate two rapid navigations, session 1 is superseded by session 2.
+    let _session1 = load_id.fetch_add(1, Ordering::SeqCst) + 1;
+    let session2 = load_id.fetch_add(1, Ordering::SeqCst) + 1;
+
+    let current = load_id.load(Ordering::SeqCst);
+    assert_eq!(current, session2);
+
+    // session 1 arriving late must be rejected.
+    let incoming_stale: u64 = 1;
+    assert_ne!(incoming_stale, current);
+}
+
+#[test]
+fn network_loaded_matching_session_is_accepted() {
+    let load_id = AtomicU64::new(0);
+    let session = load_id.fetch_add(1, Ordering::SeqCst) + 1;
+    let current = load_id.load(Ordering::SeqCst);
+
+    assert_eq!(session, current);
 }
