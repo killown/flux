@@ -252,4 +252,29 @@ mod recents_tests {
             std::env::remove_var("XDG_DATA_HOME");
         }
     }
+
+    #[test]
+    fn test_split_mime_cmd_malformed_inputs() {
+        use flux::utils::config::split_mime_cmd;
+
+        assert!(split_mime_cmd("all\", \"builtin::copy\"").is_none());
+
+        assert!(split_mime_cmd("\"all\", \"builtin::copy").is_none());
+
+        assert!(split_mime_cmd("").is_none());
+    }
+
+    #[test]
+    fn test_get_mime_type_case_insensitive_extension() {
+        use flux::utils::config::get_mime_type;
+        use std::path::Path;
+
+        let png_upper = Path::new("/nonexistent/file.PNG");
+        let mime = get_mime_type(png_upper);
+        assert_eq!(mime, "image/png");
+
+        let unknown_ext = Path::new("/nonexistent/file.unknownext");
+        let mime_unknown = get_mime_type(unknown_ext);
+        assert_eq!(mime_unknown, "application/octet-stream");
+    }
 }
