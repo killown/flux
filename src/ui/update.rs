@@ -110,8 +110,11 @@ impl FluxApp {
                 archive_path,
                 prefix,
                 password,
+                load_id,
                 result,
-            } => self.handle_archive_loaded(archive_path, prefix, password, result, &sender),
+            } => {
+                self.handle_archive_loaded(archive_path, prefix, password, load_id, result, &sender)
+            }
             AppMsg::PromptArchivePassword {
                 archive_path,
                 prefix,

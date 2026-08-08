@@ -392,7 +392,9 @@ impl FluxApp {
         self.directory_monitor = None;
         self.files.clear();
         self.is_loading = true;
-        self.load_id.fetch_add(1, Ordering::SeqCst);
+        // Bump the session counter and capture the resulting ID so the
+        // spawned closure can stamp the message it will later dispatch.
+        let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
@@ -413,6 +415,7 @@ impl FluxApp {
                 archive_path: archive_path_c,
                 prefix: prefix_c,
                 password: password_c,
+                load_id: session_id,
                 result,
             });
         });
@@ -423,11 +426,18 @@ impl FluxApp {
         archive_path: PathBuf,
         prefix: String,
         password: Option<String>,
+        load_id: u64,
         result: Result<Vec<archive::ArchiveEntry>, archive::ArchiveError>,
         sender: &AsyncComponentSender<Self>,
     ) {
-        self.is_loading = false; // <--- Mark loading as finished
-        let current_session = self.load_id.load(Ordering::SeqCst);
+        self.is_loading = false;
+
+        // Discard results from superseded navigation sessions.
+        if load_id != self.load_id.load(Ordering::SeqCst) {
+            return;
+        }
+
+        let current_session = load_id;
         let expand_labels = self.config.ui.expand_labels;
         let sort_strategy = self.sort_by;
         let sort_ascending = self.sort_ascending;
@@ -551,7 +561,6 @@ impl FluxApp {
             }
         }
     }
-
     /// Populates the file grid with entries from the GTK recent-files registry.
     ///
     /// Parses `~/.local/share/recently-used.xbel` with the standard XML reader.
