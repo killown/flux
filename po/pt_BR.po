@@ -1134,3 +1134,19 @@ msgstr "Limpar filtro"
 #: src/ui/view.rs
 msgid "Filter:"
 msgstr "Filtro:"
+
+#: src/ui/dialogs.rs:431
+msgid "Unlock LUKS Volume"
+msgstr "Desbloquear volume LUKS"
+
+#: src/ui/dialogs.rs:435
+msgid "Enter the passphrase to unlock this encrypted image."
+msgstr "Digite a senha para desbloquear esta imagem criptografada."
+
+#: src/ui/update.rs:252
+msgid "Volume mounted."
+msgstr "Volume montado."
+
+#: src/services/luks.rs:163
+msgid "Wrong passphrase."
+msgstr "Senha incorreta."
