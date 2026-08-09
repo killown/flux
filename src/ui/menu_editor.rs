@@ -81,6 +81,7 @@ enum Msg {
     Commit {
         entry: MenuEntry,
         replace: Option<usize>,
+        target_line: usize,
     },
     Save,
     Search(String),
@@ -221,7 +222,6 @@ impl SimpleComponent for MenuEditor {
             ));
         }
         {
-            // Ctrl+F focuses the search entry, Escape clears and blurs it
             let se = search_entry.clone();
             ksc.add_shortcut(gtk::Shortcut::new(
                 gtk::ShortcutTrigger::parse_string("<ctrl>f"),
@@ -282,13 +282,20 @@ impl SimpleComponent for MenuEditor {
                 rebuild_list(&shared);
             }
 
-            Msg::Commit { entry, replace } => {
+            Msg::Commit {
+                entry,
+                replace,
+                target_line,
+            } => {
                 {
                     let mut entries = shared.entries.borrow_mut();
-                    match replace {
-                        Some(idx) if idx < entries.len() => entries[idx] = entry,
-                        _ => entries.push(entry),
+                    if let Some(old_idx) = replace {
+                        if old_idx < entries.len() {
+                            entries.remove(old_idx);
+                        }
                     }
+                    let target_idx = target_line.saturating_sub(1).min(entries.len());
+                    entries.insert(target_idx, entry);
                 }
                 rebuild_list(&shared);
             }
@@ -325,8 +332,6 @@ fn rebuild_list(shared: &Shared) {
     let entries = shared.entries.borrow();
     let query = shared.search_query.borrow();
 
-    // Collect indices that survive the filter so move-up/down targets remain
-    // correct relative to the canonical entries Vec, not the visual subset.
     let needle = query.trim().to_lowercase();
     let visible: Vec<(usize, &MenuEntry)> = entries
         .iter()
@@ -383,20 +388,42 @@ fn build_row(
         Some(sub) => format!("{} › {}", sub, entry.label),
         None => entry.label.clone(),
     };
+
     let row = adw::ActionRow::builder()
         .title(&title)
         .subtitle(format!("{} │ {}", entry.mime_types, entry.command))
         .build();
 
-    if entry.submenu.is_some() {
-        row.add_prefix(
-            &gtk::Label::builder()
-                .label("sub")
-                .css_classes(["caption", "dim-label"])
-                .valign(gtk::Align::Center)
-                .build(),
-        );
-    }
+    // ── Dedicated Prefix Column Box (Line Numbers & Submenu Status) ───────────
+    let prefix_grid = gtk::Grid::builder()
+        .column_spacing(10)
+        .valign(gtk::Align::Center)
+        .margin_end(8)
+        .build();
+
+    // Column 0: Line Number (fixed width, right-aligned)
+    let line_label = gtk::Label::builder()
+        .label(format!("L{:02}", idx + 1))
+        .css_classes(["caption", "dim-label", "numeric"])
+        .halign(gtk::Align::End)
+        .width_request(32)
+        .build();
+    prefix_grid.attach(&line_label, 0, 0, 1, 1);
+
+    // Column 1: Submenu Column (fixed width, left-aligned)
+    let sub_badge = if entry.submenu.is_some() {
+        gtk::Label::builder()
+            .label("sub")
+            .css_classes(["caption", "accent"])
+            .halign(gtk::Align::Start)
+            .width_request(28)
+            .build()
+    } else {
+        gtk::Label::builder().width_request(28).build()
+    };
+    prefix_grid.attach(&sub_badge, 1, 0, 1, 1);
+
+    row.add_prefix(&prefix_grid);
 
     let btn_row = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
@@ -450,7 +477,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     dialog.set_title(Some(&dialog_title));
     dialog.set_modal(true);
     dialog.set_transient_for(Some(&shared.root));
-    dialog.set_default_size(560, -1);
+    dialog.set_default_size(680, -1);
     dialog.set_resizable(false);
 
     let outer = gtk::Box::builder()
@@ -471,44 +498,95 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .title(tr("Action").as_str())
         .build();
 
-    // ── Fields ────────────────────────────────────────────────────────────────
-    let make_entry_row = |title: &str, value: &str| -> (adw::ActionRow, gtk::Entry) {
+    // ── Stacked Entry Row helper ──────────────────────────────────────────────
+    let make_stacked_entry_row = |title: &str, value: &str| -> (adw::PreferencesRow, gtk::Entry) {
         let entry = gtk::Entry::builder()
             .text(value)
             .hexpand(true)
-            .valign(gtk::Align::Center)
+            .margin_top(4)
+            .margin_bottom(8)
+            .margin_start(12)
+            .margin_end(12)
             .build();
-        let row = adw::ActionRow::builder()
-            .title(title)
-            .activatable_widget(&entry)
+
+        let vbox = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .margin_top(8)
+            .margin_bottom(4)
             .build();
-        row.add_suffix(&entry);
-        (row, entry)
+
+        let label = gtk::Label::builder()
+            .label(title)
+            .halign(gtk::Align::Start)
+            .margin_start(12)
+            .css_classes(["heading"])
+            .build();
+
+        vbox.append(&label);
+        vbox.append(&entry);
+
+        let pref_row = adw::PreferencesRow::builder().build();
+        pref_row.set_child(Some(&vbox));
+
+        (pref_row, entry)
     };
 
-    let (label_row, label_entry) = make_entry_row(tr("Label").as_str(), &entry.label);
-    let (sub_row, sub_entry) = make_entry_row(
-        tr("Submenu  (blank = top-level)").as_str(),
+    let total_entries = shared.entries.borrow().len();
+    let max_line = if replace.is_some() {
+        total_entries.max(1)
+    } else {
+        total_entries + 1
+    };
+
+    let initial_line = replace.map(|idx| idx + 1).unwrap_or(max_line);
+
+    // ── Line Position Spinner Row ─────────────────────────────────────────────
+    let spin_btn = gtk::SpinButton::builder()
+        .adjustment(&gtk::Adjustment::new(
+            initial_line as f64,
+            1.0,
+            max_line as f64,
+            1.0,
+            5.0,
+            0.0,
+        ))
+        .numeric(true)
+        .valign(gtk::Align::Center)
+        .margin_end(12)
+        .build();
+
+    let line_row = adw::ActionRow::builder()
+        .title(tr("Line Position in menu.rs").as_str())
+        .subtitle(tr("Set exact line order (1-based)").as_str())
+        .activatable_widget(&spin_btn)
+        .build();
+    line_row.add_suffix(&spin_btn);
+
+    let (label_row, label_entry) = make_stacked_entry_row(tr("Label").as_str(), &entry.label);
+    let (sub_row, sub_entry) = make_stacked_entry_row(
+        tr("Submenu (blank = top-level)").as_str(),
         entry.submenu.as_deref().unwrap_or(""),
     );
-    let (mime_row, mime_entry) = make_entry_row(tr("MIME Types").as_str(), &entry.mime_types);
+    let (mime_row, mime_entry) =
+        make_stacked_entry_row(tr("MIME Types").as_str(), &entry.mime_types);
     let mime_hint = adw::ActionRow::builder()
         .title("all │ file │ directory │ trash │ image/all │ video/all │ audio/ │ text/all, application/all")
         .css_classes(["property"])
         .build();
-    let (cmd_row, cmd_entry) = make_entry_row(
-        tr("Command  (%p = path · %d = dir · %f = filename)").as_str(),
+    let (cmd_row, cmd_entry) = make_stacked_entry_row(
+        tr("Command (%p = path · %d = dir · %f = filename)").as_str(),
         &entry.command,
     );
     let cmd_hint = adw::ActionRow::builder()
         .title("builtin::copy │ builtin::cut │ builtin::paste │ builtin::rename │ builtin::delete │ builtin::new_folder │ builtin::new_file │ builtin::add_to_quick_list │ builtin::set_custom_icon │ builtin::reset_custom_icon │ builtin::open_with")
         .css_classes(["property"])
         .build();
-    let (toast_row, toast_entry) = make_entry_row(
-        tr("Notification  (optional)").as_str(),
+    let (toast_row, toast_entry) = make_stacked_entry_row(
+        tr("Notification (optional)").as_str(),
         entry.toast.as_deref().unwrap_or(""),
     );
 
+    g_id.add(&line_row);
     g_id.add(&label_row);
     g_id.add(&sub_row);
     g_act.add(&mime_row);
@@ -526,7 +604,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .orientation(gtk::Orientation::Horizontal)
         .halign(gtk::Align::End)
         .spacing(8)
-        .margin_top(4)
+        .margin_top(12)
         .margin_bottom(20)
         .margin_end(20)
         .build();
@@ -577,6 +655,9 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
                 return;
             }
             label_entry.remove_css_class("error");
+
+            let target_line = spin_btn.value_as_int() as usize;
+
             let new_entry = MenuEntry {
                 label,
                 submenu: {
@@ -598,9 +679,11 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
                     }
                 },
             };
+
             sender.input(Msg::Commit {
                 entry: new_entry,
                 replace,
+                target_line,
             });
             d.close();
         });
@@ -614,9 +697,6 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
 pub fn run() {
     adw::init().expect("Failed to initialize Libadwaita");
 
-    // NON_UNIQUE prevents D-Bus name registration, which avoids disrupting
-    // GIO async operations (copy_async, move_async) running in the parent process
-    // that share the same session bus.
     let app = adw::Application::builder()
         .flags(gtk::gio::ApplicationFlags::NON_UNIQUE)
         .build();
