@@ -1,4 +1,6 @@
-use flux::model::{FileLoadContext, SortBy};
+use flux::model::FileLoadContext;
+use flux::model::SortBy;
+use flux::services::loader::resolve_thumb_source;
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -233,4 +235,23 @@ fn test_foreign_owner_uid_check_logic() {
 
     let is_same_owner = !is_trash && current_uid != current_uid;
     assert!(!is_same_owner);
+}
+
+#[test]
+fn test_custom_icon_priority_over_thumbnail() {
+    let ctx = FileLoadContext {
+        display_name: "test.jpg".to_string(),
+        sort_name: "test".to_string(),
+        target_path: PathBuf::from("/some/path/test.jpg"),
+        size: 100,
+        mtime: 0,
+        is_dir: false,
+        thumbnail_path: Some(PathBuf::from("/some/path/test.jpg")),
+        is_foreign_owner: false,
+        expand_labels: false,
+        custom_icon: Some("/custom/icon.png".to_string()),
+    };
+
+    let thumb_source = resolve_thumb_source(&ctx);
+    assert_eq!(thumb_source, Some(PathBuf::from("/custom/icon.png")));
 }

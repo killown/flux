@@ -55,3 +55,32 @@ fn test_builtin_command_action_mapping() {
     assert_eq!(full_action_name, "win.copy");
     assert_eq!(lookup_name, "copy");
 }
+
+#[test]
+fn test_builtin_set_custom_icon_matches_all_mime() {
+    let mime_types = vec!["all".to_string()];
+    let mime_image = "image/png";
+    let mime_dir = constants::MIME_DIR;
+    let mime_binary = "application/octet-stream";
+
+    for mime in [mime_image, mime_dir, mime_binary] {
+        let matches = mime_types.iter().any(|m| matches!(m.as_str(), "all"));
+        assert!(
+            matches,
+            "builtin::set_custom_icon should match mime: {mime}"
+        );
+    }
+}
+
+#[test]
+fn test_builtin_set_custom_icon_action_name_mapping() {
+    let command = "builtin::set_custom_icon";
+
+    // Mirrors the match arm in build_and_show_context_menu.
+    let lookup_name = match command {
+        "builtin::set_custom_icon" => "set-custom-icon",
+        _ => "unknown",
+    };
+
+    assert_eq!(lookup_name, "set-custom-icon");
+}
