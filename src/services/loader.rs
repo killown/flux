@@ -35,6 +35,14 @@ fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
     }
 }
 
+/// Returns the path to use as thumbnail source, giving priority to custom icon.
+pub fn resolve_thumb_source(ctx: &FileLoadContext) -> Option<PathBuf> {
+    ctx.custom_icon
+        .as_ref()
+        .map(PathBuf::from)
+        .or_else(|| ctx.thumbnail_path.clone())
+}
+
 impl FluxApp {
     /// Synchronizes the application view with the filesystem state at the provided path.
     ///
@@ -210,17 +218,17 @@ impl FluxApp {
                     }
 
                     let custom_icon = if is_dir {
-                        let path_key = target_path.to_string_lossy().to_string();
                         // Image-based override takes priority over the GTK icon name picker.
+                        let path_key = target_path.to_string_lossy().to_string();
                         config_file_icons
                             .get(&path_key)
-                            .map(|_| path_key.clone())
+                            .cloned()
                             .or_else(|| config_folder_icons.get(&path_key).cloned())
                     } else {
                         let path_key = target_path.to_string_lossy().to_string();
                         // A custom image path stored in `file_icons` takes priority over the system icon.
                         // It is rendered as a thumbnail texture via the thumbnail pipeline.
-                        config_file_icons.get(&path_key).map(|_| path_key)
+                        config_file_icons.get(&path_key).cloned()
                     };
 
                     Some(FileLoadContext {
@@ -304,10 +312,7 @@ impl FluxApp {
                 // Resolve thumbnail source before `item` is partially moved into FileItem.
                 // Covers: visual-media files, file-level custom image overrides, and
                 // directory-level custom image overrides (bypasses GTK icon name limit).
-                let thumb_source = item.thumbnail_path.clone().or_else(|| {
-                    let key = item.target_path.to_string_lossy().to_string();
-                    config_file_icons.get(&key).map(PathBuf::from)
-                });
+                let thumb_source = resolve_thumb_source(&item);
 
                 self.files.append(FileItem {
                     name: item.display_name.clone(),
