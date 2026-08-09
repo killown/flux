@@ -1,5 +1,5 @@
 use crate::model::{AppMsg, FluxApp};
-use crate::utils::helpers::NEXT_TASK_ID;
+use crate::ui::paste_ops::NEXT_TASK_ID;
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;

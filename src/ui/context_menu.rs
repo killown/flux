@@ -104,6 +104,73 @@ impl FluxApp {
                         }
                         ("win.add-to-quick-list".to_string(), "add-to-quick-list")
                     }
+                    "builtin::reset_custom_icon" => {
+                        if let Some(ref target) = path {
+                            let action = gio::SimpleAction::new("reset-custom-icon", None);
+                            let target_clone = target.clone();
+                            let s = sender.clone();
+                            action.connect_activate(move |_, _| {
+                                s.input(AppMsg::ResetFileIcon(target_clone.clone()));
+                            });
+                            self.action_group.add_action(&action);
+                        }
+                        ("win.reset-custom-icon".to_string(), "reset-custom-icon")
+                    }
+                    "builtin::set_custom_icon" => {
+                        if let Some(ref target) = path {
+                            let set_icon_action = gio::SimpleAction::new("set-custom-icon", None);
+                            let target_clone = target.clone();
+                            let sender_ic = sender.clone();
+                            set_icon_action.connect_activate(move |_, _| {
+                                let filter = gtk::FileFilter::new();
+                                filter.set_name(Some("Images"));
+                                filter.add_mime_type("image/png");
+                                filter.add_mime_type("image/jpeg");
+                                filter.add_mime_type("image/webp");
+                                filter.add_mime_type("image/svg+xml");
+
+                                let toplevels = gtk::Window::list_toplevels();
+                                let parent = toplevels
+                                    .first()
+                                    .and_then(|w| w.downcast_ref::<gtk::Window>())
+                                    .cloned();
+
+                                let chooser = gtk::FileChooserNative::builder()
+                                    .title("Select Custom Icon Image")
+                                    .action(gtk::FileChooserAction::Open)
+                                    .accept_label("Set Icon")
+                                    .cancel_label("Cancel")
+                                    .build();
+
+                                if let Some(ref win) = parent {
+                                    chooser.set_transient_for(Some(win));
+                                }
+                                chooser.add_filter(&filter);
+
+                                let target_path = target_clone.clone();
+                                let s = sender_ic.clone();
+
+                                // Keep `chooser` alive across the async response by cloning
+                                // the Arc-like GObject ref into the closure.
+                                let chooser_ref = chooser.clone();
+                                chooser.connect_response(move |_, response| {
+                                    if response == gtk::ResponseType::Accept {
+                                        if let Some(file) = chooser_ref.file() {
+                                            if let Some(image_path) = file.path() {
+                                                s.input(AppMsg::SetFileIcon {
+                                                    path: target_path.clone(),
+                                                    image_path,
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+                                chooser.show();
+                            });
+                            self.action_group.add_action(&set_icon_action);
+                        }
+                        ("win.set-custom-icon".to_string(), "set-custom-icon")
+                    }
                     "builtin::delete" => {
                         let action = gio::SimpleAction::new("delete-selection", None);
                         let s = sender.clone();

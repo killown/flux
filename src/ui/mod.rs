@@ -21,6 +21,7 @@ pub mod dialogs;
 pub mod file_ops;
 pub mod navigation;
 pub mod network_dialogs;
+pub mod paste_ops;
 pub mod remote_ops;
 pub mod search_handlers;
 pub mod sidebar_network;

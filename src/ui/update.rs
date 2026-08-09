@@ -1,5 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::FileProperties;
+use crate::utils;
 use adw::gio::prelude::*;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -40,6 +41,22 @@ impl FluxApp {
             AppMsg::SetMaxWidthChars(val) => self.handle_set_max_width_chars(val, &sender),
             AppMsg::SetExpandLabels(val) => self.handle_set_expand_labels(val, &sender),
             AppMsg::SetFoldersFirst(val) => self.handle_set_folders_first(val, &sender),
+            AppMsg::SetFileIcon { path, image_path } => {
+                self.handle_set_file_icon(path, image_path, &sender)
+            }
+            AppMsg::ResetFileIcon(path) => self.handle_reset_file_icon(path, &sender),
+            AppMsg::TriggerResetIcon => {
+                let target = self
+                    .get_selected_path()
+                    .unwrap_or_else(|| self.current_path.clone());
+                if target.is_dir() {
+                    // Clear both the GTK-name override and any image-based override.
+                    sender.input(AppMsg::ResetFolderIcon(target.clone()));
+                    sender.input(AppMsg::ResetFileIcon(target));
+                } else {
+                    sender.input(AppMsg::ResetFileIcon(target));
+                }
+            }
             AppMsg::SetIconSize(val) => self.handle_set_icon_size(val, &sender),
             AppMsg::SetSidebarWidth(val) => self.handle_set_sidebar_width(val),
             AppMsg::SetShowCsd(val) => self.handle_set_show_csd(val),
@@ -79,6 +96,18 @@ impl FluxApp {
             AppMsg::Paste => self.handle_paste_from_clipboard(&sender),
             AppMsg::PerformRename(old_path, new_name) => {
                 self.handle_perform_rename(old_path, new_name, &sender)
+            }
+            AppMsg::ItemMoved { old_path, new_path } => {
+                let old_key = old_path.to_string_lossy().to_string();
+                let new_key = new_path.to_string_lossy().to_string();
+                if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
+                    self.config.ui.file_icons.insert(new_key.clone(), v);
+                }
+                if let Some(v) = self.config.ui.folder_icons.remove(&old_key) {
+                    self.config.ui.folder_icons.insert(new_key, v);
+                }
+                utils::save_config(&self.config);
+                sender.input(AppMsg::Refresh);
             }
             AppMsg::ExecuteCommand(cmd_template) => {
                 self.handle_execute_command(cmd_template, &sender)
@@ -255,14 +284,6 @@ impl FluxApp {
                     .unwrap_or_else(|| self.current_path.clone());
                 if target.is_dir() {
                     self.show_icon_picker(target, &sender);
-                }
-            }
-            AppMsg::TriggerResetIcon => {
-                let target = self
-                    .get_selected_path()
-                    .unwrap_or_else(|| self.current_path.clone());
-                if target.is_dir() {
-                    sender.input(AppMsg::ResetFolderIcon(target));
                 }
             }
 
