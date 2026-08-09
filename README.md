@@ -93,6 +93,15 @@ Flux integrates with **GVFS** (GNOME Virtual File System) to provide seamless ac
 
 > **Prerequisite:** Install `gvfs` and the relevant backend packages (e.g., `gvfs-smb`, `gvfs-sftp`) from your distribution.
 
+
+## 🎨 Custom Icon Overrides
+
+Flux allows you to assign custom visual icons or artwork to individual files and folders.
+
+- **Set Custom Image/Icon:** Right-click any file or folder and select **Set Custom Icon** (or press `F3` for folders) to pick any custom image (`.png`, `.jpg`, `.webp`, `.svg`).
+- **Reset to Default:** Right-click the item and select **Reset Custom Icon** (or press `Ctrl+F3`) to restore the system default icon.
+- **Persistence Across Moves:** Custom icon associations are automatically re-keyed and preserved when renaming, cutting and pasting, or drag-and-drop moving items.
+
 ## ⌨️ Keyboard Shortcut & Input Hub Reference
 
 ### 6.1 Unified Global Bindings
