@@ -74,3 +74,24 @@ fn test_show_transfer_button_condition() {
     let button_visible3 = has_tasks && !dialog_open;
     assert!(!button_visible3);
 }
+
+#[test]
+fn test_short_label_utf8_char_boundary_safety() {
+    fn short_label(s: &str) -> &str {
+        match s.char_indices().nth(30) {
+            Some((idx, _)) => &s[..idx],
+            None => s,
+        }
+    }
+
+    let input = "a".repeat(29) + "á_filename_too_long.txt";
+    let truncated = short_label(&input);
+    assert_eq!(truncated.chars().count(), 30);
+
+    let emoji_input = "🚀".repeat(35);
+    let emoji_truncated = short_label(&emoji_input);
+    assert_eq!(emoji_truncated.chars().count(), 30);
+
+    let short_input = "relatório_final.pdf";
+    assert_eq!(short_label(short_input), short_input);
+}

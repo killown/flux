@@ -53,7 +53,7 @@ fn test_clean_tmp_basename() {
 #[test]
 fn test_copy_name_collision_formatting() {
     let original_name = "document.pdf".to_string();
-    let target_dir = PathBuf::from("/tmp/destination");
+    let _target_dir = PathBuf::from("/tmp/destination");
 
     // Simulates the while dest.exists() loop in dispatch_paste_ops
     let format_copy_name = |orig: &str, num: usize| -> String {

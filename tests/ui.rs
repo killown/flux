@@ -22,6 +22,7 @@ mod ui {
     mod sidebar_ops_test;
     mod task_ops_test;
     mod terminal_ops_test;
+    mod test_paste_ops;
     mod ui_components_test;
     mod ui_test;
     mod update_test;

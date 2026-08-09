@@ -254,9 +254,8 @@ fn build_task_tab(
 }
 
 fn short_label(s: &str) -> &str {
-    if s.len() > 30 {
-        &s[..30]
-    } else {
-        s
+    match s.char_indices().nth(30) {
+        Some((idx, _)) => &s[..idx],
+        None => s,
     }
 }

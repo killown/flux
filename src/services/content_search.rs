@@ -67,6 +67,7 @@ pub fn start_content_search(
 
     relm4::spawn_blocking(move || {
         // Recursive walk function now takes the allowed extensions as a reference.
+        #[allow(clippy::too_many_arguments)]
         fn walk(
             dir: &gio::File,
             term_lc: &str,
