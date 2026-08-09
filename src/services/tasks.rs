@@ -179,9 +179,10 @@ impl TaskQueue {
             });
             task.label = label;
             task.current = current;
-            task.total = total;
+            if total > 0 {
+                task.total = total;
+            }
             task.total_items = total_items;
-            // Do NOT update cancellable if the task already existed
             task.speed.push(current);
         }
     }
