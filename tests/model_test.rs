@@ -135,6 +135,38 @@ fn test_folder_icons_serialization() {
 }
 
 #[test]
+fn test_file_icons_serialization_roundtrip() {
+    let mut icons = HashMap::new();
+    icons.insert(
+        "/home/user/song.mp3".to_string(),
+        "/home/user/art.jpg".to_string(),
+    );
+
+    let config = Config {
+        ui: UIConfig {
+            file_icons: icons,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+
+    let toml_str = toml::to_string(&config).expect("Failed to serialize config");
+    assert!(toml_str.contains("/home/user/art.jpg"));
+
+    let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize config");
+    assert_eq!(
+        parsed.ui.file_icons.get("/home/user/song.mp3").cloned(),
+        Some("/home/user/art.jpg".to_string())
+    );
+}
+
+#[test]
+fn test_file_icons_defaults_to_empty() {
+    let config: Config = toml::from_str("").expect("Failed to parse empty config");
+    assert!(config.ui.file_icons.is_empty());
+}
+
+#[test]
 fn test_thumbnail_types_defaults() {
     let types = ThumbnailTypes::default();
     assert!(types.images);
