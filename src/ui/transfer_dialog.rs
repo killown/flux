@@ -8,6 +8,8 @@ use adw::prelude::*;
 use gtk::glib;
 use gtk::pango;
 use relm4::prelude::*;
+use std::cell::Cell;
+use std::rc::Rc;
 use std::sync::Arc;
 
 const REFRESH_INTERVAL_MS: u32 = 250;
@@ -18,7 +20,11 @@ pub struct TransferDialogHandle {
     window: adw::Window,
     notebook: gtk::Notebook,
     queue: Arc<TaskQueue>,
-    ticker_id: Option<glib::SourceId>,
+    /// Signals the GLib ticker to stop on its next firing without ever calling
+    /// `SourceId::remove()`.  Both `close()` and the ticker closure share this
+    /// flag, the ticker returns `ControlFlow::Break` when it is set, which lets
+    /// GLib reclaim the source naturally and avoids the double-remove panic.
+    stop_flag: Rc<Cell<bool>>,
     sender: relm4::Sender<AppMsg>,
 }
 
@@ -44,15 +50,18 @@ impl TransferDialogHandle {
     }
 
     pub fn close(&mut self) {
-        if let Some(id) = self.ticker_id.take() {
-            id.remove();
-        }
+        // Signal the ticker to exit on its next poll, never call SourceId::remove()
+        // because the ticker may have already self-removed by returning Break, which
+        // would cause GLib to panic with "Source ID was not found".
+        self.stop_flag.set(true);
         self.window.close();
     }
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
 
+/// Creates and presents the transfer progress dialog, returning a handle that
+/// owns the GLib ticker lifetime via a shared stop flag.
 pub fn create_transfer_dialog(
     queue: Arc<TaskQueue>,
     sender: relm4::Sender<AppMsg>,
@@ -95,10 +104,15 @@ pub fn create_transfer_dialog(
     let notebook_weak = notebook.downgrade();
     let queue_clone = queue.clone();
     let sender_clone = sender.clone();
+    let stop_flag = Rc::new(Cell::new(false));
+    let stop_flag_ticker = Rc::clone(&stop_flag);
 
-    let ticker_id = glib::timeout_add_local(
+    glib::timeout_add_local(
         std::time::Duration::from_millis(REFRESH_INTERVAL_MS as u64),
         move || {
+            if stop_flag_ticker.get() {
+                return glib::ControlFlow::Break;
+            }
             let Some(nb) = notebook_weak.upgrade() else {
                 return glib::ControlFlow::Break;
             };
@@ -121,7 +135,7 @@ pub fn create_transfer_dialog(
         window,
         notebook,
         queue,
-        ticker_id: Some(ticker_id),
+        stop_flag,
         sender,
     }
 }
