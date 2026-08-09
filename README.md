@@ -93,7 +93,6 @@ Flux integrates with **GVFS** (GNOME Virtual File System) to provide seamless ac
 
 > **Prerequisite:** Install `gvfs` and the relevant backend packages (e.g., `gvfs-smb`, `gvfs-sftp`) from your distribution.
 
-
 ## 🎨 Custom Icon Overrides
 
 Flux allows you to assign custom visual icons or artwork to individual files and folders.
@@ -144,32 +143,30 @@ The following table details the core hotkey mappings defined across `src/ui/inpu
 | `Ctrl + Page Up`      | `AppMsg::PrevExclusive`              | Cycles backward to the previous folder in the temporary quick list.                     |
 | `Ctrl + End`          | `AppMsg::ClearExclusive`             | Clears all entries from the temporary quick list cache.                                 |
 
-## 🔍 Session Filter
+## 🔍 Search & Filtering
 
-The filter bar lets you narrow the current directory to only matching files without leaving it. It is session-scoped - never written to disk - and resets when you navigate away or dismiss it.
+Flux features a powerful dual-mode search and filtering engine accessible via `Ctrl + F`.
 
-**Activating:** click the funnel icon in the header bar, or press the button to toggle the `VIEW_FILTER` stack child.
+### 1. Filename & Size Filtering (Quick Bar)
 
-**Syntax:** type one or more patterns separated by commas. Patterns support shell glob syntax:
+As you type in the search bar, it filters filenames instantly. You can also filter files by size using comparison operators:
 
-| Pattern        | Matches                               |
-| :------------- | :------------------------------------ |
-| `*.py`         | any file ending in `.py`              |
-| `report??.pdf` | `report` + exactly two chars + `.pdf` |
-| `main*`        | any file starting with `main`         |
-| `*`            | everything                            |
+| Pattern      | Matches                                    |
+| :----------- | :----------------------------------------- |
+| `>10MB`      | Files larger than 10 MB                    |
+| `<500KB`     | Files smaller than 500 KB                  |
+| `10MB..50MB` | Files between 10 MB and 50 MB              |
+| `>1GB video` | Combines size filtering with name matching |
 
-**MIME-category shorthands** expand automatically to their concrete extension lists:
+_Supported units:_ `B`, `K` / `KB`, `M` / `MB`, `G` / `GB`, and `T` / `TB`.
 
-| Shorthand | Expands to                                                            |
-| :-------- | :-------------------------------------------------------------------- |
-| `image/*` | jpg, jpeg, png, gif, webp, avif, heic, heif, bmp, tiff, tif, jxl, svg |
-| `video/*` | mp4, mkv, webm, avi, mov, flv, wmv, m4v, mpg, mpeg, ts, ogv           |
-| `audio/*` | mp3, flac, ogg, opus, wav, aac, m4a, wma, aiff                        |
-| `font/*`  | ttf, otf, woff, woff2, ttc                                            |
-| `doc/*`   | pdf, doc, docx, odt, txt, md, epub                                    |
+### 2. Deep Content Search (`:term`)
 
-You can mix shorthands and globs freely: `image/*, *.pdf` shows all images and PDFs together. Directories always pass through regardless of the active filter.
+Prefix your query with a colon (`:`) to recursively search **inside** text-based file contents across the directory tree rather than just matching filenames.
+
+- **Search all files:** `:term` (e.g., `:fn main`)
+- **Filter by extension:** `:.ext:term` (e.g., `:.rs:search_term` or `:.rs,py:tokio`)
+- **Requirements:** The search term must be at least 3 characters long. Press `Esc` or click the stop button to cancel an active search.
 
 ## Configuration & Customization
 
