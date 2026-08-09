@@ -83,6 +83,8 @@ impl FluxApp {
 
                 relm4::spawn_blocking(move || {
                     let result = if is_cut {
+                        let file_bytes = scan_total_bytes(&src).max(1);
+
                         let move_result = gio::File::for_path(&src)
                             .move_(
                                 &gio::File::for_path(&dest),
@@ -94,6 +96,15 @@ impl FluxApp {
                             .map_err(|e| e.to_string());
 
                         if move_result.is_ok() {
+                            s.input(AppMsg::TaskProgress {
+                                id: task_id,
+                                label: clean_basename.clone(),
+                                current: file_bytes,
+                                total: file_bytes,
+                                total_items: total_files,
+                                cancellable: cancellable.clone(),
+                            });
+
                             s.input(AppMsg::ItemMoved {
                                 old_path: src.clone(),
                                 new_path: dest.clone(),
@@ -249,6 +260,8 @@ impl FluxApp {
 
             relm4::spawn_blocking(move || {
                 let result = if is_cut {
+                    let file_bytes = scan_total_bytes(&src_path).max(1);
+
                     let move_result = gio::File::for_path(&src_path)
                         .move_(
                             &gio::File::for_path(&dest),
@@ -259,6 +272,15 @@ impl FluxApp {
                         .map_err(|e| e.to_string());
 
                     if move_result.is_ok() {
+                        s.input(AppMsg::TaskProgress {
+                            id: task_id,
+                            label: clean_name.clone(),
+                            current: file_bytes,
+                            total: file_bytes,
+                            total_items: total_files,
+                            cancellable: cancellable.clone(),
+                        });
+
                         s.input(AppMsg::ItemMoved {
                             old_path: src_path.clone(),
                             new_path: dest.clone(),
