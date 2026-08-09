@@ -1,5 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::paste_ops::NEXT_TASK_ID;
+use crate::utils::search::{parse_size_filter, SizeOp};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -15,6 +16,16 @@ pub fn start_content_search(
         return;
     }
 
+    let (size_op, clean_term) = if let Some((op, rest)) = parse_size_filter(&term) {
+        (Some(op), rest)
+    } else {
+        (None, term.clone())
+    };
+
+    if clean_term.trim().is_empty() && size_op.is_none() {
+        return;
+    }
+
     // Cancel any previous search
     if let Some(cancellable) = app.content_search_cancellable.take() {
         cancellable.cancel();
@@ -23,6 +34,17 @@ pub fn start_content_search(
     app.files.clear();
     app.filter.clear();
 
+    // Force and save list mode layout for content search results snippet display
+    if !app.search_saved_layout {
+        app.saved_list_mode = app.is_list_mode;
+        app.saved_max_columns = app.files.view.max_columns();
+        app.search_saved_layout = true;
+    }
+    app.is_list_mode = true;
+    app.files.view.set_min_columns(1);
+    app.files.view.set_max_columns(1);
+    app.sync_list_mode();
+
     let cancellable = gio::Cancellable::new();
     app.content_search_cancellable = Some(cancellable.clone());
 
@@ -30,7 +52,7 @@ pub fn start_content_search(
     app.load_id.store(session_id, Ordering::SeqCst);
 
     let current_dir = app.current_path.clone();
-    let term_lc = term.to_lowercase();
+    let term_lc = clean_term.to_lowercase();
     let load_id = app.load_id.clone();
 
     // Parse extension filter once, outside the walk.
@@ -40,6 +62,8 @@ pub fn start_content_search(
             .filter(|s| !s.is_empty())
             .collect()
     });
+
+    let size_op_clone = size_op.clone();
 
     relm4::spawn_blocking(move || {
         // Recursive walk function now takes the allowed extensions as a reference.
@@ -51,6 +75,7 @@ pub fn start_content_search(
             sender: &AsyncComponentSender<FluxApp>,
             load_id: &std::sync::atomic::AtomicU64,
             allowed_exts: &Option<Vec<String>>,
+            size_op: &Option<SizeOp>,
         ) {
             if load_id.load(Ordering::Acquire) != session_id || cancellable.is_cancelled() {
                 return;
@@ -95,6 +120,7 @@ pub fn start_content_search(
                         sender,
                         load_id,
                         allowed_exts,
+                        size_op,
                     );
                     continue;
                 }
@@ -104,59 +130,85 @@ pub fn start_content_search(
                     continue;
                 }
 
+                let path = match child.path() {
+                    Some(p) => p,
+                    None => continue,
+                };
+
+                if let Some(ref op) = size_op {
+                    let metadata = match std::fs::metadata(&path) {
+                        Ok(m) => m,
+                        Err(_) => continue,
+                    };
+                    let size = metadata.len();
+                    let size_match = match op {
+                        SizeOp::Gt(v) => size > *v,
+                        SizeOp::Lt(v) => size < *v,
+                        SizeOp::Range(l, r) => size >= *l && size <= *r,
+                    };
+                    if !size_match {
+                        continue;
+                    }
+                }
+
                 // ---- Extension filter ----
                 // If an extension filter is provided, check that the file's extension is in the list.
                 if let Some(ref exts) = allowed_exts {
-                    if let Some(path) = child.path() {
-                        let file_ext = path
-                            .extension()
-                            .and_then(|e| e.to_str())
-                            .map(|s| s.to_lowercase())
-                            .unwrap_or_default();
-                        if !exts.is_empty() && !exts.contains(&file_ext) {
-                            continue; // skip this file
-                        }
-                    } else {
-                        // No path? skip if filter is active (can't determine extension).
-                        continue;
+                    let file_ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|s| s.to_lowercase())
+                        .unwrap_or_default();
+                    if !exts.is_empty() && !exts.contains(&file_ext) {
+                        continue; // skip this file
                     }
                 }
 
                 // Optional MIME filter
-                if let Some(content_type) = info.content_type() {
-                    let mime = content_type.to_string();
-                    if !mime.starts_with("text/") && !mime.contains("json") && !mime.contains("xml")
-                    {
-                        continue;
+                if !term_lc.is_empty() && size_op.is_none() {
+                    if let Some(content_type) = info.content_type() {
+                        let mime = content_type.to_string();
+                        if !mime.starts_with("text/")
+                            && !mime.contains("json")
+                            && !mime.contains("xml")
+                        {
+                            continue;
+                        }
                     }
                 }
 
-                if let Some(path) = child.path() {
-                    // Read directly on the background thread pool.
-                    let content = match std::fs::read_to_string(&path) {
-                        Ok(c) => c,
-                        Err(_) => continue, // Skip unreadable/binary files
-                    };
+                if term_lc.is_empty() {
+                    sender.input(AppMsg::ContentSearchResult {
+                        path: path.clone(),
+                        line: "Matched Filter".to_string(),
+                        line_number: 0,
+                        session: session_id,
+                    });
+                    continue;
+                }
 
-                    for (line_number, line) in content.lines().enumerate() {
-                        // Check cancellation before each line
-                        if load_id.load(Ordering::Acquire) != session_id
-                            || cancellable.is_cancelled()
-                        {
-                            break;
-                        }
-                        if line.to_lowercase().contains(term_lc)
-                            && load_id.load(Ordering::Acquire) == session_id
-                            && !cancellable.is_cancelled()
-                        {
-                            sender.input(AppMsg::ContentSearchResult {
-                                path: path.clone(),
-                                line: line.trim().to_string(),
-                                line_number: line_number + 1,
-                                session: session_id,
-                            });
-                            //break <- add break back if you want search content to only look once per file.
-                        }
+                // Read directly on the background thread pool.
+                let content = match std::fs::read_to_string(&path) {
+                    Ok(c) => c,
+                    Err(_) => continue, // Skip unreadable/binary files
+                };
+
+                for (line_number, line) in content.lines().enumerate() {
+                    // Check cancellation before each line
+                    if load_id.load(Ordering::Acquire) != session_id || cancellable.is_cancelled() {
+                        break;
+                    }
+                    if line.to_lowercase().contains(term_lc)
+                        && load_id.load(Ordering::Acquire) == session_id
+                        && !cancellable.is_cancelled()
+                    {
+                        sender.input(AppMsg::ContentSearchResult {
+                            path: path.clone(),
+                            line: line.trim().to_string(),
+                            line_number: line_number + 1,
+                            session: session_id,
+                        });
+                        //break // add break back if you want search content to only look once per file.
                     }
                 }
             }
@@ -170,6 +222,7 @@ pub fn start_content_search(
             &sender,
             &load_id,
             &allowed_exts,
+            &size_op_clone,
         );
 
         // Only send completion if still active

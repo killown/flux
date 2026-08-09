@@ -1,7 +1,7 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use crate::utils;
-use crate::utils::search::parse_content_search_query;
+use crate::utils::search::{parse_size_filter, SizeOp};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
@@ -25,21 +25,47 @@ impl FluxApp {
             return;
         }
 
-        // Check for content search trigger: starts with ':' and contains a second ':'
+        // Check for content search trigger: starts with ':'
         if query_lc.starts_with(':') {
-            if let Some((term, ext_filter)) = parse_content_search_query(&query) {
-                if !self.is_content_searching {
-                    if !self.search_saved_layout {
-                        self.saved_list_mode = self.is_list_mode;
-                        self.saved_max_columns = self.files.view.max_columns();
-                        self.search_saved_layout = true;
+            return;
+        }
+
+        // Check for size filter
+        if let Some((size_op, rest_query)) = parse_size_filter(&query_lc) {
+            self.filter = query.clone();
+            self.files.clear_filters();
+
+            let filter_text = rest_query.to_lowercase();
+            let size_op_clone = size_op.clone();
+
+            self.files.add_filter(move |item| {
+                let name_match =
+                    filter_text.is_empty() || item.name.to_lowercase().contains(&filter_text);
+
+                let size_match = if item.is_dir {
+                    true
+                } else {
+                    match size_op_clone {
+                        SizeOp::Gt(v) => item.size > v,
+                        SizeOp::Lt(v) => item.size < v,
+                        SizeOp::Range(l, r) => item.size >= l && item.size <= r,
                     }
-                    self.is_list_mode = true;
-                    self.files.view.set_min_columns(1);
-                    self.files.view.set_max_columns(1);
-                    sender.input(AppMsg::StartContentSearch(term, ext_filter));
+                };
+                name_match && size_match
+            });
+
+            let view = self.files.view.clone();
+            glib::idle_add_local_once(move || {
+                if let Some(model) = view
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                {
+                    model.unselect_all();
+                    if model.n_items() > 0 {
+                        model.select_item(0, true);
+                    }
                 }
-            }
+            });
             return;
         }
 
@@ -77,12 +103,18 @@ impl FluxApp {
         }
 
         let icon = utils::get_icon_for_path(&path, false);
-        let name = path
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
 
-        let display_name = format!("{}:{}  {}", name, line_number, line);
+        // Show relative path tree location if under current_path, else full path
+        let relative_path = path
+            .strip_prefix(&self.current_path)
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_else(|_| path.to_string_lossy().into_owned());
+
+        let display_name = if line_number > 0 {
+            format!("{}:{}  {}", relative_path, line_number, line)
+        } else {
+            format!("{}  ({})", relative_path, line)
+        };
 
         self.files.append(crate::ui::FileItem {
             name: display_name,
