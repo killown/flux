@@ -501,7 +501,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         &entry.command,
     );
     let cmd_hint = adw::ActionRow::builder()
-        .title("builtin::copy │ builtin::cut │ builtin::paste │ builtin::open_with")
+        .title("builtin::copy │ builtin::cut │ builtin::paste │ builtin::rename │ builtin::delete │ builtin::new_folder │ builtin::new_file │ builtin::add_to_quick_list │ builtin::set_custom_icon │ builtin::reset_custom_icon │ builtin::open_with")
         .css_classes(["property"])
         .build();
     let (toast_row, toast_entry) = make_entry_row(
