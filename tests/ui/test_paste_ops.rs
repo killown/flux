@@ -3,6 +3,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
+use adw::gio::prelude::*;
+use flux::ui::paste_ops::perform_file_op;
+use gtk::gio;
+
 // ─── Helpers & Utilities ───────────────────────────────────────────────────
 
 /// Replicates the tmp basename cleaning logic in paste_ops.rs:
@@ -133,4 +137,39 @@ fn test_conflict_detection_logic() {
 
     assert_eq!(conflicts.len(), 1);
     assert_eq!(conflicts[0], "ExistingFolder");
+}
+
+#[test]
+fn test_safety_interrupted_cut_preserves_source() {
+    let src_dir = tempdir().unwrap();
+    let dest_dir = tempdir().unwrap();
+
+    let src_path = src_dir.path().join("critical_data.bin");
+    let mut file = File::create(&src_path).unwrap();
+    file.write_all(&[0xFFu8; 4096]).unwrap();
+
+    let dest_path = dest_dir.path().join("critical_data.bin");
+
+    File::create(&dest_path)
+        .unwrap()
+        .write_all(&[0x00u8; 1024])
+        .unwrap();
+
+    let cancellable = gio::Cancellable::new();
+    cancellable.cancel();
+
+    let result = perform_file_op(&src_path, &dest_path, true, &cancellable);
+
+    assert!(
+        result.is_err(),
+        "Operation should report cancellation error"
+    );
+    assert!(
+        src_path.exists(),
+        "Source file MUST be preserved on failure/cancellation"
+    );
+    assert!(
+        !dest_path.exists(),
+        "Partial file on destination MUST be cleaned up by perform_file_op"
+    );
 }
