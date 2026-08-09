@@ -229,11 +229,23 @@ impl SimpleAsyncComponent for FluxApp {
                                                 glib::Propagation::Proceed
                                             }
                                         },
-                                        connect_activate[sender] => move |_| {
-                                            sender.input(AppMsg::Activate);
+                                        // Enter key triggers content search if it's a ':' query
+                                        connect_activate[sender] => move |entry| {
+                                            let raw_text = entry.text().to_string();
+                                            if raw_text.starts_with(':') {
+                                                if let Some((term, ext_filter)) = crate::utils::search::parse_content_search_query(&raw_text) {
+                                                    sender.input(AppMsg::StartContentSearch(term, ext_filter));
+                                                }
+                                            } else {
+                                                sender.input(AppMsg::UpdateFilter(raw_text));
+                                            }
                                         },
+                                        // Live search for standard filters (size, time, filenames)
                                         connect_search_changed[sender] => move |entry| {
-                                            sender.input(AppMsg::UpdateFilter(entry.text().to_string()));
+                                            let text = entry.text().to_string();
+                                            if !text.starts_with(':') {
+                                                sender.input(AppMsg::UpdateFilter(text));
+                                            }
                                         },
                                         connect_map[sender] => move |e| {
                                             e.grab_focus();
@@ -256,7 +268,6 @@ impl SimpleAsyncComponent for FluxApp {
                                             }
                                         },
                                     },
-
                                     /// Activity indicator for content search.
                                     append = &gtk::Spinner {
                                         #[watch]
