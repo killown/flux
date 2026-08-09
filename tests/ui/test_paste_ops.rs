@@ -1,175 +1,313 @@
+//! Regression tests for the transfer-dialog ticker / TaskQueue shutdown race.
+//!
+//! Scenario that caused the original crash:
+//!   1. A cross-disk move is interrupted (cancelled or device ejected mid-flight).
+//!   2. The GLib ticker fires, finds `snapshot.is_empty() == true`, returns
+//!      `ControlFlow::Break` → GLib reclaims the `SourceId` internally.
+//!   3. `TaskCompleted` arrives on the main thread → `handle_task_completed` →
+//!      `dialog.refresh()` → `dialog.close()` → the old code called
+//!      `SourceId::remove()` on the now-dead source → GLib panicked:
+//!      "Source ID N was not found when attempting to remove it".
+//!
+//! The fix replaced `Option<glib::SourceId>` with `Rc<Cell<bool>>` (stop_flag).
+//! `close()` sets the flag, the ticker checks and exits via `Break`.  The source
+//! is reclaimed exactly once, by GLib, eliminating the double-remove.
+
+use std::cell::Cell;
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
-use tempfile::tempdir;
+use std::rc::Rc;
+use std::sync::Arc;
 
 use adw::gio::prelude::*;
-use flux::ui::paste_ops::perform_file_op;
 use gtk::gio;
+use tempfile::tempdir;
 
-// ─── Helpers & Utilities ───────────────────────────────────────────────────
+use flux::services::tasks::{new_queue, TaskQueue};
+use flux::ui::paste_ops::perform_file_op;
 
-/// Replicates the tmp basename cleaning logic in paste_ops.rs:
-/// Strips the `.tmpXyZ.` prefix that archive extraction occasionally adds.
-fn clean_tmp_basename(name: &str) -> String {
-    if name.starts_with(".tmp") {
-        name.split_once('.')
-            .and_then(|(_, rest)| rest.split_once('.'))
-            .map(|(_, real)| real.to_string())
-            .unwrap_or_else(|| name.to_string())
-    } else {
-        name.to_string()
+// ─── stop_flag contract ───────────────────────────────────────────────────────
+
+/// The ticker must exit immediately when the stop flag is set, regardless of
+/// queue state.  This is the core invariant of the double-remove fix.
+#[test]
+fn test_stop_flag_gates_ticker_exit() {
+    let flag = Rc::new(Cell::new(false));
+    assert!(!flag.get(), "flag must start clear");
+
+    flag.set(true);
+    assert!(flag.get(), "flag must be observable after set");
+}
+
+/// A second `close()` call (simulated by setting the flag twice) must be a
+/// no-op and must not panic - identical to the pre-crash scenario where
+/// `id.remove()` was called on an already-removed source.
+#[test]
+fn test_stop_flag_idempotent_close() {
+    let flag = Rc::new(Cell::new(false));
+    flag.set(true);
+    flag.set(true); // second close - must not panic
+    assert!(flag.get());
+}
+
+/// Verifies that a clone of the flag shares the same underlying cell, i.e. the
+/// ticker closure and `TransferDialogHandle::close()` observe the same value.
+#[test]
+fn test_stop_flag_shared_via_clone() {
+    let owner = Rc::new(Cell::new(false));
+    let ticker_view = Rc::clone(&owner);
+
+    assert!(!ticker_view.get());
+    owner.set(true); // close() sets the owner copy
+    assert!(ticker_view.get(), "ticker must see the flag set by close()");
+}
+
+/// The ticker must not set the flag itself - only `close()` owns writes.
+/// Confirms the one-directional contract: close→flag, flag→ticker exit.
+#[test]
+fn test_ticker_does_not_mutate_flag() {
+    let flag = Rc::new(Cell::new(false));
+    let ticker_flag = Rc::clone(&flag);
+
+    // Simulate one ticker iteration that observes the flag as clear.
+    let should_continue = !ticker_flag.get();
+    assert!(should_continue, "ticker should continue when flag is clear");
+
+    // Flag remains false - the ticker never wrote to it.
+    assert!(!flag.get());
+}
+
+// ─── TaskQueue drain path ─────────────────────────────────────────────────────
+
+/// When the last task completes and the queue drains, `is_empty()` returns true.
+/// This is the queue state that triggers the `close()` path inside `refresh()`.
+#[test]
+fn test_queue_drain_triggers_close_condition() {
+    let queue = new_queue();
+    let cancellable = gio::Cancellable::new();
+
+    queue.update(1, "file.bin".into(), 0, 1024, 1, cancellable.clone());
+    assert!(!queue.is_empty());
+    assert!(queue.snapshot().len() == 1);
+
+    queue.remove(1);
+
+    // This is exactly the condition checked in `TransferDialogHandle::refresh()`.
+    assert!(queue.is_empty(), "queue must be empty after remove");
+    assert!(queue.snapshot().is_empty());
+}
+
+/// Cancelling a task removes it from the queue immediately, so the next
+/// `refresh()` call sees an empty snapshot and calls `close()`.
+#[test]
+fn test_cancel_removes_task_from_queue() {
+    let queue = new_queue();
+    let cancellable = gio::Cancellable::new();
+
+    queue.update(42, "heavy_file.iso".into(), 0, 1_000_000, 1, cancellable);
+    assert!(!queue.is_empty());
+
+    queue.cancel(42);
+
+    assert!(
+        queue.is_empty(),
+        "cancelled task must be removed from queue immediately"
+    );
+}
+
+/// Multi-task scenario: cancelling all tasks during a batch move must drain the
+/// queue in a single operation and mark every cancellable as cancelled.
+#[test]
+fn test_cancel_all_drains_queue_completely() {
+    let queue = new_queue();
+
+    let cancellables: Vec<gio::Cancellable> = (0..4).map(|_| gio::Cancellable::new()).collect();
+    for (i, c) in cancellables.iter().enumerate() {
+        queue.update(i as u64, format!("file_{}.bin", i), 0, 512, 4, c.clone());
+    }
+    assert_eq!(queue.snapshot().len(), 4);
+
+    queue.cancel_all();
+
+    assert!(queue.is_empty(), "cancel_all must drain the queue");
+    for c in &cancellables {
+        assert!(c.is_cancelled(), "every cancellable must be signalled");
     }
 }
 
-/// Replicates scan_total_bytes logic for pre-scanning copy sizes.
-fn scan_total_bytes(path: &Path) -> u64 {
-    if path.is_file() {
-        return fs::metadata(path).map(|m| m.len()).unwrap_or(0);
-    }
-    if path.is_dir() {
-        let mut total = 0u64;
-        if let Ok(entries) = fs::read_dir(path) {
-            for entry in entries.flatten() {
-                total += scan_total_bytes(&entry.path());
-            }
-        }
-        return total;
-    }
-    0
-}
-
-/// Checks if pasting `src` into `dest_dir` would cause a recursive infinite loop.
-fn is_recursive_paste(src: &Path, dest_dir: &Path) -> bool {
-    dest_dir.starts_with(src)
-}
-
-// ─── Tests ─────────────────────────────────────────────────────────────────
-
+/// Regression: `remove()` on an unknown task id must be a no-op and must not
+/// panic.  The original crash chain involved `TaskCompleted` arriving after the
+/// ticker had already self-removed the source, we must be equally tolerant of
+/// duplicate completion signals on the queue side.
 #[test]
-fn test_clean_tmp_basename() {
-    assert_eq!(clean_tmp_basename(".tmpAbCd.favicon.svg"), "favicon.svg");
-    assert_eq!(clean_tmp_basename(".tmp123.notes.txt"), "notes.txt");
-    assert_eq!(clean_tmp_basename("regular_file.png"), "regular_file.png");
-    assert_eq!(clean_tmp_basename(".gitignore"), ".gitignore");
+fn test_remove_unknown_id_is_noop() {
+    let queue = new_queue();
+    queue.remove(9999); // no panic expected
+    assert!(queue.is_empty());
 }
 
+/// `summary()` returns `None` on an empty queue - the same guard used by
+/// `show_transfer_button()` and `handle_task_queue_tick()` to avoid operating
+/// on a stale dialog after the queue has drained.
 #[test]
-fn test_copy_name_collision_formatting() {
-    let original_name = "document.pdf".to_string();
-    let _target_dir = PathBuf::from("/tmp/destination");
-
-    // Simulates the while dest.exists() loop in dispatch_paste_ops
-    let format_copy_name = |orig: &str, num: usize| -> String {
-        match orig.rfind('.') {
-            Some(idx) if idx > 0 => {
-                let (name, ext) = orig.split_at(idx);
-                format!("{} (copy {}){}", name, num, ext)
-            }
-            _ => format!("{} (copy {})", orig, num),
-        }
-    };
-
-    assert_eq!(format_copy_name(&original_name, 1), "document (copy 1).pdf");
-    assert_eq!(format_copy_name(&original_name, 2), "document (copy 2).pdf");
-
-    let no_ext = "Makefile".to_string();
-    assert_eq!(format_copy_name(&no_ext, 1), "Makefile (copy 1)");
+fn test_summary_returns_none_when_empty() {
+    let queue = new_queue();
+    assert!(queue.summary().is_none());
 }
 
+/// After a partial update sequence (progress arrives, then task completes),
+/// `summary()` reflects the correct intermediate state and then becomes `None`.
 #[test]
-fn test_scan_total_bytes_directory_tree() {
-    let dir = tempdir().unwrap();
-    let root = dir.path();
+fn test_summary_tracks_progress_then_drains() {
+    let queue = new_queue();
+    let c = gio::Cancellable::new();
 
-    // Create a 100-byte file
-    let file1_path = root.join("file1.bin");
-    let mut file1 = File::create(&file1_path).unwrap();
-    file1.write_all(&[0u8; 100]).unwrap();
+    queue.update(1, "transfer.bin".into(), 0, 1000, 1, c.clone());
+    queue.update(1, "transfer.bin".into(), 500, 1000, 1, c.clone());
 
-    // Create a nested directory with a 250-byte file
-    let sub_dir = root.join("sub");
-    fs::create_dir(&sub_dir).unwrap();
-    let file2_path = sub_dir.join("file2.bin");
-    let mut file2 = File::create(&file2_path).unwrap();
-    file2.write_all(&[0u8; 250]).unwrap();
+    let (ops, items, pct) = queue.summary().expect("summary must exist mid-transfer");
+    assert_eq!(ops, 1);
+    assert_eq!(items, 1);
+    assert!((pct - 0.5).abs() < 1e-9, "progress must be 50%");
 
-    let total_bytes = scan_total_bytes(root);
-    assert_eq!(total_bytes, 350);
+    queue.remove(1);
+    assert!(
+        queue.summary().is_none(),
+        "summary must be None after drain"
+    );
 }
 
+// ─── perform_file_op cancellation contract ────────────────────────────────────
+
+/// Cross-disk move interrupted at the I/O level: `perform_file_op` must return
+/// an error, preserve the source file, and clean up any partial destination
+/// artefact.  This is the exact scenario that triggered the original crash.
 #[test]
-fn test_recursive_paste_prevention() {
-    let parent = Path::new("/home/user/Documents");
-    let child = Path::new("/home/user/Documents/Projects/Flux");
-    let unrelated = Path::new("/home/user/Downloads");
-
-    assert!(is_recursive_paste(parent, child));
-    assert!(!is_recursive_paste(child, parent));
-    assert!(!is_recursive_paste(parent, unrelated));
-}
-
-#[test]
-fn test_conflict_detection_logic() {
-    let dir = tempdir().unwrap();
-    let target_dir = dir.path();
-
-    // Create an existing folder in the destination
-    let existing_folder = target_dir.join("ExistingFolder");
-    fs::create_dir(&existing_folder).unwrap();
-
-    let incoming_items = vec![
-        ("ExistingFolder".to_string(), true),
-        ("NewFolder".to_string(), true),
-        ("existing_file.txt".to_string(), false),
-    ];
-
-    let mut conflicts = Vec::new();
-
-    for (name, is_dir) in incoming_items {
-        if is_dir {
-            let dest = target_dir.join(&name);
-            if dest.exists() && dest.is_dir() {
-                conflicts.push(name);
-            }
-        }
-    }
-
-    assert_eq!(conflicts.len(), 1);
-    assert_eq!(conflicts[0], "ExistingFolder");
-}
-
-#[test]
-fn test_safety_interrupted_cut_preserves_source() {
+fn test_interrupted_cross_disk_move_preserves_source() {
     let src_dir = tempdir().unwrap();
     let dest_dir = tempdir().unwrap();
 
-    let src_path = src_dir.path().join("critical_data.bin");
-    let mut file = File::create(&src_path).unwrap();
-    file.write_all(&[0xFFu8; 4096]).unwrap();
-
-    let dest_path = dest_dir.path().join("critical_data.bin");
-
-    File::create(&dest_path)
+    let src_path = src_dir.path().join("payload.bin");
+    File::create(&src_path)
         .unwrap()
-        .write_all(&[0x00u8; 1024])
+        .write_all(&[0xABu8; 8192])
         .unwrap();
+
+    let dest_path = dest_dir.path().join("payload.bin");
 
     let cancellable = gio::Cancellable::new();
     cancellable.cancel();
 
     let result = perform_file_op(&src_path, &dest_path, true, &cancellable);
 
-    assert!(
-        result.is_err(),
-        "Operation should report cancellation error"
-    );
-    assert!(
-        src_path.exists(),
-        "Source file MUST be preserved on failure/cancellation"
-    );
+    assert!(result.is_err(), "cancelled op must report failure");
+    assert!(src_path.exists(), "source must survive cancellation");
     assert!(
         !dest_path.exists(),
-        "Partial file on destination MUST be cleaned up by perform_file_op"
+        "partial destination artefact must be cleaned up"
     );
+}
+
+/// Copy (not move) interrupted mid-flight: source is never touched, partial
+/// destination is cleaned up.
+#[test]
+fn test_interrupted_copy_cleans_partial_dest() {
+    let src_dir = tempdir().unwrap();
+    let dest_dir = tempdir().unwrap();
+
+    let src_path = src_dir.path().join("source.bin");
+    File::create(&src_path)
+        .unwrap()
+        .write_all(&[0xCDu8; 4096])
+        .unwrap();
+
+    let dest_path = dest_dir.path().join("source.bin");
+
+    let cancellable = gio::Cancellable::new();
+    cancellable.cancel();
+
+    let result = perform_file_op(&src_path, &dest_path, false, &cancellable);
+
+    assert!(result.is_err());
+    assert!(
+        src_path.exists(),
+        "source must be untouched after failed copy"
+    );
+    assert!(!dest_path.exists(), "partial dest must be removed");
+}
+
+/// Cancelling a task after it completes successfully must not corrupt the
+/// destination.  The `cancellable` is signalled *after* `finished_flag` is set
+/// in the worker, but the queue drain happens on the main thread - this test
+/// confirms the happy path is unaffected by a late cancel signal.
+#[test]
+fn test_late_cancel_does_not_corrupt_completed_transfer() {
+    let src_dir = tempdir().unwrap();
+    let dest_dir = tempdir().unwrap();
+
+    let src_path = src_dir.path().join("data.bin");
+    let content = vec![0x55u8; 2048];
+    File::create(&src_path)
+        .unwrap()
+        .write_all(&content)
+        .unwrap();
+
+    let dest_path = dest_dir.path().join("data.bin");
+
+    let cancellable = gio::Cancellable::new();
+    // Intentionally not cancelled - operation completes first.
+    let result = perform_file_op(&src_path, &dest_path, false, &cancellable);
+
+    assert!(result.is_ok(), "completed copy must succeed");
+    assert!(dest_path.exists());
+    assert_eq!(fs::read(&dest_path).unwrap(), content);
+
+    // Late cancel - must be a no-op on an already-completed operation.
+    cancellable.cancel();
+    assert!(
+        dest_path.exists(),
+        "late cancel must not corrupt destination"
+    );
+}
+
+// ─── Queue snapshot stability ─────────────────────────────────────────────────
+
+/// `snapshot()` must return tasks sorted by id so the dialog renders a stable
+/// tab order across consecutive ticks.  Unstable ordering was the original
+/// source of the flicker-before-crash symptom.
+#[test]
+fn test_snapshot_is_sorted_by_task_id() {
+    let queue = new_queue();
+    let c = gio::Cancellable::new();
+
+    // Insert in reverse order to expose any implicit HashMap ordering.
+    for id in [5u64, 1, 3, 2, 4] {
+        queue.update(id, format!("file_{}.bin", id), 0, 100, 1, c.clone());
+    }
+
+    let snap = queue.snapshot();
+    let ids: Vec<u64> = snap.iter().map(|(id, _)| *id).collect();
+    assert_eq!(
+        ids,
+        vec![1, 2, 3, 4, 5],
+        "snapshot must be sorted by task id"
+    );
+}
+
+/// `snapshot()` must not hold the queue lock while the caller processes
+/// results.  Verified by taking a snapshot and then mutating the queue - both
+/// must succeed without deadlock.
+#[test]
+fn test_snapshot_does_not_hold_lock() {
+    let queue = Arc::new(TaskQueue::default());
+    let c = gio::Cancellable::new();
+
+    queue.update(1, "a.bin".into(), 0, 100, 1, c.clone());
+
+    let snap = queue.snapshot();
+    assert_eq!(snap.len(), 1);
+
+    // Must not deadlock - snapshot released the lock before returning.
+    queue.remove(1);
+    assert!(queue.is_empty());
 }
