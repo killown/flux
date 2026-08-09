@@ -178,6 +178,11 @@ impl FluxApp {
 
                 finished_flag.store(true, Ordering::SeqCst);
 
+                if cancellable.is_cancelled() {
+                    s.input(AppMsg::TaskCompleted(task_id));
+                    return;
+                }
+
                 if result.is_ok() {
                     t_queue.update(
                         task_id,
@@ -203,7 +208,7 @@ impl FluxApp {
                         });
                     }
                 } else if let Err(ref e) = result {
-                    if !is_cancelled_error(e) {
+                    if !is_cancelled_error(&cancellable, e) {
                         s.input(AppMsg::ShowToast(format!("Operation failed: {}", e)));
                     }
                 }
@@ -417,8 +422,8 @@ fn clean_tmp_basename(name: &str) -> String {
     }
 }
 
-fn is_cancelled_error(msg: &str) -> bool {
-    msg.contains("cancelled")
-        || msg.contains("Cancelled")
-        || msg.contains("Operation was cancelled")
+fn is_cancelled_error(cancellable: &gio::Cancellable, msg: &str) -> bool {
+    cancellable.is_cancelled()
+        || msg.contains("g-io-error-quark: 19")
+        || msg.contains("g-io-error-quark:19")
 }
