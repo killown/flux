@@ -49,6 +49,8 @@ pub fn ensure_config_file() -> PathBuf {
 "󰋊      Folder Info" => "directory", "baobab %p"
 "󰉋      New Folder" => "directory", "builtin::new_folder", "Folder created"
 "󰈔      New File" => "directory", "builtin::new_file", "File created"
+"󰸉      Set Custom Icon" => "all", "builtin::set_custom_icon", "Custom icon set"
+"󰸉      Reset Custom Icon" => "all", "builtin::reset_custom_icon", "Custom icon Reseted"
 
 # --- Media Edit ---
 "󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p", "Joining videos..."
@@ -300,6 +302,7 @@ path = "~"
                     ascending: true,
                     expand_labels: false,
                     folder_icons: std::collections::HashMap::new(),
+                    file_icons: std::collections::HashMap::new(),
                     terminal: TerminalConfig::default(),
                     sidebar_visible: true,
                     show_recents: true,

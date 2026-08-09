@@ -1,41 +1,19 @@
 //! Paste / file-copy dispatch logic with GIO per-byte progress callbacks.
 //!
 //! This module replaces the three paste functions that previously lived in
-//! the large `FluxApp` impl block inside `ui/` (formerly `utils.txt` around
-//! line 2277).  Drop-in: the public signatures of `perform_paste_inner`,
-//! `perform_paste`, and `dispatch_paste_ops` are unchanged.
-//!
-//! # What changed
-//!
-//! 1. **GIO progress callbacks** - `gio::File::copy` is called with a real
-//!    `progress_callback` closure that fires `AppMsg::TaskProgress` with live
-//!    byte counts, replacing the stub `current: 0 / total: 1` placeholders.
-//!
-//! 2. **Size pre-scan** (`scan_total_bytes`) - before any I/O starts, a
-//!    synchronous recursive walk totals up the bytes so the dialog has a real
-//!    denominator from the very first callback.
-//!
-//! 3. **Dialog threshold logic** - `ShowTransferDialog` is emitted immediately
-//!    when `file_count >= DIALOG_FILE_THRESHOLD` or
-//!    `total_bytes >= DIALOG_SIZE_THRESHOLD`.  For small copies, a 2-second
-//!    timer fires `ShowTransferDialog` **only** if the task is still alive
-//!    (fixes the "open empty dialog" race in the previous implementation).
-//!
-//! 4. **Directory copy cancellation fixed** - `copy_dir_recursive_progress`
-//!    takes a *single* `gio::Cancellable` that is shared across all nested
-//!    `gio::File::copy` calls, so cancelling via the dialog actually aborts
-//!    in-progress directory copies.
+//! the large `FluxApp` impl block inside `ui/`. Drop-in: the public signatures
+//! of `perform_paste_inner`, `perform_paste`, and `dispatch_paste_ops` are unchanged.
 
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::NEXT_TASK_ID;
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{atomic::AtomicUsize, Arc};
+
+// Global operation ID counter, monotonically increasing, unique per session.
+pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Minimum number of files that triggers the dialog without a time delay.
 const DIALOG_FILE_THRESHOLD: usize = 5;
@@ -105,7 +83,7 @@ impl FluxApp {
 
                 relm4::spawn_blocking(move || {
                     let result = if is_cut {
-                        gio::File::for_path(&src)
+                        let move_result = gio::File::for_path(&src)
                             .move_(
                                 &gio::File::for_path(&dest),
                                 gio::FileCopyFlags::OVERWRITE
@@ -113,13 +91,27 @@ impl FluxApp {
                                 Some(&cancellable),
                                 None,
                             )
-                            .map_err(|e| e.to_string())
+                            .map_err(|e| e.to_string());
+
+                        if move_result.is_ok() {
+                            s.input(AppMsg::ItemMoved {
+                                old_path: src.clone(),
+                                new_path: dest.clone(),
+                            });
+                        }
+
+                        move_result
                     } else if src.is_dir() {
-                        // Pass the *same* cancellable to every nested file copy.
-                        copy_dir_recursive_progress(&src, &dest, &cancellable, task_id, &s)
-                            .map_err(|e| e.to_string())
+                        copy_dir_recursive_progress(
+                            &src,
+                            &dest,
+                            &cancellable,
+                            task_id,
+                            s.input_sender(),
+                        )
+                        .map_err(|e| e.to_string())
                     } else {
-                        copy_file_progress(&src, &dest, &cancellable, task_id, &s)
+                        copy_file_progress(&src, &dest, &cancellable, task_id, s.input_sender())
                             .map_err(|e| e.to_string())
                     };
 
@@ -152,11 +144,6 @@ impl FluxApp {
     }
 
     /// Shared dispatch logic for non-conflicting paste operations.
-    ///
-    /// Handles both copy and cut (move) using GIO async APIs with per-byte
-    /// progress callbacks feeding the task queue.  Only called for paths where
-    /// no directory conflict exists, conflicting directories go through
-    /// `perform_paste_inner(forced=true)`.
     pub fn dispatch_paste_ops(
         files: Vec<gio::File>,
         is_cut: bool,
@@ -238,8 +225,6 @@ impl FluxApp {
                 }
             }
 
-            // Register in the queue before spawning so the status bar shows up
-            // instantly and the dialog threshold logic can read a meaningful total.
             sender.input(AppMsg::TaskProgress {
                 id: task_id,
                 label: clean_name.clone(),
@@ -254,9 +239,6 @@ impl FluxApp {
             let s = sender.clone();
             let completed_clone = completed_files.clone();
 
-            // ── Time-based fallback dialog ─────────────────────────────────
-            // For small copies that run past the threshold, show the dialog
-            // only if the task is still in the queue (i.e. not yet completed).
             {
                 let s_delay = s.clone();
                 relm4::spawn(async move {
@@ -267,19 +249,34 @@ impl FluxApp {
 
             relm4::spawn_blocking(move || {
                 let result = if is_cut {
-                    gio::File::for_path(&src_path)
+                    let move_result = gio::File::for_path(&src_path)
                         .move_(
                             &gio::File::for_path(&dest),
                             gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
                             Some(&cancellable),
                             None,
                         )
-                        .map_err(|e| e.to_string())
+                        .map_err(|e| e.to_string());
+
+                    if move_result.is_ok() {
+                        s.input(AppMsg::ItemMoved {
+                            old_path: src_path.clone(),
+                            new_path: dest.clone(),
+                        });
+                    }
+
+                    move_result
                 } else if is_dir {
-                    copy_dir_recursive_progress(&src_path, &dest, &cancellable, task_id, &s)
-                        .map_err(|e| e.to_string())
+                    copy_dir_recursive_progress(
+                        &src_path,
+                        &dest,
+                        &cancellable,
+                        task_id,
+                        s.input_sender(),
+                    )
+                    .map_err(|e| e.to_string())
                 } else {
-                    copy_file_progress(&src_path, &dest, &cancellable, task_id, &s)
+                    copy_file_progress(&src_path, &dest, &cancellable, task_id, s.input_sender())
                         .map_err(|e| e.to_string())
                 };
 
@@ -302,10 +299,6 @@ impl FluxApp {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/// Synchronously walks a path and sums its total size in bytes.
-///
-/// Used to populate the dialog denominator before I/O begins.  Non-fatal:
-/// unreadable entries are silently skipped.
 fn scan_total_bytes(path: &Path) -> u64 {
     if path.is_file() {
         return std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
@@ -322,21 +315,13 @@ fn scan_total_bytes(path: &Path) -> u64 {
     0
 }
 
-/// Copies a single file via `gio::File::copy`, emitting `TaskProgress` on each
-/// byte-level callback.
-///
-/// The `cancellable` passed here is the *same* token registered in the queue,
-/// so cancelling via the dialog actually aborts the I/O.
 fn copy_file_progress(
     src: &Path,
     dest: &Path,
     cancellable: &gio::Cancellable,
     task_id: u64,
     sender: &relm4::Sender<AppMsg>,
-) -> Result<(), glib::Error>
-where
-{
-    use crate::services::tasks::format_bytes as _;
+) -> Result<(), glib::Error> {
     let src_file = gio::File::for_path(src);
     let dst_file = gio::File::for_path(dest);
     let label = src
@@ -347,29 +332,25 @@ where
     let s = sender.clone();
     let lbl = label.clone();
 
+    let mut progress_cb = move |current: i64, total: i64| {
+        let _ = s.send(AppMsg::TaskProgress {
+            id: task_id,
+            label: lbl.clone(),
+            current: current as u64,
+            total: total as u64,
+            total_items: 1,
+            cancellable: gio::Cancellable::new(),
+        });
+    };
+
     src_file.copy(
         &dst_file,
         gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
         Some(cancellable),
-        Some(Box::new(move |current, total| {
-            let _ = s.send(AppMsg::TaskProgress {
-                id: task_id,
-                label: lbl.clone(),
-                current: current as u64,
-                total: total as u64,
-                total_items: 1,
-                cancellable: gio::Cancellable::new(), // placeholder; real token is in the queue
-            });
-        })),
+        Some(&mut progress_cb),
     )
 }
 
-/// Recursively copies a directory, threading the *same* cancellable through
-/// every nested `gio::File::copy` call.
-///
-/// This fixes the bug in the previous implementation where a fresh
-/// `gio::Cancellable::new()` was created per file, making cancellation
-/// a no-op for directory copies.
 fn copy_dir_recursive_progress(
     src: &Path,
     dest: &Path,
@@ -387,7 +368,6 @@ fn copy_dir_recursive_progress(
     for entry in std::fs::read_dir(src)? {
         let entry = entry?;
 
-        // Honour cancellation between files so we stop promptly.
         if cancellable.is_cancelled() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::Interrupted,
@@ -402,7 +382,6 @@ fn copy_dir_recursive_progress(
         if file_type.is_dir() {
             copy_dir_recursive_progress(&child_src, &child_dest, cancellable, task_id, sender)?;
         } else {
-            // Use GIO copy for per-file progress callbacks.
             let label = child_src
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
@@ -411,33 +390,31 @@ fn copy_dir_recursive_progress(
             let lbl = label.clone();
             let c = cancellable.clone();
 
+            let mut progress_cb = move |current: i64, total: i64| {
+                let _ = s.send(AppMsg::TaskProgress {
+                    id: task_id,
+                    label: lbl.clone(),
+                    current: current as u64,
+                    total: total as u64,
+                    total_items: 1,
+                    cancellable: c.clone(),
+                });
+            };
+
             gio::File::for_path(&child_src)
                 .copy(
                     &gio::File::for_path(&child_dest),
                     gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
-                    Some(&c),
-                    Some(Box::new(move |current, total| {
-                        let _ = s.send(AppMsg::TaskProgress {
-                            id: task_id,
-                            label: lbl.clone(),
-                            current: current as u64,
-                            total: total as u64,
-                            total_items: 1,
-                            cancellable: gio::Cancellable::new(),
-                        });
-                    })),
+                    Some(cancellable),
+                    Some(&mut progress_cb),
                 )
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+                .map_err(|e| std::io::Error::other(e.to_string()))?;
         }
     }
 
     Ok(())
 }
 
-/// Emits `ShowTransferDialog` immediately when thresholds are met.
-///
-/// The dialog is idempotent on the receiving side (`handle_show_transfer_dialog`
-/// early-returns if a dialog is already open).
 fn maybe_show_dialog_immediate(
     file_count: usize,
     total_bytes: u64,
@@ -448,9 +425,6 @@ fn maybe_show_dialog_immediate(
     }
 }
 
-/// Strips the `.tmpXyZ.` prefix that archive extraction occasionally adds.
-///
-/// Example: `.tmpAbCd.favicon.svg` → `favicon.svg`
 fn clean_tmp_basename(name: &str) -> String {
     if name.starts_with(".tmp") {
         name.split_once('.')
@@ -462,7 +436,6 @@ fn clean_tmp_basename(name: &str) -> String {
     }
 }
 
-/// Heuristic to identify GIO cancellation errors so we don't show a toast for them.
 fn is_cancelled_error(msg: &str) -> bool {
     msg.contains("cancelled")
         || msg.contains("Cancelled")

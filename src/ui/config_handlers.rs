@@ -104,6 +104,29 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    pub fn handle_set_file_icon(
+        &mut self,
+        path: PathBuf,
+        image_path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.file_icons.insert(
+            path.to_string_lossy().to_string(),
+            image_path.to_string_lossy().to_string(),
+        );
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
+
+    pub fn handle_reset_file_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        self.config
+            .ui
+            .file_icons
+            .remove(&path.to_string_lossy().to_string());
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
+
     pub fn handle_set_shortcut(&mut self, key: String, val: Option<String>) {
         match key.as_str() {
             "back" => self.config.shortcuts.back = val,

@@ -172,6 +172,7 @@ impl FluxApp {
 
             let config_folder_icons = self.config.ui.folder_icons.clone();
             // Clone once so the Rayon closure can own it without borrowing `self`.
+            let config_file_icons = self.config.ui.file_icons.clone();
             let extension_filter = self.extension_filter.clone();
 
             let mut items: Vec<FileLoadContext> = raw_data
@@ -210,9 +211,16 @@ impl FluxApp {
 
                     let custom_icon = if is_dir {
                         let path_key = target_path.to_string_lossy().to_string();
-                        config_folder_icons.get(&path_key).cloned()
+                        // Image-based override takes priority over the GTK icon name picker.
+                        config_file_icons
+                            .get(&path_key)
+                            .map(|_| path_key.clone())
+                            .or_else(|| config_folder_icons.get(&path_key).cloned())
                     } else {
-                        None
+                        let path_key = target_path.to_string_lossy().to_string();
+                        // A custom image path stored in `file_icons` takes priority over the system icon.
+                        // It is rendered as a thumbnail texture via the thumbnail pipeline.
+                        config_file_icons.get(&path_key).map(|_| path_key)
                     };
 
                     Some(FileLoadContext {
@@ -293,12 +301,20 @@ impl FluxApp {
                     utils::get_icon_for_path(&item.target_path, item.is_dir)
                 };
 
+                // Resolve thumbnail source before `item` is partially moved into FileItem.
+                // Covers: visual-media files, file-level custom image overrides, and
+                // directory-level custom image overrides (bypasses GTK icon name limit).
+                let thumb_source = item.thumbnail_path.clone().or_else(|| {
+                    let key = item.target_path.to_string_lossy().to_string();
+                    config_file_icons.get(&key).map(PathBuf::from)
+                });
+
                 self.files.append(FileItem {
                     name: item.display_name.clone(),
                     icon,
                     thumbnail: None,
                     is_dir: item.is_dir,
-                    path: item.target_path,
+                    path: item.target_path.clone(),
                     icon_size: self.current_icon_size,
                     size: item.size,
                     is_editing: false,
@@ -309,7 +325,7 @@ impl FluxApp {
                     active_path: Rc::new(RefCell::new(None)),
                 });
 
-                if let Some(abs_path) = item.thumbnail_path {
+                if let Some(abs_path) = thumb_source {
                     media_tasks.push((item.display_name, abs_path));
                 }
             }

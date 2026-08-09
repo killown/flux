@@ -101,6 +101,20 @@ impl FluxApp {
         match utils::rename_path(&old_path, &new_name) {
             Ok(new_path) => {
                 let _ = self.state_db.rename_path(&old_path, &new_path);
+
+                let old_key = old_path.to_string_lossy().to_string();
+                let new_key = new_path.to_string_lossy().to_string();
+
+                // Re-key custom image overrides so the association survives renames.
+                if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
+                    self.config.ui.file_icons.insert(new_key.clone(), v);
+                }
+                // Re-key GTK icon name overrides for directories.
+                if let Some(v) = self.config.ui.folder_icons.remove(&old_key) {
+                    self.config.ui.folder_icons.insert(new_key, v);
+                }
+
+                utils::save_config(&self.config);
                 sender.input(AppMsg::Navigate(self.current_path.clone()));
             }
             Err(e) => {
@@ -244,13 +258,21 @@ impl FluxApp {
                 let src_file = gio::File::for_path(&source_path);
                 let dst_file = gio::File::for_path(&final_dest);
 
-                if let Err(e) = src_file.move_(
-                    &dst_file,
-                    gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
-                    gio::Cancellable::NONE,
-                    None,
-                ) {
-                    eprintln!("[DnD Error] Failed to move {:?}: {}", source_path, e);
+                if src_file
+                    .move_(
+                        &dst_file,
+                        gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                        gio::Cancellable::NONE,
+                        None,
+                    )
+                    .is_ok()
+                {
+                    sender_clone.input(AppMsg::ItemMoved {
+                        old_path: source_path,
+                        new_path: final_dest,
+                    });
+                } else {
+                    eprintln!("[DnD Error] Failed to move {:?}", source_path);
                 }
             }
 
@@ -281,13 +303,21 @@ impl FluxApp {
                 let src_file = gio::File::for_path(&source);
                 let dst_file = gio::File::for_path(&final_dest);
 
-                if let Err(e) = src_file.move_(
-                    &dst_file,
-                    gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
-                    gio::Cancellable::NONE,
-                    None,
-                ) {
-                    eprintln!("[File Error] External move failed: {}", e);
+                if src_file
+                    .move_(
+                        &dst_file,
+                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                        gio::Cancellable::NONE,
+                        None,
+                    )
+                    .is_ok()
+                {
+                    sender_clone.input(AppMsg::ItemMoved {
+                        old_path: source,
+                        new_path: final_dest,
+                    });
+                } else {
+                    eprintln!("[File Error] External move failed");
                 }
             }
 

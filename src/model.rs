@@ -212,6 +212,13 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Per-file custom image overrides, keyed by absolute file path string.
+    ///
+    /// Stores the absolute path to the custom image file (PNG, JPG, WebP, SVG)
+    /// that should be rendered as the icon for the corresponding file entry.
+    /// Unlike `folder_icons`, this supports any file type, not just directories.
+    #[serde(default)]
+    pub file_icons: HashMap<String, String>,
     /// Configuration settings for the embedded terminal widget.
     pub terminal: TerminalConfig,
     /// Default pixel size for file and folder icons.
@@ -298,6 +305,7 @@ pub struct UIConfig {
 impl Default for UIConfig {
     fn default() -> Self {
         Self {
+            file_icons: HashMap::new(),
             default_icon_size: 0,
             sidebar_width: 0,
             show_xdg_dirs: false,
@@ -491,9 +499,23 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Re-keys custom icon entries in both `file_icons` and `folder_icons` after
+    /// a successful filesystem move, then triggers a view refresh.
+    ///
+    /// Dispatched from the background move threads in `handle_drop_items`,
+    /// `dispatch_paste_ops`, and `perform_paste_inner` whenever `is_cut` is true
+    /// and the GIO move succeeded. `old_path` is the pre-move location,
+    /// `new_path` is the post-move destination.
+    ItemMoved {
+        old_path: PathBuf,
+        new_path: PathBuf,
+    },
+    /// Persists a custom image path as the visual override for a specific file.
+    SetFileIcon { path: PathBuf, image_path: PathBuf },
+    /// Removes the custom image override for the given file path, restoring the default icon.
+    ResetFileIcon(PathBuf),
     /// Dispatched when a LUKS image file is double-clicked and confirmed as LUKS.
     UnlockLuksImage { path: PathBuf },
-
     /// Dispatched by the background thread after successful unlock + mount.
     LuksMounted {
         image_path: PathBuf,
