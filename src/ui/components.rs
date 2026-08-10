@@ -297,7 +297,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root.set_halign(gtk::Align::Fill);
             root.set_hexpand(true);
             root.set_spacing(8);
-            widgets.icon_widget.set_pixel_size(32);
+            widgets.icon_widget.set_pixel_size(self.icon_size);
             widgets.icon_widget.set_valign(gtk::Align::Center);
             widgets.icon_widget.set_halign(gtk::Align::Start);
             widgets.label.set_halign(gtk::Align::Start);
