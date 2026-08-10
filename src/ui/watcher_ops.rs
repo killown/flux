@@ -11,6 +11,21 @@ use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_file_deleted(&mut self, path: PathBuf) {
+        if self.is_content_searching {
+            // A file can have multiple result rows (one per matching line),
+            // remove all of them
+            let mut i = 0;
+            while i < self.files.len() {
+                if self.files.get(i).is_some_and(|r| r.borrow().path == path) {
+                    self.files.remove(i);
+                    // don't increment i, next item shifts into this slot
+                } else {
+                    i += 1;
+                }
+            }
+            return;
+        }
+
         if let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) {
             let target_idx = (0..self.files.len())
                 .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));

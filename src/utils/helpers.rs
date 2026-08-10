@@ -906,6 +906,25 @@ impl FluxApp {
 
         let _ = Command::new("sh").arg("-c").arg(final_cmd).status();
     }
+
+    /// During a content search the directory monitor only watches current_path
+    /// (flat, non-recursive), so FileDeleted never fires for files in
+    /// subdirectories. Remove all grid entries for the selected paths immediately
+    /// before handing off to the trash service.
+    pub fn remove_search_results_for_paths(&mut self, paths: &[PathBuf]) {
+        let mut i = 0;
+        while i < self.files.len() {
+            if self
+                .files
+                .get(i)
+                .is_some_and(|r| paths.contains(&r.borrow().path))
+            {
+                self.files.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+    }
 }
 
 /// Spawns a new application instance rooted at `path`.

@@ -121,6 +121,14 @@ impl FluxApp {
     }
 
     pub fn handle_refresh_path(&mut self, sender: &AsyncComponentSender<Self>) {
+        // During a content search the grid shows search results, not a directory
+        // listing. A Refresh triggered by delete/trash would reload current_path
+        // and wipe the results. The watcher's FileDeleted already removed the item
+        // from the grid, so there is nothing else to do here.
+        if self.is_content_searching {
+            return;
+        }
+
         self.is_loading = true;
         let p = self.current_path.clone();
         let path_str = p.to_string_lossy();
