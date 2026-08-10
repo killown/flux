@@ -123,6 +123,9 @@ impl FluxApp {
             AppMsg::EmptyTrash => self.handle_empty_trash(&sender),
             AppMsg::Delete => {
                 let selection = self.get_selection();
+                if self.is_content_searching {
+                    self.remove_search_results_for_paths(&selection);
+                }
                 crate::services::trash::delete_items(
                     selection,
                     self.active_item_path.clone(),
