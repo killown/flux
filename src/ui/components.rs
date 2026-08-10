@@ -48,6 +48,22 @@ pub struct FileWidgets {
     pub stack: gtk::Stack,
     pub drag_source: gtk::DragSource,
     pub drop_target: gtk::DropTarget,
+    /// Right-aligned info label shown in list mode: displays file size and
+    /// extension. Hidden for content search results (which carry `size == 0`).
+    pub info_label: gtk::Label,
+}
+
+/// Formats a byte count into a human-readable string (B / KB / MB / GB).
+fn format_size(bytes: u64) -> String {
+    const KB: u64 = 1_024;
+    const MB: u64 = 1_024 * KB;
+    const GB: u64 = 1_024 * MB;
+    match bytes {
+        b if b >= GB => format!("{:.1} GB", b as f64 / GB as f64),
+        b if b >= MB => format!("{:.1} MB", b as f64 / MB as f64),
+        b if b >= KB => format!("{:.0} KB", b as f64 / KB as f64),
+        b => format!("{b} B"),
+    }
 }
 
 impl relm4::typed_view::grid::RelmGridItem for FileItem {
@@ -119,6 +135,18 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             }
             false
         });
+
+        // Right-aligned info label for list mode (extension).
+        // Created imperatively so it can be appended after the Stack.
+        let info_label = gtk::Label::builder()
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Center)
+            .hexpand(false)
+            .opacity(0.5)
+            .visible(false)
+            .build();
+        info_label.add_css_class("caption");
+        info_label.add_css_class("flux-list-info");
 
         relm4::view! {
             #[root]
@@ -271,6 +299,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             }
         }
 
+        // Append the info label after the Stack so it sits on the far right
+        // of the horizontal list row. In grid mode it is hidden.
+        root.append(&info_label);
+
         (
             root,
             FileWidgets {
@@ -281,6 +313,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 stack,
                 drag_source,
                 drop_target,
+                info_label,
             },
         )
     }
@@ -322,6 +355,24 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     // Also ensure the label inside that box is left-aligned (already set).
                 }
             }
+
+            // Populate the right-aligned info label with size + extension.
+            // Content search results always have size == 0 (set in handle_content_search_result)
+            // and carry the matched line in their name, hide the info column for those rows
+            // so the long search text has the full width without a competing right label.
+            if self.size > 0 {
+                let ext = self
+                    .path
+                    .extension()
+                    .map(|e| format!(".{}  ·  ", e.to_string_lossy()))
+                    .unwrap_or_default();
+                widgets
+                    .info_label
+                    .set_label(&format!("{}{}", ext, format_size(self.size)));
+                widgets.info_label.set_visible(true);
+            } else {
+                widgets.info_label.set_visible(false);
+            }
         } else {
             root.set_orientation(gtk::Orientation::Vertical);
             root.set_halign(gtk::Align::Center);
@@ -351,6 +402,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     box_widget.set_hexpand(false);
                 }
             }
+
+            // Always hide the info label in grid mode.
+            widgets.info_label.set_visible(false);
         }
 
         // Set the widget name to the absolute path so the app.rs controller can find it
