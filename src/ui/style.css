@@ -287,3 +287,10 @@ scrollbar.vertical slider:hover {
 .flux-filter-chip button:hover {
   opacity: 1;
 }
+
+.flux-list-info {
+  font-family: monospace;
+  font-size: 1.2em;
+  min-width: 10em;
+  text-align: end;
+}

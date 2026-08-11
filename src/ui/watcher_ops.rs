@@ -67,6 +67,10 @@ impl FluxApp {
                         path: path.clone(),
                         icon_size: self.current_icon_size,
                         size: info.size() as u64,
+                        mtime: info
+                            .modification_date_time()
+                            .map(|dt| dt.to_unix())
+                            .unwrap_or(0),
                         is_editing: false,
                         is_foreign_owner: false,
                         expand_labels: self.config.ui.expand_labels,

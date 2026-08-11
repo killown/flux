@@ -6,6 +6,7 @@ use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
 use adw::gdk;
 use adw::prelude::*;
+use chrono::TimeZone;
 use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
@@ -37,6 +38,9 @@ pub struct FileItem {
     /// Shared cell holding the current path for this item.
     /// Updated in `bind()` and read by the right‑click gesture.
     pub active_path: Rc<RefCell<Option<PathBuf>>>,
+    // In the FileItem struct, add after `is_custom_icon`:
+    /// Unix timestamp of the last modification time, `0` when unavailable.
+    pub mtime: i64,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -356,22 +360,31 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             }
 
-            // Populate the right-aligned info label with size + extension.
-            // Content search results always have size == 0 (set in handle_content_search_result)
-            // and carry the matched line in their name, hide the info column for those rows
-            // so the long search text has the full width without a competing right label.
-            if self.size > 0 {
-                let ext = self
-                    .path
-                    .extension()
-                    .map(|e| format!(".{}  ·  ", e.to_string_lossy()))
-                    .unwrap_or_default();
-                widgets
-                    .info_label
-                    .set_label(&format!("{}{}", ext, format_size(self.size)));
-                widgets.info_label.set_visible(true);
-            } else {
-                widgets.info_label.set_visible(false);
+            // Populate the right-aligned info label with size and modification date.
+            // Content search results carry size == 0 and mtime == 0, hide the column for those.
+            {
+                let mut info_parts: Vec<String> = Vec::new();
+
+                if !self.is_dir && self.size > 0 {
+                    info_parts.push(format_size(self.size));
+                }
+
+                if self.mtime > 0 {
+                    // SAFETY: timestamp_opt returns None only for out-of-range values,
+                    // valid mtime values from the filesystem are always in range.
+                    if let chrono::LocalResult::Single(dt) =
+                        chrono::Local.timestamp_opt(self.mtime, 0)
+                    {
+                        info_parts.push(dt.format("%Y-%m-%d %H:%M").to_string());
+                    }
+                }
+
+                if !info_parts.is_empty() {
+                    widgets.info_label.set_label(&info_parts.join(" · "));
+                    widgets.info_label.set_visible(true);
+                } else {
+                    widgets.info_label.set_visible(false);
+                }
             }
         } else {
             root.set_orientation(gtk::Orientation::Vertical);
