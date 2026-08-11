@@ -28,7 +28,11 @@ impl FluxApp {
             AppMsg::RemoveFromSidebar(path) => self.handle_remove_from_sidebar(path),
             AppMsg::AddToSidebarPermanent => self.handle_add_to_sidebar_permanent(),
             AppMsg::ReorderSidebar { from, to } => self.handle_reorder_sidebar(from, to),
-            AppMsg::PinFolderAt { path, before } => self.handle_pin_folder_at(path, before),
+            AppMsg::PinFolderAt {
+                path,
+                before,
+                label_name,
+            } => self.handle_pin_folder_at(path, before, label_name),
             AppMsg::UnmountDevice(path) => self.handle_unmount_device(path, &sender),
             AppMsg::ToggleSidebar => self.handle_toggle_sidebar(),
 

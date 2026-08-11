@@ -113,7 +113,12 @@ impl FluxApp {
     }
 
     /// Pins a dropped folder directly before a target row in the sidebar.
-    pub fn handle_pin_folder_at(&mut self, path: PathBuf, before: PathBuf) {
+    pub fn handle_pin_folder_at(
+        &mut self,
+        path: PathBuf,
+        before: PathBuf,
+        label_name: Option<String>,
+    ) {
         let home = dirs::home_dir().unwrap_or_default();
         let home_str = home.to_string_lossy();
         let path_str = path.to_string_lossy().to_string();
@@ -148,12 +153,21 @@ impl FluxApp {
             path: path_str,
         };
 
-        let insert_at = self
-            .config
-            .sidebar
-            .iter()
-            .position(|e| resolve(&e.path) == before_str)
-            .unwrap_or(self.config.sidebar.len());
+        let insert_at = if let Some(label_name) = label_name {
+            // Look for a label entry with matching name
+            self.config
+                .sidebar
+                .iter()
+                .position(|e| e.kind.as_deref() == Some("label") && e.name == label_name)
+                .unwrap_or(self.config.sidebar.len())
+        } else {
+            // Fallback to path matching for non-label rows
+            self.config
+                .sidebar
+                .iter()
+                .position(|e| resolve(&e.path) == before_str)
+                .unwrap_or(self.config.sidebar.len())
+        };
 
         self.config.sidebar.insert(insert_at, new_entry);
         utils::save_config(&self.config);

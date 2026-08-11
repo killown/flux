@@ -480,7 +480,14 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         let file = gtk::gio::File::for_path(&self.path);
-        let content = gdk::ContentProvider::for_value(&file.to_value());
+        // Advertise both FileList (sidebar drop target) and File (grid-to-grid drop).
+        // A single gio::File value is not reliably coerced to FileList by GTK's
+        // content negotiation, causing sidebar pins to fail most attempts.
+        let uri = format!("{}\r\n", file.uri());
+        let file_list_provider =
+            gdk::ContentProvider::for_bytes("text/uri-list", &glib::Bytes::from(uri.as_bytes()));
+        let file_provider = gdk::ContentProvider::for_value(&file.to_value());
+        let content = gdk::ContentProvider::new_union(&[file_list_provider, file_provider]);
         widgets.drag_source.set_content(Some(&content));
 
         widgets.drop_target.set_actions(if self.is_dir {
@@ -515,6 +522,7 @@ pub enum SidebarMsg {
     PinAt {
         path: PathBuf,
         before: PathBuf,
+        label_name: Option<String>,
     },
 }
 
@@ -683,8 +691,7 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::DropTarget {
                 set_actions: gdk::DragAction::COPY | gdk::DragAction::MOVE,
                 set_types: &[gdk::FileList::static_type()],
-                connect_drop[sender, path = self.path.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
-                    if is_label { return false; }
+                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
                     if let Ok(file_list) = value.get::<gdk::FileList>() {
                         for gfile in file_list.files() {
                             if let Some(folder) = gfile.path() {
@@ -692,6 +699,7 @@ impl FactoryComponent for SidebarPlace {
                                     let _ = sender.output(SidebarMsg::PinAt {
                                         path: folder,
                                         before: path.clone(),
+                                        label_name: if is_label { Some(name.clone()) } else { None },
                                     });
                                 }
                             }

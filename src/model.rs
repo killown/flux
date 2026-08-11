@@ -726,7 +726,11 @@ pub enum AppMsg {
     /// Emitted when a folder is dragged from the grid and dropped onto a specific sidebar row.
     /// If `before` is not found (e.g. a section label or unmapped mount), appends to the end
     /// of the user-defined sidebar entries.
-    PinFolderAt { path: PathBuf, before: PathBuf },
+    PinFolderAt {
+        path: PathBuf,
+        before: PathBuf,
+        label_name: Option<String>,
+    },
     /// Open the keyboard shortcuts and help overlay.
     ShowHelp,
     /// Handle a Drag-and-Drop move/copy operation for multiple items.
