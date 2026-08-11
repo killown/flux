@@ -65,7 +65,11 @@ impl FluxApp {
                         thumbnail: None,
                         is_dir,
                         path: path.clone(),
-                        icon_size: self.current_icon_size,
+                        icon_size: if self.is_list_mode {
+                            self.current_list_icon_size
+                        } else {
+                            self.current_icon_size
+                        },
                         size: info.size() as u64,
                         mtime: info
                             .modification_date_time()

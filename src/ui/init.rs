@@ -209,6 +209,7 @@ impl FluxApp {
             forward_stack: Vec::new(),
             load_id: Arc::new(AtomicU64::new(0)),
             current_icon_size: config.ui.default_icon_size,
+            current_list_icon_size: config.ui.list_icon_size,
             context_menu_popover,
             menu_actions: menu_actions_list,
             active_item_path: None,
@@ -225,7 +226,7 @@ impl FluxApp {
             _volume_monitor: volume_monitor,
             filter: String::new(),
             extension_filter: None,
-            is_list_mode: false,
+            is_list_mode: config.default_list_mode,
             header_view: constants::VIEW_PATH.to_string(),
             recent_stack: std::collections::VecDeque::with_capacity(
                 constants::RECENT_STACK_CAPACITY,
@@ -257,6 +258,16 @@ impl FluxApp {
             search_saved_layout: false,
             transfer_dialog: None,
         };
+
+        // 8.5 Apply initial list/grid mode to the view
+        if model.is_list_mode {
+            model.files.view.set_max_columns(1);
+            model.files.view.set_min_columns(1);
+        } else {
+            model.files.view.set_max_columns(20);
+            model.files.view.set_min_columns(1);
+        }
+        model.saved_list_mode = model.is_list_mode;
 
         // 9. Initial State Population
         model.setup_actions(&sender);

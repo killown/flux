@@ -167,11 +167,18 @@ impl FluxApp {
     /// with the correct orientation and icon size.
     pub fn sync_list_mode(&mut self) {
         let mode = self.is_list_mode;
+        let size = if mode {
+            self.current_list_icon_size
+        } else {
+            self.current_icon_size
+        };
         for i in 0..self.files.len() {
             if let Some(wrapper) = self.files.get(i) {
                 let mut item = wrapper.borrow().clone();
-                if item.is_list_mode != mode {
+                // Update both mode and icon size if either changed
+                if item.is_list_mode != mode || item.icon_size != size {
                     item.is_list_mode = mode;
+                    item.icon_size = size;
                     self.files.remove(i);
                     self.files.insert(i, item);
                 }

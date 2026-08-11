@@ -122,7 +122,7 @@ impl FluxApp {
             thumbnail: None,
             is_dir: false,
             path,
-            icon_size: self.current_icon_size,
+            icon_size: self.current_list_icon_size,
             size: 0,
             mtime: 0,
             is_editing: false,

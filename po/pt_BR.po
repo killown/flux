@@ -1163,10 +1163,18 @@ msgstr "Mostrar Progresso"
 msgid "Open transfer progress dialog"
 msgstr "Abrir diálogo de progresso de transferência"
 
-#: src/ui/transfer_dialog.rs:??? (adjust line number)
+#: src/ui/transfer_dialog.rs:???
 msgid "- {} remaining"
 msgstr "- {} restante"
 
-#: src/utils/helpers.rs:??? (adjust line number)
+#: src/utils/helpers.rs:???
 msgid "Copy failed: {}"
 msgstr "Falha ao copiar: {}"
+
+#: src/ui/settings.rs:123
+msgid "List Icon Size"
+msgstr "Tamanho do ícone em modo lista"
+
+#: src/ui/settings.rs:124
+msgid "Icon size used in list mode"
+msgstr "Tamanho do ícone usado quando em modo lista"
