@@ -85,9 +85,15 @@ impl FluxApp {
                 crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
                 crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
                 crate::ui::SidebarMsg::Reorder { from, to } => AppMsg::ReorderSidebar { from, to },
-                crate::ui::SidebarMsg::PinAt { path, before } => {
-                    AppMsg::PinFolderAt { path, before }
-                }
+                crate::ui::SidebarMsg::PinAt {
+                    path,
+                    before,
+                    label_name,
+                } => AppMsg::PinFolderAt {
+                    path,
+                    before,
+                    label_name,
+                },
             },
         );
 
