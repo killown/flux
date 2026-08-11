@@ -263,3 +263,20 @@ fn test_partial_ui_config_deserialization() {
     assert!(config.ui.folders_first);
     assert!(config.ui.show_thumbnails);
 }
+
+#[test]
+fn test_list_icon_size_serialization() {
+    let mut config = Config::default();
+    config.ui.list_icon_size = 48;
+    let toml_str = toml::to_string(&config).expect("Failed to serialize");
+    assert!(toml_str.contains("list_icon_size = 48"));
+
+    let parsed: Config = toml::from_str(&toml_str).expect("Failed to deserialize");
+    assert_eq!(parsed.ui.list_icon_size, 48);
+}
+
+#[test]
+fn test_list_icon_size_default() {
+    let config: Config = toml::from_str("").expect("Failed to parse empty config");
+    assert_eq!(config.ui.list_icon_size, 24);
+}
