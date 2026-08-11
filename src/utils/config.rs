@@ -40,6 +40,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
 "󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
 "󰆴      Shred File (Permanent)" => "all", "python $HOME/.local/share/flux/scripts/flux_shredder.py %p", "Shredder initialized"
+"󰛖      Compress > To ZIP" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p", "Compressing to ZIP..."
 
 # --- Navigation & System ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
