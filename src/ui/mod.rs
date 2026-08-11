@@ -111,7 +111,6 @@ pub mod constants {
     pub const FILTER_FILE: &str = "file";
 
     // Shell & Command Templates
-    pub const SHELL_BIN: &str = "sh";
     pub const TEMPLATE_PATHS: &str = "%p";
     pub const TEMPLATE_CWD: &str = "%d";
 

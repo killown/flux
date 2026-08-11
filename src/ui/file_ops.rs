@@ -7,6 +7,10 @@ use adw::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::PathBuf;
+use std::sync::atomic::Ordering;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
+use tokio::time::{sleep, Duration};
 
 impl FluxApp {
     /// Handles clipboard Copy and Cut actions by populating standard GTK Clipboard providers.
@@ -130,7 +134,10 @@ impl FluxApp {
         }
     }
 
-    /// Executes custom shell commands or built-in actions across single or multiple targets.
+    /// Executes a shell command, spawning it as a tracked background task.
+    ///
+    /// The command is run with `sh -c`, and its output is captured and displayed
+    /// in the transfer dialog. The user can cancel the task to send SIGTERM.
     pub fn handle_execute_command(
         &self,
         cmd_template: String,
@@ -194,38 +201,150 @@ impl FluxApp {
             .current_path
             .to_string_lossy()
             .starts_with(constants::TRASH_URI);
-        let sender_clone = sender.clone();
 
-        relm4::spawn_blocking(move || {
-            if final_targets.len() == 1 {
-                Self::run_custom_command_wait(&cmd_template, &final_targets[0]);
-            } else if !final_targets.is_empty() {
-                let paths_arg = final_targets
-                    .iter()
-                    .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
-                    .collect::<Vec<_>>()
-                    .join(" ");
+        if final_targets.is_empty() {
+            return;
+        }
 
-                let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
-                if cmd.contains(constants::TEMPLATE_CWD) {
-                    cmd = cmd.replace(
-                        constants::TEMPLATE_CWD,
-                        &format!("'{}'", current_path.to_string_lossy().replace("'", "'\\''")),
-                    );
-                }
+        // Build the final shell command
+        let (final_cmd, label) = if final_targets.len() == 1 {
+            let path = &final_targets[0];
+            let path_str = path.to_string_lossy();
+            let parent = path.parent().unwrap_or(path).to_string_lossy();
+            let filename = path.file_name().unwrap_or_default().to_string_lossy();
 
-                let _ = std::process::Command::new(constants::SHELL_BIN)
-                    .arg("-c")
-                    .arg(cmd)
-                    .status();
+            let p_arg = format!("'{}'", path_str.replace("'", "'\\''"));
+            let d_arg = format!("'{}'", parent.replace("'", "'\\''"));
+            let f_arg = format!("'{}'", filename.replace("'", "'\\''"));
+
+            let mut cmd = cmd_template
+                .replace("%p", &p_arg)
+                .replace("%d", &d_arg)
+                .replace("%f", &f_arg);
+
+            if cmd.contains(constants::TEMPLATE_CWD) {
+                cmd = cmd.replace(
+                    constants::TEMPLATE_CWD,
+                    &format!("'{}'", current_path.to_string_lossy().replace("'", "'\\''")),
+                );
             }
 
+            let label = path
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "Command".to_string());
+            (cmd, label)
+        } else {
+            let paths_arg = final_targets
+                .iter()
+                .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
+                .collect::<Vec<_>>()
+                .join(" ");
+
+            let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
+            if cmd.contains(constants::TEMPLATE_CWD) {
+                cmd = cmd.replace(
+                    constants::TEMPLATE_CWD,
+                    &format!("'{}'", current_path.to_string_lossy().replace("'", "'\\''")),
+                );
+            }
+            let label = format!("{} items", final_targets.len());
+            (cmd, label)
+        };
+
+        // Generate a unique task ID
+        let task_id = crate::ui::paste_ops::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+
+        // Insert a placeholder task into the queue
+        self.task_queue.insert_command(task_id, label.clone(), 0);
+
+        // Start the transfer dialog after 2 seconds if still running
+        let s_delay = sender.clone();
+        let task_id_delay = task_id;
+        relm4::spawn(async move {
+            sleep(Duration::from_secs(2)).await;
+            s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id_delay));
+        });
+
+        // Spawn the command asynchronously
+        let sender_cmd = sender.clone();
+        let task_queue = self.task_queue.clone();
+
+        relm4::spawn(async move {
+            let child = unsafe {
+                Command::new("sh")
+                    .arg("-c")
+                    .arg(&final_cmd)
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::piped())
+                    .process_group(0)
+                    .pre_exec(|| {
+                        libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGKILL, 0, 0, 0);
+                        Ok(())
+                    })
+                    .spawn()
+            };
+
+            let mut child = match child {
+                Ok(c) => c,
+                Err(e) => {
+                    sender_cmd.input(AppMsg::ShowToast(format!("Failed to spawn: {}", e)));
+                    sender_cmd.input(AppMsg::TaskCompleted(task_id));
+                    return;
+                }
+            };
+
+            let pid = child.id().unwrap_or(0);
+            task_queue.update_pid(task_id, pid);
+
+            let stdout = child.stdout.take().unwrap();
+            let stderr = child.stderr.take().unwrap();
+
+            let sender_out = sender_cmd.clone();
+            let task_id_out = task_id;
+            let stdout_task = tokio::spawn(async move {
+                let mut reader = BufReader::new(stdout).lines();
+                while let Ok(Some(line)) = reader.next_line().await {
+                    sender_out.input(AppMsg::CommandOutput {
+                        id: task_id_out,
+                        line,
+                        is_stderr: false,
+                    });
+                }
+            });
+
+            let sender_err = sender_cmd.clone();
+            let task_id_err = task_id;
+            let stderr_task = tokio::spawn(async move {
+                let mut reader = BufReader::new(stderr).lines();
+                while let Ok(Some(line)) = reader.next_line().await {
+                    sender_err.input(AppMsg::CommandOutput {
+                        id: task_id_err,
+                        line,
+                        is_stderr: true,
+                    });
+                }
+            });
+
+            let status = child.wait().await;
+            let success = status.as_ref().map(|s| s.success()).unwrap_or(false);
+            let exit_code = status.ok().and_then(|s| s.code());
+
+            stdout_task.abort();
+            stderr_task.abort();
+
+            sender_cmd.input(AppMsg::CommandFinished {
+                id: task_id,
+                success,
+                exit_code,
+            });
+
             if let Some(msg) = toast_msg {
-                sender_clone.input(AppMsg::ShowToast(msg));
+                sender_cmd.input(AppMsg::ShowToast(msg));
             }
 
             if needs_refresh {
-                sender_clone.input(AppMsg::Refresh);
+                sender_cmd.input(AppMsg::Refresh);
             }
         });
     }

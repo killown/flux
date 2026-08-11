@@ -504,6 +504,19 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Append a line of output from a command task.
+    CommandOutput {
+        id: u64,
+        line: String,
+        is_stderr: bool,
+    },
+
+    /// Command finished (success or failure).
+    CommandFinished {
+        id: u64,
+        success: bool,
+        exit_code: Option<i32>,
+    },
     /// Re-keys custom icon entries in both `file_icons` and `folder_icons` after
     /// a successful filesystem move, then triggers a view refresh.
     ///
