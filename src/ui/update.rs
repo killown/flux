@@ -58,6 +58,7 @@ impl FluxApp {
                 }
             }
             AppMsg::SetIconSize(val) => self.handle_set_icon_size(val, &sender),
+            AppMsg::SetListIconSize(val) => self.handle_set_list_icon_size(val, &sender),
             AppMsg::SetSidebarWidth(val) => self.handle_set_sidebar_width(val),
             AppMsg::SetShowCsd(val) => self.handle_set_show_csd(val),
             AppMsg::SetShowXdgDirs(val) => self.handle_set_show_xdg_dirs(val, &sender),

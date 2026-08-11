@@ -69,6 +69,14 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    /// Persists and applies a new icon size for list mode view.
+    pub fn handle_set_list_icon_size(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
+        self.config.ui.list_icon_size = val;
+        self.current_list_icon_size = val;
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
+
     pub fn handle_set_sidebar_width(&mut self, val: i32) {
         self.config.ui.sidebar_width = val;
         utils::save_config(&self.config);

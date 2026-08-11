@@ -282,6 +282,7 @@ path = "~"
             crate::model::Config {
                 ui: crate::model::UIConfig {
                     default_icon_size: 128,
+                    list_icon_size: 24,
                     startup_window_width: crate::ui::constants::DEFAULT_WIDTH,
                     startup_window_height: crate::ui::constants::DEFAULT_HEIGHT,
                     single_click: false,

@@ -223,6 +223,8 @@ pub struct UIConfig {
     pub terminal: TerminalConfig,
     /// Default pixel size for file and folder icons.
     pub default_icon_size: i32,
+    /// Default pixel size for icons when the view is in list mode.
+    pub list_icon_size: i32,
     /// Width of the left navigation sidebar in pixels.
     pub sidebar_width: i32,
     /// Whether to display standard XDG user directories like Documents and Downloads.
@@ -307,6 +309,7 @@ impl Default for UIConfig {
         Self {
             file_icons: HashMap::new(),
             default_icon_size: 0,
+            list_icon_size: 24,
             sidebar_width: 0,
             show_xdg_dirs: false,
             single_click: false,
@@ -429,6 +432,8 @@ pub struct FluxApp {
     pub search_just_opened: bool,
     /// Current pixel size of the grid item icons.
     pub current_icon_size: i32,
+    /// Current pixel size of icons when the view is in list mode.
+    pub current_list_icon_size: i32,
     /// Factory-managed collection of breadcrumb segments for the header.
     pub breadcrumbs: FactoryVecDeque<PathSegment>,
     /// A pinned list of directories for quick multi-context switching.
@@ -634,6 +639,8 @@ pub enum AppMsg {
     SetFoldersFirst(bool),
     /// Updates the default icon size.
     SetIconSize(i32),
+    /// Updates the default icon size for list mode view.
+    SetListIconSize(i32),
     /// Updates the preferred sidebar width.
     SetSidebarWidth(i32),
     /// Toggles Client-Side Decorations (CSD).

@@ -45,6 +45,20 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("List Icon Size"),
+                        set_subtitle: &tr("Icon size used in list mode"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(model.config.ui.list_icon_size as f64, 16.0, 128.0, 8.0, 0.0, 0.0),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetListIconSize(spin.value() as i32));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Grid Spacing"),
                         set_subtitle: &tr("Pixel spacing between items in the grid view"),
                         add_suffix = &gtk::SpinButton {

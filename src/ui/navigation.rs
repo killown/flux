@@ -140,8 +140,6 @@ impl FluxApp {
             return;
         }
 
-        self.reset_from_content_search();
-
         if path.is_dir()
             || path_str.starts_with(constants::TRASH_URI)
             || path_str.starts_with(constants::RECENT_URI)

@@ -35,7 +35,11 @@ impl FluxApp {
                 thumbnail: None,
                 is_dir: item.is_dir,
                 path: item.target_path,
-                icon_size: self.current_icon_size,
+                icon_size: if self.is_list_mode {
+                    self.current_list_icon_size
+                } else {
+                    self.current_icon_size
+                },
                 size: item.size,
                 mtime: item.mtime,
                 is_editing: false,

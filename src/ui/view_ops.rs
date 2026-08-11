@@ -161,6 +161,7 @@ impl FluxApp {
     /// Toggles between grid card layout and compact list view.
     pub fn handle_toggle_list_mode(&mut self) {
         self.is_list_mode = !self.is_list_mode;
+        self.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
         utils::save_config(&self.config);
         if self.is_list_mode {
@@ -224,17 +225,49 @@ impl FluxApp {
         self.load_path(path, sender);
     }
 
-    /// Adjusts grid item icon scale on scroll.
+    /// Adjusts icon scale on scroll, targeting only the active view mode.
+    ///
+    /// In grid mode the persistent `current_icon_size` and `config.ui.default_icon_size`
+    /// are updated. In list mode `current_list_icon_size` and `config.ui.list_icon_size`
+    /// are updated instead. Only items matching the current mode have their `icon_size`
+    /// field mutated, so switching modes always restores the independent size.
     pub fn handle_zoom(&mut self, delta: f64) {
         let change = if delta > 0.0 {
             -constants::ZOOM_STEP
         } else {
             constants::ZOOM_STEP
         };
-        let new_size =
-            (self.current_icon_size + change).clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
 
-        if new_size != self.current_icon_size {
+        if self.is_list_mode {
+            let new_size = (self.current_list_icon_size + change)
+                .clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
+
+            if new_size == self.current_list_icon_size {
+                return;
+            }
+
+            self.current_list_icon_size = new_size;
+            self.config.ui.list_icon_size = new_size;
+            utils::save_config(&self.config);
+
+            for i in 0..self.files.len() {
+                if let Some(item_wrapper) = self.files.get(i) {
+                    if item_wrapper.borrow().is_list_mode {
+                        let mut item = item_wrapper.borrow().clone();
+                        item.icon_size = new_size;
+                        self.files.remove(i);
+                        self.files.insert(i, item);
+                    }
+                }
+            }
+        } else {
+            let new_size =
+                (self.current_icon_size + change).clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
+
+            if new_size == self.current_icon_size {
+                return;
+            }
+
             self.current_icon_size = new_size;
             let _ = self.state_db.save_view(
                 &self.current_path,
@@ -243,12 +276,15 @@ impl FluxApp {
                 new_size as u32,
                 self.config.ui.folders_first,
             );
+
             for i in 0..self.files.len() {
                 if let Some(item_wrapper) = self.files.get(i) {
-                    let mut item = item_wrapper.borrow().clone();
-                    item.icon_size = new_size;
-                    self.files.remove(i);
-                    self.files.insert(i, item);
+                    if !item_wrapper.borrow().is_list_mode {
+                        let mut item = item_wrapper.borrow().clone();
+                        item.icon_size = new_size;
+                        self.files.remove(i);
+                        self.files.insert(i, item);
+                    }
                 }
             }
         }
