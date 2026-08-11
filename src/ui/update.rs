@@ -54,7 +54,6 @@ impl FluxApp {
                     .get_selected_path()
                     .unwrap_or_else(|| self.current_path.clone());
                 if target.is_dir() {
-                    // Clear both the GTK-name override and any image-based override.
                     sender.input(AppMsg::ResetFolderIcon(target.clone()));
                     sender.input(AppMsg::ResetFileIcon(target));
                 } else {
@@ -365,6 +364,36 @@ impl FluxApp {
             } => {
                 sender.input(AppMsg::Navigate(mount_point));
                 sender.input(AppMsg::ShowToast(crate::i18n::tr("Volume mounted.")));
+            }
+
+            // ─── command tracking handlers ──────────────────────────────
+            AppMsg::CommandOutput {
+                id,
+                line,
+                is_stderr,
+            } => {
+                self.task_queue.append_output(id, line.clone());
+                let prefix = if is_stderr { "stderr" } else { "stdout" };
+                eprintln!("[task {}] {}: {}", id, prefix, line);
+                if let Some(dialog) = &mut self.transfer_dialog {
+                    dialog.refresh();
+                }
+            }
+
+            AppMsg::CommandFinished {
+                id,
+                success,
+                exit_code,
+            } => {
+                if !success {
+                    let msg = if let Some(code) = exit_code {
+                        format!("Command failed with exit code {}", code)
+                    } else {
+                        "Command was terminated".to_string()
+                    };
+                    sender.input(AppMsg::ShowToast(msg));
+                }
+                sender.input(AppMsg::TaskCompleted(id));
             }
         }
     }

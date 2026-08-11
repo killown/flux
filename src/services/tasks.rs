@@ -5,6 +5,7 @@
 
 use gtk::gio;
 use gtk::gio::prelude::*;
+use libc;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -141,6 +142,10 @@ pub struct Task {
     pub started_at: Instant,
     /// Sliding-window speed accumulator.
     pub speed: SpeedWindow,
+    /// Process ID if this is a command task (rather than a file operation).
+    pub pid: Option<u32>,
+    /// Captured output lines (stdout + stderr) for command tasks.
+    pub output: Vec<String>,
 }
 
 // ─── TaskQueue ────────────────────────────────────────────────────────────────
@@ -176,6 +181,8 @@ impl TaskQueue {
                 cancellable: cancellable.clone(),
                 started_at: Instant::now(),
                 speed: SpeedWindow::new(),
+                pid: None,
+                output: Vec::new(),
             });
             task.label = label;
             task.current = current;
@@ -184,6 +191,31 @@ impl TaskQueue {
             }
             task.total_items = total_items;
             task.speed.push(current);
+        }
+    }
+
+    pub fn append_output(&self, id: u64, line: String) {
+        if let Ok(mut map) = self.inner.lock() {
+            if let Some(task) = map.get_mut(&id) {
+                task.output.push(line);
+            }
+        }
+    }
+
+    /// Inserts a command task with a given PID and no progress tracking.
+    pub fn insert_command(&self, id: u64, label: String, pid: u32) {
+        if let Ok(mut map) = self.inner.lock() {
+            map.entry(id).or_insert_with(|| Task {
+                label: label.clone(),
+                current: 0,
+                total: 0,
+                total_items: 0,
+                cancellable: gio::Cancellable::new(),
+                started_at: Instant::now(),
+                speed: SpeedWindow::new(),
+                pid: Some(pid),
+                output: Vec::new(),
+            });
         }
     }
 
@@ -199,6 +231,8 @@ impl TaskQueue {
         if let Ok(mut map) = self.inner.lock() {
             if let Some(task) = map.remove(&id) {
                 task.cancellable.cancel();
+                // PID killing is handled by the caller (update loop) to avoid
+                // blocking the queue lock with signal syscalls.
             }
         }
     }
@@ -208,6 +242,11 @@ impl TaskQueue {
         if let Ok(mut map) = self.inner.lock() {
             for task in map.values() {
                 task.cancellable.cancel();
+                if let Some(pid) = task.pid.filter(|&p| p != 0) {
+                    unsafe {
+                        libc::kill(-(pid as i32), libc::SIGKILL);
+                    }
+                }
             }
             map.clear();
         }
@@ -238,7 +277,16 @@ impl TaskQueue {
         Some((op_count, total_items, avg))
     }
 
-    /// Returns a **sorted** snapshot of all active tasks - cheap clone to avoid
+    /// Updates the PID of an existing command task after the child has spawned.
+    pub fn update_pid(&self, id: u64, pid: u32) {
+        if let Ok(mut map) = self.inner.lock() {
+            if let Some(task) = map.get_mut(&id) {
+                task.pid = Some(pid);
+            }
+        }
+    }
+
+    /// Returns a **sorted** snapshot of all active tasks, cheap clone to avoid
     /// holding the lock across GTK widget operations.
     ///
     /// Entries are sorted by task-id (insertion order proxy) so the dialog
