@@ -40,6 +40,29 @@ Most file managers try to do everything. Flux tries to do _one thing_ perfectly:
 - **Asynchronous Heart:** Got a folder with 5,000 high-res wallpapers? Flux won't sweat. It uses a throttled async pipeline to load thumbnails without ever freezing the window.
 - **Shortcut First:** Flux is designed for power users who prefer the keyboard over hunting for tiny icons.
 
+## Testing
+
+Flux is built with a comprehensive test suite to ensure stability and correctness.
+
+- **Unit & integration tests:** Over **350+ tests** covering core services, UI logic, utilities, and security invariants.
+- **Fuzzing:** Continuous fuzzing (via `libFuzzer`) is used to stress‑test all parsers, including archive URIs, glob patterns, search queries, and media probes. This has already uncovered real edge‑case bugs that would otherwise have crashed the application.
+
+### Running tests
+
+```bash
+# Run the full test suite
+sh tests.sh
+
+# Run fuzzing (optional, requires nightly Rust)
+cd fuzz/fuzz_targets
+python fuzz.py --level default
+
+# Run a specific target with more iterations
+python fuzz.py --target fuzz_glob --level medium
+
+# Available levels: default (10k), medium (50k), high (200k), extreme (1M)
+```
+
 ## 📦 Archive & Compressed File Browsing
 
 Flux features an integrated virtual filesystem layer (`/archive://`) that allows you to open, browse, and copy contents out of compressed archives just like normal directories.
