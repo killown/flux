@@ -88,3 +88,45 @@ name = "fuzz_menu_dsl"
 path = "fuzz_targets/fuzz_menu_dsl.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_archive_uri"
+path = "fuzz_targets/fuzz_archive_uri.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_glob"
+path = "fuzz_targets/fuzz_glob.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_search_query"
+path = "fuzz_targets/fuzz_search_query.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_expand_path"
+path = "fuzz_targets/fuzz_expand_path.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_network_uri_breadcrumbs"
+path = "fuzz_targets/fuzz_network_uri_breadcrumbs.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_network_uri_breadcrumb"
+path = "fuzz_targets/fuzz_network_uri_breadcrumb.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_size_filter"
+path = "fuzz_targets/fuzz_size_filter.rs"
+test = false
+doc = false
