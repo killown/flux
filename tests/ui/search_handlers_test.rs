@@ -95,3 +95,15 @@ fn test_switch_header_clears_filter_when_leaving_search() {
     assert_eq!(header_view, "path");
     assert!(filter.is_empty());
 }
+
+#[test]
+fn test_parse_size_filter_overflow_returns_none() {
+    // These inputs would have caused integer overflow panics before `checked_mul` was used.
+    assert!(parse_size_filter(">999999999999999999999999999999GB").is_none());
+    assert!(parse_size_filter("<999999999999999999999999999999TB").is_none());
+    // A range with huge values should also return None.
+    assert!(parse_size_filter(
+        "999999999999999999999999999999GB..1000000000000000000000000000000TB"
+    )
+    .is_none());
+}
