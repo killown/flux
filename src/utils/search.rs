@@ -68,10 +68,10 @@ mod size_filters {
             .unwrap_or(&unit_clean);
 
         let bytes = match unit {
-            "k" | "kb" => n * 1024,
-            "m" | "mb" => n * 1024 * 1024,
-            "g" | "gb" => n * 1024 * 1024 * 1024,
-            "t" | "tb" => n * 1024 * 1024 * 1024 * 1024,
+            "k" | "kb" => n.checked_mul(1024)?,
+            "m" | "mb" => n.checked_mul(1024 * 1024)?,
+            "g" | "gb" => n.checked_mul(1024 * 1024 * 1024)?,
+            "t" | "tb" => n.checked_mul(1024 * 1024 * 1024 * 1024)?,
             _ => return None,
         };
         Some(bytes)
