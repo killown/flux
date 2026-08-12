@@ -94,6 +94,13 @@ impl FluxApp {
                     before,
                     label_name,
                 },
+                crate::ui::SidebarMsg::DropMove {
+                    source_paths,
+                    dest_path,
+                } => AppMsg::SidebarDropMove {
+                    source_paths,
+                    dest_path,
+                },
             },
         );
 

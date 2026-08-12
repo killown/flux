@@ -524,6 +524,11 @@ pub enum SidebarMsg {
         before: PathBuf,
         label_name: Option<String>,
     },
+    /// Files were dragged from the grid and dropped onto a sidebar folder row.
+    DropMove {
+        source_paths: Vec<PathBuf>,
+        dest_path: PathBuf,
+    },
 }
 
 /// Simple model for a pinned sidebar location.
@@ -687,23 +692,84 @@ impl FactoryComponent for SidebarPlace {
                 },
             },
 
-            // Drop target: accept folders dragged from the file grid and pin at this position
+            // Drop target: accept any files/folders dragged from the file grid.
             add_controller = gtk::DropTarget {
                 set_actions: gdk::DragAction::COPY | gdk::DragAction::MOVE,
                 set_types: &[gdk::FileList::static_type()],
-                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
-                    if let Ok(file_list) = value.get::<gdk::FileList>() {
-                        for gfile in file_list.files() {
-                            if let Some(folder) = gfile.path() {
-                                if folder.is_dir() {
-                                    let _ = sender.output(SidebarMsg::PinAt {
-                                        path: folder,
-                                        before: path.clone(),
-                                        label_name: if is_label { Some(name.clone()) } else { None },
-                                    });
-                                }
+
+                connect_enter[path = self.path.clone(), is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target, _, _| {
+                    if is_label || !path.is_dir() {
+                        return gdk::DragAction::empty();
+                    }
+
+                    if let Some(widget) = target.widget() {
+                        widget.add_css_class("sidebar-drop-hover");
+                    }
+
+                    // Auto-navigate after 750 ms while the drag idles over the row.
+                    let nav_path = path.clone();
+                    let timer_ref = hover_timer.clone();
+                    let id = glib::timeout_add_local_once(
+                        std::time::Duration::from_millis(750),
+                        move || {
+                            timer_ref.set(None);
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(crate::model::AppMsg::Navigate(nav_path.clone()));
                             }
+                        },
+                    );
+                    hover_timer.set(Some(id));
+
+                    gdk::DragAction::MOVE
+                },
+
+                connect_leave[is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target| {
+                    if is_label { return; }
+
+                    if let Some(widget) = target.widget() {
+                        widget.remove_css_class("sidebar-drop-hover");
+                    }
+
+                    if let Some(id) = hover_timer.take() {
+                        id.remove();
+                    }
+                },
+
+                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target, value, _, _| {
+                    // Cancel any pending auto-navigate on release.
+                    if let Some(id) = hover_timer.take() {
+                        id.remove();
+                    }
+                    if let Some(widget) = target.widget() {
+                        widget.remove_css_class("sidebar-drop-hover");
+                    }
+
+                    if let Ok(file_list) = value.get::<gdk::FileList>() {
+                        let paths: Vec<PathBuf> = file_list
+                            .files()
+                            .into_iter()
+                            .filter_map(|f| f.path())
+                            .collect();
+
+                        let all_dirs = paths.iter().all(|p| p.is_dir());
+
+                        if all_dirs && !is_label {
+                            // Pin every dragged directory into the sidebar before this row.
+                            for folder in paths {
+                                let _ = sender.output(SidebarMsg::PinAt {
+                                    path: folder,
+                                    before: path.clone(),
+                                    label_name: if is_label { Some(name.clone()) } else { None },
+                                });
+                            }
+                        } else if path.is_dir() {
+                            // Move mixed or file-only payloads into the destination folder.
+                            let _ = sender.output(SidebarMsg::DropMove {
+                                source_paths: paths,
+                                dest_path: path.clone(),
+                            });
                         }
+
                         return true;
                     }
                     false
