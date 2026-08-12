@@ -176,14 +176,14 @@ impl SimpleAsyncComponent for FluxApp {
                                 } -> { set_name: constants::VIEW_PATH },
 
                                 /// Direct path entry field for manual location input.
+                                #[name = "header_path_entry"]
                                 add_child = &gtk::Entry {
                                     set_hexpand: false,
                                     set_halign: gtk::Align::Center,
                                     set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                                     set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
 
-                                    connect_map[current_path = model.current_path.clone()] => move |entry| {
-                                        entry.set_text(&current_path.to_string_lossy());
+                                    connect_map => |entry| {
                                         let pos = entry.text_length() as i32;
                                         entry.set_position(pos);
                                         entry.grab_focus();
@@ -734,6 +734,7 @@ impl SimpleAsyncComponent for FluxApp {
 
         let main_menu = Self::build_main_menu();
         widgets.main_menu_popover.set_menu_model(Some(&main_menu));
+        model.header_path_entry = widgets.header_path_entry.downgrade();
 
         widgets.grid_scroller.set_child(Some(&model.files.view));
 

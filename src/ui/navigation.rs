@@ -18,6 +18,10 @@ impl FluxApp {
                 self.load_path(prev, sender);
             }
             self.update_breadcrumbs();
+            if let Some(entry) = self.header_path_entry.upgrade() {
+                entry.set_text(&self.current_path.to_string_lossy());
+                entry.set_position(entry.text_length() as i32);
+            }
         } else if let Some(parent) = self.current_path.parent() {
             let parent_path = parent.to_path_buf();
             self.forward_stack.push(self.current_path.clone());
@@ -28,6 +32,10 @@ impl FluxApp {
                 self.load_path(parent_path, sender);
             }
             self.update_breadcrumbs();
+            if let Some(entry) = self.header_path_entry.upgrade() {
+                entry.set_text(&self.current_path.to_string_lossy());
+                entry.set_position(entry.text_length() as i32);
+            }
         }
     }
 
@@ -43,6 +51,10 @@ impl FluxApp {
                 self.load_path(next, sender);
             }
             self.update_breadcrumbs();
+            if let Some(entry) = self.header_path_entry.upgrade() {
+                entry.set_text(&self.current_path.to_string_lossy());
+                entry.set_position(entry.text_length() as i32);
+            }
         }
     }
 
@@ -79,6 +91,10 @@ impl FluxApp {
 
             self.load_network(&path_str, None, sender.clone());
             self.update_breadcrumbs();
+            if let Some(entry) = self.header_path_entry.upgrade() {
+                entry.set_text(&self.current_path.to_string_lossy());
+                entry.set_position(entry.text_length() as i32);
+            }
             return;
         }
 
@@ -110,6 +126,10 @@ impl FluxApp {
 
                 self.load_archive(archive_path, prefix, None, sender);
                 self.update_breadcrumbs();
+                if let Some(entry) = self.header_path_entry.upgrade() {
+                    entry.set_text(&self.current_path.to_string_lossy());
+                    entry.set_position(entry.text_length() as i32);
+                }
 
                 let view = self.files.view.clone();
                 glib::idle_add_local_once(move || {
@@ -126,8 +146,11 @@ impl FluxApp {
             || path_str.starts_with(constants::RECENT_URI);
 
         if !path_valid {
-            #[cfg(debug_assertions)]
-            eprintln!("[Flux] Cannot navigate: path does not exist: {}", path_str);
+            sender.input(AppMsg::ShowToast(format!(
+                "{}: {}",
+                crate::i18n::tr("Path not found"),
+                path_str
+            )));
             return;
         }
 
@@ -169,6 +192,10 @@ impl FluxApp {
 
             self.load_path(path, sender);
             self.update_breadcrumbs();
+            if let Some(entry) = self.header_path_entry.upgrade() {
+                entry.set_text(&self.current_path.to_string_lossy());
+                entry.set_position(entry.text_length() as i32);
+            }
 
             let view = self.files.view.clone();
             let terminal = self.terminal.clone();
@@ -211,6 +238,10 @@ impl FluxApp {
 
         self.load_archive(archive_path, String::new(), None, sender);
         self.update_breadcrumbs();
+        if let Some(entry) = self.header_path_entry.upgrade() {
+            entry.set_text(&self.current_path.to_string_lossy());
+            entry.set_position(entry.text_length() as i32);
+        }
 
         let view = self.files.view.clone();
         glib::idle_add_local_once(move || {
