@@ -14,6 +14,11 @@ LEVEL_RUNS = {
 
 SLOW_TARGETS = {"fuzz_media_duration", "fuzz_media_dimensions"}
 
+EXTRA_FLAGS = {
+    "fuzz_media_dimensions": ["-rss_limit_mb=4096"],
+    "fuzz_media_duration": ["-rss_limit_mb=4096"],
+}
+
 
 def get_runs(target, level):
     base = LEVEL_RUNS.get(level, 10_000)
@@ -67,8 +72,9 @@ doc = false
     for target in targets:
         runs = get_runs(target, args.level)
         print(f"\n🔍 Running {target} (level={args.level}, runs={runs})")
+        extra = EXTRA_FLAGS.get(target, [])
         result = subprocess.run(
-            ["cargo", "fuzz", "run", target, "--", f"-runs={runs}"], cwd=".."
+            ["cargo", "fuzz", "run", target, "--", f"-runs={runs}"] + extra, cwd=".."
         )
         if result.returncode != 0:
             print(f"❌ {target} crashed or failed.")
