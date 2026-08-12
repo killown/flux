@@ -748,6 +748,11 @@ pub enum AppMsg {
         before: PathBuf,
         label_name: Option<String>,
     },
+    /// Move files dragged from the grid and dropped onto a non-folder sidebar row's target folder.
+    SidebarDropMove {
+        source_paths: Vec<PathBuf>,
+        dest_path: PathBuf,
+    },
     /// Open the keyboard shortcuts and help overlay.
     ShowHelp,
     /// Handle a Drag-and-Drop move/copy operation for multiple items.

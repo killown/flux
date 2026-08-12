@@ -28,6 +28,10 @@ impl FluxApp {
             AppMsg::RemoveFromSidebar(path) => self.handle_remove_from_sidebar(path),
             AppMsg::AddToSidebarPermanent => self.handle_add_to_sidebar_permanent(),
             AppMsg::ReorderSidebar { from, to } => self.handle_reorder_sidebar(from, to),
+            AppMsg::SidebarDropMove {
+                source_paths,
+                dest_path,
+            } => self.handle_sidebar_drop_move(source_paths, dest_path, &sender),
             AppMsg::PinFolderAt {
                 path,
                 before,

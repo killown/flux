@@ -174,6 +174,62 @@ impl FluxApp {
         self.refresh_sidebar();
     }
 
+    /// Moves files dragged from the grid into a sidebar folder destination.
+    ///
+    /// Mirrors `handle_drop_items` but originates from the sidebar drop zone instead of
+    /// a grid cell. Only items whose source path differs from the computed destination are
+    /// moved, same-path no-ops are silently skipped. After all moves the view is refreshed.
+    pub fn handle_sidebar_drop_move(
+        &self,
+        source_paths: Vec<PathBuf>,
+        dest_path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let sender_clone = sender.clone();
+
+        relm4::spawn_blocking(move || {
+            for source_path in source_paths {
+                if !dest_path.is_dir() {
+                    break;
+                }
+
+                let Some(file_name) = source_path.file_name() else {
+                    continue;
+                };
+
+                let final_dest = dest_path.join(file_name);
+                if source_path == final_dest {
+                    continue;
+                }
+
+                let src_file = gio::File::for_path(&source_path);
+                let dst_file = gio::File::for_path(&final_dest);
+
+                if src_file
+                    .move_(
+                        &dst_file,
+                        gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                        gio::Cancellable::NONE,
+                        None,
+                    )
+                    .is_ok()
+                {
+                    sender_clone.input(AppMsg::ItemMoved {
+                        old_path: source_path,
+                        new_path: final_dest,
+                    });
+                } else {
+                    eprintln!(
+                        "[Sidebar DnD] Failed to move {:?} → {:?}",
+                        source_path, dest_path
+                    );
+                }
+            }
+
+            sender_clone.input(AppMsg::Refresh);
+        });
+    }
+
     pub fn handle_toggle_sidebar(&mut self) {
         self.sidebar_visible = !self.sidebar_visible;
         self.config.ui.sidebar_visible = self.sidebar_visible;
