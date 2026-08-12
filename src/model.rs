@@ -379,6 +379,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Weak reference to the inline header path entry for live text sync.
+    pub header_path_entry: glib::WeakRef<gtk::Entry>,
     // Search state for content search mode.
     pub search_saved_layout: bool,
     /// Maximum grid columns before content search, restored when search ends.
@@ -504,6 +506,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Syncs the inline path entry widget text to the current directory.
+    SyncPathEntry,
     /// Append a line of output from a command task.
     CommandOutput {
         id: u64,

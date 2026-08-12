@@ -395,6 +395,8 @@ impl FluxApp {
                 }
                 sender.input(AppMsg::TaskCompleted(id));
             }
+
+            AppMsg::SyncPathEntry => {}
         }
     }
 }

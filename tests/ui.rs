@@ -14,6 +14,7 @@ mod ui {
     mod keymap_test;
     mod location_dialog_test;
     mod menu_editor_test;
+    mod navigation_test;
     mod network_dialogs_test;
     mod remote_ops_test;
     mod search_handlers_test;

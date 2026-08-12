@@ -412,6 +412,11 @@ impl FluxApp {
                         });
                     }
                 }
+
+                if let Some(entry) = self.header_path_entry.upgrade() {
+                    entry.set_text(&path_str);
+                    entry.set_position(entry.text_length() as i32);
+                }
                 return;
             }
         }
@@ -421,23 +426,18 @@ impl FluxApp {
         // the scheme double-slash into bogus local paths. Split on '/' manually
         // and reconstruct each breadcrumb as a well-formed URI.
         if crate::services::network::is_network_uri(&self.current_path) {
-            // Locate the scheme+authority prefix ("ftp://host:port", "smb://host", …)
-            // Everything after that is the path portion to segment.
             let uri = path_str.trim_end_matches('/');
 
             if let Some((scheme, after_scheme)) = uri.split_once("://") {
-                // after_scheme = "host:port/dir/subdir"
                 let slash_pos = after_scheme.find('/');
                 let authority = &after_scheme[..slash_pos.unwrap_or(after_scheme.len())];
 
-                // Root breadcrumb: just scheme://authority
                 let root_uri = format!("{}://{}", scheme, authority);
                 guard.push_back(PathSegment {
                     name: authority.to_string(),
                     path: PathBuf::from(&root_uri),
                 });
 
-                // Remaining path segments, each building on the previous
                 if let Some(path_part) = slash_pos.map(|p| &after_scheme[p + 1..]) {
                     let mut acc = root_uri.clone();
                     for segment in path_part.split('/').filter(|s| !s.is_empty()) {
@@ -449,6 +449,11 @@ impl FluxApp {
                         });
                     }
                 }
+            }
+
+            if let Some(entry) = self.header_path_entry.upgrade() {
+                entry.set_text(&path_str);
+                entry.set_position(entry.text_length() as i32);
             }
             return;
         }
@@ -474,6 +479,11 @@ impl FluxApp {
 
         for segment in segments.into_iter().skip(skip) {
             guard.push_back(segment);
+        }
+
+        if let Some(entry) = self.header_path_entry.upgrade() {
+            entry.set_text(&path_str);
+            entry.set_position(entry.text_length() as i32);
         }
     }
 
