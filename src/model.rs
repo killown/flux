@@ -68,6 +68,8 @@ pub struct CustomAction {
     pub mime_types: Vec<String>,
     /// Optional toast message to display after the command is dispatched.
     pub toast: Option<String>,
+    /// If true, suppresses the transfer dialog for this command.
+    pub no_transfer_dialog: bool,
 }
 
 /// User-defined keyboard shortcuts for core application operations.
@@ -979,27 +981,35 @@ pub struct MenuEntry {
     pub command: String,
     /// An optional message to display as a toast notification after the command runs.
     pub toast: Option<String>,
+    /// If true, suppresses tracking progress and opening the transfer dialog.
+    #[serde(default)]
+    pub no_transfer_dialog: bool,
 }
 
 impl MenuEntry {
     /// Converts the entry into the DSL string format used in `menu.rs`.
     ///
     /// The output follows the pattern:
-    /// `"Submenu > Label" => "mime_types", "command", "toast"`
+    /// `"Submenu > Label" => "mime_types", "command", "toast", "no_transfer_dialog"`
     pub fn to_config_line(&self) -> String {
         let label_field = match &self.submenu {
             Some(sub) => format!("{} > {}", sub, self.label),
             None => self.label.clone(),
         };
 
-        let base = format!(
+        let mut line = format!(
             r#""{}" => "{}", "{}""#,
             label_field, self.mime_types, self.command
         );
 
-        match &self.toast {
-            Some(t) => format!(r#"{}, "{}""#, base, t),
-            None => base,
+        if let Some(t) = &self.toast {
+            line.push_str(&format!(r#", "{}"#, t));
         }
+
+        if self.no_transfer_dialog {
+            line.push_str(r#", "no_transfer_dialog""#);
+        }
+
+        line
     }
 }

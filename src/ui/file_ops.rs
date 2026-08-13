@@ -70,7 +70,9 @@ pub fn build_execution_command(
     }
 }
 
-/// Pure predicate: determines whether an external command template should spawn the 2s transfer dialog timer.
+/// Legacy predicate: returns false for commands known to open their own window,
+/// keeping backwards compatibility for installs that haven't added `no_transfer_dialog`
+/// to their menu.rs yet.
 pub fn should_track_in_transfer_dialog(cmd_template: &str) -> bool {
     !cmd_template.contains("--file-properties")
 }
@@ -303,8 +305,18 @@ impl FluxApp {
         // Insert placeholder task
         self.task_queue.insert_command(task_id, label, 0);
 
-        // Start transfer dialog timer ONLY if command policy permits it
-        if should_track_in_transfer_dialog(&cmd_template) {
+        // Resolve the no_transfer_dialog flag from the matching menu action.
+        let no_transfer_dialog = self
+            .menu_actions
+            .iter()
+            .find(|action| action.command == cmd_template)
+            .map(|a| a.no_transfer_dialog)
+            .unwrap_or(false);
+
+        // Start transfer dialog timer ONLY if command policy permits it.
+        // no_transfer_dialog flag takes priority, should_track_in_transfer_dialog
+        // is kept as a legacy fallback for old installs without the flag in menu.rs.
+        if !no_transfer_dialog && should_track_in_transfer_dialog(&cmd_template) {
             let s_delay = sender.clone();
             let task_id_delay = task_id;
             relm4::spawn(async move {

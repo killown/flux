@@ -360,7 +360,7 @@ path = "~"
 }
 
 /// Parses the right-hand side of a menu config line into (mime, command, optional_toast).
-pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
+pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)> {
     let input = input.trim();
 
     let remainder = input.strip_prefix('"')?;
@@ -368,19 +368,31 @@ pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
 
     let second_part = rest.trim().strip_prefix(',')?.trim();
 
-    // Find the closing quote of the command, allowing for escaped content
     let cmd_inner = second_part.strip_prefix('"')?;
     let (cmd, after_cmd) = cmd_inner.split_once('"')?;
 
-    // Optional 3rd field: , "toast message"
-    let toast = after_cmd
-        .trim()
-        .strip_prefix(',')
-        .and_then(|s| s.trim().strip_prefix('"'))
-        .and_then(|s| s.strip_suffix('"'))
-        .map(|s| s.to_string());
+    // Parse remaining optional tokens: toast and/or "no_transfer_dialog" (in any order)
+    let mut toast: Option<String> = None;
+    let mut no_transfer_dialog = false;
 
-    Some((mime.to_string(), cmd.to_string(), toast))
+    let mut remainder = after_cmd.trim();
+    while let Some(stripped) = remainder.strip_prefix(',') {
+        let stripped = stripped.trim();
+        if let Some(inner) = stripped.strip_prefix('"') {
+            if let Some((token, rest)) = inner.split_once('"') {
+                if token == "no_transfer_dialog" {
+                    no_transfer_dialog = true;
+                } else {
+                    toast = Some(token.to_string());
+                }
+                remainder = rest.trim();
+                continue;
+            }
+        }
+        break;
+    }
+
+    Some((mime.to_string(), cmd.to_string(), toast, no_transfer_dialog))
 }
 
 pub fn load_menu_config() -> Vec<CustomAction> {
@@ -406,7 +418,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 (None, full_label.to_string())
             };
 
-            if let Some((mimes_part, cmd_part, toast)) = split_mime_cmd(right) {
+            if let Some((mimes_part, cmd_part, toast, no_transfer_dialog)) = split_mime_cmd(right) {
                 let mime_types: Vec<String> = mimes_part
                     .split(',')
                     .map(|s| s.trim().to_string())
@@ -415,11 +427,11 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 actions.push(CustomAction {
                     label,
                     submenu,
-
                     action_name: format!("custom_{}", i),
                     command: cmd_part,
                     mime_types,
                     toast,
+                    no_transfer_dialog,
                 });
             }
         }
