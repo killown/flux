@@ -137,6 +137,415 @@ impl From<String> for ArchiveError {
     }
 }
 
+// ─── ArchiveBackend trait ────────────────────────────────────────────────────
+
+/// Common interface for all archive format backends.
+pub trait ArchiveBackend: Send + Sync {
+    /// List entries at `prefix` inside the archive.
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError>;
+
+    /// Extract a single entry as raw bytes.
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError>;
+
+    /// Extract a directory subtree to a temporary directory and return its root path.
+    fn extract_dir(
+        &self,
+        archive_path: &Path,
+        inner_dir: &str,
+        password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError>;
+}
+
+// ─── Real backends ────────────────────────────────────────────────────────────
+
+struct ZipBackend;
+struct TarBackend;
+struct SevenZBackend;
+struct RarBackend;
+struct IsoBackend;
+struct SingleFileBackend; // for .gz, .bz2, .xz, .zst, .lz4
+struct UnsupportedBackend;
+
+impl ArchiveBackend for ZipBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        list_zip(archive_path, prefix, password)
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, pw, tmp| {
+            extract_zip(p, i, pw, tmp)
+        })
+    }
+
+    fn extract_dir(
+        &self,
+        archive_path: &Path,
+        inner_dir: &str,
+        password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        extract_dir_zip(archive_path, inner_dir, password)
+    }
+}
+
+impl ArchiveBackend for TarBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        let name_lc = lc_name(archive_path);
+        if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+            list_tar(
+                flate2::read::GzDecoder::new(open_buf(archive_path)?),
+                prefix,
+            )
+        } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+            list_tar(bzip2::read::BzDecoder::new(open_buf(archive_path)?), prefix)
+        } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+            list_tar(xz2::read::XzDecoder::new(open_buf(archive_path)?), prefix)
+        } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+            let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
+                .map_err(|e| ArchiveError::Other(format!("zstd open: {e}")))?;
+            list_tar(dec, prefix)
+        } else if name_lc.ends_with(".tar.lz4") {
+            let dec = lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?);
+            list_tar(dec, prefix)
+        } else {
+            // plain .tar
+            list_tar(open_buf(archive_path)?, prefix)
+        }
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, _pw, tmp| {
+            let name_lc = lc_name(p);
+            if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+                extract_tar(flate2::read::GzDecoder::new(open_buf(p)?), i, tmp)
+            } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+                extract_tar(bzip2::read::BzDecoder::new(open_buf(p)?), i, tmp)
+            } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+                extract_tar(xz2::read::XzDecoder::new(open_buf(p)?), i, tmp)
+            } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+                let dec = zstd::stream::read::Decoder::new(open_buf(p)?)
+                    .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+                extract_tar(dec, i, tmp)
+            } else if name_lc.ends_with(".tar.lz4") {
+                extract_tar(lz4_flex::frame::FrameDecoder::new(open_buf(p)?), i, tmp)
+            } else {
+                extract_tar(open_buf(p)?, i, tmp)
+            }
+        })
+    }
+
+    fn extract_dir(
+        &self,
+        archive_path: &Path,
+        inner_dir: &str,
+        _password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        let name_lc = lc_name(archive_path);
+        if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+            extract_dir_tar(
+                flate2::read::GzDecoder::new(open_buf(archive_path)?),
+                inner_dir,
+            )
+        } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+            extract_dir_tar(
+                bzip2::read::BzDecoder::new(open_buf(archive_path)?),
+                inner_dir,
+            )
+        } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+            extract_dir_tar(
+                xz2::read::XzDecoder::new(open_buf(archive_path)?),
+                inner_dir,
+            )
+        } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+            let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
+                .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+            extract_dir_tar(dec, inner_dir)
+        } else if name_lc.ends_with(".tar.lz4") {
+            extract_dir_tar(
+                lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?),
+                inner_dir,
+            )
+        } else {
+            extract_dir_tar(open_buf(archive_path)?, inner_dir)
+        }
+    }
+}
+
+impl ArchiveBackend for SevenZBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        list_7z(archive_path, prefix, password)
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, pw, tmp| {
+            extract_7z(p, i, pw, tmp)
+        })
+    }
+
+    fn extract_dir(
+        &self,
+        archive_path: &Path,
+        inner_dir: &str,
+        password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        extract_dir_7z(archive_path, inner_dir, password)
+    }
+}
+
+impl ArchiveBackend for RarBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        list_rar(archive_path, prefix, password)
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, pw, tmp| {
+            extract_rar(p, i, pw, tmp)
+        })
+    }
+
+    fn extract_dir(
+        &self,
+        _archive_path: &Path,
+        _inner_dir: &str,
+        _password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        Err(ArchiveError::Other(
+            "Directory extraction from RAR archives is not supported yet".to_string(),
+        ))
+    }
+}
+
+impl ArchiveBackend for IsoBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        list_iso(archive_path, prefix)
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, _pw, tmp| {
+            extract_iso(p, i, tmp)
+        })
+    }
+
+    fn extract_dir(
+        &self,
+        _archive_path: &Path,
+        _inner_dir: &str,
+        _password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        Err(ArchiveError::Other(
+            "Directory extraction from ISO images is not supported yet".to_string(),
+        ))
+    }
+}
+
+impl ArchiveBackend for SingleFileBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        _prefix: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        let name_lc = lc_name(archive_path);
+        let inner_name = if name_lc.ends_with(".gz") {
+            strip_ext(&name_lc, ".gz")
+        } else if name_lc.ends_with(".bz2") {
+            strip_ext(&name_lc, ".bz2")
+        } else if name_lc.ends_with(".xz") {
+            strip_ext(&name_lc, ".xz")
+        } else if name_lc.ends_with(".zstd") {
+            strip_ext(&name_lc, ".zstd")
+        } else if name_lc.ends_with(".zst") {
+            strip_ext(&name_lc, ".zst")
+        } else if name_lc.ends_with(".lz4") {
+            strip_ext(&name_lc, ".lz4")
+        } else {
+            return Err(ArchiveError::Other("Unsupported single-file format".into()));
+        };
+        single_file_listing(archive_path, inner_name)
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        _inner_path: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        // Extract the whole file (the only entry) to bytes.
+        let name_lc = lc_name(archive_path);
+        let reader: Box<dyn Read> = if name_lc.ends_with(".gz") {
+            Box::new(flate2::read::GzDecoder::new(open_buf(archive_path)?))
+        } else if name_lc.ends_with(".bz2") {
+            Box::new(bzip2::read::BzDecoder::new(open_buf(archive_path)?))
+        } else if name_lc.ends_with(".xz") {
+            Box::new(xz2::read::XzDecoder::new(open_buf(archive_path)?))
+        } else if name_lc.ends_with(".zstd") || name_lc.ends_with(".zst") {
+            let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
+                .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+            Box::new(dec)
+        } else if name_lc.ends_with(".lz4") {
+            Box::new(lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?))
+        } else {
+            return Err(ArchiveError::Other("Unsupported single-file format".into()));
+        };
+        let mut data = Vec::new();
+        let mut reader = reader;
+        std::io::copy(&mut reader, &mut data)
+            .map_err(|e| ArchiveError::Other(format!("decompress: {e}")))?;
+        Ok(data)
+    }
+
+    fn extract_dir(
+        &self,
+        _archive_path: &Path,
+        _inner_dir: &str,
+        _password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        Err(ArchiveError::Other(
+            "Directory extraction from single-file archives is not supported".into(),
+        ))
+    }
+}
+
+impl ArchiveBackend for UnsupportedBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        _prefix: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        Err(ArchiveError::Other(format!(
+            "Unsupported format: {}",
+            archive_path.display()
+        )))
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        _inner_path: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        Err(ArchiveError::Other(format!(
+            "Unsupported format: {}",
+            archive_path.display()
+        )))
+    }
+
+    fn extract_dir(
+        &self,
+        archive_path: &Path,
+        _inner_dir: &str,
+        _password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        Err(ArchiveError::Other(format!(
+            "Unsupported format: {}",
+            archive_path.display()
+        )))
+    }
+}
+
+// ─── Factory ─────────────────────────────────────────────────────────────────
+
+fn get_backend(
+    archive_path: &Path,
+    backend: Option<Box<dyn ArchiveBackend>>,
+) -> Box<dyn ArchiveBackend> {
+    if let Some(b) = backend {
+        return b;
+    }
+    let name_lc = lc_name(archive_path);
+    if name_lc.ends_with(".zip") {
+        Box::new(ZipBackend)
+    } else if name_lc.ends_with(".7z") {
+        Box::new(SevenZBackend)
+    } else if name_lc.ends_with(".tar.gz")
+        || name_lc.ends_with(".tgz")
+        || name_lc.ends_with(".tar.bz2")
+        || name_lc.ends_with(".tbz2")
+        || name_lc.ends_with(".tar.xz")
+        || name_lc.ends_with(".txz")
+        || name_lc.ends_with(".tar.zst")
+        || name_lc.ends_with(".tzst")
+        || name_lc.ends_with(".tar.lz4")
+        || name_lc.ends_with(".tar")
+    {
+        Box::new(TarBackend)
+    } else if name_lc.ends_with(".rar") {
+        Box::new(RarBackend)
+    } else if name_lc.ends_with(".iso") {
+        Box::new(IsoBackend)
+    } else if name_lc.ends_with(".gz")
+        || name_lc.ends_with(".bz2")
+        || name_lc.ends_with(".xz")
+        || name_lc.ends_with(".zstd")
+        || name_lc.ends_with(".zst")
+        || name_lc.ends_with(".lz4")
+    {
+        Box::new(SingleFileBackend)
+    } else {
+        Box::new(UnsupportedBackend)
+    }
+}
+
 // ─── Public entry point ───────────────────────────────────────────────────────
 
 /// Describes a single entry within an archive as seen from a specific directory level.
@@ -169,53 +578,19 @@ pub fn list_archive_entries(
     prefix: &str,
     password: Option<&str>,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
-    let name_lc = lc_name(archive_path);
+    list_archive_entries_with_backend(archive_path, prefix, password, None)
+}
 
-    if name_lc.ends_with(".zip") {
-        list_zip(archive_path, prefix, password)
-    } else if name_lc.ends_with(".7z") {
-        list_7z(archive_path, prefix, password)
-    } else if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
-        list_tar(
-            flate2::read::GzDecoder::new(open_buf(archive_path)?),
-            prefix,
-        )
-    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
-        list_tar(bzip2::read::BzDecoder::new(open_buf(archive_path)?), prefix)
-    } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
-        list_tar(xz2::read::XzDecoder::new(open_buf(archive_path)?), prefix)
-    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
-        let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
-            .map_err(|e| ArchiveError::Other(format!("zstd open: {e}")))?;
-        list_tar(dec, prefix)
-    } else if name_lc.ends_with(".tar.lz4") {
-        let dec = lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?);
-        list_tar(dec, prefix)
-    } else if name_lc.ends_with(".tar") {
-        list_tar(open_buf(archive_path)?, prefix)
-    } else if name_lc.ends_with(".gz") {
-        // Standalone gzip - single-file pseudo-dir
-        single_file_listing(archive_path, strip_ext(&name_lc, ".gz"))
-    } else if name_lc.ends_with(".bz2") {
-        single_file_listing(archive_path, strip_ext(&name_lc, ".bz2"))
-    } else if name_lc.ends_with(".xz") {
-        single_file_listing(archive_path, strip_ext(&name_lc, ".xz"))
-    } else if name_lc.ends_with(".zstd") {
-        single_file_listing(archive_path, strip_ext(&name_lc, ".zstd"))
-    } else if name_lc.ends_with(".zst") {
-        single_file_listing(archive_path, strip_ext(&name_lc, ".zst"))
-    } else if name_lc.ends_with(".lz4") {
-        single_file_listing(archive_path, strip_ext(&name_lc, ".lz4"))
-    } else if name_lc.ends_with(".rar") {
-        list_rar(archive_path, prefix, password)
-    } else if name_lc.ends_with(".iso") {
-        list_iso(archive_path, prefix)
-    } else {
-        Err(ArchiveError::Other(format!(
-            "Unsupported format: {}",
-            archive_path.display()
-        )))
-    }
+/// Same as `list_archive_entries`, but allows injecting a custom backend (for testing).
+#[allow(dead_code)]
+pub fn list_archive_entries_with_backend(
+    archive_path: &Path,
+    prefix: &str,
+    password: Option<&str>,
+    backend: Option<Box<dyn ArchiveBackend>>,
+) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    let backend = get_backend(archive_path, backend);
+    backend.list_entries(archive_path, prefix, password)
 }
 
 /// Converts [`ArchiveEntry`] items into [`FileLoadContext`] records for the grid model.
@@ -257,6 +632,81 @@ pub fn extract_entry_to_tempfile(
     inner_path: &str,
     password: Option<&str>,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    extract_entry_to_tempfile_with_backend(archive_path, inner_path, password, None)
+}
+
+/// Same as `extract_entry_to_tempfile`, but allows injecting a custom backend.
+#[allow(dead_code)]
+pub fn extract_entry_to_tempfile_with_backend(
+    archive_path: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+    backend: Option<Box<dyn ArchiveBackend>>,
+) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    let backend = get_backend(archive_path, backend);
+    let data = backend.extract_entry_bytes(archive_path, inner_path, password)?;
+
+    let suffix = Path::new(inner_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|n| format!(".{n}"))
+        .unwrap_or_default();
+
+    let mut tmp = tempfile::Builder::new()
+        .suffix(&suffix)
+        .tempfile()
+        .map_err(|e| ArchiveError::Other(format!("temp file: {e}")))?;
+
+    tmp.write_all(&data)
+        .map_err(|e| ArchiveError::Other(format!("write temp: {e}")))?;
+    tmp.flush()
+        .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
+    Ok(tmp)
+}
+
+/// Extracts a folder entry and all of its nested contents from an archive into a
+/// temporary directory under `/tmp`.
+///
+/// Returns the `PathBuf` pointing to the extracted root folder.
+#[allow(dead_code)]
+pub fn extract_dir_to_tempdir(
+    archive_path: &std::path::Path,
+    inner_dir: &str,
+    password: Option<&str>,
+) -> Result<std::path::PathBuf, ArchiveError> {
+    extract_dir_to_tempdir_with_backend(archive_path, inner_dir, password, None)
+}
+
+/// Same as `extract_dir_to_tempdir`, but allows injecting a custom backend.
+#[allow(dead_code)]
+pub fn extract_dir_to_tempdir_with_backend(
+    archive_path: &std::path::Path,
+    inner_dir: &str,
+    password: Option<&str>,
+    backend: Option<Box<dyn ArchiveBackend>>,
+) -> Result<std::path::PathBuf, ArchiveError> {
+    let backend = get_backend(archive_path, backend);
+    backend.extract_dir(archive_path, inner_dir, password)
+}
+
+// ─── Helper to extract bytes via a temporary file ────────────────────────────
+
+/// Generic helper that calls an extraction function that writes to a tempfile,
+/// then reads the tempfile content into a `Vec<u8>`.
+fn extract_bytes_via_tempfile<F>(
+    archive_path: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+    extract_fn: F,
+) -> Result<Vec<u8>, ArchiveError>
+where
+    F: FnOnce(
+        &Path,
+        &str,
+        Option<&str>,
+        tempfile::NamedTempFile,
+    ) -> Result<tempfile::NamedTempFile, ArchiveError>,
+{
     let suffix = Path::new(inner_path)
         .file_name()
         .and_then(|n| n.to_str())
@@ -268,68 +718,18 @@ pub fn extract_entry_to_tempfile(
         .tempfile()
         .map_err(|e| ArchiveError::Other(format!("temp file: {e}")))?;
 
-    let name_lc = lc_name(archive_path);
+    let tmp = extract_fn(archive_path, inner_path, password, tmp)?;
 
-    if name_lc.ends_with(".zip") {
-        extract_zip(archive_path, inner_path, password, tmp)
-    } else if name_lc.ends_with(".7z") {
-        extract_7z(archive_path, inner_path, password, tmp)
-    } else if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
-        extract_tar(
-            flate2::read::GzDecoder::new(open_buf(archive_path)?),
-            inner_path,
-            tmp,
-        )
-    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
-        extract_tar(
-            bzip2::read::BzDecoder::new(open_buf(archive_path)?),
-            inner_path,
-            tmp,
-        )
-    } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
-        extract_tar(
-            xz2::read::XzDecoder::new(open_buf(archive_path)?),
-            inner_path,
-            tmp,
-        )
-    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
-        let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
-            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
-        extract_tar(dec, inner_path, tmp)
-    } else if name_lc.ends_with(".tar.lz4") {
-        extract_tar(
-            lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?),
-            inner_path,
-            tmp,
-        )
-    } else if name_lc.ends_with(".tar") {
-        extract_tar(open_buf(archive_path)?, inner_path, tmp)
-    } else if name_lc.ends_with(".gz") {
-        extract_single(flate2::read::GzDecoder::new(open_buf(archive_path)?), tmp)
-    } else if name_lc.ends_with(".bz2") {
-        extract_single(bzip2::read::BzDecoder::new(open_buf(archive_path)?), tmp)
-    } else if name_lc.ends_with(".xz") {
-        extract_single(xz2::read::XzDecoder::new(open_buf(archive_path)?), tmp)
-    } else if name_lc.ends_with(".zstd") || name_lc.ends_with(".zst") {
-        let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
-            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
-        extract_single(dec, tmp)
-    } else if name_lc.ends_with(".lz4") {
-        extract_single(
-            lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?),
-            tmp,
-        )
-    } else if name_lc.ends_with(".rar") {
-        extract_rar(archive_path, inner_path, password, tmp)
-    } else if name_lc.ends_with(".iso") {
-        extract_iso(archive_path, inner_path, tmp)
-    } else {
-        Err(ArchiveError::Other(format!(
-            "Unsupported format: {}",
-            archive_path.display()
-        )))
-    }
+    let mut data = Vec::new();
+    let mut file = std::fs::File::open(tmp.path())
+        .map_err(|e| ArchiveError::Other(format!("open temp: {e}")))?;
+    std::io::copy(&mut file, &mut data)
+        .map_err(|e| ArchiveError::Other(format!("read temp: {e}")))?;
+    Ok(data)
 }
+
+// ─── The rest of the file (helpers, format-specific implementations) ────────
+// (All existing helper functions remain exactly as they were, unchanged.)
 
 // ─── RAR ─────────────────────────────────────────────────────────────────────
 //
@@ -627,56 +1027,6 @@ fn list_zip(
     Ok(seen.into_values().collect())
 }
 
-/// Extracts a folder entry and all of its nested contents from an archive into a
-/// temporary directory under `/tmp`.
-///
-/// Returns the `PathBuf` pointing to the extracted root folder.
-#[allow(dead_code)]
-pub fn extract_dir_to_tempdir(
-    archive_path: &std::path::Path,
-    inner_dir: &str,
-    password: Option<&str>,
-) -> Result<std::path::PathBuf, ArchiveError> {
-    let name_lc = lc_name(archive_path);
-
-    if name_lc.ends_with(".zip") {
-        extract_dir_zip(archive_path, inner_dir, password)
-    } else if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
-        extract_dir_tar(
-            flate2::read::GzDecoder::new(open_buf(archive_path)?),
-            inner_dir,
-        )
-    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
-        extract_dir_tar(
-            bzip2::read::BzDecoder::new(open_buf(archive_path)?),
-            inner_dir,
-        )
-    } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
-        extract_dir_tar(
-            xz2::read::XzDecoder::new(open_buf(archive_path)?),
-            inner_dir,
-        )
-    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
-        let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
-            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
-        extract_dir_tar(dec, inner_dir)
-    } else if name_lc.ends_with(".tar.lz4") {
-        extract_dir_tar(
-            lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?),
-            inner_dir,
-        )
-    } else if name_lc.ends_with(".tar") {
-        extract_dir_tar(open_buf(archive_path)?, inner_dir)
-    } else if name_lc.ends_with(".7z") {
-        extract_dir_7z(archive_path, inner_dir, password)
-    } else {
-        Err(ArchiveError::Other(format!(
-            "Unsupported format for directory extraction: {}",
-            archive_path.display()
-        )))
-    }
-}
-
 fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
     let folder_name = Path::new(inner_dir)
         .file_name()
@@ -756,115 +1106,6 @@ fn extract_dir_zip(
                 .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
         }
     }
-
-    let result = dest_dir.clone();
-    std::mem::forget(temp_dir);
-    Ok(result)
-}
-
-fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
-    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
-
-    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
-
-    let mut archive = tar::Archive::new(reader);
-    for entry in archive
-        .entries()
-        .map_err(|e| ArchiveError::Other(format!("TAR: {e}")))?
-    {
-        let mut entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
-        let raw_path = entry
-            .path()
-            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
-            .to_string_lossy()
-            .replace('\\', "/");
-
-        if !raw_path.starts_with(&prefix) {
-            continue;
-        }
-        let relative = raw_path.trim_start_matches(prefix.as_str());
-        if relative.is_empty() {
-            continue;
-        }
-
-        let out_path = dest_dir.join(relative);
-        let is_dir = entry.header().entry_type().is_dir();
-
-        if is_dir {
-            std::fs::create_dir_all(&out_path)
-                .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
-        } else {
-            if let Some(parent) = out_path.parent() {
-                std::fs::create_dir_all(parent)
-                    .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
-            }
-            let mut outfile = std::fs::File::create(&out_path)
-                .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
-            std::io::copy(&mut entry, &mut outfile)
-                .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
-        }
-    }
-
-    let result = dest_dir.clone();
-    std::mem::forget(temp_dir);
-    Ok(result)
-}
-
-fn extract_dir_7z(
-    archive_path: &Path,
-    inner_dir: &str,
-    password: Option<&str>,
-) -> Result<PathBuf, ArchiveError> {
-    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
-
-    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
-
-    let file =
-        std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
-    let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
-    let mut reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
-        sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
-        sevenz_rust2::Error::MaybeBadPassword(_) => {
-            if password.is_none() {
-                ArchiveError::PasswordRequired
-            } else {
-                ArchiveError::WrongPassword
-            }
-        }
-        _ => ArchiveError::Other(e.to_string()),
-    })?;
-
-    reader
-        .for_each_entries(
-            &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn Read| {
-                let raw = entry.name().replace('\\', "/");
-                if !raw.starts_with(&prefix) {
-                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
-                    return Ok(true);
-                }
-                let relative = raw.trim_start_matches(prefix.as_str());
-                if relative.is_empty() {
-                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
-                    return Ok(true);
-                }
-
-                let out_path = dest_dir.join(relative);
-                if entry.is_directory {
-                    std::fs::create_dir_all(&out_path).ok();
-                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
-                } else {
-                    if let Some(parent) = out_path.parent() {
-                        std::fs::create_dir_all(parent).ok();
-                    }
-                    let mut outfile = std::fs::File::create(&out_path).map_err(|e| {
-                        sevenz_rust2::Error::from(std::io::Error::other(e.to_string()))
-                    })?;
-                    std::io::copy(r, &mut outfile).map_err(sevenz_rust2::Error::from)?;
-                }
-                Ok(true)
-            },
-        )
-        .map_err(|e| ArchiveError::Other(e.to_string()))?;
 
     let result = dest_dir.clone();
     std::mem::forget(temp_dir);
@@ -1086,6 +1327,68 @@ fn extract_7z(
         .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
     Ok(tmp)
 }
+
+fn extract_dir_7z(
+    archive_path: &Path,
+    inner_dir: &str,
+    password: Option<&str>,
+) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+
+    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+
+    let file =
+        std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
+    let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
+    let mut reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
+        sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
+        sevenz_rust2::Error::MaybeBadPassword(_) => {
+            if password.is_none() {
+                ArchiveError::PasswordRequired
+            } else {
+                ArchiveError::WrongPassword
+            }
+        }
+        _ => ArchiveError::Other(e.to_string()),
+    })?;
+
+    reader
+        .for_each_entries(
+            &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn Read| {
+                let raw = entry.name().replace('\\', "/");
+                if !raw.starts_with(&prefix) {
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                    return Ok(true);
+                }
+                let relative = raw.trim_start_matches(prefix.as_str());
+                if relative.is_empty() {
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                    return Ok(true);
+                }
+
+                let out_path = dest_dir.join(relative);
+                if entry.is_directory {
+                    std::fs::create_dir_all(&out_path).ok();
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                } else {
+                    if let Some(parent) = out_path.parent() {
+                        std::fs::create_dir_all(parent).ok();
+                    }
+                    let mut outfile = std::fs::File::create(&out_path).map_err(|e| {
+                        sevenz_rust2::Error::from(std::io::Error::other(e.to_string()))
+                    })?;
+                    std::io::copy(r, &mut outfile).map_err(sevenz_rust2::Error::from)?;
+                }
+                Ok(true)
+            },
+        )
+        .map_err(|e| ArchiveError::Other(e.to_string()))?;
+
+    let result = dest_dir.clone();
+    std::mem::forget(temp_dir);
+    Ok(result)
+}
+
 // ─── TAR (all compression flavours) ──────────────────────────────────────────
 
 fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, ArchiveError> {
@@ -1140,6 +1443,54 @@ fn extract_tar<R: Read>(
     Err(ArchiveError::Other(format!("not found: {inner_path}")))
 }
 
+fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+
+    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+
+    let mut archive = tar::Archive::new(reader);
+    for entry in archive
+        .entries()
+        .map_err(|e| ArchiveError::Other(format!("TAR: {e}")))?
+    {
+        let mut entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
+        let raw_path = entry
+            .path()
+            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
+            .to_string_lossy()
+            .replace('\\', "/");
+
+        if !raw_path.starts_with(&prefix) {
+            continue;
+        }
+        let relative = raw_path.trim_start_matches(prefix.as_str());
+        if relative.is_empty() {
+            continue;
+        }
+
+        let out_path = dest_dir.join(relative);
+        let is_dir = entry.header().entry_type().is_dir();
+
+        if is_dir {
+            std::fs::create_dir_all(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
+        } else {
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
+            }
+            let mut outfile = std::fs::File::create(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
+            std::io::copy(&mut entry, &mut outfile)
+                .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
+        }
+    }
+
+    let result = dest_dir.clone();
+    std::mem::forget(temp_dir);
+    Ok(result)
+}
+
 // ─── Standalone compressed single-file archives ───────────────────────────────
 
 /// Produces a listing with a single virtual entry - the decompressed filename.
@@ -1170,17 +1521,6 @@ fn single_file_listing(
         inner_path: inner_name.to_owned(),
         is_encrypted: false,
     }])
-}
-
-fn extract_single<R: Read>(
-    mut reader: R,
-    mut tmp: tempfile::NamedTempFile,
-) -> Result<tempfile::NamedTempFile, ArchiveError> {
-    std::io::copy(&mut reader, &mut tmp)
-        .map_err(|e| ArchiveError::Other(format!("decompress: {e}")))?;
-    tmp.flush()
-        .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
-    Ok(tmp)
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -1490,6 +1830,7 @@ fn list_iso_udf(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, 
     parse_7z_iso_list(&stdout, prefix, &mut seen);
     Ok(seen.into_values().collect())
 }
+
 fn extract_iso(
     archive_path: &Path,
     inner_path: &str,
