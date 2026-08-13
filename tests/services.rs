@@ -1,4 +1,5 @@
 mod services {
+    mod archive_backend_test;
     mod archive_services_test;
     mod delete_ops_test;
     mod file_loader_test;
