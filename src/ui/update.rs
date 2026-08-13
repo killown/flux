@@ -99,8 +99,8 @@ impl FluxApp {
             AppMsg::PerformPaste { files, is_cut } => {
                 self.perform_paste(files, is_cut, sender.clone())
             }
-            AppMsg::Copy => self.handle_copy_or_cut(false),
-            AppMsg::Cut => self.handle_copy_or_cut(true),
+            AppMsg::Copy => self.handle_copy_or_cut(false, &sender),
+            AppMsg::Cut => self.handle_copy_or_cut(true, &sender),
             AppMsg::Paste => self.handle_paste_from_clipboard(&sender),
             AppMsg::PerformRename(old_path, new_name) => {
                 self.handle_perform_rename(old_path, new_name, &sender)
@@ -355,7 +355,12 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::ShowToast(msg) => {
-                self.toast_overlay.add_toast(adw::Toast::new(&msg));
+                if let Some(prev) = self.last_toast.take() {
+                    prev.dismiss();
+                }
+                let toast = adw::Toast::new(&msg);
+                self.toast_overlay.add_toast(toast.clone());
+                self.last_toast = Some(toast);
             }
 
             // Mount Operations
