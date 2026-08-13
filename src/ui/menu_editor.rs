@@ -6,18 +6,38 @@ use relm4::prelude::*;
 use std::{cell::RefCell, fs, io::Write, path::PathBuf, rc::Rc};
 
 // ─── Parser helper (mirrors utils::split_mime_cmd) ───────────────────────────
-fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
+fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)> {
     let input = input.trim();
-    let (mime, rest) = input.strip_prefix('"')?.split_once('"')?;
-    let second = rest.trim().strip_prefix(',')?.trim();
-    let (cmd, after_cmd) = second.strip_prefix('"')?.split_once('"')?;
-    let toast = after_cmd
-        .trim()
-        .strip_prefix(',')
-        .and_then(|s| s.trim().strip_prefix('"'))
-        .and_then(|s| s.strip_suffix('"'))
-        .map(|s| s.to_string());
-    Some((mime.to_string(), cmd.to_string(), toast))
+
+    let remainder = input.strip_prefix('"')?;
+    let (mime, rest) = remainder.split_once('"')?;
+
+    let second_part = rest.trim().strip_prefix(',')?.trim();
+
+    let cmd_inner = second_part.strip_prefix('"')?;
+    let (cmd, after_cmd) = cmd_inner.split_once('"')?;
+
+    let mut toast: Option<String> = None;
+    let mut no_transfer_dialog = false;
+
+    let mut remainder = after_cmd.trim();
+    while let Some(stripped) = remainder.strip_prefix(',') {
+        let stripped = stripped.trim();
+        if let Some(inner) = stripped.strip_prefix('"') {
+            if let Some((token, rest)) = inner.split_once('"') {
+                if token == "no_transfer_dialog" {
+                    no_transfer_dialog = true;
+                } else {
+                    toast = Some(token.to_string());
+                }
+                remainder = rest.trim();
+                continue;
+            }
+        }
+        break;
+    }
+
+    Some((mime.to_string(), cmd.to_string(), toast, no_transfer_dialog))
 }
 
 // ─── Disk I/O ────────────────────────────────────────────────────────────────
@@ -44,7 +64,7 @@ fn load_from_disk() -> Vec<MenuEntry> {
             Some((s, l)) => (Some(s.to_string()), l.to_string()),
             None => (None, full_label.to_string()),
         };
-        let Some((mime, cmd, toast)) = split_mime_cmd(right) else {
+        let Some((mime, cmd, toast, no_transfer_dialog)) = split_mime_cmd(right) else {
             continue;
         };
         entries.push(MenuEntry {
@@ -53,6 +73,7 @@ fn load_from_disk() -> Vec<MenuEntry> {
             mime_types: mime,
             command: cmd,
             toast,
+            no_transfer_dialog,
         });
     }
     entries
@@ -389,9 +410,14 @@ fn build_row(
         None => entry.label.clone(),
     };
 
+    let mut subtitle = format!("{} │ {}", entry.mime_types, entry.command);
+    if entry.no_transfer_dialog {
+        subtitle.push_str(" │ [no transfer dialog]");
+    }
+
     let row = adw::ActionRow::builder()
         .title(&title)
-        .subtitle(format!("{} │ {}", entry.mime_types, entry.command))
+        .subtitle(&subtitle)
         .build();
 
     // ── Dedicated Prefix Column Box (Line Numbers & Submenu Status) ───────────
@@ -586,6 +612,20 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         entry.toast.as_deref().unwrap_or(""),
     );
 
+    // ── Checkbox / Switch for no_transfer_dialog ──────────────────────────────
+    let no_transfer_switch = gtk::Switch::builder()
+        .active(entry.no_transfer_dialog)
+        .valign(gtk::Align::Center)
+        .margin_end(12)
+        .build();
+
+    let no_transfer_row = adw::ActionRow::builder()
+        .title(tr("Suppress Transfer Dialog").as_str())
+        .subtitle(tr("Do not track execution progress or open transfer dialog").as_str())
+        .activatable_widget(&no_transfer_switch)
+        .build();
+    no_transfer_row.add_suffix(&no_transfer_switch);
+
     g_id.add(&line_row);
     g_id.add(&label_row);
     g_id.add(&sub_row);
@@ -594,6 +634,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     g_act.add(&cmd_row);
     g_act.add(&cmd_hint);
     g_act.add(&toast_row);
+    g_act.add(&no_transfer_row);
     page.add(&g_id);
     page.add(&g_act);
     scroller.set_child(Some(&page));
@@ -678,6 +719,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
                         Some(v)
                     }
                 },
+                no_transfer_dialog: no_transfer_switch.is_active(),
             };
 
             sender.input(Msg::Commit {

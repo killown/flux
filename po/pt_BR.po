@@ -1178,3 +1178,11 @@ msgstr "Tamanho do ícone em modo lista"
 #: src/ui/settings.rs:124
 msgid "Icon size used in list mode"
 msgstr "Tamanho do ícone usado quando em modo lista"
+
+#: src/ui/menu_editor.rs:613
+msgid "Suppress Transfer Dialog"
+msgstr "Ocultar diálogo de transferência"
+
+#: src/ui/menu_editor.rs:614
+msgid "Do not track execution progress or open transfer dialog"
+msgstr "Não acompanhar progresso de execução nem abrir diálogo de transferência"
