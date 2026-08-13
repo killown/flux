@@ -6,11 +6,74 @@ use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::time::{sleep, Duration};
+
+/// Pure helper: builds the final shell command string and human-readable task label.
+pub fn build_execution_command(
+    cmd_template: &str,
+    targets: &[PathBuf],
+    current_path: &Path,
+) -> (String, String) {
+    if targets.len() == 1 {
+        let path = &targets[0];
+        let path_str = path.to_string_lossy();
+        let parent = path.parent().unwrap_or(path).to_string_lossy();
+        let filename = path.file_name().unwrap_or_default().to_string_lossy();
+
+        let p_arg = format!("'{}'", path_str.replace('\'', "'\\''"));
+        let d_arg = format!("'{}'", parent.replace('\'', "'\\''"));
+        let f_arg = format!("'{}'", filename.replace('\'', "'\\''"));
+
+        let mut cmd = cmd_template
+            .replace("%p", &p_arg)
+            .replace("%d", &d_arg)
+            .replace("%f", &f_arg);
+
+        if cmd.contains(constants::TEMPLATE_CWD) {
+            cmd = cmd.replace(
+                constants::TEMPLATE_CWD,
+                &format!(
+                    "'{}'",
+                    current_path.to_string_lossy().replace('\'', "'\\''")
+                ),
+            );
+        }
+
+        let label = path
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "Command".to_string());
+        (cmd, label)
+    } else {
+        let paths_arg = targets
+            .iter()
+            .map(|p| format!("'{}'", p.to_string_lossy().replace('\'', "'\\''")))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
+        if cmd.contains(constants::TEMPLATE_CWD) {
+            cmd = cmd.replace(
+                constants::TEMPLATE_CWD,
+                &format!(
+                    "'{}'",
+                    current_path.to_string_lossy().replace('\'', "'\\''")
+                ),
+            );
+        }
+        let label = format!("{} items", targets.len());
+        (cmd, label)
+    }
+}
+
+/// Pure predicate: determines whether an external command template should spawn the 2s transfer dialog timer.
+pub fn should_track_in_transfer_dialog(cmd_template: &str) -> bool {
+    !cmd_template.contains("--file-properties")
+}
 
 impl FluxApp {
     /// Handles clipboard Copy and Cut actions by populating standard GTK Clipboard providers.
@@ -155,15 +218,8 @@ impl FluxApp {
         }
     }
 
-    /// Executes a shell command, spawning it as a tracked background task.
-    ///
-    /// The command is run with `sh -c`, and its output is captured and displayed
-    /// in the transfer dialog. The user can cancel the task to send SIGTERM.
-    pub fn handle_execute_command(
-        &self,
-        cmd_template: String,
-        sender: &AsyncComponentSender<Self>,
-    ) {
+    /// Extracts target paths from selection or active item context.
+    pub fn resolve_command_targets(&self) -> Vec<PathBuf> {
         let mut targets = Vec::new();
         if let Some(model) = self
             .files
@@ -180,15 +236,26 @@ impl FluxApp {
             }
         }
 
-        let final_targets = if let Some(active) = &self.active_item_path {
+        if let Some(active) = &self.active_item_path {
             if targets.contains(active) {
                 targets
             } else {
                 vec![active.clone()]
             }
+        } else if !targets.is_empty() {
+            targets
         } else {
             vec![self.current_path.clone()]
-        };
+        }
+    }
+
+    /// Executes a shell command, spawning it as a tracked background task.
+    pub fn handle_execute_command(
+        &self,
+        cmd_template: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let final_targets = self.resolve_command_targets();
 
         if cmd_template == "builtin::open_with" {
             if let Some(path) = final_targets.first() {
@@ -211,6 +278,10 @@ impl FluxApp {
             return;
         }
 
+        if final_targets.is_empty() {
+            return;
+        }
+
         let current_path = self.current_path.clone();
         let toast_msg = self
             .menu_actions
@@ -223,71 +294,26 @@ impl FluxApp {
             .to_string_lossy()
             .starts_with(constants::TRASH_URI);
 
-        if final_targets.is_empty() {
-            return;
-        }
-
-        // Build the final shell command
-        let (final_cmd, label) = if final_targets.len() == 1 {
-            let path = &final_targets[0];
-            let path_str = path.to_string_lossy();
-            let parent = path.parent().unwrap_or(path).to_string_lossy();
-            let filename = path.file_name().unwrap_or_default().to_string_lossy();
-
-            let p_arg = format!("'{}'", path_str.replace("'", "'\\''"));
-            let d_arg = format!("'{}'", parent.replace("'", "'\\''"));
-            let f_arg = format!("'{}'", filename.replace("'", "'\\''"));
-
-            let mut cmd = cmd_template
-                .replace("%p", &p_arg)
-                .replace("%d", &d_arg)
-                .replace("%f", &f_arg);
-
-            if cmd.contains(constants::TEMPLATE_CWD) {
-                cmd = cmd.replace(
-                    constants::TEMPLATE_CWD,
-                    &format!("'{}'", current_path.to_string_lossy().replace("'", "'\\''")),
-                );
-            }
-
-            let label = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_else(|| "Command".to_string());
-            (cmd, label)
-        } else {
-            let paths_arg = final_targets
-                .iter()
-                .map(|p| format!("'{}'", p.to_string_lossy().replace("'", "'\\''")))
-                .collect::<Vec<_>>()
-                .join(" ");
-
-            let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
-            if cmd.contains(constants::TEMPLATE_CWD) {
-                cmd = cmd.replace(
-                    constants::TEMPLATE_CWD,
-                    &format!("'{}'", current_path.to_string_lossy().replace("'", "'\\''")),
-                );
-            }
-            let label = format!("{} items", final_targets.len());
-            (cmd, label)
-        };
+        let (final_cmd, label) =
+            build_execution_command(&cmd_template, &final_targets, &current_path);
 
         // Generate a unique task ID
         let task_id = crate::ui::paste_ops::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
 
-        // Insert a placeholder task into the queue
-        self.task_queue.insert_command(task_id, label.clone(), 0);
+        // Insert placeholder task
+        self.task_queue.insert_command(task_id, label, 0);
 
-        // Start the transfer dialog after 2 seconds if still running
-        let s_delay = sender.clone();
-        let task_id_delay = task_id;
-        relm4::spawn(async move {
-            sleep(Duration::from_secs(2)).await;
-            s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id_delay));
-        });
+        // Start transfer dialog timer ONLY if command policy permits it
+        if should_track_in_transfer_dialog(&cmd_template) {
+            let s_delay = sender.clone();
+            let task_id_delay = task_id;
+            relm4::spawn(async move {
+                sleep(Duration::from_secs(2)).await;
+                s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id_delay));
+            });
+        }
 
-        // Spawn the command asynchronously
+        // Spawn command asynchronously
         let sender_cmd = sender.clone();
         let task_queue = self.task_queue.clone();
 
