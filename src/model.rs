@@ -482,8 +482,8 @@ pub struct FluxApp {
     pub task_queue: Arc<crate::services::tasks::TaskQueue>,
     /// Toast overlay for displaying transient notifications.
     pub toast_overlay: adw::ToastOverlay,
-    /// Pending toast messages keyed by action_name, populated at context-menu build time.
-    pub pending_toasts: std::collections::HashMap<String, String>,
+    /// Tracks the currently displayed toast so it can be dismissed before showing a new one.
+    pub last_toast: Option<adw::Toast>,
     /// Determines if the file list is sorted in ascending (true) or descending (false) order.
     pub sort_ascending: bool,
     // sidebar visibility state, used to restore the previous state when toggling.

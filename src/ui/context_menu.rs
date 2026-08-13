@@ -76,6 +76,10 @@ impl FluxApp {
 
             // --- MENU ASSEMBLY & BUILTIN MAPPING ---
             if matches {
+                // Capture toast before the match so builtin connect_activate closures can
+                // emit ShowToast directly.
+                let action_toast = action.toast.clone();
+
                 let (full_action_name, lookup_name) = match action.command.as_str() {
                     "builtin::copy" => ("win.copy".to_string(), "copy"),
                     "builtin::cut" => ("win.cut".to_string(), "cut"),
@@ -84,9 +88,13 @@ impl FluxApp {
                         let action = gio::SimpleAction::new("rename-item", None);
                         let s = sender.clone();
                         let target = path.clone();
+                        let toast = action_toast.clone();
                         action.connect_activate(move |_, _| {
                             if let Some(ref p) = target {
                                 s.input(AppMsg::StartRename(p.clone()));
+                            }
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
                             }
                         });
                         self.action_group.add_action(&action);
@@ -97,8 +105,12 @@ impl FluxApp {
                             let quick_action = gio::SimpleAction::new("add-to-quick-list", None);
                             let target_clone = target.clone();
                             let sender_q = sender.clone();
+                            let toast = action_toast.clone();
                             quick_action.connect_activate(move |_, _| {
                                 sender_q.input(AppMsg::AddExclusive(Some(target_clone.clone())));
+                                if let Some(ref msg) = toast {
+                                    sender_q.input(AppMsg::ShowToast(msg.clone()));
+                                }
                             });
                             self.action_group.add_action(&quick_action);
                         }
@@ -109,8 +121,12 @@ impl FluxApp {
                             let action = gio::SimpleAction::new("reset-custom-icon", None);
                             let target_clone = target.clone();
                             let s = sender.clone();
+                            let toast = action_toast.clone();
                             action.connect_activate(move |_, _| {
                                 s.input(AppMsg::ResetFileIcon(target_clone.clone()));
+                                if let Some(ref msg) = toast {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
                             });
                             self.action_group.add_action(&action);
                         }
@@ -121,6 +137,7 @@ impl FluxApp {
                             let set_icon_action = gio::SimpleAction::new("set-custom-icon", None);
                             let target_clone = target.clone();
                             let sender_ic = sender.clone();
+                            let toast = action_toast.clone();
                             set_icon_action.connect_activate(move |_, _| {
                                 let filter = gtk::FileFilter::new();
                                 filter.set_name(Some("Images"));
@@ -149,6 +166,7 @@ impl FluxApp {
 
                                 let target_path = target_clone.clone();
                                 let s = sender_ic.clone();
+                                let toast_inner = toast.clone();
 
                                 // Keep `chooser` alive across the async response by cloning
                                 // the Arc-like GObject ref into the closure.
@@ -161,6 +179,9 @@ impl FluxApp {
                                                     path: target_path.clone(),
                                                     image_path,
                                                 });
+                                                if let Some(ref msg) = toast_inner {
+                                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                                }
                                             }
                                         }
                                     }
@@ -171,11 +192,28 @@ impl FluxApp {
                         }
                         ("win.set-custom-icon".to_string(), "set-custom-icon")
                     }
+                    "builtin::toggle_pin" => {
+                        let action = gio::SimpleAction::new("toggle-pin", None);
+                        let s = sender.clone();
+                        let toast = action_toast.clone();
+                        action.connect_activate(move |_, _| {
+                            s.input(AppMsg::AddToSidebarPermanent);
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
+                            }
+                        });
+                        self.action_group.add_action(&action);
+                        ("win.toggle-pin".to_string(), "toggle-pin")
+                    }
                     "builtin::delete" => {
                         let action = gio::SimpleAction::new("delete-selection", None);
                         let s = sender.clone();
+                        let toast = action_toast.clone();
                         action.connect_activate(move |_, _| {
                             s.input(AppMsg::Delete);
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
+                            }
                         });
                         self.action_group.add_action(&action);
                         ("win.delete-selection".to_string(), "delete-selection")
@@ -183,8 +221,12 @@ impl FluxApp {
                     "builtin::new_folder" => {
                         let action = gio::SimpleAction::new("new-folder", None);
                         let s = sender.clone();
+                        let toast = action_toast.clone();
                         action.connect_activate(move |_, _| {
                             s.input(AppMsg::PromptNewFolder);
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
+                            }
                         });
                         self.action_group.add_action(&action);
                         ("win.new-folder".to_string(), "new-folder")
@@ -192,8 +234,12 @@ impl FluxApp {
                     "builtin::new_file" => {
                         let action = gio::SimpleAction::new("new-file", None);
                         let s = sender.clone();
+                        let toast = action_toast.clone();
                         action.connect_activate(move |_, _| {
                             s.input(AppMsg::PromptNewFile);
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
+                            }
                         });
                         self.action_group.add_action(&action);
                         ("win.new-file".to_string(), "new-file")
@@ -232,10 +278,6 @@ impl FluxApp {
                 if let Some(g_action) = self.action_group.lookup_action(lookup_name) {
                     if let Some(simple) = g_action.downcast_ref::<gio::SimpleAction>() {
                         simple.set_enabled(true);
-                        if let Some(toast_msg) = &action.toast {
-                            self.pending_toasts
-                                .insert(action.action_name.clone(), toast_msg.clone());
-                        }
                     }
                 }
 

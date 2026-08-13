@@ -249,7 +249,7 @@ impl FluxApp {
             is_loading: false,
             task_queue: crate::services::tasks::new_queue(),
             toast_overlay: adw::ToastOverlay::new(),
-            pending_toasts: std::collections::HashMap::new(),
+            last_toast: None,
             terminal,
             terminal_visible: false,
             terminal_spawned: false,

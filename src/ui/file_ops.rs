@@ -14,8 +14,21 @@ use tokio::time::{sleep, Duration};
 
 impl FluxApp {
     /// Handles clipboard Copy and Cut actions by populating standard GTK Clipboard providers.
-    pub fn handle_copy_or_cut(&self, is_cut: bool) {
+    pub fn handle_copy_or_cut(&self, is_cut: bool, sender: &AsyncComponentSender<Self>) {
         self.handle_clipboard_action(is_cut);
+        let cmd = if is_cut {
+            "builtin::cut"
+        } else {
+            "builtin::copy"
+        };
+        if let Some(toast) = self
+            .menu_actions
+            .iter()
+            .find(|a| a.command == cmd)
+            .and_then(|a| a.toast.clone())
+        {
+            sender.input(AppMsg::ShowToast(toast));
+        }
     }
 
     /// Reads content from the clipboard and dispatches a paste message.
@@ -29,6 +42,11 @@ impl FluxApp {
 
         let clipboard = display.clipboard();
         let s = sender.clone();
+        let paste_toast = self
+            .menu_actions
+            .iter()
+            .find(|a| a.command == "builtin::paste")
+            .and_then(|a| a.toast.clone());
 
         clipboard.read_text_async(None::<&gio::Cancellable>, move |res| {
             if let Ok(Some(text)) = res {
@@ -44,6 +62,9 @@ impl FluxApp {
 
                 if !files.is_empty() {
                     s.input(AppMsg::PerformPaste { files, is_cut });
+                    if let Some(toast) = paste_toast {
+                        s.input(AppMsg::ShowToast(toast));
+                    }
                 }
             }
         });
