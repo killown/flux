@@ -1,3 +1,4 @@
+use flux::ui::file_ops::{build_execution_command, should_track_in_transfer_dialog};
 use std::path::PathBuf;
 
 #[test]
@@ -108,4 +109,43 @@ fn test_is_recursive_paste_detection() {
     assert!(is_recursive_paste(parent, child));
     assert!(!is_recursive_paste(child, parent));
     assert!(!is_recursive_paste(parent, unrelated));
+}
+
+#[test]
+fn test_command_template_file_properties_bypasses_transfer_dialog() {
+    let cmd_template = "flux-fm --file-properties %p";
+    assert!(!should_track_in_transfer_dialog(cmd_template));
+}
+
+#[test]
+fn test_command_template_standard_enables_transfer_dialog() {
+    let cmd_template = "ffmpeg -i %p %p.mp4";
+    assert!(should_track_in_transfer_dialog(cmd_template));
+}
+
+#[test]
+fn test_build_execution_command_single_file_escaping() {
+    let template = "echo %p %d %f";
+    let targets = vec![PathBuf::from("/tmp/my folder/test 'file'.txt")];
+    let cwd = PathBuf::from("/tmp/my folder");
+
+    let (cmd, label) = build_execution_command(template, &targets, &cwd);
+
+    assert_eq!(label, "test 'file'.txt");
+    assert!(cmd.contains("'/tmp/my folder/test '\\''file'\\''.txt'"));
+}
+
+#[test]
+fn test_build_execution_command_multi_file() {
+    let template = "zip archive.zip %p";
+    let targets = vec![
+        PathBuf::from("/tmp/file1.txt"),
+        PathBuf::from("/tmp/file2.txt"),
+    ];
+    let cwd = PathBuf::from("/tmp");
+
+    let (cmd, label) = build_execution_command(template, &targets, &cwd);
+
+    assert_eq!(label, "2 items");
+    assert_eq!(cmd, "zip archive.zip '/tmp/file1.txt' '/tmp/file2.txt'");
 }
