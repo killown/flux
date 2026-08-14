@@ -3,7 +3,71 @@ use crate::model::FluxApp;
 use adw::gio::prelude::*;
 use gtk::{gio, glib};
 use relm4::prelude::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+/// Checks if a path or URI represents a protected root or critical system directory.
+fn is_protected_target(path: &Path) -> bool {
+    let path_str = path.to_string_lossy();
+
+    // Check raw URI root targets
+    if path_str.contains("://") {
+        if let Some((_, after_scheme)) = path_str.split_once("://") {
+            let inner_path = after_scheme
+                .find('/')
+                .map(|i| &after_scheme[i..])
+                .unwrap_or("/");
+            if inner_path.is_empty() || inner_path == "/" {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Standard path evaluation (canonicalize when possible to resolve symlinks/relative paths)
+    let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+
+    // Block filesystem root
+    if resolved == Path::new("/") {
+        return true;
+    }
+
+    // Block user's home directory
+    if let Some(home) = dirs::home_dir() {
+        if let Ok(canon_home) = home.canonicalize() {
+            if resolved == canon_home {
+                return true;
+            }
+        } else if resolved == home {
+            return true;
+        }
+    }
+
+    // Block top-level system and mount directories
+    let protected_system_paths = [
+        "/boot",
+        "/dev",
+        "/etc",
+        "/lost+found",
+        "/media",
+        "/mnt",
+        "/proc",
+        "/root",
+        "/run",
+        "/run/media",
+        "/sys",
+        "/tmp",
+        "/usr",
+        "/var",
+    ];
+
+    for sys_path in protected_system_paths {
+        if resolved == Path::new(sys_path) {
+            return true;
+        }
+    }
+
+    false
+}
 
 pub fn delete_items(
     selection: Vec<PathBuf>,
@@ -26,6 +90,18 @@ pub fn delete_items(
 
     let sender_clone = sender.clone();
     for path in selection {
+        if is_protected_target(&path) {
+            eprintln!(
+                "[Delete] Blocked attempt to delete protected system path: {:?}",
+                path
+            );
+            sender_clone.input(AppMsg::ShowToast(format!(
+                "Cannot delete protected path: {}",
+                path.display()
+            )));
+            continue;
+        }
+
         let path_str = path.to_string_lossy().into_owned();
         let is_network = crate::services::network::is_network_uri(&path);
 
