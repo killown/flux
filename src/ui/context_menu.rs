@@ -48,25 +48,53 @@ impl FluxApp {
                     let requirements: Vec<&str> = allowed_mime.split('+').collect();
                     matches = requirements.iter().any(|req| match req.trim() {
                         constants::FILTER_ALL | "all" => true,
-                        "image/all" | "image/*" => mime.starts_with("image/"),
-                        "video/all" | "video/*" => mime.starts_with("video/"),
-                        "audio/all" | "audio/*" => mime.starts_with("audio/"),
-                        "font/all" | "font/*" => mime.starts_with("font/"),
-                        "model/all" | "model/*" => mime.starts_with("model/"),
-                        "message/all" | "message/*" => mime.starts_with("message/"),
-                        "chemical/all" | "chemical/*" => mime.starts_with("chemical/"),
-                        "multipart/all" | "multipart/*" => mime.starts_with("multipart/"),
-                        "x-content/all" | "x-content/*" => mime.starts_with("x-content/"),
-                        "application/all" | "application/*" => mime.starts_with("application/"),
+                        "image/all" | "image/*" => {
+                            mime.starts_with("image/") || mime.starts_with("image-")
+                        }
+                        "video/all" | "video/*" => {
+                            mime.starts_with("video/") || mime.starts_with("video-")
+                        }
+                        "audio/all" | "audio/*" => {
+                            mime.starts_with("audio/") || mime.starts_with("audio-")
+                        }
+                        "font/all" | "font/*" => {
+                            mime.starts_with("font/") || mime.starts_with("font-")
+                        }
+                        "model/all" | "model/*" => {
+                            mime.starts_with("model/") || mime.starts_with("model-")
+                        }
+                        "message/all" | "message/*" => {
+                            mime.starts_with("message/") || mime.starts_with("message-")
+                        }
+                        "chemical/all" | "chemical/*" => {
+                            mime.starts_with("chemical/") || mime.starts_with("chemical-")
+                        }
+                        "multipart/all" | "multipart/*" => {
+                            mime.starts_with("multipart/") || mime.starts_with("multipart-")
+                        }
+                        "x-content/all" | "x-content/*" => {
+                            mime.starts_with("x-content/") || mime.starts_with("x-content-")
+                        }
+                        "application/all" | "application/*" => {
+                            mime.starts_with("application/") || mime.starts_with("application-")
+                        }
                         "text/all" | "text/*" => {
                             mime.starts_with("text/")
+                                || mime.starts_with("text-")
                                 || gio::content_type_is_a(&mime, constants::MIME_TEXT)
                                 || mime == constants::MIME_EMPTY
                         }
                         constants::FILTER_FOLDER | "directory" => mime == constants::MIME_DIR,
                         constants::FILTER_FILE => mime != constants::MIME_DIR,
-                        t if t.ends_with('/') => mime.starts_with(t),
-                        t => t == mime,
+                        t if t.ends_with('/') => {
+                            let prefix_dash = format!("{}-", t.trim_end_matches('/'));
+                            mime.starts_with(t) || mime.starts_with(&prefix_dash)
+                        }
+                        t => {
+                            t == mime
+                                || (t.contains('/') && t.replace('/', "-") == mime)
+                                || (t.contains('-') && t.replace('-', "/") == mime)
+                        }
                     });
                     if matches {
                         break;
