@@ -327,7 +327,7 @@ impl FluxApp {
             let task_id_delay = id;
             relm4::spawn(async move {
                 sleep(Duration::from_secs(2)).await;
-                s_delay.input(AppMsg::ShowCommandDialog(task_id_delay));
+                s_delay.input(AppMsg::ShowCommandDialogIfActive(task_id_delay));
             });
 
             Some(id)
@@ -357,7 +357,7 @@ impl FluxApp {
             let mut child = match child {
                 Ok(c) => c,
                 Err(e) => {
-                    sender_cmd.input(AppMsg::ShowToast(format!("Failed to spawn: {}", e)));
+                    sender_cmd.input(AppMsg::ShowToast(format!("Failed to spawn command: {}", e)));
                     if let Some(id) = task_id {
                         sender_cmd.input(AppMsg::TaskCompleted(id));
                     }
@@ -418,6 +418,8 @@ impl FluxApp {
 
             if let Some(msg) = toast_msg {
                 sender_cmd.input(AppMsg::ShowToast(msg));
+            } else if !success {
+                sender_cmd.input(AppMsg::ShowToast("Command failed".to_string()));
             }
 
             if needs_refresh {
