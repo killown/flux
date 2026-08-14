@@ -14,12 +14,15 @@ use std::rc::Rc;
 //  1  MIME helper utilities
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// Splits `"image/png"` → `("image", "png")`.
+/// Splits "image/png" or "application-wpoffice" into ("image", "png") or ("application", "wpoffice").
 #[inline]
 fn split_mime(mime: &str) -> (&str, &str) {
-    match mime.find('/') {
-        Some(idx) => (&mime[..idx], &mime[idx + 1..]),
-        None => (mime, ""),
+    if let Some(idx) = mime.find('/') {
+        (&mime[..idx], &mime[idx + 1..])
+    } else if let Some(idx) = mime.find('-') {
+        (&mime[..idx], &mime[idx + 1..])
+    } else {
+        (mime, "")
     }
 }
 
@@ -41,40 +44,44 @@ fn sanitise_for_filename(s: &str) -> String {
 //  2  Template resolver
 // ══════════════════════════════════════════════════════════════════════════════
 
-/// Returns `~/.config/flux/menus/` (or `~/.config/flux/` as fallback)
-fn flux_menus_dir() -> PathBuf {
-    let base = dirs::config_dir()
+pub fn resolve_secondary_menu_template(mime: &str) -> Option<PathBuf> {
+    let base_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("~/.config"))
         .join("flux");
-
-    let sub = base.join("menus");
-    if sub.is_dir() {
-        sub
+    let sub_dir = base_dir.join("menus");
+    let search_dirs = if sub_dir.is_dir() {
+        vec![sub_dir, base_dir]
     } else {
-        base
-    }
-}
+        vec![base_dir]
+    };
 
-pub fn resolve_secondary_menu_template(mime: &str) -> Option<PathBuf> {
-    let menus_dir = flux_menus_dir();
     let (category, subtype) = split_mime(mime);
 
     let safe_cat = sanitise_for_filename(category);
     let safe_sub = sanitise_for_filename(subtype);
 
-    let mut candidates: Vec<PathBuf> = Vec::with_capacity(3);
+    let mut candidate_filenames: Vec<String> = Vec::with_capacity(3);
 
     if !safe_sub.is_empty() && safe_sub != "all" {
-        candidates.push(menus_dir.join(format!("menu-{safe_cat}-{safe_sub}.rs")));
+        candidate_filenames.push(format!("menu-{safe_cat}-{safe_sub}.rs"));
     }
 
     if !safe_cat.is_empty() {
-        candidates.push(menus_dir.join(format!("menu-{safe_cat}-all.rs")));
+        candidate_filenames.push(format!("menu-{safe_cat}-all.rs"));
     }
 
-    candidates.push(menus_dir.join("menu-all.rs"));
+    candidate_filenames.push("menu-all.rs".to_string());
 
-    candidates.into_iter().find(|p| p.is_file())
+    for filename in candidate_filenames {
+        for dir in &search_dirs {
+            let candidate = dir.join(&filename);
+            if candidate.is_file() {
+                return Some(candidate);
+            }
+        }
+    }
+
+    None
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
