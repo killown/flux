@@ -1,3 +1,4 @@
+use flux::services::tasks::new_queue;
 use flux::services::tasks::{format_bytes, format_duration, SpeedWindow, TaskQueue};
 use gtk::gio::prelude::CancellableExt;
 use std::time::Duration;
@@ -189,4 +190,27 @@ fn test_update_preserves_started_at_on_reentry() {
     let t1 = snap2[0].1.started_at;
 
     assert_eq!(t0, t1, "started_at must not be reset on progress update");
+}
+
+#[test]
+fn test_insert_command_with_full_command_and_action_name() {
+    let queue = new_queue();
+    let id = 1;
+    let label = "test".to_string();
+    let full_command = Some("echo test".to_string());
+    let action_name = Some("custom_0".to_string());
+    queue.insert_command(
+        id,
+        label.clone(),
+        0,
+        full_command.clone(),
+        action_name.clone(),
+    );
+
+    let snapshot = queue.snapshot();
+    assert_eq!(snapshot.len(), 1);
+    let (_, task) = &snapshot[0];
+    assert_eq!(task.label, label);
+    assert_eq!(task.full_command, full_command);
+    assert_eq!(task.action_name, action_name);
 }

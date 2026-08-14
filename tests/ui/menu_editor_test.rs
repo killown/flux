@@ -42,6 +42,7 @@ fn test_menu_entry_config_line_serialization() {
         mime_types: "all".to_string(),
         command: "builtin::copy_path".to_string(),
         toast: Some("Path Copied".to_string()),
+        no_command_dialog: false,
     };
 
     let line = entry.to_config_line();

@@ -1025,7 +1025,7 @@ impl MenuEntry {
         );
 
         if let Some(t) = &self.toast {
-            line.push_str(&format!(r#", "{}"#, t));
+            line.push_str(&format!(r#", "{}""#, t));
         }
 
         if self.no_command_dialog {
