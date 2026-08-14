@@ -231,6 +231,7 @@ fn test_menu_entry_to_config_line_variations() {
         mime_types: "directory".to_string(),
         command: "alacritty".to_string(),
         toast: None,
+        no_command_dialog: false,
     };
     assert_eq!(
         simple_entry.to_config_line(),
@@ -243,6 +244,7 @@ fn test_menu_entry_to_config_line_variations() {
         mime_types: "video/all".to_string(),
         command: "ffmpeg -i %p %p.mp4".to_string(),
         toast: Some("Converting...".to_string()),
+        no_command_dialog: false,
     };
     assert_eq!(
         nested_entry.to_config_line(),

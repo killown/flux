@@ -1,3 +1,4 @@
+use flux::model::CustomAction;
 use flux::ui::file_ops::{build_execution_command, should_track_in_transfer_dialog};
 use std::path::PathBuf;
 
@@ -148,4 +149,57 @@ fn test_build_execution_command_multi_file() {
 
     assert_eq!(label, "2 items");
     assert_eq!(cmd, "zip archive.zip '/tmp/file1.txt' '/tmp/file2.txt'");
+}
+
+#[test]
+fn test_execute_command_respects_no_command_dialog() {
+    let cmd_template = "echo test".to_string();
+    let menu_actions = vec![CustomAction {
+        label: "Test".to_string(),
+        submenu: None,
+        action_name: "custom_0".to_string(),
+        command: cmd_template.clone(),
+        mime_types: vec!["all".to_string()],
+        toast: None,
+        no_command_dialog: true,
+    }];
+
+    let no_command_dialog = menu_actions
+        .iter()
+        .find(|action| action.command == cmd_template)
+        .map(|a| a.no_command_dialog)
+        .unwrap_or(false);
+
+    assert!(no_command_dialog);
+    let bypass_tracking = no_command_dialog || !should_track_in_transfer_dialog(&cmd_template);
+    assert!(bypass_tracking);
+
+    let task_id = if !bypass_tracking { Some(42) } else { None };
+    assert!(task_id.is_none());
+}
+
+#[test]
+fn test_execute_command_tracks_when_no_command_dialog_false() {
+    let cmd_template = "ffmpeg -i %p %p.mp4".to_string(); // this is tracked by legacy
+    let menu_actions = vec![CustomAction {
+        label: "Convert".to_string(),
+        submenu: None,
+        action_name: "custom_1".to_string(),
+        command: cmd_template.clone(),
+        mime_types: vec!["video/*".to_string()],
+        toast: None,
+        no_command_dialog: false,
+    }];
+
+    let no_command_dialog = menu_actions
+        .iter()
+        .find(|action| action.command == cmd_template)
+        .map(|a| a.no_command_dialog)
+        .unwrap_or(false);
+
+    assert!(!no_command_dialog);
+    let bypass_tracking = no_command_dialog || !should_track_in_transfer_dialog(&cmd_template);
+    assert!(!bypass_tracking);
+    let task_id = if !bypass_tracking { Some(42) } else { None };
+    assert!(task_id.is_some());
 }

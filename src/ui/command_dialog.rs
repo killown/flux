@@ -234,7 +234,7 @@ pub fn create_command_dialog(
     sender: relm4::Sender<AppMsg>,
 ) -> CommandDialogHandle {
     let window = adw::Window::builder()
-        .title(&crate::i18n::tr("Command Output"))
+        .title(crate::i18n::tr("Command Output"))
         .default_width(720)
         .default_height(650)
         .modal(true)

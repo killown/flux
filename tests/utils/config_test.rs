@@ -1,6 +1,9 @@
+use flux::model::{CustomAction, MenuEntry};
+use flux::utils::config::save_menu_config;
 use flux::utils::config::{
     ensure_config_file, get_system_mounts, load_menu_config, remove_recents, rename_path,
 };
+
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -277,4 +280,52 @@ mod recents_tests {
         let mime_unknown = get_mime_type(unknown_ext);
         assert_eq!(mime_unknown, "application/octet-stream");
     }
+}
+
+#[test]
+fn test_menu_entry_no_command_dialog_serialization() {
+    let entry = MenuEntry {
+        label: "Test".to_string(),
+        submenu: None,
+        mime_types: "all".to_string(),
+        command: "echo test".to_string(),
+        toast: None,
+        no_command_dialog: true,
+    };
+    let line = entry.to_config_line();
+    assert!(line.contains(r#", "no_command_dialog""#));
+
+    let entry2 = MenuEntry {
+        no_command_dialog: false,
+        ..entry.clone()
+    };
+    let line2 = entry2.to_config_line();
+    assert!(!line2.contains(r#", "no_command_dialog""#));
+}
+
+#[test]
+fn test_save_and_load_menu_config_with_no_command_dialog() {
+    let tmp_dir = tempfile::tempdir().unwrap();
+    let config_dir = tmp_dir.path().join("flux");
+    std::fs::create_dir_all(&config_dir).unwrap();
+    std::env::set_var("XDG_CONFIG_HOME", tmp_dir.path());
+
+    let actions = vec![CustomAction {
+        label: "Test".to_string(),
+        submenu: None,
+        action_name: "custom_0".to_string(),
+        command: "echo test".to_string(),
+        mime_types: vec!["all".to_string()],
+        toast: None,
+        no_command_dialog: true,
+    }];
+
+    let result = save_menu_config(&actions);
+    assert!(result.is_ok());
+
+    let loaded = load_menu_config();
+    assert_eq!(loaded.len(), 1);
+    assert!(loaded[0].no_command_dialog);
+
+    std::env::remove_var("XDG_CONFIG_HOME");
 }
