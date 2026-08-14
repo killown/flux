@@ -127,8 +127,12 @@ pub fn format_duration(secs: u64) -> String {
 /// A single in-flight background operation.
 #[derive(Debug, Clone)]
 pub struct Task {
+    /// The unique action name from `menu_actions` (e.g., `custom_0`), used to toggle `no_command_dialog`.
+    pub action_name: Option<String>,
     /// Human-readable description (e.g. filename or "3 files").
     pub label: String,
+    /// Full command string (for command tasks).
+    pub full_command: Option<String>,
     /// Bytes transferred so far.
     pub current: u64,
     /// Total bytes for this operation.
@@ -175,6 +179,8 @@ impl TaskQueue {
         if let Ok(mut map) = self.inner.lock() {
             let task = map.entry(id).or_insert_with(|| Task {
                 label: label.clone(),
+                full_command: None,
+                action_name: None,
                 current: 0,
                 total,
                 total_items,
@@ -203,10 +209,19 @@ impl TaskQueue {
     }
 
     /// Inserts a command task with a given PID and no progress tracking.
-    pub fn insert_command(&self, id: u64, label: String, pid: u32) {
+    pub fn insert_command(
+        &self,
+        id: u64,
+        label: String,
+        pid: u32,
+        full_command: Option<String>,
+        action_name: Option<String>,
+    ) {
         if let Ok(mut map) = self.inner.lock() {
             map.entry(id).or_insert_with(|| Task {
                 label: label.clone(),
+                full_command,
+                action_name,
                 current: 0,
                 total: 0,
                 total_items: 0,

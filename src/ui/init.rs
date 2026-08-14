@@ -270,6 +270,7 @@ impl FluxApp {
             saved_max_columns: 20,
             search_saved_layout: false,
             transfer_dialog: None,
+            command_dialog: None,
             header_path_entry: glib::WeakRef::new(),
         };
 

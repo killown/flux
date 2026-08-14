@@ -376,6 +376,45 @@ impl FluxApp {
             }
 
             // ─── command tracking handlers ──────────────────────────────
+            //
+            AppMsg::ToggleNoCommandDialog(action_name) => {
+                if let Some(action) = self
+                    .menu_actions
+                    .iter_mut()
+                    .find(|a| a.action_name == action_name)
+                {
+                    action.no_command_dialog = !action.no_command_dialog;
+                    utils::save_config(&self.config);
+                    if let Err(e) = utils::save_menu_config(&self.menu_actions) {
+                        eprintln!("Failed to save menu.rs: {}", e);
+                    }
+                }
+            }
+
+            AppMsg::RefreshCommandDialog(action_name) => {
+                if let Some(dialog) = &self.command_dialog {
+                    // Enviar para o dialog o estado atual (verificar a ação)
+                    if let Some(action) = self
+                        .menu_actions
+                        .iter()
+                        .find(|a| a.action_name == action_name)
+                    {
+                        dialog.update_switch_state(action.no_command_dialog);
+                    }
+                }
+            }
+            AppMsg::ShowCommandDialog(task_id) => {
+                if self.command_dialog.is_some() {
+                    return;
+                }
+                let handle = crate::ui::command_dialog::create_command_dialog(
+                    task_id,
+                    self.task_queue.clone(),
+                    sender.input_sender().clone(),
+                );
+                self.command_dialog = Some(handle);
+            }
+
             AppMsg::CommandOutput {
                 id,
                 line,
@@ -384,9 +423,17 @@ impl FluxApp {
                 self.task_queue.append_output(id, line.clone());
                 let prefix = if is_stderr { "stderr" } else { "stdout" };
                 eprintln!("[task {}] {}: {}", id, prefix, line);
-                if let Some(dialog) = &mut self.transfer_dialog {
-                    dialog.refresh();
+
+                // Send live output directly to the CommandDialog if open
+                if let Some(dialog) = &self.command_dialog {
+                    if dialog.task_id == id {
+                        dialog.append_output(&line);
+                    }
                 }
+            }
+
+            AppMsg::CommandDialogClosed => {
+                self.command_dialog = None;
             }
 
             AppMsg::CommandFinished {
@@ -402,6 +449,7 @@ impl FluxApp {
                     };
                     sender.input(AppMsg::ShowToast(msg));
                 }
+
                 sender.input(AppMsg::TaskCompleted(id));
             }
 

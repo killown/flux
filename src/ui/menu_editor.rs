@@ -18,15 +18,15 @@ fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)>
     let (cmd, after_cmd) = cmd_inner.split_once('"')?;
 
     let mut toast: Option<String> = None;
-    let mut no_transfer_dialog = false;
+    let mut no_command_dialog = false;
 
     let mut remainder = after_cmd.trim();
     while let Some(stripped) = remainder.strip_prefix(',') {
         let stripped = stripped.trim();
         if let Some(inner) = stripped.strip_prefix('"') {
             if let Some((token, rest)) = inner.split_once('"') {
-                if token == "no_transfer_dialog" {
-                    no_transfer_dialog = true;
+                if token == "no_command_dialog" {
+                    no_command_dialog = true;
                 } else {
                     toast = Some(token.to_string());
                 }
@@ -37,7 +37,7 @@ fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)>
         break;
     }
 
-    Some((mime.to_string(), cmd.to_string(), toast, no_transfer_dialog))
+    Some((mime.to_string(), cmd.to_string(), toast, no_command_dialog))
 }
 
 // ─── Disk I/O ────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ fn load_from_disk() -> Vec<MenuEntry> {
             Some((s, l)) => (Some(s.to_string()), l.to_string()),
             None => (None, full_label.to_string()),
         };
-        let Some((mime, cmd, toast, no_transfer_dialog)) = split_mime_cmd(right) else {
+        let Some((mime, cmd, toast, no_command_dialog)) = split_mime_cmd(right) else {
             continue;
         };
         entries.push(MenuEntry {
@@ -73,7 +73,7 @@ fn load_from_disk() -> Vec<MenuEntry> {
             mime_types: mime,
             command: cmd,
             toast,
-            no_transfer_dialog,
+            no_command_dialog,
         });
     }
     entries
@@ -411,7 +411,7 @@ fn build_row(
     };
 
     let mut subtitle = format!("{} │ {}", entry.mime_types, entry.command);
-    if entry.no_transfer_dialog {
+    if entry.no_command_dialog {
         subtitle.push_str(" │ [no transfer dialog]");
     }
 
@@ -612,9 +612,9 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         entry.toast.as_deref().unwrap_or(""),
     );
 
-    // ── Checkbox / Switch for no_transfer_dialog ──────────────────────────────
+    // ── Checkbox / Switch for no_command_dialog ──────────────────────────────
     let no_transfer_switch = gtk::Switch::builder()
-        .active(entry.no_transfer_dialog)
+        .active(entry.no_command_dialog)
         .valign(gtk::Align::Center)
         .margin_end(12)
         .build();
@@ -719,7 +719,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
                         Some(v)
                     }
                 },
-                no_transfer_dialog: no_transfer_switch.is_active(),
+                no_command_dialog: no_transfer_switch.is_active(),
             };
 
             sender.input(Msg::Commit {

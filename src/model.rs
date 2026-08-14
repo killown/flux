@@ -69,7 +69,7 @@ pub struct CustomAction {
     /// Optional toast message to display after the command is dispatched.
     pub toast: Option<String>,
     /// If true, suppresses the transfer dialog for this command.
-    pub no_transfer_dialog: bool,
+    pub no_command_dialog: bool,
 }
 
 /// User-defined keyboard shortcuts for core application operations.
@@ -381,6 +381,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Handle to the active command output dialog, if open.
+    pub command_dialog: Option<crate::ui::command_dialog::CommandDialogHandle>,
     /// Weak reference to the inline header path entry for live text sync.
     pub header_path_entry: glib::WeakRef<gtk::Entry>,
     // Search state for content search mode.
@@ -508,6 +510,26 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggle the `no_command_dialog` flag for a specific menu action by its action name.
+    /// This persists the change to the config file.
+    ///
+    /// # Arguments
+    /// * `String` – The unique action name (e.g., `custom_0`) of the menu entry.
+    ToggleNoCommandDialog(String),
+
+    /// Refresh the command dialog's switch state after a toggle.
+    /// Sent from the update loop to an open command dialog.
+    ///
+    /// # Arguments
+    /// * `String` – The action name whose switch state should be updated.
+    RefreshCommandDialog(String),
+    /// The command output dialog was closed (by the user or automatically).
+    ///
+    /// This clears the `FluxApp::command_dialog` handle so that subsequent
+    /// commands can open a new dialog.
+    CommandDialogClosed,
+    /// Open the command output log dialog for command task `id`.
+    ShowCommandDialog(u64),
     /// Syncs the inline path entry widget text to the current directory.
     SyncPathEntry,
     /// Append a line of output from a command task.
@@ -983,14 +1005,14 @@ pub struct MenuEntry {
     pub toast: Option<String>,
     /// If true, suppresses tracking progress and opening the transfer dialog.
     #[serde(default)]
-    pub no_transfer_dialog: bool,
+    pub no_command_dialog: bool,
 }
 
 impl MenuEntry {
     /// Converts the entry into the DSL string format used in `menu.rs`.
     ///
     /// The output follows the pattern:
-    /// `"Submenu > Label" => "mime_types", "command", "toast", "no_transfer_dialog"`
+    /// `"Submenu > Label" => "mime_types", "command", "toast", "no_command_dialog"`
     pub fn to_config_line(&self) -> String {
         let label_field = match &self.submenu {
             Some(sub) => format!("{} > {}", sub, self.label),
@@ -1006,8 +1028,8 @@ impl MenuEntry {
             line.push_str(&format!(r#", "{}"#, t));
         }
 
-        if self.no_transfer_dialog {
-            line.push_str(r#", "no_transfer_dialog""#);
+        if self.no_command_dialog {
+            line.push_str(r#", "no_command_dialog""#);
         }
 
         line
