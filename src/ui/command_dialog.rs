@@ -549,6 +549,7 @@ pub fn create_command_dialog(
             .snapshot()
             .iter()
             .any(|(id, _)| *id == task_id_clone);
+
         if !still_active {
             state_label_timer.set_text(&crate::i18n::tr("State: Completed / Terminated"));
             let _ = sender_timer.send(AppMsg::CommandDialogClosed);

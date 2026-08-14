@@ -117,6 +117,42 @@ impl FluxApp {
         }
     }
 
+    pub fn handle_show_command_dialog(&mut self, id: u64) {
+        if self.command_dialog.is_some() {
+            return;
+        }
+
+        let dialog = crate::ui::command_dialog::create_command_dialog(
+            id,
+            self.task_queue.clone(),
+            crate::model::SENDER
+                .get()
+                .expect("SENDER not initialised")
+                .clone(),
+        );
+        self.command_dialog = Some(dialog);
+    }
+
+    pub fn handle_show_command_dialog_if_active(&mut self, id: u64) {
+        if self.command_dialog.is_some() {
+            return;
+        }
+
+        let still_active = self
+            .task_queue
+            .snapshot()
+            .iter()
+            .any(|(task_id, _)| *task_id == id);
+
+        if still_active {
+            self.handle_show_command_dialog(id);
+        }
+    }
+
+    pub fn handle_command_dialog_closed(&mut self) {
+        self.command_dialog = None;
+    }
+
     pub fn handle_transfer_dialog_closed(&mut self) {
         if let Some(mut dialog) = self.transfer_dialog.take() {
             dialog.close();

@@ -387,8 +387,7 @@ impl FluxApp {
                 sender.input(AppMsg::ShowToast(crate::i18n::tr("Volume mounted.")));
             }
 
-            // ─── command tracking handlers ──────────────────────────────
-            //
+            // Command Tracking Handlers
             AppMsg::ToggleNoCommandDialog(action_name) => {
                 if let Some(action) = self
                     .menu_actions
@@ -405,7 +404,6 @@ impl FluxApp {
 
             AppMsg::RefreshCommandDialog(action_name) => {
                 if let Some(dialog) = &self.command_dialog {
-                    // Enviar para o dialog o estado atual (verificar a ação)
                     if let Some(action) = self
                         .menu_actions
                         .iter()
@@ -415,16 +413,13 @@ impl FluxApp {
                     }
                 }
             }
-            AppMsg::ShowCommandDialog(task_id) => {
-                if self.command_dialog.is_some() {
-                    return;
-                }
-                let handle = crate::ui::command_dialog::create_command_dialog(
-                    task_id,
-                    self.task_queue.clone(),
-                    sender.input_sender().clone(),
-                );
-                self.command_dialog = Some(handle);
+
+            AppMsg::ShowCommandDialog(id) => {
+                self.handle_show_command_dialog(id);
+            }
+
+            AppMsg::ShowCommandDialogIfActive(id) => {
+                self.handle_show_command_dialog_if_active(id);
             }
 
             AppMsg::CommandOutput {
@@ -436,7 +431,6 @@ impl FluxApp {
                 let prefix = if is_stderr { "stderr" } else { "stdout" };
                 eprintln!("[task {}] {}: {}", id, prefix, line);
 
-                // Send live output directly to the CommandDialog if open
                 if let Some(dialog) = &self.command_dialog {
                     if dialog.task_id == id {
                         dialog.append_output(&line);
@@ -445,7 +439,7 @@ impl FluxApp {
             }
 
             AppMsg::CommandDialogClosed => {
-                self.command_dialog = None;
+                self.handle_command_dialog_closed();
             }
 
             AppMsg::CommandFinished {
@@ -460,6 +454,12 @@ impl FluxApp {
                         "Command was terminated".to_string()
                     };
                     sender.input(AppMsg::ShowToast(msg));
+                }
+
+                if let Some(dialog) = &self.command_dialog {
+                    if dialog.task_id == id {
+                        self.handle_command_dialog_closed();
+                    }
                 }
 
                 sender.input(AppMsg::TaskCompleted(id));

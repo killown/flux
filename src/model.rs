@@ -510,6 +510,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Open the command output log dialog for command task `id` only if still active.
+    ShowCommandDialogIfActive(u64),
     /// Ctrl+Right-click on a file: kicks off async MIME resolution for the
     /// secondary template-driven context menu.
     PrepareSecondaryMenu {
