@@ -1,10 +1,13 @@
-PREFIX    ?= $(HOME)/.local
+PREFIX     ?= $(HOME)/.local
 BINDIR     = $(PREFIX)/bin
 APPDIR     = $(PREFIX)/share/applications
 ICONDIR    = $(PREFIX)/share/icons/hicolor/scalable/apps
 CONFDIR    = $(PREFIX)/share/flux
 SCRIPTDIR  = $(CONFDIR)/scripts
 LOCALEDIR  = $(PREFIX)/share/locale
+
+# User configuration target directory
+USER_CONFDIR = $(HOME)/.config/flux
 
 # po/ directory relative to this Makefile
 PO_DIR     = po
@@ -21,6 +24,7 @@ install: translations
 		$(DESTDIR)$(APPDIR) \
 		$(DESTDIR)$(ICONDIR) \
 		$(DESTDIR)$(CONFDIR)/themes \
+		$(DESTDIR)$(CONFDIR)/menus \
 		$(DESTDIR)$(SCRIPTDIR)
 
 	# 2. Binary
@@ -34,14 +38,29 @@ install: translations
 	# 4. Icon
 	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/flux.svg
 
-	# 5. Themes
+	# 5. Themes & Shared Menus
 	@cp -r themes/. $(DESTDIR)$(CONFDIR)/themes/
 	@cp themes/default.css $(DESTDIR)$(CONFDIR)/style.css
+	@if [ -d menus ]; then cp -r menus/. $(DESTDIR)$(CONFDIR)/menus/; fi
 
 	# 6. Scripts
 	@install -m 755 scripts/*.py $(DESTDIR)$(SCRIPTDIR)/
 
-	# 7. Refresh desktop database (skip when packaging)
+	# 7. Copy default menus to ~/.config/flux/menus/ if not already present
+	@if [ -z "$(DESTDIR)" ] && [ -d menus ]; then \
+		mkdir -p $(USER_CONFDIR)/menus; \
+		for file in menus/*.rs; do \
+			if [ -f "$$file" ]; then \
+				target="$(USER_CONFDIR)/menus/$$(basename "$$file")"; \
+				if [ ! -f "$$target" ]; then \
+					cp "$$file" "$$target"; \
+					echo "Installed default menu template: $$target"; \
+				fi; \
+			fi; \
+		done; \
+	fi
+
+	# 8. Refresh desktop database (skip when packaging)
 	@if [ -z "$(DESTDIR)" ]; then \
 		update-desktop-database $(PREFIX)/share/applications; \
 		echo "Successfully installed to $(PREFIX)"; \
