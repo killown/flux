@@ -13,8 +13,11 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Mutex;
 
 use crate::model::TerminalConfig;
+
+static CONFIG_CACHE: Mutex<Option<crate::model::Config>> = Mutex::new(None);
 
 pub fn ensure_config_file() -> PathBuf {
     let config_dir = dirs::config_dir()
@@ -95,6 +98,10 @@ pub fn ensure_config_file() -> PathBuf {
 }
 
 pub fn save_config(config: &crate::model::Config) {
+    if let Ok(mut guard) = CONFIG_CACHE.lock() {
+        *guard = Some(config.clone());
+    }
+
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
@@ -130,6 +137,12 @@ pub fn rename_path(old_path: &Path, new_name: &str) -> std::io::Result<PathBuf> 
 }
 
 pub fn load_config() -> crate::model::Config {
+    if let Ok(guard) = CONFIG_CACHE.lock() {
+        if let Some(ref cached) = *guard {
+            return cached.clone();
+        }
+    }
+
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
@@ -355,6 +368,10 @@ path = "~"
 
     if changed {
         crate::utils::save_config(&config);
+    }
+
+    if let Ok(mut guard) = CONFIG_CACHE.lock() {
+        *guard = Some(config.clone());
     }
 
     config
