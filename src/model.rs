@@ -510,6 +510,23 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Ctrl+Right-click on a file: kicks off async MIME resolution for the
+    /// secondary template-driven context menu.
+    PrepareSecondaryMenu {
+        x: f64,
+        y: f64,
+        path: Option<PathBuf>,
+    },
+    /// Delivers the fully-resolved secondary menu actions to the GTK main
+    /// thread for popover construction.
+    ShowSecondaryMenu {
+        x: f64,
+        y: f64,
+        path: Option<PathBuf>,
+        mime: String,
+        actions: Vec<crate::model::CustomAction>,
+    },
+
     /// Toggle the `no_command_dialog` flag for a specific menu action by its action name.
     /// This persists the change to the config file.
     ///

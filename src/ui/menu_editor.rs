@@ -40,15 +40,70 @@ fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)>
     Some((mime.to_string(), cmd.to_string(), toast, no_command_dialog))
 }
 
-// ─── Disk I/O ────────────────────────────────────────────────────────────────
-fn config_path() -> PathBuf {
+// ─── Disk I/O & Dynamic Menu Discovery ───────────────────────────────────────
+fn flux_base_dir() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join("flux/menu.rs")
+        .join("flux")
 }
 
-fn load_from_disk() -> Vec<MenuEntry> {
-    let content = fs::read_to_string(config_path()).unwrap_or_default();
+fn get_available_menus() -> Vec<String> {
+    let mut menus = vec!["menu.rs".to_string()];
+    let base = flux_base_dir();
+
+    // Check root config dir
+    if let Ok(entries) = fs::read_dir(&base) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    if name.starts_with("menu") && name.ends_with(".rs") && name != "menu.rs" {
+                        menus.push(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // Check menus/ subdirectory
+    let sub = base.join("menus");
+    if let Ok(entries) = fs::read_dir(sub) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    if name.starts_with("menu")
+                        && name.ends_with(".rs")
+                        && !menus.contains(&name.to_string())
+                    {
+                        menus.push(name.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    menus.sort();
+    menus
+}
+
+fn config_path_for(menu_name: &str) -> PathBuf {
+    let base = flux_base_dir();
+    let sub_path = base.join("menus").join(menu_name);
+    if sub_path.exists() {
+        sub_path
+    } else {
+        let root_path = base.join(menu_name);
+        if root_path.exists() || menu_name == "menu.rs" {
+            root_path
+        } else {
+            base.join("menus").join(menu_name)
+        }
+    }
+}
+
+fn load_from_disk(menu_name: &str) -> Vec<MenuEntry> {
+    let content = fs::read_to_string(config_path_for(menu_name)).unwrap_or_default();
     let mut entries = Vec::new();
 
     for line in content.lines() {
@@ -79,8 +134,8 @@ fn load_from_disk() -> Vec<MenuEntry> {
     entries
 }
 
-fn write_to_disk(entries: &[MenuEntry]) -> std::io::Result<()> {
-    let path = config_path();
+fn write_to_disk(menu_name: &str, entries: &[MenuEntry]) -> std::io::Result<()> {
+    let path = config_path_for(menu_name);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
@@ -106,11 +161,13 @@ enum Msg {
     },
     Save,
     Search(String),
+    SelectMenu(String),
 }
 
 // ─── Shared imperative state ──────────────────────────────────────────────────
 struct Shared {
     entries: Rc<RefCell<Vec<MenuEntry>>>,
+    current_menu: Rc<RefCell<String>>,
     list_box: gtk::ListBox,
     toast_overlay: adw::ToastOverlay,
     root: adw::Window,
@@ -141,7 +198,8 @@ impl SimpleComponent for MenuEditor {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let entries = Rc::new(RefCell::new(load_from_disk()));
+        let current_menu = Rc::new(RefCell::new("menu.rs".to_string()));
+        let entries = Rc::new(RefCell::new(load_from_disk("menu.rs")));
         let toast_overlay = adw::ToastOverlay::new();
         let search_query = Rc::new(RefCell::new(String::new()));
 
@@ -157,21 +215,41 @@ impl SimpleComponent for MenuEditor {
             .build();
         let save_btn = gtk::Button::builder()
             .label(tr("Save").as_str())
-            .tooltip_text(tr("Write to ~/.config/flux/menu.rs  (Ctrl+S)").as_str())
+            .tooltip_text(tr("Write to config file  (Ctrl+S)").as_str())
             .css_classes(["suggested-action"])
             .build();
+
+        // ── Menu Selection ComboBox / DropDown ────────────────────────────────
+        let available_menus = get_available_menus();
+        let default_idx = available_menus
+            .iter()
+            .position(|s| s == "menu.rs")
+            .unwrap_or(0) as u32;
+
+        let menu_strings: Vec<&str> = available_menus.iter().map(|s| s.as_str()).collect();
+        let menu_model = gtk::StringList::new(&menu_strings);
+        let menu_dropdown = gtk::DropDown::builder()
+            .model(&menu_model)
+            .selected(default_idx)
+            .valign(gtk::Align::Center)
+            .tooltip_text(tr("Select menu configuration file to edit").as_str())
+            .build();
+
+        // Pack elements into HeaderBar
+        header.pack_start(&add_btn);
 
         // ── Search bar in header title position ───────────────────────────────
         let search_entry = gtk::SearchEntry::builder()
             .placeholder_text(tr("Search entries…").as_str())
             .hexpand(true)
-            .max_width_chars(40)
+            .max_width_chars(30)
             .tooltip_text(tr("Filter entries  (Ctrl+F)").as_str())
             .build();
         header.set_title_widget(Some(&search_entry));
 
-        header.pack_start(&add_btn);
+        // Pack menu selection dropdown and save button on the right side
         header.pack_end(&save_btn);
+        header.pack_end(&menu_dropdown);
         outer_box.append(&header);
 
         let scroller = gtk::ScrolledWindow::builder()
@@ -193,6 +271,7 @@ impl SimpleComponent for MenuEditor {
 
         let shared = Rc::new(RefCell::new(Shared {
             entries: entries.clone(),
+            current_menu: current_menu.clone(),
             list_box,
             toast_overlay,
             root: root.clone(),
@@ -202,6 +281,14 @@ impl SimpleComponent for MenuEditor {
 
         rebuild_list(&shared.borrow());
 
+        {
+            let s = sender.clone();
+            menu_dropdown.connect_selected_notify(move |dd| {
+                if let Some(item) = dd.selected_item().and_downcast::<gtk::StringObject>() {
+                    s.input(Msg::SelectMenu(item.string().to_string()));
+                }
+            });
+        }
         {
             let s = sender.clone();
             add_btn.connect_clicked(move |_| s.input(Msg::AddEntry));
@@ -263,6 +350,12 @@ impl SimpleComponent for MenuEditor {
         let shared = self.shared.borrow();
 
         match msg {
+            Msg::SelectMenu(menu_name) => {
+                *shared.current_menu.borrow_mut() = menu_name.clone();
+                *shared.entries.borrow_mut() = load_from_disk(&menu_name);
+                rebuild_list(&shared);
+            }
+
             Msg::AddEntry => show_dialog(&shared, None, &MenuEntry::default()),
 
             Msg::EditEntry(idx) => {
@@ -322,15 +415,18 @@ impl SimpleComponent for MenuEditor {
             }
 
             Msg::Save => {
-                let ok = write_to_disk(&shared.entries.borrow()).is_ok();
+                let menu_name = shared.current_menu.borrow().clone();
+                let ok = write_to_disk(&menu_name, &shared.entries.borrow()).is_ok();
+                let msg_saved = format!("{} saved", menu_name);
+                let msg_failed = format!("Failed to save {}", menu_name);
                 shared.toast_overlay.add_toast(if ok {
                     adw::Toast::builder()
-                        .title(tr("menu.rs saved").as_str())
+                        .title(tr(&msg_saved).as_str())
                         .timeout(2)
                         .build()
                 } else {
                     adw::Toast::builder()
-                        .title(tr("Failed to save menu.rs").as_str())
+                        .title(tr(&msg_failed).as_str())
                         .timeout(4)
                         .build()
                 });
@@ -405,19 +501,22 @@ fn build_row(
     total: usize,
     sender: &ComponentSender<MenuEditor>,
 ) -> adw::ActionRow {
-    let title = match &entry.submenu {
+    let raw_title = match &entry.submenu {
         Some(sub) => format!("{} › {}", sub, entry.label),
         None => entry.label.clone(),
     };
 
-    let mut subtitle = format!("{} │ {}", entry.mime_types, entry.command);
+    let mut raw_subtitle = format!("{} │ {}", entry.mime_types, entry.command);
     if entry.no_command_dialog {
-        subtitle.push_str(" │ [no transfer dialog]");
+        raw_subtitle.push_str(" │ [no transfer dialog]");
     }
 
+    let safe_title = glib::markup_escape_text(&raw_title);
+    let safe_subtitle = glib::markup_escape_text(&raw_subtitle);
+
     let row = adw::ActionRow::builder()
-        .title(&title)
-        .subtitle(&subtitle)
+        .title(safe_title.as_str())
+        .subtitle(safe_subtitle.as_str())
         .build();
 
     // ── Dedicated Prefix Column Box (Line Numbers & Submenu Status) ───────────
@@ -567,6 +666,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     let initial_line = replace.map(|idx| idx + 1).unwrap_or(max_line);
 
     // ── Line Position Spinner Row ─────────────────────────────────────────────
+    let menu_name_val = shared.current_menu.borrow().clone();
     let spin_btn = gtk::SpinButton::builder()
         .adjustment(&gtk::Adjustment::new(
             initial_line as f64,
@@ -581,8 +681,9 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .margin_end(12)
         .build();
 
+    let line_row_title = format!("Line Position in {}", menu_name_val);
     let line_row = adw::ActionRow::builder()
-        .title(tr("Line Position in menu.rs").as_str())
+        .title(tr(&line_row_title))
         .subtitle(tr("Set exact line order (1-based)").as_str())
         .activatable_widget(&spin_btn)
         .build();

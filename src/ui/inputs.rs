@@ -353,7 +353,10 @@ pub fn setup_controllers(
     window.add_controller(settings_shortcut);
 
     // 10. Click-on-empty-space deselection
-    setup_deselect_on_background_click(grid_view, sender);
+    setup_deselect_on_background_click(grid_view, sender.clone());
+
+    // 11. Ctrl+Right-click → secondary MIME-matched context menu
+    crate::ui::secondary_context_menu::setup_secondary_menu_gesture(window, sender);
 }
 
 /// Attaches a primary-button gesture to the `GridView` that clears the

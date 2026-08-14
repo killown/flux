@@ -25,6 +25,7 @@ pub mod network_dialogs;
 pub mod paste_ops;
 pub mod remote_ops;
 pub mod search_handlers;
+pub mod secondary_context_menu;
 pub mod sidebar_network;
 pub mod sidebar_ops;
 pub mod task_ops;

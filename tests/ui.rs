@@ -18,6 +18,7 @@ mod ui {
     mod network_dialogs_test;
     mod remote_ops_test;
     mod search_handlers_test;
+    mod secondary_menu_test;
     mod settings_window_test;
     mod sidebar_network_test;
     mod sidebar_ops_test;

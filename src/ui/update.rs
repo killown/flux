@@ -252,6 +252,18 @@ impl FluxApp {
             AppMsg::Activate => self.handle_activate(&sender),
             AppMsg::LaunchWithApp(app_id) => self.handle_launch_with_app(app_id),
             AppMsg::ClearRecents => self.handle_clear_recents(&sender),
+            AppMsg::PrepareSecondaryMenu { x, y, path } => {
+                self.handle_prepare_secondary_menu(x, y, path, &sender);
+            }
+            AppMsg::ShowSecondaryMenu {
+                x,
+                y,
+                path,
+                mime,
+                actions,
+            } => {
+                self.build_and_show_secondary_menu(x, y, path, mime, actions, &sender);
+            }
             AppMsg::PrepareContextMenu(x, y, path) => {
                 self.handle_prepare_context_menu(x, y, path, &sender)
             }
