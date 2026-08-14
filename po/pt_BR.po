@@ -1179,10 +1179,117 @@ msgstr "Tamanho do ícone em modo lista"
 msgid "Icon size used in list mode"
 msgstr "Tamanho do ícone usado quando em modo lista"
 
-#: src/ui/menu_editor.rs:613
-msgid "Suppress Transfer Dialog"
-msgstr "Ocultar diálogo de transferência"
+#: src/ui/command_dialog.rs:148 
+msgid "Command Output"
+msgstr "Saída do Comando"
 
-#: src/ui/menu_editor.rs:614
-msgid "Do not track execution progress or open transfer dialog"
-msgstr "Não acompanhar progresso de execução nem abrir diálogo de transferência"
+#: src/ui/command_dialog.rs:272
+msgid "Suppress dialog"
+msgstr "Ocultar diálogo"
+
+#: src/ui/command_dialog.rs:277
+msgid "When enabled, this command will not show the output dialog again. This setting is saved in your menu configuration."
+msgstr "Quando ativado, este comando não mostrará mais o diálogo de saída. Esta configuração é salva no seu arquivo de configuração de menu."
+
+#: src/ui/command_dialog.rs:280
+msgid "Toggle to suppress the dialog for this specific command."
+msgstr "Alternar para ocultar o diálogo para este comando específico."
+
+#: src/ui/command_dialog.rs:384
+msgid "Copy all info to clipboard"
+msgstr "Copiar todas as informações para a área de transferência"
+
+# --- Info panel labels ---
+#: src/ui/command_dialog.rs:???
+msgid "PID:"
+msgstr "PID:"
+
+#: src/ui/command_dialog.rs:???
+msgid "State:"
+msgstr "Estado:"
+
+#: src/ui/command_dialog.rs:???
+msgid "CPU time:"
+msgstr "Tempo de CPU:"
+
+#: src/ui/command_dialog.rs:???
+msgid "Memory (RSS/VMS):"
+msgstr "Memória (RSS/VMS):"
+
+#: src/ui/command_dialog.rs:???
+msgid "Threads:"
+msgstr "Threads:"
+
+#: src/ui/command_dialog.rs:???
+msgid "Open FDs:"
+msgstr "FDs abertos:"
+
+#: src/ui/command_dialog.rs:???
+msgid "CWD:"
+msgstr "Diretório atual:"
+
+#: src/ui/command_dialog.rs:???
+msgid "I/O:"
+msgstr "E/S:"
+
+#: src/ui/command_dialog.rs:???
+msgid "Command:"
+msgstr "Comando:"
+
+#: src/ui/command_dialog.rs:???
+msgid "State: Completed / Terminated"
+msgstr "Estado: Concluído / Finalizado"
+
+#: src/ui/command_dialog.rs:???
+msgid "State: (unavailable)"
+msgstr "Estado: (indisponível)"
+
+#: src/ui/command_dialog.rs:???
+msgid "I/O: (unavailable)"
+msgstr "E/S: (indisponível)"
+
+#: src/ui/command_dialog.rs:???
+msgid "N/A"
+msgstr "N/D"
+
+#: src/ui/command_dialog.rs:???
+msgid "Unknown"
+msgstr "Desconhecido"
+
+# --- Process states ---
+#: src/ui/command_dialog.rs:???
+msgid "Running"
+msgstr "Executando"
+
+#: src/ui/command_dialog.rs:???
+msgid "Sleeping"
+msgstr "Em espera"
+
+#: src/ui/command_dialog.rs:???
+msgid "Uninterruptible Sleep"
+msgstr "Sono ininterrupto"
+
+#: src/ui/command_dialog.rs:???
+msgid "Zombie"
+msgstr "Zumbi"
+
+#: src/ui/command_dialog.rs:???
+msgid "Stopped"
+msgstr "Parado"
+
+#: src/ui/command_dialog.rs:???
+msgid "Tracing Stop"
+msgstr "Parada por rastreamento"
+
+#: src/ui/command_dialog.rs:???
+msgid "Dead"
+msgstr "Morto"
+
+#: src/ui/command_dialog.rs:???
+msgid "PPID:"
+msgstr "PPID:"
+
+#: src/ui/command_dialog.rs:???
+msgid "user+sys"
+msgstr "usuário+sistema"
+

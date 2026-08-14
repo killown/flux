@@ -71,7 +71,7 @@ pub fn build_execution_command(
 }
 
 /// Legacy predicate: returns false for commands known to open their own window,
-/// keeping backwards compatibility for installs that haven't added `no_transfer_dialog`
+/// keeping backwards compatibility for installs that haven't added `no_command_dialog`
 /// to their menu.rs yet.
 pub fn should_track_in_transfer_dialog(cmd_template: &str) -> bool {
     !cmd_template.contains("--file-properties")
@@ -299,31 +299,41 @@ impl FluxApp {
         let (final_cmd, label) =
             build_execution_command(&cmd_template, &final_targets, &current_path);
 
-        // Generate a unique task ID
-        let task_id = crate::ui::paste_ops::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
-
-        // Insert placeholder task
-        self.task_queue.insert_command(task_id, label, 0);
-
-        // Resolve the no_transfer_dialog flag from the matching menu action.
-        let no_transfer_dialog = self
+        // Resolve the no_command_dialog flag from the matching menu action.
+        let no_command_dialog = self
             .menu_actions
             .iter()
             .find(|action| action.command == cmd_template)
-            .map(|a| a.no_transfer_dialog)
+            .map(|a| a.no_command_dialog)
             .unwrap_or(false);
 
-        // Start transfer dialog timer ONLY if command policy permits it.
-        // no_transfer_dialog flag takes priority, should_track_in_transfer_dialog
-        // is kept as a legacy fallback for old installs without the flag in menu.rs.
-        if !no_transfer_dialog && should_track_in_transfer_dialog(&cmd_template) {
+        // Check if this command should be completely untracked (e.g. file properties)
+        let bypass_tracking = no_command_dialog || !should_track_in_transfer_dialog(&cmd_template);
+
+        // Generate task ID only if tracking is needed – defined OUTSIDE the condition
+        let task_id = if !bypass_tracking {
+            let id = crate::ui::paste_ops::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+            // Insert into queue – note the full_command parameter
+            let action_name = self
+                .menu_actions
+                .iter()
+                .find(|a| a.command == cmd_template)
+                .map(|a| a.action_name.clone());
+            self.task_queue
+                .insert_command(id, label, 0, Some(final_cmd.clone()), action_name);
+
+            // Show command dialog after 2 seconds if still running
             let s_delay = sender.clone();
-            let task_id_delay = task_id;
+            let task_id_delay = id;
             relm4::spawn(async move {
                 sleep(Duration::from_secs(2)).await;
-                s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id_delay));
+                s_delay.input(AppMsg::ShowCommandDialog(task_id_delay));
             });
-        }
+
+            Some(id)
+        } else {
+            None
+        };
 
         // Spawn command asynchronously
         let sender_cmd = sender.clone();
@@ -348,40 +358,46 @@ impl FluxApp {
                 Ok(c) => c,
                 Err(e) => {
                     sender_cmd.input(AppMsg::ShowToast(format!("Failed to spawn: {}", e)));
-                    sender_cmd.input(AppMsg::TaskCompleted(task_id));
+                    if let Some(id) = task_id {
+                        sender_cmd.input(AppMsg::TaskCompleted(id));
+                    }
                     return;
                 }
             };
 
-            let pid = child.id().unwrap_or(0);
-            task_queue.update_pid(task_id, pid);
+            if let Some(id) = task_id {
+                let pid = child.id().unwrap_or(0);
+                task_queue.update_pid(id, pid);
+            }
 
             let stdout = child.stdout.take().unwrap();
             let stderr = child.stderr.take().unwrap();
 
             let sender_out = sender_cmd.clone();
-            let task_id_out = task_id;
             let stdout_task = tokio::spawn(async move {
                 let mut reader = BufReader::new(stdout).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
-                    sender_out.input(AppMsg::CommandOutput {
-                        id: task_id_out,
-                        line,
-                        is_stderr: false,
-                    });
+                    if let Some(id) = task_id {
+                        sender_out.input(AppMsg::CommandOutput {
+                            id,
+                            line,
+                            is_stderr: false,
+                        });
+                    }
                 }
             });
 
             let sender_err = sender_cmd.clone();
-            let task_id_err = task_id;
             let stderr_task = tokio::spawn(async move {
                 let mut reader = BufReader::new(stderr).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
-                    sender_err.input(AppMsg::CommandOutput {
-                        id: task_id_err,
-                        line,
-                        is_stderr: true,
-                    });
+                    if let Some(id) = task_id {
+                        sender_err.input(AppMsg::CommandOutput {
+                            id,
+                            line,
+                            is_stderr: true,
+                        });
+                    }
                 }
             });
 
@@ -392,11 +408,13 @@ impl FluxApp {
             stdout_task.abort();
             stderr_task.abort();
 
-            sender_cmd.input(AppMsg::CommandFinished {
-                id: task_id,
-                success,
-                exit_code,
-            });
+            if let Some(id) = task_id {
+                sender_cmd.input(AppMsg::CommandFinished {
+                    id,
+                    success,
+                    exit_code,
+                });
+            }
 
             if let Some(msg) = toast_msg {
                 sender_cmd.input(AppMsg::ShowToast(msg));

@@ -15,6 +15,7 @@ pub use settings::SettingsWindow;
 pub mod menu_editor;
 pub use components::SidebarMsg;
 pub mod app_action_ops;
+pub mod command_dialog;
 pub mod config_handlers;
 pub mod context_menu;
 pub mod dialogs;

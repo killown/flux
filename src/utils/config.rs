@@ -1,3 +1,5 @@
+use crate::model::CustomAction;
+use crate::model::MenuEntry;
 use crate::ui::constants;
 use crate::utils::media::probe_media_duration;
 use crate::utils::PathExt;
@@ -12,7 +14,6 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::model::CustomAction;
 use crate::model::TerminalConfig;
 
 pub fn ensure_config_file() -> PathBuf {
@@ -371,17 +372,17 @@ pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bo
     let cmd_inner = second_part.strip_prefix('"')?;
     let (cmd, after_cmd) = cmd_inner.split_once('"')?;
 
-    // Parse remaining optional tokens: toast and/or "no_transfer_dialog" (in any order)
+    // Parse remaining optional tokens: toast and/or "no_command_dialog" (in any order)
     let mut toast: Option<String> = None;
-    let mut no_transfer_dialog = false;
+    let mut no_command_dialog = false;
 
     let mut remainder = after_cmd.trim();
     while let Some(stripped) = remainder.strip_prefix(',') {
         let stripped = stripped.trim();
         if let Some(inner) = stripped.strip_prefix('"') {
             if let Some((token, rest)) = inner.split_once('"') {
-                if token == "no_transfer_dialog" {
-                    no_transfer_dialog = true;
+                if token == "no_command_dialog" {
+                    no_command_dialog = true;
                 } else {
                     toast = Some(token.to_string());
                 }
@@ -392,7 +393,7 @@ pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bo
         break;
     }
 
-    Some((mime.to_string(), cmd.to_string(), toast, no_transfer_dialog))
+    Some((mime.to_string(), cmd.to_string(), toast, no_command_dialog))
 }
 
 pub fn load_menu_config() -> Vec<CustomAction> {
@@ -418,7 +419,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 (None, full_label.to_string())
             };
 
-            if let Some((mimes_part, cmd_part, toast, no_transfer_dialog)) = split_mime_cmd(right) {
+            if let Some((mimes_part, cmd_part, toast, no_command_dialog)) = split_mime_cmd(right) {
                 let mime_types: Vec<String> = mimes_part
                     .split(',')
                     .map(|s| s.trim().to_string())
@@ -431,12 +432,39 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     command: cmd_part,
                     mime_types,
                     toast,
-                    no_transfer_dialog,
+                    no_command_dialog,
                 });
             }
         }
     }
     actions
+}
+
+/// Writes the current menu actions to `~/.config/flux/menu.rs`
+/// in the same DSL format expected by `load_menu_config`.
+pub fn save_menu_config(actions: &[CustomAction]) -> std::io::Result<()> {
+    let config_dir = dirs::config_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("flux");
+    std::fs::create_dir_all(&config_dir)?;
+    let path = config_dir.join("menu.rs");
+
+    let mut content = String::new();
+    for action in actions {
+        // Convert CustomAction to MenuEntry for consistent serialization
+        let entry = MenuEntry {
+            label: action.label.clone(),
+            submenu: action.submenu.clone(),
+            mime_types: action.mime_types.join(", "),
+            command: action.command.clone(),
+            toast: action.toast.clone(),
+            no_command_dialog: action.no_command_dialog,
+        };
+        content.push_str(&entry.to_config_line());
+        content.push('\n');
+    }
+    std::fs::write(path, content)?;
+    Ok(())
 }
 
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
