@@ -15,7 +15,8 @@ PO_FILES   = $(wildcard $(PO_DIR)/*.po)
 # Derive language tags from filenames: po/pt_BR.po → pt_BR
 LANGS      = $(basename $(notdir $(PO_FILES)))
 
-.PHONY: install translations
+
+.PHONY: install translations set-archive-defaults
 
 install: translations
 	# 1. Create directories
@@ -76,3 +77,22 @@ translations:
 		       $(PO_DIR)/$(lang).po; \
 		echo "Compiled translation: $(lang)"; \
 	)
+
+# To set flux as the default handler for compressed files:
+#   make set-archive-defaults
+set-archive-defaults:
+	xdg-mime default flux.desktop application/zip
+	xdg-mime default flux.desktop application/x-7z-compressed
+	xdg-mime default flux.desktop application/x-tar
+	xdg-mime default flux.desktop application/gzip
+	xdg-mime default flux.desktop application/x-bzip2
+	xdg-mime default flux.desktop application/x-xz
+	xdg-mime default flux.desktop application/zstd
+	xdg-mime default flux.desktop application/x-rar
+	xdg-mime default flux.desktop application/vnd.rar
+	xdg-mime default flux.desktop application/x-iso9660-image
+	xdg-mime default flux.desktop application/x-compressed-tar
+	xdg-mime default flux.desktop application/x-bzip-compressed-tar
+	xdg-mime default flux.desktop application/x-xz-compressed-tar
+	xdg-mime default flux.desktop application/x-zstd-compressed-tar
+	update-desktop-database ~/.local/share/applications
