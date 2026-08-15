@@ -5,6 +5,8 @@ use std::path::PathBuf;
 pub enum StartupAction {
     /// Launch the main file-manager window starting at the given path.
     Launch(PathBuf),
+    /// open the archive-explorer window for the given path.
+    OpenArchive(PathBuf),
     /// Open the standalone file-properties dialog for the given path.
     FileProperties(PathBuf),
     /// Open the context-menu editor utility.
@@ -37,6 +39,13 @@ pub fn resolve_startup_action(args: &[String], home_dir: PathBuf) -> StartupActi
 
         Some(arg) if arg.starts_with('-') => StartupAction::UnknownFlag(arg.to_string()),
 
-        Some(path) => StartupAction::Launch(PathBuf::from(path)),
+        Some(path) => {
+            let p = PathBuf::from(path);
+            if p.is_file() && crate::services::archive::is_supported_archive(&p) {
+                StartupAction::OpenArchive(p)
+            } else {
+                StartupAction::Launch(p)
+            }
+        }
     }
 }

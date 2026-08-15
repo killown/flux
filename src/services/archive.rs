@@ -620,6 +620,31 @@ pub fn entries_to_load_contexts(
         .collect()
 }
 
+#[allow(dead_code)]
+pub fn is_supported_archive(path: &std::path::Path) -> bool {
+    let name_lc = lc_name(path);
+    name_lc.ends_with(".zip")
+        || name_lc.ends_with(".7z")
+        || name_lc.ends_with(".rar")
+        || name_lc.ends_with(".iso")
+        || name_lc.ends_with(".tar")
+        || name_lc.ends_with(".tar.gz")
+        || name_lc.ends_with(".tgz")
+        || name_lc.ends_with(".tar.bz2")
+        || name_lc.ends_with(".tbz2")
+        || name_lc.ends_with(".tar.xz")
+        || name_lc.ends_with(".txz")
+        || name_lc.ends_with(".tar.zst")
+        || name_lc.ends_with(".tzst")
+        || name_lc.ends_with(".tar.lz4")
+        || name_lc.ends_with(".gz")
+        || name_lc.ends_with(".bz2")
+        || name_lc.ends_with(".xz")
+        || name_lc.ends_with(".zst")
+        || name_lc.ends_with(".zstd")
+        || name_lc.ends_with(".lz4")
+}
+
 // ─── Extraction ───────────────────────────────────────────────────────────────
 
 /// Extracts a single file entry to a [`tempfile::NamedTempFile`] for `xdg-open`.
