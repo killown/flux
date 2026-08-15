@@ -43,9 +43,7 @@ impl FluxApp {
             if let Some(paned) = &self.terminal_paned {
                 let height = paned.height();
                 if height > 0 {
-                    let char_height = self.terminal.char_height().max(1);
-                    let terminal_height = self.config.ui.terminal.height * char_height;
-                    paned.set_position(height - terminal_height);
+                    paned.set_position(height - self.config.ui.terminal.height);
                 }
             }
 
