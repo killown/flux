@@ -184,7 +184,7 @@ impl FluxApp {
             sender.input(AppMsg::CloseSearchSync);
 
             if self.header_view == constants::VIEW_SEARCH {
-                self.header_view = "path".to_string();
+                self.header_view = constants::VIEW_PATH.to_string();
             }
 
             self.history.push(old_path);
@@ -230,7 +230,7 @@ impl FluxApp {
         sender.input(AppMsg::CloseSearchSync);
 
         if self.header_view == constants::VIEW_SEARCH {
-            self.header_view = "path".to_string();
+            self.header_view = constants::VIEW_PATH.to_string();
         }
 
         self.history.push(old_path);

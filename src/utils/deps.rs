@@ -1,9 +1,12 @@
 //! Runtime availability checks for optional external binaries.
 
+use std::path::Path;
+use std::process::Command;
+
 /// Logs a warning for each optional external binary not found in `$PATH`.
 pub fn check_optional_deps() {
     for bin in ["ffmpeg", "ffprobe", "magick"] {
-        if std::process::Command::new("which")
+        if Command::new("which")
             .arg(bin)
             .output()
             .map(|o| !o.status.success())
@@ -16,6 +19,27 @@ pub fn check_optional_deps() {
     check_gvfs_deps();
 }
 
+fn check_binary_exists(bin: &str) -> bool {
+    if Command::new("which")
+        .arg(bin)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+    {
+        return true;
+    }
+
+    let lib_dirs = [
+        "/usr/lib/gvfs",
+        "/usr/libexec",
+        "/usr/lib",
+        "/usr/local/lib/gvfs",
+        "/usr/local/libexec",
+    ];
+
+    lib_dirs.iter().any(|dir| Path::new(dir).join(bin).exists())
+}
+
 /// Checks GVFS daemon and backend availability and logs a warning for each
 /// missing component.
 ///
@@ -24,9 +48,7 @@ pub fn check_optional_deps() {
 /// functional. The check is advisory: Flux reports the deficiency as a toast
 /// at the point of use rather than blocking startup.
 fn check_gvfs_deps() {
-    let results = crate::services::network::check_gvfs_deps();
-
-    if !results.get("gvfsd").copied().unwrap_or(false) {
+    if !check_binary_exists("gvfsd") {
         eprintln!(
             "[flux] GVFS daemon ('gvfsd') not found - network browsing will be unavailable. \
              Install the 'gvfs' package via your package manager."
@@ -42,7 +64,7 @@ fn check_gvfs_deps() {
     ];
 
     for (binary, label) in backends {
-        if !results.get(binary).copied().unwrap_or(false) {
+        if !check_binary_exists(binary) {
             eprintln!(
                 "[flux] optional GVFS backend '{binary}' not found - {label} browsing may be \
                  limited. Install the corresponding gvfs backend package."

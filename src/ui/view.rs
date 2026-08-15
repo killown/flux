@@ -83,13 +83,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_halign: gtk::Align::Center,
                                 set_hexpand: false,
                                 set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
-                                #[watch] set_visible_child_name: &model.header_view,
                                 set_transition_type: gtk::StackTransitionType::Crossfade,
-                                add_child = &gtk::Button {
-                                    add_css_class: "flat",
-                                    #[watch] set_label: &model.current_path.to_string_lossy(),
-                                    connect_clicked => AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()),
-                                } -> { set_name: "path_old" },
 
                                 /// Interactive breadcrumb container for directory parent navigation.
                                 #[name = "path_entry"]
@@ -739,8 +733,12 @@ impl SimpleAsyncComponent for FluxApp {
         widgets.grid_scroller.set_child(Some(&model.files.view));
 
         let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        sidebar_wrapper.append(model.sidebar.widget());
-        sidebar_wrapper.append(&model.network_section);
+        if model.sidebar.widget().parent().is_none() {
+            sidebar_wrapper.append(model.sidebar.widget());
+        }
+        if model.network_section.parent().is_none() {
+            sidebar_wrapper.append(&model.network_section);
+        }
         widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
 
         model.context_menu_popover.set_parent(&widgets.grid_overlay);

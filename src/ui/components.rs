@@ -588,7 +588,7 @@ impl FactoryComponent for SidebarPlace {
             #[watch]
             set_activatable: !self.is_section_label,
             add_css_class: constants::SIDEBAR_ROW_CLASS,
-            #[watch] add_css_class: if self.is_mount { "sidebar-mount" } else { "" },
+            #[watch] set_class_active: ("sidebar-mount", self.is_mount),
             connect_realize[is_label = self.is_section_label] => move |w| {
                 FluxApp::set_cursor_pointer(w.as_ref(), !is_label);
                 if is_label {
