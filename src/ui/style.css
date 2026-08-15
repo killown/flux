@@ -24,16 +24,16 @@ listview {
 
 .thumbnail {
   border-radius: 6px;
-  box-shadow: 0 4px 8px alpha(black, 0.3);
+  box-shadow: 0px 4px 8px alpha(black, 0.3);
   transition: transform 300ms ease;
-  margin-bottom: 0;
+  margin-bottom: 0px;
 }
 
 .flux-label {
   margin-top: 4px;
   font-weight: 600;
   font-size: 11px;
-  text-shadow: 0 1px 3px alpha(black, 0.3);
+  text-shadow: 0px 1px 3px alpha(black, 0.3);
   transition: all 250ms ease;
 }
 
@@ -53,14 +53,14 @@ listview {
   border-bottom-color: rgba(0, 0, 0, 0.15);
   border-radius: 8px;
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    0px 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0px 1px 0px rgba(255, 255, 255, 0.08);
   min-height: 28px;
   padding: 2px 8px;
   transition: all 0.15s ease;
 }
 
-.sidebar-row:not(#sidebar-section) {
+.sidebar-row {
   padding: 8px 8px;
   margin: 2px 8px;
   border-radius: 10px;
@@ -68,23 +68,23 @@ listview {
   transition: all 200ms ease;
 }
 
-.sidebar-row:not(#sidebar-section) .sidebar-label {
+.sidebar-row .sidebar-label {
   margin-left: 10px;
   font-size: 10pt;
   font-weight: 600;
 }
 
-.sidebar-row:not(#sidebar-section):hover:not(:selected) {
+.sidebar-row:hover:not(:selected) {
   background-color: alpha(@accent_color, 0.1);
   color: @window_fg_color;
 }
 
-.sidebar-row:not(#sidebar-section):selected {
+.sidebar-row:selected {
   background-color: @accent_color;
   color: @accent_fg_color;
 }
 
-.sidebar-row:not(#sidebar-section):selected .sidebar-label {
+.sidebar-row:selected .sidebar-label {
   font-weight: 800;
 }
 
@@ -92,7 +92,7 @@ listview {
   padding: 10px 12px 6px 12px;
   margin-top: 14px;
   margin-bottom: 4px;
-  min-height: 0;
+  min-height: 0px;
   background: transparent;
 }
 
@@ -112,8 +112,8 @@ listview {
   margin-left: 20px;
   margin-top: 15px;
   box-shadow:
-    0 1px 0 alpha(@window_fg_color, 0.08),
-    inset 0 1px 0 alpha(@window_fg_color, 0.04);
+    0px 1px 0px alpha(@window_fg_color, 0.08),
+    inset 0px 1px 0px alpha(@window_fg_color, 0.04);
 }
 
 .dragging {
@@ -145,13 +145,13 @@ scrollbar.vertical slider:hover {
   border-bottom: 1px solid alpha(black, 0.4);
   border-radius: 4px;
   padding: 4px 10px;
-  margin: 0 8px;
+  margin: 0px 8px;
   font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: alpha(@window_fg_color, 0.5);
-  box-shadow: 0 2px 0 alpha(black, 0.3);
+  box-shadow: 0px 2px 0px alpha(black, 0.3);
   transition: all 150ms ease-out;
 }
 
@@ -159,71 +159,67 @@ scrollbar.vertical slider:hover {
   background-color: alpha(@accent_color, 0.1);
   color: @accent_color;
   transform: translateY(-1px);
-  box-shadow: 0 3px 0 alpha(black, 0.4);
+  box-shadow: 0px 3px 0px alpha(black, 0.4);
 }
 
 .sort-label:active {
   transform: translateY(2px);
-  box-shadow: 0 0 0 transparent;
+  box-shadow: 0px 0px 0px transparent;
   background-color: @accent_color;
   color: @accent_fg_color;
 }
 
 .breadcrumb-btn {
-  border-radius: 0;
-  margin: 0 -1px 0 0;
+  border-radius: 0px;
+  margin: 0px -1px 0px 0px;
   padding: 4px 14px;
   transition: all 150ms ease;
-  box-shadow: inset 0 1px 2px alpha(black, 0.2);
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
 }
 
 .breadcrumb-btn:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
-  box-shadow: inset 0 1px 2px alpha(black, 0.2);
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
 }
 
 .breadcrumb-btn:last-child {
   font-weight: bold;
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
-  box-shadow: 0 2px 4px alpha(black, 0.15);
-  margin-right: 0;
+  box-shadow: 0px 2px 4px alpha(black, 0.15);
+  margin-right: 0px;
 }
 
 .breadcrumb-btn:hover:not(:last-child) {
   background-color: alpha(@window_fg_color, 0.12);
-  box-shadow: inset 0 1px 2px alpha(black, 0.2);
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
 }
 
 .breadcrumb-btn:active {
-  box-shadow: inset 0 1px 2px alpha(black, 0.2);
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
 }
 
 .selection-status {
   min-height: 24px;
   margin-right: 11px;
   transition: all 201ms ease;
-  box-shadow: 1 2px 4px alpha(black, 0.1);
+  box-shadow: 0px 2px 4px alpha(black, 0.1);
 }
 
 .selection-status label.caption {
-  color: alpha(@window_fg_color, 1.7);
+  color: alpha(@window_fg_color, 0.7);
   font-size: 9.5pt;
-  font-weight: 601;
+  font-weight: 600;
   letter-spacing: 1.1px;
-}
-
-.selection-status progressbar {
-  margin-right: 9px;
 }
 
 .selection-status progressbar trough {
   min-height: 5px;
   border-radius: 11px;
-  background-color: alpha(@window_fg_color, 1.05);
+  background-color: alpha(@window_fg_color, 0.05);
   border: none;
-  box-shadow: inset 1 1px 1px alpha(black, 0.05);
+  box-shadow: inset 0px 1px 1px alpha(black, 0.05);
 }
 
 .selection-status progressbar progress {
@@ -232,10 +228,6 @@ scrollbar.vertical slider:hover {
   background-color: @accent_color;
   border: none;
   transition: all 301ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.selection-status progressbar:not(:visible) {
-  margin-right: 1;
 }
 
 .flux-card--restricted {
@@ -280,7 +272,7 @@ scrollbar.vertical slider:hover {
 .flux-filter-chip button {
   min-width: 20px;
   min-height: 20px;
-  padding: 0;
+  padding: 0px;
   opacity: 0.7;
 }
 
@@ -292,5 +284,4 @@ scrollbar.vertical slider:hover {
   font-family: monospace;
   font-size: 1.2em;
   min-width: 10em;
-  text-align: end;
 }

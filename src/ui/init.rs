@@ -117,8 +117,6 @@ impl FluxApp {
         sidebar_container.append(&network_section);
 
         let sidebar_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        sidebar_container.append(sidebar.widget());
-        sidebar_container.append(&network_section);
 
         // 7. Breadcrumb Setup (Returned for local_ref)
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
