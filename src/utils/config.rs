@@ -109,7 +109,10 @@ pub fn save_config(config: &crate::model::Config) {
     let config_path = config_dir.join("config.toml");
 
     if let Ok(toml_str) = toml::to_string_pretty(config) {
-        let _ = fs::write(config_path, toml_str);
+        let tmp_path = config_dir.join(".config.toml.tmp");
+        if fs::write(&tmp_path, toml_str).is_ok() {
+            let _ = fs::rename(&tmp_path, &config_path);
+        }
     }
 }
 
