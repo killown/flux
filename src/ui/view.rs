@@ -784,6 +784,15 @@ impl SimpleAsyncComponent for FluxApp {
         terminal_box.append(&terminal_widget);
         widgets.terminal_revealer.set_child(Some(&terminal_box));
 
+        if let Ok(archive_str) = std::env::var("FLUX_OPEN_ARCHIVE") {
+            std::env::remove_var("FLUX_OPEN_ARCHIVE");
+            let archive_path = std::path::PathBuf::from(archive_str);
+            let s = sender.clone();
+            gtk::glib::idle_add_local_once(move || {
+                s.input(AppMsg::EnterArchive(archive_path));
+            });
+        }
+
         AsyncComponentParts { model, widgets }
     }
 }

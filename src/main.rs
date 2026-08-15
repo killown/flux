@@ -156,6 +156,49 @@ fn setup_shortcuts(app: &adw::Application) {
     app.set_accels_for_action("app.new-window", &["<Primary>n"]);
 }
 
+fn launch_main_app(start_path: PathBuf, open_archive: Option<PathBuf>) {
+    // Defer non-critical CSS/Theme loading and dependency checks by 150ms
+    glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+        load_custom_css();
+        setup_config_watcher();
+        std::thread::spawn(crate::utils::deps::check_optional_deps);
+        glib::ControlFlow::Break
+    });
+
+    // --- MAIN APP HANDLER ---
+    //NOTE:
+    // Setting application_id with .flags(gio::ApplicationFlags...) in the builder
+    // triggers a synchronous D-Bus handshake  and Wayland compositor lookup
+    // that blocks the main thread for around ~200ms.
+    let base_app = adw::Application::builder().build();
+
+    assert!(
+        base_app.application_id().is_none(),
+        "\n\n[flux] STARTUP REGRESSION: application_id is set on the main adw::Application.\n\
+     This triggers a synchronous D-Bus name acquisition and Wayland compositor\n\
+     lookup on the main thread, adding ~200ms to startup time.\n\
+     Remove .application_id(...) from the adw::Application::builder() call.\n"
+    );
+
+    assert!(
+        !base_app.flags().contains(gio::ApplicationFlags::NON_UNIQUE),
+        "\n\n[flux] STARTUP REGRESSION: NON_UNIQUE flag is set on the main adw::Application.\n\
+     This triggers a synchronous D-Bus handshake and Wayland compositor lookup\n\
+     on the main thread, adding ~200ms to startup time.\n\
+     Remove .flags(gio::ApplicationFlags::NON_UNIQUE) from the adw::Application::builder() call.\n"
+    );
+
+    setup_shortcuts(&base_app);
+
+    if let Some(archive_path) = open_archive {
+        std::env::set_var("FLUX_OPEN_ARCHIVE", &archive_path);
+    }
+
+    let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
+    app.allow_multiple_instances(true);
+    app.with_args(vec![]).run_async::<FluxApp>(start_path);
+}
+
 fn main() {
     i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
@@ -172,7 +215,7 @@ fn main() {
             println!("Usage: flux [OPTIONS] [PATH]");
             println!();
             println!("Arguments:");
-            println!("  [PATH]  Directory to open on startup");
+            println!("  [PATH]  Directory or archive file to open on startup");
             println!();
             println!("Options:");
             println!("  -h, --help                  Print this help message");
@@ -197,43 +240,13 @@ fn main() {
             std::process::exit(1);
         }
 
+        StartupAction::OpenArchive(archive_path) => {
+            let start_path = archive_path.parent().unwrap_or(&archive_path).to_path_buf();
+            launch_main_app(start_path, Some(archive_path));
+        }
+
         StartupAction::Launch(start_path) => {
-            // Defer non-critical CSS/Theme loading and dependency checks by 150ms
-            glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
-                load_custom_css();
-                setup_config_watcher();
-                std::thread::spawn(crate::utils::deps::check_optional_deps);
-                glib::ControlFlow::Break
-            });
-
-            // --- MAIN APP HANDLER ---
-            //NOTE:
-            // Setting application_id with .flags(gio::ApplicationFlags...) in the builder
-            // triggers a synchronous D-Bus handshake  and Wayland compositor lookup
-            // that blocks the main thread for around ~200ms.
-            let base_app = adw::Application::builder().build();
-
-            assert!(
-                base_app.application_id().is_none(),
-                "\n\n[flux] STARTUP REGRESSION: application_id is set on the main adw::Application.\n\
-             This triggers a synchronous D-Bus name acquisition and Wayland compositor\n\
-             lookup on the main thread, adding ~200ms to startup time.\n\
-             Remove .application_id(...) from the adw::Application::builder() call.\n"
-            );
-
-            assert!(
-                !base_app.flags().contains(gio::ApplicationFlags::NON_UNIQUE),
-                "\n\n[flux] STARTUP REGRESSION: NON_UNIQUE flag is set on the main adw::Application.\n\
-             This triggers a synchronous D-Bus handshake and Wayland compositor lookup\n\
-             on the main thread, adding ~200ms to startup time.\n\
-             Remove .flags(gio::ApplicationFlags::NON_UNIQUE) from the adw::Application::builder() call.\n"
-            );
-
-            setup_shortcuts(&base_app);
-
-            let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
-            app.allow_multiple_instances(true);
-            app.with_args(vec![]).run_async::<FluxApp>(start_path);
+            launch_main_app(start_path, None);
         }
     }
 }
