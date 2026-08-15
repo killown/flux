@@ -4,7 +4,7 @@
   --shadow-hover: rgba(0, 0, 0, 0.15);
   --font-main: "Inter", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
-  letter-spacing: 0.2px !important;
+  letter-spacing: 0.2px;
 }
 
 window {
@@ -22,7 +22,7 @@ headerbar {
 
 headerbar label {
   color: #1d1d1f;
-  letter-spacing: 1.5px !important;
+  letter-spacing: 1.5px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -86,10 +86,9 @@ headerbar button:hover {
   margin-top: 8px;
   margin-bottom: 2px;
   padding: 10px 12px 6px 12px;
-  min-height: 0;
-  border-radius: 0;
+  min-height: 0px;
+  border-radius: 0px;
   transform: none;
-  pointer-events: none;
 }
 
 .sidebar-section:hover,
@@ -127,14 +126,6 @@ headerbar button:hover {
   color: @accent_color;
 }
 
-.sidebar-section::before {
-  content: "";
-  display: block;
-  height: 1px;
-  margin: 0 14px 6px 14px;
-  background: rgba(0, 0, 0, 0.08);
-}
-
 gridview,
 listview {
   background-color: #ffffff;
@@ -143,7 +134,7 @@ listview {
 
 gridview child {
   padding: 2px;
-  margin: 0;
+  margin: 0px;
   border-radius: 12px;
   transition: background-color 150ms ease;
 }
@@ -175,7 +166,6 @@ gridview child:selected .flux-label {
     background-color 200ms ease,
     box-shadow 200ms ease,
     transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  backface-visibility: hidden;
 }
 
 .flux-card:hover {
@@ -190,7 +180,7 @@ gridview child:selected .flux-label {
   color: #1d1d1f;
   font-family: var(--font-main);
   font-size: 10pt;
-  letter-spacing: 0.4px !important;
+  letter-spacing: 0.4px;
 }
 
 /* ── Breadcrumb ── */
@@ -212,13 +202,12 @@ button.breadcrumb-btn {
   color: rgba(29, 29, 31, 0.85);
   font-family: var(--font-mono);
   font-size: 0.9em;
-  position: relative;
 }
 
 button.breadcrumb-btn:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
-  border-right-width: 0;
+  border-right-width: 0px;
 }
 
 button.breadcrumb-btn:last-child {
@@ -245,16 +234,6 @@ button.breadcrumb-btn:last-child:hover {
   box-shadow: 0 4px 12px rgba(0, 122, 255, 0.35);
 }
 
-button.breadcrumb-btn:not(:last-child)::after {
-  content: "›";
-  display: inline-block;
-  margin-left: 10px;
-  font-size: 1.3em;
-  font-weight: 200;
-  color: rgba(0, 0, 0, 0.25);
-  pointer-events: none;
-}
-
 button.breadcrumb-btn:hover:not(:last-child) {
   background: linear-gradient(
     to bottom,
@@ -276,7 +255,7 @@ button.breadcrumb-btn:active:not(:last-child) {
 button.breadcrumb-btn label {
   color: inherit;
   font-family: var(--font-mono);
-  letter-spacing: 0.8px !important;
+  letter-spacing: 0.8px;
 }
 
 /* ── Popovers ── */
@@ -296,7 +275,7 @@ popover.menu contents {
 
 popover.menu modelbutton label {
   color: #1d1d1f;
-  letter-spacing: 0.4px !important;
+  letter-spacing: 0.4px;
 }
 
 popover.menu modelbutton:hover {
@@ -318,7 +297,7 @@ entry {
   padding: 4px 12px;
   color: #1d1d1f;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
-  letter-spacing: 0.5px !important;
+  letter-spacing: 0.5px;
 }
 
 entry:focus {
@@ -371,7 +350,7 @@ progressbar progress {
   border-radius: 8px;
   padding: 8px 16px;
   font-weight: bold;
-  letter-spacing: 1.2px !important;
+  letter-spacing: 1.2px;
 }
 
 .destructive-action:hover {
@@ -382,7 +361,7 @@ progressbar progress {
 .property {
   background: transparent;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  padding: 6px 0;
+  padding: 6px 0px;
   color: #1d1d1f;
   font-size: 9.5pt;
 }
@@ -605,17 +584,17 @@ scrollbar slider:hover {
 /* ── Settings window overrides ── */
 window.settings-window headerbar label,
 adwpreferenceswindow headerbar label {
-  letter-spacing: 2px !important;
+  letter-spacing: 2px;
   font-weight: 800;
 }
 
 .settings-row label {
   color: #1d1d1f;
-  letter-spacing: 0.3px !important;
+  letter-spacing: 0.3px;
 }
 
 adwpreferencesgroup > box > label {
-  letter-spacing: 1.5px !important;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   font-weight: bold;
   opacity: 0.7;
@@ -623,7 +602,7 @@ adwpreferencesgroup > box > label {
 
 adwactionrow label {
   color: #1d1d1f;
-  letter-spacing: 0.3px !important;
+  letter-spacing: 0.3px;
 }
 
 dropdown {
@@ -634,12 +613,12 @@ dropdown {
 }
 
 dropdown label {
-  letter-spacing: 0.5px !important;
+  letter-spacing: 0.5px;
 }
 
 toast label {
   color: #1d1d1f;
-  letter-spacing: 0.6px !important;
+  letter-spacing: 0.6px;
 }
 
 /* ─── Settings window contrast improvements ───────────────────────── */
@@ -666,7 +645,6 @@ toast label {
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     0 8px 24px rgba(0, 0, 0, 0.08);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(20px);
 }
 
 .quick-panel-scroll undershoot.left,
