@@ -1086,12 +1086,16 @@ fn extract_dir_zip(
         if !name.starts_with(&prefix) {
             continue;
         }
+
         let relative = name.trim_start_matches(prefix.as_str());
         if relative.is_empty() {
             continue;
         }
 
         let out_path = dest_dir.join(relative);
+        if !out_path.starts_with(&dest_dir) {
+            continue; // skip malicious entry silently
+        }
         if is_dir {
             std::fs::create_dir_all(&out_path)
                 .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;

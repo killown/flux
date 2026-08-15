@@ -464,7 +464,7 @@ pub struct TerminalHandler {
 
 impl Perform for TerminalHandler {
     fn print(&mut self, c: char) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
 
         // DECAWM pending wrap (xenl): if the previous character landed on the
         // last column, wrap NOW before printing the new character. This means
@@ -523,7 +523,7 @@ impl Perform for TerminalHandler {
     }
 
     fn execute(&mut self, byte: u8) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         match byte {
             b'\r' => {
                 state.cursor_x = 0;
@@ -565,7 +565,7 @@ impl Perform for TerminalHandler {
         _ignore: bool,
         command: char,
     ) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
 
         let mut p: Vec<i64> = Vec::new();
         for param in params.iter() {
@@ -900,7 +900,7 @@ impl Perform for TerminalHandler {
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _command: bool) {
-        let state = self.state.lock().unwrap();
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
 
         if params.is_empty() {
             return;
@@ -1792,19 +1792,19 @@ impl Terminal {
     }
 
     pub fn feed_child(&self, data: &[u8]) {
-        let state = self.state.lock().unwrap();
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.write_pty(data);
     }
 
     pub fn set_color_foreground(&self, color: &gtk::gdk::RGBA) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.fg_color = *color;
         state.current_fg = *color;
         self.drawing_area.queue_draw();
     }
 
     pub fn set_color_background(&self, color: &gtk::gdk::RGBA) {
-        let mut state = self.state.lock().unwrap();
+        let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         state.bg_color = *color;
         state.current_bg = *color;
         self.drawing_area.queue_draw();
@@ -1812,7 +1812,7 @@ impl Terminal {
 
     pub fn set_font(&self, font_desc: Option<&pango::FontDescription>) {
         if let Some(fd) = font_desc {
-            let mut state = self.state.lock().unwrap();
+            let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
             state.font_desc = fd.clone();
             self.drawing_area.queue_draw();
         }
@@ -1920,7 +1920,7 @@ impl Terminal {
         }
 
         {
-            let mut state = self.state.lock().unwrap();
+            let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
             state.ansi_palette = palette;
             // cursor / selection tint from accent color
             if let Some(acc) = accent {
@@ -1981,7 +1981,10 @@ impl Terminal {
     where
         F: Fn(std::path::PathBuf) + Send + 'static,
     {
-        self.state.lock().unwrap().on_cwd_change = Some(Box::new(f));
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .on_cwd_change = Some(Box::new(f));
     }
 
     pub fn grab_focus(&self) {
@@ -1996,7 +1999,7 @@ impl Terminal {
     /// Sends `SIGWINCH` to the shell process so it re-reads `$LINES`/`$COLUMNS`
     /// from `TIOCGWINSZ`. Call this after the pane has settled at its final size.
     pub fn send_sigwinch(&self) {
-        let state = self.state.lock().unwrap();
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(pid) = state.shell_pid {
             unsafe {
                 libc::kill(pid, libc::SIGWINCH);
@@ -2009,7 +2012,11 @@ impl Terminal {
     }
 
     pub fn emit_copy_clipboard(&self) {
-        let text = self.state.lock().unwrap().get_selected_text();
+        let text = self
+            .state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get_selected_text();
         if text.is_empty() {
             return;
         }
@@ -2044,7 +2051,7 @@ impl Terminal {
 
     #[allow(dead_code)]
     pub fn pty(&self) -> Option<std::os::unix::io::RawFd> {
-        self.state.lock().unwrap().pty_fd
+        self.state.lock().unwrap_or_else(|e| e.into_inner()).pty_fd
     }
     #[allow(clippy::too_many_arguments)]
     pub fn spawn_async<F>(
@@ -2067,7 +2074,13 @@ impl Terminal {
         let (width, height) = (self.drawing_area.width(), self.drawing_area.height());
 
         let layout = self.drawing_area.create_pango_layout(None);
-        layout.set_font_description(Some(&self.state.lock().unwrap().font_desc));
+        layout.set_font_description(Some(
+            &self
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .font_desc,
+        ));
         layout.set_text("W");
         let extents = layout.pixel_extents();
         let char_width = extents.1.width() as f64;
@@ -2123,7 +2136,7 @@ impl Terminal {
         };
 
         {
-            let mut state = self.state.lock().unwrap();
+            let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
             state.cleaned_up = false;
             state.pty_master_fd = Some(master_fd);
             state.cols = cols;
@@ -2159,7 +2172,7 @@ impl Terminal {
                 let pid = glib::Pid(child.id() as i32);
 
                 {
-                    let mut state = self.state.lock().unwrap();
+                    let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
                     state.pty_fd = Some(master_fd);
                     state.shell_pid = Some(child.id() as libc::pid_t);
                 }

@@ -12,6 +12,13 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::time::{sleep, Duration};
 
+fn shell_safe(s: &str) -> Option<String> {
+    if s.contains('\n') || s.contains('\r') || s.contains('\0') {
+        return None;
+    }
+    Some(format!("'{}'", s.replace('\'', "'\\''")))
+}
+
 /// Pure helper: builds the final shell command string and human-readable task label.
 pub fn build_execution_command(
     cmd_template: &str,
@@ -24,9 +31,18 @@ pub fn build_execution_command(
         let parent = path.parent().unwrap_or(path).to_string_lossy();
         let filename = path.file_name().unwrap_or_default().to_string_lossy();
 
-        let p_arg = format!("'{}'", path_str.replace('\'', "'\\''"));
-        let d_arg = format!("'{}'", parent.replace('\'', "'\\''"));
-        let f_arg = format!("'{}'", filename.replace('\'', "'\\''"));
+        let p_arg = match shell_safe(&path_str) {
+            Some(a) => a,
+            None => return (String::new(), String::new()),
+        };
+        let d_arg = match shell_safe(&parent) {
+            Some(a) => a,
+            None => return (String::new(), String::new()),
+        };
+        let f_arg = match shell_safe(&filename) {
+            Some(a) => a,
+            None => return (String::new(), String::new()),
+        };
 
         let mut cmd = cmd_template
             .replace("%p", &p_arg)
@@ -36,10 +52,10 @@ pub fn build_execution_command(
         if cmd.contains(constants::TEMPLATE_CWD) {
             cmd = cmd.replace(
                 constants::TEMPLATE_CWD,
-                &format!(
-                    "'{}'",
-                    current_path.to_string_lossy().replace('\'', "'\\''")
-                ),
+                &match shell_safe(&current_path.to_string_lossy()) {
+                    Some(a) => a,
+                    None => return (String::new(), String::new()),
+                },
             );
         }
 
@@ -49,20 +65,23 @@ pub fn build_execution_command(
             .unwrap_or_else(|| "Command".to_string());
         (cmd, label)
     } else {
-        let paths_arg = targets
+        let paths: Option<Vec<String>> = targets
             .iter()
-            .map(|p| format!("'{}'", p.to_string_lossy().replace('\'', "'\\''")))
-            .collect::<Vec<_>>()
-            .join(" ");
+            .map(|p| shell_safe(&p.to_string_lossy()))
+            .collect();
+        let paths_arg = match paths {
+            Some(v) => v.join(" "),
+            None => return (String::new(), String::new()),
+        };
 
         let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
         if cmd.contains(constants::TEMPLATE_CWD) {
             cmd = cmd.replace(
                 constants::TEMPLATE_CWD,
-                &format!(
-                    "'{}'",
-                    current_path.to_string_lossy().replace('\'', "'\\''")
-                ),
+                &match shell_safe(&current_path.to_string_lossy()) {
+                    Some(a) => a,
+                    None => return (String::new(), String::new()),
+                },
             );
         }
         let label = format!("{} items", targets.len());
@@ -298,6 +317,13 @@ impl FluxApp {
 
         let (final_cmd, label) =
             build_execution_command(&cmd_template, &final_targets, &current_path);
+
+        if final_cmd.is_empty() {
+            sender.input(AppMsg::ShowToast(
+                "Cannot run command: filename contains unsafe characters".into(),
+            ));
+            return;
+        }
 
         // Resolve the no_command_dialog flag from the matching menu action.
         let no_command_dialog = self
