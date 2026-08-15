@@ -749,13 +749,13 @@ impl SimpleAsyncComponent for FluxApp {
         if let Some(paned) = &model.terminal_paned {
             let sender_clone = sender.clone();
             paned.connect_notify(Some("position"), move |paned, _| {
-                let height = paned.height();
-                let position = paned.position();
-                let terminal_height = height - position;
-
-                let terminal_lines = terminal_height / 24;
-                if terminal_lines > 0 {
-                    sender_clone.input(AppMsg::SetTerminalHeight(terminal_lines));
+                let total_height = paned.height();
+                if total_height == 0 {
+                    return;
+                }
+                let terminal_px = total_height - paned.position();
+                if terminal_px > 50 {
+                    sender_clone.input(AppMsg::SetTerminalHeight(terminal_px));
                 }
             });
         }

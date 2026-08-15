@@ -1993,11 +1993,6 @@ impl Terminal {
         self.drawing_area.has_focus()
     }
 
-    /// Returns the cached character cell height in pixels, or 0 if not yet drawn.
-    pub fn char_height(&self) -> i32 {
-        self.state.lock().unwrap().char_height as i32
-    }
-
     /// Sends `SIGWINCH` to the shell process so it re-reads `$LINES`/`$COLUMNS`
     /// from `TIOCGWINSZ`. Call this after the pane has settled at its final size.
     pub fn send_sigwinch(&self) {
