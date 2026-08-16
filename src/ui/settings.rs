@@ -186,42 +186,61 @@ impl SimpleComponent for SettingsWindow {
                             set_model: Some(&{
                                 let sl = gtk::StringList::new(&[]);
                                 sl.append("default");
-                                if let Ok(entries) = std::fs::read_dir(dirs::data_local_dir().unwrap_or_default().join("flux/themes")) {
-                                    let mut t = Vec::new();
-                                    for e in entries.flatten() {
-                                        if e.path().extension().is_some_and(|ext| ext == "css") {
-                                            if let Some(n) = e.path().file_stem().and_then(|n| n.to_str()) {
-                                                if n != "default" { t.push(n.to_string()); }
+
+                                let mut theme_names = std::collections::BTreeSet::new();
+
+                                let config_themes = dirs::config_dir().unwrap_or_default().join("flux/themes");
+                                let local_themes = dirs::data_local_dir().unwrap_or_default().join("flux/themes");
+                                let sys_themes = std::path::PathBuf::from("/usr/share/flux/themes");
+
+                                for dir in [config_themes, local_themes, sys_themes] {
+                                    if let Ok(entries) = std::fs::read_dir(dir) {
+                                        for e in entries.flatten() {
+                                            if e.path().extension().is_some_and(|ext| ext == "css") {
+                                                if let Some(n) = e.path().file_stem().and_then(|n| n.to_str()) {
+                                                    if n != "default" && n != "style" {
+                                                        theme_names.insert(n.to_string());
+                                                    }
+                                                }
                                             }
                                         }
                                     }
-                                    t.sort();
-                                    for theme in t {
-                                        sl.append(&theme);
-                                    }
+                                }
+
+                                for theme in theme_names {
+                                    sl.append(&theme);
                                 }
                                 sl
                             }),
                             set_selected: {
                                 let current = model.config.ui.theme.as_deref().unwrap_or("default");
-                                let mut idx = 0;
-                                if current != "default" {
-                                    if let Ok(entries) = std::fs::read_dir(dirs::data_local_dir().unwrap_or_default().join("flux/themes")) {
-                                        let mut t = Vec::new();
+                                let mut selected_idx = 0u32;
+
+                                let config_themes = dirs::config_dir().unwrap_or_default().join("flux/themes");
+                                let local_themes = dirs::data_local_dir().unwrap_or_default().join("flux/themes");
+                                let sys_themes = std::path::PathBuf::from("/usr/share/flux/themes");
+
+                                let mut theme_names = std::collections::BTreeSet::new();
+                                for dir in [config_themes, local_themes, sys_themes] {
+                                    if let Ok(entries) = std::fs::read_dir(dir) {
                                         for e in entries.flatten() {
                                             if e.path().extension().is_some_and(|ext| ext == "css") {
                                                 if let Some(n) = e.path().file_stem().and_then(|n| n.to_str()) {
-                                                    if n != "default" { t.push(n.to_string()); }
+                                                    if n != "default" && n != "style" {
+                                                        theme_names.insert(n.to_string());
+                                                    }
                                                 }
                                             }
                                         }
-                                        t.sort();
-                                        if let Some(pos) = t.iter().position(|x| x == current) {
-                                            idx = (pos + 1) as u32;
-                                        }
                                     }
                                 }
-                                idx
+
+                                if current != "default" {
+                                    if let Some(pos) = theme_names.iter().position(|x| x == current) {
+                                        selected_idx = (pos + 1) as u32;
+                                    }
+                                }
+                                selected_idx
                             },
                             connect_selected_notify => move |drop| {
                                 if let Some(item) = drop.selected_item().and_downcast::<gtk::StringObject>() {

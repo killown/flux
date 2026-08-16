@@ -4,73 +4,17 @@ mod services;
 mod ui;
 mod utils;
 
-use crate::model::{AppMsg, Config, FluxApp};
+use crate::model::{AppMsg, FluxApp};
 use crate::ui::FileProperties;
 use adw::prelude::*;
 use adw::{gio, glib};
 use flux::args::{resolve_startup_action, StartupAction};
 use relm4::prelude::*;
 use std::cell::OnceCell;
-use std::fs;
 use std::path::PathBuf;
 
 thread_local! {
-    static CSS_PROVIDER: gtk::CssProvider = gtk::CssProvider::new();
     static CONFIG_MONITOR: OnceCell<gio::FileMonitor> = const { OnceCell::new() };
-}
-
-/// Loads CSS based on config.toml theme selection with local and internal fallbacks.
-fn load_custom_css() {
-    let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
-    let config_path = config_dir.join("config.toml");
-
-    let config: Option<Config> = fs::read_to_string(&config_path)
-        .ok()
-        .and_then(|content| toml::from_str(&content).ok());
-
-    let mut css_data = None;
-
-    if let Some(theme_name) = config.and_then(|c| c.ui.theme) {
-        let theme_filename = format!("{}.css", theme_name);
-
-        let local_theme = dirs::data_dir()
-            .unwrap_or_default()
-            .join("flux")
-            .join("themes")
-            .join(&theme_filename);
-
-        let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
-
-        css_data = fs::read_to_string(&local_theme)
-            .or_else(|_| fs::read_to_string(&system_theme))
-            .ok();
-    }
-
-    if css_data.is_none() {
-        css_data = fs::read_to_string(config_dir.join("style.css")).ok();
-    }
-
-    if let Some(display) = adw::gdk::Display::default() {
-        CSS_PROVIDER.with(|provider| {
-            // Remove existing provider from display
-            gtk::style_context_remove_provider_for_display(&display, provider);
-
-            if let Some(data) = css_data {
-                // Load new CSS data
-                provider.load_from_data(&data);
-
-                // Add the updated provider back
-                gtk::style_context_add_provider_for_display(
-                    &display,
-                    provider,
-                    gtk::STYLE_PROVIDER_PRIORITY_USER,
-                );
-            } else {
-                // No CSS data available, clear the provider
-                provider.load_from_data("");
-            }
-        });
-    }
 }
 
 /// Sets up a GIO directory monitor to watch for config or style changes and refreshes UI components.
@@ -84,37 +28,40 @@ fn setup_config_watcher() {
     let file = gio::File::for_path(&config_dir);
 
     let Ok(monitor) = file.monitor_directory(
-        gio::FileMonitorFlags::WATCH_MOUNTS | gio::FileMonitorFlags::SEND_MOVED,
+        gio::FileMonitorFlags::WATCH_MOVES | gio::FileMonitorFlags::WATCH_MOUNTS,
         gio::Cancellable::NONE,
     ) else {
         return;
     };
 
-    monitor.connect_changed(|_, file, _, event_type| {
-        if let Some(name) = file.basename() {
-            let n = name.to_string_lossy();
-            if n == "style.css" || n == "config.toml" {
-                match event_type {
-                    gio::FileMonitorEvent::Changed
-                    | gio::FileMonitorEvent::ChangesDoneHint
-                    | gio::FileMonitorEvent::Created
-                    | gio::FileMonitorEvent::MovedIn => {
-                        load_custom_css();
-                        // Signal the application to reload the sidebar if the config file was modified
-                        if n == "config.toml" {
-                            if let Some(app) = gio::Application::default() {
-                                app.activate_action("reload-sidebar", None);
-                            }
+    monitor.connect_changed(|_, file, other_file, event_type| {
+        use gio::FileMonitorEvent::*;
+
+        let file_name = file.basename().map(|n| n.to_string_lossy().to_string());
+        let other_name = other_file
+            .and_then(|f| f.basename())
+            .map(|n| n.to_string_lossy().to_string());
+
+        let matched = matches!(
+            (file_name.as_deref(), other_name.as_deref()),
+            (Some("config.toml" | "style.css"), _) | (_, Some("config.toml" | "style.css"))
+        );
+
+        if matched {
+            match event_type {
+                Changed | ChangesDoneHint | Created | MovedIn | Renamed | Moved => {
+                    glib::timeout_add_local_once(std::time::Duration::from_millis(50), || {
+                        crate::utils::helpers::load_custom_css();
+                        if let Some(app) = gio::Application::default() {
+                            app.activate_action("reload-sidebar", None);
                         }
-                    }
-                    _ => {}
+                    });
                 }
+                _ => {}
             }
         }
     });
 
-    // `set` is a no-op if already initialized, the losing monitor is dropped,
-    // which cancels the underlying GFileMonitor via GIO's ref-counting.
     CONFIG_MONITOR.with(|cell| {
         let _ = cell.set(monitor);
     });
@@ -159,7 +106,7 @@ fn setup_shortcuts(app: &adw::Application) {
 fn launch_main_app(start_path: PathBuf, open_archive: Option<PathBuf>) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
-        load_custom_css();
+        crate::utils::helpers::load_custom_css();
         setup_config_watcher();
         std::thread::spawn(crate::utils::deps::check_optional_deps);
         glib::ControlFlow::Break

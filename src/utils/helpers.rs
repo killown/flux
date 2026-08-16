@@ -6,6 +6,8 @@ use gtk::gdk;
 use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
+use std::cell::RefCell;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 impl FluxApp {
@@ -904,6 +906,77 @@ impl FluxApp {
     }
 }
 
+thread_local! {
+    static ACTIVE_CSS_PROVIDER: RefCell<Option<gtk::CssProvider>> = const { RefCell::new(None) };
+}
+
+/// Applies the active theme CSS to the global GTK display, cleanly removing the old stylesheet.
+pub fn load_custom_css() {
+    let config = crate::utils::load_config();
+    let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
+
+    let mut css_data = None;
+
+    if let Some(ref theme_name) = config.ui.theme {
+        if theme_name != "default" {
+            let theme_filename = format!("{}.css", theme_name);
+
+            let local_theme = dirs::data_local_dir()
+                .unwrap_or_default()
+                .join("flux/themes")
+                .join(&theme_filename);
+
+            let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
+            let user_conf_theme = config_dir.join("themes").join(&theme_filename);
+
+            css_data = fs::read_to_string(&local_theme)
+                .or_else(|_| fs::read_to_string(&user_conf_theme))
+                .or_else(|_| fs::read_to_string(&system_theme))
+                .ok();
+        }
+    }
+
+    if css_data.is_none() {
+        css_data = fs::read_to_string(config_dir.join("style.css")).ok();
+    }
+
+    if let Some(display) = adw::gdk::Display::default() {
+        ACTIVE_CSS_PROVIDER.with(|cell| {
+            let mut guard = cell.borrow_mut();
+
+            if let Some(ref old_provider) = *guard {
+                gtk::style_context_remove_provider_for_display(&display, old_provider);
+            }
+
+            let new_provider = gtk::CssProvider::new();
+
+            if let Some(ref data) = css_data {
+                new_provider.load_from_data(data);
+            } else {
+                new_provider.load_from_data("");
+            }
+
+            gtk::style_context_add_provider_for_display(
+                &display,
+                &new_provider,
+                gtk::STYLE_PROVIDER_PRIORITY_USER,
+            );
+
+            *guard = Some(new_provider);
+        });
+    }
+
+    if let Some(ref theme_name) = config.ui.theme {
+        let style_manager = adw::StyleManager::default();
+        if theme_name.contains("dark") {
+            style_manager.set_color_scheme(adw::ColorScheme::ForceDark);
+        } else if theme_name.contains("light") {
+            style_manager.set_color_scheme(adw::ColorScheme::ForceLight);
+        } else {
+            style_manager.set_color_scheme(adw::ColorScheme::Default);
+        }
+    }
+}
 /// Spawns a new application instance rooted at `path`.
 ///
 /// Uses the running executable path rather than a hardcoded binary name so
