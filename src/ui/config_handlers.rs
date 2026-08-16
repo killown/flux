@@ -80,6 +80,9 @@ impl FluxApp {
     pub fn handle_set_sidebar_width(&mut self, val: i32) {
         self.config.ui.sidebar_width = val;
         utils::save_config(&self.config);
+        if let Some(ref widget) = self.sidebar_widget {
+            widget.set_width_request(val);
+        }
     }
 
     pub fn handle_set_show_csd(&mut self, val: bool) {
@@ -96,6 +99,8 @@ impl FluxApp {
     pub fn handle_set_theme(&mut self, theme: Option<String>) {
         self.config.ui.theme = theme;
         utils::save_config(&self.config);
+        crate::utils::helpers::load_custom_css();
+        self.terminal.apply_theme(&self.config.ui.terminal);
     }
 
     pub fn handle_set_default_sort(&mut self, sort: SortBy, sender: &AsyncComponentSender<Self>) {

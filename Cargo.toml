@@ -66,3 +66,7 @@ path = "src/main.rs"
 [lib]
 name = "flux"
 path = "src/lib.rs"
+
+[profile.local]
+inherits = "dev"
+opt-level = 2
