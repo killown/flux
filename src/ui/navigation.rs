@@ -44,6 +44,9 @@ impl FluxApp {
         self.reset_from_content_search();
         if let Some(next) = self.forward_stack.pop() {
             self.history.push(self.current_path.clone());
+            if self.history.len() > constants::MAX_HISTORY {
+                self.history.remove(0);
+            }
             if crate::services::network::is_network_uri(&next) {
                 self.current_path = next.clone();
                 self.load_network(&next.to_string_lossy(), None, sender.clone());
@@ -87,6 +90,10 @@ impl FluxApp {
             }
 
             self.history.push(old_path);
+            if self.history.len() > constants::MAX_HISTORY {
+                self.history.remove(0);
+            }
+            self.forward_stack.clear();
             self.forward_stack.clear();
 
             self.load_network(&path_str, None, sender.clone());
