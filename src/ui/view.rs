@@ -77,6 +77,9 @@ impl SimpleAsyncComponent for FluxApp {
                                 connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                             },
 
+                            // WARNING: If you remove #[watch] here, Ctrl+F and double-click
+                            // on breadcrumbs will stop working. The stack won't switch to
+                            // VIEW_SEARCH or VIEW_ENTRY. This binding is critical.
                             /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
                             #[wrap(Some)]
                                 set_title_widget: header_stack = &gtk::Stack {
