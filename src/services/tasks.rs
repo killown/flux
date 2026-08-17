@@ -254,16 +254,25 @@ impl TaskQueue {
 
     /// Cancels every in-flight task and clears the queue.
     pub fn cancel_all(&self) {
-        if let Ok(mut map) = self.inner.lock() {
-            for task in map.values() {
-                task.cancellable.cancel();
-                if let Some(pid) = task.pid.filter(|&p| p != 0) {
-                    unsafe {
-                        libc::kill(-(pid as i32), libc::SIGKILL);
-                    }
+        let tasks: Vec<(gio::Cancellable, Option<u32>)> = match self.inner.lock() {
+            Ok(mut map) => {
+                let collected = map
+                    .values()
+                    .map(|t| (t.cancellable.clone(), t.pid.filter(|&p| p != 0)))
+                    .collect();
+                map.clear();
+                collected
+            }
+            Err(_) => return,
+        };
+
+        for (cancellable, pid) in tasks {
+            cancellable.cancel();
+            if let Some(pid) = pid {
+                unsafe {
+                    libc::kill(-(pid as i32), libc::SIGKILL);
                 }
             }
-            map.clear();
         }
     }
 
