@@ -21,9 +21,15 @@ impl FluxApp {
 
     pub fn handle_set_asc(&mut self, asc: bool, sender: &relm4::AsyncComponentSender<Self>) {
         self.sort_ascending = asc;
+        let sort_col = match self.sort_by {
+            SortBy::Name => "Name",
+            SortBy::Date => "Date",
+            SortBy::Size => "Size",
+            SortBy::Type => "Type",
+        };
         let _ = self.state_db.save_view(
             &self.current_path,
-            &format!("{:?}", self.sort_by),
+            sort_col,
             !self.sort_ascending,
             self.current_icon_size as u32,
             self.config.ui.folders_first,
@@ -107,9 +113,15 @@ impl FluxApp {
         self.config.ui.default_sort = sort;
         self.sort_by = sort;
         utils::save_config(&self.config);
+        let sort_col = match self.sort_by {
+            SortBy::Name => "Name",
+            SortBy::Date => "Date",
+            SortBy::Size => "Size",
+            SortBy::Type => "Type",
+        };
         let _ = self.state_db.save_view(
             &self.current_path,
-            &format!("{:?}", self.sort_by),
+            sort_col,
             !self.sort_ascending,
             self.current_icon_size as u32,
             self.config.ui.folders_first,
