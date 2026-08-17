@@ -84,17 +84,18 @@ impl FluxApp {
             // Single file
             (1, true, _) => {
                 let size_str = glib::format_size(total_size);
-                let selected_path = self
+                let selected_item = self
                     .files
                     .view
                     .model()
                     .and_downcast::<gtk::MultiSelection>()
                     .and_then(|m| {
                         let pos = m.selection().nth(0);
-                        self.files.get(pos)
-                    })
-                    .map(|w| w.borrow().path.clone());
-                if let Some(path) = selected_path {
+                        self.files.get(pos).map(|w| w.borrow().clone())
+                    });
+
+                if let Some(ref item) = selected_item {
+                    let path = item.path.clone();
                     let s = sender.clone();
                     relm4::spawn_blocking(move || {
                         let mime = utils::get_mime_type(&path);
@@ -118,7 +119,27 @@ impl FluxApp {
                     });
                 }
 
-                format!("{} ({})", single_name, size_str)
+                if let Some(item) = selected_item {
+                    let date_str = if item.mtime > 0 {
+                        use chrono::TimeZone;
+                        match chrono::Local.timestamp_opt(item.mtime, 0) {
+                            chrono::LocalResult::Single(dt) => {
+                                Some(dt.format("%Y-%m-%d %H:%M").to_string())
+                            }
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    };
+
+                    if let Some(dt_formatted) = date_str {
+                        format!("{} ({}) · {}", item.name, size_str, dt_formatted)
+                    } else {
+                        format!("{} ({})", item.name, size_str)
+                    }
+                } else {
+                    format!("{} ({})", single_name, size_str)
+                }
             }
 
             // Single folder
@@ -133,9 +154,27 @@ impl FluxApp {
                         self.files.get(pos)
                     });
                 if let Some(wrapper) = item {
-                    let path = wrapper.borrow().path.clone();
+                    let borrowed = wrapper.borrow();
+                    let path = borrowed.path.clone();
                     let child_count = std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0);
-                    format!("{} ({} items)", single_name, child_count)
+
+                    let date_str = if borrowed.mtime > 0 {
+                        use chrono::TimeZone;
+                        match chrono::Local.timestamp_opt(borrowed.mtime, 0) {
+                            chrono::LocalResult::Single(dt) => {
+                                Some(dt.format("%Y-%m-%d %H:%M").to_string())
+                            }
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    };
+
+                    if let Some(dt_formatted) = date_str {
+                        format!("{} ({} items) · {}", single_name, child_count, dt_formatted)
+                    } else {
+                        format!("{} ({} items)", single_name, child_count)
+                    }
                 } else {
                     single_name
                 }
