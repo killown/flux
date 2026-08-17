@@ -181,7 +181,7 @@ impl FluxApp {
             let config_folder_icons = self.config.ui.folder_icons.clone();
             // Clone once so the Rayon closure can own it without borrowing `self`.
             let config_file_icons = self.config.ui.file_icons.clone();
-            let extension_filter = self.extension_filter.clone();
+            let extension_globset = self.extension_globset.clone();
 
             let mut items: Vec<FileLoadContext> = raw_data
                 .into_par_iter()
@@ -192,12 +192,8 @@ impl FluxApp {
 
                     // Session-scoped glob filter, directories always pass through.
                     if !is_dir {
-                        if let Some(ref patterns) = extension_filter {
-                            let name_lc = display_name.to_lowercase();
-                            let matched = patterns
-                                .iter()
-                                .any(|p| crate::utils::glob::glob_match(p, &name_lc));
-                            if !matched {
+                        if let Some(ref gs) = extension_globset {
+                            if !gs.is_match(&display_name) {
                                 return None;
                             }
                         }
@@ -468,6 +464,7 @@ impl FluxApp {
         let sort_strategy = self.sort_by;
         let sort_ascending = self.sort_ascending;
         let folders_first = self.config.ui.folders_first;
+        let extension_globset = self.extension_globset.clone();
 
         match result {
             Err(archive::ArchiveError::PasswordRequired) => {
@@ -497,16 +494,12 @@ impl FluxApp {
                 let mut items =
                     archive::entries_to_load_contexts(&entries, &archive_path, expand_labels);
 
-                let extension_filter = self.extension_filter.clone();
-                if let Some(ref patterns) = extension_filter {
+                if let Some(ref gs) = extension_globset {
                     items.retain(|item| {
                         if item.is_dir {
                             return true;
                         }
-                        let name_lc = item.display_name.to_lowercase();
-                        patterns
-                            .iter()
-                            .any(|p| crate::utils::glob::glob_match(p, &name_lc))
+                        gs.is_match(&item.display_name)
                     });
                 }
 
@@ -646,6 +639,8 @@ impl FluxApp {
         entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
 
         let mut media_tasks = Vec::new();
+        let extension_globset = self.extension_globset.clone();
+
         for (_ts, href) in entries {
             let gfile = gio::File::for_uri(&href);
             let Some(path) = gfile.path() else { continue };
@@ -662,12 +657,8 @@ impl FluxApp {
 
             // Session-scoped glob filter for recents view.
             if !is_dir {
-                if let Some(ref patterns) = self.extension_filter {
-                    let name_lc = display_name.to_lowercase();
-                    let matched = patterns
-                        .iter()
-                        .any(|p| crate::utils::glob::glob_match(p, &name_lc));
-                    if !matched {
+                if let Some(ref gs) = extension_globset {
+                    if !gs.is_match(&display_name) {
                         continue;
                     }
                 }
