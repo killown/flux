@@ -82,11 +82,8 @@ pub fn delete_items(
     }
 
     if selection.is_empty() {
-        eprintln!("[Delete] no selection and no active_item_path, bailing");
         return;
     }
-
-    eprintln!("[Delete] {} item(s) selected", selection.len());
 
     let sender_clone = sender.clone();
     for path in selection {
@@ -186,10 +183,8 @@ pub fn delete_items(
                     Ok(())
                 }
 
-                eprintln!("[Delete] spawned GLib task for uri={:?}", file_clone.uri().to_string());
                 match delete_recursive(&file_clone) {
                     Ok(()) => {
-                        eprintln!("[Delete] delete_recursive succeeded, sending Refresh");
                         s.input(AppMsg::Refresh);
                     }
                     Err(e) => {
@@ -212,7 +207,6 @@ pub fn delete_items(
                 }
             });
         } else {
-            eprintln!("[Delete] local path → attempting trash_async");
             let file_for_fallback = file.clone();
             file.trash_async(
                 glib::Priority::DEFAULT,
@@ -220,7 +214,6 @@ pub fn delete_items(
                 move |res| {
                     match res {
                         Ok(_) => {
-                            eprintln!("[Delete] trash_async succeeded, sending Refresh");
                             s.input(AppMsg::Refresh);
                         }
                         Err(trash_err) => {
@@ -263,7 +256,6 @@ pub fn delete_items(
 
                                 match delete_recursive(&file_for_fallback) {
                                     Ok(()) => {
-                                        eprintln!("[Delete] fallback delete_recursive succeeded");
                                         s_inner.input(AppMsg::Refresh);
                                     }
                                     Err(e) => {
