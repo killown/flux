@@ -4,6 +4,7 @@ use crate::utils::search::{parse_size_filter, SizeOp};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
+use std::io::{BufRead, BufReader};
 use std::sync::atomic::Ordering;
 
 pub fn start_content_search(
@@ -188,17 +189,21 @@ pub fn start_content_search(
                     continue;
                 }
 
-                // Read directly on the background thread pool.
-                let content = match std::fs::read_to_string(&path) {
-                    Ok(c) => c,
-                    Err(_) => continue, // Skip unreadable/binary files
+                let file = match std::fs::File::open(&path) {
+                    Ok(f) => f,
+                    Err(_) => continue, // Skip unreadable files
                 };
+                let reader = BufReader::new(file);
 
-                for (line_number, line) in content.lines().enumerate() {
+                for (line_number, line_result) in reader.lines().enumerate() {
                     // Check cancellation before each line
                     if load_id.load(Ordering::Acquire) != session_id || cancellable.is_cancelled() {
                         break;
                     }
+                    let line = match line_result {
+                        Ok(l) => l,
+                        Err(_) => break,
+                    };
                     if line.to_lowercase().contains(term_lc)
                         && load_id.load(Ordering::Acquire) == session_id
                         && !cancellable.is_cancelled()
