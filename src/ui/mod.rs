@@ -73,6 +73,7 @@ pub mod constants {
     pub const VIEW_FILTER: &str = "filter";
     pub const ICON_FILTER: &str = "view-filter-symbolic";
     pub const FILTER_BAR_CSS_CLASS: &str = "flux-filter-bar";
+    pub const MAX_HISTORY: usize = 100;
 
     // Thumbnails
     pub const CACHED_THUMBNAIL_SIZE: i32 = 512;
