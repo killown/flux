@@ -4,22 +4,24 @@
 //! host component is the percent-encoded absolute path of the archive on disk.
 //!
 //! # Supported formats
-//! | Extension                          | Backend          | Password |
-//! |------------------------------------|------------------|----------|
-//! | `.zip`                             | `zip`            | ✓        |
-//! | `.tar`, `.tar.gz`, `.tgz`          | `tar` + `flate2` | ✗        |
-//! | `.tar.bz2`, `.tbz2`                | `tar` + `bzip2`  | ✗        |
-//! | `.tar.xz`, `.txz`                  | `tar` + `xz2`    | ✗        |
-//! | `.tar.zst`, `.tzst`                | `tar` + `zstd`   | ✗        |
-//! | `.tar.lz4`                         | `tar` + `lz4`    | ✗        |
-//! | `.7z`                              | `sevenz-rust2`   | ✓        |
-//! | `.iso` (ISO 9660)                  | `iso9660_simple` | ✗        |
-//! | `.iso` (UDF)                       | `7z` (p7zip)     | ✗        |
-//! | `.gz` (standalone)                 | `flate2`         | ✗        |
-//! | `.bz2` (standalone)                | `bzip2`          | ✗        |
-//! | `.xz` (standalone)                 | `xz2`            | ✗        |
-//! | `.zst` / `.zstd` (standalone)      | `zstd`           | ✗        |
-//! | `.lz4` (standalone)                | `lz4_flex`       | ✗        |
+//! | Extension                                  | Backend          | Password |
+//! |--------------------------------------------|------------------|----------|
+//! | `.zip`                                     | `zip`            | ✓        |
+//! | `.tar`, `.tar.gz`, `.tgz`                  | `tar` + `flate2` | ✗        |
+//! | `.tar.bz2`, `.tbz2`                        | `tar` + `bzip2`  | ✗        |
+//! | `.tar.xz`, `.txz`                          | `tar` + `xz2`    | ✗        |
+//! | `.tar.lzma`, `.tlz`                        | `tar` + `xz2`    | ✗        |
+//! | `.tar.zst`, `.tzst`                        | `tar` + `zstd`   | ✗        |
+//! | `.tar.lz4`                                 | `tar` + `lz4`    | ✗        |
+//! | `.7z`                                      | `sevenz-rust2`   | ✓        |
+//! | `.iso` (ISO 9660)                          | `iso9660_simple` | ✗        |
+//! | `.iso` (UDF)                               | `7z` (p7zip)     | ✗        |
+//! | `.gz` (standalone)                         | `flate2`         | ✗        |
+//! | `.bz2` (standalone)                        | `bzip2`          | ✗        |
+//! | `.xz` / `.lzma` (standalone)               | `xz2`            | ✗        |
+//! | `.zst` / `.zstd` (standalone)              | `zstd`           | ✗        |
+//! | `.lz4` (standalone)                        | `lz4_flex`       | ✗        |
+//! | `.deb` (Debian package)                    | `ar` + `tar`     | ✗        |
 
 use std::collections::HashMap;
 use std::io::{BufReader, Read, Seek, Write};
@@ -91,8 +93,9 @@ pub fn is_browsable_archive(path: &Path) -> bool {
     matches_extension(
         path,
         &[
-            "zip", "tar", "tar.gz", "tgz", "tar.bz2", "tbz2", "tar.xz", "txz", "tar.zst", "tzst",
-            "tar.lz4", "7z", "rar", "gz", "bz2", "xz", "zst", "zstd", "lz4", "iso",
+            "zip", "tar", "tar.gz", "tgz", "tar.bz2", "tbz2", "tar.xz", "txz", "tar.lzma", "tlz",
+            "tar.zst", "tzst", "tar.lz4", "7z", "rar", "gz", "bz2", "xz", "lzma", "zst", "zstd",
+            "lz4", "iso", "deb",
         ],
     )
 }
@@ -173,7 +176,8 @@ struct TarBackend;
 struct SevenZBackend;
 struct RarBackend;
 struct IsoBackend;
-struct SingleFileBackend; // for .gz, .bz2, .xz, .zst, .lz4
+struct SingleFileBackend; // for .gz, .bz2, .xz, .lzma, .zst, .lz4
+struct DebBackend; // for .deb (ar + inner data.tar.*)
 struct UnsupportedBackend;
 
 impl ArchiveBackend for ZipBackend {
@@ -222,7 +226,11 @@ impl ArchiveBackend for TarBackend {
             )
         } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
             list_tar(bzip2::read::BzDecoder::new(open_buf(archive_path)?), prefix)
-        } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+        } else if name_lc.ends_with(".tar.xz")
+            || name_lc.ends_with(".txz")
+            || name_lc.ends_with(".tar.lzma")
+            || name_lc.ends_with(".tlz")
+        {
             list_tar(xz2::read::XzDecoder::new(open_buf(archive_path)?), prefix)
         } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
             let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
@@ -249,7 +257,11 @@ impl ArchiveBackend for TarBackend {
                 extract_tar(flate2::read::GzDecoder::new(open_buf(p)?), i, tmp)
             } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
                 extract_tar(bzip2::read::BzDecoder::new(open_buf(p)?), i, tmp)
-            } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+            } else if name_lc.ends_with(".tar.xz")
+                || name_lc.ends_with(".txz")
+                || name_lc.ends_with(".tar.lzma")
+                || name_lc.ends_with(".tlz")
+            {
                 extract_tar(xz2::read::XzDecoder::new(open_buf(p)?), i, tmp)
             } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
                 let dec = zstd::stream::read::Decoder::new(open_buf(p)?)
@@ -280,7 +292,11 @@ impl ArchiveBackend for TarBackend {
                 bzip2::read::BzDecoder::new(open_buf(archive_path)?),
                 inner_dir,
             )
-        } else if name_lc.ends_with(".tar.xz") || name_lc.ends_with(".txz") {
+        } else if name_lc.ends_with(".tar.xz")
+            || name_lc.ends_with(".txz")
+            || name_lc.ends_with(".tar.lzma")
+            || name_lc.ends_with(".tlz")
+        {
             extract_dir_tar(
                 xz2::read::XzDecoder::new(open_buf(archive_path)?),
                 inner_dir,
@@ -411,6 +427,8 @@ impl ArchiveBackend for SingleFileBackend {
             strip_ext(&name_lc, ".bz2")
         } else if name_lc.ends_with(".xz") {
             strip_ext(&name_lc, ".xz")
+        } else if name_lc.ends_with(".lzma") {
+            strip_ext(&name_lc, ".lzma")
         } else if name_lc.ends_with(".zstd") {
             strip_ext(&name_lc, ".zstd")
         } else if name_lc.ends_with(".zst") {
@@ -435,7 +453,7 @@ impl ArchiveBackend for SingleFileBackend {
             Box::new(flate2::read::GzDecoder::new(open_buf(archive_path)?))
         } else if name_lc.ends_with(".bz2") {
             Box::new(bzip2::read::BzDecoder::new(open_buf(archive_path)?))
-        } else if name_lc.ends_with(".xz") {
+        } else if name_lc.ends_with(".xz") || name_lc.ends_with(".lzma") {
             Box::new(xz2::read::XzDecoder::new(open_buf(archive_path)?))
         } else if name_lc.ends_with(".zstd") || name_lc.ends_with(".zst") {
             let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
@@ -462,6 +480,37 @@ impl ArchiveBackend for SingleFileBackend {
         Err(ArchiveError::Other(
             "Directory extraction from single-file archives is not supported".into(),
         ))
+    }
+}
+
+impl ArchiveBackend for DebBackend {
+    fn list_entries(
+        &self,
+        archive_path: &Path,
+        prefix: &str,
+        _password: Option<&str>,
+    ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        list_deb(archive_path, prefix)
+    }
+
+    fn extract_entry_bytes(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        password: Option<&str>,
+    ) -> Result<Vec<u8>, ArchiveError> {
+        extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, _pw, tmp| {
+            extract_deb(p, i, tmp)
+        })
+    }
+
+    fn extract_dir(
+        &self,
+        archive_path: &Path,
+        inner_dir: &str,
+        _password: Option<&str>,
+    ) -> Result<PathBuf, ArchiveError> {
+        extract_dir_deb(archive_path, inner_dir)
     }
 }
 
@@ -523,6 +572,8 @@ fn get_backend(
         || name_lc.ends_with(".tbz2")
         || name_lc.ends_with(".tar.xz")
         || name_lc.ends_with(".txz")
+        || name_lc.ends_with(".tar.lzma")
+        || name_lc.ends_with(".tlz")
         || name_lc.ends_with(".tar.zst")
         || name_lc.ends_with(".tzst")
         || name_lc.ends_with(".tar.lz4")
@@ -533,9 +584,12 @@ fn get_backend(
         Box::new(RarBackend)
     } else if name_lc.ends_with(".iso") {
         Box::new(IsoBackend)
+    } else if name_lc.ends_with(".deb") {
+        Box::new(DebBackend)
     } else if name_lc.ends_with(".gz")
         || name_lc.ends_with(".bz2")
         || name_lc.ends_with(".xz")
+        || name_lc.ends_with(".lzma")
         || name_lc.ends_with(".zstd")
         || name_lc.ends_with(".zst")
         || name_lc.ends_with(".lz4")
@@ -1435,6 +1489,10 @@ fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, Archi
             .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
             .to_string_lossy()
             .replace('\\', "/");
+        let raw_name = raw_name.strip_prefix("./").unwrap_or(&raw_name);
+        if raw_name.is_empty() {
+            continue;
+        }
         let raw_name = raw_name.trim_end_matches('/');
         let is_dir = header.entry_type().is_dir();
         let size = header.size().unwrap_or(0);
@@ -1461,6 +1519,7 @@ fn extract_tar<R: Read>(
             .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
             .to_string_lossy()
             .replace('\\', "/");
+        let path = path.strip_prefix("./").unwrap_or(&path);
         if path.trim_end_matches('/') == inner_path {
             std::io::copy(&mut entry, &mut tmp)
                 .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
@@ -1488,6 +1547,8 @@ fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, Archi
             .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
             .to_string_lossy()
             .replace('\\', "/");
+
+        let raw_path = raw_path.strip_prefix("./").unwrap_or(&raw_path);
 
         if !raw_path.starts_with(&prefix) {
             continue;
@@ -1979,4 +2040,123 @@ fn extract_iso_udf(
     tmp.flush()
         .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
     Ok(tmp)
+}
+
+// ─── .deb helpers ─────────────────────────────────────────────────────────────
+fn extract_deb_data(deb_path: &Path) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
+    let tmp = tempfile::tempdir().map_err(|e| ArchiveError::Other(format!("tempdir: {e}")))?;
+
+    // Extract all members, we care about data.tar.*
+    let out = std::process::Command::new("ar")
+        .args(["x", &deb_path.to_string_lossy()])
+        .current_dir(tmp.path())
+        .output()
+        .map_err(|e| ArchiveError::Other(format!("ar spawn failed (install binutils): {e}")))?;
+
+    if !out.status.success() {
+        return Err(ArchiveError::Other(format!(
+            "ar failed: {}",
+            String::from_utf8_lossy(&out.stderr).trim()
+        )));
+    }
+
+    // Find the data tarball (data.tar.gz / data.tar.xz / data.tar.zst / …)
+    let data_tar = std::fs::read_dir(tmp.path())
+        .map_err(|e| ArchiveError::Other(format!("readdir: {e}")))?
+        .flatten()
+        .map(|e| e.path())
+        .find(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .map(|n| n.starts_with("data.tar"))
+                .unwrap_or(false)
+        })
+        .ok_or_else(|| ArchiveError::Other("data.tar.* not found inside .deb".into()))?;
+
+    Ok((tmp, data_tar))
+}
+
+fn list_deb(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    let (_tmp, data_tar) = extract_deb_data(archive_path)?;
+    TarBackend.list_entries(&data_tar, prefix, None)
+}
+
+fn extract_deb(
+    archive_path: &Path,
+    inner_path: &str,
+    tmp: tempfile::NamedTempFile,
+) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    let (_dir, data_tar) = extract_deb_data(archive_path)?;
+    // Deb data tarballs store entries as "./usr/bin/foo" - prepend "./" if absent.
+    let normalized = if inner_path.starts_with("./") {
+        inner_path.to_owned()
+    } else {
+        format!("./{inner_path}")
+    };
+    let name_lc = lc_name(&data_tar);
+    if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+        extract_tar(
+            flate2::read::GzDecoder::new(open_buf(&data_tar)?),
+            &normalized,
+            tmp,
+        )
+    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+        extract_tar(
+            bzip2::read::BzDecoder::new(open_buf(&data_tar)?),
+            &normalized,
+            tmp,
+        )
+    } else if name_lc.ends_with(".tar.xz")
+        || name_lc.ends_with(".txz")
+        || name_lc.ends_with(".tar.lzma")
+        || name_lc.ends_with(".tlz")
+    {
+        extract_tar(
+            xz2::read::XzDecoder::new(open_buf(&data_tar)?),
+            &normalized,
+            tmp,
+        )
+    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+        let dec = zstd::stream::read::Decoder::new(open_buf(&data_tar)?)
+            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+        extract_tar(dec, &normalized, tmp)
+    } else if name_lc.ends_with(".tar.lz4") {
+        extract_tar(
+            lz4_flex::frame::FrameDecoder::new(open_buf(&data_tar)?),
+            &normalized,
+            tmp,
+        )
+    } else {
+        extract_tar(open_buf(&data_tar)?, &normalized, tmp)
+    }
+}
+
+fn extract_dir_deb(archive_path: &Path, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
+    let (_dir, data_tar) = extract_deb_data(archive_path)?;
+    let name_lc = lc_name(&data_tar);
+    if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+        extract_dir_tar(
+            flate2::read::GzDecoder::new(open_buf(&data_tar)?),
+            inner_dir,
+        )
+    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+        extract_dir_tar(bzip2::read::BzDecoder::new(open_buf(&data_tar)?), inner_dir)
+    } else if name_lc.ends_with(".tar.xz")
+        || name_lc.ends_with(".txz")
+        || name_lc.ends_with(".tar.lzma")
+        || name_lc.ends_with(".tlz")
+    {
+        extract_dir_tar(xz2::read::XzDecoder::new(open_buf(&data_tar)?), inner_dir)
+    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+        let dec = zstd::stream::read::Decoder::new(open_buf(&data_tar)?)
+            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+        extract_dir_tar(dec, inner_dir)
+    } else if name_lc.ends_with(".tar.lz4") {
+        extract_dir_tar(
+            lz4_flex::frame::FrameDecoder::new(open_buf(&data_tar)?),
+            inner_dir,
+        )
+    } else {
+        extract_dir_tar(open_buf(&data_tar)?, inner_dir)
+    }
 }
