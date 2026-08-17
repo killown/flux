@@ -79,11 +79,13 @@ impl SimpleAsyncComponent for FluxApp {
 
                             /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
                             #[wrap(Some)]
-                            set_title_widget: header_stack = &gtk::Stack {
-                                set_halign: gtk::Align::Center,
-                                set_hexpand: false,
-                                set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
-                                set_transition_type: gtk::StackTransitionType::Crossfade,
+                                set_title_widget: header_stack = &gtk::Stack {
+                                    set_halign: gtk::Align::Center,
+                                    set_hexpand: false,
+                                    set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
+                                    set_transition_type: gtk::StackTransitionType::Crossfade,
+                                    #[watch]
+                                    set_visible_child_name: &model.header_view,
 
                                 /// Interactive breadcrumb container for directory parent navigation.
                                 #[name = "path_entry"]
