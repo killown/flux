@@ -1,3 +1,5 @@
+use globset::{Glob, GlobSet, GlobSetBuilder};
+
 /// Shell-glob pattern matching for session-scoped file-type filtering.
 ///
 /// Supports `*` (any sequence of characters, including empty) and `?`
@@ -18,6 +20,7 @@
 /// assert!(glob_match("",       "")),
 /// assert!(!glob_match("",      "x")),
 /// ```
+#[allow(dead_code)]
 pub fn glob_match(pattern: &str, name: &str) -> bool {
     let p: Vec<char> = pattern.chars().collect();
     let n: Vec<char> = name.chars().collect();
@@ -44,6 +47,24 @@ pub fn glob_match(pattern: &str, name: &str) -> bool {
         }
     }
     dp[pl][nl]
+}
+
+/// Compiles a list of glob patterns into a precomputed matcher.
+///
+/// Use this instead of `glob_match` for filtering many files against the
+/// same set of patterns. Returns `None` if no valid patterns are provided.
+#[allow(dead_code)]
+pub fn compile_patterns(patterns: &[String]) -> Option<GlobSet> {
+    if patterns.is_empty() {
+        return None;
+    }
+    let mut builder = GlobSetBuilder::new();
+    for pattern in patterns {
+        if let Ok(glob) = Glob::new(pattern) {
+            builder.add(glob);
+        }
+    }
+    builder.build().ok().filter(|s| !s.is_empty())
 }
 
 /// Expands a MIME-category shorthand into concrete extension glob patterns.

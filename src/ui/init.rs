@@ -224,6 +224,7 @@ impl FluxApp {
             action_group,
             exclusive_list: Vec::new(),
             exclusive_index: None,
+            extension_globset: None,
             search_just_opened: false,
             sort_by: config.ui.default_sort,
             sort_ascending: true,

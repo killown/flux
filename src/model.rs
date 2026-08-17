@@ -469,12 +469,9 @@ pub struct FluxApp {
     /// Current search/filter string.
     pub filter: String,
     /// Session-scoped glob pattern allowlist for persistent navigation filtering.
-    ///
-    /// When `Some`, only files whose lowercased filename matches at least one
-    /// pattern are rendered in the grid. Directories always pass through.
-    /// Patterns support shell glob syntax: `*` = any sequence, `?` = one char.
-    /// The filter is never written to disk and resets to `None` on exit.
     pub extension_filter: Option<Vec<String>>,
+    /// Precompiled glob matcher for the current extension filter.
+    pub extension_globset: Option<globset::GlobSet>,
     /// When true the file grid renders items as compact horizontal rows
     /// (small icon + filename) instead of the default vertical card layout.
     pub is_list_mode: bool,
