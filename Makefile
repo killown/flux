@@ -6,6 +6,12 @@ CONFDIR    = $(PREFIX)/share/flux
 SCRIPTDIR  = $(CONFDIR)/scripts
 LOCALEDIR  = $(PREFIX)/share/locale
 
+# Detect the built binary – prefer local profile, then release, then debug
+BIN_PATH := $(shell if [ -f target/local/flux-fm ]; then echo target/local/flux-fm; \
+                     elif [ -f target/release/flux-fm ]; then echo target/release/flux-fm; \
+                     elif [ -f target/debug/flux-fm ]; then echo target/debug/flux-fm; \
+                     else echo target/release/flux-fm; fi)
+
 # User configuration target directory
 USER_CONFDIR = $(HOME)/.config/flux
 
@@ -29,7 +35,7 @@ install: translations
 		$(DESTDIR)$(SCRIPTDIR)
 
 	# 2. Binary
-	@install -m 755 target/release/flux-fm $(DESTDIR)$(BINDIR)/flux-fm
+	@install -m 755 $(BIN_PATH) $(DESTDIR)$(BINDIR)/flux-fm
 
 	# 3. Desktop file
 	@sed "s|@BIN_PATH@|$(BINDIR)/flux-fm|g" flux.desktop.in > flux.desktop.tmp
