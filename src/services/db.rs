@@ -138,7 +138,7 @@ impl StateManager {
     /// Removes entries from the database if the corresponding filesystem paths no longer exist.
     pub fn scrub_orphans(&self) -> Result<()> {
         let paths: Vec<String> = {
-            let conn = self.conn.lock().unwrap();
+            let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let mut stmt = conn.prepare("SELECT path FROM folder_settings")?;
             let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
             rows.flatten().collect()
@@ -146,17 +146,30 @@ impl StateManager {
 
         let mut orphans = Vec::new();
         for path_str in paths {
+            // Avoid deleting non-filesystem virtual URIs like trash:/// or /archive://
+            if path_str.starts_with("trash://")
+                || path_str.starts_with("/archive://")
+                || path_str.starts_with("recent://")
+                || path_str.contains("://")
+            {
+                continue;
+            }
+
             if !std::path::Path::new(&path_str).exists() {
                 orphans.push(path_str);
             }
         }
 
         if !orphans.is_empty() {
-            let conn = self.conn.lock().unwrap();
-            let mut del_stmt = conn.prepare("DELETE FROM folder_settings WHERE path = ?1")?;
-            for orphan in orphans {
-                let _ = del_stmt.execute(params![orphan]);
+            let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+            let tx = conn.transaction()?;
+            {
+                let mut del_stmt = tx.prepare("DELETE FROM folder_settings WHERE path = ?1")?;
+                for orphan in &orphans {
+                    let _ = del_stmt.execute(params![orphan]);
+                }
             }
+            tx.commit()?;
             let _ = conn.execute("VACUUM", []);
         }
 
