@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 #[relm4::component(pub, async)]
 impl SimpleAsyncComponent for FluxApp {
-    type Init = PathBuf;
+    type Init = crate::model::AppInit;
     type Input = AppMsg;
     type Output = ();
 
@@ -722,10 +722,14 @@ impl SimpleAsyncComponent for FluxApp {
 
     /// Initializes the Flux application component, setting up state, UI widgets, and system monitors.
     async fn init(
-        start_path: Self::Init,
+        init: Self::Init,
         root: Self::Root,
         sender: AsyncComponentSender<Self>,
     ) -> AsyncComponentParts<Self> {
+        let crate::model::AppInit {
+            start_path,
+            open_archive,
+        } = init;
         let (mut model, breadcrumb_box) = Self::init_components(start_path, &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
@@ -789,9 +793,7 @@ impl SimpleAsyncComponent for FluxApp {
         terminal_box.append(&terminal_widget);
         widgets.terminal_revealer.set_child(Some(&terminal_box));
 
-        if let Ok(archive_str) = std::env::var("FLUX_OPEN_ARCHIVE") {
-            std::env::remove_var("FLUX_OPEN_ARCHIVE");
-            let archive_path = std::path::PathBuf::from(archive_str);
+        if let Some(archive_path) = open_archive {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
                 s.input(AppMsg::EnterArchive(archive_path));
