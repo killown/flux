@@ -4,7 +4,7 @@ mod services;
 mod ui;
 mod utils;
 
-use crate::model::{AppMsg, FluxApp};
+use crate::model::{AppInit, AppMsg, FluxApp};
 use crate::ui::FileProperties;
 use adw::prelude::*;
 use adw::{gio, glib};
@@ -137,13 +137,12 @@ fn launch_main_app(start_path: PathBuf, open_archive: Option<PathBuf>) {
 
     setup_shortcuts(&base_app);
 
-    if let Some(archive_path) = open_archive {
-        std::env::set_var("FLUX_OPEN_ARCHIVE", &archive_path);
-    }
-
     let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);
-    app.with_args(vec![]).run_async::<FluxApp>(start_path);
+    app.with_args(vec![]).run_async::<FluxApp>(AppInit {
+        start_path,
+        open_archive,
+    });
 }
 
 fn main() {

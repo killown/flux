@@ -19,6 +19,14 @@ fn default_true() -> bool {
     true
 }
 
+/// Startup parameters passed from the argument parser to the Relm4 component initializer.
+pub struct AppInit {
+    /// The dir the file manager should open on startup.
+    pub start_path: PathBuf,
+    /// If the user started flux with an archive file, open it right after init.
+    pub open_archive: Option<PathBuf>,
+}
+
 /// Internal metadata container for parallel directory processing.
 #[derive(Debug, Clone)]
 pub struct FileLoadContext {
