@@ -281,9 +281,9 @@ pub fn list_network_entries(
     let file = gio::File::for_uri(uri);
 
     let mount_op = build_mount_op(credentials);
-    let mount_result =
-        file.mount_enclosing_volume_future(gio::MountMountFlags::NONE, Some(&mount_op));
-    drive_in_main_context(mount_result).ok();
+    // Ignore mount errors, the volume may already be mounted, in which case
+    // enumerate_children below will succeed regardless.
+    mount_enclosing_volume_sync(&file, &mount_op).ok();
 
     let attributes = "standard::name,standard::display-name,standard::type,standard::size,\
          time::modified,standard::icon,standard::content-type";
@@ -362,9 +362,7 @@ pub fn create_network_directory(
 ) -> Result<(), NetworkError> {
     let file = gio::File::for_uri(uri);
     let mount_op = build_mount_op(credentials);
-    let mount_result =
-        file.mount_enclosing_volume_future(gio::MountMountFlags::NONE, Some(&mount_op));
-    drive_in_main_context(mount_result).ok();
+    mount_enclosing_volume_sync(&file, &mount_op).ok();
 
     file.make_directory(None::<&gio::Cancellable>)
         .map_err(NetworkError::from)?;
@@ -440,12 +438,7 @@ pub fn unmount_network_location(uri: &str) -> Result<(), NetworkError> {
         .map_err(NetworkError::from)?;
 
     let mount_op = gio::MountOperation::new();
-    let res = drive_in_main_context(
-        mount.unmount_with_operation_future(gio::MountUnmountFlags::NONE, Some(&mount_op)),
-    )
-    .map_err(NetworkError::from)?;
-
-    res.map_err(NetworkError::from)?;
+    unmount_with_operation_sync(&mount, &mount_op).map_err(NetworkError::from)?;
 
     Ok(())
 }
@@ -579,29 +572,59 @@ fn build_mount_op(credentials: Option<&NetworkCredentials>) -> gio::MountOperati
     op
 }
 
-fn drive_in_main_context<F>(future: F) -> Result<F::Output, glib::Error>
+fn block_on_gio<T, E>(starter: impl FnOnce(Box<dyn FnOnce(Result<T, E>) + 'static>)) -> Result<T, E>
 where
-    F: std::future::Future + 'static,
-    F::Output: Send + 'static,
+    T: 'static,
+    E: 'static,
 {
     let ctx = glib::MainContext::new();
-    let lp = glib::MainLoop::new(Some(&ctx), false);
-    let result = std::sync::Arc::new(std::sync::Mutex::new(None::<F::Output>));
+    let _guard = ctx.acquire().expect("Failed to acquire thread MainContext");
+
+    let result = std::rc::Rc::new(std::cell::RefCell::new(None));
     let result_clone = result.clone();
-    let lp_clone = lp.clone();
 
-    ctx.spawn_local(async move {
-        let val = future.await;
-        *result_clone.lock().unwrap() = Some(val);
-        lp_clone.quit();
-    });
+    ctx.with_thread_default(|| {
+        starter(Box::new(move |res| {
+            *result_clone.borrow_mut() = Some(res);
+        }));
+    })
+    .expect("Failed to set thread default MainContext");
 
-    lp.run();
+    while result.borrow().is_none() {
+        ctx.iteration(true);
+    }
 
-    let val = result.lock().unwrap().take();
-    val.ok_or_else(|| glib::Error::new(gio::IOErrorEnum::Failed, "async future produced no value"))
+    let val = result.borrow_mut().take().unwrap();
+    val
 }
 
+fn mount_enclosing_volume_sync(
+    file: &gio::File,
+    mount_op: &gio::MountOperation,
+) -> Result<(), glib::Error> {
+    block_on_gio(|cb| {
+        file.mount_enclosing_volume(
+            gio::MountMountFlags::NONE,
+            Some(mount_op),
+            gio::Cancellable::NONE,
+            cb,
+        );
+    })
+}
+
+fn unmount_with_operation_sync(
+    mount: &gio::Mount,
+    mount_op: &gio::MountOperation,
+) -> Result<(), glib::Error> {
+    block_on_gio(|cb| {
+        mount.unmount_with_operation(
+            gio::MountUnmountFlags::NONE,
+            Some(mount_op),
+            gio::Cancellable::NONE,
+            cb,
+        );
+    })
+}
 fn classify_enum_error(e: glib::Error, uri: &str) -> NetworkError {
     let msg = e.message().to_owned();
 
