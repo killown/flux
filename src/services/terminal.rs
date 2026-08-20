@@ -7,6 +7,7 @@ use gtk::DrawingArea;
 use std::os::unix::io::{FromRawFd, RawFd};
 use std::os::unix::process::CommandExt;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
 use vte::{Parser, Perform};
@@ -459,7 +460,8 @@ impl std::fmt::Debug for TerminalState {
 
 pub struct TerminalHandler {
     pub state: Arc<Mutex<TerminalState>>,
-    pub draw_sender: tokio::sync::mpsc::UnboundedSender<()>,
+    /// Set to `true` by the PTY reader thread whenever the grid changes.
+    pub needs_redraw: Arc<AtomicBool>,
 }
 
 impl Perform for TerminalHandler {
@@ -519,7 +521,7 @@ impl Perform for TerminalHandler {
         state.selection_active = false;
         state.selection_start = None;
         state.selection_end = None;
-        let _ = self.draw_sender.send(());
+        self.needs_redraw.store(true, Ordering::Release);
     }
 
     fn execute(&mut self, byte: u8) {
@@ -555,7 +557,7 @@ impl Perform for TerminalHandler {
             }
             _ => {}
         }
-        let _ = self.draw_sender.send(());
+        self.needs_redraw.store(true, Ordering::Release);
     }
 
     fn csi_dispatch(
@@ -896,7 +898,7 @@ impl Perform for TerminalHandler {
             // Ignore unknown sequences per ECMA-48.
             _ => {}
         }
-        let _ = self.draw_sender.send(());
+        self.needs_redraw.store(true, Ordering::Release);
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _command: bool) {
@@ -966,7 +968,9 @@ pub struct Terminal {
     pub drawing_area: DrawingArea,
     pub state: Arc<Mutex<TerminalState>>,
     _pty_reader: Option<std::thread::JoinHandle<()>>,
-    draw_sender: tokio::sync::mpsc::UnboundedSender<()>,
+    /// Shared dirty flag written by the PTY reader thread and polled by the
+    /// 60 FPS GTK timer.
+    needs_redraw: Arc<AtomicBool>,
     /// Last directory queued for respawn, only the most recent survives rapid navigation.
     pending_dir: Arc<Mutex<Option<String>>>,
 }
@@ -985,7 +989,7 @@ impl Clone for Terminal {
             drawing_area: self.drawing_area.clone(),
             state: self.state.clone(),
             _pty_reader: None,
-            draw_sender: self.draw_sender.clone(),
+            needs_redraw: self.needs_redraw.clone(),
             pending_dir: self.pending_dir.clone(),
         }
     }
@@ -1048,14 +1052,21 @@ impl Terminal {
         // Set size request to 1 character line so GTK allows shrinking when resized
         drawing_area.set_size_request(-1, char_height);
 
-        let (draw_sender, mut draw_receiver) = tokio::sync::mpsc::unbounded_channel::<()>();
+        // Dirty flag shared between the PTY reader thread (writer) and the GTK
+        // main thread (reader).
+        let needs_redraw = Arc::new(AtomicBool::new(false));
 
         let drawing_area_clone = drawing_area.clone();
-        glib::MainContext::default().spawn_local(async move {
-            while let Some(()) = draw_receiver.recv().await {
-                drawing_area_clone.queue_draw();
-            }
-        });
+        let needs_redraw_timer = needs_redraw.clone();
+        glib::timeout_add_local(
+            std::time::Duration::from_millis(16), // ~60 FPS
+            move || {
+                if needs_redraw_timer.swap(false, Ordering::AcqRel) {
+                    drawing_area_clone.queue_draw();
+                }
+                glib::ControlFlow::Continue
+            },
+        );
 
         let state = Arc::new(Mutex::new(TerminalState::new(80, 24)));
         state.lock().unwrap().font_desc = font_desc;
@@ -1670,7 +1681,7 @@ impl Terminal {
             drawing_area,
             state,
             _pty_reader: None,
-            draw_sender,
+            needs_redraw,
             pending_dir: Arc::new(Mutex::new(None)),
         };
 
@@ -2178,14 +2189,14 @@ impl Terminal {
                 }
 
                 let state_clone = self.state.clone();
-                let draw_sender = self.draw_sender.clone();
+                let needs_redraw_reader = self.needs_redraw.clone();
 
                 let handle = std::thread::spawn(move || {
                     let mut buf = [0u8; 4096];
                     let mut parser = Parser::new();
                     let mut handler = TerminalHandler {
                         state: state_clone.clone(),
-                        draw_sender: draw_sender.clone(),
+                        needs_redraw: needs_redraw_reader,
                     };
                     loop {
                         let n = unsafe {
