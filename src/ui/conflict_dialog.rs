@@ -200,7 +200,7 @@ fn build_extra_child(ctx: &ConflictContext, file_name: &str, op_word: &str) -> g
         .build();
 
     let rename_label = gtk::Label::builder()
-        .label(&format!(
+        .label(format!(
             "{}: \"{}\"",
             crate::i18n::tr("Auto-rename will save as"),
             rename_name
@@ -301,7 +301,7 @@ fn build_file_side(
         let mtime_str = format_mtime(&meta);
 
         let meta_label = gtk::Label::builder()
-            .label(&format!("{} · {}", size_str, mtime_str))
+            .label(format!("{} · {}", size_str, mtime_str))
             .css_classes(["caption", "dim-label"])
             .xalign(0.0)
             .build();
@@ -415,7 +415,7 @@ fn days_to_ymd(days: u64) -> (u64, u64, u64) {
     let jd = days + 2_440_588;
     let l = jd + 68_569;
     let n = 4 * l / 146_097;
-    let l = l - (146_097 * n + 3) / 4;
+    let l = l - (146_097 * n).div_ceil(4);
     let i = 4_000 * (l + 1) / 1_461_001;
     let l = l - 1_461 * i / 4 + 31;
     let j = 80 * l / 2_447;
