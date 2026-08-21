@@ -7,11 +7,11 @@ use crate::model::AppMsg;
 use crate::ui::conflict_policy::{auto_rename_dest, ConflictChoice, ConflictContext};
 use relm4::prelude::*;
 
-// Response IDs as gtk::ResponseType
+// Standard Response IDs
 const RESP_CANCEL: gtk::ResponseType = gtk::ResponseType::Cancel;
-const RESP_SKIP: gtk::ResponseType = gtk::ResponseType::Other(1);
-const RESP_RENAME: gtk::ResponseType = gtk::ResponseType::Other(2);
-const RESP_REPLACE: gtk::ResponseType = gtk::ResponseType::Other(3);
+const RESP_SKIP: gtk::ResponseType = gtk::ResponseType::Reject;
+const RESP_RENAME: gtk::ResponseType = gtk::ResponseType::Apply;
+const RESP_REPLACE: gtk::ResponseType = gtk::ResponseType::Accept;
 
 pub fn show_conflict_dialog(
     ctx: ConflictContext,
@@ -61,6 +61,10 @@ pub fn show_conflict_dialog(
     );
     dialog.set_secondary_text(Some(&body));
 
+    if let Some(ref win) = window {
+        dialog.set_transient_for(Some(win));
+    }
+
     // Add buttons in desired order
     dialog.add_button(&crate::i18n::tr("Cancel"), RESP_CANCEL);
     dialog.add_button(&crate::i18n::tr("Skip"), RESP_SKIP);
@@ -100,7 +104,10 @@ pub fn show_conflict_dialog(
     let s = sender.clone();
 
     dialog.connect_response(move |dlg, response_id| {
-        dlg.close();
+        eprintln!(
+            "[ConflictDialog] connect_response received response_id: {:?}",
+            response_id
+        );
 
         let choice = match response_id {
             RESP_REPLACE => ConflictChoice::Replace,
@@ -108,6 +115,8 @@ pub fn show_conflict_dialog(
             RESP_RENAME => ConflictChoice::AutoRename,
             _ => ConflictChoice::Cancel,
         };
+
+        eprintln!("[ConflictDialog] Mapped to choice: {:?}", choice);
 
         let apply_all_active = apply_all_check
             .as_ref()
@@ -131,6 +140,8 @@ pub fn show_conflict_dialog(
         if let Some(tx) = tx_cell.take() {
             let _ = tx.send(choice);
         }
+
+        dlg.close();
     });
 
     dialog.present();
