@@ -241,33 +241,28 @@ cp themes/* ~/.local/share/flux/themes/
 
 Flux requires the following system libraries and runtime tools:
 
-| Category    | Dependencies                                                               |
-| :---------- | :------------------------------------------------------------------------- |
-| **System**  | `libadwaita`, `gtk4`, `glib2`, `pango`, `graphene`, `cairo`, `gdk-pixbuf2` |
-| **Runtime** | `ffmpeg`, `ffprobe`, `ImageMagick`                                         |
+| Category    | Dependencies                                                                              |
+| :---------- | :---------------------------------------------------------------------------------------- |
+| **System**  | `libadwaita`, `gtk4`, `glib2`, `pango`, `graphene`, `cairo`, `gdk-pixbuf2`, `poppler-glib`|
+| **Runtime** | `ffmpeg`, `ffprobe`, `ImageMagick`                                                        |
+
+**Ubuntu / Debian / Linux Mint**
+
+```bash
+sudo apt update
+sudo apt install libadwaita-1-dev libgtk-4-dev libpango1.0-dev libgraphene-1.0-dev libcairo2-dev libgdk-pixbuf-2.0-dev libpoppler-glib-dev ffmpeg imagemagick
+```
 
 **Arch Linux**
 
 ```bash
-sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 ffmpeg imagemagick
+sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 poppler-glib ffmpeg imagemagick
 ```
-
-######
-
-**Ubuntu / Debian**
-
-```
-bash
-sudo apt update
-sudo apt install libadwaita-1-dev libgtk-4-dev libpango1.0-dev libgraphene-1.0-dev libcairo2-dev libgdk-pixbuf-2.0-dev ffmpeg imagemagick
-```
-
-######
 
 **Fedora**
 
 ```bash
-sudo dnf install libadwaita-devel gtk4-devel pango-devel graphene-devel cairo-devel gdk-pixbuf2-devel ffmpeg ImageMagick
+sudo dnf install libadwaita-devel gtk4-devel pango-devel graphene-devel cairo-devel gdk-pixbuf2-devel poppler-glib-devel ffmpeg ImageMagick
 ```
 
 ### Build
