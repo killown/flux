@@ -7,10 +7,9 @@ fn test_state(cols: usize, rows: usize) -> TerminalState {
 }
 
 fn test_handler(state: Arc<Mutex<TerminalState>>) -> TerminalHandler {
-    let (tx, _) = tokio::sync::mpsc::unbounded_channel();
     TerminalHandler {
         state,
-        draw_sender: tx,
+        needs_redraw: Arc::new(std::sync::atomic::AtomicBool::new(false)),
     }
 }
 
