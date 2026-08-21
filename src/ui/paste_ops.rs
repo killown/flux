@@ -1,15 +1,14 @@
-//! Paste / file-copy dispatch logic with active disk-polling progress monitoring.
-//!
-//! This module replaces the paste functions with real-time file-size watching logic.
-
 use crate::model::{AppMsg, FluxApp};
 use crate::services::tasks::TaskQueue;
+use crate::ui::conflict_policy::{
+    auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
+};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{atomic::AtomicUsize, Arc, Mutex};
 
 // Global operation ID counter, monotonically increasing, unique per session.
 pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
@@ -35,7 +34,13 @@ impl FluxApp {
 
         if forced {
             let resolved_files = resolve_gio_files(files);
-            self.run_paste_batch(resolved_files, is_cut, target_dir, sender);
+            self.run_paste_batch(
+                resolved_files,
+                is_cut,
+                target_dir,
+                sender,
+                ConflictPolicy::ReplaceAll,
+            );
         } else {
             self.dispatch_paste_ops(files, is_cut, target_dir, sender);
         }
@@ -71,6 +76,7 @@ impl FluxApp {
         }
 
         if !dir_conflicts.is_empty() {
+            // Legacy folder-conflict dialog - kept as-is.
             let gfiles = resolved_files
                 .iter()
                 .map(|(p, _, _)| gio::File::for_path(p))
@@ -84,7 +90,13 @@ impl FluxApp {
             return;
         }
 
-        self.run_paste_batch(resolved_files, is_cut, target_dir, sender);
+        self.run_paste_batch(
+            resolved_files,
+            is_cut,
+            target_dir,
+            sender,
+            ConflictPolicy::Ask,
+        );
     }
 
     /// Core execution batch runner for both forced and non-conflicting pastes.
@@ -94,6 +106,7 @@ impl FluxApp {
         is_cut: bool,
         target_dir: PathBuf,
         sender: AsyncComponentSender<Self>,
+        initial_policy: ConflictPolicy,
     ) {
         let total_files = resolved_files.len();
         let total_bytes: u64 = resolved_files
@@ -103,27 +116,15 @@ impl FluxApp {
 
         let completed_files = Arc::new(AtomicUsize::new(0));
 
-        for (src_path, clean_name, is_dir) in resolved_files {
+        // Shared, mutable conflict policy for the batch.
+        // Updated by the GTK thread via `AppMsg::SetConflictPolicy`.
+        let policy = Arc::new(Mutex::new(initial_policy));
+
+        for (batch_index, (src_path, clean_name, is_dir)) in resolved_files.into_iter().enumerate()
+        {
             let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
             let cancellable = gio::Cancellable::new();
-            let mut dest = target_dir.join(&clean_name);
-
-            if !is_cut && !is_dir {
-                let mut copy_number = 1;
-                let original_name = clean_name.clone();
-
-                while dest.exists() {
-                    let new_name = match original_name.rfind('.') {
-                        Some(idx) if idx > 0 => {
-                            let (name, ext) = original_name.split_at(idx);
-                            format!("{} (copy {}){}", name, copy_number, ext)
-                        }
-                        _ => format!("{} (copy {})", original_name, copy_number),
-                    };
-                    dest = target_dir.join(&new_name);
-                    copy_number += 1;
-                }
-            }
+            let dest_initial = target_dir.join(&clean_name);
 
             let file_bytes = scan_total_bytes(&src_path).max(1);
 
@@ -150,6 +151,7 @@ impl FluxApp {
             let s = sender.clone();
             let completed_clone = completed_files.clone();
             let t_queue = self.task_queue.clone();
+            let policy_clone = Arc::clone(&policy);
 
             {
                 let s_delay = s.clone();
@@ -160,6 +162,68 @@ impl FluxApp {
             }
 
             relm4::spawn_blocking(move || {
+                // ── Conflict resolution ──────────────────────────────────────
+                let dest = if !is_dir && dest_initial.exists() {
+                    let current_policy = { policy_clone.lock().unwrap().clone() };
+
+                    match current_policy {
+                        ConflictPolicy::ReplaceAll => dest_initial.clone(),
+                        ConflictPolicy::SkipAll => {
+                            s.input(AppMsg::TaskCompleted(task_id));
+                            let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                            if count == total_files {
+                                s.input(AppMsg::Refresh);
+                            }
+                            return;
+                        }
+                        ConflictPolicy::AutoRenameAll => auto_rename_dest(&dest_initial),
+                        ConflictPolicy::Ask => {
+                            let (tx, rx) = tokio::sync::oneshot::channel::<ConflictChoice>();
+
+                            let ctx = ConflictContext {
+                                dest: dest_initial.clone(),
+                                is_cut,
+                                batch_total: total_files,
+                                batch_index: batch_index + 1,
+                            };
+
+                            s.input(AppMsg::FileConflictDetected {
+                                context: ctx,
+                                resolver: Arc::new(Mutex::new(Some(tx))),
+                            });
+
+                            let choice = tokio::runtime::Handle::current()
+                                .block_on(rx)
+                                .unwrap_or(ConflictChoice::Cancel);
+
+                            match choice {
+                                ConflictChoice::Cancel => {
+                                    cancellable.cancel();
+                                    s.input(AppMsg::TaskCompleted(task_id));
+                                    let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                                    if count == total_files {
+                                        s.input(AppMsg::Refresh);
+                                    }
+                                    return;
+                                }
+                                ConflictChoice::Skip => {
+                                    s.input(AppMsg::TaskCompleted(task_id));
+                                    let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                                    if count == total_files {
+                                        s.input(AppMsg::Refresh);
+                                    }
+                                    return;
+                                }
+                                ConflictChoice::AutoRename => auto_rename_dest(&dest_initial),
+                                ConflictChoice::Replace => dest_initial.clone(),
+                            }
+                        }
+                    }
+                } else {
+                    dest_initial.clone()
+                };
+
+                // ── Progress watcher ─────────────────────────────────────────
                 let finished_flag = Arc::new(AtomicBool::new(false));
 
                 spawn_file_watcher(
@@ -174,6 +238,7 @@ impl FluxApp {
                     s.input_sender().clone(),
                 );
 
+                // ── Actual I/O ───────────────────────────────────────────────
                 let result = perform_file_op(&src_path, &dest, is_cut, &cancellable);
 
                 finished_flag.store(true, Ordering::SeqCst);
