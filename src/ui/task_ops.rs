@@ -88,6 +88,14 @@ impl FluxApp {
         if self.transfer_dialog.is_some() {
             return;
         }
+        // Don't open while a conflict-resolution dialog is blocking a worker.
+        if self.conflict_dialog_active {
+            return;
+        }
+        // Don't open while a command dialog is active.
+        if self.command_dialog.is_some() {
+            return;
+        }
         if self.task_queue.is_empty() {
             return;
         }
@@ -104,6 +112,10 @@ impl FluxApp {
 
     pub fn handle_show_transfer_dialog_if_active(&mut self, id: u64) {
         if self.transfer_dialog.is_some() {
+            return;
+        }
+        // Don't open while a conflict-resolution dialog is blocking a worker.
+        if self.conflict_dialog_active {
             return;
         }
         let still_active = self

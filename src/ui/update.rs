@@ -465,6 +465,30 @@ impl FluxApp {
                 sender.input(AppMsg::TaskCompleted(id));
             }
 
+            AppMsg::FileConflictDetected { context, resolver } => {
+                if let Some(mut dialog) = self.transfer_dialog.take() {
+                    dialog.close();
+                }
+
+                let tx = resolver
+                    .lock()
+                    .expect("conflict resolver mutex poisoned")
+                    .take()
+                    .expect("FileConflictDetected handled more than once");
+
+                self.conflict_dialog_active = true;
+                crate::ui::conflict_dialog::show_conflict_dialog(context, tx, sender.clone());
+            }
+
+            AppMsg::ConflictDialogClosed => {
+                self.conflict_dialog_active = false;
+            }
+
+            AppMsg::SetConflictPolicy(_policy) => {
+                // No-op for now, extend when a persistent default preference
+                // is added to Settings.
+            }
+
             AppMsg::SyncPathEntry => {}
         }
     }

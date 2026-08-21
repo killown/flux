@@ -509,12 +509,34 @@ pub struct FluxApp {
     /// `None` while no dialog is showing, `Some` while at least one transfer
     /// is active and the dialog threshold has been reached.
     pub transfer_dialog: Option<crate::ui::transfer_dialog::TransferDialogHandle>,
+    /// True while a per-file conflict-resolution dialog is blocking a worker.
+    /// Prevents `handle_show_transfer_dialog` from opening the transfer
+    /// progress window on top of the conflict prompt.
+    pub conflict_dialog_active: bool,
 }
 
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// A background copy/move worker detected that its destination path already
+    /// exists and needs user input before it can proceed.
+    FileConflictDetected {
+        context: crate::ui::conflict_policy::ConflictContext,
+        resolver: std::sync::Arc<
+            std::sync::Mutex<
+                Option<tokio::sync::oneshot::Sender<crate::ui::conflict_policy::ConflictChoice>>,
+            >,
+        >,
+    },
+    /// Sent by the conflict dialog's response closure immediately before it
+    /// resolves the oneshot sender.  Clears `FluxApp::conflict_dialog_active`
+    /// so the transfer-progress dialog is re-enabled.
+    ConflictDialogClosed,
+    /// Update (or reset) the session-scoped conflict-resolution policy for the
+    /// currently executing batch.  Sent by `conflict_dialog` when the user
+    /// enables "Apply to all".
+    SetConflictPolicy(crate::ui::conflict_policy::ConflictPolicy),
     /// Open the command output log dialog for command task `id` only if still active.
     ShowCommandDialogIfActive(u64),
     /// Ctrl+Right-click on a file: kicks off async MIME resolution for the

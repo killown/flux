@@ -267,6 +267,7 @@ impl FluxApp {
             transfer_dialog: None,
             command_dialog: None,
             header_path_entry: glib::WeakRef::new(),
+            conflict_dialog_active: false,
         };
 
         // 8.5 Apply initial list/grid mode to the view

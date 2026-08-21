@@ -17,6 +17,8 @@ pub use components::SidebarMsg;
 pub mod app_action_ops;
 pub mod command_dialog;
 pub mod config_handlers;
+pub mod conflict_dialog;
+pub mod conflict_policy;
 pub mod context_menu;
 pub mod dialogs;
 pub mod file_ops;
