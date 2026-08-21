@@ -9,6 +9,25 @@
 
 window {
   background-color: #f5f5f7;
+  color: #1d1d1f;
+}
+
+messagedialog,
+dialog,
+window.dialog {
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+messagedialog label,
+dialog label,
+window.dialog label {
+  color: #1d1d1f;
+}
+
+messagedialog .secondary-text,
+dialog .secondary-text {
+  color: rgba(0, 0, 0, 0.75);
 }
 
 headerbar {
@@ -283,6 +302,10 @@ popover.menu modelbutton:hover {
   color: white;
 }
 
+popover.menu modelbutton:hover label {
+  color: white;
+}
+
 popover.menu > contents separator {
   background-color: rgba(0, 0, 0, 0.08);
   min-height: 1px;
@@ -331,6 +354,14 @@ progressbar progress {
 }
 
 /* ── Buttons ── */
+button {
+  color: #1d1d1f;
+}
+
+button label {
+  color: #1d1d1f;
+}
+
 .suggested-action {
   background-color: #007aff;
   color: white;
@@ -340,21 +371,29 @@ progressbar progress {
   font-weight: bold;
 }
 
+.suggested-action label {
+  color: white;
+}
+
 .suggested-action:hover {
   background-color: #0066d9;
 }
 
 .destructive-action {
-  background-color: rgba(255, 59, 48, 0.08);
-  color: #ff3b30;
+  background-color: rgba(255, 59, 48, 0.12);
+  color: #d70015;
   border-radius: 8px;
   padding: 8px 16px;
   font-weight: bold;
   letter-spacing: 1.2px;
 }
 
+.destructive-action label {
+  color: #d70015;
+}
+
 .destructive-action:hover {
-  background-color: rgba(255, 59, 48, 0.15);
+  background-color: rgba(255, 59, 48, 0.2);
 }
 
 /* ── Misc UI elements ── */
@@ -375,15 +414,15 @@ progressbar progress {
 }
 
 .error {
-  border: 1px solid #ff3b30;
-  background: rgba(255, 59, 48, 0.06);
-  color: #ff3b30;
+  border: 1px solid #d70015;
+  background: rgba(255, 59, 48, 0.08);
+  color: #d70015;
 }
 
 .warning {
-  border: 1px solid #ff9500;
-  background: rgba(255, 149, 0, 0.06);
-  color: #ff9500;
+  border: 1px solid #c97000;
+  background: rgba(255, 149, 0, 0.08);
+  color: #c97000;
 }
 
 .card {
@@ -529,7 +568,7 @@ levelbar block {
 }
 
 levelbar block.low {
-  background: #ff3b30;
+  background: #d70015;
 }
 
 levelbar block.high {
@@ -537,7 +576,7 @@ levelbar block.high {
 }
 
 levelbar block.full {
-  background: #34c759;
+  background: #248a3d;
 }
 
 /* ── List / Row ── */
@@ -628,15 +667,15 @@ toast label {
 
 .settings-window .dim-label,
 .settings-window .caption {
-  color: rgba(0, 0, 0, 0.65);
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .settings-window .success {
-  color: #34c759;
+  color: #248a3d;
 }
 
 .settings-window .error {
-  color: #ff3b30;
+  color: #d70015;
 }
 
 .quick-panel-scroll {
