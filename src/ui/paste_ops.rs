@@ -181,6 +181,7 @@ impl FluxApp {
                             let (tx, rx) = tokio::sync::oneshot::channel::<ConflictChoice>();
 
                             let ctx = ConflictContext {
+                                src: src_path.clone(),
                                 dest: dest_initial.clone(),
                                 is_cut,
                                 batch_total: total_files,

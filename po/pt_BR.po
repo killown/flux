@@ -1293,3 +1293,79 @@ msgstr "PPID:"
 msgid "user+sys"
 msgstr "usuário+sistema"
 
+# --- Conflict dialog entries ---
+#: src/ui/conflict_dialog.rs
+msgid "Replace existing file?"
+msgstr "Substituir arquivo existente?"
+
+#: src/ui/conflict_dialog.rs
+msgid "Conflict"
+msgstr "Conflito"
+
+#: src/ui/conflict_dialog.rs
+msgid "A file with this name already exists. Choose what to do with it."
+msgstr "Um arquivo com este nome já existe. Escolha o que fazer com ele."
+
+#: src/ui/conflict_dialog.rs
+msgid "Skip"
+msgstr "Pular"
+
+#: src/ui/conflict_dialog.rs
+msgid "Auto-Rename"
+msgstr "Renomear automaticamente"
+
+#: src/ui/conflict_dialog.rs
+msgid "Replace"
+msgstr "Substituir"
+
+#: src/ui/conflict_dialog.rs
+msgid "Existing file"
+msgstr "Arquivo existente"
+
+#: src/ui/conflict_dialog.rs
+msgid "Auto-rename will save as"
+msgstr "Renomeação automática salvará como"
+
+#: src/ui/conflict_dialog.rs
+msgid "Apply to all remaining conflicts"
+msgstr "Aplicar a todos os conflitos restantes"
+
+#: src/ui/conflict_dialog.rs
+msgid "copy"
+msgstr "copiar"
+
+#: src/ui/conflict_dialog.rs
+msgid "move"
+msgstr "mover"
+
+#: src/ui/conflict_dialog.rs
+msgid "just now"
+msgstr "agora mesmo"
+
+#: src/ui/conflict_dialog.rs
+msgid "1 minute ago"
+msgstr "1 minuto atrás"
+
+#: src/ui/conflict_dialog.rs
+msgid "minutes ago"
+msgstr "minutos atrás"
+
+#: src/ui/conflict_dialog.rs
+msgid "1 hour ago"
+msgstr "1 hora atrás"
+
+#: src/ui/conflict_dialog.rs
+msgid "hours ago"
+msgstr "horas atrás"
+
+#: src/ui/conflict_dialog.rs
+msgid "Yesterday"
+msgstr "Ontem"
+
+#: src/ui/conflict_dialog.rs
+msgid "days ago"
+msgstr "dias atrás"
+
+#: src/ui/conflict_dialog.rs
+msgid "A file with this name already exists in the destination. Choose what to do with it."
+msgstr "Um arquivo com este nome já existe no destino. Escolha o que fazer com ele."

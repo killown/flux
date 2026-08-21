@@ -32,6 +32,8 @@ pub enum ConflictPolicy {
 /// Context passed to the UI thread so it can build the conflict dialog.
 #[derive(Debug, Clone)]
 pub struct ConflictContext {
+    /// The source path that is being copied or moved.
+    pub src: PathBuf,
     /// The destination that already exists.
     pub dest: PathBuf,
     /// `true` when this is a move (cut) rather than a copy.
