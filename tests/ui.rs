@@ -2,6 +2,7 @@ mod ui {
     mod app_action_ops_test;
     mod components_test;
     mod config_handlers_test;
+    mod conflict_dialog_test;
     mod context_menu_test;
     mod dialog_prompt_ops_test;
     mod file_ops_test;
