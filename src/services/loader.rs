@@ -127,7 +127,6 @@ impl FluxApp {
                         }
                         gio::FileMonitorEvent::Created
                         | gio::FileMonitorEvent::MovedIn
-                        | gio::FileMonitorEvent::Changed
                         | gio::FileMonitorEvent::ChangesDoneHint => {
                             sender_clone.input(AppMsg::FileChanged(path));
                         }
