@@ -225,13 +225,18 @@ impl FluxApp {
                 };
 
                 // ── Progress watcher ─────────────────────────────────────────
+                let final_label = dest
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or(clean_name);
+
                 let finished_flag = Arc::new(AtomicBool::new(false));
 
                 spawn_file_watcher(
                     dest.clone(),
                     file_bytes,
                     task_id,
-                    clean_name.clone(),
+                    final_label.clone(),
                     total_files,
                     cancellable.clone(),
                     finished_flag.clone(),
@@ -252,7 +257,7 @@ impl FluxApp {
                 if result.is_ok() {
                     t_queue.update(
                         task_id,
-                        clean_name.clone(),
+                        final_label.clone(),
                         file_bytes,
                         file_bytes,
                         total_files,
@@ -260,7 +265,7 @@ impl FluxApp {
                     );
                     s.input(AppMsg::TaskProgress {
                         id: task_id,
-                        label: clean_name.clone(),
+                        label: final_label,
                         current: file_bytes,
                         total: file_bytes,
                         total_items: total_files,
@@ -357,6 +362,10 @@ pub fn perform_file_op(
     is_cut: bool,
     cancellable: &gio::Cancellable,
 ) -> Result<(), String> {
+    if src == dest && is_cut {
+        return Ok(());
+    }
+
     let src_file = gio::File::for_path(src);
     let dst_file = gio::File::for_path(dest);
 
