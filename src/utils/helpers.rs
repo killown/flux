@@ -620,6 +620,7 @@ impl FluxApp {
         items: Vec<(PathBuf, bool)>,
         sender: &relm4::AsyncComponentSender<Self>,
     ) {
+        #[allow(clippy::never_loop)]
         for (path, is_dir) in items {
             let path_str = path.to_string_lossy();
 
@@ -689,14 +690,18 @@ impl FluxApp {
                 sender.input(AppMsg::EnterArchive(path));
                 break;
             }
-            // 3.5. LUKS encrypted image file - probe magic bytes, prompt passphrase
-            else if crate::services::luks::is_luks_image(&path) {
-                sender.input(AppMsg::UnlockLuksImage { path });
-                break;
-            }
-            // 4. Regular file opening via xdg-open
+            // 3.5. LUKS encrypted image file or standard file opening offloaded to background worker
             else {
-                crate::utils::open_file(path);
+                let sender_clone = sender.clone();
+                let path_clone = path.clone();
+                relm4::spawn_blocking(move || {
+                    if crate::services::luks::is_luks_image(&path_clone) {
+                        sender_clone.input(AppMsg::UnlockLuksImage { path: path_clone });
+                    } else {
+                        crate::utils::open_file(path_clone);
+                    }
+                });
+                break;
             }
         }
     }
@@ -977,6 +982,7 @@ pub fn load_custom_css() {
         }
     }
 }
+
 /// Spawns a new application instance rooted at `path`.
 ///
 /// Uses the running executable path rather than a hardcoded binary name so
