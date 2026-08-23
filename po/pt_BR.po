@@ -1369,3 +1369,11 @@ msgstr "dias atrás"
 #: src/ui/conflict_dialog.rs
 msgid "A file with this name already exists in the destination. Choose what to do with it."
 msgstr "Um arquivo com este nome já existe no destino. Escolha o que fazer com ele."
+
+#: src/ui/help.rs:???
+msgid "Undo file operation"
+msgstr "Desfazer operação de arquivo"
+
+#: src/ui/help.rs:???
+msgid "Redo file operation"
+msgstr "Refazer operação de arquivo"

@@ -389,6 +389,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// In-session undo/redo history for file operations.
+    pub file_op_history: crate::ui::undo_redo::FileOpHistory,
     /// Handle to the active command output dialog, if open.
     pub command_dialog: Option<crate::ui::command_dialog::CommandDialogHandle>,
     /// Weak reference to the inline header path entry for live text sync.
@@ -519,6 +521,44 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Undo the most recent file operation (Ctrl+Z).
+    Undo,
+    /// Redo the most recently undone operation (Ctrl+Shift+Z / Ctrl+Y).
+    Redo,
+    /// Internal: background undo-move succeeded, record the inverse redo op.
+    UndoMoveComplete {
+        redo_items: Vec<(std::path::PathBuf, std::path::PathBuf)>,
+        dest_dir: std::path::PathBuf,
+    },
+    /// Internal: background undo-move failed, restore op on the undo stack.
+    UndoMoveFailed(crate::ui::undo_redo::FileOp),
+    /// Internal: background undo-trash succeeded, record the inverse redo op.
+    UndoTrashComplete { paths: Vec<std::path::PathBuf> },
+    /// Internal: background undo-trash failed, restore op on the undo stack.
+    UndoTrashFailed(crate::ui::undo_redo::FileOp),
+    /// Internal: background redo-move succeeded, record the inverse undo op.
+    RedoMoveComplete {
+        items: Vec<(std::path::PathBuf, std::path::PathBuf)>,
+        dest_dir: std::path::PathBuf,
+    },
+    /// Internal: background redo-move failed, restore op on the redo stack.
+    RedoMoveFailed(crate::ui::undo_redo::FileOp),
+    /// Internal: background redo-trash succeeded, record the inverse undo op.
+    RedoTrashComplete { paths: Vec<std::path::PathBuf> },
+    /// Internal: background redo-trash failed, restore op on the redo stack.
+    RedoTrashFailed(crate::ui::undo_redo::FileOp),
+    /// Notification that items were sent to the trash.
+    TrashSucceeded(Vec<std::path::PathBuf>),
+    /// Notification that a batch move completed.
+    MoveSucceeded {
+        items: Vec<(std::path::PathBuf, std::path::PathBuf)>,
+        dest_dir: std::path::PathBuf,
+    },
+    /// Notification that a batch copy completed.
+    CopySucceeded {
+        copies: Vec<(std::path::PathBuf, std::path::PathBuf)>,
+        dest_dir: std::path::PathBuf,
+    },
     /// A background copy/move worker detected that its destination path already
     /// exists and needs user input before it can proceed.
     FileConflictDetected {

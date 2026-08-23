@@ -147,6 +147,26 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }
+            gdk::Key::z if is_ctrl => {
+                // Let the terminal shell handle Ctrl+Z (job control) if it has focus.
+                if terminal_area_cap.has_focus() {
+                    return glib::Propagation::Proceed;
+                }
+                let is_shift = state.contains(gdk::ModifierType::SHIFT_MASK);
+                if is_shift {
+                    sender_cap.input(AppMsg::Redo);
+                } else {
+                    sender_cap.input(AppMsg::Undo);
+                }
+                glib::Propagation::Stop
+            }
+            gdk::Key::y if is_ctrl => {
+                if terminal_area_cap.has_focus() {
+                    return glib::Propagation::Proceed;
+                }
+                sender_cap.input(AppMsg::Redo);
+                glib::Propagation::Stop
+            }
             _ => glib::Propagation::Proceed,
         }
     });
@@ -247,6 +267,33 @@ pub fn setup_controllers(
         Some(keymap.delete.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_delete.input(AppMsg::Delete);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_undo = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("<Primary>z").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_undo.input(AppMsg::Undo);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_redo1 = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("<Primary><Shift>z").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_redo1.input(AppMsg::Redo);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_redo2 = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("<Primary>y").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_redo2.input(AppMsg::Redo);
             glib::Propagation::Stop
         })),
     ));
