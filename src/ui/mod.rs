@@ -33,6 +33,8 @@ pub mod sidebar_ops;
 pub mod task_ops;
 pub mod terminal_ops;
 pub mod transfer_dialog;
+pub mod undo_ops;
+pub mod undo_redo;
 pub mod view_ops;
 pub mod watcher_ops;
 

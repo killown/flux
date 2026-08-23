@@ -224,6 +224,19 @@ impl FluxApp {
                 }
 
                 utils::save_config(&self.config);
+                let canon_old = old_path.canonicalize().unwrap_or_else(|_| old_path.clone());
+                let canon_new = new_path.canonicalize().unwrap_or_else(|_| new_path.clone());
+                self.file_op_history
+                    .push_undo(crate::ui::undo_redo::FileOp::Rename {
+                        old_path: canon_old,
+                        new_path: canon_new,
+                        old_name: old_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().into_owned())
+                            .unwrap_or_default(),
+                        new_name: new_name.clone(),
+                    });
+
                 sender.input(AppMsg::Navigate(self.current_path.clone()));
             }
             Err(e) => {
@@ -461,9 +474,12 @@ impl FluxApp {
         dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        let dest_path = dest_path.canonicalize().unwrap_or(dest_path);
         let sender_clone = sender.clone();
 
         relm4::spawn_blocking(move || {
+            let mut completed_moves = Vec::new();
+
             for source_path in source_paths {
                 if !dest_path.is_dir() {
                     break;
@@ -485,12 +501,13 @@ impl FluxApp {
                 if src_file
                     .move_(
                         &dst_file,
-                        gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
                         gio::Cancellable::NONE,
                         None,
                     )
                     .is_ok()
                 {
+                    completed_moves.push((source_path.clone(), final_dest.clone()));
                     sender_clone.input(AppMsg::ItemMoved {
                         old_path: source_path,
                         new_path: final_dest,
@@ -498,6 +515,13 @@ impl FluxApp {
                 } else {
                     eprintln!("[DnD Error] Failed to move {:?}", source_path);
                 }
+            }
+
+            if !completed_moves.is_empty() {
+                sender_clone.input(AppMsg::MoveSucceeded {
+                    items: completed_moves,
+                    dest_dir: dest_path,
+                });
             }
 
             sender_clone.input(AppMsg::Refresh);
@@ -530,7 +554,7 @@ impl FluxApp {
                 if src_file
                     .move_(
                         &dst_file,
-                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
                         gio::Cancellable::NONE,
                         None,
                     )

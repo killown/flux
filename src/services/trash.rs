@@ -86,7 +86,9 @@ pub fn delete_items(
     }
 
     let sender_clone = sender.clone();
-    for path in selection {
+    for raw_path in selection {
+        let path = raw_path.canonicalize().unwrap_or_else(|_| raw_path.clone());
+
         if is_protected_target(&path) {
             eprintln!(
                 "[Delete] Blocked attempt to delete protected system path: {:?}",
@@ -208,12 +210,14 @@ pub fn delete_items(
             });
         } else {
             let file_for_fallback = file.clone();
+            let trashed_path = path.clone();
             file.trash_async(
                 glib::Priority::DEFAULT,
                 gio::Cancellable::NONE,
                 move |res| {
                     match res {
                         Ok(_) => {
+                            s.input(AppMsg::TrashSucceeded(vec![trashed_path]));
                             s.input(AppMsg::Refresh);
                         }
                         Err(trash_err) => {

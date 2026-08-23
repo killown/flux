@@ -30,7 +30,10 @@ impl FluxApp {
         forced: bool,
         sender: AsyncComponentSender<Self>,
     ) {
-        let target_dir = self.current_path.clone();
+        let target_dir = self
+            .current_path
+            .canonicalize()
+            .unwrap_or_else(|_| self.current_path.clone());
 
         if forced {
             let resolved_files = resolve_gio_files(files);
@@ -120,6 +123,8 @@ impl FluxApp {
         // Updated by the GTK thread via `AppMsg::SetConflictPolicy`.
         let policy = Arc::new(Mutex::new(initial_policy));
 
+        let batch_results = Arc::new(Mutex::new(Vec::new()));
+
         for (batch_index, (src_path, clean_name, is_dir)) in resolved_files.into_iter().enumerate()
         {
             let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
@@ -152,6 +157,8 @@ impl FluxApp {
             let completed_clone = completed_files.clone();
             let t_queue = self.task_queue.clone();
             let policy_clone = Arc::clone(&policy);
+            let results_clone = Arc::clone(&batch_results);
+            let target_dir_clone = target_dir.clone();
 
             {
                 let s_delay = s.clone();
@@ -255,6 +262,10 @@ impl FluxApp {
                 }
 
                 if result.is_ok() {
+                    results_clone
+                        .lock()
+                        .unwrap()
+                        .push((src_path.clone(), dest.clone()));
                     t_queue.update(
                         task_id,
                         final_label.clone(),
@@ -288,6 +299,18 @@ impl FluxApp {
 
                 let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
                 if count == total_files {
+                    let recorded = results_clone.lock().unwrap().clone();
+                    if is_cut && !recorded.is_empty() {
+                        s.input(AppMsg::MoveSucceeded {
+                            items: recorded,
+                            dest_dir: target_dir_clone,
+                        });
+                    } else if !is_cut && !recorded.is_empty() {
+                        s.input(AppMsg::CopySucceeded {
+                            copies: recorded,
+                            dest_dir: target_dir_clone,
+                        });
+                    }
                     s.input(AppMsg::Refresh);
                 }
             });
@@ -373,7 +396,7 @@ pub fn perform_file_op(
         let move_res = src_file
             .move_(
                 &dst_file,
-                gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
                 Some(cancellable),
                 None,
             )

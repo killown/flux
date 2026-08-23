@@ -105,6 +105,51 @@ impl FluxApp {
             AppMsg::PerformRename(old_path, new_name) => {
                 self.handle_perform_rename(old_path, new_name, &sender)
             }
+            AppMsg::Undo => self.handle_undo(&sender),
+            AppMsg::Redo => self.handle_redo(&sender),
+            AppMsg::UndoMoveComplete {
+                redo_items,
+                dest_dir,
+            } => {
+                self.handle_undo_move_complete(redo_items, dest_dir, &sender);
+            }
+            AppMsg::UndoMoveFailed(op) => {
+                self.handle_undo_move_failed(op);
+            }
+            AppMsg::UndoTrashComplete { paths } => {
+                self.handle_undo_trash_complete(paths, &sender);
+            }
+            AppMsg::UndoTrashFailed(op) => {
+                self.handle_undo_trash_failed(op);
+            }
+            AppMsg::RedoMoveComplete { items, dest_dir } => {
+                self.handle_redo_move_complete(items, dest_dir, &sender);
+            }
+            AppMsg::RedoMoveFailed(op) => {
+                self.handle_redo_move_failed(op);
+            }
+            AppMsg::RedoTrashComplete { paths } => {
+                self.handle_redo_trash_complete(paths, &sender);
+            }
+            AppMsg::RedoTrashFailed(op) => {
+                self.handle_redo_trash_failed(op);
+            }
+            AppMsg::TrashSucceeded(paths) => {
+                self.file_op_history
+                    .push_undo(crate::ui::undo_redo::FileOp::Trash { paths });
+            }
+            AppMsg::MoveSucceeded { items, dest_dir } => {
+                self.file_op_history
+                    .push_undo(crate::ui::undo_redo::FileOp::Move { items, dest_dir });
+            }
+            AppMsg::CopySucceeded { copies, dest_dir } => {
+                let copy_dests = copies.into_iter().map(|(_, dest)| dest).collect();
+                self.file_op_history
+                    .push_undo(crate::ui::undo_redo::FileOp::Copy {
+                        copies: copy_dests,
+                        dest_dir,
+                    });
+            }
             AppMsg::ItemMoved { old_path, new_path } => {
                 let old_key = old_path.to_string_lossy().to_string();
                 let new_key = new_path.to_string_lossy().to_string();

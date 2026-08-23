@@ -133,31 +133,31 @@ impl SimpleComponent for HelpWindow {
 
             // --- Search Page ---
             add = &adw::PreferencesPage {
-            set_title: &tr("Search"),
-            set_icon_name: Some("search-symbolic"),
+                set_title: &tr("Search"),
+                set_icon_name: Some("search-symbolic"),
 
-            add = &adw::PreferencesGroup {
-                set_title: &tr("Content Search"),
-                set_description: Some(&tr("Search inside file contents (not just filenames)")),
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Content Search"),
+                    set_description: Some(&tr("Search inside file contents (not just filenames)")),
 
-                add = &adw::ActionRow {
-                    set_title: &tr("Start content search"),
-                    set_subtitle: &tr("Type :term to search all files, or :.ext:term to filter by extension"),
-                    add_suffix = &gtk::Label {
-                        set_label: ":term  or  :.ext:term",
-                        add_css_class: "keycap",
+                    add = &adw::ActionRow {
+                        set_title: &tr("Start content search"),
+                        set_subtitle: &tr("Type :term to search all files, or :.ext:term to filter by extension"),
+                        add_suffix = &gtk::Label {
+                            set_label: ":term  or  :.ext:term",
+                            add_css_class: "keycap",
+                        },
                     },
-                },
-                add = &adw::ActionRow {
-                    set_title: &tr("Cancel content search"),
-                    set_subtitle: &tr("Press Escape while in search view"),
-                    add_suffix = &gtk::Label {
-                        set_label: "Esc",
-                        add_css_class: "keycap",
+                    add = &adw::ActionRow {
+                        set_title: &tr("Cancel content search"),
+                        set_subtitle: &tr("Press Escape while in search view"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Esc",
+                            add_css_class: "keycap",
+                        },
                     },
                 },
             },
-        },
 
             // --- System & View Page ---
             add = &adw::PreferencesPage {
@@ -236,6 +236,20 @@ impl SimpleComponent for HelpWindow {
                             add_css_class: "keycap",
                         },
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Undo file operation"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Z",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Redo file operation"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Shift + Z / Ctrl + Y",
+                            add_css_class: "keycap",
+                        },
+                    },
                 },
             },
 
@@ -275,7 +289,7 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                 },
-            }
+            },
         }
     }
 
