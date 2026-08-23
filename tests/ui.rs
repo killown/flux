@@ -28,6 +28,7 @@ mod ui {
     mod test_paste_ops;
     mod ui_components_test;
     mod ui_test;
+    mod undo_redo_test;
     mod update_test;
     mod view_ops_test;
     mod watcher_ops_test;
