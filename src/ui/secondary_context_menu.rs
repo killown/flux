@@ -355,14 +355,6 @@ impl FluxApp {
         let mut submenu_map: indexmap::IndexMap<String, gio::Menu> = indexmap::IndexMap::new();
 
         for action in &actions {
-            if !self
-                .menu_actions
-                .iter()
-                .any(|a| a.action_name == action.action_name)
-            {
-                self.menu_actions.push(action.clone());
-            }
-
             let mut matches = false;
             'outer: for allowed_mime in &action.mime_types {
                 let requirements: Vec<&str> = allowed_mime.split('+').collect();
