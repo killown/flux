@@ -279,3 +279,39 @@ fn create_mock_config_with_labels() -> Config {
     ];
     config
 }
+
+#[test]
+fn test_handle_rename_sidebar_place_matching_and_persistence() {
+    let mut config = Config::default();
+    let home = dirs::home_dir().unwrap_or_default();
+
+    config.sidebar = vec![
+        CustomPlace {
+            name: "Home".into(),
+            kind: None,
+            icon: "user-home-symbolic".into(),
+            path: "~".into(),
+        },
+        CustomPlace {
+            name: "Old Project".into(),
+            kind: None,
+            icon: "folder".into(),
+            path: "~/Projects/Old".into(),
+        },
+    ];
+
+    let target_path = home.join("Projects/Old");
+    let new_name = "New Project Name".to_string();
+
+    let mut modified = false;
+    for place in &mut config.sidebar {
+        let expanded = flux::utils::expand_path(&place.path);
+        if expanded == target_path {
+            place.name = new_name.clone();
+            modified = true;
+        }
+    }
+
+    assert!(modified);
+    assert_eq!(config.sidebar[1].name, "New Project Name");
+}

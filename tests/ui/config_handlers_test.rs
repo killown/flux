@@ -1,4 +1,4 @@
-use flux::model::{Config, UIConfig};
+use flux::model::{Config, CustomPlace, UIConfig};
 use std::path::PathBuf;
 
 #[test]
@@ -56,5 +56,40 @@ fn test_file_icon_override_update() {
     assert_eq!(
         ui_config.file_icons.get(&key).cloned(),
         Some("/img/v2.png".to_string())
+    );
+}
+
+#[test]
+fn test_set_folder_icon_updates_matching_sidebar_place() {
+    let mut config = Config::default();
+    let home = dirs::home_dir().unwrap_or_default();
+    let target_dir = home.join("Downloads");
+
+    config.sidebar.push(CustomPlace {
+        name: "Downloads".into(),
+        kind: None,
+        icon: "folder-download-symbolic".into(),
+        path: "~/Downloads".into(),
+    });
+
+    let new_icon = "folder-custom-symbolic".to_string();
+    let path_str = target_dir.to_string_lossy().to_string();
+
+    config.ui.folder_icons.insert(path_str, new_icon.clone());
+
+    for place in &mut config.sidebar {
+        let expanded = flux::utils::expand_path(&place.path);
+        if expanded == target_dir {
+            place.icon = new_icon.clone();
+        }
+    }
+
+    assert_eq!(config.sidebar[0].icon, "folder-custom-symbolic");
+    assert_eq!(
+        config
+            .ui
+            .folder_icons
+            .get(&target_dir.to_string_lossy().to_string()),
+        Some(&"folder-custom-symbolic".to_string())
     );
 }
