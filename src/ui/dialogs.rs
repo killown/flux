@@ -308,6 +308,133 @@ impl FluxApp {
         });
     }
 
+    /// Displays a symbolic-only icon picker dialog for sidebar locations.
+    pub fn show_sidebar_icon_picker(
+        &self,
+        target_path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let toplevels = gtk::Window::list_toplevels();
+        let parent = toplevels
+            .first()
+            .and_then(|w| w.downcast_ref::<gtk::Window>());
+        let dialog = gtk::Dialog::builder()
+            .title(crate::i18n::tr("Select Sidebar Icon"))
+            .transient_for(parent.unwrap())
+            .modal(true)
+            .use_header_bar(1)
+            .build();
+        let flow_box = gtk::FlowBox::builder()
+            .valign(gtk::Align::Start)
+            .max_children_per_line(8)
+            .min_children_per_line(8)
+            .selection_mode(gtk::SelectionMode::Single)
+            .build();
+        let scrolled = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .vscrollbar_policy(gtk::PolicyType::Automatic)
+            .child(&flow_box)
+            .height_request(380)
+            .width_request(480)
+            .build();
+        let search_entry = gtk::SearchEntry::builder()
+            .margin_top(6)
+            .margin_bottom(6)
+            .margin_start(6)
+            .margin_end(6)
+            .build();
+        let content_area = dialog.content_area();
+        content_area.append(&search_entry);
+        content_area.append(&scrolled);
+
+        let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
+        let icon_names = icon_theme.icon_names();
+
+        for icon_name in icon_names {
+            let name_str = icon_name.as_str();
+            if name_str.ends_with("-symbolic") {
+                let image = gtk::Image::from_icon_name(name_str);
+                image.set_pixel_size(20);
+                let button = gtk::Button::builder()
+                    .child(&image)
+                    .tooltip_text(name_str)
+                    .has_frame(false)
+                    .build();
+                unsafe {
+                    button.set_data("icon-name", icon_name.to_string());
+                }
+                let dialog_btn_clone = dialog.clone();
+                let flow_box_btn_clone = flow_box.clone();
+                button.connect_clicked(move |btn| {
+                    if let Some(row) = btn
+                        .parent()
+                        .and_then(|p| p.downcast::<gtk::FlowBoxChild>().ok())
+                    {
+                        flow_box_btn_clone.select_child(&row);
+                        dialog_btn_clone.response(gtk::ResponseType::Ok);
+                    }
+                });
+                flow_box.append(&button);
+            }
+        }
+
+        let flow_box_clone = flow_box.clone();
+        search_entry.connect_search_changed(move |entry| {
+            let text = entry.text().to_string().to_lowercase();
+            let mut child = flow_box_clone.first_child();
+            while let Some(ref widget) = child {
+                if let Some(child_row) = widget.downcast_ref::<gtk::FlowBoxChild>() {
+                    if let Some(button) = child_row
+                        .child()
+                        .and_then(|c| c.downcast::<gtk::Button>().ok())
+                    {
+                        unsafe {
+                            if let Some(name) =
+                                button.data::<String>("icon-name").map(|p| p.as_ref())
+                            {
+                                child_row.set_visible(name.to_lowercase().contains(&text));
+                            }
+                        }
+                    }
+                }
+                child = widget.next_sibling();
+            }
+        });
+
+        let dialog_select = dialog.clone();
+        flow_box.connect_child_activated(move |_, _| {
+            dialog_select.response(gtk::ResponseType::Ok);
+        });
+        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+        dialog.add_button(&crate::i18n::tr("Select"), gtk::ResponseType::Ok);
+
+        let flow_box_select = flow_box.clone();
+        let sender_clone = sender.clone();
+        let target_path_clone = target_path.clone();
+
+        dialog.connect_response(move |win, response| {
+            if response == gtk::ResponseType::Ok {
+                if let Some(row) = flow_box_select.selected_children().first() {
+                    if let Some(button) = row.child().and_then(|c| c.downcast::<gtk::Button>().ok())
+                    {
+                        unsafe {
+                            if let Some(name) =
+                                button.data::<String>("icon-name").map(|p| p.as_ref())
+                            {
+                                sender_clone.input(AppMsg::SetFolderIcon {
+                                    path: target_path_clone.clone(),
+                                    icon_name: name.to_string(),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            win.destroy();
+        });
+        dialog.present();
+    }
+
     /// Displays a grid-based icon picker dialog to set custom folder icons.
     pub fn show_icon_picker(&self, target_path: PathBuf, sender: &AsyncComponentSender<Self>) {
         let toplevels = gtk::Window::list_toplevels();

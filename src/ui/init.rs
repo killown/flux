@@ -84,6 +84,7 @@ impl FluxApp {
             |msg| match msg {
                 crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
                 crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
+                crate::ui::SidebarMsg::ChangeIcon(path) => AppMsg::ShowSidebarIconPicker(path),
                 crate::ui::SidebarMsg::Reorder { from, to } => AppMsg::ReorderSidebar { from, to },
                 crate::ui::SidebarMsg::PinAt {
                     path,

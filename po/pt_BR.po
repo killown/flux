@@ -1377,3 +1377,23 @@ msgstr "Desfazer operação de arquivo"
 #: src/ui/help.rs:???
 msgid "Redo file operation"
 msgstr "Refazer operação de arquivo"
+
+#: src/ui/components.rs:???
+msgid "Change icon"
+msgstr "Alterar ícone"
+
+#: src/ui/dialogs.rs:???
+msgid "Select Icon"
+msgstr "Selecionar ícone"
+
+#: src/ui/dialogs.rs:???
+msgid "Select Folder Icon"
+msgstr "Selecionar ícone da pasta"
+
+#: src/ui/dialogs.rs:???
+msgid "Select Sidebar Icon"
+msgstr "Selecionar ícone da barra lateral"
+
+#: src/ui/dialogs.rs:???
+msgid "Select"
+msgstr "Selecionar"
