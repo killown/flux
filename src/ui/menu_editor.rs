@@ -839,6 +839,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
 
 pub fn run() {
     adw::init().expect("Failed to initialize Libadwaita");
+    crate::utils::helpers::load_custom_css();
 
     let app = adw::Application::builder()
         .flags(gtk::gio::ApplicationFlags::NON_UNIQUE)
