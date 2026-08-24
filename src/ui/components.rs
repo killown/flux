@@ -512,6 +512,10 @@ pub enum SidebarMsg {
     Navigate(PathBuf),
     Remove(PathBuf),
     ChangeIcon(PathBuf),
+    Rename {
+        path: PathBuf,
+        current_name: String,
+    },
     Reorder {
         from: PathBuf,
         to: PathBuf,
@@ -622,7 +626,7 @@ impl FactoryComponent for SidebarPlace {
 
             add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
-                connect_pressed[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
+                connect_pressed[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
                     if is_label { return; }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
 
@@ -631,6 +635,7 @@ impl FactoryComponent for SidebarPlace {
                         .build();
 
                     let menu_model = gio::Menu::new();
+                    menu_model.append(Some(&tr("Rename")), Some("sidebar.rename"));
                     menu_model.append(Some(&tr("Change icon")), Some("sidebar.change_icon"));
                     menu_model.append(Some(&tr("Remove from sidebar")), Some("sidebar.remove"));
                     menu.set_menu_model(Some(&menu_model));
@@ -642,6 +647,18 @@ impl FactoryComponent for SidebarPlace {
                         menu.set_pointing_to(Some(&rect));
 
                         let action_group = gio::SimpleActionGroup::new();
+
+                        let rename_action = gio::SimpleAction::new("rename", None);
+                        let sender_rn = sender.clone();
+                        let path_rn = path.clone();
+                        let name_rn = name.clone();
+                        rename_action.connect_activate(move |_, _| {
+                            let _ = sender_rn.output(SidebarMsg::Rename {
+                                path: path_rn.clone(),
+                                current_name: name_rn.clone(),
+                            });
+                        });
+                        action_group.add_action(&rename_action);
 
                         let change_icon_action = gio::SimpleAction::new("change_icon", None);
                         let sender_ci = sender.clone();

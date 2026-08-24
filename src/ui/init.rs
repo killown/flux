@@ -85,6 +85,9 @@ impl FluxApp {
                 crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
                 crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
                 crate::ui::SidebarMsg::ChangeIcon(path) => AppMsg::ShowSidebarIconPicker(path),
+                crate::ui::SidebarMsg::Rename { path, current_name } => {
+                    AppMsg::PromptSidebarRename { path, current_name }
+                }
                 crate::ui::SidebarMsg::Reorder { from, to } => AppMsg::ReorderSidebar { from, to },
                 crate::ui::SidebarMsg::PinAt {
                     path,

@@ -521,6 +521,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Prompts a dialog to rename a sidebar bookmark.
+    PromptSidebarRename { path: PathBuf, current_name: String },
+    /// Persists a new name for a matching sidebar entry in config.toml.
+    RenameSidebarPlace { path: PathBuf, new_name: String },
     /// Undo the most recent file operation (Ctrl+Z).
     Undo,
     /// Redo the most recently undone operation (Ctrl+Shift+Z / Ctrl+Y).

@@ -28,6 +28,12 @@ impl FluxApp {
             AppMsg::RemoveFromSidebar(path) => self.handle_remove_from_sidebar(path),
             AppMsg::AddToSidebarPermanent => self.handle_add_to_sidebar_permanent(),
             AppMsg::ReorderSidebar { from, to } => self.handle_reorder_sidebar(from, to),
+            AppMsg::PromptSidebarRename { path, current_name } => {
+                self.show_prompt_sidebar_rename(path, current_name, &sender);
+            }
+            AppMsg::RenameSidebarPlace { path, new_name } => {
+                self.handle_rename_sidebar_place(path, new_name, &sender);
+            }
             AppMsg::SidebarDropMove {
                 source_paths,
                 dest_path,
