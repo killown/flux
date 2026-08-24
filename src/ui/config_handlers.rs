@@ -190,6 +190,28 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_rename_sidebar_place(
+        &mut self,
+        path: PathBuf,
+        new_name: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let mut modified = false;
+
+        for place in &mut self.config.sidebar {
+            let expanded = utils::expand_path(&place.path);
+            if expanded == path {
+                place.name = new_name.clone();
+                modified = true;
+            }
+        }
+
+        if modified {
+            utils::save_config(&self.config);
+            sender.input(AppMsg::RefreshSidebar);
+        }
+    }
+
     pub fn handle_set_folder_icon(
         &mut self,
         path: PathBuf,

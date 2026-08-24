@@ -1397,3 +1397,11 @@ msgstr "Selecionar ícone da barra lateral"
 #: src/ui/dialogs.rs:???
 msgid "Select"
 msgstr "Selecionar"
+
+#: src/ui/dialogs.rs:???
+msgid "Rename Bookmark"
+msgstr "Renomear favorito"
+
+#: src/ui/dialogs.rs:???
+msgid "Enter a new display name for this bookmark:"
+msgstr "Digite um novo nome de exibição para este favorito:"

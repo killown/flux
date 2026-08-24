@@ -308,6 +308,64 @@ impl FluxApp {
         });
     }
 
+    /// Displays a modal prompt to rename a sidebar bookmark.
+    pub fn show_prompt_sidebar_rename(
+        &self,
+        target_path: PathBuf,
+        current_name: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let parent = gtk::Application::default().active_window();
+        let s = sender.clone();
+
+        let dialog = gtk::MessageDialog::new(
+            parent.as_ref(),
+            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+            gtk::MessageType::Other,
+            gtk::ButtonsType::None,
+            crate::i18n::tr("Rename Bookmark"),
+        );
+        dialog.set_secondary_text(Some(&crate::i18n::tr(
+            "Enter a new display name for this bookmark:",
+        )));
+
+        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+        let rename_btn = dialog.add_button(&crate::i18n::tr("Rename"), gtk::ResponseType::Ok);
+        rename_btn.style_context().add_class("suggested-action");
+        dialog.set_default_response(gtk::ResponseType::Ok);
+
+        let entry = gtk::Entry::builder()
+            .text(&current_name)
+            .activates_default(true)
+            .margin_top(8)
+            .margin_bottom(4)
+            .margin_start(16)
+            .margin_end(16)
+            .build();
+
+        entry.select_region(0, -1);
+        entry.connect_map(|e| {
+            e.grab_focus();
+        });
+
+        dialog.content_area().append(&entry);
+        dialog.present();
+
+        let entry_clone = entry.clone();
+        dialog.connect_response(move |dlg, resp| {
+            if resp == gtk::ResponseType::Ok {
+                let new_name = entry_clone.text().trim().to_string();
+                if !new_name.is_empty() {
+                    s.input(AppMsg::RenameSidebarPlace {
+                        path: target_path.clone(),
+                        new_name,
+                    });
+                }
+            }
+            dlg.close();
+        });
+    }
+
     /// Displays a symbolic-only icon picker dialog for sidebar locations.
     pub fn show_sidebar_icon_picker(
         &self,
