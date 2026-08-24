@@ -5,6 +5,23 @@
   --font-main: "Inter", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
   letter-spacing: 0.2px;
+
+  /* ── Adwaita / GTK palette overrides for light mode ── */
+  --standalone-color-ok: #1d1d1f;
+  --accent-fg-color: #ffffff;
+  --window-bg-color: #f5f5f7;
+  --window-fg-color: #1d1d1f;
+  --view-bg-color: #ffffff;
+  --view-fg-color: #1d1d1f;
+  --headerbar-bg-color: #ececec;
+  --headerbar-fg-color: #1d1d1f;
+  --card-bg-color: #ffffff;
+  --card-fg-color: #1d1d1f;
+  --popover-bg-color: #ffffff;
+  --popover-fg-color: #1d1d1f;
+  --dialog-bg-color: #ffffff;
+  --dialog-fg-color: #1d1d1f;
+  --secondary-fg-color: rgba(29, 29, 31, 0.7);
 }
 
 window {
@@ -292,9 +309,26 @@ popover.menu contents {
   box-shadow: 0 8px 24px var(--shadow);
 }
 
+popover.menu modelbutton {
+  color: #1d1d1f;
+}
+
 popover.menu modelbutton label {
   color: #1d1d1f;
   letter-spacing: 0.4px;
+}
+
+popover.menu modelbutton label:disabled,
+popover.menu modelbutton accelerator,
+popover.menu modelbutton .accelerator {
+  color: rgba(29, 29, 31, 0.6);
+}
+
+popover.menu modelbutton image,
+popover.menu modelbutton arrow,
+popover.menu modelbutton arrow.right,
+popover.menu modelbutton arrow.left {
+  color: #1d1d1f;
 }
 
 popover.menu modelbutton:hover {
@@ -302,7 +336,14 @@ popover.menu modelbutton:hover {
   color: white;
 }
 
-popover.menu modelbutton:hover label {
+popover.menu modelbutton:hover label,
+popover.menu modelbutton:hover label:disabled,
+popover.menu modelbutton:hover accelerator,
+popover.menu modelbutton:hover .accelerator,
+popover.menu modelbutton:hover image,
+popover.menu modelbutton:hover arrow,
+popover.menu modelbutton:hover arrow.right,
+popover.menu modelbutton:hover arrow.left {
   color: white;
 }
 
@@ -313,18 +354,118 @@ popover.menu > contents separator {
 }
 
 /* ── Entry ── */
-entry {
+entry,
+searchentry,
+passwordentry,
+entry text,
+searchentry text,
+passwordentry text {
   background-color: #f5f5f7;
   border: none;
   border-radius: 22px;
   padding: 4px 12px;
   color: #1d1d1f;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+  caret-color: #1d1d1f;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
   letter-spacing: 0.5px;
 }
 
-entry:focus {
+entry placeholder,
+searchentry placeholder,
+passwordentry placeholder {
+  color: rgba(29, 29, 31, 0.5);
+}
+
+entry:focus,
+searchentry:focus,
+passwordentry:focus,
+entry:focus-within,
+searchentry:focus-within,
+passwordentry:focus-within {
   box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+entry image,
+entry image.clear,
+searchentry image,
+searchentry image.clear,
+passwordentry image,
+passwordentry image.clear,
+entry image.left,
+entry image.right,
+searchentry image.left,
+searchentry image.right,
+passwordentry image.left,
+passwordentry image.right,
+entry button,
+entry button.image-button,
+entry button.clear,
+entry button.close,
+searchentry button,
+searchentry button.image-button,
+searchentry button.clear,
+searchentry button.close,
+passwordentry button,
+passwordentry button.image-button,
+passwordentry button.clear,
+passwordentry button.close {
+  color: #1d1d1f;
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+  opacity: 0.75;
+}
+
+entry image:hover,
+entry image.clear:hover,
+searchentry image:hover,
+searchentry image.clear:hover,
+passwordentry image:hover,
+passwordentry image.clear:hover,
+entry button:hover,
+entry button.image-button:hover,
+entry button.clear:hover,
+entry button.close:hover,
+searchentry button:hover,
+searchentry button.image-button:hover,
+searchentry button.clear:hover,
+searchentry button.close:hover,
+passwordentry button:hover,
+passwordentry button.image-button:hover,
+passwordentry button.clear:hover,
+passwordentry button.close:hover {
+  color: #1d1d1f;
+  background-color: rgba(0, 0, 0, 0.08);
+  opacity: 1;
+}
+
+entry image:active,
+entry image.clear:active,
+searchentry image:active,
+searchentry image.clear:active,
+passwordentry image:active,
+passwordentry image.clear:active,
+entry button:active,
+entry button.image-button:active,
+entry button.clear:active,
+entry button.close:active,
+searchentry button:active,
+searchentry button.image-button:active,
+searchentry button.clear:active,
+searchentry button.close:active,
+passwordentry button:active,
+passwordentry button.image-button:active,
+passwordentry button.clear:active,
+passwordentry button.close:active {
+  color: #007aff;
+  opacity: 1;
+}
+
+textview,
+textview text {
+  background-color: #ffffff;
+  color: #1d1d1f;
+  caret-color: #1d1d1f;
 }
 
 /* ── Selection status ── */
@@ -438,9 +579,20 @@ button label {
 }
 
 .boxed-list {
-  background: rgba(0, 0, 0, 0.02);
+  background: #ffffff;
   border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.boxed-list > row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+.boxed-list > row:last-child {
+  border-bottom: none;
 }
 
 /* ── Checkboxes & Radios ── */
@@ -479,11 +631,13 @@ tooltip.background {
 }
 
 /* ── Spinbutton ── */
-spinbutton {
+spinbutton,
+spinbutton text {
   background-color: rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.04);
   border-radius: 8px;
   color: #1d1d1f;
+  caret-color: #1d1d1f;
   padding: 0 4px;
   min-height: 28px;
 }
@@ -620,7 +774,7 @@ scrollbar slider:hover {
   background-color: rgba(0, 0, 0, 0.25);
 }
 
-/* ── Settings window overrides ── */
+/* ── Settings window & Libadwaita Preferences Row overrides ── */
 window.settings-window headerbar label,
 adwpreferenceswindow headerbar label {
   letter-spacing: 2px;
@@ -639,9 +793,33 @@ adwpreferencesgroup > box > label {
   opacity: 0.7;
 }
 
-adwactionrow label {
+adwactionrow,
+adwactionrow label,
+adwpreferencesrow,
+adwpreferencesrow label,
+adwpreferencespage,
+adwpreferencespage label {
   color: #1d1d1f;
-  letter-spacing: 0.3px;
+}
+
+adwactionrow .title,
+adwpreferencesrow .title,
+adwactionrow label.title,
+adwpreferencesrow label.title,
+adwpreferencesgroup .title,
+adwpreferencesgroup label.title {
+  color: #1d1d1f;
+  font-weight: 600;
+}
+
+adwactionrow .subtitle,
+adwpreferencesrow .subtitle,
+adwactionrow label.subtitle,
+adwpreferencesrow label.subtitle,
+adwpreferencesgroup .description,
+adwpreferencesgroup label.description,
+.subtitle {
+  color: rgba(29, 29, 31, 0.75) !important;
 }
 
 dropdown {
@@ -676,6 +854,31 @@ toast label {
 
 .settings-window .error {
   color: #d70015;
+}
+
+/* ── Menu editor & General Utility Classes ── */
+.dim-label {
+  color: rgba(29, 29, 31, 0.75) !important;
+}
+
+.caption {
+  color: rgba(29, 29, 31, 0.75) !important;
+}
+
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: rgba(29, 29, 31, 0.75) !important;
+}
+
+.accent {
+  color: #007aff !important;
+  font-weight: 700;
+}
+
+.heading {
+  font-weight: 700;
+  color: #1d1d1f !important;
 }
 
 .quick-panel-scroll {
