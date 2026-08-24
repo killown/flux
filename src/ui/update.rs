@@ -346,6 +346,9 @@ impl FluxApp {
                 );
             }
             AppMsg::ShowIconPicker(target_path) => self.show_icon_picker(target_path, &sender),
+            AppMsg::ShowSidebarIconPicker(path) => {
+                self.show_sidebar_icon_picker(path, &sender);
+            }
             AppMsg::TriggerIconPicker => {
                 let target = self
                     .get_selected_path()

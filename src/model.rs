@@ -1033,6 +1033,8 @@ pub enum AppMsg {
     ToggleSortOrder,
     /// Sets sort direction: true for Ascending, false for Descending.
     SetAsc(bool),
+    /// Opens an icon picker dialog for a sidebar entry (symbolic only).
+    ShowSidebarIconPicker(PathBuf),
     /// Opens an icon picker dialog for the given directory path.
     ShowIconPicker(PathBuf),
     /// Persists a custom icon name for the given directory path.

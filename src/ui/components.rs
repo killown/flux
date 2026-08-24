@@ -511,6 +511,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 pub enum SidebarMsg {
     Navigate(PathBuf),
     Remove(PathBuf),
+    ChangeIcon(PathBuf),
     Reorder {
         from: PathBuf,
         to: PathBuf,
@@ -630,6 +631,7 @@ impl FactoryComponent for SidebarPlace {
                         .build();
 
                     let menu_model = gio::Menu::new();
+                    menu_model.append(Some(&tr("Change icon")), Some("sidebar.change_icon"));
                     menu_model.append(Some(&tr("Remove from sidebar")), Some("sidebar.remove"));
                     menu.set_menu_model(Some(&menu_model));
 
@@ -640,6 +642,15 @@ impl FactoryComponent for SidebarPlace {
                         menu.set_pointing_to(Some(&rect));
 
                         let action_group = gio::SimpleActionGroup::new();
+
+                        let change_icon_action = gio::SimpleAction::new("change_icon", None);
+                        let sender_ci = sender.clone();
+                        let path_ci = path.clone();
+                        change_icon_action.connect_activate(move |_, _| {
+                            let _ = sender_ci.output(SidebarMsg::ChangeIcon(path_ci.clone()));
+                        });
+                        action_group.add_action(&change_icon_action);
+
                         let remove_action = gio::SimpleAction::new("remove", None);
                         let sender_c = sender.clone();
                         let path_c = path.clone();

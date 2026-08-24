@@ -196,12 +196,23 @@ impl FluxApp {
         icon_name: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        let path_str = path.to_string_lossy().to_string();
+
         self.config
             .ui
             .folder_icons
-            .insert(path.to_string_lossy().to_string(), icon_name);
+            .insert(path_str, icon_name.clone());
+
+        for place in &mut self.config.sidebar {
+            let expanded = utils::expand_path(&place.path);
+            if expanded == path {
+                place.icon = icon_name.clone();
+            }
+        }
+
         utils::save_config(&self.config);
         sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::RefreshSidebar);
     }
 
     pub fn handle_reset_folder_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
