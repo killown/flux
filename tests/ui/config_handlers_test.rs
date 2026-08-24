@@ -42,6 +42,40 @@ fn test_file_icon_override_insertion_and_removal() {
 }
 
 #[test]
+fn test_rename_sidebar_device_in_config() {
+    use flux::model::{Config, DeviceRename};
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+
+    let mut config = Config::default();
+    let mut renames = HashMap::new();
+    renames.insert(
+        "/mnt/vault".to_string(),
+        DeviceRename {
+            name: "Vault".to_string(),
+            icon: Some("lock-symbolic".to_string()),
+        },
+    );
+    config.ui.device_renames = renames;
+
+    let target_path = PathBuf::from("/mnt/vault");
+    let new_name = "Secure Vault".to_string();
+    let path_str = target_path.to_string_lossy().to_string();
+
+    let mut modified = false;
+    if let Some(device) = config.ui.device_renames.get_mut(&path_str) {
+        device.name = new_name;
+        modified = true;
+    }
+
+    assert!(modified);
+    assert_eq!(
+        config.ui.device_renames.get("/mnt/vault").unwrap().name,
+        "Secure Vault"
+    );
+}
+
+#[test]
 fn test_file_icon_override_update() {
     let mut ui_config = UIConfig::default();
     let key = "/home/user/doc.pdf".to_string();
