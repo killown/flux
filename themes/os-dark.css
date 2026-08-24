@@ -237,13 +237,41 @@ popover.menu contents {
   box-shadow: 0 8px 24px var(--shadow);
 }
 
+popover.menu modelbutton {
+  color: @theme_fg_color;
+}
+
 popover.menu modelbutton label {
   color: @theme_fg_color;
   letter-spacing: 0.4px;
 }
 
+popover.menu modelbutton label:disabled,
+popover.menu modelbutton accelerator,
+popover.menu modelbutton .accelerator {
+  color: alpha(@theme_fg_color, 0.55);
+}
+
+popover.menu modelbutton image,
+popover.menu modelbutton arrow,
+popover.menu modelbutton arrow.right,
+popover.menu modelbutton arrow.left {
+  color: @theme_fg_color;
+}
+
 popover.menu modelbutton:hover {
   background-color: @accent_bg_color;
+  color: @accent_fg_color;
+}
+
+popover.menu modelbutton:hover label,
+popover.menu modelbutton:hover label:disabled,
+popover.menu modelbutton:hover accelerator,
+popover.menu modelbutton:hover .accelerator,
+popover.menu modelbutton:hover image,
+popover.menu modelbutton:hover arrow,
+popover.menu modelbutton:hover arrow.right,
+popover.menu modelbutton:hover arrow.left {
   color: @accent_fg_color;
 }
 
@@ -253,18 +281,118 @@ popover.menu > contents separator {
   margin: 4px 8px;
 }
 
-entry {
+entry,
+searchentry,
+passwordentry,
+entry text,
+searchentry text,
+passwordentry text {
   background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 5%);
   border: none;
   border-radius: 22px;
   padding: 4px 12px;
   color: @theme_fg_color;
+  caret-color: @theme_fg_color;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
   letter-spacing: 0.5px;
 }
 
-entry:focus {
+entry placeholder,
+searchentry placeholder,
+passwordentry placeholder {
+  color: alpha(@theme_fg_color, 0.45);
+}
+
+entry:focus,
+searchentry:focus,
+passwordentry:focus,
+entry:focus-within,
+searchentry:focus-within,
+passwordentry:focus-within {
   box-shadow: 0 0 0 3px alpha(@accent_color, 0.3);
+}
+
+entry image,
+entry image.clear,
+searchentry image,
+searchentry image.clear,
+passwordentry image,
+passwordentry image.clear,
+entry image.left,
+entry image.right,
+searchentry image.left,
+searchentry image.right,
+passwordentry image.left,
+passwordentry image.right,
+entry button,
+entry button.image-button,
+entry button.clear,
+entry button.close,
+searchentry button,
+searchentry button.image-button,
+searchentry button.clear,
+searchentry button.close,
+passwordentry button,
+passwordentry button.image-button,
+passwordentry button.clear,
+passwordentry button.close {
+  color: @theme_fg_color;
+  background-color: transparent;
+  box-shadow: none;
+  border: none;
+  opacity: 0.75;
+}
+
+entry image:hover,
+entry image.clear:hover,
+searchentry image:hover,
+searchentry image.clear:hover,
+passwordentry image:hover,
+passwordentry image.clear:hover,
+entry button:hover,
+entry button.image-button:hover,
+entry button.clear:hover,
+entry button.close:hover,
+searchentry button:hover,
+searchentry button.image-button:hover,
+searchentry button.clear:hover,
+searchentry button.close:hover,
+passwordentry button:hover,
+passwordentry button.image-button:hover,
+passwordentry button.clear:hover,
+passwordentry button.close:hover {
+  color: @theme_fg_color;
+  background-color: alpha(@theme_fg_color, 0.08);
+  opacity: 1;
+}
+
+entry image:active,
+entry image.clear:active,
+searchentry image:active,
+searchentry image.clear:active,
+passwordentry image:active,
+passwordentry image.clear:active,
+entry button:active,
+entry button.image-button:active,
+entry button.clear:active,
+entry button.close:active,
+searchentry button:active,
+searchentry button.image-button:active,
+searchentry button.clear:active,
+searchentry button.close:active,
+passwordentry button:active,
+passwordentry button.image-button:active,
+passwordentry button.clear:active,
+passwordentry button.close:active {
+  color: @accent_color;
+  opacity: 1;
+}
+
+textview,
+textview text {
+  background-color: transparent;
+  color: @theme_fg_color;
+  caret-color: @theme_fg_color;
 }
 
 .selection-status {
@@ -300,6 +428,10 @@ progressbar progress {
   font-weight: bold;
 }
 
+.suggested-action label {
+  color: @accent_fg_color;
+}
+
 .suggested-action:hover {
   background-color: alpha(@accent_bg_color, 0.8);
 }
@@ -311,6 +443,10 @@ progressbar progress {
   padding: 8px 16px;
   font-weight: bold;
   letter-spacing: 1.2px;
+}
+
+.destructive-action label {
+  color: #ff3b30;
 }
 
 .destructive-action:hover {
@@ -396,11 +532,13 @@ tooltip.background {
   padding: 6px 12px;
 }
 
-spinbutton {
+spinbutton,
+spinbutton text {
   background-color: alpha(@theme_fg_color, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 8px;
   color: @theme_fg_color;
+  caret-color: @theme_fg_color;
   padding: 0 4px;
   min-height: 28px;
 }
@@ -548,9 +686,33 @@ adwpreferencesgroup > box > label {
   opacity: 0.7;
 }
 
-adwactionrow label {
+adwactionrow,
+adwactionrow label,
+adwpreferencesrow,
+adwpreferencesrow label,
+adwpreferencespage,
+adwpreferencespage label {
   color: @theme_fg_color;
-  letter-spacing: 0.3px;
+}
+
+adwactionrow .title,
+adwpreferencesrow .title,
+adwactionrow label.title,
+adwpreferencesrow label.title,
+adwpreferencesgroup .title,
+adwpreferencesgroup label.title {
+  color: @theme_fg_color;
+  font-weight: 600;
+}
+
+adwactionrow .subtitle,
+adwpreferencesrow .subtitle,
+adwactionrow label.subtitle,
+adwpreferencesrow label.subtitle,
+adwpreferencesgroup .description,
+adwpreferencesgroup label.description,
+.subtitle {
+  color: alpha(@theme_fg_color, 0.65);
 }
 
 dropdown {
@@ -567,6 +729,31 @@ dropdown label {
 toast label {
   color: @theme_fg_color;
   letter-spacing: 0.6px;
+}
+
+/* ── Menu editor & General Utility Classes ── */
+.dim-label {
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+.caption {
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+.accent {
+  color: @accent_color;
+  font-weight: 700;
+}
+
+.heading {
+  font-weight: 700;
+  color: @theme_fg_color;
 }
 
 .quick-panel-scroll {
