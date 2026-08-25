@@ -129,19 +129,17 @@ impl FluxApp {
                         ("win.rename-item".to_string(), "rename-item")
                     }
                     "builtin::add_to_quick_list" => {
-                        if let Some(ref target) = path {
-                            let quick_action = gio::SimpleAction::new("add-to-quick-list", None);
-                            let target_clone = target.clone();
-                            let sender_q = sender.clone();
-                            let toast = action_toast.clone();
-                            quick_action.connect_activate(move |_, _| {
-                                sender_q.input(AppMsg::AddExclusive(Some(target_clone.clone())));
-                                if let Some(ref msg) = toast {
-                                    sender_q.input(AppMsg::ShowToast(msg.clone()));
-                                }
-                            });
-                            self.action_group.add_action(&quick_action);
-                        }
+                        let quick_action = gio::SimpleAction::new("add-to-quick-list", None);
+                        let sender_q = sender.clone();
+                        let toast = action_toast.clone();
+
+                        quick_action.connect_activate(move |_, _| {
+                            sender_q.input(AppMsg::AddExclusive(None));
+                            if let Some(ref msg) = toast {
+                                sender_q.input(AppMsg::ShowToast(msg.clone()));
+                            }
+                        });
+                        self.action_group.add_action(&quick_action);
                         ("win.add-to-quick-list".to_string(), "add-to-quick-list")
                     }
                     "builtin::reset_custom_icon" => {

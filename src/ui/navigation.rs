@@ -256,25 +256,41 @@ impl FluxApp {
         });
     }
 
-    /// Adds a path to the temporary quick panel list.
+    /// Adds a path or multiple selected paths to the temporary quick panel list.
     pub fn handle_add_exclusive(
         &mut self,
         explicit_path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
-        let path_to_add = explicit_path.unwrap_or_else(|| {
-            self.get_selected_path()
-                .unwrap_or_else(|| self.current_path.clone())
-        });
-        if !self.exclusive_list.contains(&path_to_add) {
-            self.exclusive_list.push(path_to_add);
-            if self.exclusive_index.is_none() {
-                self.exclusive_index = Some(self.exclusive_list.len() - 1);
+        let mut paths_to_add = Vec::new();
+
+        if let Some(path) = explicit_path {
+            paths_to_add.push(path);
+        } else {
+            let selection = self.get_selection();
+            if selection.is_empty() {
+                paths_to_add.push(self.current_path.clone());
+            } else {
+                paths_to_add.extend(selection);
+            }
+        }
+
+        let mut added_any = false;
+        for path in paths_to_add {
+            let canon = path.canonicalize().unwrap_or(path);
+            if !self.exclusive_list.contains(&canon) {
+                self.exclusive_list.push(canon);
+                added_any = true;
+            }
+        }
+
+        if added_any {
+            if self.exclusive_index.is_none() && !self.exclusive_list.is_empty() {
+                self.exclusive_index = Some(0);
             }
             sender.input(AppMsg::RebuildQuickPanel);
         }
     }
-
     /// Clears all entries from the temporary quick panel list.
     pub fn handle_clear_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         self.exclusive_list.clear();
