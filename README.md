@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
 **Flux** is a minimalist, high-performance file manager for Linux. It’s built for those who love the clean look of GNOME but want a tool that stays out of their way.
-<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/c4382d06-4ee4-470e-8fd6-a8e388f4266c" />
+<img width="1960" height="1081" alt=" from 2026-08-25 16-38-42" src="https://github.com/user-attachments/assets/de75f947-4d6c-410f-8fbd-54364540cc91" />
 
 ## Why Flux?
 
@@ -241,10 +241,10 @@ cp themes/* ~/.local/share/flux/themes/
 
 Flux requires the following system libraries and runtime tools:
 
-| Category    | Dependencies                                                                              |
-| :---------- | :---------------------------------------------------------------------------------------- |
-| **System**  | `libadwaita`, `gtk4`, `glib2`, `pango`, `graphene`, `cairo`, `gdk-pixbuf2`, `poppler-glib`|
-| **Runtime** | `ffmpeg`, `ffprobe`, `ImageMagick`                                                        |
+| Category    | Dependencies                                                                               |
+| :---------- | :----------------------------------------------------------------------------------------- |
+| **System**  | `libadwaita`, `gtk4`, `glib2`, `pango`, `graphene`, `cairo`, `gdk-pixbuf2`, `poppler-glib` |
+| **Runtime** | `ffmpeg`, `ffprobe`, `ImageMagick`                                                         |
 
 **Ubuntu / Debian / Linux Mint**
 
