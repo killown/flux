@@ -1325,5 +1325,14 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
             }
         }
     }
+
+    // Append active network mounts directly into system mounts
+    for (uri, name, _icon) in crate::services::network::active_mounts() {
+        let path = PathBuf::from(uri);
+        if path.is_absolute() && !mounts.iter().any(|(_, p)| p == &path) {
+            mounts.push((name, path));
+        }
+    }
+
     mounts
 }
