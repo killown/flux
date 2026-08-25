@@ -156,6 +156,12 @@ impl FluxApp {
                         dest_dir,
                     });
             }
+            AppMsg::MoveFilesToTarget {
+                sources,
+                destination,
+            } => {
+                self.handle_move_files_to_target(sources, destination, &sender);
+            }
             AppMsg::ItemMoved { old_path, new_path } => {
                 let old_key = old_path.to_string_lossy().to_string();
                 let new_key = new_path.to_string_lossy().to_string();

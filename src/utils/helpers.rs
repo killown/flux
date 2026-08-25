@@ -706,6 +706,32 @@ impl FluxApp {
         }
     }
 
+    /// Moves a collection of source files/directories into a target destination directory.
+    pub fn handle_move_files_to_target(
+        &mut self,
+        sources: Vec<PathBuf>,
+        destination: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let mut moved_any = false;
+        for src in sources {
+            if src == destination {
+                continue;
+            }
+            if let Some(file_name) = src.file_name() {
+                let dest_path = destination.join(file_name);
+                if let Err(e) = std::fs::rename(&src, &dest_path) {
+                    sender.input(AppMsg::ShowToast(format!("Failed to move file: {}", e)));
+                } else {
+                    moved_any = true;
+                }
+            }
+        }
+        if moved_any {
+            sender.input(AppMsg::Refresh);
+        }
+    }
+
     /// Registers application-wide keyboard shortcuts with a ShortcutController.
     pub fn setup_shortcuts(
         controller: &gtk::ShortcutController,

@@ -347,6 +347,39 @@ impl FluxApp {
             });
             btn.add_controller(middle);
 
+            // ── Add Drop Target for quick-list button ──
+            let formats = gtk::gdk::ContentFormats::builder()
+                .add_type(gtk::gdk::FileList::static_type())
+                .build();
+
+            let drop_target = gtk::DropTarget::builder()
+                .actions(gtk::gdk::DragAction::MOVE | gtk::gdk::DragAction::COPY)
+                .formats(&formats)
+                .build();
+
+            let target_path = path.clone();
+            let sender_drop = sender.clone();
+
+            drop_target.connect_drop(move |_target, value, _, _| {
+                if let Ok(file_list) = value.get::<gtk::gdk::FileList>() {
+                    let source_paths: Vec<PathBuf> = file_list
+                        .files()
+                        .into_iter()
+                        .filter_map(|f| f.path())
+                        .collect();
+
+                    if !source_paths.is_empty() {
+                        sender_drop.input(AppMsg::MoveFilesToTarget {
+                            sources: source_paths,
+                            destination: target_path.clone(),
+                        });
+                        return true;
+                    }
+                }
+                false
+            });
+
+            btn.add_controller(drop_target);
             panel.append(&btn);
         }
     }
