@@ -25,6 +25,8 @@ pub struct AppInit {
     pub start_path: PathBuf,
     /// If the user started flux with an archive file, open it right after init.
     pub open_archive: Option<PathBuf>,
+    /// Pre-seeded list of directory paths to populate the quick-panel triage queue on startup.
+    pub quick_list: Option<Vec<PathBuf>>,
 }
 
 /// Internal metadata container for parallel directory processing.
