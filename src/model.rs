@@ -523,6 +523,11 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Files were dragged from the grid and dropped onto a quick-list tab button.
+    MoveFilesToTarget {
+        sources: Vec<PathBuf>,
+        destination: PathBuf,
+    },
     /// Prompts a dialog to rename a sidebar bookmark.
     PromptSidebarRename { path: PathBuf, current_name: String },
     /// Persists a new name for a matching sidebar entry in config.toml.
