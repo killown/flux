@@ -1,4 +1,5 @@
-use flux::args::{resolve_startup_action, StartupAction};
+use flux::args::{resolve_startup_action, resolve_startup_action_with_reader, StartupAction};
+use std::io::Cursor;
 use std::path::PathBuf;
 
 fn args(argv: &[&str]) -> Vec<String> {
@@ -240,5 +241,85 @@ fn all_flag_variants_are_distinct() {
         unique.len(),
         variants.len(),
         "two flags resolved to the same action variant"
+    );
+}
+
+// ── --set-icon / --reset-icon ────────────────────────────────────────────
+
+#[test]
+fn set_icon_with_target_and_image() {
+    let action = resolve_startup_action(
+        &args(&["flux-fm", "--set-icon", "/tmp/music.flac", "/tmp/cover.jpg"]),
+        home(),
+    );
+    assert_eq!(
+        action,
+        StartupAction::SetIcon {
+            target: PathBuf::from("/tmp/music.flac"),
+            image: PathBuf::from("/tmp/cover.jpg"),
+        }
+    );
+}
+
+#[test]
+fn set_icon_missing_args_falls_back_to_help() {
+    let action =
+        resolve_startup_action(&args(&["flux-fm", "--set-icon", "/tmp/music.flac"]), home());
+    assert_eq!(action, StartupAction::PrintHelp);
+}
+
+#[test]
+fn set_icons_stdin_flag() {
+    let action = resolve_startup_action(&args(&["flux-fm", "--set-icons-stdin"]), home());
+    assert_eq!(action, StartupAction::SetIconsStdin);
+}
+
+#[test]
+fn reset_icon_with_target() {
+    let action = resolve_startup_action(
+        &args(&["flux-fm", "--reset-icon", "/tmp/music.flac"]),
+        home(),
+    );
+    assert_eq!(
+        action,
+        StartupAction::ResetIcon(PathBuf::from("/tmp/music.flac"))
+    );
+}
+
+#[test]
+fn reset_icon_without_target_falls_back_to_help() {
+    let action = resolve_startup_action(&args(&["flux-fm", "--reset-icon"]), home());
+    assert_eq!(action, StartupAction::PrintHelp);
+}
+
+#[test]
+fn quick_list_multiple_paths() {
+    let action = resolve_startup_action(
+        &args(&["flux-fm", "--quick-list", "/tmp/dir1", "/tmp/dir2"]),
+        home(),
+    );
+    assert_eq!(
+        action,
+        StartupAction::QuickList(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2"),])
+    );
+}
+
+#[test]
+fn quick_list_empty_falls_back_to_help() {
+    let action = resolve_startup_action(&args(&["flux-fm", "--quick-list"]), home());
+    assert_eq!(action, StartupAction::PrintHelp);
+}
+
+#[test]
+fn quick_list_stdin_action() {
+    let cursor = Cursor::new(b"/tmp/dir1\n/tmp/dir2\n");
+    let action = resolve_startup_action_with_reader(
+        &args(&["flux-fm", "--quick-list-stdin"]),
+        home(),
+        cursor,
+    );
+    assert_eq!(
+        action,
+        StartupAction::QuickList(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2"),])
     );
 }

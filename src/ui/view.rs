@@ -729,8 +729,10 @@ impl SimpleAsyncComponent for FluxApp {
         let crate::model::AppInit {
             start_path,
             open_archive,
+            quick_list,
         } = init;
-        let (mut model, breadcrumb_box) = Self::init_components(start_path, &root, sender.clone());
+        let (mut model, breadcrumb_box) =
+            Self::init_components(start_path, quick_list, &root, sender.clone());
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
         let widgets = view_output!();

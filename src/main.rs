@@ -4,13 +4,14 @@ mod services;
 mod ui;
 mod utils;
 
-use crate::model::{AppInit, AppMsg, FluxApp};
+use crate::model::{AppInit, AppMsg, Config, FluxApp};
 use crate::ui::FileProperties;
 use adw::prelude::*;
 use adw::{gio, glib};
 use flux::args::{resolve_startup_action, StartupAction};
 use relm4::prelude::*;
 use std::cell::OnceCell;
+use std::io::BufRead;
 use std::path::PathBuf;
 
 thread_local! {
@@ -67,6 +68,30 @@ fn setup_config_watcher() {
     });
 }
 
+fn set_icon_on_target(config: &mut Config, target: &std::path::Path, image: &std::path::Path) {
+    let key = target.to_string_lossy().to_string();
+    let img_val = image.to_string_lossy().to_string();
+
+    if target.is_dir() {
+        config.ui.folder_icons.insert(key, img_val.clone());
+        // Also update matching sidebar pinned location icons
+        for place in &mut config.sidebar {
+            let expanded = crate::utils::expand_path(&place.path);
+            if expanded == target {
+                place.icon = img_val.clone();
+            }
+        }
+    } else {
+        config.ui.file_icons.insert(key, img_val);
+    }
+}
+
+fn reset_icon_on_target(config: &mut Config, target: &std::path::Path) {
+    let key = target.to_string_lossy().to_string();
+    config.ui.file_icons.remove(&key);
+    config.ui.folder_icons.remove(&key);
+}
+
 fn setup_shortcuts(app: &adw::Application) {
     let action_menu_editor = gio::SimpleAction::new("open-menu-editor", None);
     action_menu_editor.connect_activate(|_, _| {
@@ -103,7 +128,11 @@ fn setup_shortcuts(app: &adw::Application) {
     app.set_accels_for_action("app.new-window", &["<Primary>n"]);
 }
 
-fn launch_main_app(start_path: PathBuf, open_archive: Option<PathBuf>) {
+fn launch_main_app(
+    start_path: PathBuf,
+    open_archive: Option<PathBuf>,
+    quick_list: Option<Vec<PathBuf>>,
+) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
         crate::utils::helpers::load_custom_css();
@@ -142,6 +171,7 @@ fn launch_main_app(start_path: PathBuf, open_archive: Option<PathBuf>) {
     app.with_args(vec![]).run_async::<FluxApp>(AppInit {
         start_path,
         open_archive,
+        quick_list,
     });
 }
 
@@ -152,7 +182,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
 
-    match resolve_startup_action(&args, home_dir) {
+    match resolve_startup_action(&args, home_dir.clone()) {
         StartupAction::PrintVersion => {
             println!("flux {}", env!("CARGO_PKG_VERSION"));
         }
@@ -167,6 +197,20 @@ fn main() {
             println!("  -h, --help                  Print this help message");
             println!("  -v, --version               Print version information");
             println!("      --file-properties PATH  Open the file properties window for PATH");
+            println!("      --set-icon TARGET IMAGE Set a custom icon/image for TARGET");
+            println!(
+                "      --set-icons-stdin       Read TARGET<TAB>IMAGE pairs from standard input"
+            );
+            println!("      --reset-icon TARGET     Reset custom icon for TARGET back to default");
+            println!(
+                "      --reset-icons-stdin     Read TARGET paths from standard input to reset"
+            );
+            println!(
+                "      --quick-list PATH...    Open with quick-panel pre-populated with PATHs"
+            );
+            println!(
+                "      --quick-list-stdin      Open with quick-panel populated from standard input"
+            );
             println!("      --menu-editor           To manage menu.rs");
         }
 
@@ -188,11 +232,93 @@ fn main() {
 
         StartupAction::OpenArchive(archive_path) => {
             let start_path = archive_path.parent().unwrap_or(&archive_path).to_path_buf();
-            launch_main_app(start_path, Some(archive_path));
+            launch_main_app(start_path, Some(archive_path), None);
         }
 
         StartupAction::Launch(start_path) => {
-            launch_main_app(start_path, None);
+            launch_main_app(start_path, None, None);
+        }
+
+        StartupAction::QuickList(paths) => {
+            let first = paths.first().cloned().unwrap_or_else(|| home_dir.clone());
+            launch_main_app(first, None, Some(paths));
+        }
+
+        StartupAction::SetIcon { target, image } => {
+            let target_canon = target.canonicalize().unwrap_or(target);
+            let image_canon = image.canonicalize().unwrap_or(image);
+
+            if !image_canon.exists() {
+                eprintln!("flux: icon file not found: {}", image_canon.display());
+                std::process::exit(1);
+            }
+
+            let mut config = utils::load_config();
+            set_icon_on_target(&mut config, &target_canon, &image_canon);
+            utils::save_config(&config);
+            println!("Custom icon applied to {}", target_canon.display());
+        }
+
+        StartupAction::SetIconsStdin => {
+            let mut config = utils::load_config();
+            let stdin = std::io::stdin();
+            let mut count = 0;
+
+            for line in stdin.lock().lines().map_while(Result::ok) {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    continue;
+                }
+                let parts: Vec<&str> = if trimmed.contains('\t') {
+                    trimmed.split('\t').collect()
+                } else {
+                    trimmed.split_whitespace().collect()
+                };
+
+                if parts.len() >= 2 {
+                    let target = PathBuf::from(parts[0]);
+                    let image = PathBuf::from(parts[1]);
+                    let target_canon = target.canonicalize().unwrap_or(target);
+                    let image_canon = image.canonicalize().unwrap_or(image);
+
+                    if image_canon.exists() {
+                        set_icon_on_target(&mut config, &target_canon, &image_canon);
+                        count += 1;
+                    }
+                }
+            }
+
+            utils::save_config(&config);
+            println!("Batch updated {} custom icon(s)", count);
+        }
+
+        StartupAction::ResetIcon(target) => {
+            let target_canon = target.canonicalize().unwrap_or(target);
+            let mut config = utils::load_config();
+            reset_icon_on_target(&mut config, &target_canon);
+            utils::save_config(&config);
+            println!("Reset icon for {}", target_canon.display());
+        }
+
+        StartupAction::ResetIconsStdin => {
+            let mut config = utils::load_config();
+            let stdin = std::io::stdin();
+            let mut count = 0;
+
+            for line in stdin.lock().lines().map_while(Result::ok) {
+                let trimmed = line.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    continue;
+                }
+
+                let target = PathBuf::from(trimmed);
+                let target_canon = target.canonicalize().unwrap_or(target);
+                reset_icon_on_target(&mut config, &target_canon);
+                count += 1;
+            }
+
+            utils::save_config(&config);
+            println!("Batch reset {} custom icon(s)", count);
         }
     }
 }

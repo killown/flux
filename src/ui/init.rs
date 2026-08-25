@@ -20,6 +20,7 @@ impl FluxApp {
     /// from the main component file to improve maintainability and compilation speed.
     pub(crate) fn init_components(
         start_path: PathBuf,
+        quick_list: Option<Vec<PathBuf>>,
         root: &adw::Window,
         sender: AsyncComponentSender<Self>,
     ) -> (Self, gtk::Box) {
@@ -210,6 +211,20 @@ impl FluxApp {
             term_for_app_shutdown.kill_shell();
         });
 
+        let mut initial_exclusive_list = Vec::new();
+        let mut initial_exclusive_index = None;
+        if let Some(list) = quick_list {
+            for p in list {
+                let canon = p.canonicalize().unwrap_or(p);
+                if canon.exists() && !initial_exclusive_list.contains(&canon) {
+                    initial_exclusive_list.push(canon);
+                }
+            }
+            if !initial_exclusive_list.is_empty() {
+                initial_exclusive_index = Some(0);
+            }
+        }
+
         // 8. Model Assembly
         let mut model = FluxApp {
             files,
@@ -226,8 +241,8 @@ impl FluxApp {
             active_item_path: None,
             directory_monitor: None,
             action_group,
-            exclusive_list: Vec::new(),
-            exclusive_index: None,
+            exclusive_list: initial_exclusive_list,
+            exclusive_index: initial_exclusive_index,
             extension_globset: None,
             search_just_opened: false,
             sort_by: config.ui.default_sort,
@@ -287,6 +302,11 @@ impl FluxApp {
 
         // 9. Initial State Population
         model.setup_actions(&sender);
+
+        if !model.exclusive_list.is_empty() {
+            model.handle_rebuild_quick_panel(&sender);
+        }
+
         model.recent_stack.push_front(start_path.clone());
         model.update_breadcrumbs();
 
