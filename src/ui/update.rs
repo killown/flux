@@ -43,6 +43,7 @@ impl FluxApp {
                 before,
                 label_name,
             } => self.handle_pin_folder_at(path, before, label_name),
+            AppMsg::ShowSidebarPinZone(_val) => {}
             AppMsg::UnmountDevice(path) => self.handle_unmount_device(path, &sender),
             AppMsg::ToggleSidebar => self.handle_toggle_sidebar(),
 

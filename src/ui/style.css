@@ -341,3 +341,31 @@ scrollbar.vertical slider:hover {
   background-color: @accent_color;
   color: @accent_fg_color;
 }
+
+/* ── Sidebar pin-to-sidebar drop zone ─────────────────────────────────────── */
+.sidebar-pin-zone {
+  margin: 4px 8px 6px 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px dashed alpha(@accent_color, 0.5);
+  background-color: alpha(@accent_color, 0.05);
+  transition: all 150ms ease;
+  min-height: 36px;
+}
+
+.sidebar-pin-zone-label {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: alpha(@accent_color, 0.85);
+  margin-left: 8px;
+}
+
+.sidebar-pin-zone image {
+  color: alpha(@accent_color, 0.85);
+}
+
+.sidebar-pin-zone.sidebar-pin-zone-hover {
+  background-color: alpha(@accent_color, 0.18);
+  border-color: @accent_color;
+  border-style: solid;
+}

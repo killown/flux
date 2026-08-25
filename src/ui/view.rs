@@ -747,10 +747,90 @@ impl SimpleAsyncComponent for FluxApp {
         if model.sidebar.widget().parent().is_none() {
             sidebar_wrapper.append(model.sidebar.widget());
         }
-        if model.network_section.parent().is_none() {
-            sidebar_wrapper.append(&model.network_section);
-        }
+
+        let pin_zone = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(10)
+            .margin_start(12)
+            .margin_end(12)
+            .margin_top(6)
+            .margin_bottom(8)
+            .css_classes(["sidebar-pin-zone"])
+            .visible(false)
+            .build();
+        let pin_icon = gtk::Image::builder().icon_name("list-add-symbolic").build();
+        let pin_label = gtk::Label::builder()
+            .label(tr("Pin to Sidebar"))
+            .halign(gtk::Align::Start)
+            .hexpand(true)
+            .build();
+        pin_label.add_css_class("sidebar-pin-zone-label");
+        pin_zone.append(&pin_icon);
+        pin_zone.append(&pin_label);
+        sidebar_wrapper.append(&model.network_section);
+        sidebar_wrapper.append(&pin_zone);
         widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
+
+        {
+            let sidebar_ft = gtk::DropTarget::builder()
+                .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
+                .preload(false)
+                .build();
+            sidebar_ft.set_types(&[gdk::FileList::static_type()]);
+            let pz_enter = pin_zone.clone();
+            sidebar_ft.connect_enter(move |_, _, _| {
+                pz_enter.set_visible(true);
+                gdk::DragAction::empty()
+            });
+            let pz_leave = pin_zone.clone();
+            sidebar_ft.connect_leave(move |_| {
+                let pz = pz_leave.clone();
+                glib::timeout_add_local_once(std::time::Duration::from_millis(80), move || {
+                    pz.set_visible(false);
+                });
+            });
+            widgets.sidebar_box.add_controller(sidebar_ft);
+        }
+
+        {
+            let pin_zone_dt = gtk::DropTarget::builder()
+                .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
+                .build();
+            pin_zone_dt.set_types(&[gdk::FileList::static_type()]);
+            let pz_hover = pin_zone.clone();
+            pin_zone_dt.connect_enter(move |_, _, _| {
+                pz_hover.add_css_class("sidebar-pin-zone-hover");
+                gdk::DragAction::COPY
+            });
+            let pz_leave2 = pin_zone.clone();
+            pin_zone_dt.connect_leave(move |_| {
+                pz_leave2.remove_css_class("sidebar-pin-zone-hover");
+            });
+            let s_pin = sender.clone();
+            let pz_drop = pin_zone.clone();
+            pin_zone_dt.connect_drop(move |_, value, _, _| {
+                pz_drop.remove_css_class("sidebar-pin-zone-hover");
+                pz_drop.set_visible(false);
+                if let Ok(file_list) = value.get::<gdk::FileList>() {
+                    let paths: Vec<std::path::PathBuf> = file_list
+                        .files()
+                        .into_iter()
+                        .filter_map(|f| f.path())
+                        .filter(|p| p.is_dir())
+                        .collect();
+                    for folder in paths {
+                        s_pin.input(AppMsg::PinFolderAt {
+                            path: folder,
+                            before: std::path::PathBuf::new(),
+                            label_name: None,
+                        });
+                    }
+                    return true;
+                }
+                false
+            });
+            pin_zone.add_controller(pin_zone_dt);
+        }
 
         model.context_menu_popover.set_parent(&widgets.grid_overlay);
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());

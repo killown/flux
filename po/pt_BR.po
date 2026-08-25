@@ -1405,3 +1405,7 @@ msgstr "Renomear favorito"
 #: src/ui/dialogs.rs:???
 msgid "Enter a new display name for this bookmark:"
 msgstr "Digite um novo nome de exibição para este favorito:"
+
+#: src/ui/view.rs:764
+msgid "Pin to Sidebar"
+msgstr "Fixar na barra lateral"

@@ -523,6 +523,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Show or hide the "Pin to Sidebar" drop zone at the bottom of the sidebar.
+    ShowSidebarPinZone(bool),
     /// Files were dragged from the grid and dropped onto a quick-list tab button.
     MoveFilesToTarget {
         sources: Vec<PathBuf>,
