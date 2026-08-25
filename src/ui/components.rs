@@ -592,17 +592,11 @@ impl FactoryComponent for SidebarPlace {
             set_selectable: !self.is_section_label,
             #[watch]
             set_activatable: !self.is_section_label,
-            add_css_class: constants::SIDEBAR_ROW_CLASS,
+            #[watch] set_class_active: (constants::SIDEBAR_SECTION_ROW_CLASS, self.is_section_label),
+            #[watch] set_class_active: (constants::SIDEBAR_ROW_CLASS, !self.is_section_label),
             #[watch] set_class_active: ("sidebar-mount", self.is_mount),
             connect_realize[is_label = self.is_section_label] => move |w| {
                 FluxApp::set_cursor_pointer(w.as_ref(), !is_label);
-                if is_label {
-                    let w = w.clone();
-                    glib::idle_add_local_once(move || {
-                        w.remove_css_class(constants::SIDEBAR_ROW_CLASS);
-                        w.add_css_class(constants::SIDEBAR_SECTION_ROW_CLASS);
-                    });
-                }
             },
 
             add_controller = gtk::GestureClick {
