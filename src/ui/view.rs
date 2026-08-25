@@ -747,6 +747,8 @@ impl SimpleAsyncComponent for FluxApp {
         if model.sidebar.widget().parent().is_none() {
             sidebar_wrapper.append(model.sidebar.widget());
         }
+        sidebar_wrapper.append(&model.network_section);
+        widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
 
         let pin_zone = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
@@ -767,9 +769,9 @@ impl SimpleAsyncComponent for FluxApp {
         pin_label.add_css_class("sidebar-pin-zone-label");
         pin_zone.append(&pin_icon);
         pin_zone.append(&pin_label);
-        sidebar_wrapper.append(&model.network_section);
-        sidebar_wrapper.append(&pin_zone);
-        widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
+        // prepend into sidebar_box (outside the ScrolledWindow) so it always
+        // appears at the very top, above the scrollable bookmark list.
+        widgets.sidebar_box.prepend(&pin_zone);
 
         {
             let sidebar_ft = gtk::DropTarget::builder()
