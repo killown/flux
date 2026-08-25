@@ -989,3 +989,10 @@ toast label {
   color: #1d1d1f;
   font-weight: bold;
 }
+
+toast button,
+toast button label,
+adwtoast button,
+adwtoast button label {
+  color: inherit;
+}
