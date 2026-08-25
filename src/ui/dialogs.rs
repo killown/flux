@@ -479,10 +479,45 @@ impl FluxApp {
                             if let Some(name) =
                                 button.data::<String>("icon-name").map(|p| p.as_ref())
                             {
-                                sender_clone.input(AppMsg::SetFolderIcon {
-                                    path: target_path_clone.clone(),
-                                    icon_name: name.to_string(),
-                                });
+                                let mut config = crate::utils::load_config();
+                                let path_str = target_path_clone.to_string_lossy().to_string();
+                                let path_trimmed = path_str.trim_end_matches('/').to_string();
+
+                                let mut matched = false;
+                                for place in &mut config.sidebar {
+                                    if crate::utils::expand_path(&place.path) == target_path_clone {
+                                        place.icon = name.to_string();
+                                        matched = true;
+                                    }
+                                }
+
+                                if !matched {
+                                    if let Some(device) =
+                                        config.ui.device_renames.get_mut(&path_str)
+                                    {
+                                        device.icon = Some(name.to_string());
+                                    } else if let Some(device) =
+                                        config.ui.device_renames.get_mut(&path_trimmed)
+                                    {
+                                        device.icon = Some(name.to_string());
+                                    } else {
+                                        let display_name = target_path_clone
+                                            .file_name()
+                                            .map(|n| n.to_string_lossy().to_string())
+                                            .unwrap_or_else(|| path_trimmed);
+
+                                        config.ui.device_renames.insert(
+                                            path_str,
+                                            crate::model::DeviceRename {
+                                                name: display_name,
+                                                icon: Some(name.to_string()),
+                                            },
+                                        );
+                                    }
+                                }
+
+                                crate::utils::save_config(&config);
+                                sender_clone.input(AppMsg::RefreshSidebar);
                             }
                         }
                     }
