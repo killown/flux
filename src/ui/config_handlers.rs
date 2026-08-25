@@ -231,17 +231,37 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         let path_str = path.to_string_lossy().to_string();
+        let path_trimmed = path_str.trim_end_matches('/').to_string();
 
         self.config
             .ui
             .folder_icons
-            .insert(path_str, icon_name.clone());
+            .insert(path_str.clone(), icon_name.clone());
 
         for place in &mut self.config.sidebar {
             let expanded = utils::expand_path(&place.path);
             if expanded == path {
                 place.icon = icon_name.clone();
             }
+        }
+
+        if let Some(device) = self.config.ui.device_renames.get_mut(&path_str) {
+            device.icon = Some(icon_name.clone());
+        } else if let Some(device) = self.config.ui.device_renames.get_mut(&path_trimmed) {
+            device.icon = Some(icon_name.clone());
+        } else {
+            let display_name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| path_trimmed);
+
+            self.config.ui.device_renames.insert(
+                path_str,
+                crate::model::DeviceRename {
+                    name: display_name,
+                    icon: Some(icon_name),
+                },
+            );
         }
 
         utils::save_config(&self.config);
