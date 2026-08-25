@@ -319,12 +319,39 @@ impl FluxApp {
         }
 
         // 3. Mounts
+        let home = dirs::home_dir().unwrap_or_default();
+        let home_str = home.to_string_lossy().to_string();
+
         for (mut name, path) in utils::get_system_mounts() {
             let path_str = path.to_string_lossy().to_string();
+            let trimmed_path = path_str.trim_end_matches('/');
             let mut icon = "drive-harddisk-symbolic".to_string();
 
             // Intercept device renames to apply custom Name and Icon
-            if let Some(rename) = self.config.ui.device_renames.get(&path_str) {
+            // Matches exact string, trimmed path, expanded tilde paths, or mount name
+            let rename_opt = self
+                .config
+                .ui
+                .device_renames
+                .get(&path_str)
+                .or_else(|| self.config.ui.device_renames.get(trimmed_path))
+                .or_else(|| {
+                    self.config.ui.device_renames.iter().find_map(|(k, v)| {
+                        let expanded = if k.starts_with('~') {
+                            k.replace('~', &home_str)
+                        } else {
+                            k.clone()
+                        };
+                        let exp_trimmed = expanded.trim_end_matches('/');
+                        if exp_trimmed == trimmed_path || exp_trimmed == path_str || k == &name {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    })
+                });
+
+            if let Some(rename) = rename_opt {
                 name = rename.name.clone();
                 if let Some(custom_icon) = &rename.icon {
                     icon = custom_icon.clone();
