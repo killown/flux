@@ -327,3 +327,17 @@ scrollbar.vertical slider:hover {
   font-size: 1.2em;
   min-width: 10em;
 }
+
+.connected-server {
+  background-color: alpha(@accent_color, 0.06);
+  border-left: 2px solid @accent_color;
+}
+
+.connected-server:hover:not(:selected) {
+  background-color: alpha(@accent_color, 0.12);
+}
+
+.connected-server:selected {
+  background-color: @accent_color;
+  color: @accent_fg_color;
+}
