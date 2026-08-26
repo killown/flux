@@ -142,6 +142,23 @@ impl FluxApp {
                         self.action_group.add_action(&quick_action);
                         ("win.add-to-quick-list".to_string(), "add-to-quick-list")
                     }
+                    "builtin::tagfile" => {
+                        if mime != constants::MIME_DIR {
+                            let action = gio::SimpleAction::new("tag-file", None);
+                            let s = sender.clone();
+                            let toast = action_toast.clone();
+                            action.connect_activate(move |_, _| {
+                                s.input(AppMsg::OpenTagPicker);
+                                if let Some(ref msg) = toast {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
+                            });
+                            self.action_group.add_action(&action);
+                            ("win.tag-file".to_string(), "tag-file")
+                        } else {
+                            continue;
+                        }
+                    }
                     "builtin::reset_custom_icon" => {
                         if let Some(ref target) = path {
                             let action = gio::SimpleAction::new("reset-custom-icon", None);

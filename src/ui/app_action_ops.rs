@@ -24,7 +24,9 @@ impl FluxApp {
         }
 
         let items: Vec<(PathBuf, bool)> = if let Some(pos) = position {
-            if self.filter.is_empty() {
+            let query_lc = self.filter.to_lowercase();
+
+            if self.filter.is_empty() || self.is_content_searching {
                 self.files
                     .get(pos)
                     .map(|w| {
@@ -32,8 +34,74 @@ impl FluxApp {
                         vec![(item.path.clone(), item.is_dir)]
                     })
                     .unwrap_or_default()
+            } else if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query_lc) {
+                // If tag search rebuilt the files list directly, map by position first
+                if let Some(wrapper) = self.files.get(pos) {
+                    let item = wrapper.borrow();
+                    vec![(item.path.clone(), item.is_dir)]
+                } else {
+                    let rest_clean = rest.trim().to_lowercase();
+                    let target_tags: Vec<String> =
+                        tags.into_iter().map(|t| t.to_lowercase()).collect();
+                    let mut match_count = 0u32;
+                    let mut found = None;
+
+                    for i in 0..self.files.len() {
+                        if let Some(wrapper) = self.files.get(i) {
+                            let item = wrapper.borrow();
+                            let name_ok = rest_clean.is_empty()
+                                || item.name.to_lowercase().contains(&rest_clean);
+
+                            if name_ok {
+                                let file_tags = crate::utils::xattr::read_tags(&item.path);
+                                let file_tags_lc: Vec<String> =
+                                    file_tags.into_iter().map(|t| t.to_lowercase()).collect();
+
+                                if target_tags.iter().all(|req| file_tags_lc.contains(req)) {
+                                    if match_count == pos {
+                                        found = Some((item.path.clone(), item.is_dir));
+                                        break;
+                                    }
+                                    match_count += 1;
+                                }
+                            }
+                        }
+                    }
+                    found.map(|f| vec![f]).unwrap_or_default()
+                }
+            } else if let Some((op, rest)) = crate::utils::search::parse_size_filter(&query_lc) {
+                let rest_clean = rest.trim().to_lowercase();
+                let mut match_count = 0u32;
+                let mut found = None;
+
+                for i in 0..self.files.len() {
+                    if let Some(wrapper) = self.files.get(i) {
+                        let item = wrapper.borrow();
+                        let name_ok =
+                            rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
+                        let size_ok = if item.is_dir {
+                            true
+                        } else {
+                            match op {
+                                crate::utils::search::SizeOp::Gt(v) => item.size > v,
+                                crate::utils::search::SizeOp::Lt(v) => item.size < v,
+                                crate::utils::search::SizeOp::Range(l, r) => {
+                                    item.size >= l && item.size <= r
+                                }
+                            }
+                        };
+
+                        if name_ok && size_ok {
+                            if match_count == pos {
+                                found = Some((item.path.clone(), item.is_dir));
+                                break;
+                            }
+                            match_count += 1;
+                        }
+                    }
+                }
+                found.map(|f| vec![f]).unwrap_or_default()
             } else {
-                let query_lc = self.filter.to_lowercase();
                 let mut match_count = 0u32;
                 let mut found = None;
                 for i in 0..self.files.len() {

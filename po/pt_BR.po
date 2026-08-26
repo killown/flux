@@ -1449,3 +1449,24 @@ msgstr "Nome do Arquivo de Menu"
 #: src/ui/menu_editor.rs:664
 msgid "Enter a menu name (e.g. 'menu-application-all.rs' for 'application/all' MIME type)"
 msgstr "Digite o nome do menu (ex: 'menu-application-all.rs' para o tipo MIME 'application/all')"
+
+msgid "Browse by Tag"
+msgstr "Navegar por Etiqueta"
+
+msgid "Tag Navigator"
+msgstr "Navegador de Etiquetas"
+
+msgid "Type tag name…"
+msgstr "Digite o nome da etiqueta…"
+
+msgid "No Tags Found"
+msgstr "Nenhuma Etiqueta Encontrada"
+
+msgid "No matching tags in database"
+msgstr "Nenhuma etiqueta correspondente no banco de dados"
+
+msgid "Open tag navigator"
+msgstr "Abrir navegador de etiquetas"
+
+msgid "Edit tags for selection"
+msgstr "Editar etiquetas da seleção"

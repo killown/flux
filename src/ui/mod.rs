@@ -30,6 +30,8 @@ pub mod search_handlers;
 pub mod secondary_context_menu;
 pub mod sidebar_network;
 pub mod sidebar_ops;
+pub mod tag_navigator;
+pub mod tag_picker;
 pub mod task_ops;
 pub mod terminal_ops;
 pub mod transfer_dialog;

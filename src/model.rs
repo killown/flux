@@ -523,6 +523,22 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Open the global tag navigation command palette dialog
+    OpenTagNavigator,
+    /// Delete a tag from the database entirely across all files.
+    DeleteTagGlobally(String),
+    /// Open the tag picker popover for the current selection (Ctrl+T).
+    OpenTagPicker,
+    /// Deliver the resolved tags for the picker to display.
+    TagsReady {
+        paths: Vec<PathBuf>,
+        tags: Vec<String>,
+        available_tags: Vec<String>,
+    },
+    /// Persist a tag set to xattr + SQLite for the given path.
+    SetFileTags { path: PathBuf, tags: Vec<String> },
+    /// Navigate to a virtual tag view or filter by tag.
+    NavigateTag(String),
     /// Prompts a modal dialog to rename a section label.
     PromptSidebarRenameSection {
         old_name: String,

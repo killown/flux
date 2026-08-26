@@ -69,6 +69,27 @@ impl FluxApp {
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         let path_str = path.to_string_lossy();
 
+        // 0. Intercept Tag searches typed into location bar or clicked in sidebar
+        if path_str == "tags://" {
+            sender.input(AppMsg::OpenTagNavigator);
+            return;
+        }
+
+        if path_str.starts_with('#')
+            || path_str.starts_with(":tag:")
+            || path_str.starts_with(":t:")
+            || path_str.starts_with("tags://")
+        {
+            let clean_tag = path_str
+                .trim_start_matches("tags://")
+                .trim_start_matches(":tag:")
+                .trim_start_matches(":t:")
+                .trim_start_matches('#');
+
+            sender.input(AppMsg::NavigateTag(clean_tag.to_string()));
+            return;
+        }
+
         // 1. Intercept Network URIs
         if crate::services::network::is_network_uri(&path) {
             if path == self.current_path {

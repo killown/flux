@@ -80,6 +80,55 @@ mod size_filters {
 
 pub use size_filters::{parse_size_filter, SizeOp};
 
+/// Parses a tag query from the search input.
+///
+/// Syntax:
+/// - `:tag:work` or `:t:work` → tags: ["work"]
+/// - `:tag:work,urgent` or `#work,urgent` → tags: ["work", "urgent"]
+///
+/// Returns `Some((tags, remaining_query))` or `None`.
+pub fn parse_tag_filter(query: &str) -> Option<(Vec<String>, String)> {
+    let query_trim = query.trim();
+    if query_trim.is_empty() {
+        return None;
+    }
+
+    let parts: Vec<&str> = query_trim.split_whitespace().collect();
+
+    for (i, part) in parts.iter().enumerate() {
+        let raw_tags = if let Some(rest) = part.strip_prefix(":tag:") {
+            Some(rest)
+        } else if let Some(rest) = part.strip_prefix(":t:") {
+            Some(rest)
+        } else if let Some(rest) = part.strip_prefix('#') {
+            Some(rest)
+        } else {
+            None
+        };
+
+        if let Some(tag_str) = raw_tags {
+            let tags: Vec<String> = tag_str
+                .split(',')
+                .map(|t| t.trim().to_lowercase())
+                .filter(|t| !t.is_empty())
+                .collect();
+
+            if !tags.is_empty() {
+                let rest = parts
+                    .iter()
+                    .enumerate()
+                    .filter(|(j, _)| *j != i)
+                    .map(|(_, s)| *s)
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                return Some((tags, rest));
+            }
+        }
+    }
+
+    None
+}
+
 /// Parses a content‑search query string.
 ///
 /// Syntax:
@@ -93,6 +142,12 @@ pub fn parse_content_search_query(query: &str) -> Option<(String, Option<String>
         return None;
     }
     let rest = &query_lc[1..];
+
+    // Prevent collision with `:tag:` / `:t:` prefix
+    if rest.starts_with("tag:") || rest.starts_with("t:") {
+        return None;
+    }
+
     if let Some(second_col_pos) = rest.find(':') {
         let ext_part = rest[..second_col_pos].trim();
         let term_part = rest[second_col_pos + 1..].trim();

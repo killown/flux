@@ -1,0 +1,108 @@
+network_bookmarks = []
+default_list_mode = false
+
+[ui]
+default_icon_size = 96
+list_icon_size = 48
+sidebar_width = 240
+show_xdg_dirs = false
+single_click = false
+theme = "os-dark"
+default_sort = "Date"
+folders_first = true
+show_hidden_by_default = false
+show_csd = true
+start_maximized = false
+startup_window_width = 980
+startup_window_height = 780
+max_width_chars = 39
+grid_spacing = 16
+ascending = true
+expand_labels = false
+sidebar_visible = true
+show_recents = false
+recents_row = 1
+show_thumbnails = true
+
+[ui.terminal]
+height = 243
+fg_color = ""
+bg_color = ""
+font = "JetBrains Mono 11"
+
+[ui.current_folders_first]
+
+[ui.folder_sort]
+
+[ui.folder_icon_size]
+
+[ui.thumbnail_types]
+images = true
+videos = true
+fonts = true
+pdfs = true
+
+# --- Places ---
+[[sidebar]]
+name = "Places"
+kind = "label"
+icon = ""
+path = ""
+
+[[sidebar]]
+name = "Home"
+icon = "user-home-symbolic"
+path = "~"
+
+[[sidebar]]
+name = "Downloads"
+icon = "browser-download-symbolic"
+path = "~/Downloads"
+
+[[sidebar]]
+name = "Documents"
+icon = "emblem-documents-symbolic"
+path = "~/Documents"
+
+[[sidebar]]
+name = "Recents"
+icon = "document-open-recent-symbolic"
+path = "recent:///"
+
+# --- System ---
+[[sidebar]]
+name = "System"
+kind = "label"
+icon = ""
+path = ""
+
+[[sidebar]]
+name = "Tags"
+icon = "tag-symbolic"
+path = "tags://"
+
+[[sidebar]]
+name = "Config"
+icon = "org.gnome.Settings-symbolic"
+path = "~/.config"
+
+[[sidebar]]
+name = "Trash"
+icon = "org.gnome.Settings-trash-file-history-symbolic"
+path = "trash:///"
+
+# --- Devices ---
+[[sidebar]]
+name = "Devices"
+kind = "label"
+icon = ""
+path = ""
+
+[shortcuts]
+open = "Return"
+delete = "Delete"
+back = "BackSpace"
+forward = "<Alt>Right"
+refresh = "F5"
+search = "<control>f"
+toggle_hidden = "<control>h"
