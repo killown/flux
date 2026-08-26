@@ -339,6 +339,87 @@ impl FluxApp {
             AppMsg::SearchBackspace => self.handle_search_backspace(&sender),
             AppMsg::SwitchHeader(view_name) => self.handle_switch_header(view_name),
 
+            // Tags
+            AppMsg::OpenTagPicker => {
+                let selection = self.get_selection();
+                let paths = if selection.is_empty() {
+                    vec![self.current_path.clone()]
+                } else {
+                    selection
+                };
+
+                let state_db = self.state_db.clone();
+                let sender_tag = sender.clone();
+                let paths_clone = paths.clone();
+
+                std::thread::spawn(move || {
+                    let first_path = &paths_clone[0];
+                    let initial_tags = crate::utils::xattr::read_tags(first_path);
+                    let available_tags = state_db.list_all_tags().unwrap_or_default();
+
+                    sender_tag.input(AppMsg::TagsReady {
+                        paths: paths_clone,
+                        tags: initial_tags,
+                        available_tags,
+                    });
+                });
+            }
+            AppMsg::TagsReady {
+                paths,
+                tags,
+                available_tags,
+            } => {
+                let parent_widget = self.files.view.clone();
+                crate::ui::tag_picker::show_tag_picker(
+                    &parent_widget,
+                    paths,
+                    tags,
+                    available_tags,
+                    sender.clone(),
+                );
+            }
+            AppMsg::SetFileTags { path, tags } => {
+                let state_db = self.state_db.clone();
+                let path_clone = path.clone();
+                let tags_clone = tags.clone();
+                let sender_refresh = sender.clone();
+
+                std::thread::spawn(move || {
+                    let _ = crate::utils::xattr::write_tags(&path_clone, &tags_clone);
+                    let mtime = std::fs::metadata(&path_clone)
+                        .and_then(|m| m.modified())
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(0);
+
+                    let _ = state_db.set_tags(&path_clone, &tags_clone, mtime);
+                    sender_refresh.input(AppMsg::Refresh);
+                });
+            }
+            AppMsg::DeleteTagGlobally(tag) => {
+                let state_db = self.state_db.clone();
+                let sender_refresh = sender.clone();
+                std::thread::spawn(move || {
+                    let _ = state_db.delete_tag_globally(&tag);
+                    sender_refresh.input(AppMsg::Refresh);
+                });
+            }
+            AppMsg::OpenTagNavigator => {
+                let tags = self.state_db.list_all_tags().unwrap_or_default();
+                crate::ui::tag_navigator::show_tag_navigator(
+                    &self.files.view,
+                    tags,
+                    sender.clone(),
+                );
+            }
+            AppMsg::NavigateTag(tag) => {
+                let filter_str = format!(":tag:{}", tag);
+                self.search_just_opened = false;
+                self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
+                sender.input(AppMsg::UpdateFilter(filter_str));
+            }
+
             // Application Actions & Modals
             AppMsg::Open(position) => self.handle_open(position, &sender),
             AppMsg::Activate => self.handle_activate(&sender),

@@ -38,6 +38,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰏊      Paste" => "all", "builtin::paste", "Pasted items"
 "󰑕      Rename" => "all", "builtin::rename"
 "󰱝      Open With..." => "file", "builtin::open_with"
+"🆃      Edit Tags" => "file", "builtin::tagfile", "Opening tag editor..."
 "󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
 "󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
 "󰆴      Shred File (Permanent)" => "all", "python $HOME/.local/share/flux/scripts/flux_shredder.py %p", "Shredder initialized"
@@ -211,6 +212,11 @@ name = "Default"
 kind = "label"
 icon = ""
 path = ""
+
+[[sidebar]]
+name = "Tags"
+icon = "tag-symbolic"
+path = "tags://"
 
 [[sidebar]]
 name = "Home"

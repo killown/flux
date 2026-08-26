@@ -110,8 +110,8 @@ pub fn setup_controllers(
     let terminal_area_cap = terminal_area.clone();
 
     capture.connect_key_pressed(move |_ctrl, keyval, _keycode, state| {
-        let modifiers = state & gtk::accelerator_get_default_mod_mask();
-        let is_ctrl = modifiers == gdk::ModifierType::CONTROL_MASK;
+        let is_ctrl = state.contains(gdk::ModifierType::CONTROL_MASK);
+        let is_shift = state.contains(gdk::ModifierType::SHIFT_MASK);
 
         match keyval {
             gdk::Key::Insert if is_ctrl => {
@@ -136,6 +136,17 @@ pub fn setup_controllers(
             }
             gdk::Key::F8 => {
                 sender_cap.input(AppMsg::ToggleSidebar);
+                glib::Propagation::Stop
+            }
+            gdk::Key::t | gdk::Key::T if is_ctrl => {
+                if terminal_area_cap.has_focus() {
+                    return glib::Propagation::Proceed;
+                }
+                if is_shift {
+                    sender_cap.input(AppMsg::OpenTagNavigator);
+                } else {
+                    sender_cap.input(AppMsg::OpenTagPicker);
+                }
                 glib::Propagation::Stop
             }
             gdk::Key::Tab => {
@@ -321,6 +332,24 @@ pub fn setup_controllers(
         Some(keymap.root.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_root.input(AppMsg::Navigate(PathBuf::from("/")));
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_tag = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("<Primary>t").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_tag.input(AppMsg::OpenTagPicker);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_tag_nav = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("<Primary><Shift>t").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_tag_nav.input(AppMsg::OpenTagNavigator);
             glib::Propagation::Stop
         })),
     ));

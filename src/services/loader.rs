@@ -243,7 +243,40 @@ impl FluxApp {
 
             if !self.filter.is_empty() {
                 let query = self.filter.to_lowercase();
-                items.retain(|item| item.sort_name.contains(&query));
+                if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query) {
+                    let rest_clean = rest.trim().to_lowercase();
+                    items.retain(|item| {
+                        let name_match =
+                            rest_clean.is_empty() || item.sort_name.contains(&rest_clean);
+                        if !name_match {
+                            return false;
+                        }
+                        let file_tags = crate::utils::xattr::read_tags(&item.target_path);
+                        let file_tags_lc: Vec<String> =
+                            file_tags.into_iter().map(|t| t.to_lowercase()).collect();
+                        tags.iter().all(|req| file_tags_lc.contains(req))
+                    });
+                } else if let Some((op, rest)) = crate::utils::search::parse_size_filter(&query) {
+                    let rest_clean = rest.trim().to_lowercase();
+                    items.retain(|item| {
+                        let name_match =
+                            rest_clean.is_empty() || item.sort_name.contains(&rest_clean);
+                        let size_match = if item.is_dir {
+                            true
+                        } else {
+                            match op {
+                                crate::utils::search::SizeOp::Gt(v) => item.size > v,
+                                crate::utils::search::SizeOp::Lt(v) => item.size < v,
+                                crate::utils::search::SizeOp::Range(l, r) => {
+                                    item.size >= l && item.size <= r
+                                }
+                            }
+                        };
+                        name_match && size_match
+                    });
+                } else {
+                    items.retain(|item| item.sort_name.contains(&query));
+                }
             }
 
             items.par_sort_unstable_by(move |a, b| {
@@ -594,6 +627,7 @@ impl FluxApp {
     /// # Arguments
     /// * `sender` - Component handle used to dispatch lifecycle updates.
     pub fn load_recents(&mut self, sender: &AsyncComponentSender<Self>) {
+        self.is_loading = true;
         self.directory_monitor = None;
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
@@ -607,6 +641,7 @@ impl FluxApp {
             Ok(s) => s,
             Err(_) => {
                 self.update_breadcrumbs();
+                self.is_loading = false;
                 return;
             }
         };
@@ -694,6 +729,7 @@ impl FluxApp {
 
         self.update_breadcrumbs();
         self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+        self.is_loading = false;
     }
 
     /// Extracts the value of a named XML attribute from a single-line tag string.

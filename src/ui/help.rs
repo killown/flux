@@ -90,6 +90,13 @@ impl SimpleComponent for HelpWindow {
                             add_css_class: "keycap",
                         },
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open tag navigator"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Shift + T",
+                            add_css_class: "keycap",
+                        },
+                    },
                 },
             },
 
@@ -247,6 +254,13 @@ impl SimpleComponent for HelpWindow {
                         set_title: &tr("Redo file operation"),
                         add_suffix = &gtk::Label {
                             set_label: "Ctrl + Shift + Z / Ctrl + Y",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Edit tags for selection"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + T",
                             add_css_class: "keycap",
                         },
                     },

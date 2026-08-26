@@ -8,6 +8,14 @@ pub struct StateManager {
 }
 
 impl StateManager {
+    /// Deletes all occurrences of a tag globally from the database.
+    pub fn delete_tag_globally(&self, tag: &str) -> Result<()> {
+        let clean = tag.trim().trim_start_matches('#');
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM file_tags WHERE tag = ?1", params![clean])?;
+        Ok(())
+    }
+
     /// Creates a StateManager with a specific database path (useful for testing).
     #[allow(dead_code)]
     pub fn new_with_path(db_path: &Path) -> Result<Self> {
@@ -35,6 +43,14 @@ impl StateManager {
                 uri TEXT UNIQUE NOT NULL,
                 timestamp INTEGER NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS file_tags (
+                path TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                mtime INTEGER NOT NULL,
+                PRIMARY KEY (path, tag)
+            );
+            CREATE INDEX IF NOT EXISTS idx_file_tags_tag ON file_tags(tag);
             ",
         )?;
 
@@ -71,6 +87,14 @@ impl StateManager {
                 uri TEXT UNIQUE NOT NULL,
                 timestamp INTEGER NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS file_tags (
+                path TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                mtime INTEGER NOT NULL,
+                PRIMARY KEY (path, tag)
+            );
+            CREATE INDEX IF NOT EXISTS idx_file_tags_tag ON file_tags(tag);
         ",
         )?;
 
@@ -132,16 +156,97 @@ impl StateManager {
             "UPDATE folder_settings SET path = ?1 WHERE path = ?2",
             params![new_str, old_str],
         )?;
+
+        conn.execute(
+            "UPDATE file_tags SET path = ?1 WHERE path = ?2",
+            params![new_str, old_str],
+        )?;
         Ok(())
+    }
+
+    /// Updates cached tags for a given path.
+    pub fn set_tags(&self, path: &Path, tags: &[String], mtime: i64) -> Result<()> {
+        let path_str = path.to_string_lossy();
+        let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        let tx = conn.transaction()?;
+
+        tx.execute("DELETE FROM file_tags WHERE path = ?1", params![path_str])?;
+
+        {
+            let mut stmt = tx.prepare(
+                "INSERT INTO file_tags (path, tag, mtime) VALUES (?1, ?2, ?3)
+                 ON CONFLICT(path, tag) DO UPDATE SET mtime = excluded.mtime",
+            )?;
+
+            for tag in tags {
+                let clean = tag.trim().trim_start_matches('#');
+                if !clean.is_empty() {
+                    stmt.execute(params![path_str, clean, mtime])?;
+                }
+            }
+        }
+
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Retrieves cached tags for a given path.
+    #[allow(dead_code)]
+    pub fn get_tags(&self, path: &Path) -> Result<Vec<String>> {
+        let path_str = path.to_string_lossy();
+        let conn = self.conn.lock().unwrap();
+        let mut stmt =
+            conn.prepare("SELECT tag FROM file_tags WHERE path = ?1 ORDER BY tag ASC")?;
+        let rows = stmt.query_map(params![path_str], |row| row.get(0))?;
+
+        let mut tags = Vec::new();
+        for tag in rows {
+            tags.push(tag?);
+        }
+        Ok(tags)
+    }
+
+    /// Retrieves all file paths associated with a specific tag.
+    pub fn get_paths_for_tag(&self, tag: &str) -> Result<Vec<PathBuf>> {
+        let clean = tag.trim().trim_start_matches('#');
+        let conn = self.conn.lock().unwrap();
+        let mut stmt =
+            conn.prepare("SELECT path FROM file_tags WHERE tag = ?1 ORDER BY path ASC")?;
+        let rows = stmt.query_map(params![clean], |row| row.get::<_, String>(0))?;
+
+        let mut paths = Vec::new();
+        for path_str in rows {
+            paths.push(PathBuf::from(path_str?));
+        }
+        Ok(paths)
+    }
+
+    /// Retrieves all unique tags stored in the database.
+    pub fn list_all_tags(&self) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT DISTINCT tag FROM file_tags ORDER BY tag ASC")?;
+        let rows = stmt.query_map([], |row| row.get(0))?;
+
+        let mut tags = Vec::new();
+        for tag in rows {
+            tags.push(tag?);
+        }
+        Ok(tags)
     }
 
     /// Removes entries from the database if the corresponding filesystem paths no longer exist.
     pub fn scrub_orphans(&self) -> Result<()> {
-        let paths: Vec<String> = {
+        let (paths, tag_paths): (Vec<String>, Vec<String>) = {
             let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let mut stmt = conn.prepare("SELECT path FROM folder_settings")?;
             let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
-            rows.flatten().collect()
+            let p1 = rows.flatten().collect();
+
+            let mut tag_stmt = conn.prepare("SELECT DISTINCT path FROM file_tags")?;
+            let tag_rows = tag_stmt.query_map([], |row| row.get::<_, String>(0))?;
+            let p2 = tag_rows.flatten().collect();
+
+            (p1, p2)
         };
 
         let mut orphans = Vec::new();
@@ -160,13 +265,28 @@ impl StateManager {
             }
         }
 
-        if !orphans.is_empty() {
+        let mut tag_orphans = Vec::new();
+        for path_str in tag_paths {
+            if !std::path::Path::new(&path_str).exists() {
+                tag_orphans.push(path_str);
+            }
+        }
+
+        if !orphans.is_empty() || !tag_orphans.is_empty() {
             let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let tx = conn.transaction()?;
             {
-                let mut del_stmt = tx.prepare("DELETE FROM folder_settings WHERE path = ?1")?;
-                for orphan in &orphans {
-                    let _ = del_stmt.execute(params![orphan]);
+                if !orphans.is_empty() {
+                    let mut del_stmt = tx.prepare("DELETE FROM folder_settings WHERE path = ?1")?;
+                    for orphan in &orphans {
+                        let _ = del_stmt.execute(params![orphan]);
+                    }
+                }
+                if !tag_orphans.is_empty() {
+                    let mut del_tag_stmt = tx.prepare("DELETE FROM file_tags WHERE path = ?1")?;
+                    for orphan in &tag_orphans {
+                        let _ = del_tag_stmt.execute(params![orphan]);
+                    }
                 }
             }
             tx.commit()?;

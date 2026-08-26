@@ -11,6 +11,7 @@ pub mod helpers;
 pub mod media;
 pub mod path;
 pub mod search;
+pub mod xattr;
 
 // 2. Public Re-exports
 // This allows the rest of the app to use `utils::resolve` instead of `utils::path::resolve`.

@@ -131,8 +131,8 @@ impl FluxApp {
 
         if !modifiers.intersects(forbidden) {
             if let Some(c) = keyval.to_unicode() {
-                // Only capture alphanumerics OR our chosen trigger characters
-                if c.is_ascii_alphanumeric() || c == ':' || c == '<' {
+                // Allow alphanumerics, tags (#), content search (:), and size filters (<)
+                if c.is_ascii_alphanumeric() || c == ':' || c == '<' || c == '#' {
                     sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
                     sender.input(AppMsg::SearchInput(c));
                     return glib::Propagation::Stop;
@@ -305,6 +305,8 @@ impl FluxApp {
             // Translate Trash if it's the default English name
             if custom.path == constants::TRASH_URI && name == "Trash" {
                 name = crate::i18n::tr("Trash");
+            } else if custom.path == "tags://" && name == "Tags" {
+                name = crate::i18n::tr("Tags");
             }
 
             guard.push_back(SidebarPlace {

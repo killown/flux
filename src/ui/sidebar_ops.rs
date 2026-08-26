@@ -12,16 +12,21 @@ impl FluxApp {
         self.config = utils::load_config();
         self.sidebar.guard().clear();
         for place in &self.config.sidebar {
+            let is_label = place.kind.as_deref() == Some("label");
+            let path = if is_label {
+                PathBuf::new()
+            } else if place.path == "tags://" {
+                PathBuf::from(&place.path)
+            } else {
+                utils::expand_path(&place.path)
+            };
+
             self.sidebar.guard().push_back(crate::ui::SidebarPlace {
                 name: place.name.clone(),
                 icon: place.icon.clone(),
-                path: if place.kind.as_deref() == Some("label") {
-                    PathBuf::new()
-                } else {
-                    utils::expand_path(&place.path)
-                },
+                path,
                 is_mount: false,
-                is_section_label: place.kind.as_deref() == Some("label"),
+                is_section_label: is_label,
             });
         }
         self.refresh_sidebar();

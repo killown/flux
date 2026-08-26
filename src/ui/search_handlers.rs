@@ -5,10 +5,12 @@ use crate::utils::search::{parse_size_filter, SizeOp};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
-    /// Resets the filter and view layout state when content search is active.
+    /// Resets the filter and view layout state when content search or tag search is active.
     pub fn handle_update_filter(&mut self, query: String, sender: &AsyncComponentSender<Self>) {
         if query.is_empty() && self.search_just_opened {
             self.search_just_opened = false;
@@ -21,12 +23,117 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
             } else {
                 self.files.clear_filters();
+                sender.input(AppMsg::Refresh);
             }
             return;
         }
 
         // Check for content search trigger: starts with ':'
-        if query_lc.starts_with(':') {
+        if query_lc.starts_with(':')
+            && !query_lc.starts_with(":tag:")
+            && !query_lc.starts_with(":t:")
+        {
+            return;
+        }
+
+        // Check for tag filter (:tag:name, :t:name, #name) -> Global Search
+        if let Some((tags, rest_query)) = crate::utils::search::parse_tag_filter(&query_lc) {
+            self.filter = query.clone();
+            self.files.clear_filters();
+            self.files.clear();
+
+            let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
+            let filter_text = rest_query.trim().to_lowercase();
+
+            let mut matching_paths = std::collections::BTreeSet::new();
+
+            for tag in &target_tags {
+                if let Ok(paths) = self.state_db.get_paths_for_tag(tag) {
+                    for path in paths {
+                        if !path.exists() {
+                            continue;
+                        }
+
+                        // Check if file matches all requested tags
+                        let file_tags = crate::utils::xattr::read_tags(&path);
+                        let file_tags_lc: Vec<String> =
+                            file_tags.into_iter().map(|t| t.to_lowercase()).collect();
+
+                        if target_tags.iter().all(|req| file_tags_lc.contains(req)) {
+                            matching_paths.insert(path);
+                        }
+                    }
+                }
+            }
+
+            let mut media_tasks = Vec::new();
+
+            for path in matching_paths {
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| path.to_string_lossy().to_string());
+
+                if !filter_text.is_empty() && !name.to_lowercase().contains(&filter_text) {
+                    continue;
+                }
+
+                let is_dir = path.is_dir();
+                let meta = std::fs::metadata(&path).ok();
+                let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+                let mtime = meta
+                    .as_ref()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs() as i64)
+                    .unwrap_or(0);
+
+                let icon = utils::get_icon_for_path(&path, is_dir);
+
+                if !is_dir {
+                    let (is_img, is_vid) = utils::is_visual_media(&path);
+                    if is_img || is_vid {
+                        media_tasks.push((name.clone(), path.clone()));
+                    }
+                }
+
+                self.files.append(crate::ui::FileItem {
+                    name,
+                    icon,
+                    thumbnail: None,
+                    is_dir,
+                    path: path.clone(),
+                    icon_size: if self.is_list_mode {
+                        self.current_list_icon_size
+                    } else {
+                        self.current_icon_size
+                    },
+                    size,
+                    mtime,
+                    is_editing: false,
+                    is_foreign_owner: false,
+                    expand_labels: self.config.ui.expand_labels,
+                    is_list_mode: self.is_list_mode,
+                    is_custom_icon: false,
+                    active_path: Rc::new(RefCell::new(None)),
+                });
+            }
+
+            let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+            self.spawn_thumbnail_loader(media_tasks, session_id, sender.clone());
+
+            let view = self.files.view.clone();
+            glib::idle_add_local_once(move || {
+                if let Some(model) = view
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                {
+                    model.unselect_all();
+                    if model.n_items() > 0 {
+                        model.select_item(0, true);
+                    }
+                }
+            });
             return;
         }
 
