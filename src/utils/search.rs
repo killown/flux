@@ -96,15 +96,10 @@ pub fn parse_tag_filter(query: &str) -> Option<(Vec<String>, String)> {
     let parts: Vec<&str> = query_trim.split_whitespace().collect();
 
     for (i, part) in parts.iter().enumerate() {
-        let raw_tags = if let Some(rest) = part.strip_prefix(":tag:") {
-            Some(rest)
-        } else if let Some(rest) = part.strip_prefix(":t:") {
-            Some(rest)
-        } else if let Some(rest) = part.strip_prefix('#') {
-            Some(rest)
-        } else {
-            None
-        };
+        let raw_tags = part
+            .strip_prefix(":tag:")
+            .or_else(|| part.strip_prefix(":t:"))
+            .or_else(|| part.strip_prefix('#'));
 
         if let Some(tag_str) = raw_tags {
             let tags: Vec<String> = tag_str

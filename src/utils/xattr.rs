@@ -19,7 +19,7 @@ pub fn read_tags<P: AsRef<Path>>(path: P) -> Vec<String> {
     };
 
     content
-        .split(|c| c == ',' || c == '\n')
+        .split([',', '\n'])
         .map(|s| s.trim().trim_start_matches('#').to_string())
         .filter(|s| !s.is_empty())
         .collect()
