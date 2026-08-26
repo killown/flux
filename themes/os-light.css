@@ -1,3 +1,4 @@
+/* ── Theme Root Variables ── */
 :root {
   --accent-color: #007aff;
   --shadow: rgba(0, 0, 0, 0.08);
@@ -24,6 +25,7 @@
   --secondary-fg-color: rgba(29, 29, 31, 0.7);
 }
 
+/* ── Base Windows & Dialogs ── */
 window {
   background-color: #f5f5f7;
   color: #1d1d1f;
@@ -47,6 +49,7 @@ dialog .secondary-text {
   color: rgba(0, 0, 0, 0.75);
 }
 
+/* ── HeaderBar & Navigation ── */
 headerbar {
   background-color: #ececec;
   padding: 4px 12px;
@@ -76,7 +79,25 @@ headerbar button:hover {
   background-color: rgba(0, 0, 0, 0.06);
 }
 
-/* ── Light Sidebar ── */
+headerbar togglebutton {
+  background-color: transparent;
+  color: #1d1d1f;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+headerbar togglebutton:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+headerbar togglebutton:checked,
+headerbar togglebutton:active {
+  background-color: rgba(0, 122, 255, 0.15);
+  color: #007aff;
+}
+
+/* ── Sidebar & Navigation Tree ── */
 .sidebar {
   background-color: #f5f5f7;
   border: none;
@@ -84,9 +105,10 @@ headerbar button:hover {
 }
 
 .sidebar-row:not(.sidebar-section) {
-  margin: 2px 14px;
-  padding: 6px 16px;
-  border-radius: 12px;
+  margin: 1px 14px;
+  padding: 3px 14px;
+  min-height: 24px;
+  border-radius: 10px;
   background-color: transparent;
   border: none;
   transition:
@@ -98,8 +120,8 @@ headerbar button:hover {
 .sidebar-row:not(.sidebar-section) label {
   color: #1d1d1f;
   font-family: var(--font-main);
-  font-size: 10.5pt;
-  letter-spacing: 0.6px;
+  font-size: 9.5pt;
+  letter-spacing: 0.4px;
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
@@ -119,9 +141,9 @@ headerbar button:hover {
 }
 
 .sidebar-section {
-  margin-top: 8px;
-  margin-bottom: 2px;
-  padding: 10px 12px 6px 12px;
+  margin-top: 6px;
+  margin-bottom: 1px;
+  padding: 6px 12px 3px 12px;
   min-height: 0px;
   border-radius: 0px;
   transform: none;
@@ -136,7 +158,7 @@ headerbar button:hover {
 
 .sidebar-section-label {
   font-family: var(--font-main);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -145,7 +167,19 @@ headerbar button:hover {
   border: none;
   box-shadow: none;
   margin-left: 26px;
-  margin-top: 10px;
+  margin-top: 6px;
+}
+
+/* Device / Mount row styles */
+.sidebar-mount {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  min-height: 22px;
+  padding: 1px 6px;
+  margin: 1px 14px;
+  transition: all 0.15s ease;
 }
 
 .sort-container image {
@@ -156,10 +190,10 @@ button.eject-button {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 4px;
+  padding: 1px 3px;
   min-height: 0;
   min-width: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   color: rgba(29, 29, 31, 0.45);
   opacity: 0.7;
   transition:
@@ -170,7 +204,7 @@ button.eject-button {
 
 button.eject-button image {
   color: inherit;
-  -gtk-icon-size: 14px;
+  -gtk-icon-size: 12px;
 }
 
 button.eject-button:hover {
@@ -195,6 +229,7 @@ button.eject-button:active {
   opacity: 1;
 }
 
+/* ── Grid & List Item Views ── */
 gridview,
 listview {
   background-color: #ffffff;
@@ -210,16 +245,6 @@ gridview child {
 
 gridview child:hover {
   background-color: rgba(0, 0, 0, 0.04);
-}
-
-gridview child:selected {
-  background-color: rgba(0, 122, 255, 0.18);
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.3);
-}
-
-gridview child:selected .flux-label {
-  color: #1d1d1f;
-  font-weight: bold;
 }
 
 .flux-card {
@@ -252,7 +277,65 @@ gridview child:selected .flux-label {
   letter-spacing: 0.4px;
 }
 
-/* ── Breadcrumb ── */
+gridview child:selected .flux-card {
+  background-color: alpha(@accent_color, 0.12);
+  box-shadow:
+    inset 0 0 0 1.5px @accent_color,
+    0 2px 8px alpha(@accent_color, 0.15);
+  transform: translateY(-1px);
+}
+
+gridview child:selected .flux-label {
+  color: #1d1d1f;
+  font-weight: 600;
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+}
+
+gridview child:selected .flux-list-info {
+  color: rgba(29, 29, 31, 0.75);
+}
+
+window:backdrop gridview child:selected .flux-card {
+  background-color: rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.flux-card--restricted {
+  border-left: 2px solid #ff9500;
+}
+
+.flux-lock-badge {
+  color: #ff9500;
+}
+
+.flux-list-info {
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+  color: rgba(29, 29, 31, 0.65);
+}
+
+entry.flux-rename-entry {
+  background-color: #ffffff;
+  border: 1px solid #007aff;
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+  padding: 2px 8px;
+  font-size: 9.5pt;
+  min-height: 24px;
+}
+
+/* ── Drag & Drop States ── */
+.sidebar-dragging {
+  opacity: 0.45;
+}
+
+.sidebar-drop-hover {
+  background-color: rgba(0, 122, 255, 0.15) !important;
+  box-shadow: inset 0 0 0 1px #007aff;
+}
+
+/* ── Breadcrumb Navigation ── */
 button.breadcrumb-btn {
   background: linear-gradient(
     to bottom,
@@ -327,7 +410,7 @@ button.breadcrumb-btn label {
   letter-spacing: 0.8px;
 }
 
-/* ── Popovers ── */
+/* ── Popovers & Context Menus ── */
 popover.menu {
   border: none;
   outline: none;
@@ -386,7 +469,7 @@ popover.menu > contents separator {
   margin: 4px 8px;
 }
 
-/* ── Entry ── */
+/* ── Text Entries & Inputs ── */
 entry,
 searchentry,
 passwordentry,
@@ -501,10 +584,10 @@ textview text {
   caret-color: #1d1d1f;
 }
 
-/* ── Selection status ── */
+/* ── Status Bar & Transfers ── */
 .selection-status {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-top: 1px solid rgba(0, 0, 0, 0.04);
+  background-color: rgba(245, 245, 247, 0.9);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
   padding: 4px 16px;
   min-height: 28px;
 }
@@ -513,407 +596,55 @@ textview text {
   color: #1d1d1f;
   font-family: var(--font-mono);
   font-size: 8.5pt;
-}
-
-/* ── Progressbar ── */
-progressbar {
-  background-color: rgba(0, 0, 0, 0.04);
-  border-radius: 4px;
-}
-
-progressbar progress {
-  background-color: #007aff;
-  border-radius: 4px;
-  min-height: 4px;
-}
-
-/* ── Buttons ── */
-button {
-  color: #1d1d1f;
-}
-
-button label {
-  color: #1d1d1f;
-}
-
-.suggested-action {
-  background-color: #007aff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 18px;
-  font-weight: bold;
-}
-
-.suggested-action label {
-  color: white;
-}
-
-.suggested-action:hover {
-  background-color: #0066d9;
-}
-
-.destructive-action {
-  background-color: rgba(255, 59, 48, 0.12);
-  color: #d70015;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: bold;
-  letter-spacing: 1.2px;
-}
-
-.destructive-action label {
-  color: #d70015;
-}
-
-.destructive-action:hover {
-  background-color: rgba(255, 59, 48, 0.2);
-}
-
-/* ── Misc UI elements ── */
-.property {
-  background: transparent;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-  padding: 6px 0px;
-  color: #1d1d1f;
-  font-size: 9.5pt;
-}
-
-.property label {
-  color: #1d1d1f;
-}
-
-.monospace {
-  font-family: var(--font-mono);
-}
-
-.error {
-  border: 1px solid #d70015;
-  background: rgba(255, 59, 48, 0.08);
-  color: #d70015;
-}
-
-.warning {
-  border: 1px solid #c97000;
-  background: rgba(255, 149, 0, 0.08);
-  color: #c97000;
-}
-
-.card {
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.frame {
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 8px;
-  background: transparent;
-}
-
-.boxed-list {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px var(--shadow);
-}
-
-.boxed-list > row {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background-color: #ffffff;
-  color: #1d1d1f;
-}
-
-.boxed-list > row:last-child {
-  border-bottom: none;
-}
-
-/* ── Checkboxes & Radios ── */
-check,
-radio {
-  background-color: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 4px;
-  min-height: 16px;
-  min-width: 16px;
-}
-
-check:checked,
-radio:checked {
-  background-color: #007aff;
-  border-color: #007aff;
-}
-
-check:hover,
-radio:hover {
-  border-color: #007aff;
-}
-
-check:disabled,
-radio:disabled {
-  opacity: 0.4;
-}
-
-/* ── Tooltips ── */
-tooltip.background {
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 8px;
-  color: #1d1d1f;
-  padding: 6px 12px;
-}
-
-/* ── Spinbutton ── */
-spinbutton,
-spinbutton text {
-  background-color: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 8px;
-  color: #1d1d1f;
-  caret-color: #1d1d1f;
-  padding: 0 4px;
-  min-height: 28px;
-}
-
-spinbutton:focus-within {
-  border-color: #007aff;
-}
-
-spinbutton > button {
-  background: transparent;
-  border: none;
-  color: #1d1d1f;
-}
-
-spinbutton > button:hover {
-  color: #007aff;
-}
-
-/* ── Dropdown / Combobox ── */
-dropdown,
-combobox {
-  background-color: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  border-radius: 8px;
-  color: #1d1d1f;
-  min-height: 28px;
-}
-
-dropdown button,
-combobox button {
-  background: transparent;
-  border: none;
-  color: #1d1d1f;
-}
-
-dropdown:focus-within,
-combobox:focus-within {
-  border-color: #007aff;
-}
-
-/* ── Notebook ── */
-notebook > header {
-  background: transparent;
-  border: none;
-}
-
-notebook > header > tabs > tab {
-  background: transparent;
-  color: #1d1d1f;
-  padding: 4px 12px;
-  border: none;
-  border-bottom: 2px solid transparent;
-}
-
-notebook > header > tabs > tab:checked {
-  color: #007aff;
-  border-bottom-color: #007aff;
-}
-
-/* ── Scale ── */
-scale trough {
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
-  min-height: 4px;
-}
-
-scale highlight {
-  background: #007aff;
-}
-
-scale slider {
-  background: white;
-  border: 2px solid #007aff;
-  border-radius: 50%;
-  min-width: 16px;
-  min-height: 16px;
-}
-
-/* ── Levelbar ── */
-levelbar block {
-  border-radius: 4px;
-}
-
-levelbar block.low {
-  background: #d70015;
-}
-
-levelbar block.high {
-  background: #007aff;
-}
-
-levelbar block.full {
-  background: #248a3d;
-}
-
-/* ── List / Row ── */
-list,
-listview {
-  background: transparent;
-  color: #1d1d1f;
-}
-
-row {
-  background: transparent;
-  color: #1d1d1f;
-}
-
-row:selected {
-  background: rgba(0, 122, 255, 0.08);
-  color: #007aff;
-}
-
-.view {
-  background: transparent;
-  color: #1d1d1f;
-}
-
-.view:selected {
-  background: rgba(0, 122, 255, 0.08);
-  color: #007aff;
-}
-
-/* ── Scrollbar ── */
-scrollbar {
-  background: transparent;
-}
-
-scrollbar slider {
-  background-color: rgba(0, 0, 0, 0.12);
-  border-radius: 10px;
-}
-
-scrollbar slider:hover {
-  background-color: rgba(0, 0, 0, 0.25);
-}
-
-/* ── Settings window & Libadwaita Preferences Row overrides ── */
-window.settings-window headerbar label,
-adwpreferenceswindow headerbar label {
-  letter-spacing: 2px;
-  font-weight: 800;
-}
-
-.settings-row label {
-  color: #1d1d1f;
   letter-spacing: 0.3px;
 }
 
-adwpreferencesgroup > box > label {
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-weight: bold;
-  opacity: 0.7;
+.selection-status label.dim-label {
+  color: rgba(29, 29, 31, 0.5);
 }
 
-adwactionrow,
-adwactionrow label,
-adwpreferencesrow,
-adwpreferencesrow label,
-adwpreferencespage,
-adwpreferencespage label {
-  color: #1d1d1f;
+.selection-status progressbar {
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  min-height: 4px;
 }
 
-adwactionrow .title,
-adwpreferencesrow .title,
-adwactionrow label.title,
-adwpreferencesrow label.title,
-adwpreferencesgroup .title,
-adwpreferencesgroup label.title {
-  color: #1d1d1f;
-  font-weight: 600;
+.selection-status progressbar progress {
+  background-color: #007aff;
+  border-radius: 4px;
+  min-height: 4px;
 }
 
-adwactionrow .subtitle,
-adwpreferencesrow .subtitle,
-adwactionrow label.subtitle,
-adwpreferencesrow label.subtitle,
-adwpreferencesgroup .description,
-adwpreferencesgroup label.description,
-.subtitle {
-  color: rgba(29, 29, 31, 0.75) !important;
-}
-
-dropdown {
-  background-color: #ffffff;
-  color: #1d1d1f;
-  border-radius: 8px;
-  padding: 4px 8px;
-}
-
-dropdown label {
-  letter-spacing: 0.5px;
-}
-
-toast label {
-  color: #1d1d1f;
-  letter-spacing: 0.6px;
-}
-
-/* ─── Settings window contrast improvements ───────────────────────── */
-.settings-window label {
-  color: #1d1d1f;
-}
-
-.settings-window .dim-label,
-.settings-window .caption {
-  color: rgba(0, 0, 0, 0.75);
-}
-
-.settings-window .success {
-  color: #248a3d;
-}
-
-.settings-window .error {
-  color: #d70015;
-}
-
-/* ── Menu editor & General Utility Classes ── */
-.dim-label {
-  color: rgba(29, 29, 31, 0.75) !important;
-}
-
-.caption {
-  color: rgba(29, 29, 31, 0.75) !important;
-}
-
-.numeric {
+.selection-status button.flat {
+  background: transparent;
+  color: #007aff;
+  padding: 2px 8px;
+  min-height: 22px;
+  font-size: 8.5pt;
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: rgba(29, 29, 31, 0.75) !important;
+  border-radius: 4px;
 }
 
-.accent {
-  color: #007aff !important;
-  font-weight: 700;
+.selection-status button.flat:hover {
+  background-color: rgba(0, 122, 255, 0.08);
 }
 
-.heading {
-  font-weight: 700;
-  color: #1d1d1f !important;
+.selection-status button.destructive-action {
+  padding: 2px 6px;
+  min-height: 22px;
+  font-size: 8.5pt;
+  border-radius: 4px;
 }
 
+window:backdrop .selection-status {
+  background-color: #f5f5f7;
+}
+
+window:backdrop .selection-status label {
+  color: rgba(29, 29, 31, 0.35);
+}
+
+/* ── Quick Panel ── */
 .quick-panel-scroll {
   background: rgba(245, 245, 247, 0.75);
   box-shadow:
@@ -990,6 +721,355 @@ toast label {
   font-weight: bold;
 }
 
+/* ── Standard Buttons & Actions ── */
+button {
+  color: #1d1d1f;
+}
+
+button label {
+  color: #1d1d1f;
+}
+
+.suggested-action {
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: bold;
+}
+
+.suggested-action label {
+  color: white;
+}
+
+.suggested-action:hover {
+  background-color: #0066d9;
+}
+
+.destructive-action {
+  background-color: rgba(255, 59, 48, 0.12);
+  color: #d70015;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: bold;
+  letter-spacing: 1.2px;
+}
+
+.destructive-action label {
+  color: #d70015;
+}
+
+.destructive-action:hover {
+  background-color: rgba(255, 59, 48, 0.2);
+}
+
+/* ── Form Controls & Widgets ── */
+check,
+radio {
+  background-color: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  min-height: 16px;
+  min-width: 16px;
+}
+
+check:checked,
+radio:checked {
+  background-color: #007aff;
+  border-color: #007aff;
+}
+
+check:hover,
+radio:hover {
+  border-color: #007aff;
+}
+
+check:disabled,
+radio:disabled {
+  opacity: 0.4;
+}
+
+spinbutton,
+spinbutton text {
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: #1d1d1f;
+  caret-color: #1d1d1f;
+  padding: 0 4px;
+  min-height: 28px;
+}
+
+spinbutton:focus-within {
+  border-color: #007aff;
+}
+
+spinbutton > button {
+  background: transparent;
+  border: none;
+  color: #1d1d1f;
+}
+
+spinbutton > button:hover {
+  color: #007aff;
+}
+
+dropdown,
+combobox {
+  background-color: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: #1d1d1f;
+  min-height: 28px;
+}
+
+dropdown button,
+combobox button {
+  background: transparent;
+  border: none;
+  color: #1d1d1f;
+}
+
+dropdown:focus-within,
+combobox:focus-within {
+  border-color: #007aff;
+}
+
+dropdown {
+  background-color: #ffffff;
+  color: #1d1d1f;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+dropdown label {
+  letter-spacing: 0.5px;
+}
+
+scale trough {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  min-height: 4px;
+}
+
+scale highlight {
+  background: #007aff;
+}
+
+scale slider {
+  background: white;
+  border: 2px solid #007aff;
+  border-radius: 50%;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+levelbar block {
+  border-radius: 4px;
+}
+
+levelbar block.low {
+  background: #d70015;
+}
+
+levelbar block.high {
+  background: #007aff;
+}
+
+levelbar block.full {
+  background: #248a3d;
+}
+
+progressbar {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
+progressbar progress {
+  background-color: #007aff;
+  border-radius: 4px;
+  min-height: 4px;
+}
+
+scrollbar {
+  background: transparent;
+}
+
+scrollbar slider {
+  background-color: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+notebook > header {
+  background: transparent;
+  border: none;
+}
+
+notebook > header > tabs > tab {
+  background: transparent;
+  color: #1d1d1f;
+  padding: 4px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+}
+
+notebook > header > tabs > tab:checked {
+  color: #007aff;
+  border-bottom-color: #007aff;
+}
+
+/* ── Cards, Lists & Frames ── */
+.card {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.frame {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.boxed-list {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.boxed-list > row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+.boxed-list > row:last-child {
+  border-bottom: none;
+}
+
+list,
+listview {
+  background: transparent;
+  color: #1d1d1f;
+}
+
+row {
+  background: transparent;
+  color: #1d1d1f;
+}
+
+row:selected {
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+}
+
+.view {
+  background: transparent;
+  color: #1d1d1f;
+}
+
+.view:selected {
+  background: rgba(0, 122, 255, 0.08);
+  color: #007aff;
+}
+
+.property {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 6px 0px;
+  color: #1d1d1f;
+  font-size: 9.5pt;
+}
+
+.property label {
+  color: #1d1d1f;
+}
+
+/* ── Settings & Libadwaita Preferences ── */
+window.settings-window headerbar label,
+adwpreferenceswindow headerbar label {
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+.settings-row label {
+  color: #1d1d1f;
+  letter-spacing: 0.3px;
+}
+
+adwpreferencesgroup > box > label {
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.7;
+}
+
+adwactionrow,
+adwactionrow label,
+adwpreferencesrow,
+adwpreferencesrow label,
+adwpreferencespage,
+adwpreferencespage label {
+  color: #1d1d1f;
+}
+
+adwactionrow .title,
+adwpreferencesrow .title,
+adwactionrow label.title,
+adwpreferencesrow label.title,
+adwpreferencesgroup .title,
+adwpreferencesgroup label.title {
+  color: #1d1d1f;
+  font-weight: 600;
+}
+
+adwactionrow .subtitle,
+adwpreferencesrow .subtitle,
+adwactionrow label.subtitle,
+adwpreferencesrow label.subtitle,
+adwpreferencesgroup .description,
+adwpreferencesgroup label.description,
+.subtitle {
+  color: rgba(29, 29, 31, 0.75) !important;
+}
+
+.settings-window label {
+  color: #1d1d1f;
+}
+
+.settings-window .dim-label,
+.settings-window .caption {
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.settings-window .success {
+  color: #248a3d;
+}
+
+.settings-window .error {
+  color: #d70015;
+}
+
+/* ── Utilities, Tooltips & Status States ── */
+tooltip.background {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: #1d1d1f;
+  padding: 6px 12px;
+}
+
+toast label {
+  color: #1d1d1f;
+  letter-spacing: 0.6px;
+}
+
 toast button,
 toast button label,
 adwtoast button,
@@ -997,58 +1077,42 @@ adwtoast button label {
   color: inherit;
 }
 
-gridview child:selected .flux-card {
-  background-color: alpha(@accent_color, 0.12);
-  box-shadow:
-    inset 0 0 0 1.5px @accent_color,
-    0 2px 8px alpha(@accent_color, 0.15);
-  transform: translateY(-1px);
+.dim-label {
+  color: rgba(29, 29, 31, 0.75) !important;
 }
 
-gridview child:selected .flux-label {
-  color: #1d1d1f;
-  font-weight: 600;
-  background-color: transparent;
-  border-radius: 0;
-  padding: 0;
+.caption {
+  color: rgba(29, 29, 31, 0.75) !important;
 }
 
-gridview child:selected .flux-list-info {
-  color: rgba(29, 29, 31, 0.75);
-}
-
-window:backdrop gridview child:selected .flux-card {
-  background-color: rgba(0, 0, 0, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
-}
-
-.flux-card--restricted {
-  border-left: 2px solid #ff9500;
-}
-
-.flux-lock-badge {
-  color: #ff9500;
-}
-
-entry.flux-rename-entry {
-  background-color: #ffffff;
-  border: 1px solid #007aff;
-  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
-  padding: 2px 8px;
-  font-size: 9.5pt;
-  min-height: 24px;
-}
-
-  opacity: 0.45;
-}
-
-.sidebar-drop-hover {
-  background-color: rgba(0, 122, 255, 0.15) !important;
-  box-shadow: inset 0 0 0 1px #007aff;
-}
-
-.flux-list-info {
+.numeric {
   font-family: var(--font-mono);
-  font-size: 8.5pt;
-  color: rgba(29, 29, 31, 0.65);
+  font-variant-numeric: tabular-nums;
+  color: rgba(29, 29, 31, 0.75) !important;
+}
+
+.accent {
+  color: #007aff !important;
+  font-weight: 700;
+}
+
+.heading {
+  font-weight: 700;
+  color: #1d1d1f !important;
+}
+
+.monospace {
+  font-family: var(--font-mono);
+}
+
+.error {
+  border: 1px solid #d70015;
+  background: rgba(255, 59, 48, 0.08);
+  color: #d70015;
+}
+
+.warning {
+  border: 1px solid #c97000;
+  background: rgba(255, 149, 0, 0.08);
+  color: #c97000;
 }

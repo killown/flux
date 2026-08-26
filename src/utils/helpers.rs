@@ -7,7 +7,9 @@ use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
 use std::cell::RefCell;
+use std::ffi::CString;
 use std::fs;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 impl FluxApp {
@@ -1034,6 +1036,30 @@ pub fn load_custom_css() {
             style_manager.set_color_scheme(adw::ColorScheme::Default);
         }
     }
+}
+
+/// Computes the right-side status string containing active filters and free volume space.
+pub fn format_right_status(current_path: &Path, extension_filter: Option<&[String]>) -> String {
+    let mut parts = Vec::new();
+
+    if let Some(patterns) = extension_filter {
+        if !patterns.is_empty() {
+            parts.push(format!("[filter: {}]", patterns.join(", ")));
+        }
+    }
+
+    if current_path.is_absolute() && current_path.exists() {
+        if let Ok(c_path) = CString::new(current_path.as_os_str().as_bytes()) {
+            let mut stat = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+            if unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) } == 0 {
+                let stat = unsafe { stat.assume_init() };
+                let free_bytes = (stat.f_bsize as u64) * (stat.f_bavail as u64);
+                parts.push(format!("{} free", gtk::glib::format_size(free_bytes)));
+            }
+        }
+    }
+
+    parts.join(" · ")
 }
 
 /// Spawns a new application instance rooted at `path`.
