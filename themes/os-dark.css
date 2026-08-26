@@ -1,3 +1,4 @@
+/* ── Theme Root Variables ── */
 :root {
   --accent-color: #007aff;
   --shadow: rgba(0, 0, 0, 0.6);
@@ -7,6 +8,7 @@
   letter-spacing: 0.2px;
 }
 
+/* ── HeaderBar & Navigation ── */
 headerbar {
   background-color: @headerbar_bg_color;
   padding: 4px 12px;
@@ -36,6 +38,25 @@ headerbar button:hover {
   background-color: alpha(@headerbar_fg_color, 0.08);
 }
 
+headerbar togglebutton {
+  background-color: transparent;
+  color: @headerbar_fg_color;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+headerbar togglebutton:hover {
+  background-color: alpha(@headerbar_fg_color, 0.08);
+}
+
+headerbar togglebutton:checked,
+headerbar togglebutton:active {
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+}
+
+/* ── Sidebar & Navigation Tree ── */
 .sidebar {
   background-color: @window_bg_color;
   border: none;
@@ -43,9 +64,10 @@ headerbar button:hover {
 }
 
 .sidebar-row:not(.sidebar-section) {
-  margin: 2px 14px;
-  padding: 6px 16px;
-  border-radius: 12px;
+  margin: 1px 14px;
+  padding: 3px 14px;
+  min-height: 24px;
+  border-radius: 10px;
   background-color: transparent;
   border: none;
   transition:
@@ -57,8 +79,8 @@ headerbar button:hover {
 .sidebar-row:not(.sidebar-section) label {
   color: alpha(@theme_fg_color, 0.85);
   font-family: var(--font-main);
-  font-size: 10.5pt;
-  letter-spacing: 0.6px;
+  font-size: 9.5pt;
+  letter-spacing: 0.4px;
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
@@ -78,9 +100,9 @@ headerbar button:hover {
 }
 
 .sidebar-section {
-  margin-top: 8px;
-  margin-bottom: 2px;
-  padding: 10px 12px 6px 12px;
+  margin-top: 6px;
+  margin-bottom: 1px;
+  padding: 6px 12px 3px 12px;
   min-height: 0px;
   background: transparent;
   border-radius: 0px;
@@ -96,7 +118,7 @@ headerbar button:hover {
 
 .sidebar-section-label {
   font-family: var(--font-main);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -105,29 +127,30 @@ headerbar button:hover {
   border: none;
   box-shadow: none;
   margin-left: 26px;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
-gridview,
-listview {
-  background-color: transparent;
-  padding: 16px 24px;
-}
-
-gridview child {
-  padding: 2px;
-  margin: 0px;
+/* Device / Mount row styles */
+.sidebar-mount {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  min-height: 22px;
+  padding: 1px 6px;
+  margin: 1px 14px;
+  transition: all 0.15s ease;
 }
 
 button.eject-button {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 4px;
+  padding: 1px 3px;
   min-height: 0;
   min-width: 0;
-  border-radius: 6px;
-  color: rgba(29, 29, 31, 0.45);
+  border-radius: 4px;
+  color: alpha(@theme_fg_color, 0.45);
   opacity: 0.7;
   transition:
     opacity 150ms ease,
@@ -137,18 +160,18 @@ button.eject-button {
 
 button.eject-button image {
   color: inherit;
-  -gtk-icon-size: 14px;
+  -gtk-icon-size: 12px;
 }
 
 button.eject-button:hover {
-  background-color: rgba(0, 0, 0, 0.06);
-  color: #1d1d1f;
+  background-color: alpha(@theme_fg_color, 0.08);
+  color: @theme_fg_color;
   opacity: 1;
 }
 
 button.eject-button:active {
-  background-color: rgba(0, 0, 0, 0.12);
-  color: #1d1d1f;
+  background-color: alpha(@theme_fg_color, 0.15);
+  color: @theme_fg_color;
 }
 
 .sidebar-row:not(.sidebar-section):selected button.eject-button {
@@ -160,6 +183,18 @@ button.eject-button:active {
   background-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
   opacity: 1;
+}
+
+/* ── Grid & List Item Views ── */
+gridview,
+listview {
+  background-color: transparent;
+  padding: 16px 24px;
+}
+
+gridview child {
+  padding: 2px;
+  margin: 0px;
 }
 
 .flux-card {
@@ -192,13 +227,57 @@ button.eject-button:active {
   letter-spacing: 0.4px;
 }
 
-gridview > child:selected .flux-label {
-  color: @theme_fg_color;
-  font-weight: bold;
+gridview child:selected .flux-card {
+  background-color: alpha(@accent_color, 0.22);
+  box-shadow:
+    0 0 0 2px @accent_color,
+    0 6px 18px alpha(@accent_color, 0.35);
+  transform: translateY(-2px);
 }
 
-/* ── Breadcrumb pill style ── */
+gridview child:selected .flux-label {
+  color: #ffffff;
+  font-weight: 700;
+}
 
+gridview child:selected .flux-list-info {
+  color: alpha(#ffffff, 0.85);
+}
+
+.flux-card--restricted {
+  border-left: 2px solid #ff9500;
+}
+
+.flux-lock-badge {
+  color: #ff9500;
+}
+
+.flux-list-info {
+  font-family: var(--font-mono);
+  font-size: 8.5pt;
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+entry.flux-rename-entry {
+  background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 10%);
+  border: 1px solid @accent_color;
+  box-shadow: 0 0 0 2px alpha(@accent_color, 0.35);
+  padding: 2px 8px;
+  font-size: 9.5pt;
+  min-height: 24px;
+}
+
+/* ── Drag & Drop States ── */
+.sidebar-dragging {
+  opacity: 0.45;
+}
+
+.sidebar-drop-hover {
+  background-color: alpha(@accent_color, 0.25) !important;
+  box-shadow: inset 0 0 0 1px @accent_color;
+}
+
+/* ── Breadcrumb Navigation ── */
 button.breadcrumb-btn {
   background: linear-gradient(
     to bottom,
@@ -214,12 +293,12 @@ button.breadcrumb-btn {
   font-size: 0.9em;
 }
 
-/* First and last child get rounded ends */
 button.breadcrumb-btn:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
   border-right-width: 0px;
 }
+
 button.breadcrumb-btn:last-child {
   border-top-right-radius: 16px;
   border-bottom-right-radius: 16px;
@@ -233,10 +312,12 @@ button.breadcrumb-btn:last-child {
   font-weight: 600;
   padding: 4px 18px;
 }
+
 button.breadcrumb-btn:last-child label {
   color: @accent_fg_color;
   font-weight: 600;
 }
+
 button.breadcrumb-btn:last-child:hover {
   background: color-mix(in srgb, @accent_bg_color, #000 10%);
   box-shadow: 0 4px 12px alpha(@accent_color, 0.4);
@@ -254,6 +335,7 @@ button.breadcrumb-btn:hover:not(:last-child) {
   border-color: alpha(@theme_fg_color, 0.18);
   color: @theme_fg_color;
 }
+
 button.breadcrumb-btn:active:not(:last-child) {
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   transform: translateY(1px);
@@ -265,6 +347,7 @@ button.breadcrumb-btn label {
   letter-spacing: 0.8px;
 }
 
+/* ── Popovers & Context Menus ── */
 popover.menu {
   border: none;
   outline: none;
@@ -323,6 +406,7 @@ popover.menu > contents separator {
   margin: 4px 8px;
 }
 
+/* ── Text Entries & Inputs ── */
 entry,
 searchentry,
 passwordentry,
@@ -437,9 +521,10 @@ textview text {
   caret-color: @theme_fg_color;
 }
 
+/* ── Status Bar & Transfers ── */
 .selection-status {
-  background-color: alpha(@window_bg_color, 0.8);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: alpha(@window_bg_color, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding: 4px 16px;
   min-height: 28px;
 }
@@ -448,356 +533,55 @@ textview text {
   color: @theme_fg_color;
   font-family: var(--font-mono);
   font-size: 8.5pt;
-}
-
-progressbar {
-  background-color: alpha(@theme_fg_color, 0.05);
-  border-radius: 4px;
-}
-
-progressbar progress {
-  background-color: @accent_bg_color;
-  border-radius: 4px;
-  min-height: 4px;
-}
-
-.suggested-action {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 18px;
-  font-weight: bold;
-}
-
-.suggested-action label {
-  color: @accent_fg_color;
-}
-
-.suggested-action:hover {
-  background-color: alpha(@accent_bg_color, 0.8);
-}
-
-.destructive-action {
-  background-color: alpha(#ff3b30, 0.1);
-  color: #ff3b30;
-  border-radius: 8px;
-  padding: 8px 16px;
-  font-weight: bold;
-  letter-spacing: 1.2px;
-}
-
-.destructive-action label {
-  color: #ff3b30;
-}
-
-.destructive-action:hover {
-  background-color: alpha(#ff3b30, 0.2);
-}
-
-.property {
-  background: transparent;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 6px 0px;
-  color: @theme_fg_color;
-  font-size: 9.5pt;
-}
-
-.property label {
-  color: @theme_fg_color;
-}
-
-.monospace {
-  font-family: var(--font-mono);
-}
-
-.error {
-  border: 1px solid #ff3b30;
-  background: alpha(#ff3b30, 0.08);
-  color: #ff3b30;
-}
-
-.warning {
-  border: 1px solid #ff9500;
-  background: alpha(#ff9500, 0.08);
-  color: #ff9500;
-}
-
-.card {
-  background: alpha(@theme_fg_color, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.frame {
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  background: transparent;
-}
-
-.boxed-list {
-  background: alpha(@theme_fg_color, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-check,
-radio {
-  background-color: alpha(@theme_fg_color, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  min-height: 16px;
-  min-width: 16px;
-}
-
-check:checked,
-radio:checked {
-  background-color: @accent_bg_color;
-  border-color: @accent_bg_color;
-}
-
-check:hover,
-radio:hover {
-  border-color: @accent_bg_color;
-}
-
-check:disabled,
-radio:disabled {
-  opacity: 0.4;
-}
-
-tooltip.background {
-  background-color: alpha(@window_bg_color, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  color: @theme_fg_color;
-  padding: 6px 12px;
-}
-
-spinbutton,
-spinbutton text {
-  background-color: alpha(@theme_fg_color, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  color: @theme_fg_color;
-  caret-color: @theme_fg_color;
-  padding: 0 4px;
-  min-height: 28px;
-}
-
-spinbutton:focus-within {
-  border-color: @accent_bg_color;
-}
-
-spinbutton > button {
-  background: transparent;
-  border: none;
-  color: @theme_fg_color;
-}
-
-spinbutton > button:hover {
-  color: @accent_color;
-}
-
-dropdown,
-combobox {
-  background-color: alpha(@theme_fg_color, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  color: @theme_fg_color;
-  min-height: 28px;
-}
-
-dropdown button,
-combobox button {
-  background: transparent;
-  border: none;
-  color: @theme_fg_color;
-}
-
-dropdown:focus-within,
-combobox:focus-within {
-  border-color: @accent_bg_color;
-}
-
-notebook > header {
-  background: transparent;
-  border: none;
-}
-
-notebook > header > tabs > tab {
-  background: transparent;
-  color: @theme_fg_color;
-  padding: 4px 12px;
-  border: none;
-  border-bottom: 2px solid transparent;
-}
-
-notebook > header > tabs > tab:checked {
-  color: @accent_color;
-  border-bottom-color: @accent_color;
-}
-
-scale trough {
-  background: alpha(@theme_fg_color, 0.1);
-  border-radius: 10px;
-  min-height: 4px;
-}
-
-scale highlight {
-  background: @accent_bg_color;
-}
-
-scale slider {
-  background: @theme_fg_color;
-  border: 2px solid @accent_bg_color;
-  border-radius: 50%;
-  min-width: 16px;
-  min-height: 16px;
-}
-
-levelbar block {
-  border-radius: 4px;
-}
-
-levelbar block.low {
-  background: #ff3b30;
-}
-
-levelbar block.high {
-  background: @accent_bg_color;
-}
-
-levelbar block.full {
-  background: #34c759;
-}
-
-list,
-listview {
-  background: transparent;
-  color: @theme_fg_color;
-}
-
-row {
-  background: transparent;
-  color: @theme_fg_color;
-}
-
-row:selected {
-  background: alpha(@accent_bg_color, 0.08);
-  color: @accent_color;
-}
-
-.view {
-  background: transparent;
-  color: @theme_fg_color;
-}
-
-.view:selected {
-  background: alpha(@accent_bg_color, 0.08);
-  color: @accent_color;
-}
-
-scrollbar {
-  background: transparent;
-}
-
-scrollbar slider {
-  background-color: alpha(@theme_fg_color, 0.2);
-  border-radius: 10px;
-}
-
-scrollbar slider:hover {
-  background-color: alpha(@theme_fg_color, 0.4);
-}
-
-window.settings-window headerbar label,
-adwpreferenceswindow headerbar label {
-  letter-spacing: 2px;
-  font-weight: 800;
-}
-
-.settings-row label {
   letter-spacing: 0.3px;
 }
 
-adwpreferencesgroup > box > label {
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  font-weight: bold;
-  opacity: 0.7;
+.selection-status label.dim-label {
+  color: alpha(@theme_fg_color, 0.45);
 }
 
-adwactionrow,
-adwactionrow label,
-adwpreferencesrow,
-adwpreferencesrow label,
-adwpreferencespage,
-adwpreferencespage label {
-  color: @theme_fg_color;
+.selection-status progressbar {
+  background-color: alpha(@theme_fg_color, 0.1);
+  border-radius: 4px;
+  min-height: 4px;
 }
 
-adwactionrow .title,
-adwpreferencesrow .title,
-adwactionrow label.title,
-adwpreferencesrow label.title,
-adwpreferencesgroup .title,
-adwpreferencesgroup label.title {
-  color: @theme_fg_color;
-  font-weight: 600;
+.selection-status progressbar progress {
+  background-color: @accent_bg_color;
+  border-radius: 4px;
+  min-height: 4px;
 }
 
-adwactionrow .subtitle,
-adwpreferencesrow .subtitle,
-adwactionrow label.subtitle,
-adwpreferencesrow label.subtitle,
-adwpreferencesgroup .description,
-adwpreferencesgroup label.description,
-.subtitle {
-  color: alpha(@theme_fg_color, 0.65);
-}
-
-dropdown {
-  background-color: @card_bg_color;
-  color: @theme_fg_color;
-  border-radius: 8px;
-  padding: 4px 8px;
-}
-
-dropdown label {
-  letter-spacing: 0.5px;
-}
-
-toast label {
-  color: @theme_fg_color;
-  letter-spacing: 0.6px;
-}
-
-/* ── Menu editor & General Utility Classes ── */
-.dim-label {
-  color: alpha(@theme_fg_color, 0.65);
-}
-
-.caption {
-  color: alpha(@theme_fg_color, 0.65);
-}
-
-.numeric {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: alpha(@theme_fg_color, 0.65);
-}
-
-.accent {
+.selection-status button.flat {
+  background: transparent;
   color: @accent_color;
-  font-weight: 700;
+  padding: 2px 8px;
+  min-height: 22px;
+  font-size: 8.5pt;
+  font-family: var(--font-mono);
+  border-radius: 4px;
 }
 
-.heading {
-  font-weight: 700;
-  color: @theme_fg_color;
+.selection-status button.flat:hover {
+  background-color: alpha(@accent_color, 0.12);
 }
 
+.selection-status button.destructive-action {
+  padding: 2px 6px;
+  min-height: 22px;
+  font-size: 8.5pt;
+  border-radius: 4px;
+}
+
+window:backdrop .selection-status {
+  background-color: alpha(@window_bg_color, 0.95);
+}
+
+window:backdrop .selection-status label {
+  color: alpha(@theme_fg_color, 0.35);
+}
+
+/* ── Quick Panel ── */
 .quick-panel-scroll {
   background: rgba(18, 18, 18, 0.6);
   box-shadow:
@@ -874,51 +658,347 @@ toast label {
   font-weight: bold;
 }
 
-gridview child:selected .flux-card {
-  background-color: alpha(@accent_color, 0.22);
-  box-shadow:
-    0 0 0 2px @accent_color,
-    0 6px 18px alpha(@accent_color, 0.35);
-  transform: translateY(-2px);
+/* ── Standard Buttons & Actions ── */
+.suggested-action {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: bold;
 }
 
-gridview child:selected .flux-label {
-  color: #ffffff;
+.suggested-action label {
+  color: @accent_fg_color;
+}
+
+.suggested-action:hover {
+  background-color: alpha(@accent_bg_color, 0.8);
+}
+
+.destructive-action {
+  background-color: alpha(#ff3b30, 0.1);
+  color: #ff3b30;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: bold;
+  letter-spacing: 1.2px;
+}
+
+.destructive-action label {
+  color: #ff3b30;
+}
+
+.destructive-action:hover {
+  background-color: alpha(#ff3b30, 0.2);
+}
+
+/* ── Form Controls & Widgets ── */
+check,
+radio {
+  background-color: alpha(@theme_fg_color, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  min-height: 16px;
+  min-width: 16px;
+}
+
+check:checked,
+radio:checked {
+  background-color: @accent_bg_color;
+  border-color: @accent_bg_color;
+}
+
+check:hover,
+radio:hover {
+  border-color: @accent_bg_color;
+}
+
+check:disabled,
+radio:disabled {
+  opacity: 0.4;
+}
+
+spinbutton,
+spinbutton text {
+  background-color: alpha(@theme_fg_color, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: @theme_fg_color;
+  caret-color: @theme_fg_color;
+  padding: 0 4px;
+  min-height: 28px;
+}
+
+spinbutton:focus-within {
+  border-color: @accent_bg_color;
+}
+
+spinbutton > button {
+  background: transparent;
+  border: none;
+  color: @theme_fg_color;
+}
+
+spinbutton > button:hover {
+  color: @accent_color;
+}
+
+dropdown,
+combobox {
+  background-color: alpha(@theme_fg_color, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: @theme_fg_color;
+  min-height: 28px;
+}
+
+dropdown button,
+combobox button {
+  background: transparent;
+  border: none;
+  color: @theme_fg_color;
+}
+
+dropdown:focus-within,
+combobox:focus-within {
+  border-color: @accent_bg_color;
+}
+
+dropdown label {
+  letter-spacing: 0.5px;
+}
+
+scale trough {
+  background: alpha(@theme_fg_color, 0.1);
+  border-radius: 10px;
+  min-height: 4px;
+}
+
+scale highlight {
+  background: @accent_bg_color;
+}
+
+scale slider {
+  background: @theme_fg_color;
+  border: 2px solid @accent_bg_color;
+  border-radius: 50%;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+levelbar block {
+  border-radius: 4px;
+}
+
+levelbar block.low {
+  background: #ff3b30;
+}
+
+levelbar block.high {
+  background: @accent_bg_color;
+}
+
+levelbar block.full {
+  background: #34c759;
+}
+
+progressbar {
+  background-color: alpha(@theme_fg_color, 0.05);
+  border-radius: 4px;
+}
+
+progressbar progress {
+  background-color: @accent_bg_color;
+  border-radius: 4px;
+  min-height: 4px;
+}
+
+scrollbar {
+  background: transparent;
+}
+
+scrollbar slider {
+  background-color: alpha(@theme_fg_color, 0.2);
+  border-radius: 10px;
+}
+
+scrollbar slider:hover {
+  background-color: alpha(@theme_fg_color, 0.4);
+}
+
+notebook > header {
+  background: transparent;
+  border: none;
+}
+
+notebook > header > tabs > tab {
+  background: transparent;
+  color: @theme_fg_color;
+  padding: 4px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+}
+
+notebook > header > tabs > tab:checked {
+  color: @accent_color;
+  border-bottom-color: @accent_color;
+}
+
+/* ── Cards, Lists & Frames ── */
+.card {
+  background: alpha(@theme_fg_color, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.frame {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: transparent;
+}
+
+.boxed-list {
+  background: alpha(@theme_fg_color, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+list,
+listview {
+  background: transparent;
+  color: @theme_fg_color;
+}
+
+row {
+  background: transparent;
+  color: @theme_fg_color;
+}
+
+row:selected {
+  background: alpha(@accent_bg_color, 0.08);
+  color: @accent_color;
+}
+
+.view {
+  background: transparent;
+  color: @theme_fg_color;
+}
+
+.view:selected {
+  background: alpha(@accent_bg_color, 0.08);
+  color: @accent_color;
+}
+
+.property {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 0px;
+  color: @theme_fg_color;
+  font-size: 9.5pt;
+}
+
+.property label {
+  color: @theme_fg_color;
+}
+
+/* ── Settings & Libadwaita Preferences ── */
+window.settings-window headerbar label,
+adwpreferenceswindow headerbar label {
+  letter-spacing: 2px;
+  font-weight: 800;
+}
+
+.settings-row label {
+  letter-spacing: 0.3px;
+}
+
+adwpreferencesgroup > box > label {
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: bold;
+  opacity: 0.7;
+}
+
+adwactionrow,
+adwactionrow label,
+adwpreferencesrow,
+adwpreferencesrow label,
+adwpreferencespage,
+adwpreferencespage label {
+  color: @theme_fg_color;
+}
+
+adwactionrow .title,
+adwpreferencesrow .title,
+adwactionrow label.title,
+adwpreferencesrow label.title,
+adwpreferencesgroup .title,
+adwpreferencesgroup label.title {
+  color: @theme_fg_color;
+  font-weight: 600;
+}
+
+adwactionrow .subtitle,
+adwpreferencesrow .subtitle,
+adwactionrow label.subtitle,
+adwpreferencesrow label.subtitle,
+adwpreferencesgroup .description,
+adwpreferencesgroup label.description,
+.subtitle {
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+/* ── Utilities, Tooltips & Status States ── */
+tooltip.background {
+  background-color: alpha(@window_bg_color, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: @theme_fg_color;
+  padding: 6px 12px;
+}
+
+toast label {
+  color: @theme_fg_color;
+  letter-spacing: 0.6px;
+}
+
+.dim-label {
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+.caption {
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+.numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: alpha(@theme_fg_color, 0.65);
+}
+
+.accent {
+  color: @accent_color;
   font-weight: 700;
 }
 
-gridview child:selected .flux-list-info {
-  color: alpha(#ffffff, 0.85);
+.heading {
+  font-weight: 700;
+  color: @theme_fg_color;
 }
 
-.flux-card--restricted {
-  border-left: 2px solid #ff9500;
-}
-
-.flux-lock-badge {
-  color: #ff9500;
-}
-
-entry.flux-rename-entry {
-  background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 10%);
-  border: 1px solid @accent_color;
-  box-shadow: 0 0 0 2px alpha(@accent_color, 0.35);
-  padding: 2px 8px;
-  font-size: 9.5pt;
-  min-height: 24px;
-}
-
-.sidebar-dragging {
-  opacity: 0.45;
-}
-
-.sidebar-drop-hover {
-  background-color: alpha(@accent_color, 0.25) !important;
-  box-shadow: inset 0 0 0 1px @accent_color;
-}
-
-.flux-list-info {
+.monospace {
   font-family: var(--font-mono);
-  font-size: 8.5pt;
-  color: alpha(@theme_fg_color, 0.65);
+}
+
+.error {
+  border: 1px solid #ff3b30;
+  background: alpha(#ff3b30, 0.08);
+  color: #ff3b30;
+}
+
+.warning {
+  border: 1px solid #ff9500;
+  background: alpha(#ff9500, 0.08);
+  color: #ff9500;
 }

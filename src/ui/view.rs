@@ -661,12 +661,21 @@ impl SimpleAsyncComponent for FluxApp {
                             },
                         },
 
-                      /// Selection status bar at the bottom of the main content view.
-                      gtk::Box {
+                        /// Selection status bar at the bottom of the main content view.
+                        gtk::Box {
                             set_orientation: gtk::Orientation::Horizontal,
                             set_margin_all: 6,
                             set_spacing: 12,
                             add_css_class: "selection-status",
+
+                            /// Selection information & child count
+                            gtk::Label {
+                                #[watch]
+                                set_label: &model.selection_status,
+                                add_css_class: "caption",
+                                set_halign: gtk::Align::Start,
+                                set_hexpand: true,
+                            },
 
                             /// Visual indicator for background task completion
                             gtk::ProgressBar {
@@ -674,9 +683,9 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_visible: model.task_queue.summary().is_some(),
                                 #[watch]
                                 set_fraction: model.task_queue.summary().map(|(_, _, pct)| pct).unwrap_or(0.0),
-                                set_halign: gtk::Align::Start,
+                                set_halign: gtk::Align::Center,
                                 set_valign: gtk::Align::Center,
-                                set_width_request: 150,
+                                set_width_request: 140,
                             },
 
                             /// ─── Show Progress button ────────────────────────────────
@@ -702,13 +711,25 @@ impl SimpleAsyncComponent for FluxApp {
                                 connect_clicked => AppMsg::CancelAllTasks,
                             },
 
-                            /// Selection information
+                            /// Filter & Volume free disk space
                             gtk::Label {
                                 #[watch]
-                                set_label: &model.selection_status,
+                                set_label: &crate::utils::helpers::format_right_status(
+                                    &model.current_path,
+                                    model.extension_filter.as_deref(),
+                                ),
                                 add_css_class: "caption",
+                                add_css_class: "dim-label",
                                 set_halign: gtk::Align::End,
-                                set_hexpand: true,
+                            },
+
+                            /// Active sort state indicator
+                            gtk::Label {
+                                #[watch]
+                                set_label: &model.sort_status(),
+                                add_css_class: "caption",
+                                add_css_class: "dim-label",
+                                set_halign: gtk::Align::End,
                             }
                         }
                     }

@@ -1,12 +1,162 @@
+/* ── HeaderBar & Navigation ── */
 headerbar {
   background-color: alpha(@window_bg_color, 0.8);
   border-bottom: 1px solid alpha(@window_fg_color, 0.1);
   padding: 8px;
 }
 
-gridview,
-listview {
-  padding: 16px 24px;
+headerbar togglebutton:checked,
+headerbar togglebutton:active {
+  background-color: alpha(@accent_color, 0.2);
+  color: @accent_color;
+}
+
+.sort-label {
+  background-color: alpha(@window_fg_color, 0.05);
+  border-top: 1px solid alpha(@window_fg_color, 0.15);
+  border-left: 1px solid alpha(@window_fg_color, 0.1);
+  border-right: 1px solid alpha(@window_fg_color, 0.05);
+  border-bottom: 1px solid alpha(black, 0.4);
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin: 0px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: alpha(@window_fg_color, 0.5);
+  box-shadow: 0px 2px 0px alpha(black, 0.3);
+  transition: all 150ms ease-out;
+}
+
+.sort-label:hover {
+  background-color: alpha(@accent_color, 0.1);
+  color: @accent_color;
+  transform: translateY(-1px);
+  box-shadow: 0px 3px 0px alpha(black, 0.4);
+}
+
+.sort-label:active {
+  transform: translateY(2px);
+  box-shadow: 0px 0px 0px transparent;
+  background-color: @accent_color;
+  color: @accent_fg_color;
+}
+
+/* ── Breadcrumb Navigation ── */
+.breadcrumb-btn {
+  border-radius: 0px;
+  margin: 0px -1px 0px 0px;
+  padding: 4px 14px;
+  transition: all 150ms ease;
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
+}
+
+.breadcrumb-btn:first-child {
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
+}
+
+.breadcrumb-btn:last-child {
+  font-weight: bold;
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+  box-shadow: 0px 2px 4px alpha(black, 0.15);
+  margin-right: 0px;
+}
+
+.breadcrumb-btn:hover:not(:last-child) {
+  background-color: alpha(@window_fg_color, 0.12);
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
+}
+
+.breadcrumb-btn:active {
+  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
+}
+
+/* ── Sidebar & Navigation Tree ── */
+.sidebar-row {
+  padding: 3px 8px;
+  margin: 2px 7px;
+  border-radius: 12px;
+  font-weight: 500;
+  transition: all 200ms ease;
+}
+
+.sidebar-row .sidebar-label {
+  margin-left: 8px;
+  font-size: 10.5pt;
+  letter-spacing: 0.6px;
+  font-weight: 600;
+}
+
+.sidebar-row:hover:not(:selected) {
+  background-color: alpha(@accent_color, 0.1);
+  color: @window_fg_color;
+}
+
+.sidebar-row:selected {
+  background-color: @accent_color;
+  color: @accent_fg_color;
+}
+
+.sidebar-row:selected .sidebar-label {
+  font-weight: 800;
+}
+
+.sidebar-row.sidebar-section-row {
+  padding: 10px 12px 6px 12px;
+  margin-top: 14px;
+  margin-bottom: 4px;
+  min-height: 0px;
+  background: transparent;
+}
+
+.sidebar-row.sidebar-section-row:hover,
+.sidebar-row.sidebar-section-row:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.sidebar-section-label {
+  font-family: var(--font-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+.sidebar-mount {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom-color: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  box-shadow:
+    0px 1px 3px rgba(0, 0, 0, 0.15),
+    inset 0px 1px 0px rgba(255, 255, 255, 0.08);
+  min-height: 28px;
+  padding: 2px 8px;
+  transition: all 0.15s ease;
+}
+
+.connected-server {
+  background-color: alpha(@accent_color, 0.06);
+  border-left: 2px solid @accent_color;
+}
+
+.connected-server:hover:not(:selected) {
+  background-color: alpha(@accent_color, 0.12);
+}
+
+.connected-server:selected {
+  background-color: @accent_color;
+  color: @accent_fg_color;
 }
 
 button.eject-button {
@@ -52,6 +202,59 @@ button.eject-button:active {
   opacity: 1;
 }
 
+/* ── Sidebar Pin Zone & Drag/Drop ── */
+.sidebar-pin-zone {
+  margin: 4px 8px 6px 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1.5px dashed alpha(@accent_color, 0.5);
+  background-color: alpha(@accent_color, 0.05);
+  transition: all 150ms ease;
+  min-height: 36px;
+}
+
+.sidebar-pin-zone-label {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: alpha(@accent_color, 0.85);
+  margin-left: 8px;
+}
+
+.sidebar-pin-zone image {
+  color: alpha(@accent_color, 0.85);
+}
+
+.sidebar-pin-zone.sidebar-pin-zone-hover {
+  background-color: alpha(@accent_color, 0.18);
+  border-color: @accent_color;
+  border-style: solid;
+}
+
+.sidebar-dragging,
+.dragging {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.sidebar-drop-hover,
+.drop-hover {
+  background-color: alpha(@accent_color, 0.2) !important;
+  border: 2px dashed @accent_color;
+  box-shadow: inset 0 0 0 1.5px @accent_color;
+  transform: scale(1.05);
+}
+
+.sidebar-drop-target {
+  background-color: alpha(@accent_color, 0.15);
+  border-top: 2px solid @accent_color;
+}
+
+/* ── Grid & List Item Views ── */
+gridview,
+listview {
+  padding: 16px 24px;
+}
+
 .flux-card {
   background-color: alpha(@window_fg_color, 0.05);
   padding: 8px;
@@ -62,6 +265,12 @@ button.eject-button:active {
 
 .flux-card:hover {
   background-color: alpha(@accent_color, 0.1);
+  transform: translateY(-2px);
+}
+
+gridview child:selected .flux-card {
+  background-color: alpha(@accent_color, 0.2);
+  box-shadow: 0 0 0 1.5px @accent_color;
   transform: translateY(-2px);
 }
 
@@ -85,191 +294,19 @@ button.eject-button:active {
   transform: translateY(-1px);
 }
 
-.sidebar-drop-target {
-  background-color: alpha(@accent_color, 0.15);
-  border-top: 2px solid @accent_color;
-}
-
-.sidebar-mount {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom-color: rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-  box-shadow:
-    0px 1px 3px rgba(0, 0, 0, 0.15),
-    inset 0px 1px 0px rgba(255, 255, 255, 0.08);
-  min-height: 28px;
-  padding: 2px 8px;
-  transition: all 0.15s ease;
-}
-
-.sidebar-row {
-  padding: 8px 8px;
-  margin: 2px 8px;
-  border-radius: 10px;
-  font-weight: 500;
-  transition: all 200ms ease;
-}
-
-.sidebar-row .sidebar-label {
-  margin-left: 10px;
-  font-size: 10pt;
-  font-weight: 600;
-}
-
-.sidebar-row:hover:not(:selected) {
-  background-color: alpha(@accent_color, 0.1);
-  color: @window_fg_color;
-}
-
-.sidebar-row:selected {
-  background-color: @accent_color;
+gridview child:selected .flux-label {
   color: @accent_fg_color;
-}
-
-.sidebar-row:selected .sidebar-label {
-  font-weight: 800;
-}
-
-.sidebar-row.sidebar-section-row {
-  padding: 10px 12px 6px 12px;
-  margin-top: 14px;
-  margin-bottom: 4px;
-  min-height: 0px;
-  background: transparent;
-}
-
-.sidebar-row.sidebar-section-row:hover,
-.sidebar-row.sidebar-section-row:focus {
-  background: transparent;
-  box-shadow: none;
-}
-
-.sidebar-section-label {
-  font-family: var(--font-main);
-  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  margin-left: 10px;
-  margin-top: 10px;
 }
 
-.dragging {
-  opacity: 0.4;
-  filter: grayscale(1);
+.flux-list-info {
+  font-family: monospace;
+  font-size: 1.2em;
+  min-width: 10em;
 }
 
-.drop-hover {
-  background-color: alpha(@accent_color, 0.2);
-  border: 2px dashed @accent_color;
-  transform: scale(1.05);
-}
-
-scrollbar.vertical slider {
-  background-color: alpha(@window_fg_color, 0.1);
-  border-radius: 20px;
-  margin: 2px;
-}
-
-scrollbar.vertical slider:hover {
-  background-color: alpha(@accent_color, 0.5);
-}
-
-.sort-label {
-  background-color: alpha(@window_fg_color, 0.05);
-  border-top: 1px solid alpha(@window_fg_color, 0.15);
-  border-left: 1px solid alpha(@window_fg_color, 0.1);
-  border-right: 1px solid alpha(@window_fg_color, 0.05);
-  border-bottom: 1px solid alpha(black, 0.4);
-  border-radius: 4px;
-  padding: 4px 10px;
-  margin: 0px 8px;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: alpha(@window_fg_color, 0.5);
-  box-shadow: 0px 2px 0px alpha(black, 0.3);
-  transition: all 150ms ease-out;
-}
-
-.sort-label:hover {
-  background-color: alpha(@accent_color, 0.1);
-  color: @accent_color;
-  transform: translateY(-1px);
-  box-shadow: 0px 3px 0px alpha(black, 0.4);
-}
-
-.sort-label:active {
-  transform: translateY(2px);
-  box-shadow: 0px 0px 0px transparent;
-  background-color: @accent_color;
-  color: @accent_fg_color;
-}
-
-.breadcrumb-btn {
-  border-radius: 0px;
-  margin: 0px -1px 0px 0px;
-  padding: 4px 14px;
-  transition: all 150ms ease;
-  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
-}
-
-.breadcrumb-btn:first-child {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
-}
-
-.breadcrumb-btn:last-child {
-  font-weight: bold;
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
-  box-shadow: 0px 2px 4px alpha(black, 0.15);
-  margin-right: 0px;
-}
-
-.breadcrumb-btn:hover:not(:last-child) {
-  background-color: alpha(@window_fg_color, 0.12);
-  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
-}
-
-.breadcrumb-btn:active {
-  box-shadow: inset 0px 1px 2px alpha(black, 0.2);
-}
-
-.selection-status {
-  min-height: 24px;
-  margin-right: 11px;
-  transition: all 201ms ease;
-  box-shadow: 0px 2px 4px alpha(black, 0.1);
-}
-
-.selection-status label.caption {
-  color: alpha(@window_fg_color, 0.7);
-  font-size: 9.5pt;
-  font-weight: 600;
-  letter-spacing: 1.1px;
-}
-
-.selection-status progressbar trough {
-  min-height: 5px;
-  border-radius: 11px;
-  background-color: alpha(@window_fg_color, 0.05);
-  border: none;
-  box-shadow: inset 0px 1px 1px alpha(black, 0.05);
-}
-
-.selection-status progressbar progress {
-  border-radius: 11px;
-  background-image: none;
-  background-color: @accent_color;
-  border: none;
-  transition: all 301ms cubic-bezier(0.16, 1, 0.3, 1);
+gridview child:selected .flux-list-info {
+  color: alpha(@accent_fg_color, 0.85);
 }
 
 .flux-card--restricted {
@@ -290,8 +327,16 @@ scrollbar.vertical slider:hover {
   -gtk-icon-size: 12px;
 }
 
-/* ── Session Navigation Filter ──────────────────────────────────────────── */
+entry.flux-rename-entry {
+  background-color: alpha(@window_bg_color, 0.95);
+  border: 1px solid @accent_color;
+  box-shadow: 0 0 0 2px alpha(@accent_color, 0.25);
+  padding: 2px 8px;
+  font-size: 9.5pt;
+  min-height: 24px;
+}
 
+/* ── Filter Bar & Chips ── */
 .flux-filter-bar {
   background-color: alpha(@accent_bg_color, 0.08);
   border-bottom: 1px solid alpha(@borders, 0.5);
@@ -322,50 +367,87 @@ scrollbar.vertical slider:hover {
   opacity: 1;
 }
 
-.flux-list-info {
-  font-family: monospace;
-  font-size: 1.2em;
-  min-width: 10em;
+/* ── Quick Panel ── */
+.quick-panel-scroll {
+  background: alpha(@window_bg_color, 0.7);
+  border-top: 1px solid alpha(@window_fg_color, 0.08);
 }
 
-.connected-server {
-  background-color: alpha(@accent_color, 0.06);
-  border-left: 2px solid @accent_color;
+.quick-panel-tab {
+  min-width: 80px;
+  padding: 4px 12px;
+  font-size: 0.85em;
+  border-radius: 6px;
+  background-color: alpha(@window_fg_color, 0.05);
+  border: 1px solid alpha(@window_fg_color, 0.08);
+  transition: all 0.15s ease;
 }
 
-.connected-server:hover:not(:selected) {
+.quick-panel-tab:hover {
   background-color: alpha(@accent_color, 0.12);
 }
 
-.connected-server:selected {
+.quick-panel-tab:checked,
+.quick-panel-tab:active {
   background-color: @accent_color;
   color: @accent_fg_color;
 }
 
-/* ── Sidebar pin-to-sidebar drop zone ─────────────────────────────────────── */
-.sidebar-pin-zone {
-  margin: 4px 8px 6px 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  border: 1.5px dashed alpha(@accent_color, 0.5);
-  background-color: alpha(@accent_color, 0.05);
-  transition: all 150ms ease;
-  min-height: 36px;
+/* ── Status Bar & Transfers ── */
+.selection-status {
+  min-height: 24px;
+  margin-right: 11px;
+  transition: all 201ms ease;
+  box-shadow: 0px 2px 4px alpha(black, 0.1);
 }
 
-.sidebar-pin-zone-label {
+.selection-status label.caption {
+  color: alpha(@window_fg_color, 0.7);
   font-size: 9.5pt;
   font-weight: 600;
-  color: alpha(@accent_color, 0.85);
-  margin-left: 8px;
+  letter-spacing: 1.1px;
 }
 
-.sidebar-pin-zone image {
-  color: alpha(@accent_color, 0.85);
+.selection-status label.dim-label {
+  color: alpha(@window_fg_color, 0.45);
 }
 
-.sidebar-pin-zone.sidebar-pin-zone-hover {
-  background-color: alpha(@accent_color, 0.18);
-  border-color: @accent_color;
-  border-style: solid;
+.selection-status progressbar trough {
+  min-height: 5px;
+  border-radius: 11px;
+  background-color: alpha(@window_fg_color, 0.05);
+  border: none;
+  box-shadow: inset 0px 1px 1px alpha(black, 0.05);
+}
+
+.selection-status progressbar progress {
+  border-radius: 11px;
+  background-image: none;
+  background-color: @accent_color;
+  border: none;
+  transition: all 301ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.selection-status button.flat {
+  background: transparent;
+  color: @accent_color;
+  padding: 2px 8px;
+  min-height: 22px;
+  font-size: 8.5pt;
+  border-radius: 4px;
+}
+
+.selection-status button.flat:hover {
+  background-color: alpha(@accent_color, 0.12);
+}
+
+/* ── Scrollbars ── */
+scrollbar.vertical slider {
+  background-color: alpha(@window_fg_color, 0.1);
+  border-radius: 20px;
+  margin: 2px;
+}
+
+scrollbar.vertical slider:hover {
+  background-color: alpha(@accent_color, 0.5);
 }
