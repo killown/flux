@@ -1053,7 +1053,7 @@ pub fn format_right_status(current_path: &Path, extension_filter: Option<&[Strin
             let mut stat = std::mem::MaybeUninit::<libc::statvfs>::uninit();
             if unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) } == 0 {
                 let stat = unsafe { stat.assume_init() };
-                let free_bytes = (stat.f_bsize as u64) * (stat.f_bavail as u64);
+                let free_bytes = (stat.f_bsize) * (stat.f_bavail);
                 parts.push(format!("{} free", gtk::glib::format_size(free_bytes)));
             }
         }

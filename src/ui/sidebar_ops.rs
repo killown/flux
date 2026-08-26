@@ -109,7 +109,7 @@ impl FluxApp {
 
         if let (Some(fi), Some(ti)) = (from_idx, to_idx) {
             let entry = self.config.sidebar.remove(fi);
-            let insert_at = if fi < ti { ti } else { ti };
+            let insert_at = ti;
             self.config.sidebar.insert(insert_at, entry);
 
             crate::utils::save_config(&self.config);
