@@ -288,12 +288,12 @@ button.breadcrumb-btn {
     alpha(@theme_fg_color, 0.06),
     alpha(@theme_fg_color, 0.02)
   );
-  padding: 4px 14px;
+  padding: 3px 10px;
   margin: 1px;
   font-weight: 500;
   transition: all 0.12s ease;
   color: alpha(@theme_fg_color, 0.8);
-  font-family: var(--font-mono);
+  font-family: var(--font-main);
   font-size: 0.9em;
 }
 
@@ -301,6 +301,7 @@ button.breadcrumb-btn:first-child {
   border-top-left-radius: 16px;
   border-bottom-left-radius: 16px;
   border-right-width: 0px;
+  padding-left: 12px;
 }
 
 button.breadcrumb-btn:last-child {
@@ -314,7 +315,7 @@ button.breadcrumb-btn:last-child {
     0 2px 8px alpha(@accent_color, 0.3),
     inset 0 1px 0 alpha(white, 0.2);
   font-weight: 600;
-  padding: 4px 18px;
+  padding: 3px 14px;
 }
 
 button.breadcrumb-btn:last-child label {
@@ -347,8 +348,8 @@ button.breadcrumb-btn:active:not(:last-child) {
 
 button.breadcrumb-btn label {
   color: inherit;
-  font-family: var(--font-mono);
-  letter-spacing: 0.4px;
+  font-family: var(--font-main);
+  letter-spacing: 0px;
 }
 
 /* ── Popovers & Context Menus ── */
