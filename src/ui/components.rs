@@ -534,6 +534,11 @@ pub enum SidebarMsg {
         source_paths: Vec<PathBuf>,
         dest_path: PathBuf,
     },
+    // ── Section-label actions ────────────────────────────────────────────────
+    /// User requested to rename a section label.
+    RenameSection(String),
+    /// User chose "Remove Section" from the label context menu.
+    RemoveSection(String),
 }
 
 /// Simple model for a pinned sidebar location.
@@ -621,7 +626,6 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
                 connect_pressed[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
-                    if is_label { return; }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
 
                     let menu = gtk::PopoverMenu::builder()
@@ -629,18 +633,31 @@ impl FactoryComponent for SidebarPlace {
                         .build();
 
                     let menu_model = gio::Menu::new();
-                    menu_model.append(Some(&tr("Rename")), Some("sidebar.rename"));
-                    menu_model.append(Some(&tr("Change icon")), Some("sidebar.change_icon"));
-                    menu_model.append(Some(&tr("Remove from sidebar")), Some("sidebar.remove"));
-                    menu.set_menu_model(Some(&menu_model));
+                    let action_group = gio::SimpleActionGroup::new();
 
-                    if let Some(widget) = gesture.widget() {
-                        menu.set_parent(&widget);
+                    if is_label {
+                        menu_model.append(Some(&tr("Rename")), Some("sidebar.rename_section"));
+                        menu_model.append(Some(&tr("Remove section")), Some("sidebar.remove_section"));
 
-                        let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
-                        menu.set_pointing_to(Some(&rect));
+                        let rename_action = gio::SimpleAction::new("rename_section", None);
+                        let sender_rn = sender.clone();
+                        let name_rn = name.clone();
+                        rename_action.connect_activate(move |_, _| {
+                            let _ = sender_rn.output(SidebarMsg::RenameSection(name_rn.clone()));
+                        });
+                        action_group.add_action(&rename_action);
 
-                        let action_group = gio::SimpleActionGroup::new();
+                        let remove_action = gio::SimpleAction::new("remove_section", None);
+                        let sender_rm = sender.clone();
+                        let name_rm = name.clone();
+                        remove_action.connect_activate(move |_, _| {
+                            let _ = sender_rm.output(SidebarMsg::RemoveSection(name_rm.clone()));
+                        });
+                        action_group.add_action(&remove_action);
+                    } else {
+                        menu_model.append(Some(&tr("Rename")), Some("sidebar.rename"));
+                        menu_model.append(Some(&tr("Change icon")), Some("sidebar.change_icon"));
+                        menu_model.append(Some(&tr("Remove from sidebar")), Some("sidebar.remove"));
 
                         let rename_action = gio::SimpleAction::new("rename", None);
                         let sender_rn = sender.clone();
@@ -669,24 +686,35 @@ impl FactoryComponent for SidebarPlace {
                             let _ = sender_c.output(SidebarMsg::Remove(path_c.clone()));
                         });
                         action_group.add_action(&remove_action);
-                        widget.insert_action_group("sidebar", Some(&action_group));
+                    }
 
+                    menu.set_menu_model(Some(&menu_model));
+
+                    if let Some(widget) = gesture.widget() {
+                        menu.set_parent(&widget);
+
+                        let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
+                        menu.set_pointing_to(Some(&rect));
+
+                        widget.insert_action_group("sidebar", Some(&action_group));
                         menu.popup();
                     }
                 }
             },
 
-            // Drag source: carry this row's path as a plain string
+            // Drag source: carry this row's path or label identifier as a plain string
             add_controller = gtk::DragSource {
                 set_actions: gdk::DragAction::MOVE,
-                connect_prepare[path = self.path.clone(), is_label = self.is_section_label] => move |src, _, _| {
-                    if is_label { return None; }
+                connect_prepare[path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |src, _, _| {
                     if let Some(w) = src.widget() {
                         w.add_css_class("sidebar-dragging");
                     }
-                    Some(gdk::ContentProvider::for_value(
-                        &path.to_string_lossy().to_string().to_value()
-                    ))
+                    let payload = if is_label {
+                        format!("label:{}", name)
+                    } else {
+                        path.to_string_lossy().to_string()
+                    };
+                    Some(gdk::ContentProvider::for_value(&payload.to_value()))
                 },
                 connect_drag_end => |src, _, _| {
                     if let Some(w) = src.widget() {
@@ -695,18 +723,22 @@ impl FactoryComponent for SidebarPlace {
                 },
             },
 
-            // Drop target: accept a path string dropped from another sidebar row
+            // Drop target: accept a path string or label dropped from another sidebar row
             add_controller = gtk::DropTarget {
                 set_actions: gdk::DragAction::MOVE,
                 set_types: &[glib::types::Type::STRING],
-                connect_drop[sender, path = self.path.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
-                    if is_label { return false; }
+                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
                     if let Ok(from_str) = value.get::<String>() {
+                        let to = if is_label {
+                            PathBuf::from(format!("label:{}", name))
+                        } else {
+                            path.clone()
+                        };
                         let from = PathBuf::from(&from_str);
-                        if from != path {
+                        if from != to {
                             let _ = sender.output(SidebarMsg::Reorder {
                                 from,
-                                to: path.clone(),
+                                to,
                             });
                         }
                     }

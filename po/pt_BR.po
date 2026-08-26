@@ -1409,3 +1409,27 @@ msgstr "Digite um novo nome de exibição para este favorito:"
 #: src/ui/view.rs:764
 msgid "Pin to Sidebar"
 msgstr "Fixar na barra lateral"
+
+#: src/ui/config_handlers.rs:??? src/ui/view.rs:???
+msgid "New Section"
+msgstr "Nova Seção"
+
+#: src/ui/config_handlers.rs:???
+msgid "Enter a title for the new section:"
+msgstr "Digite um título para a nova seção:"
+
+#: src/ui/config_handlers.rs:???
+msgid "Section title"
+msgstr "Título da seção"
+
+#: src/ui/config_handlers.rs:???
+msgid "Rename Section"
+msgstr "Renomear Seção"
+
+#: src/ui/config_handlers.rs:???
+msgid "Enter a new title for this section:"
+msgstr "Digite um novo título para esta seção:"
+
+#: src/ui/components.rs:???
+msgid "Remove section"
+msgstr "Remover seção"

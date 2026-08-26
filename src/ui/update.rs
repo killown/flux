@@ -29,10 +29,39 @@ impl FluxApp {
             AppMsg::AddToSidebarPermanent => self.handle_add_to_sidebar_permanent(),
             AppMsg::ReorderSidebar { from, to } => self.handle_reorder_sidebar(from, to),
             AppMsg::PromptSidebarRename { path, current_name } => {
-                self.show_prompt_sidebar_rename(path, current_name, &sender);
+                let path_str = path.to_string_lossy();
+                if let Some(section_name) = path_str.strip_prefix("__section__:") {
+                    // Rename a section label rather than a pinned path.
+                    self.show_prompt_sidebar_rename_section(
+                        section_name.to_string(),
+                        current_name,
+                        &sender,
+                    );
+                } else {
+                    self.show_prompt_sidebar_rename(path, current_name, &sender);
+                }
             }
             AppMsg::RenameSidebarPlace { path, new_name } => {
                 self.handle_rename_sidebar_place(path, new_name, &sender);
+            }
+            AppMsg::PromptSidebarRenameSection {
+                old_name,
+                current_name,
+            } => {
+                self.show_prompt_sidebar_rename_section(old_name, current_name, &sender);
+            }
+            AppMsg::RenameSidebarSection { old_name, new_name } => {
+                let mut modified = false;
+                for place in &mut self.config.sidebar {
+                    if place.kind.as_deref() == Some("label") && place.name == old_name {
+                        place.name = new_name.clone();
+                        modified = true;
+                    }
+                }
+                if modified {
+                    crate::utils::save_config(&self.config);
+                    self.refresh_sidebar();
+                }
             }
             AppMsg::SidebarDropMove {
                 source_paths,
@@ -114,6 +143,11 @@ impl FluxApp {
             }
             AppMsg::Undo => self.handle_undo(&sender),
             AppMsg::Redo => self.handle_redo(&sender),
+            AppMsg::RemoveSidebarSection(name) => self.handle_remove_sidebar_section(name),
+            AppMsg::PromptNewSidebarSection => {
+                self.show_prompt_new_sidebar_section(&sender);
+            }
+            AppMsg::AddSidebarSection(title) => self.handle_add_sidebar_section(title),
             AppMsg::UndoMoveComplete {
                 redo_items,
                 dest_dir,

@@ -106,6 +106,11 @@ impl FluxApp {
                     source_paths,
                     dest_path,
                 },
+                crate::ui::SidebarMsg::RenameSection(name) => AppMsg::PromptSidebarRenameSection {
+                    old_name: name.clone(),
+                    current_name: name,
+                },
+                crate::ui::SidebarMsg::RemoveSection(name) => AppMsg::RemoveSidebarSection(name),
             },
         );
 
