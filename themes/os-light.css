@@ -5,7 +5,7 @@
   --shadow-hover: rgba(0, 0, 0, 0.15);
   --font-main: "Inter", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
-  letter-spacing: 0.2px;
+  letter-spacing: 0px;
 
   /* ── Adwaita / GTK palette overrides for light mode ── */
   --standalone-color-ok: #1d1d1f;
@@ -57,13 +57,18 @@ headerbar {
   border: none;
   box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.06);
   font-family: var(--font-main);
+  letter-spacing: 0px;
+}
+
+headerbar > windowtitle label.title {
+  color: #1d1d1f;
+  font-weight: 700;
+  letter-spacing: 0px;
 }
 
 headerbar label {
   color: #1d1d1f;
-  letter-spacing: 1.5px;
-  font-weight: 700;
-  text-transform: uppercase;
+  letter-spacing: 0px;
 }
 
 headerbar button {
@@ -121,7 +126,7 @@ headerbar togglebutton:active {
   color: #1d1d1f;
   font-family: var(--font-main);
   font-size: 9.5pt;
-  letter-spacing: 0.4px;
+  letter-spacing: 0px;
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
@@ -160,7 +165,7 @@ headerbar togglebutton:active {
   font-family: var(--font-main);
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(29, 29, 31, 0.45);
   background: transparent;
@@ -274,7 +279,7 @@ gridview child:hover {
   color: #1d1d1f;
   font-family: var(--font-main);
   font-size: 10pt;
-  letter-spacing: 0.4px;
+  letter-spacing: 0px;
 }
 
 gridview child:selected .flux-card {
@@ -407,7 +412,7 @@ button.breadcrumb-btn:active:not(:last-child) {
 button.breadcrumb-btn label {
   color: inherit;
   font-family: var(--font-mono);
-  letter-spacing: 0.8px;
+  letter-spacing: 0.4px;
 }
 
 /* ── Popovers & Context Menus ── */
@@ -431,7 +436,7 @@ popover.menu modelbutton {
 
 popover.menu modelbutton label {
   color: #1d1d1f;
-  letter-spacing: 0.4px;
+  letter-spacing: 0px;
 }
 
 popover.menu modelbutton label:disabled,
@@ -483,7 +488,7 @@ passwordentry text {
   color: #1d1d1f;
   caret-color: #1d1d1f;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-  letter-spacing: 0.5px;
+  letter-spacing: 0px;
 }
 
 entry placeholder,
@@ -596,7 +601,7 @@ textview text {
   color: #1d1d1f;
   font-family: var(--font-mono);
   font-size: 8.5pt;
-  letter-spacing: 0.3px;
+  letter-spacing: 0px;
 }
 
 .selection-status label.dim-label {
@@ -753,7 +758,7 @@ button label {
   border-radius: 8px;
   padding: 8px 16px;
   font-weight: bold;
-  letter-spacing: 1.2px;
+  letter-spacing: 0px;
 }
 
 .destructive-action label {
@@ -844,7 +849,7 @@ dropdown {
 }
 
 dropdown label {
-  letter-spacing: 0.5px;
+  letter-spacing: 0px;
 }
 
 scale trough {
@@ -992,21 +997,45 @@ row:selected {
 }
 
 /* ── Settings & Libadwaita Preferences ── */
+window.settings-window,
+adwpreferenceswindow,
+.settings-window {
+  letter-spacing: 0px;
+}
+
 window.settings-window headerbar label,
-adwpreferenceswindow headerbar label {
-  letter-spacing: 2px;
-  font-weight: 800;
+adwpreferenceswindow headerbar label,
+.settings-window headerbar label,
+viewswitcher label,
+adwviewswitcher label,
+viewswitchertitle label,
+adwviewswitchertitle label,
+viewswitcherbar label,
+adwviewswitcherbar label,
+viewswitcher button label,
+adwviewswitcher button label {
+  letter-spacing: 0px !important;
+  font-weight: 500;
+  text-transform: none;
+  font-size: 9pt;
+}
+
+viewswitcher button,
+adwviewswitcher button {
+  padding-left: 4px;
+  padding-right: 4px;
+  min-width: 60px;
 }
 
 .settings-row label {
   color: #1d1d1f;
-  letter-spacing: 0.3px;
+  letter-spacing: 0px;
 }
 
 adwpreferencesgroup > box > label {
-  letter-spacing: 1.5px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: 700;
   opacity: 0.7;
 }
 
@@ -1067,7 +1096,7 @@ tooltip.background {
 
 toast label {
   color: #1d1d1f;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.4px;
 }
 
 toast button,
