@@ -238,7 +238,7 @@ button.eject-button:active {
 
 .sidebar-drop-hover,
 .drop-hover {
-  background-color: alpha(@accent_color, 0.2) !important;
+  background-color: alpha(@accent_color, 0.2);
   border: 2px dashed @accent_color;
   box-shadow: inset 0 0 0 1.5px @accent_color;
   transform: scale(1.05);
