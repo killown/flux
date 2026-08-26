@@ -162,6 +162,8 @@ enum Msg {
     Save,
     Search(String),
     SelectMenu(String),
+    PromptNewMenu,
+    CreateNewMenu(String),
 }
 
 // ─── Shared imperative state ──────────────────────────────────────────────────
@@ -173,6 +175,8 @@ struct Shared {
     root: adw::Window,
     sender: ComponentSender<MenuEditor>,
     search_query: Rc<RefCell<String>>,
+    menu_model: gtk::StringList,
+    menu_dropdown: gtk::DropDown,
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -213,6 +217,10 @@ impl SimpleComponent for MenuEditor {
             .icon_name("list-add-symbolic")
             .tooltip_text(tr("Add new entry  (Ctrl+N)").as_str())
             .build();
+        let new_menu_btn = gtk::Button::builder()
+            .icon_name("document-new-symbolic")
+            .tooltip_text(tr("Create menu config").as_str())
+            .build();
         let save_btn = gtk::Button::builder()
             .label(tr("Save").as_str())
             .tooltip_text(tr("Write to config file  (Ctrl+S)").as_str())
@@ -237,6 +245,7 @@ impl SimpleComponent for MenuEditor {
 
         // Pack elements into HeaderBar
         header.pack_start(&add_btn);
+        header.pack_start(&new_menu_btn);
 
         // ── Search bar in header title position ───────────────────────────────
         let search_entry = gtk::SearchEntry::builder()
@@ -277,6 +286,8 @@ impl SimpleComponent for MenuEditor {
             root: root.clone(),
             sender: sender.clone(),
             search_query,
+            menu_model,
+            menu_dropdown: menu_dropdown.clone(),
         }));
 
         rebuild_list(&shared.borrow());
@@ -292,6 +303,10 @@ impl SimpleComponent for MenuEditor {
         {
             let s = sender.clone();
             add_btn.connect_clicked(move |_| s.input(Msg::AddEntry));
+        }
+        {
+            let s = sender.clone();
+            new_menu_btn.connect_clicked(move |_| s.input(Msg::PromptNewMenu));
         }
         {
             let s = sender.clone();
@@ -353,6 +368,45 @@ impl SimpleComponent for MenuEditor {
             Msg::SelectMenu(menu_name) => {
                 *shared.current_menu.borrow_mut() = menu_name.clone();
                 *shared.entries.borrow_mut() = load_from_disk(&menu_name);
+                rebuild_list(&shared);
+            }
+
+            Msg::PromptNewMenu => show_new_menu_dialog(&shared),
+
+            Msg::CreateNewMenu(raw_name) => {
+                let clean_name = raw_name.trim();
+                let mut filename = if clean_name.starts_with("menu") {
+                    clean_name.to_string()
+                } else {
+                    format!("menu_{}", clean_name)
+                };
+                if !filename.ends_with(".rs") {
+                    filename.push_str(".rs");
+                }
+
+                let path = config_path_for(&filename);
+                let is_new = !path.exists();
+                if is_new {
+                    let _ = write_to_disk(&filename, &[]);
+                }
+
+                // Update dropdown list
+                let available = get_available_menus();
+                let menu_strings: Vec<&str> = available.iter().map(|s| s.as_str()).collect();
+                shared
+                    .menu_model
+                    .splice(0, shared.menu_model.n_items(), &menu_strings);
+
+                if let Some(pos) = available.iter().position(|s| s == &filename) {
+                    shared.menu_dropdown.set_selected(pos as u32);
+                }
+
+                *shared.current_menu.borrow_mut() = filename.clone();
+                *shared.entries.borrow_mut() = if is_new {
+                    Vec::new()
+                } else {
+                    load_from_disk(&filename)
+                };
                 rebuild_list(&shared);
             }
 
@@ -591,6 +645,98 @@ fn build_row(
     row
 }
 
+// ─── New Menu dialog ─────────────────────────────────────────────────────────
+fn show_new_menu_dialog(shared: &Shared) {
+    let dialog = adw::Window::new();
+    dialog.set_title(Some(tr("Create Menu").as_str()));
+    dialog.set_modal(true);
+    dialog.set_transient_for(Some(&shared.root));
+    dialog.set_default_size(520, -1);
+    dialog.set_resizable(false);
+
+    let outer = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .build();
+    outer.append(&adw::HeaderBar::new());
+
+    let page = adw::PreferencesPage::new();
+    let group = adw::PreferencesGroup::builder()
+        .title(tr("Menu File Name").as_str())
+        .description(tr("Enter a menu name (e.g. 'menu-application-all.rs' for 'application/all' MIME type)").as_str())
+        .build();
+
+    let name_entry = gtk::Entry::builder()
+        .placeholder_text("custom")
+        .hexpand(true)
+        .margin_top(4)
+        .margin_bottom(8)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+
+    let row = adw::PreferencesRow::builder().build();
+    row.set_child(Some(&name_entry));
+    group.add(&row);
+    page.add(&group);
+    outer.append(&page);
+
+    let btn_bar = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .halign(gtk::Align::End)
+        .spacing(8)
+        .margin_top(12)
+        .margin_bottom(20)
+        .margin_end(20)
+        .build();
+
+    let cancel_btn = gtk::Button::builder().label(tr("Cancel").as_str()).build();
+    let create_btn = gtk::Button::builder()
+        .label(tr("Create").as_str())
+        .css_classes(["suggested-action"])
+        .build();
+
+    btn_bar.append(&cancel_btn);
+    btn_bar.append(&create_btn);
+    outer.append(&btn_bar);
+
+    dialog.set_content(Some(&outer));
+
+    {
+        let d = dialog.clone();
+        cancel_btn.connect_clicked(move |_| d.close());
+    }
+
+    {
+        let d = dialog.clone();
+        let esc = gtk::ShortcutController::new();
+        esc.add_shortcut(gtk::Shortcut::new(
+            gtk::ShortcutTrigger::parse_string("Escape"),
+            Some(gtk::CallbackAction::new(move |_, _| {
+                d.close();
+                glib::Propagation::Stop
+            })),
+        ));
+        dialog.add_controller(esc);
+    }
+
+    {
+        let d = dialog.clone();
+        let sender = shared.sender.clone();
+        create_btn.connect_clicked(move |_| {
+            let text = name_entry.text().to_string();
+            if text.trim().is_empty() {
+                name_entry.add_css_class("error");
+                return;
+            }
+            name_entry.remove_css_class("error");
+            sender.input(Msg::CreateNewMenu(text));
+            d.close();
+        });
+    }
+
+    dialog.present();
+}
+
 // ─── Entry dialog ─────────────────────────────────────────────────────────────
 fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     let dialog = adw::Window::new();
@@ -599,7 +745,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     } else {
         tr("Add Entry")
     };
-    dialog.set_title(Some(&dialog_title));
+    dialog.set_title(Some(dialog_title.as_str()));
     dialog.set_modal(true);
     dialog.set_transient_for(Some(&shared.root));
     dialog.set_default_size(680, -1);
@@ -757,7 +903,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         tr("Add")
     };
     let commit_btn = gtk::Button::builder()
-        .label(&commit_label)
+        .label(commit_label.as_str())
         .css_classes(["suggested-action"])
         .build();
     btn_bar.append(&cancel_btn);
@@ -839,6 +985,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
 
 pub fn run() {
     adw::init().expect("Failed to initialize Libadwaita");
+    crate::i18n::init();
     crate::utils::helpers::load_custom_css();
 
     let app = adw::Application::builder()
