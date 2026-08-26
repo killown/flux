@@ -80,15 +80,18 @@ impl FluxApp {
     /// Reorders custom entries in the sidebar bookmark list.
     pub fn handle_reorder_sidebar(&mut self, from: PathBuf, to: PathBuf) {
         let home = dirs::home_dir().unwrap_or_default();
-        let home_str = home.to_string_lossy();
+        let home_str = home.to_string_lossy().to_string();
 
-        let resolve = |entry_path: &str| -> String {
-            if entry_path.starts_with('~') {
-                entry_path.replacen('~', &home_str, 1)
+        let resolve_key = |place: &crate::model::CustomPlace| -> String {
+            if place.kind.as_deref() == Some("label") {
+                format!("label:{}", place.name)
+            } else if place.path.starts_with('~') {
+                place.path.replacen('~', &home_str, 1)
             } else {
-                entry_path.to_owned()
+                place.path.clone()
             }
         };
+
         let from_str = from.to_string_lossy().to_string();
         let to_str = to.to_string_lossy().to_string();
 
@@ -96,18 +99,20 @@ impl FluxApp {
             .config
             .sidebar
             .iter()
-            .position(|e| resolve(&e.path) == from_str);
+            .position(|e| resolve_key(e) == from_str);
+
         let to_idx = self
             .config
             .sidebar
             .iter()
-            .position(|e| resolve(&e.path) == to_str);
+            .position(|e| resolve_key(e) == to_str);
 
         if let (Some(fi), Some(ti)) = (from_idx, to_idx) {
             let entry = self.config.sidebar.remove(fi);
-            let insert_at = if fi < ti { ti - 1 } else { ti };
+            let insert_at = if fi < ti { ti } else { ti };
             self.config.sidebar.insert(insert_at, entry);
-            utils::save_config(&self.config);
+
+            crate::utils::save_config(&self.config);
             self.refresh_sidebar();
         }
     }

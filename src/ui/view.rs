@@ -3,6 +3,7 @@ use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
 use adw::prelude::*;
+use gtk::gio;
 use gtk::glib::{self};
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -832,6 +833,41 @@ impl SimpleAsyncComponent for FluxApp {
                 false
             });
             pin_zone.add_controller(pin_zone_dt);
+        }
+
+        // Right-click on empty sidebar space → offer "New Section".
+        // Uses Bubble phase so it only fires when no child row claimed the event.
+        {
+            let new_section_rc = gtk::GestureClick::new();
+            new_section_rc.set_button(3);
+            new_section_rc.set_propagation_phase(gtk::PropagationPhase::Bubble);
+            let s_ns = sender.clone();
+            new_section_rc.connect_pressed(move |gesture, _, x, y| {
+                // Only fire when no child already claimed the event (i.e. empty space).
+                if gesture.current_event_state().is_empty() {
+                    let menu = gtk::PopoverMenu::builder().has_arrow(false).build();
+                    let menu_model = gio::Menu::new();
+                    menu_model.append(Some(&tr("New Section")), Some("sidebar_empty.new_section"));
+                    menu.set_menu_model(Some(&menu_model));
+
+                    if let Some(widget) = gesture.widget() {
+                        menu.set_parent(&widget);
+                        let rect = gdk::Rectangle::new(x as i32, y as i32, 1, 1);
+                        menu.set_pointing_to(Some(&rect));
+
+                        let ag = gio::SimpleActionGroup::new();
+                        let new_action = gio::SimpleAction::new("new_section", None);
+                        let s2 = s_ns.clone();
+                        new_action.connect_activate(move |_, _| {
+                            s2.input(AppMsg::PromptNewSidebarSection);
+                        });
+                        ag.add_action(&new_action);
+                        widget.insert_action_group("sidebar_empty", Some(&ag));
+                        menu.popup();
+                    }
+                }
+            });
+            widgets.sidebar_box.add_controller(new_section_rc);
         }
 
         model.context_menu_popover.set_parent(&widgets.grid_overlay);

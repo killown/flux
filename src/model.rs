@@ -523,6 +523,19 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Prompts a modal dialog to rename a section label.
+    PromptSidebarRenameSection {
+        old_name: String,
+        current_name: String,
+    },
+    /// Persists a new name for a section label entry in config.toml.
+    RenameSidebarSection { old_name: String, new_name: String },
+    /// Removes a section label entry from config.toml and refreshes the sidebar.
+    RemoveSidebarSection(String),
+    /// Prompts the user for a title, then appends a new `kind = "label"`.
+    PromptNewSidebarSection,
+    /// Appends a new section-label entry with the given title to config.sidebar.
+    AddSidebarSection(String),
     /// Show or hide the "Pin to Sidebar" drop zone at the bottom of the sidebar.
     ShowSidebarPinZone(bool),
     /// Files were dragged from the grid and dropped onto a quick-list tab button.
