@@ -596,6 +596,35 @@ impl SimpleComponent for SettingsWindow {
                 },
             },
 
+            // --- Search Page ---
+            add = &adw::PreferencesPage {
+                set_title: &tr("Search"),
+                set_icon_name: Some("search-symbolic"),
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Content Search"),
+                    set_description: Some(&tr("Configure how content search behaves")),
+
+                    add = &adw::ActionRow {
+                        set_title: &tr("Max Results"),
+                        set_subtitle: &tr("Maximum number of matches to return (higher values may be slower)"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.max_content_search_results as f64,
+                                10.0, 5000.0, 10.0, 100.0, 0.0
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetMaxContentSearchResults(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                },
+            },
+
             // --- Terminal Page ---
             add = &adw::PreferencesPage {
                 set_title: &tr("Terminal"),

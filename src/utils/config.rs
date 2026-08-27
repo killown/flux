@@ -321,6 +321,8 @@ path = "~"
                     recents_row: 0,
                     show_thumbnails: true,
                     thumbnail_types: crate::model::ThumbnailTypes::default(),
+                    max_content_search_results:
+                        crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
                 },
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),

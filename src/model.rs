@@ -224,6 +224,10 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Maximum number of results returned by content search.
+    /// Higher values may impact performance on large directories.
+    #[serde(default)]
+    pub max_content_search_results: usize,
     /// Per-file custom image overrides, keyed by absolute file path string.
     ///
     /// Stores the absolute path to the custom image file (PNG, JPG, WebP, SVG)
@@ -348,6 +352,7 @@ impl Default for UIConfig {
             recents_row: 0,
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
+            max_content_search_results: crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
         }
     }
 }
@@ -523,6 +528,9 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Sets the maximum number of content search results.
+    /// Value is persisted in the config file.
+    SetMaxContentSearchResults(usize),
     /// A batch of files matched a recursive extension/glob search.
     ExtensionSearchBatch {
         results: Vec<crate::services::extension_search::ExtensionMatch>,

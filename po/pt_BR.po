@@ -1514,3 +1514,15 @@ msgstr "HTML colado como arquivo"
 #: src/ui/clipboard_paste.rs:263
 msgid "Failed to save HTML"
 msgstr "Falha ao salvar o HTML"
+
+#: src/ui/settings.rs:???
+msgid "Max Results"
+msgstr "Máx. Resultados"
+
+#: src/ui/settings.rs:???
+msgid "Maximum number of matches to return (higher values may be slower)"
+msgstr "Número máximo de correspondências a retornar (valores mais altos podem ser mais lentos)"
+
+#: src/ui/settings.rs:???
+msgid "Configure how content search behaves"
+msgstr "Configure o comportamento da pesquisa de conteúdo"
