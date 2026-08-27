@@ -1535,9 +1535,9 @@ msgstr "Pesquisa Avançada"
 msgid "Pattern(s)"
 msgstr "Padrão(ões)"
 
-#: src/ui/advanced_search.rs:129
-msgid "Search term"
-msgstr "Termo de pesquisa"
+#: src/ui/advanced_search.rs:119
+msgid "Inside files"
+msgstr "Dentro dos arquivos"
 
 #: src/ui/advanced_search.rs:130
 msgid "At least 3 characters"
@@ -1622,3 +1622,7 @@ msgstr "Opções"
 #: src/ui/advanced_search.rs:134
 msgid "Filter by Tag"
 msgstr "Filtrar por Tag"
+
+#: src/ui/advanced_search.rs:114
+msgid "File name"
+msgstr "Nome do arquivo"
