@@ -1,7 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use crate::utils;
-use adw::gdk;
 use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::gio;
@@ -113,45 +112,6 @@ impl FluxApp {
         {
             sender.input(AppMsg::ShowToast(toast));
         }
-    }
-
-    /// Reads content from the clipboard and dispatches a paste message.
-    pub fn handle_paste_from_clipboard(&self, sender: &AsyncComponentSender<Self>) {
-        let Some(display) = gdk::Display::default() else {
-            sender.input(AppMsg::ShowToast(
-                "No display available for clipboard operation".to_string(),
-            ));
-            return;
-        };
-
-        let clipboard = display.clipboard();
-        let s = sender.clone();
-        let paste_toast = self
-            .menu_actions
-            .iter()
-            .find(|a| a.command == "builtin::paste")
-            .and_then(|a| a.toast.clone());
-
-        clipboard.read_text_async(None::<&gio::Cancellable>, move |res| {
-            if let Ok(Some(text)) = res {
-                let mut lines = text.lines();
-                let first_line = lines.next().unwrap_or("");
-
-                let is_cut = first_line == "cut";
-
-                let files: Vec<gio::File> = lines
-                    .filter(|uri| !uri.is_empty())
-                    .map(|uri| gio::File::for_uri(uri.trim_end_matches('\r')))
-                    .collect();
-
-                if !files.is_empty() {
-                    s.input(AppMsg::PerformPaste { files, is_cut });
-                    if let Some(toast) = paste_toast {
-                        s.input(AppMsg::ShowToast(toast));
-                    }
-                }
-            }
-        });
     }
 
     /// Presents a warning dialog when pasting into a location where target folders already exist.
