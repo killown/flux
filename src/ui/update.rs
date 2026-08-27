@@ -308,6 +308,9 @@ impl FluxApp {
             }
 
             // Search & Filtering
+            AppMsg::SetMaxContentSearchResults(val) => {
+                self.handle_set_max_content_search_results(val, &sender)
+            }
             AppMsg::StartExtensionSearch(patterns) => {
                 crate::services::extension_search::start_extension_search(self, patterns, sender);
             }

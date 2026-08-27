@@ -5,6 +5,15 @@ use relm4::prelude::*;
 use std::path::PathBuf;
 
 impl FluxApp {
+    pub fn handle_set_max_content_search_results(
+        &mut self,
+        val: usize,
+        _sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.max_content_search_results = val;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_set_single_click(&mut self, val: bool) {
         self.config.ui.single_click = val;
         self.files.view.set_single_click_activate(val);
