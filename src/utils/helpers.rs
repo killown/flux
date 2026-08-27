@@ -11,6 +11,7 @@ use std::ffi::CString;
 use std::fs;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 
 impl FluxApp {
     /// Returns the display-friendly string for the current sorting state.
@@ -946,6 +947,38 @@ impl FluxApp {
         let content = gdk::ContentProvider::new_union(&[uri_provider, text_provider]);
 
         clipboard.set_content(Some(&content)).unwrap();
+    }
+
+    /// Appends a batch of extension/glob search results to the grid.
+    pub fn handle_extension_search_batch(
+        &mut self,
+        results: Vec<crate::services::extension_search::ExtensionMatch>,
+        session: u64,
+    ) {
+        if self.load_id.load(Ordering::SeqCst) != session {
+            return;
+        }
+
+        for item in results {
+            let icon = utils::get_icon_for_path(&item.path, false);
+
+            self.files.append(crate::ui::FileItem {
+                name: item.display,
+                icon,
+                thumbnail: None,
+                is_dir: false,
+                path: item.path,
+                icon_size: self.current_list_icon_size,
+                size: 0,
+                mtime: 0,
+                is_editing: false,
+                is_foreign_owner: false,
+                expand_labels: false,
+                is_list_mode: true,
+                is_custom_icon: false,
+                active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
+            });
+        }
     }
 
     /// During a content search the directory monitor only watches current_path

@@ -67,6 +67,7 @@ impl FluxApp {
     // may resolve relative paths incorrectly, moving files to previous locations
     // instead of the directory currently displayed to the user.
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        self.reset_from_content_search();
         let path_str = path.to_string_lossy();
 
         // 0. Intercept Tag searches typed into location bar or clicked in sidebar
@@ -243,6 +244,7 @@ impl FluxApp {
         archive_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        self.reset_from_content_search();
         let old_path = std::mem::replace(
             &mut self.current_path,
             crate::services::archive::build_archive_uri(&archive_path, ""),

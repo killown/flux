@@ -36,6 +36,40 @@ impl FluxApp {
             return;
         }
 
+        // Check for glob pattern (*.iso, etc.) -> Recursive Subfolder Search
+        let has_wildcard = query_lc.contains('*') || query_lc.contains('?');
+        let has_ext_char = query_lc
+            .rfind('.')
+            .map(|dot_idx| {
+                dot_idx + 1 < query_lc.len() && !query_lc[dot_idx + 1..].trim().is_empty()
+            })
+            .unwrap_or(false);
+
+        // Instantly lock into list mode if the user starts typing a wildcard pattern
+        if has_wildcard {
+            if !self.search_saved_layout {
+                self.saved_list_mode = self.is_list_mode;
+                self.saved_max_columns = self.files.view.max_columns();
+                self.search_saved_layout = true;
+            }
+            self.is_list_mode = true;
+            self.files.view.set_min_columns(1);
+            self.files.view.set_max_columns(1);
+            self.sync_list_mode();
+        }
+
+        // Only kick off the heavy recursive search once there are actual characters following the glob/dot
+        if has_wildcard && has_ext_char {
+            self.filter = query.clone();
+            let query_target = query_lc.clone();
+            sender.input(AppMsg::StartExtensionSearch(vec![query_target]));
+            return;
+        } else if has_wildcard {
+            // Just filter current view or wait while they finish typing the extension (e.g., user typed "*.p")
+            self.filter = query.clone();
+            self.files.clear_filters();
+            return;
+        }
         // Check for tag filter (:tag:name, :t:name, #name) -> Global Search
         if let Some((tags, rest_query)) = crate::utils::search::parse_tag_filter(&query_lc) {
             self.filter = query.clone();

@@ -8,6 +8,7 @@
 pub mod archive;
 pub mod content_search;
 pub mod db;
+pub mod extension_search;
 pub mod loader;
 pub mod luks;
 pub mod network;
