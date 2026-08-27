@@ -124,6 +124,15 @@ impl FluxApp {
             AppMsg::SetAsc(asc) => self.handle_set_asc(asc, &sender),
 
             // Clipboard & File Operations
+            AppMsg::PasteImageFromClipboard => {
+                // No-op: handled inline in clipboard_paste.rs via read_texture_async.
+            }
+            AppMsg::PasteTextFromClipboard => {
+                // No-op: handled inline in clipboard_paste.rs via read_text_async.
+            }
+            AppMsg::PasteHtmlFromClipboard => {
+                // No-op: handled inline in clipboard_paste.rs via read_async.
+            }
             AppMsg::ConfirmReplacePaste {
                 files,
                 conflicts,

@@ -523,6 +523,12 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Paste image data from the clipboard as a timestamped file into the current directory.
+    PasteImageFromClipboard,
+    /// Paste plain text as a file.
+    PasteTextFromClipboard,
+    /// Paste rich text HTML content from the clipboard into a new `.html` file.
+    PasteHtmlFromClipboard,
     /// Open the global tag navigation command palette dialog
     OpenTagNavigator,
     /// Delete a tag from the database entirely across all files.
