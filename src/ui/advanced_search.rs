@@ -21,7 +21,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
         .title(tr("Advanced Search"))
         .modal(true)
         .default_width(480)
-        .default_height(480)
+        .default_height(520)
         .resizable(false)
         .build();
 
@@ -120,9 +120,14 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
         .title(tr("Search Criteria"))
         .build();
 
+    let name_entry = make_entry_row(
+        &criteria_group,
+        &tr("File name"),
+        "report, draft*, document",
+    );
     let content_entry = make_entry_row(
         &criteria_group,
-        &tr("Search term"),
+        &tr("Inside files"),
         &tr("At least 3 characters"),
     );
     let fname_entry = make_entry_row(
@@ -244,6 +249,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
 
     // ── Search ───────────────────────────────────────────────────────────────
     {
+        let name_entry = name_entry.clone();
         let fname_entry = fname_entry.clone();
         let content_entry = content_entry.clone();
         let ext_entry = ext_entry.clone();
@@ -262,6 +268,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
             submitted.set(true);
             d.close();
 
+            let name_text = name_entry.text().trim().to_string();
             let fname_text = fname_entry.text().trim().to_string();
             let content_text = content_entry.text().trim().to_string();
             let ext_text = ext_entry.text().trim().to_string();
@@ -270,7 +277,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
             let size_op_sel = size_op_row.selected();
             let size_val: u64 = size_entry.text().trim().parse().unwrap_or(0);
             let size_unit_sel = size_unit_row.selected();
-            let recursive = recursive_sw.is_active();
+            let mut recursive = recursive_sw.is_active();
             let include_hidden = hidden_sw.is_active();
 
             let date_seconds: Option<u64> = match date_sel {
@@ -304,24 +311,42 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
                 return;
             }
 
-            let mut patterns: Vec<String> = if !fname_text.is_empty() {
-                fname_text
+            let mut patterns: Vec<String> = Vec::new();
+
+            if !name_text.is_empty() {
+                for item in name_text
+                    .split(',')
+                    .map(|s| s.trim())
+                    .filter(|s| !s.is_empty())
+                {
+                    let mut term = item.to_string();
+                    if term.ends_with('*') || term.contains('*') {
+                        recursive = true;
+                    }
+                    if !term.starts_with('*') && !term.ends_with('*') {
+                        term = format!("*{}*", term);
+                    }
+                    patterns.push(term.to_lowercase());
+                }
+            }
+
+            if !fname_text.is_empty() {
+                for p in fname_text
                     .split(',')
                     .map(|p| p.trim().to_lowercase())
                     .filter(|p| !p.is_empty())
-                    .collect()
+                {
+                    patterns.push(p);
+                }
             } else if !ext_text.is_empty() {
-                ext_text
+                for e in ext_text
                     .split(',')
-                    .map(|e| {
-                        let trimmed = e.trim().trim_start_matches('.');
-                        format!("*.{}", trimmed)
-                    })
-                    .filter(|p| p.len() > 2)
-                    .collect()
-            } else {
-                Vec::new()
-            };
+                    .map(|e| e.trim().trim_start_matches('.'))
+                    .filter(|e| !e.is_empty())
+                {
+                    patterns.push(format!("*.{}", e));
+                }
+            }
 
             if recursive {
                 if patterns.is_empty() {
@@ -345,9 +370,9 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
     }
 
     {
-        let content = content_entry.clone();
+        let name = name_entry.clone();
         dialog.connect_map(move |_| {
-            content.grab_focus();
+            name.grab_focus();
         });
     }
 
