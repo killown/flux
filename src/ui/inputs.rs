@@ -138,6 +138,10 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::ToggleSidebar);
                 glib::Propagation::Stop
             }
+            gdk::Key::F12 => {
+                sender_cap.input(AppMsg::OpenAdvancedSearch);
+                glib::Propagation::Stop
+            }
             gdk::Key::t | gdk::Key::T if is_ctrl => {
                 if terminal_area_cap.has_focus() {
                     return glib::Propagation::Proceed;
@@ -226,6 +230,15 @@ pub fn setup_controllers(
         Some(gtk::ShortcutTrigger::parse_string("F8").unwrap()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_sidebar.input(AppMsg::ToggleSidebar);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_adv_search = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("F12").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_adv_search.input(AppMsg::OpenAdvancedSearch);
             glib::Propagation::Stop
         })),
     ));

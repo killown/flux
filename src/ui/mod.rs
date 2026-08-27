@@ -4,6 +4,7 @@
 //! logic to separate the presentation layer from the core application state.
 
 // --- 1. Submodule Declarations ---
+pub mod advanced_search;
 pub mod init;
 pub mod inputs;
 pub mod keymap;

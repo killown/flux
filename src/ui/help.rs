@@ -144,6 +144,17 @@ impl SimpleComponent for HelpWindow {
                 set_icon_name: Some("search-symbolic"),
 
                 add = &adw::PreferencesGroup {
+                    set_title: &tr("Advanced Search"),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open advanced search dialog"),
+                        add_suffix = &gtk::Label {
+                            set_label: "F12",
+                            add_css_class: "keycap",
+                        },
+                    },
+                },
+
+                add = &adw::PreferencesGroup {
                     set_title: &tr("Content Search"),
                     set_description: Some(&tr("Search inside file contents (not just filenames)")),
 

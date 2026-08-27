@@ -528,6 +528,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Open the Advanced Search dialog.
+    OpenAdvancedSearch,
     /// Sets the maximum number of content search results.
     /// Value is persisted in the config file.
     SetMaxContentSearchResults(usize),
@@ -538,6 +540,8 @@ pub enum AppMsg {
     },
     /// Kick off a recursive filename search using glob patterns.
     StartExtensionSearch(Vec<String>),
+    /// Recursive search with full advanced constraints.
+    StartAdvancedSearch(crate::services::extension_search::AdvancedSearchParams),
     /// Paste image data from the clipboard as a timestamped file into the current directory.
     PasteImageFromClipboard,
     /// Paste plain text as a file.

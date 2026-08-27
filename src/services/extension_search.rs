@@ -21,7 +21,27 @@ pub struct ExtensionMatch {
     pub display: String,
 }
 
-/// Launch a recursive filename search from `app.current_path` using `ignore`'s synchronous traversal.
+/// Optional constraints from the Advanced Search dialog.
+///
+/// When `None` fields are present the corresponding predicate is skipped,
+/// so a default `AdvancedSearchParams` behaves identically to the plain
+/// `start_extension_search` path.
+#[derive(Debug, Clone, Default)]
+pub struct AdvancedSearchParams {
+    /// Glob patterns (already expanded from MIME shorthands).
+    pub patterns: Vec<String>,
+    /// Exclude files whose mtime is older than `now - date_seconds`.
+    pub date_seconds: Option<u64>,
+    /// `(larger_than, threshold_bytes)`:
+    /// * `true`  → keep only files *larger than* the threshold
+    /// * `false` → keep only files *smaller than* the threshold
+    pub size_bytes: Option<(bool, u64)>,
+    /// When `true`, dotfiles are included even if the global toggle is off.
+    pub include_hidden: bool,
+}
+
+/// Launch a recursive filename search from `app.current_path` using `ignore`'s
+/// synchronous traversal.
 ///
 /// Matched files are delivered in batches via [`AppMsg::ExtensionSearchBatch`]
 /// so the GTK main loop is never saturated, even for patterns like `*.png`
@@ -35,12 +55,46 @@ pub fn start_extension_search(
     patterns: Vec<String>,
     sender: AsyncComponentSender<FluxApp>,
 ) {
-    if patterns.is_empty() {
+    let params = AdvancedSearchParams {
+        patterns,
+        include_hidden: app.show_hidden,
+        ..Default::default()
+    };
+    start_walk(app, params, sender);
+}
+
+/// Launch a recursive search with the full set of constraints from the
+/// Advanced Search dialog.
+pub fn start_advanced_search(
+    app: &mut FluxApp,
+    params: AdvancedSearchParams,
+    sender: AsyncComponentSender<FluxApp>,
+) {
+    // When the dialog's "include hidden" toggle is off, respect the session
+    // flag, when it's on, override it regardless of the global setting.
+    let effective_hidden = params.include_hidden || app.show_hidden;
+    let params = AdvancedSearchParams {
+        include_hidden: effective_hidden,
+        ..params
+    };
+    start_walk(app, params, sender);
+}
+
+// ── Shared implementation ────────────────────────────────────────────────────
+
+/// Core walk implementation shared by both public entry points.
+fn start_walk(
+    app: &mut FluxApp,
+    params: AdvancedSearchParams,
+    sender: AsyncComponentSender<FluxApp>,
+) {
+    if params.patterns.is_empty() {
         return;
     }
 
     // Expand MIME shorthands and compile into a GlobSet.
-    let expanded: Vec<String> = patterns
+    let expanded: Vec<String> = params
+        .patterns
         .iter()
         .flat_map(|p| crate::utils::glob::expand_mime_category(p))
         .collect();
@@ -78,7 +132,15 @@ pub fn start_extension_search(
 
     let current_dir = app.current_path.clone();
     let load_id = app.load_id.clone();
-    let show_hidden = app.show_hidden;
+
+    // Snapshot the params that the walk thread needs.
+    let include_hidden = params.include_hidden;
+    let date_seconds = params.date_seconds;
+    let size_bytes = params.size_bytes;
+
+    // Compute the mtime boundary once, outside the hot loop.
+    let mtime_boundary: Option<std::time::SystemTime> = date_seconds
+        .map(|secs| std::time::SystemTime::now() - std::time::Duration::from_secs(secs));
 
     relm4::spawn_blocking(move || {
         let mut batch: Vec<ExtensionMatch> = Vec::with_capacity(BATCH_SIZE);
@@ -86,7 +148,7 @@ pub fn start_extension_search(
 
         let mut builder = WalkBuilder::new(&current_dir);
         builder
-            .hidden(!show_hidden)
+            .hidden(!include_hidden)
             .parents(true)
             .ignore(true)
             .git_ignore(true)
@@ -95,7 +157,7 @@ pub fn start_extension_search(
             .follow_links(true)
             .same_file_system(false);
 
-        // Filter out pseudo-filesystems, virtual Wine/Proton drives, and prefix loops
+        // Filter out pseudo-filesystems, virtual Wine/Proton drives, and prefix loops.
         let walker = builder
             .filter_entry(|entry| {
                 let path = entry.path();
@@ -123,7 +185,7 @@ pub fn start_extension_search(
                 Err(_) => continue,
             };
 
-            // Only inspect regular files
+            // Only inspect regular files.
             if !entry.file_type().is_some_and(|ft| ft.is_file()) {
                 continue;
             }
@@ -131,6 +193,34 @@ pub fn start_extension_search(
             let name = entry.file_name().to_string_lossy();
             if !globset.is_match(name.to_lowercase()) {
                 continue;
+            }
+
+            let path = entry.path();
+
+            // ── Advanced predicates ──────────────────────────────────────
+            // Only call std::fs::metadata when at least one predicate is active.
+            if mtime_boundary.is_some() || size_bytes.is_some() {
+                match std::fs::metadata(path) {
+                    Ok(meta) => {
+                        if let Some(boundary) = mtime_boundary {
+                            match meta.modified() {
+                                Ok(mtime) if mtime < boundary => continue,
+                                Err(_) => continue,
+                                _ => {}
+                            }
+                        }
+                        if let Some((larger, threshold)) = size_bytes {
+                            let file_size = meta.len();
+                            if larger && file_size <= threshold {
+                                continue;
+                            }
+                            if !larger && file_size >= threshold {
+                                continue;
+                            }
+                        }
+                    }
+                    Err(_) => continue,
+                }
             }
 
             let path = entry.into_path();
@@ -151,7 +241,7 @@ pub fn start_extension_search(
             }
         }
 
-        // Flush any remaining results
+        // Flush any remaining results.
         if !batch.is_empty()
             && !cancellable.is_cancelled()
             && load_id.load(Ordering::Acquire) == session_id

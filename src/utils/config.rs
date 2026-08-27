@@ -145,6 +145,7 @@ pub fn load_config() -> crate::model::Config {
 
         let mut default_toml = String::from(
             r#"[ui]
+max_content_search_results = 100
 default_icon_size = 96
 startup_window_width = 1280
 startup_window_height = 800
@@ -217,6 +218,11 @@ path = ""
 name = "Tags"
 icon = "tag-symbolic"
 path = "tags://"
+
+[[sidebar]]
+name = "Search"
+icon = "system-search-symbolic"
+path = "search://"
 
 [[sidebar]]
 name = "Home"

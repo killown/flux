@@ -308,9 +308,18 @@ impl FluxApp {
             }
 
             // Search & Filtering
+            AppMsg::OpenAdvancedSearch => {
+                crate::ui::advanced_search::show_advanced_search(self, sender.clone());
+            }
+
+            AppMsg::StartAdvancedSearch(params) => {
+                crate::services::extension_search::start_advanced_search(self, params, sender);
+            }
+
             AppMsg::SetMaxContentSearchResults(val) => {
                 self.handle_set_max_content_search_results(val, &sender)
             }
+
             AppMsg::StartExtensionSearch(patterns) => {
                 crate::services::extension_search::start_extension_search(self, patterns, sender);
             }
