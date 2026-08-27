@@ -310,6 +310,7 @@ impl SimpleAsyncComponent for FluxApp {
                                             }
                                         },
 
+
                                         connect_activate[sender] => move |entry| {
                                             let raw = entry.text().to_string();
                                             let patterns: Vec<String> = raw
@@ -319,11 +320,15 @@ impl SimpleAsyncComponent for FluxApp {
                                                 .collect();
                                             if patterns.is_empty() {
                                                 sender.input(AppMsg::ClearExtensionFilter);
+                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                             } else {
-                                                sender.input(AppMsg::SetExtensionFilter(patterns));
+                                                // Recursive search: walk the current directory tree and
+                                                // present every file whose name matches the glob pattern(s).
+                                                sender.input(AppMsg::StartExtensionSearch(patterns));
+                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                             }
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                         },
+
 
                                         add_controller = gtk::EventControllerKey {
                                             connect_key_pressed[sender] => move |_, keyval, _, _| {

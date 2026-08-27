@@ -308,6 +308,10 @@ impl FluxApp {
             }
 
             // Search & Filtering
+            AppMsg::StartExtensionSearch(patterns) => {
+                crate::services::extension_search::start_extension_search(self, patterns, sender);
+            }
+
             AppMsg::CloseSearchSync => {
                 self.search_just_opened = false;
             }
@@ -337,12 +341,17 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
                 self.reset_from_content_search();
             }
+            AppMsg::ExtensionSearchBatch { results, session } => {
+                self.handle_extension_search_batch(results, session);
+            }
             AppMsg::ContentSearchResult {
                 path,
                 line,
                 line_number,
                 session,
-            } => self.handle_content_search_result(path, line, line_number, session),
+            } => {
+                self.handle_content_search_result(path, line, line_number, session);
+            }
             AppMsg::ContentSearchDone { session } => self.handle_content_search_done(session),
             AppMsg::SearchInput(c) => self.handle_search_input(c),
             AppMsg::SearchBackspace => self.handle_search_backspace(&sender),

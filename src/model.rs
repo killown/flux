@@ -523,6 +523,13 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// A batch of files matched a recursive extension/glob search.
+    ExtensionSearchBatch {
+        results: Vec<crate::services::extension_search::ExtensionMatch>,
+        session: u64,
+    },
+    /// Kick off a recursive filename search using glob patterns.
+    StartExtensionSearch(Vec<String>),
     /// Paste image data from the clipboard as a timestamped file into the current directory.
     PasteImageFromClipboard,
     /// Paste plain text as a file.
