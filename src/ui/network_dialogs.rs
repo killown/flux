@@ -76,7 +76,7 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
     window.set_title(Some(&crate::i18n::tr("Connect to Server")));
     window.set_modal(true);
     window.set_transient_for(Some(parent));
-    window.set_default_size(520, -1);
+    window.set_default_size(440, -1);
     window.set_resizable(false);
 
     // ── Main layout ──────────────────────────────────────────────────────────
@@ -102,31 +102,19 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
 
     // ── Content ──────────────────────────────────────────────────────────────
 
-    let content = gtk::Box::new(gtk::Orientation::Vertical, 0);
-    content.set_margin_top(12);
-    content.set_margin_bottom(12);
-    content.set_margin_start(24);
-    content.set_margin_end(24);
-
-    let clamp = adw::Clamp::new();
-    clamp.set_maximum_size(600);
-    clamp.set_child(Some(&content));
-
-    let scroller = gtk::ScrolledWindow::builder()
-        .vexpand(true)
-        .propagate_natural_height(true)
-        .build();
-    scroller.set_child(Some(&clamp));
-
-    main_box.append(&scroller);
-
-    window.set_content(Some(&main_box));
+    let content = gtk::Box::new(gtk::Orientation::Vertical, 12);
+    content.set_margin_top(16);
+    content.set_margin_bottom(16);
+    content.set_margin_start(16);
+    content.set_margin_end(16);
 
     // ── Form fields ──────────────────────────────────────────────────────────
 
-    let page = adw::PreferencesPage::new();
-    let group = adw::PreferencesGroup::new();
-    page.add(&group);
+    // Compact list box instead of PreferencesGroup for tighter height control
+    let list_box = gtk::ListBox::builder()
+        .selection_mode(gtk::SelectionMode::None)
+        .css_classes(["boxed-list"])
+        .build();
 
     // Protocol
     let protocol_row = adw::ComboRow::new();
@@ -134,55 +122,62 @@ pub fn show_connect_to_server(parent: &impl IsA<gtk::Window>, sender: Sender<App
     let protocol_strings: Vec<&str> = PROTOCOLS.iter().map(|p| p.label).collect();
     let protocol_model = gtk::StringList::new(&protocol_strings);
     protocol_row.set_model(Some(&protocol_model));
-    group.add(&protocol_row);
+    list_box.append(&protocol_row);
 
     // Host / Server
     let host_entry = gtk::Entry::builder()
         .input_purpose(gtk::InputPurpose::Url)
         .placeholder_text("server.example.com")
+        .valign(gtk::Align::Center)
         .build();
     let host_row = adw::ActionRow::builder()
         .title(crate::i18n::tr("Server Address"))
         .activatable_widget(&host_entry)
         .build();
     host_row.add_suffix(&host_entry);
-    group.add(&host_row);
+    list_box.append(&host_row);
 
     // Port
     let port_entry = gtk::Entry::builder()
         .input_purpose(gtk::InputPurpose::Digits)
         .placeholder_text(crate::i18n::tr("optional"))
+        .valign(gtk::Align::Center)
         .build();
     let port_row = adw::ActionRow::builder()
         .title(crate::i18n::tr("Port"))
         .activatable_widget(&port_entry)
         .build();
     port_row.add_suffix(&port_entry);
-    group.add(&port_row);
+    list_box.append(&port_row);
 
     // Path / Share
     let path_entry = gtk::Entry::builder()
         .placeholder_text(crate::i18n::tr("optional"))
+        .valign(gtk::Align::Center)
         .build();
     let path_row = adw::ActionRow::builder()
         .title(crate::i18n::tr("Share / Path"))
         .activatable_widget(&path_entry)
         .build();
     path_row.add_suffix(&path_entry);
-    group.add(&path_row);
+    list_box.append(&path_row);
 
     // Username
     let user_entry = gtk::Entry::builder()
         .placeholder_text(crate::i18n::tr("optional"))
+        .valign(gtk::Align::Center)
         .build();
     let user_row = adw::ActionRow::builder()
         .title(crate::i18n::tr("Username"))
         .activatable_widget(&user_entry)
         .build();
     user_row.add_suffix(&user_entry);
-    group.add(&user_row);
+    list_box.append(&user_row);
 
-    content.append(&page);
+    content.append(&list_box);
+    main_box.append(&content);
+
+    window.set_content(Some(&main_box));
 
     // ── Protocol change → update default port ──────────────────────────────
 
