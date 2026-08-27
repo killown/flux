@@ -95,7 +95,7 @@ pub fn start_extension_search(
             .follow_links(true)
             .same_file_system(false);
 
-        // Filter out pseudo-filesystems and virtual Wine/Proton dosdevices drive loops
+        // Filter out pseudo-filesystems, virtual Wine/Proton drives, and prefix loops
         let walker = builder
             .filter_entry(|entry| {
                 let path = entry.path();
@@ -104,6 +104,9 @@ pub fn start_extension_search(
                     && !s.contains("/sys/")
                     && !s.contains("/dev/")
                     && !s.contains("/dosdevices/")
+                    && !s.contains("/Prefixes/")
+                    && !s.contains("/compatdata/")
+                    && !s.contains("/drive_c/")
             })
             .build();
 
