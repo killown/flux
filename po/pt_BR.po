@@ -1470,3 +1470,47 @@ msgstr "Abrir navegador de etiquetas"
 
 msgid "Edit tags for selection"
 msgstr "Editar etiquetas da seleção"
+
+#: src/ui/clipboard_paste.rs:25
+msgid "No display available for clipboard operation"
+msgstr "Nenhum display disponível para a operação da área de transferência"
+
+#: src/ui/clipboard_paste.rs:59
+msgid "Nothing pasteable in clipboard"
+msgstr "Nenhum conteúdo colável na área de transferência"
+
+#: src/ui/clipboard_paste.rs:117
+msgid "Image pasted as file"
+msgstr "Imagem colada como arquivo"
+
+#: src/ui/clipboard_paste.rs:123
+msgid "Failed to save image"
+msgstr "Falha ao salvar a imagem"
+
+#: src/ui/clipboard_paste.rs:131
+msgid "Could not read image from clipboard"
+msgstr "Não foi possível ler a imagem da área de transferência"
+
+#: src/ui/clipboard_paste.rs:138 src/ui/clipboard_paste.rs:162 src/ui/clipboard_paste.rs:271
+msgid "Clipboard read error"
+msgstr "Erro ao ler a área de transferência"
+
+#: src/ui/clipboard_paste.rs:180
+msgid "Text pasted as file"
+msgstr "Texto colado como arquivo"
+
+#: src/ui/clipboard_paste.rs:186
+msgid "Failed to save text"
+msgstr "Falha ao salvar o texto"
+
+#: src/ui/clipboard_paste.rs:249
+msgid "Could not read HTML from clipboard"
+msgstr "Não foi possível ler o HTML da área de transferência"
+
+#: src/ui/clipboard_paste.rs:257
+msgid "HTML pasted as file"
+msgstr "HTML colado como arquivo"
+
+#: src/ui/clipboard_paste.rs:263
+msgid "Failed to save HTML"
+msgstr "Falha ao salvar o HTML"
