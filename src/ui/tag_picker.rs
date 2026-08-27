@@ -255,6 +255,8 @@ pub fn show_tag_picker(
         });
     }
 
+    let tags_submitted = std::rc::Rc::new(std::cell::Cell::new(false));
+
     // Header buttons bindings
     {
         let d = dialog.clone();
@@ -266,7 +268,10 @@ pub fn show_tag_picker(
         let current_selected = current_selected.clone();
         let paths = paths.clone();
         let s = sender.clone();
+        let submitted = tags_submitted.clone();
+
         apply_btn.connect_clicked(move |_| {
+            submitted.set(true);
             let tags: Vec<String> = current_selected.borrow().iter().cloned().collect();
             for path in &paths {
                 s.input(AppMsg::SetFileTags {
@@ -282,6 +287,40 @@ pub fn show_tag_picker(
     dialog.connect_map(move |_| {
         search_entry_focus.grab_focus();
     });
+
+    // Recover current folder on close/cancel if inside search://
+    {
+        let sender = sender.clone();
+        let submitted = tags_submitted.clone();
+        let fallback_parent = paths
+            .first()
+            .and_then(|p| p.parent())
+            .map(|p| p.to_path_buf());
+
+        dialog.connect_close_request(move |_| {
+            if !submitted.get() {
+                if let Some(target) = fallback_parent.as_ref() {
+                    sender.input(AppMsg::CancelContentSearch);
+                    sender.input(AppMsg::Navigate(target.clone()));
+                }
+            }
+            gtk::glib::Propagation::Proceed
+        });
+    }
+
+    // Escape closes dialog
+    {
+        let d = dialog.clone();
+        let key_ctrl = gtk::EventControllerKey::new();
+        key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
+            if keyval == adw::gdk::Key::Escape {
+                d.close();
+                return gtk::glib::Propagation::Stop;
+            }
+            gtk::glib::Propagation::Proceed
+        });
+        dialog.add_controller(key_ctrl);
+    }
 
     dialog.present();
 }

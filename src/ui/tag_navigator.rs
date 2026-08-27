@@ -1,6 +1,7 @@
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
@@ -99,6 +100,9 @@ pub fn show_tag_navigator(
             .collect::<Vec<String>>(),
     );
 
+    // Track whether a selection was explicitly confirmed
+    let tag_submitted = Rc::new(AtomicBool::new(false));
+
     // ── Populate & Filter List ───────────────────────────────────────────────
     let populate = {
         let all_tags = all_tags.clone();
@@ -168,7 +172,7 @@ pub fn show_tag_navigator(
         });
     }
 
-    // Live Update Helper (without closing dialog)
+    // Live Update Helper
     let update_filter = {
         let sender = sender.clone();
         Rc::new(move |selected_text: String| {
@@ -178,7 +182,7 @@ pub fn show_tag_navigator(
         })
     };
 
-    // Live Selection Presentation on cursor change or selection
+    // Live Selection Presentation on cursor change
     {
         let update_filter = update_filter.clone();
         list_box.connect_selected_rows_changed(move |box_| {
@@ -192,13 +196,15 @@ pub fn show_tag_navigator(
         });
     }
 
-    // Row Click / Activate: Keeps selection active and closes dialog
+    // Row Click / Activate: Confirms selection and closes dialog
     {
         let dialog = dialog.clone();
         let update_filter = update_filter.clone();
+        let tag_submitted = tag_submitted.clone();
         list_box.connect_row_activated(move |_, row| {
             if let Some(row_box) = row.child().and_downcast::<gtk::Box>() {
                 if let Some(lbl) = row_box.last_child().and_downcast::<gtk::Label>() {
+                    tag_submitted.store(true, Ordering::SeqCst);
                     update_filter(lbl.text().to_string());
                     dialog.close();
                 }
@@ -211,15 +217,29 @@ pub fn show_tag_navigator(
         let dialog = dialog.clone();
         let list_box = list_box.clone();
         let update_filter = update_filter.clone();
+        let tag_submitted = tag_submitted.clone();
         search_entry.connect_activate(move |_| {
             if let Some(selected_row) = list_box.selected_row() {
                 if let Some(row_box) = selected_row.child().and_downcast::<gtk::Box>() {
                     if let Some(lbl) = row_box.last_child().and_downcast::<gtk::Label>() {
+                        tag_submitted.store(true, Ordering::SeqCst);
                         update_filter(lbl.text().to_string());
                     }
                 }
             }
             dialog.close();
+        });
+    }
+
+    // Recover previous view on close if dismissed without confirming
+    {
+        let sender = sender.clone();
+        let tag_submitted = tag_submitted.clone();
+        dialog.connect_close_request(move |_| {
+            if !tag_submitted.load(Ordering::SeqCst) {
+                sender.input(AppMsg::CancelContentSearch);
+            }
+            gtk::glib::Propagation::Proceed
         });
     }
 

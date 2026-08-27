@@ -70,11 +70,22 @@ impl FluxApp {
         self.reset_from_content_search();
         let path_str = path.to_string_lossy();
 
+        //--------------------------------------------------------------------------------------//
+        //NOTE: this block of code is where in can intercept and handle special URIs or commands before
+        // proceeding with normal navigation.
+
         // 0. Intercept Tag searches typed into location bar or clicked in sidebar
         if path_str == "tags://" {
             sender.input(AppMsg::OpenTagNavigator);
             return;
         }
+
+        // Intercept Advanced Search virtual URI
+        if path_str == "search://" {
+            sender.input(AppMsg::OpenAdvancedSearch);
+            return;
+        }
+        //--------------------------------------------------------------------------------------//
 
         if path_str.starts_with('#')
             || path_str.starts_with(":tag:")

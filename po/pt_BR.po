@@ -1526,3 +1526,99 @@ msgstr "Número máximo de correspondências a retornar (valores mais altos pode
 #: src/ui/settings.rs:???
 msgid "Configure how content search behaves"
 msgstr "Configure o comportamento da pesquisa de conteúdo"
+
+#: src/ui/advanced_search.rs:36 src/ui/advanced_search.rs:52
+msgid "Advanced Search"
+msgstr "Pesquisa Avançada"
+
+#: src/ui/advanced_search.rs:118
+msgid "Pattern(s)"
+msgstr "Padrão(ões)"
+
+#: src/ui/advanced_search.rs:129
+msgid "Search term"
+msgstr "Termo de pesquisa"
+
+#: src/ui/advanced_search.rs:130
+msgid "At least 3 characters"
+msgstr "Pelo menos 3 caracteres"
+
+#: src/ui/advanced_search.rs:132
+msgid "Limit to extension"
+msgstr "Limitar à extensão"
+
+#: src/ui/advanced_search.rs:141
+msgid "Modified within"
+msgstr "Modificado em"
+
+#: src/ui/advanced_search.rs:143
+msgid "Any time"
+msgstr "Qualquer momento"
+
+#: src/ui/advanced_search.rs:144
+msgid "Last hour"
+msgstr "Última hora"
+
+#: src/ui/advanced_search.rs:145
+msgid "Today"
+msgstr "Hoje"
+
+#: src/ui/advanced_search.rs:146
+msgid "Last 7 days"
+msgstr "Últimos 7 dias"
+
+#: src/ui/advanced_search.rs:147
+msgid "Last 30 days"
+msgstr "Últimos 30 dias"
+
+#: src/ui/advanced_search.rs:148
+msgid "Last year"
+msgstr "Último ano"
+
+#: src/ui/advanced_search.rs:161
+msgid "Condition"
+msgstr "Condição"
+
+#: src/ui/advanced_search.rs:162
+msgid "Any size"
+msgstr "Qualquer tamanho"
+
+#: src/ui/advanced_search.rs:162
+msgid "Larger than"
+msgstr "Maior que"
+
+#: src/ui/advanced_search.rs:162
+msgid "Smaller than"
+msgstr "Menor que"
+
+#: src/ui/advanced_search.rs:175
+msgid "Amount"
+msgstr "Valor"
+
+#: src/ui/advanced_search.rs:182
+msgid "Unit"
+msgstr "Unidade"
+
+#: src/ui/advanced_search.rs:199
+msgid "Search Scope"
+msgstr "Escopo da Pesquisa"
+
+#: src/ui/advanced_search.rs:204
+msgid "Search subdirectories"
+msgstr "Pesquisar subdiretórios"
+
+#: src/ui/advanced_search.rs:214
+msgid "Include hidden files"
+msgstr "Incluir arquivos ocultos"
+
+#: src/ui/advanced_search.rs:115
+msgid "Search Criteria"
+msgstr "Critérios de Pesquisa"
+
+#: src/ui/advanced_search.rs:200
+msgid "Options"
+msgstr "Opções"
+
+#: src/ui/advanced_search.rs:134
+msgid "Filter by Tag"
+msgstr "Filtrar por Tag"
