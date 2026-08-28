@@ -67,8 +67,29 @@ impl FluxApp {
     // may resolve relative paths incorrectly, moving files to previous locations
     // instead of the directory currently displayed to the user.
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        self.reset_from_content_search();
         let path_str = path.to_string_lossy();
+
+        // Guard against re-navigating to the current folder (by string or canonical target)
+        // WARNING: Do not remove or modify this check without careful consideration.
+        // Removing this check causes redundant navigation to the currently active path,
+        // clearing the file grid and causing all items to disappear on repeated navigation.
+        if path == self.current_path {
+            return;
+        }
+
+        if !crate::services::network::is_network_uri(&path)
+            && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+            && !path_str.starts_with(constants::TRASH_URI)
+            && !path_str.starts_with(constants::RECENT_URI)
+        {
+            if let (Ok(p1), Ok(p2)) = (path.canonicalize(), self.current_path.canonicalize()) {
+                if p1 == p2 {
+                    return;
+                }
+            }
+        }
+
+        self.reset_from_content_search();
 
         //--------------------------------------------------------------------------------------//
         //NOTE: this block of code is where in can intercept and handle special URIs or commands before
@@ -104,10 +125,6 @@ impl FluxApp {
 
         // 1. Intercept Network URIs
         if crate::services::network::is_network_uri(&path) {
-            if path == self.current_path {
-                return;
-            }
-
             let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
             self.recent_stack.retain(|p| p != &path && p != &old_path);
@@ -127,7 +144,6 @@ impl FluxApp {
                 self.history.remove(0);
             }
             self.forward_stack.clear();
-            self.forward_stack.clear();
 
             self.load_network(&path_str, None, sender.clone());
             self.update_breadcrumbs();
@@ -143,10 +159,6 @@ impl FluxApp {
             if let Some((archive_path, prefix)) =
                 crate::services::archive::parse_archive_uri(&path_str)
             {
-                if path == self.current_path {
-                    return;
-                }
-
                 let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
                 self.recent_stack.retain(|p| p != &path && p != &old_path);
@@ -197,10 +209,6 @@ impl FluxApp {
         if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
             self.exclusive_index = Some(pos);
             sender.input(AppMsg::RebuildQuickPanel);
-        }
-
-        if path == self.current_path {
-            return;
         }
 
         if path.is_dir()
@@ -325,6 +333,7 @@ impl FluxApp {
             sender.input(AppMsg::RebuildQuickPanel);
         }
     }
+
     /// Clears all entries from the temporary quick panel list.
     pub fn handle_clear_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         self.exclusive_list.clear();

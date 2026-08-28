@@ -528,6 +528,13 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Delivers background-enumerated system and network mounts to update the sidebar.
+    SystemMountsReady(Vec<(String, std::path::PathBuf)>),
+    ///Custom icons appear a frame after the directory renders
+    FolderIconsReady {
+        icons: std::collections::HashMap<String, String>,
+        session: u64,
+    },
     /// Open the Advanced Search dialog.
     OpenAdvancedSearch,
     /// Sets the maximum number of content search results.

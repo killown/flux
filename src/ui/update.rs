@@ -100,6 +100,24 @@ impl FluxApp {
                     sender.input(AppMsg::ResetFileIcon(target));
                 }
             }
+            AppMsg::FolderIconsReady { icons, session } => {
+                if session == self.load_id.load(Ordering::SeqCst) {
+                    for i in 0..self.files.len() {
+                        if let Some(wrapper) = self.files.get(i) {
+                            let path_key = wrapper.borrow().path.to_string_lossy().to_string();
+                            if let Some(icon_name) = icons.get(&path_key) {
+                                if let Ok(icon) = gtk::gio::Icon::for_string(icon_name) {
+                                    let mut item = wrapper.borrow().clone();
+                                    item.icon = icon;
+                                    item.is_custom_icon = true;
+                                    self.files.remove(i);
+                                    self.files.insert(i, item);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             AppMsg::SetIconSize(val) => self.handle_set_icon_size(val, &sender),
             AppMsg::SetListIconSize(val) => self.handle_set_list_icon_size(val, &sender),
             AppMsg::SetSidebarWidth(val) => self.handle_set_sidebar_width(val),
@@ -582,6 +600,9 @@ impl FluxApp {
             }
 
             // Mount Operations
+            AppMsg::SystemMountsReady(mounts) => {
+                self.handle_system_mounts_ready(mounts);
+            }
             AppMsg::UnlockLuksImage { path } => {
                 self.show_luks_passphrase_dialog(path, &sender);
             }

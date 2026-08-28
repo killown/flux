@@ -177,8 +177,11 @@ impl FluxApp {
 
             let current_uid: u32 = unsafe { libc::getuid() };
 
-            let config_folder_icons = self.config.ui.folder_icons.clone();
-            // Clone once so the Rayon closure can own it without borrowing `self`.
+            // Load folder icons from DB once per directory navigate (single SELECT,
+            // no TOML involved) and keep file_icons from the in-memory config.
+            let config_folder_icons = self.state_db.load_folder_icons();
+            // Keep the in-memory cache in sync so callers that read config still work.
+            self.config.ui.folder_icons = config_folder_icons.clone();
             let config_file_icons = self.config.ui.file_icons.clone();
             let extension_globset = self.extension_globset.clone();
 
