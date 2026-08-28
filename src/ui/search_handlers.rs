@@ -267,9 +267,9 @@ impl FluxApp {
         };
 
         let display_name = if line_number > 0 {
-            format!("{}:{}  {}", relative_path, line_number, snippet)
+            format!("L:{}  {}  {}", line_number, relative_path, snippet)
         } else {
-            format!("{}  ({})", relative_path, snippet)
+            format!("{}  {}", relative_path, snippet)
         };
 
         self.files.append(crate::ui::FileItem {
