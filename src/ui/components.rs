@@ -55,6 +55,9 @@ pub struct FileWidgets {
     /// Right-aligned info label shown in list mode: displays file size and
     /// extension. Hidden for content search results (which carry `size == 0`).
     pub info_label: gtk::Label,
+    /// Scrolled window wrapping the Stack. In list mode it scrolls horizontally
+    /// so a long path never resizes the row or the window.
+    pub label_scroller: gtk::ScrolledWindow,
 }
 
 /// Formats a byte count into a human-readable string (B / KB / MB / GB).
@@ -303,7 +306,20 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             }
         }
 
-        // Append the info label after the Stack so it sits on the far right
+        // Wrap the Stack in a ScrolledWindow so that in list mode a long path
+        // scrolls horizontally instead of resizing the row or the window.
+        let label_scroller = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never) // switched to Automatic in list mode
+            .vscrollbar_policy(gtk::PolicyType::Never)
+            .propagate_natural_width(true) // grid mode default
+            .hexpand(false)
+            .vexpand(false)
+            .build();
+        label_scroller.set_child(Some(&stack));
+
+        root.append(&label_scroller);
+
+        // Append the info label after the scroller so it sits on the far right
         // of the horizontal list row. In grid mode it is hidden.
         root.append(&info_label);
 
@@ -318,6 +334,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 drag_source,
                 drop_target,
                 info_label,
+                label_scroller,
             },
         )
     }
@@ -340,23 +357,30 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label.set_halign(gtk::Align::Start);
             widgets.label.set_hexpand(true);
             widgets.label.set_justify(gtk::Justification::Left);
-            widgets.label.set_max_width_chars(-1);
             widgets.label.set_width_chars(-1);
-            widgets
-                .label
-                .set_ellipsize(gtk::pango::EllipsizeMode::Middle);
+            widgets.label.set_max_width_chars(-1);
+            // Never wrap or ellipsize in list mode: the ScrolledWindow handles overflow.
             widgets.label.set_wrap(false);
+            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::None);
 
-            // Make the Stack fill horizontally so its children can expand.
+            // In list mode the scroller provides horizontal scrolling so the row
+            // never grows wider than its allocated column width.
+            widgets
+                .label_scroller
+                .set_hscrollbar_policy(gtk::PolicyType::Automatic);
+            widgets.label_scroller.set_propagate_natural_width(false);
+            widgets.label_scroller.set_hexpand(true);
+
+            // Stack and its label-box fill the scroller's viewport.
             widgets.stack.set_halign(gtk::Align::Fill);
             widgets.stack.set_hexpand(true);
 
-            // Get the label container (the Box inside the Stack) and make it fill.
+            // Get the label container (the Box inside the Stack) and make it start-aligned.
             if let Some(label_box) = widgets.stack.child_by_name(constants::VIEW_LABEL) {
                 if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
-                    box_widget.set_halign(gtk::Align::Fill);
+                    box_widget.set_halign(gtk::Align::Start);
                     box_widget.set_hexpand(true);
-                    // Also ensure the label inside that box is left-aligned (already set).
+                    box_widget.set_size_request(-1, -1);
                 }
             }
 
@@ -387,6 +411,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             }
         } else {
+            let config = utils::load_config();
             root.set_orientation(gtk::Orientation::Vertical);
             root.set_halign(gtk::Align::Center);
             root.set_spacing(0);
@@ -396,6 +421,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label.set_halign(gtk::Align::Center);
             widgets.label.set_hexpand(false);
             widgets.label.set_justify(gtk::Justification::Center);
+            widgets.label.set_max_width_chars(config.ui.max_width_chars);
+            widgets.label.set_width_chars(config.ui.grid_spacing);
 
             if self.expand_labels {
                 widgets.label.set_wrap(true);
@@ -406,6 +433,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
             }
 
+            // Restore scroller to grid-mode defaults: no scrollbar, propagate natural size.
+            widgets
+                .label_scroller
+                .set_hscrollbar_policy(gtk::PolicyType::Never);
+            widgets.label_scroller.set_propagate_natural_width(true);
+            widgets.label_scroller.set_hexpand(false);
+
             // Reset Stack alignment for grid mode (centered).
             widgets.stack.set_halign(gtk::Align::Center);
             widgets.stack.set_hexpand(false);
@@ -413,6 +447,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
                     box_widget.set_halign(gtk::Align::Center);
                     box_widget.set_hexpand(false);
+                    box_widget.set_size_request(-1, -1);
                 }
             }
 
@@ -763,7 +798,7 @@ impl FactoryComponent for SidebarPlace {
                     // Auto-navigate after 750 ms while the drag idles over the row.
                     let nav_path = path.clone();
                     let timer_ref = hover_timer.clone();
-                    let id = glib::timeout_add_local_once(
+                    let id = gtk::glib::timeout_add_local_once(
                         std::time::Duration::from_millis(750),
                         move || {
                             timer_ref.set(None);
