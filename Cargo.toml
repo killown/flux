@@ -73,3 +73,7 @@ path = "src/lib.rs"
 [profile.local]
 inherits = "dev"
 opt-level = 2
+lto = "thin"
+codegen-units = 1
+debug = false
+strip = "symbols"
