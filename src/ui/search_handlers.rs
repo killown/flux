@@ -59,10 +59,16 @@ impl FluxApp {
         }
 
         // Only kick off the heavy recursive search once there are actual characters following the glob/dot
-        if has_wildcard && has_ext_char {
+        if has_wildcard && (has_ext_char || query_lc.len() > 1) {
             self.filter = query.clone();
             let query_target = query_lc.clone();
-            sender.input(AppMsg::StartExtensionSearch(vec![query_target]));
+            sender.input(AppMsg::StartAdvancedSearch(
+                crate::services::extension_search::AdvancedSearchParams {
+                    patterns: vec![query_target],
+                    include_hidden: self.show_hidden,
+                    ..Default::default()
+                },
+            ));
             return;
         } else if has_wildcard {
             // Just filter current view or wait while they finish typing the extension (e.g., user typed "*.p")
@@ -251,10 +257,19 @@ impl FluxApp {
             .map(|p| p.to_string_lossy().into_owned())
             .unwrap_or_else(|_| path.to_string_lossy().into_owned());
 
-        let display_name = if line_number > 0 {
-            format!("{}:{}  {}", relative_path, line_number, line)
+        let trimmed_line = line.trim();
+        let snippet = if trimmed_line.chars().count() > 180 {
+            let mut s: String = trimmed_line.chars().take(180).collect();
+            s.push('…');
+            s
         } else {
-            format!("{}  ({})", relative_path, line)
+            trimmed_line.to_string()
+        };
+
+        let display_name = if line_number > 0 {
+            format!("{}:{}  {}", relative_path, line_number, snippet)
+        } else {
+            format!("{}  ({})", relative_path, snippet)
         };
 
         self.files.append(crate::ui::FileItem {

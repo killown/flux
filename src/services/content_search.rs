@@ -3,12 +3,13 @@ use crate::services::constants::MAX_CONTENT_SEARCH_RESULTS;
 use crate::ui::paste_ops::NEXT_TASK_ID;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use gtk::gio::prelude::*;
-use ignore::WalkBuilder;
+use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use relm4::prelude::*;
 use relm4::AsyncComponentSender;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::Arc;
 
 pub fn start_content_search(
     app: &mut FluxApp,
@@ -56,20 +57,21 @@ pub fn start_content_search(
     app.load_id.store(session_id, Ordering::SeqCst);
 
     let current_dir = app.current_path.clone();
-    let term_lc = clean_term.to_lowercase();
+    let term_lc = Arc::new(clean_term.to_lowercase());
     let load_id = app.load_id.clone();
     let show_hidden = app.show_hidden;
 
     // Parse extension filter once, outside the walk.
-    let allowed_exts: Option<Vec<String>> = ext_filter.as_ref().map(|s| {
-        s.split(',')
-            .map(|part| part.trim().to_lowercase())
-            .filter(|s| !s.is_empty())
-            .collect()
+    let allowed_exts: Option<Arc<Vec<String>>> = ext_filter.as_ref().map(|s| {
+        Arc::new(
+            s.split(',')
+                .map(|part| part.trim().to_lowercase())
+                .filter(|s| !s.is_empty())
+                .collect(),
+        )
     });
 
     relm4::spawn_blocking(move || {
-        let mut count: usize = 0;
         let mut builder = WalkBuilder::new(&current_dir);
         builder
             .hidden(!show_hidden)
@@ -93,98 +95,161 @@ pub fn start_content_search(
                     && !s.contains("/compatdata/")
                     && !s.contains("/drive_c/")
             })
-            .build();
+            .build_parallel();
 
-        for result in walker {
-            if load_id.load(Ordering::Acquire) != session_id
-                || cancellable.is_cancelled()
-                || count >= MAX_CONTENT_SEARCH_RESULTS
-            {
-                break;
-            }
+        let count = Arc::new(AtomicUsize::new(0));
 
-            let entry = match result {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
+        struct ContentVisitor {
+            sender: AsyncComponentSender<FluxApp>,
+            load_id: Arc<AtomicU64>,
+            session_id: u64,
+            cancellable: gtk::gio::Cancellable,
+            count: Arc<AtomicUsize>,
+            size_op: Option<SizeOp>,
+            allowed_exts: Option<Arc<Vec<String>>>,
+            term_lc: Arc<String>,
+        }
 
-            // Only inspect regular files
-            if !entry.file_type().is_some_and(|ft| ft.is_file()) {
-                continue;
-            }
-
-            let path = entry.into_path();
-
-            // ---- Size Filter ----
-            if let Some(ref op) = size_op {
-                let metadata = match std::fs::metadata(&path) {
-                    Ok(m) => m,
-                    Err(_) => continue,
-                };
-                let size = metadata.len();
-                let size_match = match op {
-                    SizeOp::Gt(v) => size > *v,
-                    SizeOp::Lt(v) => size < *v,
-                    SizeOp::Range(l, r) => size >= *l && size <= *r,
-                };
-                if !size_match {
-                    continue;
-                }
-            }
-
-            // ---- Extension filter ----
-            if let Some(ref exts) = allowed_exts {
-                let file_ext = path
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .map(|s| s.to_lowercase())
-                    .unwrap_or_default();
-                if !exts.is_empty() && !exts.contains(&file_ext) {
-                    continue;
-                }
-            }
-
-            if term_lc.is_empty() {
-                sender.input(AppMsg::ContentSearchResult {
-                    path: path.clone(),
-                    line: "Matched Filter".to_string(),
-                    line_number: 0,
-                    session: session_id,
-                });
-                count += 1;
-                continue;
-            }
-
-            let file = match File::open(&path) {
-                Ok(f) => f,
-                Err(_) => continue,
-            };
-            let reader = BufReader::new(file);
-
-            for (line_number, line_result) in reader.lines().enumerate() {
-                if load_id.load(Ordering::Acquire) != session_id || cancellable.is_cancelled() {
-                    break;
-                }
-                let line = match line_result {
-                    Ok(l) => l,
-                    Err(_) => break,
-                };
-
-                if line.to_lowercase().contains(&term_lc)
-                    && load_id.load(Ordering::Acquire) == session_id
-                    && !cancellable.is_cancelled()
+        impl ParallelVisitor for ContentVisitor {
+            fn visit(&mut self, result: Result<ignore::DirEntry, ignore::Error>) -> WalkState {
+                if self.load_id.load(Ordering::Acquire) != self.session_id
+                    || self.cancellable.is_cancelled()
+                    || self.count.load(Ordering::Relaxed) >= MAX_CONTENT_SEARCH_RESULTS
                 {
-                    sender.input(AppMsg::ContentSearchResult {
-                        path: path.clone(),
-                        line: line.trim().to_string(),
-                        line_number: line_number + 1,
-                        session: session_id,
-                    });
-                    count += 1;
-                    break; // Matches first line hit per file to keep it blazing fast
+                    return WalkState::Quit;
                 }
+
+                let entry = match result {
+                    Ok(e) => e,
+                    Err(_) => return WalkState::Continue,
+                };
+
+                // Only inspect regular files
+                if !entry.file_type().is_some_and(|ft| ft.is_file()) {
+                    return WalkState::Continue;
+                }
+
+                let path = entry.into_path();
+
+                // ---- Size Filter ----
+                if let Some(ref op) = self.size_op {
+                    let metadata = match std::fs::metadata(&path) {
+                        Ok(m) => m,
+                        Err(_) => return WalkState::Continue,
+                    };
+                    let size = metadata.len();
+                    let size_match = match op {
+                        SizeOp::Gt(v) => size > *v,
+                        SizeOp::Lt(v) => size < *v,
+                        SizeOp::Range(l, r) => size >= *l && size <= *r,
+                    };
+                    if !size_match {
+                        return WalkState::Continue;
+                    }
+                }
+
+                // ---- Extension filter ----
+                if let Some(ref exts) = self.allowed_exts {
+                    let file_ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|s| s.to_lowercase())
+                        .unwrap_or_default();
+                    if !exts.is_empty() && !exts.contains(&file_ext) {
+                        return WalkState::Continue;
+                    }
+                }
+
+                if self.term_lc.is_empty() {
+                    let curr = self.count.fetch_add(1, Ordering::Relaxed);
+                    if curr < MAX_CONTENT_SEARCH_RESULTS {
+                        self.sender.input(AppMsg::ContentSearchResult {
+                            path,
+                            line: "Matched Filter".to_string(),
+                            line_number: 0,
+                            session: self.session_id,
+                        });
+                    }
+                    return WalkState::Continue;
+                }
+
+                let file = match File::open(&path) {
+                    Ok(f) => f,
+                    Err(_) => return WalkState::Continue,
+                };
+                let reader = BufReader::new(file);
+
+                for (line_number, line_result) in reader.lines().enumerate() {
+                    if self.load_id.load(Ordering::Acquire) != self.session_id
+                        || self.cancellable.is_cancelled()
+                        || self.count.load(Ordering::Relaxed) >= MAX_CONTENT_SEARCH_RESULTS
+                    {
+                        break;
+                    }
+                    let line = match line_result {
+                        Ok(l) => l,
+                        Err(_) => break,
+                    };
+
+                    if line.to_lowercase().contains(self.term_lc.as_str())
+                        && self.load_id.load(Ordering::Acquire) == self.session_id
+                        && !self.cancellable.is_cancelled()
+                    {
+                        let curr = self.count.fetch_add(1, Ordering::Relaxed);
+                        if curr < MAX_CONTENT_SEARCH_RESULTS {
+                            self.sender.input(AppMsg::ContentSearchResult {
+                                path: path.clone(),
+                                line: line.trim().to_string(),
+                                line_number: line_number + 1,
+                                session: self.session_id,
+                            });
+                        }
+                        break; // Matches first line hit per file to keep it blazing fast
+                    }
+                }
+
+                WalkState::Continue
             }
         }
+
+        struct ContentVisitorBuilder {
+            sender: AsyncComponentSender<FluxApp>,
+            load_id: Arc<AtomicU64>,
+            session_id: u64,
+            cancellable: gtk::gio::Cancellable,
+            count: Arc<AtomicUsize>,
+            size_op: Option<SizeOp>,
+            allowed_exts: Option<Arc<Vec<String>>>,
+            term_lc: Arc<String>,
+        }
+
+        impl<'s> ParallelVisitorBuilder<'s> for ContentVisitorBuilder {
+            fn build(&mut self) -> Box<dyn ParallelVisitor + 's> {
+                Box::new(ContentVisitor {
+                    sender: self.sender.clone(),
+                    load_id: self.load_id.clone(),
+                    session_id: self.session_id,
+                    cancellable: self.cancellable.clone(),
+                    count: self.count.clone(),
+                    size_op: self.size_op.clone(),
+                    allowed_exts: self.allowed_exts.clone(),
+                    term_lc: self.term_lc.clone(),
+                })
+            }
+        }
+
+        let mut visitor_builder = ContentVisitorBuilder {
+            sender: sender.clone(),
+            load_id: load_id.clone(),
+            session_id,
+            cancellable: cancellable.clone(),
+            count,
+            size_op,
+            allowed_exts,
+            term_lc,
+        };
+
+        walker.visit(&mut visitor_builder);
 
         if !cancellable.is_cancelled() && load_id.load(Ordering::Acquire) == session_id {
             sender.input(AppMsg::ContentSearchDone {

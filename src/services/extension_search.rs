@@ -1,9 +1,10 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::paste_ops::NEXT_TASK_ID;
 use gtk::gio::prelude::*;
-use ignore::WalkBuilder;
+use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use relm4::prelude::*;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{mpsc, Arc};
 
 /// Results are flushed to the UI in batches of this size to avoid flooding
 /// the GTK main loop with individual messages (critical for patterns like
@@ -100,7 +101,7 @@ fn start_walk(
         .collect();
 
     let globset = match crate::utils::glob::compile_patterns(&expanded) {
-        Some(gs) => gs,
+        Some(gs) => Arc::new(gs),
         None => return,
     };
 
@@ -143,9 +144,6 @@ fn start_walk(
         .map(|secs| std::time::SystemTime::now() - std::time::Duration::from_secs(secs));
 
     relm4::spawn_blocking(move || {
-        let mut batch: Vec<ExtensionMatch> = Vec::with_capacity(BATCH_SIZE);
-        let mut count: usize = 0;
-
         let mut builder = WalkBuilder::new(&current_dir);
         builder
             .hidden(!include_hidden)
@@ -170,87 +168,168 @@ fn start_walk(
                     && !s.contains("/compatdata/")
                     && !s.contains("/drive_c/")
             })
-            .build();
+            .build_parallel();
 
-        for result in walker {
-            if load_id.load(Ordering::Acquire) != session_id
-                || cancellable.is_cancelled()
-                || count >= MAX_SEARCH_RESULTS
-            {
-                break;
-            }
+        let (tx, rx) = mpsc::channel::<ExtensionMatch>();
+        let total_count = Arc::new(AtomicUsize::new(0));
 
-            let entry = match result {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
+        let sender_for_collector = sender.clone();
+        let load_id_for_collector = load_id.clone();
+        let cancellable_for_collector = cancellable.clone();
+        let collector_handle = std::thread::spawn(move || {
+            let mut batch: Vec<ExtensionMatch> = Vec::with_capacity(BATCH_SIZE);
 
-            // Only inspect regular files.
-            if !entry.file_type().is_some_and(|ft| ft.is_file()) {
-                continue;
-            }
+            while let Ok(item) = rx.recv() {
+                if cancellable_for_collector.is_cancelled()
+                    || load_id_for_collector.load(Ordering::Acquire) != session_id
+                {
+                    break;
+                }
 
-            let name = entry.file_name().to_string_lossy();
-            if !globset.is_match(name.to_lowercase()) {
-                continue;
-            }
+                batch.push(item);
 
-            let path = entry.path();
-
-            // ── Advanced predicates ──────────────────────────────────────
-            // Only call std::fs::metadata when at least one predicate is active.
-            if mtime_boundary.is_some() || size_bytes.is_some() {
-                match std::fs::metadata(path) {
-                    Ok(meta) => {
-                        if let Some(boundary) = mtime_boundary {
-                            match meta.modified() {
-                                Ok(mtime) if mtime < boundary => continue,
-                                Err(_) => continue,
-                                _ => {}
-                            }
-                        }
-                        if let Some((larger, threshold)) = size_bytes {
-                            let file_size = meta.len();
-                            if larger && file_size <= threshold {
-                                continue;
-                            }
-                            if !larger && file_size >= threshold {
-                                continue;
-                            }
-                        }
-                    }
-                    Err(_) => continue,
+                if batch.len() >= BATCH_SIZE {
+                    let chunk = std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
+                    sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                        results: chunk,
+                        session: session_id,
+                    });
                 }
             }
 
-            let path = entry.into_path();
-            let display = path
-                .strip_prefix(&current_dir)
-                .map(|p| p.to_string_lossy().into_owned())
-                .unwrap_or_else(|_| path.to_string_lossy().into_owned());
-
-            batch.push(ExtensionMatch { path, display });
-            count += 1;
-
-            if batch.len() >= BATCH_SIZE {
-                let chunk = std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
-                sender.input(AppMsg::ExtensionSearchBatch {
-                    results: chunk,
+            // Flush any remaining results.
+            if !batch.is_empty()
+                && !cancellable_for_collector.is_cancelled()
+                && load_id_for_collector.load(Ordering::Acquire) == session_id
+            {
+                sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                    results: batch,
                     session: session_id,
                 });
             }
+        });
+
+        struct SearchVisitor {
+            tx: mpsc::Sender<ExtensionMatch>,
+            current_dir: std::path::PathBuf,
+            globset: Arc<globset::GlobSet>,
+            mtime_boundary: Option<std::time::SystemTime>,
+            size_bytes: Option<(bool, u64)>,
+            cancellable: gtk::gio::Cancellable,
+            load_id: Arc<AtomicU64>,
+            session_id: u64,
+            total_count: Arc<AtomicUsize>,
         }
 
-        // Flush any remaining results.
-        if !batch.is_empty()
-            && !cancellable.is_cancelled()
-            && load_id.load(Ordering::Acquire) == session_id
-        {
-            sender.input(AppMsg::ExtensionSearchBatch {
-                results: batch,
-                session: session_id,
-            });
+        impl ParallelVisitor for SearchVisitor {
+            fn visit(&mut self, result: Result<ignore::DirEntry, ignore::Error>) -> WalkState {
+                if self.load_id.load(Ordering::Acquire) != self.session_id
+                    || self.cancellable.is_cancelled()
+                    || self.total_count.load(Ordering::Relaxed) >= MAX_SEARCH_RESULTS
+                {
+                    return WalkState::Quit;
+                }
+
+                let entry = match result {
+                    Ok(e) => e,
+                    Err(_) => return WalkState::Continue,
+                };
+
+                // Only inspect regular files.
+                if !entry.file_type().is_some_and(|ft| ft.is_file()) {
+                    return WalkState::Continue;
+                }
+
+                let name = entry.file_name().to_string_lossy();
+                if !self.globset.is_match(name.to_lowercase()) {
+                    return WalkState::Continue;
+                }
+
+                let path = entry.path();
+
+                // ── Advanced predicates ──────────────────────────────────────
+                // Only call std::fs::metadata when at least one predicate is active.
+                if self.mtime_boundary.is_some() || self.size_bytes.is_some() {
+                    match std::fs::metadata(path) {
+                        Ok(meta) => {
+                            if let Some(boundary) = self.mtime_boundary {
+                                match meta.modified() {
+                                    Ok(mtime) if mtime < boundary => return WalkState::Continue,
+                                    Err(_) => return WalkState::Continue,
+                                    _ => {}
+                                }
+                            }
+                            if let Some((larger, threshold)) = self.size_bytes {
+                                let file_size = meta.len();
+                                if larger && file_size <= threshold {
+                                    return WalkState::Continue;
+                                }
+                                if !larger && file_size >= threshold {
+                                    return WalkState::Continue;
+                                }
+                            }
+                        }
+                        Err(_) => return WalkState::Continue,
+                    }
+                }
+
+                let path = entry.into_path();
+                let display = path
+                    .strip_prefix(&self.current_dir)
+                    .map(|p| p.to_string_lossy().into_owned())
+                    .unwrap_or_else(|_| path.to_string_lossy().into_owned());
+
+                self.total_count.fetch_add(1, Ordering::Relaxed);
+                let _ = self.tx.send(ExtensionMatch { path, display });
+
+                WalkState::Continue
+            }
         }
+
+        struct SearchVisitorBuilder {
+            tx: mpsc::Sender<ExtensionMatch>,
+            current_dir: std::path::PathBuf,
+            globset: Arc<globset::GlobSet>,
+            mtime_boundary: Option<std::time::SystemTime>,
+            size_bytes: Option<(bool, u64)>,
+            cancellable: gtk::gio::Cancellable,
+            load_id: Arc<AtomicU64>,
+            session_id: u64,
+            total_count: Arc<AtomicUsize>,
+        }
+
+        impl<'s> ParallelVisitorBuilder<'s> for SearchVisitorBuilder {
+            fn build(&mut self) -> Box<dyn ParallelVisitor + 's> {
+                Box::new(SearchVisitor {
+                    tx: self.tx.clone(),
+                    current_dir: self.current_dir.clone(),
+                    globset: self.globset.clone(),
+                    mtime_boundary: self.mtime_boundary,
+                    size_bytes: self.size_bytes,
+                    cancellable: self.cancellable.clone(),
+                    load_id: self.load_id.clone(),
+                    session_id: self.session_id,
+                    total_count: self.total_count.clone(),
+                })
+            }
+        }
+
+        let mut visitor_builder = SearchVisitorBuilder {
+            tx,
+            current_dir,
+            globset,
+            mtime_boundary,
+            size_bytes,
+            cancellable: cancellable.clone(),
+            load_id: load_id.clone(),
+            session_id,
+            total_count,
+        };
+
+        walker.visit(&mut visitor_builder);
+        drop(visitor_builder);
+
+        let _ = collector_handle.join();
 
         if !cancellable.is_cancelled() && load_id.load(Ordering::Acquire) == session_id {
             sender.input(AppMsg::ContentSearchDone {

@@ -310,7 +310,6 @@ impl SimpleAsyncComponent for FluxApp {
                                             }
                                         },
 
-
                                         connect_activate[sender] => move |entry| {
                                             let raw = entry.text().to_string();
                                             let patterns: Vec<String> = raw
@@ -328,7 +327,6 @@ impl SimpleAsyncComponent for FluxApp {
                                                 sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                             }
                                         },
-
 
                                         add_controller = gtk::EventControllerKey {
                                             connect_key_pressed[sender] => move |_, keyval, _, _| {
@@ -514,6 +512,9 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_vexpand: true,
                                         set_hexpand: true,
                                         set_halign: gtk::Align::Fill,
+                                        set_hscrollbar_policy: gtk::PolicyType::Automatic,
+                                        set_vscrollbar_policy: gtk::PolicyType::Automatic,
+                                        set_propagate_natural_width: false,
                                         /// Scroll event controller for UI zooming (Ctrl + Scroll).
                                         add_controller = gtk::EventControllerScroll {
                                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -680,6 +681,9 @@ impl SimpleAsyncComponent for FluxApp {
                                 add_css_class: "caption",
                                 set_halign: gtk::Align::Start,
                                 set_hexpand: true,
+                                // Ellipsize so a long path/selection string never
+                                // stretches the status bar and resizes the window.
+                                set_ellipsize: gtk::pango::EllipsizeMode::End,
                             },
 
                             /// Visual indicator for background task completion
