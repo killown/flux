@@ -204,18 +204,9 @@ impl FluxApp {
         };
 
         let get_xdg_name = |p: &PathBuf| {
-            gio::File::for_path(p)
-                .query_info(
-                    gio::FILE_ATTRIBUTE_STANDARD_DISPLAY_NAME,
-                    gio::FileQueryInfoFlags::NONE,
-                    gio::Cancellable::NONE,
-                )
-                .map(|info| info.display_name().to_string())
-                .unwrap_or_else(|_| {
-                    p.file_name()
-                        .map(|n| n.to_string_lossy().to_string())
-                        .unwrap_or_default()
-                })
+            p.file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| p.to_string_lossy().to_string())
         };
 
         // 1. Core XDG Directories - Conditioned on show_xdg_dirs config
@@ -323,60 +314,11 @@ impl FluxApp {
             guard.push_back(recents_place());
         }
 
-        // 3. Mounts
-        let home = dirs::home_dir().unwrap_or_default();
-        let home_str = home.to_string_lossy().to_string();
-
-        for (mut name, path) in utils::get_system_mounts() {
-            let path_str = path.to_string_lossy().to_string();
-            let trimmed_path = path_str.trim_end_matches('/');
-            let mut icon = "drive-harddisk-symbolic".to_string();
-
-            // Intercept device renames to apply custom Name and Icon
-            // Matches exact string, trimmed path, expanded tilde paths, or mount name
-            let rename_opt = self
-                .config
-                .ui
-                .device_renames
-                .get(&path_str)
-                .or_else(|| self.config.ui.device_renames.get(trimmed_path))
-                .or_else(|| {
-                    self.config.ui.device_renames.iter().find_map(|(k, v)| {
-                        let expanded = if k.starts_with('~') {
-                            k.replace('~', &home_str)
-                        } else {
-                            k.clone()
-                        };
-                        let exp_trimmed = expanded.trim_end_matches('/');
-                        if exp_trimmed == trimmed_path || exp_trimmed == path_str || k == &name {
-                            Some(v)
-                        } else {
-                            None
-                        }
-                    })
-                });
-
-            if let Some(rename) = rename_opt {
-                name = rename.name.clone();
-                if let Some(custom_icon) = &rename.icon {
-                    icon = custom_icon.clone();
-                }
-            } else {
-                // Fallback icon logic if no specific rename exists
-                if name.to_lowercase().contains("drive")
-                    || name.to_lowercase().contains("cloud")
-                    || path_str.contains("Gdrive")
-                {
-                    icon = "folder-remote-symbolic".to_string();
-                }
-            }
-
-            guard.push_back(SidebarPlace {
-                name,
-                icon,
-                path,
-                is_mount: true,
-                is_section_label: false,
+        // 3. Mounts - Offloaded to background thread to prevent blocking the UI loop
+        if let Some(sender) = crate::model::SENDER.get().cloned() {
+            relm4::spawn_blocking(move || {
+                let mounts = utils::get_system_mounts();
+                let _ = sender.send(AppMsg::SystemMountsReady(mounts));
             });
         }
     }

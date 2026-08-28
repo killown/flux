@@ -229,95 +229,92 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     add_css_class: constants::THUMBNAIL_CLASS,
                 },
 
-                #[name = "stack"]
-                gtk::Stack {
-                    set_transition_type: gtk::StackTransitionType::Crossfade,
-                    set_halign: gtk::Align::Center,
+                #[name = "label_scroller"]
+                gtk::ScrolledWindow {
+                    set_hscrollbar_policy: gtk::PolicyType::Never,
+                    set_vscrollbar_policy: gtk::PolicyType::Never,
+                    set_propagate_natural_width: true,
+                    set_hexpand: false,
                     set_vexpand: false,
 
-                    add_child = &gtk::Box {
-                        set_orientation: gtk::Orientation::Horizontal,
+                    #[name = "stack"]
+                    #[wrap(Some)]
+                    set_child = &gtk::Stack {
+                        set_transition_type: gtk::StackTransitionType::Crossfade,
                         set_halign: gtk::Align::Center,
-                        set_spacing: 4,
+                        set_vexpand: false,
 
-                        #[name = "lock_icon"]
-                        gtk::Image {
-                            set_icon_name: Some("changes-prevent-symbolic"),
-                            set_pixel_size: 12,
-                            set_visible: false,
-                            add_css_class: "flux-lock-badge",
-                        },
+                        add_child = &gtk::Box {
+                            set_orientation: gtk::Orientation::Horizontal,
+                            set_halign: gtk::Align::Center,
+                            set_spacing: 4,
 
-                        #[name = "label"]
-                        gtk::Label {
-                            set_justify: gtk::Justification::Center,
-                            set_max_width_chars: config.ui.max_width_chars,
-                            set_width_chars: config.ui.grid_spacing,
-                            set_ellipsize: gtk::pango::EllipsizeMode::End,
-                            set_hexpand: false,
-                            add_css_class: constants::FLUX_LABEL_CLASS,
-                        },
-                    } -> { set_name: constants::VIEW_LABEL },
+                            #[name = "lock_icon"]
+                            gtk::Image {
+                                set_icon_name: Some("changes-prevent-symbolic"),
+                                set_pixel_size: 12,
+                                set_visible: false,
+                                add_css_class: "flux-lock-badge",
+                            },
 
-                    #[name = "entry"]
-                    add_child = &gtk::Entry {
-                        set_halign: gtk::Align::Center,
-                        add_css_class: constants::RENAME_ENTRY_CLASS,
+                            #[name = "label"]
+                            gtk::Label {
+                                set_justify: gtk::Justification::Center,
+                                set_max_width_chars: config.ui.max_width_chars,
+                                set_width_chars: config.ui.grid_spacing,
+                                set_ellipsize: gtk::pango::EllipsizeMode::End,
+                                set_hexpand: false,
+                                add_css_class: constants::FLUX_LABEL_CLASS,
+                            },
+                        } -> { set_name: constants::VIEW_LABEL },
 
-                        // 1. Reliable focus loss detection
-                        add_controller = gtk::EventControllerFocus {
-                            connect_leave[sender = crate::model::SENDER.clone()] => move |_| {
-                                if let Some(s) = sender.get() {
-                                    s.send(crate::model::AppMsg::Refresh).ok();
-                                }
-                            }
-                        },
+                        #[name = "entry"]
+                        add_child = &gtk::Entry {
+                            set_halign: gtk::Align::Center,
+                            add_css_class: constants::RENAME_ENTRY_CLASS,
 
-                        // 2. Escape key handling
-                        add_controller = gtk::EventControllerKey {
-                            connect_key_pressed[sender = crate::model::SENDER.clone()] => move |_, keyval, _, _| {
-                                if keyval == gdk::Key::Escape {
+                            // 1. Reliable focus loss detection
+                            add_controller = gtk::EventControllerFocus {
+                                connect_leave[sender = crate::model::SENDER.clone()] => move |_| {
                                     if let Some(s) = sender.get() {
                                         s.send(crate::model::AppMsg::Refresh).ok();
-                                        return glib::Propagation::Stop;
                                     }
                                 }
-                                glib::Propagation::Proceed
-                            }
-                        },
+                            },
 
-                        // 3. Enter key handling
-                        connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
-                            if let Some(s) = sender.get() {
-                                let old_path_opt: Option<PathBuf> = unsafe {
-                                    root
-                                        .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
-                                        .map(|ptr| ptr.as_ref().clone())
-                                        .and_then(|rc| rc.borrow().clone())
-                                };
-                                if let Some(old_path) = old_path_opt {
-                                    let new_name = entry.text().to_string();
-                                    s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
+                            // 2. Escape key handling
+                            add_controller = gtk::EventControllerKey {
+                                connect_key_pressed[sender = crate::model::SENDER.clone()] => move |_, keyval, _, _| {
+                                    if keyval == gdk::Key::Escape {
+                                        if let Some(s) = sender.get() {
+                                            s.send(crate::model::AppMsg::Refresh).ok();
+                                            return glib::Propagation::Stop;
+                                        }
+                                    }
+                                    glib::Propagation::Proceed
                                 }
-                            }
-                        },
-                    } -> { set_name: constants::VIEW_ENTRY }
+                            },
+
+                            // 3. Enter key handling
+                            connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
+                                if let Some(s) = sender.get() {
+                                    let old_path_opt: Option<PathBuf> = unsafe {
+                                        root
+                                            .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
+                                            .map(|ptr| ptr.as_ref().clone())
+                                            .and_then(|rc| rc.borrow().clone())
+                                    };
+                                    if let Some(old_path) = old_path_opt {
+                                        let new_name = entry.text().to_string();
+                                        s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
+                                    }
+                                }
+                            },
+                        } -> { set_name: constants::VIEW_ENTRY }
+                    }
                 }
             }
         }
-
-        // Wrap the Stack in a ScrolledWindow so that in list mode a long path
-        // scrolls horizontally instead of resizing the row or the window.
-        let label_scroller = gtk::ScrolledWindow::builder()
-            .hscrollbar_policy(gtk::PolicyType::Never) // switched to Automatic in list mode
-            .vscrollbar_policy(gtk::PolicyType::Never)
-            .propagate_natural_width(true) // grid mode default
-            .hexpand(false)
-            .vexpand(false)
-            .build();
-        label_scroller.set_child(Some(&stack));
-
-        root.append(&label_scroller);
 
         // Append the info label after the scroller so it sits on the far right
         // of the horizontal list row. In grid mode it is hidden.
@@ -486,30 +483,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         if let Some(ref texture) = self.thumbnail {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
-            // Only apply the theme fallback check for custom user-set icons.
-            // For normal file/directory icons, use the icon as-is.
-            if self.is_custom_icon {
-                let display = match adw::gdk::Display::default() {
-                    Some(d) => d,
-                    None => {
-                        widgets.icon_widget.set_from_gicon(&self.icon);
-                        return;
-                    }
-                };
-                let icon_theme = gtk::IconTheme::for_display(&display);
-
-                if let Some(icon_str) = self.icon.to_string() {
-                    let icon_str = icon_str.as_str();
-                    if !icon_str.is_empty() && !icon_theme.has_icon(icon_str) {
-                        // Custom icon not found in current theme, fall back to folder icon
-                        let fallback_icon =
-                            gio::Icon::for_string("folder").unwrap_or_else(|_| self.icon.clone());
-                        widgets.icon_widget.set_from_gicon(&fallback_icon);
-                        return;
-                    }
-                }
-            }
-
             // Default: use the icon as-is
             widgets.icon_widget.set_from_gicon(&self.icon);
         }

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::{constants, FileItem, SidebarPlace};
+use crate::ui::{constants, FileItem};
 use crate::utils;
 use gtk::gio;
 use gtk::glib;
@@ -314,20 +314,6 @@ impl FluxApp {
 
         model.recent_stack.push_front(start_path.clone());
         model.update_breadcrumbs();
-
-        for place in &config.sidebar {
-            model.sidebar.guard().push_back(SidebarPlace {
-                name: place.name.clone(),
-                icon: place.icon.clone(),
-                path: if place.kind.as_deref() == Some("label") {
-                    std::path::PathBuf::new()
-                } else {
-                    utils::expand_path(&place.path)
-                },
-                is_mount: false,
-                is_section_label: place.kind.as_deref() == Some("label"),
-            });
-        }
         model.refresh_sidebar();
 
         // Throttled task queue UI refresh, deferred by 150ms, updates status bar only.

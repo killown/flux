@@ -1,4 +1,5 @@
 use crate::model::{AppMsg, FluxApp};
+use crate::ui::SidebarPlace;
 use crate::utils;
 use adw::gio;
 use adw::gio::prelude::*;
@@ -30,6 +31,70 @@ impl FluxApp {
             });
         }
         self.refresh_sidebar();
+    }
+
+    pub fn handle_system_mounts_ready(&mut self, mounts: Vec<(String, std::path::PathBuf)>) {
+        let mut guard = self.sidebar.guard();
+
+        // Remove existing mount items from the back to maintain index stability
+        let mut idx = guard.len();
+        while idx > 0 {
+            idx -= 1;
+            if guard.get(idx).map(|p| p.is_mount).unwrap_or(false) {
+                guard.remove(idx);
+            }
+        }
+
+        let home = dirs::home_dir().unwrap_or_default();
+        let home_str = home.to_string_lossy().to_string();
+
+        for (mut name, path) in mounts {
+            let path_str = path.to_string_lossy().to_string();
+            let trimmed_path = path_str.trim_end_matches('/');
+            let mut icon = "drive-harddisk-symbolic".to_string();
+
+            let rename_opt = self
+                .config
+                .ui
+                .device_renames
+                .get(&path_str)
+                .or_else(|| self.config.ui.device_renames.get(trimmed_path))
+                .or_else(|| {
+                    self.config.ui.device_renames.iter().find_map(|(k, v)| {
+                        let expanded = if k.starts_with('~') {
+                            k.replace('~', &home_str)
+                        } else {
+                            k.clone()
+                        };
+                        let exp_trimmed = expanded.trim_end_matches('/');
+                        if exp_trimmed == trimmed_path || exp_trimmed == path_str || k == &name {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    })
+                });
+
+            if let Some(rename) = rename_opt {
+                name = rename.name.clone();
+                if let Some(custom_icon) = &rename.icon {
+                    icon = custom_icon.clone();
+                }
+            } else if name.to_lowercase().contains("drive")
+                || name.to_lowercase().contains("cloud")
+                || path_str.contains("Gdrive")
+            {
+                icon = "folder-remote-symbolic".to_string();
+            }
+
+            guard.push_back(SidebarPlace {
+                name,
+                icon,
+                path,
+                is_mount: true,
+                is_section_label: false,
+            });
+        }
     }
 
     /// Removes a custom location from the sidebar configuration.

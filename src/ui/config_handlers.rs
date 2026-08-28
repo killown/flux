@@ -390,19 +390,20 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         let path_str = path.to_string_lossy().to_string();
-
+        if let Err(e) = self.state_db.set_folder_icon(&path_str, &icon_name) {
+            eprintln!("[flux] Failed to save folder icon: {e}");
+        }
+        // Keep the in-memory cache in sync so the current session sees the change.
         self.config.ui.folder_icons.insert(path_str, icon_name);
-
-        utils::save_config(&self.config);
         sender.input(AppMsg::Refresh);
     }
 
     pub fn handle_reset_folder_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        self.config
-            .ui
-            .folder_icons
-            .remove(&path.to_string_lossy().to_string());
-        utils::save_config(&self.config);
+        let path_str = path.to_string_lossy().to_string();
+        if let Err(e) = self.state_db.remove_folder_icon(&path_str) {
+            eprintln!("[flux] Failed to remove folder icon: {e}");
+        }
+        self.config.ui.folder_icons.remove(&path_str);
         sender.input(AppMsg::Refresh);
     }
 

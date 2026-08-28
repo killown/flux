@@ -26,10 +26,13 @@ impl StateManager {
 
         let conn = Connection::open(db_path)?;
 
+        conn.pragma_update(None, "journal_mode", "WAL")?;
+        conn.pragma_update(None, "synchronous", "NORMAL")?;
+        conn.pragma_update(None, "busy_timeout", 5000)?;
+        conn.pragma_update(None, "mmap_size", 268435456)?;
+
         conn.execute_batch(
             "
-            PRAGMA journal_mode = WAL;
-            PRAGMA synchronous = NORMAL;
             CREATE TABLE IF NOT EXISTS folder_settings (
                 path TEXT PRIMARY KEY,
                 sort_col TEXT,
@@ -51,6 +54,11 @@ impl StateManager {
                 PRIMARY KEY (path, tag)
             );
             CREATE INDEX IF NOT EXISTS idx_file_tags_tag ON file_tags(tag);
+
+            CREATE TABLE IF NOT EXISTS folder_icons (
+                path TEXT PRIMARY KEY,
+                icon TEXT NOT NULL
+            );
             ",
         )?;
 
@@ -70,10 +78,13 @@ impl StateManager {
 
         let conn = Connection::open(db_path)?;
 
+        conn.pragma_update(None, "journal_mode", "WAL")?;
+        conn.pragma_update(None, "synchronous", "NORMAL")?;
+        conn.pragma_update(None, "busy_timeout", 5000)?;
+        conn.pragma_update(None, "mmap_size", 268435456)?;
+
         conn.execute_batch(
             "
-            PRAGMA journal_mode = WAL;
-            PRAGMA synchronous = NORMAL;
             CREATE TABLE IF NOT EXISTS folder_settings (
                 path TEXT PRIMARY KEY,
                 sort_col TEXT,
@@ -95,6 +106,11 @@ impl StateManager {
                 PRIMARY KEY (path, tag)
             );
             CREATE INDEX IF NOT EXISTS idx_file_tags_tag ON file_tags(tag);
+
+            CREATE TABLE IF NOT EXISTS folder_icons (
+                path TEXT PRIMARY KEY,
+                icon TEXT NOT NULL
+            );
         ",
         )?;
 
@@ -234,9 +250,54 @@ impl StateManager {
         Ok(tags)
     }
 
+    /// Returns all folder icon entries as a HashMap for use as a read cache.
+    pub fn load_folder_icons(&self) -> std::collections::HashMap<String, String> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = match conn.prepare("SELECT path, icon FROM folder_icons") {
+            Ok(s) => s,
+            Err(_) => return std::collections::HashMap::new(),
+        };
+        let rows = match stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        }) {
+            Ok(r) => r,
+            Err(_) => return std::collections::HashMap::new(),
+        };
+        rows.flatten().collect()
+    }
+
+    /// Inserts or updates a folder icon entry.
+    pub fn set_folder_icon(&self, path: &str, icon: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT INTO folder_icons (path, icon) VALUES (?1, ?2)
+             ON CONFLICT(path) DO UPDATE SET icon = excluded.icon",
+            params![path, icon],
+        )?;
+        Ok(())
+    }
+
+    /// Removes a folder icon entry.
+    pub fn remove_folder_icon(&self, path: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM folder_icons WHERE path = ?1", params![path])?;
+        Ok(())
+    }
+
+    /// Renames a folder icon entry when a directory is moved or renamed.
+    #[allow(dead_code)]
+    pub fn rename_folder_icon(&self, old_path: &str, new_path: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE folder_icons SET path = ?1 WHERE path = ?2",
+            params![new_path, old_path],
+        )?;
+        Ok(())
+    }
+
     /// Removes entries from the database if the corresponding filesystem paths no longer exist.
     pub fn scrub_orphans(&self) -> Result<()> {
-        let (paths, tag_paths): (Vec<String>, Vec<String>) = {
+        let (paths, tag_paths, icon_paths): (Vec<String>, Vec<String>, Vec<String>) = {
             let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let mut stmt = conn.prepare("SELECT path FROM folder_settings")?;
             let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
@@ -246,7 +307,11 @@ impl StateManager {
             let tag_rows = tag_stmt.query_map([], |row| row.get::<_, String>(0))?;
             let p2 = tag_rows.flatten().collect();
 
-            (p1, p2)
+            let mut icon_stmt = conn.prepare("SELECT path FROM folder_icons")?;
+            let icon_rows = icon_stmt.query_map([], |row| row.get::<_, String>(0))?;
+            let p3 = icon_rows.flatten().collect();
+
+            (p1, p2, p3)
         };
 
         let mut orphans = Vec::new();
@@ -272,7 +337,17 @@ impl StateManager {
             }
         }
 
-        if !orphans.is_empty() || !tag_orphans.is_empty() {
+        let mut icon_orphans = Vec::new();
+        for path_str in icon_paths {
+            if path_str.contains("://") {
+                continue;
+            }
+            if !std::path::Path::new(&path_str).exists() {
+                icon_orphans.push(path_str);
+            }
+        }
+
+        if !orphans.is_empty() || !tag_orphans.is_empty() || !icon_orphans.is_empty() {
             let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let tx = conn.transaction()?;
             {
@@ -286,6 +361,13 @@ impl StateManager {
                     let mut del_tag_stmt = tx.prepare("DELETE FROM file_tags WHERE path = ?1")?;
                     for orphan in &tag_orphans {
                         let _ = del_tag_stmt.execute(params![orphan]);
+                    }
+                }
+                if !icon_orphans.is_empty() {
+                    let mut del_icon_stmt =
+                        tx.prepare("DELETE FROM folder_icons WHERE path = ?1")?;
+                    for orphan in &icon_orphans {
+                        let _ = del_icon_stmt.execute(params![orphan]);
                     }
                 }
             }
