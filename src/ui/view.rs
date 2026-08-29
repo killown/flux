@@ -323,7 +323,7 @@ impl SimpleAsyncComponent for FluxApp {
                                             } else {
                                                 // Recursive search: walk the current directory tree and
                                                 // present every file whose name matches the glob pattern(s).
-                                                sender.input(AppMsg::StartExtensionSearch(patterns));
+                                                sender.input(AppMsg::SetExtensionFilter(patterns));
                                                 sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
                                             }
                                         },

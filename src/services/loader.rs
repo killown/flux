@@ -195,7 +195,7 @@ impl FluxApp {
                     // Session-scoped glob filter, directories always pass through.
                     if !is_dir {
                         if let Some(ref gs) = extension_globset {
-                            if !gs.is_match(&display_name) {
+                            if !gs.is_match(name.to_lowercase()) {
                                 return None;
                             }
                         }
@@ -534,7 +534,7 @@ impl FluxApp {
                         if item.is_dir {
                             return true;
                         }
-                        gs.is_match(&item.display_name)
+                        gs.is_match(item.display_name.to_lowercase())
                     });
                 }
 

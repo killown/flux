@@ -94,7 +94,40 @@ pub fn expand_mime_category(pattern: &str) -> Vec<String> {
         "doc/*" => &[
             "*.pdf", "*.doc", "*.docx", "*.odt", "*.txt", "*.md", "*.epub",
         ],
-        _ => return vec![pattern.to_string()],
+        _ => {
+            // Real MIME type (e.g. "application/zip", "image/png"), look up
+            // matching globs from the system MIME database.
+            if pattern.contains('/') {
+                let mime = pattern.to_lowercase();
+                for path in &["/usr/share/mime/globs2", "/usr/share/mime/globs"] {
+                    if let Ok(content) = std::fs::read_to_string(path) {
+                        let globs: Vec<String> = content
+                            .lines()
+                            .filter(|l| !l.starts_with('#'))
+                            .filter_map(|l| {
+                                // globs2: "weight:mime:glob[:flags]"  globs: "mime:glob"
+                                let cols: Vec<&str> = l.split(':').collect();
+                                // globs2 col[0] is weight (numeric), col[1]/col[2] are mime/glob
+                                let (mime_part, glob_part) = match cols.len() {
+                                    len if len >= 3 => (cols[1], cols[2]),
+                                    2 => (cols[0], cols[1]),
+                                    _ => return None,
+                                };
+                                if mime_part == mime {
+                                    Some(glob_part.to_string())
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        if !globs.is_empty() {
+                            return globs;
+                        }
+                    }
+                }
+            }
+            return vec![pattern.to_string()];
+        }
     };
     exts.iter().map(|s| s.to_string()).collect()
 }
