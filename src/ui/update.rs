@@ -347,20 +347,10 @@ impl FluxApp {
             }
             AppMsg::UpdateFilter(query) => self.handle_update_filter(query, &sender),
             AppMsg::SetExtensionFilter(patterns) => {
-                let expanded: Vec<String> = patterns
-                    .iter()
-                    .flat_map(|p| crate::utils::glob::expand_mime_category(p))
-                    .collect();
-                self.extension_filter = if expanded.is_empty() {
-                    None
-                } else {
-                    Some(expanded)
-                };
-                sender.input(AppMsg::Refresh);
+                self.handle_set_extension_filter(patterns, &sender);
             }
             AppMsg::ClearExtensionFilter => {
-                self.extension_filter = None;
-                sender.input(AppMsg::Refresh);
+                self.handle_clear_extension_filter(&sender);
             }
             AppMsg::StartContentSearch(term, ext_filter) => {
                 crate::services::content_search::start_content_search(
