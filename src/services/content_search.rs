@@ -2,6 +2,7 @@ use crate::model::{AppMsg, FluxApp};
 use crate::services::constants::MAX_CONTENT_SEARCH_RESULTS;
 use crate::ui::paste_ops::NEXT_TASK_ID;
 use crate::utils::search::{parse_size_filter, SizeOp};
+use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use relm4::prelude::*;
@@ -58,6 +59,16 @@ pub fn start_content_search(
 
     let current_dir = app.current_path.clone();
     let term_lc = Arc::new(clean_term.to_lowercase());
+    // Build the case-insensitive matcher once, each visitor thread clones the Arc.
+    let matcher: Option<Arc<AhoCorasick>> = if !term_lc.is_empty() {
+        AhoCorasick::builder()
+            .ascii_case_insensitive(true)
+            .build([term_lc.as_str()])
+            .ok()
+            .map(Arc::new)
+    } else {
+        None
+    };
     let load_id = app.load_id.clone();
     let show_hidden = app.show_hidden;
 
@@ -108,6 +119,7 @@ pub fn start_content_search(
             size_op: Option<SizeOp>,
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
+            matcher: Option<Arc<AhoCorasick>>,
         }
 
         impl ParallelVisitor for ContentVisitor {
@@ -177,34 +189,43 @@ pub fn start_content_search(
                     Ok(f) => f,
                     Err(_) => return WalkState::Continue,
                 };
-                let reader = BufReader::new(file);
+                let mut reader = BufReader::new(file);
+                // Reuse a single buffer across all lines, zero allocation per line.
+                let mut buf = String::new();
+                let mut line_number: usize = 0;
 
-                for (line_number, line_result) in reader.lines().enumerate() {
+                loop {
                     if self.load_id.load(Ordering::Acquire) != self.session_id
                         || self.cancellable.is_cancelled()
                         || self.count.load(Ordering::Relaxed) >= MAX_CONTENT_SEARCH_RESULTS
                     {
                         break;
                     }
-                    let line = match line_result {
-                        Ok(l) => l,
-                        Err(_) => break,
-                    };
+                    buf.clear();
+                    match reader.read_line(&mut buf) {
+                        Ok(0) | Err(_) => break, // EOF or read error
+                        Ok(_) => {}
+                    }
+                    line_number += 1;
 
-                    if line.to_lowercase().contains(self.term_lc.as_str())
-                        && self.load_id.load(Ordering::Acquire) == self.session_id
-                        && !self.cancellable.is_cancelled()
-                    {
+                    // aho-corasick ascii_case_insensitive search, no lowercase alloc.
+                    let matched = self
+                        .matcher
+                        .as_ref()
+                        .map(|m| m.is_match(buf.as_bytes()))
+                        .unwrap_or(false);
+
+                    if matched {
                         let curr = self.count.fetch_add(1, Ordering::Relaxed);
                         if curr < MAX_CONTENT_SEARCH_RESULTS {
                             self.sender.input(AppMsg::ContentSearchResult {
                                 path: path.clone(),
-                                line: line.trim().to_string(),
-                                line_number: line_number + 1,
+                                line: buf.trim().to_string(),
+                                line_number,
                                 session: self.session_id,
                             });
                         }
-                        break; // Matches first line hit per file to keep it blazing fast
+                        break; // First line hit per file only
                     }
                 }
 
@@ -221,6 +242,7 @@ pub fn start_content_search(
             size_op: Option<SizeOp>,
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
+            matcher: Option<Arc<AhoCorasick>>,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for ContentVisitorBuilder {
@@ -234,6 +256,7 @@ pub fn start_content_search(
                     size_op: self.size_op.clone(),
                     allowed_exts: self.allowed_exts.clone(),
                     term_lc: self.term_lc.clone(),
+                    matcher: self.matcher.clone(),
                 })
             }
         }
@@ -247,6 +270,7 @@ pub fn start_content_search(
             size_op,
             allowed_exts,
             term_lc,
+            matcher,
         };
 
         walker.visit(&mut visitor_builder);

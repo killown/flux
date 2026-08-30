@@ -330,17 +330,13 @@ impl FluxApp {
     }
 
     /// Receives generated thumbnail textures and updates grid items.
-    pub fn handle_thumbnail_ready(&mut self, name: String, texture: gdk::Texture, load_id: u64) {
+    pub fn handle_thumbnail_ready(&mut self, grid_idx: u32, texture: gdk::Texture, load_id: u64) {
         if load_id == self.load_id.load(Ordering::SeqCst) {
-            let target_idx = (0..self.files.len())
-                .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
-            if let Some(idx) = target_idx {
-                if let Some(item_wrapper) = self.files.get(idx) {
-                    let mut item = item_wrapper.borrow().clone();
-                    item.thumbnail = Some(texture);
-                    self.files.remove(idx);
-                    self.files.insert(idx, item);
-                }
+            if let Some(item_wrapper) = self.files.get(grid_idx) {
+                let mut item = item_wrapper.borrow().clone();
+                item.thumbnail = Some(texture);
+                self.files.remove(grid_idx);
+                self.files.insert(grid_idx, item);
             }
         }
     }

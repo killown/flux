@@ -176,16 +176,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
                         if let Some(s) = sender.get() {
                             let widget = gesture.widget().unwrap();
-                            let path_opt: Option<PathBuf> = unsafe {
-                                widget
-                                    .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
-                                    .map(|ptr| ptr.as_ref().clone())
-                                    .and_then(|rc| rc.borrow().clone())
+                            let idx_opt: Option<u32> = unsafe {
+                                widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
                             };
 
                             if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                 let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
                             }
                         }
                     }
@@ -204,17 +201,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             if let Some(s) = sender.get() {
                                 let widget = gesture.widget().unwrap();
 
-                                // Extract the path from the shared cell
-                                let path_opt: Option<PathBuf> = unsafe {
-                                    widget
-                                        .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
-                                        .map(|ptr| ptr.as_ref().clone())
-                                        .and_then(|rc| rc.borrow().clone())
+                                let idx_opt: Option<u32> = unsafe {
+                                    widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
                                 };
 
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                     let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
                                 }
                             }
                         }

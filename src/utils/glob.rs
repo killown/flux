@@ -67,67 +67,94 @@ pub fn compile_patterns(patterns: &[String]) -> Option<GlobSet> {
     builder.build().ok().filter(|s| !s.is_empty())
 }
 
-/// Expands a MIME-category shorthand into concrete extension glob patterns.
+/// Returns a reference to the global MIME database, parsed once from
+/// `/usr/share/mime/globs2` (preferred) or `/usr/share/mime/globs`.
 ///
-/// Recognised shorthands (case-insensitive):
-/// - `image/*`  → all image extensions
-/// - `video/*`  → all video extensions  
-/// - `audio/*`  → all audio extensions
-/// - `font/*`   → all font extensions
-/// - `doc/*`    → common document extensions
-///
-/// Any other pattern is returned as-is in a single-element Vec.
-pub fn expand_mime_category(pattern: &str) -> Vec<String> {
-    let exts: &[&str] = match pattern.to_lowercase().as_str() {
-        "image/*" => &[
-            "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp", "*.avif", "*.heic", "*.heif", "*.bmp",
-            "*.tiff", "*.tif", "*.jxl", "*.svg",
-        ],
-        "video/*" => &[
-            "*.mp4", "*.mkv", "*.webm", "*.avi", "*.mov", "*.flv", "*.wmv", "*.m4v", "*.mpg",
-            "*.mpeg", "*.ts", "*.ogv",
-        ],
-        "audio/*" => &[
-            "*.mp3", "*.flac", "*.ogg", "*.opus", "*.wav", "*.aac", "*.m4a", "*.wma", "*.aiff",
-        ],
-        "font/*" => &["*.ttf", "*.otf", "*.woff", "*.woff2", "*.ttc"],
-        "doc/*" => &[
-            "*.pdf", "*.doc", "*.docx", "*.odt", "*.txt", "*.md", "*.epub",
-        ],
-        _ => {
-            // Real MIME type (e.g. "application/zip", "image/png"), look up
-            // matching globs from the system MIME database.
-            if pattern.contains('/') {
-                let mime = pattern.to_lowercase();
-                for path in &["/usr/share/mime/globs2", "/usr/share/mime/globs"] {
-                    if let Ok(content) = std::fs::read_to_string(path) {
-                        let globs: Vec<String> = content
-                            .lines()
-                            .filter(|l| !l.starts_with('#'))
-                            .filter_map(|l| {
-                                // globs2: "weight:mime:glob[:flags]"  globs: "mime:glob"
-                                let cols: Vec<&str> = l.split(':').collect();
-                                // globs2 col[0] is weight (numeric), col[1]/col[2] are mime/glob
-                                let (mime_part, glob_part) = match cols.len() {
-                                    len if len >= 3 => (cols[1], cols[2]),
-                                    2 => (cols[0], cols[1]),
-                                    _ => return None,
-                                };
-                                if mime_part == mime {
-                                    Some(glob_part.to_string())
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                        if !globs.is_empty() {
-                            return globs;
-                        }
+/// Keys are lowercase MIME types (`"application/zip"`), values are the
+/// glob patterns registered for that type (`["*.zip", "*.zipx"]`).
+fn mime_db() -> &'static std::collections::HashMap<String, Vec<String>> {
+    static DB: std::sync::OnceLock<std::collections::HashMap<String, Vec<String>>> =
+        std::sync::OnceLock::new();
+
+    DB.get_or_init(|| {
+        let mut map: std::collections::HashMap<String, Vec<String>> =
+            std::collections::HashMap::new();
+
+        for path in &["/usr/share/mime/globs2", "/usr/share/mime/globs"] {
+            if let Ok(content) = std::fs::read_to_string(path) {
+                for line in content.lines() {
+                    if line.starts_with('#') || line.is_empty() {
+                        continue;
+                    }
+                    // globs2: "weight:mime/type:*.ext"
+                    // globs:  "mime/type:*.ext"
+                    let cols: Vec<&str> = line.splitn(3, ':').collect();
+                    // globs2 col[0] is numeric weight, real mime has a '/'
+                    let (mime, glob) = if cols.len() == 3 {
+                        (cols[1].to_string(), cols[2])
+                    } else {
+                        (cols[0].to_string(), cols[1])
+                    };
+                    if mime.contains('/') {
+                        map.entry(mime.to_lowercase())
+                            .or_default()
+                            .push(glob.to_string());
                     }
                 }
+                // Prefer globs2, stop after first successful parse.
+                if !map.is_empty() {
+                    break;
+                }
             }
-            return vec![pattern.to_string()];
         }
+        map
+    })
+}
+
+/// Expands a MIME-category shorthand or real MIME type into concrete glob
+/// patterns. Built-in shorthands are resolved from static slices, real MIME
+/// types (anything containing `/`) are resolved from the system database
+/// cached in a `OnceLock` - O(1) after the first call.
+///
+/// Built-in shorthands (case-insensitive):
+/// - `image/*`, `video/*`, `audio/*`, `font/*`, `doc/*`
+///
+/// Any unrecognised pattern without a `/` is returned as-is.
+pub fn expand_mime_category(pattern: &str) -> Vec<String> {
+    let lc = pattern.to_lowercase();
+
+    // Built-in shorthands - static, zero allocation.
+    let shorthand: Option<&[&str]> = match lc.as_str() {
+        "image/*" => Some(&[
+            "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp", "*.avif", "*.heic", "*.heif", "*.bmp",
+            "*.tiff", "*.tif", "*.jxl", "*.svg",
+        ]),
+        "video/*" => Some(&[
+            "*.mp4", "*.mkv", "*.webm", "*.avi", "*.mov", "*.flv", "*.wmv", "*.m4v", "*.mpg",
+            "*.mpeg", "*.ts", "*.ogv",
+        ]),
+        "audio/*" => Some(&[
+            "*.mp3", "*.flac", "*.ogg", "*.opus", "*.wav", "*.aac", "*.m4a", "*.wma", "*.aiff",
+        ]),
+        "font/*" => Some(&["*.ttf", "*.otf", "*.woff", "*.woff2", "*.ttc"]),
+        "doc/*" => Some(&[
+            "*.pdf", "*.doc", "*.docx", "*.odt", "*.txt", "*.md", "*.epub",
+        ]),
+        _ => None,
     };
-    exts.iter().map(|s| s.to_string()).collect()
+    if let Some(exts) = shorthand {
+        return exts.iter().map(|s| s.to_string()).collect();
+    }
+
+    if lc.contains('/') {
+        if let Some(globs) = mime_db().get(&lc) {
+            return globs.clone();
+        }
+        // Unknown MIME type: return a pattern that matches nothing so the
+        // filter doesn't silently pass everything through.
+        return vec![format!("__unknown_mime__{}", lc)];
+    }
+
+    // Plain glob (*.zip, *.rs) - pass through as-is.
+    vec![pattern.to_string()]
 }

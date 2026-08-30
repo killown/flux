@@ -36,6 +36,7 @@ fn mock_ctx(name: &str, is_dir: bool, size: u64, mtime: i64) -> FileLoadContext 
     FileLoadContext {
         display_name: name.to_string(),
         sort_name: name.to_lowercase(),
+        sort_ext: String::new(),
         target_path: PathBuf::from(name),
         size,
         mtime,
@@ -242,6 +243,7 @@ fn test_custom_icon_priority_over_thumbnail() {
     let ctx = FileLoadContext {
         display_name: "test.jpg".to_string(),
         sort_name: "test".to_string(),
+        sort_ext: String::new(),
         target_path: PathBuf::from("/some/path/test.jpg"),
         size: 100,
         mtime: 0,

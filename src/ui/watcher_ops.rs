@@ -86,7 +86,7 @@ impl FluxApp {
 
                     let current_session = self.load_id.load(Ordering::SeqCst);
                     self.spawn_thumbnail_loader(
-                        vec![(display_name, path)],
+                        vec![(self.files.len() - 1, path)],
                         current_session,
                         sender.clone(),
                     );

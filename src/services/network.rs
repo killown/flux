@@ -378,6 +378,11 @@ pub fn entries_to_load_contexts(
         .map(|e| {
             let target_path = PathBuf::from(&e.uri);
             let sort_name = e.display_name.to_lowercase();
+            let sort_ext = std::path::Path::new(&e.display_name)
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.to_ascii_lowercase())
+                .unwrap_or_default();
             let custom_icon = if e.is_dir {
                 e.icon_name
                     .clone()
@@ -389,6 +394,7 @@ pub fn entries_to_load_contexts(
             FileLoadContext {
                 display_name: e.display_name.clone(),
                 sort_name,
+                sort_ext,
                 target_path,
                 size: e.size,
                 mtime: e.mtime,

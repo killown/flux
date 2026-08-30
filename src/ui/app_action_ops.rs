@@ -194,41 +194,24 @@ impl FluxApp {
         &self,
         x: f64,
         y: f64,
-        path: Option<PathBuf>,
+        item_idx: Option<u32>,
         sender: &AsyncComponentSender<Self>,
     ) {
-        if let Some(ref target_path) = path {
-            let selection_model = self
+        let path = if let Some(idx) = item_idx {
+            if let Some(selection_model) = self
                 .files
                 .view
                 .model()
                 .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                .expect("Selection model must be MultiSelection");
-            let selection = selection_model.selection();
-            let mut target_idx = None;
-
-            let target_normalized = target_path
-                .to_string_lossy()
-                .trim_end_matches('/')
-                .to_string();
-
-            for i in 0..self.files.len() {
-                if let Some(wrapper) = self.files.get(i) {
-                    let item_path = wrapper.borrow().path.to_string_lossy().to_string();
-                    let item_normalized = item_path.trim_end_matches('/').to_string();
-                    if item_normalized == target_normalized {
-                        target_idx = Some(i);
-                        break;
-                    }
-                }
-            }
-
-            if let Some(idx) = target_idx {
-                if !selection.contains(idx) {
+            {
+                if !selection_model.selection().contains(idx) {
                     selection_model.select_item(idx, true);
                 }
             }
-        }
+            self.files.get(idx).map(|w| w.borrow().path.clone())
+        } else {
+            None
+        };
 
         let sender_ctx = sender.clone();
         relm4::spawn_blocking(move || {

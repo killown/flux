@@ -314,10 +314,10 @@ impl FluxApp {
             AppMsg::CycleFolderPriority => self.handle_cycle_folder_priority(&sender),
             AppMsg::Zoom(delta) => self.handle_zoom(delta),
             AppMsg::ThumbnailReady {
-                name,
+                grid_idx,
                 texture,
                 load_id,
-            } => self.handle_thumbnail_ready(name, texture, load_id),
+            } => self.handle_thumbnail_ready(grid_idx, texture, load_id),
             AppMsg::MediaDurationReady(maybe_duration) => {
                 self.handle_media_duration_ready(maybe_duration)
             }
@@ -463,6 +463,9 @@ impl FluxApp {
             AppMsg::Activate => self.handle_activate(&sender),
             AppMsg::LaunchWithApp(app_id) => self.handle_launch_with_app(app_id),
             AppMsg::ClearRecents => self.handle_clear_recents(&sender),
+            AppMsg::PrepareContextMenu(x, y, item_idx) => {
+                self.handle_prepare_context_menu(x, y, item_idx, &sender);
+            }
             AppMsg::PrepareSecondaryMenu { x, y, path } => {
                 self.handle_prepare_secondary_menu(x, y, path, &sender);
             }
@@ -474,9 +477,6 @@ impl FluxApp {
                 actions,
             } => {
                 self.build_and_show_secondary_menu(x, y, path, mime, actions, &sender);
-            }
-            AppMsg::PrepareContextMenu(x, y, path) => {
-                self.handle_prepare_context_menu(x, y, path, &sender)
             }
             AppMsg::ShowContextMenu { x, y, path, mime } => {
                 self.build_and_show_context_menu(x, y, path, mime, &sender)

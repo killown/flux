@@ -106,17 +106,24 @@ impl FluxApp {
                 }
             }
 
-            let mut media_tasks = Vec::new();
+            let mut media_tasks: Vec<(u32, std::path::PathBuf)> = Vec::new();
+            let mut grid_idx: u32 = self.files.len();
 
             for path in matching_paths {
+                if !filter_text.is_empty() {
+                    let filename_str = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy())
+                        .unwrap_or_default();
+                    if !filename_str.to_lowercase().contains(&filter_text) {
+                        continue;
+                    }
+                }
+
                 let name = path
                     .file_name()
-                    .map(|n| n.to_string_lossy().to_string())
-                    .unwrap_or_else(|| path.to_string_lossy().to_string());
-
-                if !filter_text.is_empty() && !name.to_lowercase().contains(&filter_text) {
-                    continue;
-                }
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| path.to_string_lossy().into_owned());
 
                 let is_dir = path.is_dir();
                 let meta = std::fs::metadata(&path).ok();
@@ -133,7 +140,7 @@ impl FluxApp {
                 if !is_dir {
                     let (is_img, is_vid) = utils::is_visual_media(&path);
                     if is_img || is_vid {
-                        media_tasks.push((name.clone(), path.clone()));
+                        media_tasks.push((grid_idx, path.clone()));
                     }
                 }
 
@@ -142,7 +149,7 @@ impl FluxApp {
                     icon,
                     thumbnail: None,
                     is_dir,
-                    path: path.clone(),
+                    path,
                     icon_size: if self.is_list_mode {
                         self.current_list_icon_size
                     } else {
@@ -157,6 +164,7 @@ impl FluxApp {
                     is_custom_icon: false,
                     active_path: Rc::new(RefCell::new(None)),
                 });
+                grid_idx += 1;
             }
 
             let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
