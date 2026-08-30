@@ -661,6 +661,11 @@ pub fn entries_to_load_contexts(
             FileLoadContext {
                 display_name: e.name.clone(),
                 sort_name: e.name.to_lowercase(),
+                sort_ext: std::path::Path::new(&e.name)
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_ascii_lowercase())
+                    .unwrap_or_default(),
                 target_path,
                 size: e.size,
                 mtime: e.mtime,

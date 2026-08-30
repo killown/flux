@@ -215,22 +215,37 @@ impl FluxApp {
                         }
                     }
 
-                    let custom_icon = if is_dir {
-                        // Image-based override takes priority over the GTK icon name picker.
-                        let path_key = target_path.to_string_lossy().to_string();
-                        config_file_icons
-                            .get(&path_key)
-                            .cloned()
-                            .or_else(|| config_folder_icons.get(&path_key).cloned())
+                    // Short-circuit entirely when both maps are empty (the common case),
+                    // avoiding a heap allocation and hash lookup for every directory entry.
+                    let custom_icon = if config_file_icons.is_empty()
+                        && (!is_dir || config_folder_icons.is_empty())
+                    {
+                        None
                     } else {
-                        let path_key = target_path.to_string_lossy().to_string();
-                        // A custom image path stored in `file_icons` takes priority over the system icon.
-                        // It is rendered as a thumbnail texture via the thumbnail pipeline.
-                        config_file_icons.get(&path_key).cloned()
+                        // Use to_str() to borrow the path as &str without allocating a String.
+                        // Falls back to an owned String only when the path is not valid UTF-8.
+                        let path_key = target_path.to_str();
+                        path_key.and_then(|k| {
+                            config_file_icons.get(k).cloned().or_else(|| {
+                                if is_dir {
+                                    config_folder_icons.get(k).cloned()
+                                } else {
+                                    None
+                                }
+                            })
+                        })
                     };
 
+                    let sort_name = display_name.to_lowercase();
+                    let sort_ext = std::path::Path::new(&display_name)
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|e| e.to_ascii_lowercase())
+                        .unwrap_or_default();
+
                     Some(FileLoadContext {
-                        sort_name: display_name.to_lowercase(),
+                        sort_name,
+                        sort_ext,
                         display_name,
                         target_path,
                         size,
@@ -292,33 +307,14 @@ impl FluxApp {
                 }
 
                 let primary_order = match sort_strategy {
-                    SortBy::Name => a
-                        .display_name
-                        .to_lowercase()
-                        .cmp(&b.display_name.to_lowercase()),
+                    SortBy::Name => a.sort_name.cmp(&b.sort_name),
                     SortBy::Size => a.size.cmp(&b.size),
                     SortBy::Date => a.mtime.cmp(&b.mtime),
-                    SortBy::Type => {
-                        let ext_a = std::path::Path::new(&a.display_name)
-                            .extension()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or("")
-                            .to_lowercase();
-
-                        let ext_b = std::path::Path::new(&b.display_name)
-                            .extension()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or("")
-                            .to_lowercase();
-
-                        ext_a.cmp(&ext_b)
-                    }
+                    SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                 };
 
                 let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
-                    a.display_name
-                        .to_lowercase()
-                        .cmp(&b.display_name.to_lowercase())
+                    a.sort_name.cmp(&b.sort_name)
                 } else {
                     primary_order
                 };
@@ -330,8 +326,8 @@ impl FluxApp {
                 }
             });
 
-            let mut media_tasks = Vec::new();
-            for item in items {
+            let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
+            for (grid_idx, item) in (self.files.len()..).zip(items) {
                 let icon = if let Some(ref custom) = item.custom_icon {
                     gtk::gio::Icon::for_string(custom).unwrap_or_else(|_| {
                         utils::get_icon_for_path(&item.target_path, item.is_dir)
@@ -367,7 +363,7 @@ impl FluxApp {
                 });
 
                 if let Some(abs_path) = thumb_source {
-                    media_tasks.push((item.display_name, abs_path));
+                    media_tasks.push((grid_idx, abs_path));
                 }
             }
 
@@ -534,7 +530,7 @@ impl FluxApp {
                         if item.is_dir {
                             return true;
                         }
-                        gs.is_match(item.display_name.to_lowercase())
+                        gs.is_match(&item.sort_name)
                     });
                 }
 
@@ -552,19 +548,7 @@ impl FluxApp {
                         SortBy::Name => a.sort_name.cmp(&b.sort_name),
                         SortBy::Size => a.size.cmp(&b.size),
                         SortBy::Date => a.mtime.cmp(&b.mtime),
-                        SortBy::Type => {
-                            let ext_a = std::path::Path::new(&a.display_name)
-                                .extension()
-                                .and_then(|s| s.to_str())
-                                .unwrap_or("")
-                                .to_lowercase();
-                            let ext_b = std::path::Path::new(&b.display_name)
-                                .extension()
-                                .and_then(|s| s.to_str())
-                                .unwrap_or("")
-                                .to_lowercase();
-                            ext_a.cmp(&ext_b)
-                        }
+                        SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                     };
 
                     let tie = if primary_order == std::cmp::Ordering::Equal {
@@ -580,16 +564,15 @@ impl FluxApp {
                     }
                 });
 
-                let mut media_tasks = Vec::new();
-
-                for item in items {
+                let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
+                for (grid_idx, item) in (self.files.len()..).zip(items) {
                     let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
 
                     // Collect visual media files for thumbnail generation
                     if !item.is_dir {
                         let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
                         if is_img || is_vid {
-                            media_tasks.push((item.display_name.clone(), item.target_path.clone()));
+                            media_tasks.push((grid_idx, item.target_path.clone()));
                         }
                     }
 
@@ -675,7 +658,7 @@ impl FluxApp {
         entries.sort_by(|a, b| b.0.cmp(&a.0));
         entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
 
-        let mut media_tasks = Vec::new();
+        let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
         let extension_globset = self.extension_globset.clone();
 
         for (_ts, href) in entries {
@@ -695,7 +678,7 @@ impl FluxApp {
             // Session-scoped glob filter for recents view.
             if !is_dir {
                 if let Some(ref gs) = extension_globset {
-                    if !gs.is_match(&display_name) {
+                    if !gs.is_match(display_name.to_lowercase()) {
                         continue;
                     }
                 }
@@ -705,7 +688,7 @@ impl FluxApp {
 
             let (is_img, is_vid) = is_visual_media_by_ext(&path);
             if is_img || is_vid {
-                media_tasks.push((display_name.clone(), path.clone()));
+                media_tasks.push((self.files.len(), path.clone()));
             }
 
             self.files.append(crate::ui::FileItem {

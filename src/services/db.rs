@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use rusqlite::{params, Connection, Result};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -314,38 +315,34 @@ impl StateManager {
             (p1, p2, p3)
         };
 
-        let mut orphans = Vec::new();
-        for path_str in paths {
-            // Avoid deleting non-filesystem virtual URIs like trash:/// or /archive://
-            if path_str.starts_with("trash://")
-                || path_str.starts_with("/archive://")
-                || path_str.starts_with("recent://")
-                || path_str.contains("://")
-            {
-                continue;
-            }
+        let orphans: Vec<String> = paths
+            .into_par_iter()
+            .filter(|path_str| {
+                if path_str.starts_with("trash://")
+                    || path_str.starts_with("/archive://")
+                    || path_str.starts_with("recent://")
+                    || path_str.contains("://")
+                {
+                    return false;
+                }
+                !std::path::Path::new(path_str).exists()
+            })
+            .collect();
 
-            if !std::path::Path::new(&path_str).exists() {
-                orphans.push(path_str);
-            }
-        }
+        let tag_orphans: Vec<String> = tag_paths
+            .into_par_iter()
+            .filter(|path_str| !std::path::Path::new(path_str).exists())
+            .collect();
 
-        let mut tag_orphans = Vec::new();
-        for path_str in tag_paths {
-            if !std::path::Path::new(&path_str).exists() {
-                tag_orphans.push(path_str);
-            }
-        }
-
-        let mut icon_orphans = Vec::new();
-        for path_str in icon_paths {
-            if path_str.contains("://") {
-                continue;
-            }
-            if !std::path::Path::new(&path_str).exists() {
-                icon_orphans.push(path_str);
-            }
-        }
+        let icon_orphans: Vec<String> = icon_paths
+            .into_par_iter()
+            .filter(|path_str| {
+                if path_str.contains("://") {
+                    return false;
+                }
+                !std::path::Path::new(path_str).exists()
+            })
+            .collect();
 
         if !orphans.is_empty() || !tag_orphans.is_empty() || !icon_orphans.is_empty() {
             let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());

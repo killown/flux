@@ -510,13 +510,11 @@ pub fn get_icon_for_path_with_override(
     }
     let filename = path.file_name().unwrap_or_default().to_string_lossy();
 
-    // For network URIs, content_type_guess may fail, fall back to extension.
-    let content_type = if crate::services::network::is_network_uri(path) {
-        if let Some(mime) = guess_mime_from_extension(&filename) {
-            mime
-        } else {
-            "application/octet-stream".to_string()
-        }
+    // Fast-path: check static extension mapping before calling GIO content_type_guess.
+    let content_type = if let Some(mime) = guess_mime_from_extension(&filename) {
+        mime
+    } else if crate::services::network::is_network_uri(path) {
+        "application/octet-stream".to_string()
     } else {
         let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
         ct.to_string()

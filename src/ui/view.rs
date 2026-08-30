@@ -534,19 +534,17 @@ impl SimpleAsyncComponent for FluxApp {
                                             set_button: 3,
                                             connect_pressed[sender] => move |gesture, _, x, y| {
                                                 if let Some(widget) = gesture.widget() {
-                                                    let mut picked_path = None;
                                                     if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
                                                         let mut current: Option<gtk::Widget> = Some(picked);
                                                         while let Some(w) = current {
                                                             let name = w.widget_name().to_string();
                                                             if name.starts_with("/") || name.starts_with("trash://") {
-                                                                picked_path = Some(PathBuf::from(name));
                                                                 break;
                                                             }
                                                             current = w.parent();
                                                         }
                                                     }
-                                                    sender.input(AppMsg::PrepareContextMenu(x, y, picked_path));
+                                                    sender.input(AppMsg::PrepareContextMenu(x, y, None));
                                                 }
                                             }
                                         },

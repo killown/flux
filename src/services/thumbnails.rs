@@ -9,7 +9,7 @@ use std::sync::Arc;
 impl FluxApp {
     pub fn spawn_thumbnail_loader(
         &self,
-        media_tasks: Vec<(String, PathBuf)>,
+        media_tasks: Vec<(u32, PathBuf)>,
         current_session: u64,
         sender: AsyncComponentSender<Self>,
     ) {
@@ -27,7 +27,7 @@ impl FluxApp {
         relm4::spawn(async move {
             let mut handles = Vec::new();
 
-            for (name, media_path) in media_tasks {
+            for (grid_idx, media_path) in media_tasks {
                 if session_arc.load(Ordering::Acquire) != current_session {
                     break;
                 }
@@ -36,7 +36,6 @@ impl FluxApp {
                 let inner_sender = sender.clone();
                 let inner_session = session_arc.clone();
                 let session_id = current_session;
-                let task_name = name.clone();
                 let task_path = media_path.clone();
 
                 let handle = tokio::spawn(async move {
@@ -51,7 +50,7 @@ impl FluxApp {
                     if let Some(texture) = texture {
                         if inner_session.load(Ordering::Acquire) == session_id {
                             inner_sender.input(AppMsg::ThumbnailReady {
-                                name: task_name,
+                                grid_idx,
                                 texture,
                                 load_id: session_id,
                             });

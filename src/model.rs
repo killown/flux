@@ -44,6 +44,8 @@ pub struct FileLoadContext {
     pub is_dir: bool,
     /// Pre-processed string used for case-insensitive and natural sorting.
     pub sort_name: String,
+    /// Pre-computed lowercase file extension for zero-alloc Type sorting.
+    pub sort_ext: String,
     /// The path to a cached or generated image representing the file content.
     pub thumbnail_path: Option<PathBuf>,
     /// True when the file's Unix UID does not match the current process's effective UID.
@@ -872,7 +874,7 @@ pub enum AppMsg {
     /// using `gio::DesktopAppInfo::new()`.
     LaunchWithApp(String),
     /// Calculate coordinates and determine target for a context menu.
-    PrepareContextMenu(f64, f64, Option<PathBuf>),
+    PrepareContextMenu(f64, f64, Option<u32>),
     /// Display the context menu popover with relevant actions for the given mime type.
     ShowContextMenu {
         x: f64,
@@ -984,7 +986,7 @@ pub enum AppMsg {
     /// loading indicator and select the first result.
     ContentSearchDone { session: u64 },
     ThumbnailReady {
-        name: String,
+        grid_idx: u32,
         texture: gdk::Texture,
         load_id: u64,
     },
