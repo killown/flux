@@ -903,6 +903,14 @@ impl FluxApp {
 
         for item in results {
             let icon = utils::get_icon_for_path(&item.path, false);
+            let meta = std::fs::metadata(&item.path).ok();
+            let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+            let mtime = meta
+                .as_ref()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_secs() as i64)
+                .unwrap_or(0);
 
             self.files.append(crate::ui::FileItem {
                 name: item.display,
@@ -911,8 +919,8 @@ impl FluxApp {
                 is_dir: false,
                 path: item.path,
                 icon_size: self.current_list_icon_size,
-                size: 0,
-                mtime: 0,
+                size,
+                mtime,
                 is_editing: false,
                 is_foreign_owner: false,
                 expand_labels: false,
