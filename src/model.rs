@@ -1,3 +1,4 @@
+use crate::ui::conflict_policy::{ConflictChoice, ConflictContext};
 use crate::ui::keymap::KeyMap;
 use gtk::gdk;
 use relm4::factory::FactoryVecDeque;
@@ -7,8 +8,9 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
 use std::sync::OnceLock;
+use std::sync::{Arc, Mutex};
+use tokio::sync::oneshot;
 
 use crate::ui::{FileItem, SidebarPlace};
 
@@ -18,6 +20,9 @@ pub static SENDER: OnceLock<relm4::Sender<AppMsg>> = OnceLock::new();
 fn default_true() -> bool {
     true
 }
+
+/// Type alias for the conflict resolution channel used in file copy/move operations.
+pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
 /// Startup parameters passed from the argument parser to the Relm4 component initializer.
 pub struct AppInit {
@@ -638,12 +643,8 @@ pub enum AppMsg {
     /// A background copy/move worker detected that its destination path already
     /// exists and needs user input before it can proceed.
     FileConflictDetected {
-        context: crate::ui::conflict_policy::ConflictContext,
-        resolver: std::sync::Arc<
-            std::sync::Mutex<
-                Option<tokio::sync::oneshot::Sender<crate::ui::conflict_policy::ConflictChoice>>,
-            >,
-        >,
+        context: ConflictContext,
+        resolver: ConflictResolver,
     },
     /// Sent by the conflict dialog's response closure immediately before it
     /// resolves the oneshot sender.  Clears `FluxApp::conflict_dialog_active`

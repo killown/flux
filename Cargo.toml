@@ -59,6 +59,7 @@ bitflags = "2.6"
 ignore = "0.4.33"
 memmap2 = "0.9"
 aho-corasick = "1.1.5"
+parking_lot = "0.12.5"
 
 [dev-dependencies]
 tempfile = "3"
