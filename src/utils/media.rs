@@ -13,6 +13,7 @@ use std::time::Duration;
 /// Runs `ffprobe` as a Tokio child process and parses its stdout.
 /// Returns `None` if the file is not a valid media container, if `ffprobe`
 /// is not installed, or if the output cannot be parsed.
+#[allow(dead_code)]
 pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
     let output = tokio::process::Command::new("ffprobe")
         .args([
@@ -60,6 +61,7 @@ pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
 /// # Returns
 ///
 /// `Some((width, height))` in pixels on success, `None` otherwise.
+#[allow(dead_code)]
 pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
     let path_str = path.to_str()?;
     let (_, w, h) = gdk_pixbuf::Pixbuf::file_info(path_str)?;
@@ -76,6 +78,7 @@ pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
 ///
 /// * `w` - Image width in pixels.
 /// * `h` - Image height in pixels.
+#[allow(dead_code)]
 pub fn aspect_ratio_label(w: u32, h: u32) -> String {
     if w == 0 || h == 0 {
         return String::new();
@@ -104,6 +107,7 @@ pub fn aspect_ratio_label(w: u32, h: u32) -> String {
 /// # Arguments
 ///
 /// * `d` - The duration to format.
+#[allow(dead_code)]
 pub fn format_duration(d: Duration) -> String {
     let total = d.as_secs();
     let h = total / 3600;
@@ -119,7 +123,9 @@ pub fn format_duration(d: Duration) -> String {
 
 fn gcd(mut a: u32, mut b: u32) -> u32 {
     while b != 0 {
-        (a, b) = (b, a % b);
+        let rem = a % b;
+        a = b;
+        b = rem;
     }
     a
 }
