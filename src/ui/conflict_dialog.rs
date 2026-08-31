@@ -15,7 +15,7 @@ const RESP_REPLACE: gtk::ResponseType = gtk::ResponseType::Accept;
 
 pub fn show_conflict_dialog(
     ctx: ConflictContext,
-    tx: oneshot::Sender<ConflictChoice>,
+    tx: oneshot::Sender<(ConflictChoice, bool)>,
     sender: AsyncComponentSender<crate::model::FluxApp>,
 ) {
     let window = gtk::Application::default().active_window();
@@ -83,7 +83,7 @@ pub fn show_conflict_dialog(
     dialog.set_default_response(RESP_SKIP);
 
     // ── Extra child: file preview card ──────────────────────────────────────
-    let extra = build_extra_child(&ctx, &file_name, &op_word);
+    let (extra, apply_all) = build_extra_child(&ctx, &file_name, &op_word);
     if let Some(content_area) = dialog
         .content_area()
         .first_child()
@@ -95,20 +95,14 @@ pub fn show_conflict_dialog(
     }
 
     // ── Response handler ────────────────────────────────────────────────────
-    let tx_cell: Rc<Cell<Option<oneshot::Sender<ConflictChoice>>>> = Rc::new(Cell::new(Some(tx)));
+    #[allow(clippy::type_complexity)]
+    let tx_cell: Rc<Cell<Option<oneshot::Sender<(ConflictChoice, bool)>>>> =
+        Rc::new(Cell::new(Some(tx)));
 
-    let apply_all_check = extra
-        .last_child()
-        .and_then(|w| w.downcast::<gtk::CheckButton>().ok());
-
+    let apply_all_check = apply_all;
     let s = sender.clone();
 
     dialog.connect_response(move |dlg, response_id| {
-        eprintln!(
-            "[ConflictDialog] connect_response received response_id: {:?}",
-            response_id
-        );
-
         let choice = match response_id {
             RESP_REPLACE => ConflictChoice::Replace,
             RESP_SKIP => ConflictChoice::Skip,
@@ -116,29 +110,15 @@ pub fn show_conflict_dialog(
             _ => ConflictChoice::Cancel,
         };
 
-        eprintln!("[ConflictDialog] Mapped to choice: {:?}", choice);
-
         let apply_all_active = apply_all_check
             .as_ref()
             .map(|c| c.is_active())
             .unwrap_or(false);
 
-        if apply_all_active {
-            let policy = match &choice {
-                ConflictChoice::Replace => crate::ui::conflict_policy::ConflictPolicy::ReplaceAll,
-                ConflictChoice::Skip => crate::ui::conflict_policy::ConflictPolicy::SkipAll,
-                ConflictChoice::AutoRename => {
-                    crate::ui::conflict_policy::ConflictPolicy::AutoRenameAll
-                }
-                ConflictChoice::Cancel => crate::ui::conflict_policy::ConflictPolicy::Ask,
-            };
-            s.input(AppMsg::SetConflictPolicy(policy));
-        }
-
         s.input(AppMsg::ConflictDialogClosed);
 
         if let Some(tx) = tx_cell.take() {
-            let _ = tx.send(choice);
+            let _ = tx.send((choice, apply_all_active));
         }
 
         dlg.close();
@@ -149,7 +129,11 @@ pub fn show_conflict_dialog(
 
 // ─── Extra child builder ──────────────────────────────────────────────────────
 
-fn build_extra_child(ctx: &ConflictContext, file_name: &str, op_word: &str) -> gtk::Box {
+fn build_extra_child(
+    ctx: &ConflictContext,
+    file_name: &str,
+    op_word: &str,
+) -> (gtk::Box, Option<gtk::CheckButton>) {
     let root = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(0)
@@ -241,7 +225,7 @@ fn build_extra_child(ctx: &ConflictContext, file_name: &str, op_word: &str) -> g
         .build();
     root.append(&apply_all);
 
-    root
+    (root, Some(apply_all))
 }
 
 // ─── File side builder ────────────────────────────────────────────────────────

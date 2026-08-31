@@ -13,6 +13,9 @@ use std::sync::{atomic::AtomicUsize, Arc, Mutex};
 // Global operation ID counter, monotonically increasing, unique per session.
 pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
+/// Mutex to serialise conflict-resolution dialogs so only one is shown at a time.
+static CONFLICT_MUTEX: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
+
 /// Minimum number of files that triggers the dialog without a time delay.
 const DIALOG_FILE_THRESHOLD: usize = 5;
 /// Minimum total bytes that triggers the dialog without a time delay (32 MiB).
@@ -185,28 +188,15 @@ impl FluxApp {
                         }
                         ConflictPolicy::AutoRenameAll => auto_rename_dest(&dest_initial),
                         ConflictPolicy::Ask => {
-                            let (tx, rx) = tokio::sync::oneshot::channel::<ConflictChoice>();
+                            // Serialise conflict resolution so only one dialog is shown at a time.
+                            let _lock = CONFLICT_MUTEX.lock();
 
-                            let ctx = ConflictContext {
-                                src: src_path.clone(),
-                                dest: dest_initial.clone(),
-                                is_cut,
-                                batch_total: total_files,
-                                batch_index: batch_index + 1,
-                            };
-
-                            s.input(AppMsg::FileConflictDetected {
-                                context: ctx,
-                                resolver: Arc::new(Mutex::new(Some(tx))),
-                            });
-
-                            let choice = tokio::runtime::Handle::current()
-                                .block_on(rx)
-                                .unwrap_or(ConflictChoice::Cancel);
-
-                            match choice {
-                                ConflictChoice::Cancel => {
-                                    cancellable.cancel();
+                            // Re-check policy after acquiring the mutex, another thread may have
+                            // updated it while we were waiting.
+                            let rechecked_policy = { policy_clone.lock().unwrap().clone() };
+                            match rechecked_policy {
+                                ConflictPolicy::ReplaceAll => dest_initial.clone(),
+                                ConflictPolicy::SkipAll => {
                                     s.input(AppMsg::TaskCompleted(task_id));
                                     let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
                                     if count == total_files {
@@ -214,16 +204,66 @@ impl FluxApp {
                                     }
                                     return;
                                 }
-                                ConflictChoice::Skip => {
-                                    s.input(AppMsg::TaskCompleted(task_id));
-                                    let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
-                                    if count == total_files {
-                                        s.input(AppMsg::Refresh);
+                                ConflictPolicy::AutoRenameAll => auto_rename_dest(&dest_initial),
+                                ConflictPolicy::Ask => {
+                                    let (tx, rx) =
+                                        tokio::sync::oneshot::channel::<(ConflictChoice, bool)>();
+
+                                    let ctx = ConflictContext {
+                                        src: src_path.clone(),
+                                        dest: dest_initial.clone(),
+                                        is_cut,
+                                        batch_total: total_files,
+                                        batch_index: batch_index + 1,
+                                    };
+
+                                    s.input(AppMsg::FileConflictDetected {
+                                        context: ctx,
+                                        resolver: Arc::new(Mutex::new(Some(tx))),
+                                    });
+
+                                    let (choice, apply_all) = tokio::runtime::Handle::current()
+                                        .block_on(rx)
+                                        .unwrap_or((ConflictChoice::Cancel, false));
+
+                                    if apply_all {
+                                        let new_policy = match choice {
+                                            ConflictChoice::Replace => ConflictPolicy::ReplaceAll,
+                                            ConflictChoice::Skip => ConflictPolicy::SkipAll,
+                                            ConflictChoice::AutoRename => {
+                                                ConflictPolicy::AutoRenameAll
+                                            }
+                                            ConflictChoice::Cancel => ConflictPolicy::SkipAll,
+                                        };
+                                        *policy_clone.lock().unwrap() = new_policy;
                                     }
-                                    return;
+
+                                    match choice {
+                                        ConflictChoice::Cancel => {
+                                            cancellable.cancel();
+                                            s.input(AppMsg::TaskCompleted(task_id));
+                                            let count =
+                                                completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                                            if count == total_files {
+                                                s.input(AppMsg::Refresh);
+                                            }
+                                            return;
+                                        }
+                                        ConflictChoice::Skip => {
+                                            s.input(AppMsg::TaskCompleted(task_id));
+                                            let count =
+                                                completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
+                                            if count == total_files {
+                                                s.input(AppMsg::Refresh);
+                                            }
+                                            return;
+                                        }
+                                        ConflictChoice::AutoRename => {
+                                            auto_rename_dest(&dest_initial)
+                                        }
+                                        ConflictChoice::Replace => dest_initial.clone(),
+                                    }
                                 }
-                                ConflictChoice::AutoRename => auto_rename_dest(&dest_initial),
-                                ConflictChoice::Replace => dest_initial.clone(),
                             }
                         }
                     }
