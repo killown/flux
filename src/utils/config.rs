@@ -1,7 +1,6 @@
 use crate::model::CustomAction;
 use crate::model::MenuEntry;
 use crate::ui::constants;
-use crate::utils::media::probe_media_duration;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
@@ -1140,36 +1139,23 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         return None;
     }
 
-    let (cache_dir, cache_path) = thumbnail_cache_path(path)?;
+    let is_pdf_file = is_pdf(path);
+    let is_font_file = !is_pdf_file && is_font(path);
+    let (is_img, is_vid) = if !is_pdf_file && !is_font_file {
+        is_visual_media(path)
+    } else {
+        (false, false)
+    };
 
-    // Don't even check the cache if the type is disabled - this prevents
-    // the function from returning cached thumbnails when the type is disabled
-    // Check PDF first before is_visual_media
-    if is_pdf(path) {
+    if is_pdf_file {
         if !config.ui.thumbnail_types.pdfs {
             return None;
         }
-        let cache_p = cache_path.clone();
-        let path_p = path.to_path_buf();
-        return tokio::task::spawn_blocking(move || pdf_thumbnail(&path_p, &cache_p))
-            .await
-            .ok()?;
-    }
-
-    if is_font(path) {
+    } else if is_font_file {
         if !config.ui.thumbnail_types.fonts {
             return None;
         }
-        let cache_p = cache_path.clone();
-        let path_p = path.to_path_buf();
-        return tokio::task::spawn_blocking(move || font_thumbnail(&path_p, &cache_p))
-            .await
-            .ok()?;
-    }
-
-    let (is_img, is_vid) = is_visual_media(path);
-
-    if is_img {
+    } else if is_img {
         if !config.ui.thumbnail_types.images {
             return None;
         }
@@ -1182,11 +1168,10 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         return None;
     }
 
-    tokio::fs::create_dir_all(&cache_dir).await.ok()?;
+    let (cache_dir, cache_path) = thumbnail_cache_path(path)?;
 
+    // Fast-path: Check persistent thumbnail cache before any decoding or rendering
     let source_meta = tokio::fs::metadata(path).await.ok();
-
-    // Only check cache if the type is enabled
     if cache_path.exists() {
         let is_valid = source_meta
             .as_ref()
@@ -1194,11 +1179,31 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .unwrap_or(true);
 
         if is_valid {
-            let file = adw::gio::File::for_path(&cache_path);
-            return gdk::Texture::from_file(&file).ok();
+            if let Ok(bytes) = tokio::fs::read(&cache_path).await {
+                let glib_bytes = glib::Bytes::from(&bytes);
+                return gdk::Texture::from_bytes(&glib_bytes).ok();
+            }
         }
-
         let _ = tokio::fs::remove_file(&cache_path).await;
+    }
+
+    tokio::fs::create_dir_all(&cache_dir).await.ok()?;
+
+    // ── 2. Thumbnail Generation ───────────────────────────────────────────────
+    if is_pdf_file {
+        let cache_p = cache_path.clone();
+        let path_p = path.to_path_buf();
+        return tokio::task::spawn_blocking(move || pdf_thumbnail(&path_p, &cache_p))
+            .await
+            .ok()?;
+    }
+
+    if is_font_file {
+        let cache_p = cache_path.clone();
+        let path_p = path.to_path_buf();
+        return tokio::task::spawn_blocking(move || font_thumbnail(&path_p, &cache_p))
+            .await
+            .ok()?;
     }
 
     if is_img {
@@ -1225,41 +1230,55 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     }
 
     if is_vid {
-        // Compute a sensible seek time using the video duration.
-        let seek_time = if let Some(dur) = probe_media_duration(path).await {
-            let dur_secs = dur.as_secs_f64();
-            if dur_secs >= 60.0 {
-                60.0 // at least 1 minute for long videos
-            } else if dur_secs >= 1.0 {
-                (dur_secs * 0.1).max(1.0) // 10% but at least 1s
-            } else {
-                0.0
-            }
+        // Helper closure to run ffmpeg with a given seek offset
+        async fn try_ffmpeg(
+            path: &Path,
+            cache_path: &Path,
+            seek: &str,
+        ) -> std::process::ExitStatus {
+            tokio::process::Command::new("ffmpeg")
+                .arg("-y")
+                .arg("-loglevel")
+                .arg("panic")
+                .arg("-noautorotate")
+                .arg("-ss")
+                .arg(seek)
+                .arg("-i")
+                .arg(path)
+                .arg("-an")
+                .arg("-threads")
+                .arg("1")
+                .arg("-vframes")
+                .arg("1")
+                .arg("-vf")
+                .arg(format!(
+                    "scale={}:-1:force_original_aspect_ratio=decrease",
+                    constants::CACHED_THUMBNAIL_SIZE
+                ))
+                .arg(cache_path)
+                .status()
+                .await
+                .unwrap_or_else(|_| std::process::Command::new("false").status().unwrap())
+        }
+
+        // Try seeking at 5.0s first (skips intros/black frames on long videos)
+        let mut success = false;
+        let status = try_ffmpeg(path, &cache_path, "5.000").await;
+        if status.success() && cache_path.exists() {
+            success = true;
         } else {
-            1.0 // fallback if duration cannot be probed
-        };
+            // Fallback for short videos (< 5 seconds): retry from the very beginning
+            let fallback_status = try_ffmpeg(path, &cache_path, "0.000").await;
+            if fallback_status.success() && cache_path.exists() {
+                success = true;
+            }
+        }
 
-        let seek_arg = format!("{:.3}", seek_time); // ffmpeg accepts e.g. "10.500"
-
-        let status = tokio::process::Command::new("ffmpeg")
-            .arg("-y")
-            .arg("-loglevel")
-            .arg("panic")
-            .arg("-i")
-            .arg(path)
-            .arg("-ss")
-            .arg(&seek_arg) // use the computed time
-            .arg("-vframes")
-            .arg("1")
-            .arg("-vf")
-            .arg(format!("scale={}:-1", constants::CACHED_THUMBNAIL_SIZE))
-            .arg(&cache_path)
-            .status()
-            .await;
-
-        if matches!(status, Ok(s) if s.success() && cache_path.exists()) {
-            let file = adw::gio::File::for_path(&cache_path);
-            return gdk::Texture::from_file(&file).ok();
+        if success {
+            if let Ok(bytes) = tokio::fs::read(&cache_path).await {
+                let glib_bytes = glib::Bytes::from(&bytes);
+                return gdk::Texture::from_bytes(&glib_bytes).ok();
+            }
         }
     }
 

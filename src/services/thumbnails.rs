@@ -1,10 +1,10 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::services::constants;
 use crate::utils;
+use futures::stream::{self, StreamExt};
 use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 
 impl FluxApp {
     pub fn spawn_thumbnail_loader(
@@ -19,36 +19,26 @@ impl FluxApp {
             return;
         }
 
-        // Use Arc<Semaphore> to share across tasks
-        let semaphore = Arc::new(tokio::sync::Semaphore::new(
-            constants::MAX_THUMBNAIL_THREADS,
-        ));
-
         relm4::spawn(async move {
-            let mut handles = Vec::new();
+            // Process tasks with bounded concurrency to eliminate task churn
+            stream::iter(media_tasks)
+                .map(|(grid_idx, media_path)| {
+                    let inner_sender = sender.clone();
+                    let inner_session = session_arc.clone();
+                    let session_id = current_session;
 
-            for (grid_idx, media_path) in media_tasks {
-                if session_arc.load(Ordering::Acquire) != current_session {
-                    break;
-                }
+                    async move {
+                        if inner_session.load(Ordering::Acquire) != session_id {
+                            return;
+                        }
 
-                let sem_clone = semaphore.clone();
-                let inner_sender = sender.clone();
-                let inner_session = session_arc.clone();
-                let session_id = current_session;
-                let task_path = media_path.clone();
+                        let texture = utils::get_or_create_thumbnail(&media_path).await;
 
-                let handle = tokio::spawn(async move {
-                    let _permit = sem_clone.acquire().await.unwrap();
+                        if inner_session.load(Ordering::Acquire) != session_id {
+                            return;
+                        }
 
-                    let texture = utils::get_or_create_thumbnail(&task_path).await;
-
-                    if inner_session.load(Ordering::Acquire) != session_id {
-                        return;
-                    }
-
-                    if let Some(texture) = texture {
-                        if inner_session.load(Ordering::Acquire) == session_id {
+                        if let Some(texture) = texture {
                             inner_sender.input(AppMsg::ThumbnailReady {
                                 grid_idx,
                                 texture,
@@ -56,18 +46,14 @@ impl FluxApp {
                             });
                         }
                     }
-                });
-
-                handles.push(handle);
-            }
-
-            for handle in handles {
-                if session_arc.load(Ordering::Acquire) != current_session {
-                    handle.abort();
-                    break;
-                }
-                let _ = handle.await;
-            }
+                })
+                .buffer_unordered(constants::MAX_THUMBNAIL_THREADS)
+                .take_while(|_| {
+                    let active = session_arc.load(Ordering::Acquire) == current_session;
+                    async move { active }
+                })
+                .collect::<Vec<()>>()
+                .await;
         });
     }
 }
