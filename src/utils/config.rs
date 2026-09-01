@@ -7,6 +7,8 @@ use adw::prelude::*;
 use gtk::gdk_pixbuf;
 use gtk::gio;
 use gtk::glib;
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
 use std::io::{Read, Write};
@@ -14,6 +16,10 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::model::TerminalConfig;
+
+thread_local! {
+    static THEMED_ICON_CACHE: RefCell<HashMap<String, adw::gio::Icon>> = RefCell::new(HashMap::new());
+}
 
 pub fn ensure_config_file() -> PathBuf {
     let config_dir = dirs::config_dir()
@@ -520,7 +526,15 @@ pub fn get_icon_for_path_with_override(
         ct.to_string()
     };
 
-    adw::gio::content_type_get_icon(&content_type)
+    THEMED_ICON_CACHE.with(|cache| {
+        let mut map = cache.borrow_mut();
+        if let Some(icon) = map.get(&content_type) {
+            return icon.clone();
+        }
+        let icon = adw::gio::content_type_get_icon(&content_type);
+        map.insert(content_type, icon.clone());
+        icon
+    })
 }
 
 pub fn get_mime_type(path: &Path) -> String {

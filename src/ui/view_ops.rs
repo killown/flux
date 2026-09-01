@@ -338,11 +338,19 @@ impl FluxApp {
                     .map(|w| w.borrow().grid_idx == grid_idx)
                     .unwrap_or(false)
             }) {
-                if let Some(wrapper) = self.files.get(pos) {
+                let target_path = if let Some(wrapper) = self.files.get(pos) {
                     let mut item = wrapper.borrow().clone();
-                    item.thumbnail = Some(texture);
+                    item.thumbnail = Some(texture.clone());
+                    let path = item.path.clone();
                     self.files.remove(pos);
                     self.files.insert(pos, item);
+                    path
+                } else {
+                    return;
+                };
+
+                if let Some(cached) = self.folder_cache.get_mut(&self.current_path) {
+                    cached.thumbnails.insert(target_path, texture);
                 }
             }
         }

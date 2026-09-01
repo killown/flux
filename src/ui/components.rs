@@ -297,7 +297,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             },
 
                             // 3. Enter key handling
-                            connect_activate[sender = crate::model::SENDER.clone(), root] => move |entry| {
+                            connect_activate[sender = crate::model::SENDER.clone(), #[weak] root] => move |entry| {
                                 if let Some(s) = sender.get() {
                                     let old_path_opt: Option<PathBuf> = unsafe {
                                         root
@@ -515,9 +515,20 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
-    fn unbind(&mut self, _widgets: &mut Self::Widgets, root: &mut Self::Root) {
+    fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
+        widgets.icon_widget.clear();
+        widgets
+            .drag_source
+            .set_content(None::<&gdk::ContentProvider>);
+        widgets.drag_source.set_icon(None::<&gdk::Paintable>, 0, 0);
+        widgets.label.set_text("");
+        widgets.info_label.set_text("");
+        widgets.entry.set_text("");
+        *self.active_path.borrow_mut() = None;
         unsafe {
-            root.set_data("lazy_thumb_requested", u32::MAX);
+            let _ = root.steal_data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell");
+            let _ = root.steal_data::<u32>("lazy_thumb_requested");
+            let _ = root.steal_data::<u32>("grid_item_index");
         }
     }
 }
