@@ -1142,15 +1142,12 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         (false, false)
     };
 
-    if is_pdf_file && !config.ui.thumbnail_types.pdfs {
-        return None;
-    } else if is_font_file && !config.ui.thumbnail_types.fonts {
-        return None;
-    } else if is_img && !config.ui.thumbnail_types.images {
-        return None;
-    } else if is_vid && !config.ui.thumbnail_types.videos {
-        return None;
-    } else if !is_pdf_file && !is_font_file && !is_img && !is_vid {
+    let is_supported = (is_pdf_file && config.ui.thumbnail_types.pdfs)
+        || (is_font_file && config.ui.thumbnail_types.fonts)
+        || (is_img && config.ui.thumbnail_types.images)
+        || (is_vid && config.ui.thumbnail_types.videos);
+
+    if !is_supported {
         return None;
     }
 
