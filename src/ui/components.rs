@@ -41,6 +41,12 @@ pub struct FileItem {
     // In the FileItem struct, add after `is_custom_icon`:
     /// Unix timestamp of the last modification time, `0` when unavailable.
     pub mtime: i64,
+    /// Position of this item in the grid model.
+    ///
+    /// Set at construction time in `loader.rs` and read by `bind()` to dispatch
+    /// lazy thumbnail requests without relying on widget-data that may not yet
+    /// be populated.
+    pub grid_idx: u32,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -503,6 +509,14 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         // Store a clone of the Rc in the widget data so gestures can access the cell
         unsafe {
             root.set_data("active_path_cell", self.active_path.clone());
+        }
+    }
+
+    /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
+    /// recycled widget cell can request its own thumbnail without being suppressed.
+    fn unbind(&mut self, _widgets: &mut Self::Widgets, root: &mut Self::Root) {
+        unsafe {
+            root.set_data("lazy_thumb_requested", u32::MAX);
         }
     }
 }

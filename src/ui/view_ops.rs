@@ -332,11 +332,72 @@ impl FluxApp {
     /// Receives generated thumbnail textures and updates grid items.
     pub fn handle_thumbnail_ready(&mut self, grid_idx: u32, texture: gdk::Texture, load_id: u64) {
         if load_id == self.load_id.load(Ordering::SeqCst) {
-            if let Some(item_wrapper) = self.files.get(grid_idx) {
-                let mut item = item_wrapper.borrow().clone();
-                item.thumbnail = Some(texture);
-                self.files.remove(grid_idx);
-                self.files.insert(grid_idx, item);
+            if let Some(pos) = (0..self.files.len()).find(|&i| {
+                self.files
+                    .get(i)
+                    .map(|w| w.borrow().grid_idx == grid_idx)
+                    .unwrap_or(false)
+            }) {
+                if let Some(wrapper) = self.files.get(pos) {
+                    let mut item = wrapper.borrow().clone();
+                    item.thumbnail = Some(texture);
+                    self.files.remove(pos);
+                    self.files.insert(pos, item);
+                }
+            }
+        }
+    }
+
+    pub fn check_visible_thumbnails(&mut self, sender: &AsyncComponentSender<Self>) {
+        if !self.config.ui.lazy_thumbnails || self.files.is_empty() {
+            return;
+        }
+
+        let total_items = self.files.len() as usize;
+        let current_session = self.load_id.load(std::sync::atomic::Ordering::SeqCst);
+
+        let vadj = self.files.view.vadjustment();
+        let (val, page_size, upper, lower) = match vadj {
+            Some(ref adj) => (adj.value(), adj.page_size(), adj.upper(), adj.lower()),
+            None => (0.0, 1.0, 1.0, 0.0),
+        };
+
+        let max_scroll = (upper - page_size).max(0.0);
+        let current_idx = if max_scroll > 0.0 {
+            let progress = ((val - lower) / max_scroll).clamp(0.0, 1.0);
+            (progress * (total_items.saturating_sub(1) as f64)).round() as usize
+        } else {
+            0
+        };
+
+        let last_idx = self.last_thumb_scroll_idx;
+        self.last_thumb_scroll_idx = current_idx;
+
+        let window_size = 60usize.min(total_items);
+        let min_pos = current_idx.min(last_idx).saturating_sub(window_size / 2);
+        let max_pos = (current_idx.max(last_idx) + window_size).min(total_items);
+
+        for i in min_pos..max_pos {
+            if let Some(wrapper) = self.files.get(i as u32) {
+                let item = wrapper.borrow();
+                let grid_idx = item.grid_idx;
+
+                if self.pending_thumbnails.contains(&grid_idx) {
+                    continue;
+                }
+
+                if !item.is_dir && item.thumbnail.is_none() {
+                    let (is_img, is_vid) = utils::is_visual_media(&item.path);
+                    if is_img || is_vid {
+                        self.pending_thumbnails.insert(grid_idx);
+                        self.spawn_single_thumbnail(
+                            grid_idx,
+                            item.path.clone(),
+                            current_session,
+                            sender.clone(),
+                        );
+                    }
+                }
             }
         }
     }
@@ -378,5 +439,27 @@ impl FluxApp {
         }
 
         self.selection_status.push_str(&format!(" - {}", mime));
+    }
+
+    /// Handles an on-demand thumbnail request dispatched by `FileItem::bind`.
+    ///
+    /// Only active when `config.ui.lazy_thumbnails` is `true`.  Guards against
+    /// duplicate jobs using `pending_thumbnails`: the first `bind()` call for a
+    /// given `grid_idx` in the current session inserts it into the set and
+    /// spawns exactly one background worker, subsequent calls for the same index
+    /// (widget recycling, re-bind during scroll) are no-ops.
+    pub fn handle_request_thumbnail(
+        &mut self,
+        grid_idx: u32,
+        path: std::path::PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let current_session = self.load_id.load(std::sync::atomic::Ordering::SeqCst);
+
+        if !self.pending_thumbnails.insert(grid_idx) {
+            return;
+        }
+
+        self.spawn_single_thumbnail(grid_idx, path, current_session, sender.clone());
     }
 }

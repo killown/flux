@@ -325,6 +325,10 @@ pub struct UIConfig {
     /// or disable previews for specific file categories independently.
     #[serde(default)]
     pub thumbnail_types: ThumbnailTypes,
+    /// Generate thumbnails only for items scrolled into the viewport instead of
+    /// loading all of them eagerly when a directory is opened.
+    #[serde(default)]
+    pub lazy_thumbnails: bool,
 }
 
 impl Default for UIConfig {
@@ -360,6 +364,7 @@ impl Default for UIConfig {
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
             max_content_search_results: crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
+            lazy_thumbnails: false,
         }
     }
 }
@@ -403,6 +408,8 @@ impl Default for TerminalConfig {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// The last thumbnail index that was scrolled into view
+    pub last_thumb_scroll_idx: usize,
     /// In-session undo/redo history for file operations.
     pub file_op_history: crate::ui::undo_redo::FileOpHistory,
     /// Handle to the active command output dialog, if open.
@@ -458,6 +465,9 @@ pub struct FluxApp {
     pub forward_stack: Vec<PathBuf>,
     /// Monotonically increasing ID to synchronize asynchronous thumbnail/file loading.
     pub load_id: Arc<AtomicU64>,
+    /// Grid indices for which a lazy thumbnail request has already been dispatched in
+    /// the current session.
+    pub pending_thumbnails: std::collections::HashSet<u32>,
     /// Flag indicating the search interface was just initialized to trigger focus.
     pub search_just_opened: bool,
     /// Current pixel size of the grid item icons.
@@ -535,6 +545,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the lazy thumbnail generation setting.
+    SetLazyThumbnails(bool),
+    /// Check for visible thumbnails in the current viewport and request generation for any missing ones
+    CheckVisibleThumbnails,
     /// Delivers background-enumerated system and network mounts to update the sidebar.
     SystemMountsReady(Vec<(String, std::path::PathBuf)>),
     ///Custom icons appear a frame after the directory renders
@@ -989,6 +1003,12 @@ pub enum AppMsg {
     ThumbnailReady {
         grid_idx: u32,
         texture: gdk::Texture,
+        load_id: u64,
+    },
+    /// Requests on-demand thumbnail generation for a single visible item.
+    RequestThumbnail {
+        grid_idx: u32,
+        path: std::path::PathBuf,
         load_id: u64,
     },
     /// Switch the header bar between path, entry, and search modes.

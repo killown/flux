@@ -28,6 +28,11 @@ impl FluxApp {
         crate::utils::save_config(&self.config);
     }
 
+    pub fn handle_set_lazy_thumbnails(&mut self, val: bool) {
+        self.config.ui.lazy_thumbnails = val;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_set_asc(&mut self, asc: bool, sender: &relm4::AsyncComponentSender<Self>) {
         self.sort_ascending = asc;
         let sort_col = match self.sort_by {

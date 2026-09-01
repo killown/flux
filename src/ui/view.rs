@@ -515,6 +515,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_hscrollbar_policy: gtk::PolicyType::Automatic,
                                         set_vscrollbar_policy: gtk::PolicyType::Automatic,
                                         set_propagate_natural_width: false,
+
                                         /// Scroll event controller for UI zooming (Ctrl + Scroll).
                                         add_controller = gtk::EventControllerScroll {
                                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -771,6 +772,12 @@ impl SimpleAsyncComponent for FluxApp {
         model.header_path_entry = widgets.header_path_entry.downgrade();
 
         widgets.grid_scroller.set_child(Some(&model.files.view));
+
+        let vadj = widgets.grid_scroller.vadjustment();
+        let s_vadj = sender.clone();
+        vadj.connect_value_changed(move |_| {
+            s_vadj.input(AppMsg::CheckVisibleThumbnails);
+        });
 
         let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
         if model.sidebar.widget().parent().is_none() {

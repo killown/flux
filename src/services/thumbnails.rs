@@ -56,4 +56,47 @@ impl FluxApp {
                 .await;
         });
     }
+
+    /// Spawns a background worker to generate (or cache-hit) the thumbnail for a
+    /// single grid item on demand.
+    ///
+    /// Used exclusively by the lazy-thumbnail path (`config.ui.lazy_thumbnails = true`).
+    /// Mirrors the session-invalidation and XDG-cache semantics of
+    /// [`Self::spawn_thumbnail_loader`] so that:
+    ///
+    /// * A stale result from a superseded navigation session is silently discarded.
+    /// * XDG FreeDesktop thumbnail caches (`~/.cache/thumbnails/`) are consulted
+    ///   first by `utils::get_or_create_thumbnail`, keeping cache hits fast.
+    /// * Concurrency is naturally bounded: each call is one tokio task, the
+    ///   `pending_thumbnails` guard in `handle_request_thumbnail` ensures only one
+    ///   task per grid index is ever live.
+    pub fn spawn_single_thumbnail(
+        &self,
+        grid_idx: u32,
+        media_path: PathBuf,
+        current_session: u64,
+        sender: AsyncComponentSender<Self>,
+    ) {
+        let session_arc = self.load_id.clone();
+
+        relm4::spawn(async move {
+            if session_arc.load(Ordering::Acquire) != current_session {
+                return;
+            }
+
+            let texture = utils::get_or_create_thumbnail(&media_path).await;
+
+            if session_arc.load(Ordering::Acquire) != current_session {
+                return;
+            }
+
+            if let Some(texture) = texture {
+                sender.input(AppMsg::ThumbnailReady {
+                    grid_idx,
+                    texture,
+                    load_id: current_session,
+                });
+            }
+        });
+    }
 }

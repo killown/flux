@@ -317,6 +317,20 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Lazy Thumbnails"),
+                        set_subtitle: &tr("Generate thumbnails only for items in view"),
+                        set_sensitive: model.config.ui.show_thumbnails,
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.lazy_thumbnails && model.config.ui.show_thumbnails,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetLazyThumbnails(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Images"),
                         set_subtitle: &tr("PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"),
                         set_sensitive: model.config.ui.show_thumbnails,
