@@ -179,11 +179,27 @@ impl FluxApp {
     }
 
     pub fn handle_reset_file_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        self.config
-            .ui
-            .file_icons
-            .remove(&path.to_string_lossy().to_string());
+        let path_str = path.to_string_lossy().to_string();
+        self.config.ui.file_icons.remove(&path_str);
         utils::save_config(&self.config);
+
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(parent);
+        }
+        self.folder_cache.remove(&path);
+
+        // Live-update matching grid items instantly back to default
+        let default_icon = utils::get_icon_for_path(&path, false);
+        for i in 0..self.files.len() {
+            if let Some(wrapper) = self.files.get(i) {
+                let mut item = wrapper.borrow().clone();
+                if item.path == path {
+                    item.icon = default_icon.clone();
+                    item.is_custom_icon = false;
+                    *wrapper.borrow_mut() = item;
+                }
+            }
+        }
         sender.input(AppMsg::Refresh);
     }
 
