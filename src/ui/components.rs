@@ -47,6 +47,10 @@ pub struct FileItem {
     /// lazy thumbnail requests without relying on widget-data that may not yet
     /// be populated.
     pub grid_idx: u32,
+    /// Cached from config at construction time - avoids a config.toml read per bind() call.
+    pub max_width_chars: i32,
+    /// Cached from config at construction time - avoids a config.toml read per bind() call.
+    pub grid_spacing: i32,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -88,10 +92,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Sets up drag-and-drop functionality and mouse gesture listeners for
     /// context menu interaction.
     fn setup(_item: &gtk::ListItem) -> (Self::Root, Self::Widgets) {
+        let config = utils::load_config();
         let drag_source = gtk::DragSource::builder()
             .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
             .build();
-        let config = utils::load_config();
 
         drag_source.connect_drag_begin(|src, _| {
             if let Some(widget) = src.widget() {
@@ -259,8 +263,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             #[name = "label"]
                             gtk::Label {
                                 set_justify: gtk::Justification::Center,
-                                set_max_width_chars: config.ui.max_width_chars,
-                                set_width_chars: config.ui.grid_spacing,
                                 set_ellipsize: gtk::pango::EllipsizeMode::End,
                                 set_hexpand: false,
                                 add_css_class: constants::FLUX_LABEL_CLASS,
@@ -407,7 +409,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             }
         } else {
-            let config = utils::load_config();
             root.set_orientation(gtk::Orientation::Vertical);
             root.set_halign(gtk::Align::Center);
             root.set_spacing(0);
@@ -417,8 +418,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label.set_halign(gtk::Align::Center);
             widgets.label.set_hexpand(false);
             widgets.label.set_justify(gtk::Justification::Center);
-            widgets.label.set_max_width_chars(config.ui.max_width_chars);
-            widgets.label.set_width_chars(config.ui.grid_spacing);
+            widgets.label.set_max_width_chars(self.max_width_chars);
+            widgets.label.set_width_chars(self.grid_spacing);
 
             if self.expand_labels {
                 widgets.label.set_wrap(true);

@@ -584,8 +584,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_halign: gtk::Align::Center,
                                         set_valign: gtk::Align::Center,
                                         set_size_request: (48, 48),
-                                        #[watch]
-                                        set_spinning: model.is_loading,
+                                        set_spinning: true,
                                         #[watch]
                                         set_visible: model.is_loading,
                                     },
