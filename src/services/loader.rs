@@ -36,6 +36,7 @@ fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
 }
 
 /// Returns the path to use as thumbnail source, giving priority to custom icon.
+#[allow(dead_code)]
 pub fn resolve_thumb_source(ctx: &FileLoadContext) -> Option<PathBuf> {
     ctx.custom_icon
         .as_ref()
@@ -163,7 +164,7 @@ impl FluxApp {
             let raw_entries: Vec<(String, bool)> = if is_trash {
                 let root_bg = gio::File::for_uri(&path_clone.to_string_lossy());
                 if let Ok(enumerator) = root_bg.enumerate_children(
-                    "standard::name,standard::type",
+                    "standard::name,standard::type,standard::size",
                     gio::FileQueryInfoFlags::NONE,
                     gio::Cancellable::NONE,
                 ) {
@@ -183,11 +184,10 @@ impl FluxApp {
                 match std::fs::read_dir(&path_clone) {
                     Ok(read_dir) => read_dir
                         .flatten()
-                        .filter_map(|entry| {
+                        .map(|entry| {
                             let name = entry.file_name().to_string_lossy().to_string();
-                            // file_type() uses d_type directly, avoiding a stat() syscall
                             let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
-                            Some((name, is_dir))
+                            (name, is_dir)
                         })
                         .collect(),
                     Err(_) => Vec::new(),
