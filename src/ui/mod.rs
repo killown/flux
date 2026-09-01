@@ -84,7 +84,7 @@ pub mod constants {
     pub const MAX_HISTORY: usize = 100;
 
     // Thumbnails
-    pub const CACHED_THUMBNAIL_SIZE: i32 = 512;
+    pub const CACHED_THUMBNAIL_SIZE: i32 = 256;
 
     // Layout Constraints
     pub const SCROLLED_WINDOW_MIN_WIDTH: i32 = 480;

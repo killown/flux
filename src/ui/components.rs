@@ -510,6 +510,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         // Store a clone of the Rc in the widget data so gestures can access the cell
         unsafe {
             root.set_data("active_path_cell", self.active_path.clone());
+            root.set_data("grid_item_index", self.grid_idx);
         }
     }
 

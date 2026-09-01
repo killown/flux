@@ -149,11 +149,32 @@ impl FluxApp {
         image_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
-        self.config.ui.file_icons.insert(
-            path.to_string_lossy().to_string(),
-            image_path.to_string_lossy().to_string(),
-        );
+        let path_str = path.to_string_lossy().to_string();
+        self.config
+            .ui
+            .file_icons
+            .insert(path_str.clone(), image_path.to_string_lossy().to_string());
         utils::save_config(&self.config);
+
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(parent);
+        }
+        self.folder_cache.remove(&path);
+
+        // Live-update matching grid items instantly
+        let new_icon = gtk::gio::Icon::for_string(&image_path.to_string_lossy())
+            .unwrap_or_else(|_| utils::get_icon_for_path(&path, false));
+
+        for i in 0..self.files.len() {
+            if let Some(wrapper) = self.files.get(i) {
+                let mut item = wrapper.borrow().clone();
+                if item.path == path {
+                    item.icon = new_icon.clone();
+                    item.is_custom_icon = true;
+                    *wrapper.borrow_mut() = item;
+                }
+            }
+        }
         sender.input(AppMsg::Refresh);
     }
 
