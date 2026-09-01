@@ -790,8 +790,25 @@ impl FluxApp {
         let new_items_len = items.len();
         let current_files_len = self.files.len() as usize;
 
+        let config_file_icons = &self.config.ui.file_icons;
+        let config_folder_icons = &self.config.ui.folder_icons;
+
         for (grid_idx, item) in items.into_iter().enumerate() {
-            let icon = if let Some(ref custom) = item.custom_icon {
+            let custom_icon = config_file_icons
+                .get(&item.target_path.to_string_lossy().to_string())
+                .cloned()
+                .or_else(|| {
+                    if item.is_dir {
+                        config_folder_icons
+                            .get(&item.target_path.to_string_lossy().to_string())
+                            .cloned()
+                    } else {
+                        None
+                    }
+                })
+                .or(item.custom_icon);
+
+            let icon = if let Some(ref custom) = custom_icon {
                 gtk::gio::Icon::for_string(custom)
                     .unwrap_or_else(|_| utils::get_icon_for_path(&item.target_path, item.is_dir))
             } else {
@@ -819,7 +836,7 @@ impl FluxApp {
                 is_foreign_owner: item.is_foreign_owner,
                 expand_labels: item.expand_labels,
                 is_list_mode,
-                is_custom_icon: item.custom_icon.is_some(),
+                is_custom_icon: custom_icon.is_some(),
                 active_path: Rc::new(RefCell::new(None)),
                 grid_idx: grid_idx as u32,
                 max_width_chars,
