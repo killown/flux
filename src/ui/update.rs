@@ -262,6 +262,14 @@ impl FluxApp {
             }
 
             // Navigation & Quick List
+            AppMsg::FolderLoaded {
+                path,
+                load_id,
+                items,
+                media_tasks,
+            } => {
+                self.handle_folder_loaded(path, load_id, items, media_tasks, &sender);
+            }
             AppMsg::Navigate(path) => self.handle_navigate(path, &sender),
             AppMsg::GoBack => self.handle_go_back(&sender),
             AppMsg::GoForward => self.handle_go_forward(&sender),

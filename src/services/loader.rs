@@ -66,18 +66,28 @@ impl FluxApp {
         self.is_loading = true;
         let path_str = path.to_string_lossy().to_string();
 
-        // Network URIs must go through load_network, gio::File::for_path and
-        // std::fs have no URI awareness and will silently produce an empty listing.
+        // ── Virtual / special paths - delegate and return immediately ────────────
         if crate::services::network::is_network_uri(&path) {
             self.current_path = path.clone();
             self.load_network(&path_str, None, sender.clone());
             return;
         }
+        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            if let Some((archive_path, prefix)) =
+                crate::services::archive::parse_archive_uri(&path_str)
+            {
+                self.current_path = path;
+                self.load_archive(archive_path, prefix, None, sender);
+            }
+            return;
+        }
+        if path_str.starts_with("recent:///") {
+            self.load_recents(sender);
+            return;
+        }
 
-        self.directory_monitor = None;
+        // ── Persistent per-folder view state ─────────────────────────────────────
         let mut folders_first = self.config.ui.folders_first;
-
-        // Load persistent folder state from SQLite before scanning
         if let Ok(Some((sort, rev, size, ff))) = self.state_db.get_view(&path) {
             self.sort_by = match sort.as_str() {
                 "Date" => SortBy::Date,
@@ -94,21 +104,8 @@ impl FluxApp {
             self.current_icon_size = self.config.ui.default_icon_size;
         }
 
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-            if let Some((archive_path, prefix)) =
-                crate::services::archive::parse_archive_uri(&path_str)
-            {
-                self.current_path = path;
-                self.load_archive(archive_path, prefix, None, sender);
-            }
-            return;
-        }
-
-        if path_str.starts_with("recent:///") {
-            self.load_recents(sender);
-            return;
-        }
-
+        // ── Folder monitor ────────────────────────────────────────────────────────
+        self.directory_monitor = None;
         let root = if path_str.starts_with("trash://") {
             gio::File::for_uri(&path_str)
         } else {
@@ -147,53 +144,63 @@ impl FluxApp {
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
 
-        let attributes =
-            "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
+        let show_hidden = self.show_hidden;
+        let sort_strategy = self.sort_by;
+        let sort_ascending = self.sort_ascending;
+        let is_trash = path_str.starts_with("trash://");
+        let config_folder_icons = self.state_db.load_folder_icons();
+        self.config.ui.folder_icons = config_folder_icons.clone();
+        let config_file_icons = self.config.ui.file_icons.clone();
+        let extension_globset = self.extension_globset.clone();
+        let expand_labels = self.config.ui.expand_labels;
+        let filter = self.filter.clone();
+        let path_clone = path.clone();
+        let sender_clone = sender.clone();
 
-        if let Ok(enumerator) = root.enumerate_children(
-            attributes,
-            gio::FileQueryInfoFlags::NONE,
-            gio::Cancellable::NONE,
-        ) {
-            let raw_data: Vec<(String, String, bool, u64, i64, u32)> = enumerator
-                .flatten()
-                .map(|info| {
-                    (
-                        info.name().to_string_lossy().to_string(),
-                        info.display_name().to_string(),
-                        info.file_type() == gio::FileType::Directory,
-                        info.size() as u64,
-                        info.modification_date_time()
-                            .map(|dt| dt.to_unix())
-                            .unwrap_or(0),
-                        info.attribute_uint32("unix::uid"),
-                    )
-                })
-                .collect();
+        // ── Fast asynchronous item loader ─────────────────────────────────────────
+        relm4::spawn_blocking(move || {
+            // Fast directory reading without individual stat() calls per file
+            let raw_entries: Vec<(String, bool)> = if is_trash {
+                let root_bg = gio::File::for_uri(&path_clone.to_string_lossy());
+                if let Ok(enumerator) = root_bg.enumerate_children(
+                    "standard::name,standard::type",
+                    gio::FileQueryInfoFlags::NONE,
+                    gio::Cancellable::NONE,
+                ) {
+                    enumerator
+                        .flatten()
+                        .map(|info| {
+                            (
+                                info.name().to_string_lossy().to_string(),
+                                info.file_type() == gio::FileType::Directory,
+                            )
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                }
+            } else {
+                match std::fs::read_dir(&path_clone) {
+                    Ok(read_dir) => read_dir
+                        .flatten()
+                        .filter_map(|entry| {
+                            let name = entry.file_name().to_string_lossy().to_string();
+                            // file_type() uses d_type directly, avoiding a stat() syscall
+                            let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
+                            Some((name, is_dir))
+                        })
+                        .collect(),
+                    Err(_) => Vec::new(),
+                }
+            };
 
-            let show_hidden = self.show_hidden;
-            let sort_strategy = self.sort_by;
-            let sort_ascending = self.sort_ascending;
-            let is_trash = path_str.starts_with("trash://");
-
-            let current_uid: u32 = unsafe { libc::getuid() };
-
-            // Load folder icons from DB once per directory navigate (single SELECT,
-            // no TOML involved) and keep file_icons from the in-memory config.
-            let config_folder_icons = self.state_db.load_folder_icons();
-            // Keep the in-memory cache in sync so callers that read config still work.
-            self.config.ui.folder_icons = config_folder_icons.clone();
-            let config_file_icons = self.config.ui.file_icons.clone();
-            let extension_globset = self.extension_globset.clone();
-
-            let mut items: Vec<FileLoadContext> = raw_data
+            let mut items: Vec<FileLoadContext> = raw_entries
                 .into_par_iter()
-                .filter_map(|(name, display_name, is_dir, size, mtime, uid)| {
+                .filter_map(|(name, is_dir)| {
                     if !show_hidden && name.starts_with('.') {
                         return None;
                     }
 
-                    // Session-scoped glob filter, directories always pass through.
                     if !is_dir {
                         if let Some(ref gs) = extension_globset {
                             if !gs.is_match(name.to_lowercase()) {
@@ -203,9 +210,9 @@ impl FluxApp {
                     }
 
                     let target_path = if is_trash {
-                        PathBuf::from(root.child(&name).uri())
+                        PathBuf::from(format!("trash:///{}", name))
                     } else {
-                        path.join(&name)
+                        path_clone.join(&name)
                     };
 
                     let mut thumbnail_path = None;
@@ -216,15 +223,11 @@ impl FluxApp {
                         }
                     }
 
-                    // Short-circuit entirely when both maps are empty (the common case),
-                    // avoiding a heap allocation and hash lookup for every directory entry.
                     let custom_icon = if config_file_icons.is_empty()
                         && (!is_dir || config_folder_icons.is_empty())
                     {
                         None
                     } else {
-                        // Use to_str() to borrow the path as &str without allocating a String.
-                        // Falls back to an owned String only when the path is not valid UTF-8.
                         let path_key = target_path.to_str();
                         path_key.and_then(|k| {
                             config_file_icons.get(k).cloned().or_else(|| {
@@ -237,8 +240,8 @@ impl FluxApp {
                         })
                     };
 
-                    let sort_name = display_name.to_lowercase();
-                    let sort_ext = std::path::Path::new(&display_name)
+                    let sort_name = name.to_lowercase();
+                    let sort_ext = std::path::Path::new(&name)
                         .extension()
                         .and_then(|e| e.to_str())
                         .map(|e| e.to_ascii_lowercase())
@@ -247,57 +250,25 @@ impl FluxApp {
                     Some(FileLoadContext {
                         sort_name,
                         sort_ext,
-                        display_name,
+                        display_name: name,
                         target_path,
-                        size,
-                        mtime,
+                        size: 0,
+                        mtime: 0,
                         is_dir,
                         thumbnail_path,
-                        is_foreign_owner: !is_trash && uid != current_uid,
-                        expand_labels: self.config.ui.expand_labels,
+                        is_foreign_owner: false,
+                        expand_labels,
                         custom_icon,
                     })
                 })
                 .collect();
 
-            if !self.filter.is_empty() {
-                let query = self.filter.to_lowercase();
-                if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query) {
-                    let rest_clean = rest.trim().to_lowercase();
-                    items.retain(|item| {
-                        let name_match =
-                            rest_clean.is_empty() || item.sort_name.contains(&rest_clean);
-                        if !name_match {
-                            return false;
-                        }
-                        let file_tags = crate::utils::xattr::read_tags(&item.target_path);
-                        let file_tags_lc: Vec<String> =
-                            file_tags.into_iter().map(|t| t.to_lowercase()).collect();
-                        tags.iter().all(|req| file_tags_lc.contains(req))
-                    });
-                } else if let Some((op, rest)) = crate::utils::search::parse_size_filter(&query) {
-                    let rest_clean = rest.trim().to_lowercase();
-                    items.retain(|item| {
-                        let name_match =
-                            rest_clean.is_empty() || item.sort_name.contains(&rest_clean);
-                        let size_match = if item.is_dir {
-                            true
-                        } else {
-                            match op {
-                                crate::utils::search::SizeOp::Gt(v) => item.size > v,
-                                crate::utils::search::SizeOp::Lt(v) => item.size < v,
-                                crate::utils::search::SizeOp::Range(l, r) => {
-                                    item.size >= l && item.size <= r
-                                }
-                            }
-                        };
-                        name_match && size_match
-                    });
-                } else {
-                    items.retain(|item| item.sort_name.contains(&query));
-                }
+            if !filter.is_empty() {
+                let query = filter.to_lowercase();
+                items.retain(|item| item.sort_name.contains(&query));
             }
 
+            // Parallel sort
             items.par_sort_unstable_by(move |a, b| {
                 if a.is_dir != b.is_dir {
                     return if folders_first {
@@ -308,10 +279,8 @@ impl FluxApp {
                 }
 
                 let primary_order = match sort_strategy {
-                    SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                    SortBy::Size => a.size.cmp(&b.size),
-                    SortBy::Date => a.mtime.cmp(&b.mtime),
                     SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
+                    _ => a.sort_name.cmp(&b.sort_name),
                 };
 
                 let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
@@ -327,58 +296,29 @@ impl FluxApp {
                 }
             });
 
-            let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
-            for (grid_idx, item) in (self.files.len()..).zip(items) {
-                let icon = if let Some(ref custom) = item.custom_icon {
-                    gtk::gio::Icon::for_string(custom).unwrap_or_else(|_| {
-                        utils::get_icon_for_path(&item.target_path, item.is_dir)
-                    })
-                } else {
-                    utils::get_icon_for_path(&item.target_path, item.is_dir)
-                };
+            let media_tasks: Vec<(u32, PathBuf)> = items
+                .iter()
+                .enumerate()
+                .filter_map(|(i, item)| {
+                    if item.is_dir {
+                        return None;
+                    }
+                    let source = item
+                        .custom_icon
+                        .as_ref()
+                        .map(PathBuf::from)
+                        .or_else(|| item.thumbnail_path.clone())?;
+                    Some((i as u32, source))
+                })
+                .collect();
 
-                // Resolve thumbnail source before `item` is partially moved into FileItem.
-                // Covers: visual-media files, file-level custom image overrides, and
-                // directory-level custom image overrides (bypasses GTK icon name limit).
-                let thumb_source = resolve_thumb_source(&item);
-
-                self.files.append(FileItem {
-                    name: item.display_name.clone(),
-                    icon,
-                    thumbnail: None,
-                    is_dir: item.is_dir,
-                    path: item.target_path.clone(),
-                    icon_size: if self.is_list_mode {
-                        self.current_list_icon_size
-                    } else {
-                        self.current_icon_size
-                    },
-                    size: item.size,
-                    mtime: item.mtime,
-                    is_editing: false,
-                    is_foreign_owner: item.is_foreign_owner,
-                    expand_labels: item.expand_labels,
-                    is_list_mode: self.is_list_mode,
-                    is_custom_icon: item.custom_icon.is_some(),
-                    active_path: Rc::new(RefCell::new(None)),
-                    grid_idx,
-                });
-
-                if let Some(abs_path) = thumb_source {
-                    media_tasks.push((grid_idx, abs_path));
-                }
-            }
-
-            self.current_path = path;
-
-            if !self.config.ui.lazy_thumbnails {
-                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
-            } else {
-                sender.input(AppMsg::CheckVisibleThumbnails);
-            }
-        }
-
-        self.is_loading = false;
+            sender_clone.input(AppMsg::FolderLoaded {
+                path: path_clone,
+                load_id: current_session,
+                items,
+                media_tasks,
+            });
+        });
     }
 
     /// Asynchronously lists a network location via GVFS and dispatches the result.
@@ -603,6 +543,8 @@ impl FluxApp {
                         is_custom_icon: false,
                         active_path: Rc::new(RefCell::new(None)),
                         grid_idx,
+                        max_width_chars: self.config.ui.max_width_chars,
+                        grid_spacing: self.config.ui.grid_spacing,
                     });
                 }
 
@@ -725,6 +667,8 @@ impl FluxApp {
                 is_custom_icon: false,
                 active_path: Rc::new(RefCell::new(None)),
                 grid_idx: grid_idx as u32,
+                max_width_chars: self.config.ui.max_width_chars,
+                grid_spacing: self.config.ui.grid_spacing,
             });
         }
 
@@ -753,5 +697,80 @@ impl FluxApp {
         let rest = &tag[start..];
         let end = rest.find('"')?;
         Some(rest[..end].to_owned())
+    }
+
+    /// Applies a completed off-thread folder enumeration to the live UI grid.
+    ///
+    /// Called exclusively from the GTK main thread via `AppMsg::FolderLoaded`.
+    /// All I/O and CPU work has already been done in `load_path`'s
+    /// `spawn_blocking` closure, this method only mutates model state and
+    /// appends pre-built `FileItem` values to the `TypedGridView` store.
+    ///
+    /// Stale results from superseded navigation sessions are discarded via the
+    /// `load_id` guard before touching any shared state.
+    pub fn handle_folder_loaded(
+        &mut self,
+        path: PathBuf,
+        load_id: u64,
+        items: Vec<FileLoadContext>,
+        media_tasks: Vec<(u32, PathBuf)>,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if load_id != self.load_id.load(Ordering::SeqCst) {
+            return;
+        }
+
+        self.files.clear();
+
+        let max_width_chars = self.config.ui.max_width_chars;
+        let grid_spacing = self.config.ui.grid_spacing;
+        let is_list_mode = self.is_list_mode;
+        let list_icon_size = self.current_list_icon_size;
+        let grid_icon_size = self.current_icon_size;
+
+        let file_items = items.into_iter().enumerate().map(|(grid_idx, item)| {
+            let icon = if let Some(ref custom) = item.custom_icon {
+                gtk::gio::Icon::for_string(custom)
+                    .unwrap_or_else(|_| utils::get_icon_for_path(&item.target_path, item.is_dir))
+            } else {
+                utils::get_icon_for_path(&item.target_path, item.is_dir)
+            };
+
+            FileItem {
+                name: item.display_name,
+                icon,
+                thumbnail: None,
+                is_dir: item.is_dir,
+                path: item.target_path,
+                icon_size: if is_list_mode {
+                    list_icon_size
+                } else {
+                    grid_icon_size
+                },
+                size: item.size,
+                mtime: item.mtime,
+                is_editing: false,
+                is_foreign_owner: item.is_foreign_owner,
+                expand_labels: item.expand_labels,
+                is_list_mode,
+                is_custom_icon: item.custom_icon.is_some(),
+                active_path: Rc::new(RefCell::new(None)),
+                grid_idx: grid_idx as u32,
+                max_width_chars,
+                grid_spacing,
+            }
+        });
+
+        self.files.extend_from_iter(file_items);
+
+        self.current_path = path;
+        self.update_breadcrumbs();
+        self.is_loading = false;
+
+        if !self.config.ui.lazy_thumbnails {
+            self.spawn_thumbnail_loader(media_tasks, load_id, sender.clone());
+        } else {
+            sender.input(AppMsg::CheckVisibleThumbnails);
+        }
     }
 }

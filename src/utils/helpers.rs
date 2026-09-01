@@ -928,6 +928,8 @@ impl FluxApp {
                 is_custom_icon: false,
                 active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
                 grid_idx: self.files.len(),
+                max_width_chars: self.config.ui.max_width_chars,
+                grid_spacing: self.config.ui.grid_spacing,
             });
         }
     }

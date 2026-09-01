@@ -1112,13 +1112,9 @@ pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
 pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let path_str = path.to_string_lossy();
 
-    // ── 0. Virtual Archive Resolution ──────────────────────────────────────────
-    // If this is an archive URI, extract the single file to a temp file first,
-    // then recursively run thumbnailing on the temp file.
     if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
         if let Some((archive_path, inner)) = crate::services::archive::parse_archive_uri(&path_str)
         {
-            // Extract the media file to /tmp using cached password (if any)
             let tmp_file = tokio::task::spawn_blocking(move || {
                 crate::services::archive::extract_entry_to_tempfile(&archive_path, &inner, None)
             })
@@ -1127,14 +1123,12 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .ok()?;
 
             let texture = Box::pin(get_or_create_thumbnail(tmp_file.path())).await;
-            tmp_file.keep().ok(); // Retain temporary file for OS cleanup
+            tmp_file.keep().ok();
             return texture;
         }
         return None;
     }
 
-    // ── 1. Config & Validation Checks ──────────────────────────────────────────
-    // Load config once and check if thumbnails are enabled at all
     let config = load_config();
     if !config.ui.show_thumbnails {
         return None;
@@ -1148,30 +1142,21 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         (false, false)
     };
 
-    if is_pdf_file {
-        if !config.ui.thumbnail_types.pdfs {
-            return None;
-        }
-    } else if is_font_file {
-        if !config.ui.thumbnail_types.fonts {
-            return None;
-        }
-    } else if is_img {
-        if !config.ui.thumbnail_types.images {
-            return None;
-        }
-    } else if is_vid {
-        if !config.ui.thumbnail_types.videos {
-            return None;
-        }
-    } else {
-        // Not a supported thumbnail type
+    if is_pdf_file && !config.ui.thumbnail_types.pdfs {
+        return None;
+    } else if is_font_file && !config.ui.thumbnail_types.fonts {
+        return None;
+    } else if is_img && !config.ui.thumbnail_types.images {
+        return None;
+    } else if is_vid && !config.ui.thumbnail_types.videos {
+        return None;
+    } else if !is_pdf_file && !is_font_file && !is_img && !is_vid {
         return None;
     }
 
     let (cache_dir, cache_path) = thumbnail_cache_path(path)?;
 
-    // Fast-path: Check persistent thumbnail cache before any decoding or rendering
+    // ── 1. Cache Check with Auto-Eviction of Corrupted Files ─────────────────
     let source_meta = tokio::fs::metadata(path).await.ok();
     if cache_path.exists() {
         let is_valid = source_meta
@@ -1182,7 +1167,9 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         if is_valid {
             if let Ok(bytes) = tokio::fs::read(&cache_path).await {
                 let glib_bytes = glib::Bytes::from(&bytes);
-                return gdk::Texture::from_bytes(&glib_bytes).ok();
+                if let Ok(texture) = gdk::Texture::from_bytes(&glib_bytes) {
+                    return Some(texture);
+                }
             }
         }
         let _ = tokio::fs::remove_file(&cache_path).await;
@@ -1190,7 +1177,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     tokio::fs::create_dir_all(&cache_dir).await.ok()?;
 
-    // ── 2. Thumbnail Generation ───────────────────────────────────────────────
+    // ── 2. Generation via Atomic Temp File ────────────────────────────────────
     if is_pdf_file {
         let cache_p = cache_path.clone();
         let path_p = path.to_path_buf();
@@ -1210,33 +1197,47 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     if is_img {
         let path_buf = path.to_path_buf();
         let cache_p = cache_path.clone();
+        let cache_d = cache_dir.clone();
+
         return tokio::task::spawn_blocking(move || {
-            match gdk_pixbuf::Pixbuf::from_file_at_scale(
+            let pixbuf = gdk_pixbuf::Pixbuf::from_file_at_scale(
                 &path_buf,
                 constants::CACHED_THUMBNAIL_SIZE,
                 constants::CACHED_THUMBNAIL_SIZE,
                 true,
-            ) {
-                Ok(pixbuf) => {
-                    if let Some(path_str) = cache_p.to_str() {
-                        let _ = pixbuf.savev(path_str, "png", &[]);
-                    }
-                    Some(gdk::Texture::for_pixbuf(&pixbuf))
+            )
+            .ok()?;
+
+            let pid = std::process::id();
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0);
+            let tmp_path = cache_d.join(format!(".tmp.{pid}.{nanos}.png"));
+
+            if let Some(tmp_str) = tmp_path.to_str() {
+                if pixbuf.savev(tmp_str, "png", &[]).is_ok() {
+                    let _ = std::fs::rename(&tmp_path, &cache_p);
+                } else {
+                    let _ = std::fs::remove_file(&tmp_path);
                 }
-                Err(_) => None,
             }
+
+            Some(gdk::Texture::for_pixbuf(&pixbuf))
         })
         .await
         .ok()?;
     }
 
     if is_vid {
-        // Helper closure to run ffmpeg with a given seek offset
-        async fn try_ffmpeg(
-            path: &Path,
-            cache_path: &Path,
-            seek: &str,
-        ) -> std::process::ExitStatus {
+        let pid = std::process::id();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let tmp_path = cache_dir.join(format!(".tmp.{pid}.{nanos}.png"));
+
+        async fn try_ffmpeg(path: &Path, out_path: &Path, seek: &str) -> bool {
             tokio::process::Command::new("ffmpeg")
                 .arg("-y")
                 .arg("-loglevel")
@@ -1256,30 +1257,26 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                     "scale={}:-1:force_original_aspect_ratio=decrease",
                     constants::CACHED_THUMBNAIL_SIZE
                 ))
-                .arg(cache_path)
+                .arg(out_path)
                 .status()
                 .await
-                .unwrap_or_else(|_| std::process::Command::new("false").status().unwrap())
+                .map(|s| s.success())
+                .unwrap_or(false)
         }
 
-        // Try seeking at 5.0s first (skips intros/black frames on long videos)
-        let mut success = false;
-        let status = try_ffmpeg(path, &cache_path, "5.000").await;
-        if status.success() && cache_path.exists() {
-            success = true;
-        } else {
-            // Fallback for short videos (< 5 seconds): retry from the very beginning
-            let fallback_status = try_ffmpeg(path, &cache_path, "0.000").await;
-            if fallback_status.success() && cache_path.exists() {
-                success = true;
-            }
+        let mut success = try_ffmpeg(path, &tmp_path, "5.000").await;
+        if !success || !tmp_path.exists() {
+            success = try_ffmpeg(path, &tmp_path, "0.000").await;
         }
 
-        if success {
+        if success && tmp_path.exists() {
+            let _ = tokio::fs::rename(&tmp_path, &cache_path).await;
             if let Ok(bytes) = tokio::fs::read(&cache_path).await {
                 let glib_bytes = glib::Bytes::from(&bytes);
                 return gdk::Texture::from_bytes(&glib_bytes).ok();
             }
+        } else {
+            let _ = tokio::fs::remove_file(&tmp_path).await;
         }
     }
 

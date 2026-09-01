@@ -788,6 +788,19 @@ pub enum AppMsg {
         uri: String,
         contexts: Vec<crate::model::FileLoadContext>,
     },
+    /// Carries the result of an async, off-thread folder enumeration back to
+    /// the main loop so the grid can be populated without blocking the GTK thread.
+    FolderLoaded {
+        /// The path that was enumerated, used to guard against stale navigations.
+        path: PathBuf,
+        /// The session ID from `load_id` at the time navigation was initiated.
+        /// Results whose `load_id` differs from the current counter are discarded.
+        load_id: u64,
+        /// Fully processed, filtered, and sorted file contexts ready for the grid.
+        items: Vec<FileLoadContext>,
+        /// Visual-media paths collected for thumbnail dispatch.
+        media_tasks: Vec<(u32, PathBuf)>,
+    },
     /// Navigate to the `network:///` GIO location that lists visible network neighbours.
     NavigateNetwork,
 
