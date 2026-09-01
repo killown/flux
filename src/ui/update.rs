@@ -13,6 +13,7 @@ impl FluxApp {
         }
         self.is_content_searching = false;
         self.load_id.fetch_add(1, Ordering::SeqCst);
+        self.pending_thumbnails.clear();
         self.filter.clear();
         self.search_just_opened = false;
         self.is_list_mode = self.saved_list_mode;
@@ -313,11 +314,22 @@ impl FluxApp {
             AppMsg::CycleSort => self.handle_cycle_sort(&sender),
             AppMsg::CycleFolderPriority => self.handle_cycle_folder_priority(&sender),
             AppMsg::Zoom(delta) => self.handle_zoom(delta),
+            AppMsg::CheckVisibleThumbnails => {
+                self.check_visible_thumbnails(&sender);
+            }
             AppMsg::ThumbnailReady {
                 grid_idx,
                 texture,
                 load_id,
             } => self.handle_thumbnail_ready(grid_idx, texture, load_id),
+            AppMsg::SetLazyThumbnails(val) => {
+                self.handle_set_lazy_thumbnails(val);
+            }
+            AppMsg::RequestThumbnail {
+                grid_idx,
+                path,
+                load_id: _,
+            } => self.handle_request_thumbnail(grid_idx, path, &sender),
             AppMsg::MediaDurationReady(maybe_duration) => {
                 self.handle_media_duration_ready(maybe_duration)
             }

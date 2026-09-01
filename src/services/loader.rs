@@ -145,6 +145,7 @@ impl FluxApp {
 
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        self.pending_thumbnails.clear();
 
         let attributes =
             "standard::name,standard::display-name,standard::type,standard::size,time::modified,unix::uid";
@@ -360,6 +361,7 @@ impl FluxApp {
                     is_list_mode: self.is_list_mode,
                     is_custom_icon: item.custom_icon.is_some(),
                     active_path: Rc::new(RefCell::new(None)),
+                    grid_idx,
                 });
 
                 if let Some(abs_path) = thumb_source {
@@ -369,7 +371,11 @@ impl FluxApp {
 
             self.current_path = path;
 
-            self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+            if !self.config.ui.lazy_thumbnails {
+                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+            } else {
+                sender.input(AppMsg::CheckVisibleThumbnails);
+            }
         }
 
         self.is_loading = false;
@@ -448,6 +454,7 @@ impl FluxApp {
         // Bump the session counter and capture the resulting ID so the
         // spawned closure can stamp the message it will later dispatch.
         let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        self.pending_thumbnails.clear();
 
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
@@ -595,11 +602,17 @@ impl FluxApp {
                         is_list_mode: self.is_list_mode,
                         is_custom_icon: false,
                         active_path: Rc::new(RefCell::new(None)),
+                        grid_idx,
                     });
                 }
 
                 self.update_breadcrumbs();
-                self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+
+                if !self.config.ui.lazy_thumbnails {
+                    self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+                } else {
+                    sender.input(AppMsg::CheckVisibleThumbnails);
+                }
             }
         }
     }
@@ -617,6 +630,7 @@ impl FluxApp {
         self.directory_monitor = None;
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        self.pending_thumbnails.clear();
         self.current_path = std::path::PathBuf::from(crate::ui::constants::RECENT_URI);
 
         let xbel_path = dirs::data_local_dir()
@@ -661,7 +675,7 @@ impl FluxApp {
         let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
         let extension_globset = self.extension_globset.clone();
 
-        for (_ts, href) in entries {
+        for (grid_idx, (_ts, href)) in entries.into_iter().enumerate() {
             let gfile = gio::File::for_uri(&href);
             let Some(path) = gfile.path() else { continue };
             if !path.exists() {
@@ -710,11 +724,17 @@ impl FluxApp {
                 is_list_mode: self.is_list_mode,
                 is_custom_icon: false,
                 active_path: Rc::new(RefCell::new(None)),
+                grid_idx: grid_idx as u32,
             });
         }
 
         self.update_breadcrumbs();
-        self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+
+        if !self.config.ui.lazy_thumbnails {
+            self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+        } else {
+            sender.input(AppMsg::CheckVisibleThumbnails);
+        }
         self.is_loading = false;
     }
 

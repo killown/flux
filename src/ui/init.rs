@@ -285,6 +285,8 @@ impl FluxApp {
             header_path_entry: glib::WeakRef::new(),
             conflict_dialog_active: false,
             file_op_history: crate::ui::undo_redo::FileOpHistory::new(),
+            pending_thumbnails: std::collections::HashSet::new(),
+            last_thumb_scroll_idx: 0,
         };
 
         // 7.5 Apply initial list/grid mode to the view

@@ -1626,3 +1626,11 @@ msgstr "Filtrar por Tag"
 #: src/ui/advanced_search.rs:114
 msgid "File name"
 msgstr "Nome do arquivo"
+
+#: src/ui/settings.rs:???
+msgid "Lazy Thumbnails"
+msgstr "Miniaturas Sob Demanda"
+
+#: src/ui/settings.rs:???
+msgid "Generate thumbnails only for items in view"
+msgstr "Gerar miniaturas apenas para itens visíveis"

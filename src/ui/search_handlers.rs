@@ -163,6 +163,7 @@ impl FluxApp {
                     is_list_mode: self.is_list_mode,
                     is_custom_icon: false,
                     active_path: Rc::new(RefCell::new(None)),
+                    grid_idx,
                 });
                 grid_idx += 1;
             }
@@ -303,6 +304,7 @@ impl FluxApp {
             is_list_mode: true,
             is_custom_icon: false,
             active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
+            grid_idx: self.files.len(),
         });
     }
 

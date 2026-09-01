@@ -927,6 +927,7 @@ impl FluxApp {
                 is_list_mode: true,
                 is_custom_icon: false,
                 active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
+                grid_idx: self.files.len(),
             });
         }
     }
