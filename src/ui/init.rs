@@ -287,6 +287,7 @@ impl FluxApp {
             file_op_history: crate::ui::undo_redo::FileOpHistory::new(),
             pending_thumbnails: std::collections::HashSet::new(),
             last_thumb_scroll_idx: 0,
+            folder_cache: std::collections::HashMap::with_capacity(32),
         };
 
         // 7.5 Apply initial list/grid mode to the view

@@ -405,9 +405,20 @@ impl Default for TerminalConfig {
     }
 }
 
+/// Cached session data for a visited directory to avoid reloading items on revisit.
+#[derive(Debug, Clone)]
+pub struct CachedFolder {
+    pub items: Vec<FileLoadContext>,
+    pub media_tasks: Vec<(u32, PathBuf)>,
+    pub thumbnails: std::collections::HashMap<PathBuf, gdk::Texture>,
+    pub last_visited: std::time::Instant,
+}
+
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// In-memory folder session cache mapped by directory path.
+    pub folder_cache: std::collections::HashMap<PathBuf, CachedFolder>,
     /// The last thumbnail index that was scrolled into view
     pub last_thumb_scroll_idx: usize,
     /// In-session undo/redo history for file operations.

@@ -106,7 +106,9 @@ impl FluxApp {
         }
 
         // ── Folder monitor ────────────────────────────────────────────────────────
-        self.directory_monitor = None;
+        if let Some(old_mon) = self.directory_monitor.take() {
+            old_mon.cancel();
+        }
         let root = if path_str.starts_with("trash://") {
             gio::File::for_uri(&path_str)
         } else {
@@ -141,7 +143,6 @@ impl FluxApp {
             self.directory_monitor = Some(monitor);
         }
 
-        self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
 
@@ -157,6 +158,28 @@ impl FluxApp {
         let filter = self.filter.clone();
         let path_clone = path.clone();
         let sender_clone = sender.clone();
+
+        if !is_trash
+            && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+            && filter.is_empty()
+            && extension_globset.is_none()
+        {
+            if let Some(cached) = self.folder_cache.get_mut(&path) {
+                cached.last_visited = std::time::Instant::now();
+                let cached_items = cached.items.clone();
+                let cached_media = cached.media_tasks.clone();
+                self.handle_folder_loaded(
+                    path,
+                    current_session,
+                    cached_items,
+                    cached_media,
+                    sender,
+                );
+                return;
+            }
+        }
+
+        self.files.clear();
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
@@ -388,7 +411,9 @@ impl FluxApp {
         mut password: Option<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
-        self.directory_monitor = None;
+        if let Some(old_mon) = self.directory_monitor.take() {
+            old_mon.cancel();
+        }
         self.files.clear();
         self.is_loading = true;
         // Bump the session counter and capture the resulting ID so the
@@ -569,7 +594,9 @@ impl FluxApp {
     /// * `sender` - Component handle used to dispatch lifecycle updates.
     pub fn load_recents(&mut self, sender: &AsyncComponentSender<Self>) {
         self.is_loading = true;
-        self.directory_monitor = None;
+        if let Some(old_mon) = self.directory_monitor.take() {
+            old_mon.cancel();
+        }
         self.files.clear();
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
@@ -720,7 +747,37 @@ impl FluxApp {
             return;
         }
 
-        self.files.clear();
+        let is_cached = self.folder_cache.contains_key(&path);
+
+        if !path.to_string_lossy().starts_with("trash://")
+            && !path
+                .to_string_lossy()
+                .starts_with(crate::services::archive::ARCHIVE_URI)
+            && self.filter.is_empty()
+            && self.extension_globset.is_none()
+            && !is_cached
+        {
+            if self.folder_cache.len() >= 10 {
+                if let Some(oldest) = self
+                    .folder_cache
+                    .iter()
+                    .min_by_key(|(_, v)| v.last_visited)
+                    .map(|(k, _)| k.clone())
+                {
+                    self.folder_cache.remove(&oldest);
+                }
+            }
+
+            self.folder_cache.insert(
+                path.clone(),
+                crate::model::CachedFolder {
+                    items: items.clone(),
+                    media_tasks: media_tasks.clone(),
+                    thumbnails: std::collections::HashMap::new(),
+                    last_visited: std::time::Instant::now(),
+                },
+            );
+        }
 
         let max_width_chars = self.config.ui.max_width_chars;
         let grid_spacing = self.config.ui.grid_spacing;
@@ -728,7 +785,12 @@ impl FluxApp {
         let list_icon_size = self.current_list_icon_size;
         let grid_icon_size = self.current_icon_size;
 
-        let file_items = items.into_iter().enumerate().map(|(grid_idx, item)| {
+        let cached_thumbs = self.folder_cache.get(&path).map(|c| &c.thumbnails);
+
+        let new_items_len = items.len();
+        let current_files_len = self.files.len() as usize;
+
+        for (grid_idx, item) in items.into_iter().enumerate() {
             let icon = if let Some(ref custom) = item.custom_icon {
                 gtk::gio::Icon::for_string(custom)
                     .unwrap_or_else(|_| utils::get_icon_for_path(&item.target_path, item.is_dir))
@@ -736,10 +798,14 @@ impl FluxApp {
                 utils::get_icon_for_path(&item.target_path, item.is_dir)
             };
 
-            FileItem {
+            let thumbnail = cached_thumbs
+                .and_then(|m| m.get(&item.target_path))
+                .cloned();
+
+            let file_item = FileItem {
                 name: item.display_name,
                 icon,
-                thumbnail: None,
+                thumbnail,
                 is_dir: item.is_dir,
                 path: item.target_path,
                 icon_size: if is_list_mode {
@@ -758,19 +824,35 @@ impl FluxApp {
                 grid_idx: grid_idx as u32,
                 max_width_chars,
                 grid_spacing,
+            };
+
+            if (grid_idx as u32) < self.files.len() {
+                if let Some(wrapper) = self.files.get(grid_idx as u32) {
+                    *wrapper.borrow_mut() = file_item;
+                }
+            } else {
+                self.files.append(file_item);
             }
-        });
+        }
 
-        self.files.extend_from_iter(file_items);
+        if current_files_len > new_items_len {
+            for _ in new_items_len..current_files_len {
+                if self.files.len() > 0 {
+                    self.files.remove(self.files.len() - 1);
+                }
+            }
+        }
 
-        self.current_path = path;
+        self.current_path = path.clone();
         self.update_breadcrumbs();
         self.is_loading = false;
 
-        if !self.config.ui.lazy_thumbnails {
-            self.spawn_thumbnail_loader(media_tasks, load_id, sender.clone());
-        } else {
-            sender.input(AppMsg::CheckVisibleThumbnails);
+        if !is_cached {
+            if !self.config.ui.lazy_thumbnails {
+                self.spawn_thumbnail_loader(media_tasks, load_id, sender.clone());
+            } else {
+                sender.input(AppMsg::CheckVisibleThumbnails);
+            }
         }
     }
 }
