@@ -844,7 +844,7 @@ fn pdf_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
     );
 
     if let Some(path_str) = cache_path.to_str() {
-        let _ = pixbuf.savev(path_str, "png", &[]);
+        let _ = pixbuf.savev(path_str, "png", &[("compression", "9")]);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))
@@ -1075,7 +1075,7 @@ fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
     );
 
     if let Some(path_str) = cache_path.to_str() {
-        let _ = pixbuf.savev(path_str, "png", &[]);
+        let _ = pixbuf.savev(path_str, "png", &[("compression", "9")]);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))
@@ -1230,12 +1230,18 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     // ── 1. Cache Check with Auto-Eviction of Corrupted Files ─────────────────
     let source_meta = tokio::fs::metadata(path).await.ok();
     if cache_path.exists() {
+        if let Ok(meta) = tokio::fs::metadata(&cache_path).await {
+            if meta.len() > 1024 * 1024 {
+                let _ = tokio::fs::remove_file(&cache_path).await;
+            }
+        }
+
         let is_valid = source_meta
             .as_ref()
             .map(|m| thumbnail_is_valid(&cache_path, m))
             .unwrap_or(true);
 
-        if is_valid {
+        if is_valid && cache_path.exists() {
             if let Ok(bytes) = tokio::fs::read(&cache_path).await {
                 let glib_bytes = glib::Bytes::from(&bytes);
                 if let Ok(texture) = gdk::Texture::from_bytes(&glib_bytes) {
@@ -1271,13 +1277,17 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         let cache_d = cache_dir.clone();
 
         return tokio::task::spawn_blocking(move || {
-            let pixbuf = gdk_pixbuf::Pixbuf::from_file_at_scale(
-                &path_buf,
-                constants::CACHED_THUMBNAIL_SIZE,
-                constants::CACHED_THUMBNAIL_SIZE,
-                true,
-            )
-            .ok()?;
+            let max_dim = constants::CACHED_THUMBNAIL_SIZE;
+            let pixbuf =
+                gdk_pixbuf::Pixbuf::from_file_at_scale(&path_buf, max_dim, max_dim, true).ok()?;
+
+            let width = pixbuf.width();
+            let height = pixbuf.height();
+            let pixbuf = if width > max_dim || height > max_dim {
+                pixbuf.scale_simple(max_dim, max_dim, gdk_pixbuf::InterpType::Bilinear)?
+            } else {
+                pixbuf
+            };
 
             let pid = std::process::id();
             let nanos = std::time::SystemTime::now()
@@ -1287,7 +1297,10 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             let tmp_path = cache_d.join(format!(".tmp.{pid}.{nanos}.png"));
 
             if let Some(tmp_str) = tmp_path.to_str() {
-                if pixbuf.savev(tmp_str, "png", &[]).is_ok() {
+                if pixbuf
+                    .savev(tmp_str, "png", &[("compression", "9")])
+                    .is_ok()
+                {
                     let _ = std::fs::rename(&tmp_path, &cache_p);
                 } else {
                     let _ = std::fs::remove_file(&tmp_path);

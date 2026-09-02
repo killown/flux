@@ -9,6 +9,7 @@ use adw::prelude::*;
 use chrono::TimeZone;
 use gtk::gio;
 use gtk::glib;
+use gtk::glib::clone;
 use relm4::prelude::*;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -471,10 +472,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
             // Defer focus grab to next main loop iteration so the widget
             // is fully realized after the stack transition completes.
-            let entry = widgets.entry.clone();
-            gtk::glib::idle_add_local_once(move || {
-                entry.grab_focus();
-            });
+            gtk::glib::idle_add_local_once(clone!(
+                #[weak(rename_to = entry)]
+                widgets.entry,
+                move || {
+                    entry.grab_focus();
+                }
+            ));
         } else {
             // Ensure the label is visible when not editing.
             widgets.stack.set_visible_child_name(constants::VIEW_LABEL);
