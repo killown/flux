@@ -28,6 +28,7 @@ impl FluxApp {
         crate::utils::save_config(&self.config);
     }
 
+    // WARNING: lazy load mode will not work properly with custom icons
     pub fn handle_set_lazy_thumbnails(&mut self, val: bool) {
         self.config.ui.lazy_thumbnails = val;
         utils::save_config(&self.config);

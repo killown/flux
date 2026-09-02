@@ -64,6 +64,9 @@ impl FluxApp {
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        unsafe {
+            libc::malloc_trim(0);
+        }
         self.is_loading = true;
         let path_str = path.to_string_lossy().to_string();
 
@@ -184,8 +187,6 @@ impl FluxApp {
                 return;
             }
         }
-
-        self.files.clear();
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
@@ -763,7 +764,7 @@ impl FluxApp {
             && self.extension_globset.is_none()
             && !is_cached
         {
-            if self.folder_cache.len() >= 10 {
+            if self.folder_cache.len() >= 3 {
                 if let Some(oldest) = self
                     .folder_cache
                     .iter()
@@ -771,6 +772,9 @@ impl FluxApp {
                     .map(|(k, _)| k.clone())
                 {
                     self.folder_cache.remove(&oldest);
+                    unsafe {
+                        libc::malloc_trim(0);
+                    }
                 }
             }
 
@@ -793,10 +797,11 @@ impl FluxApp {
 
         let cached_thumbs = self.folder_cache.get(&path).map(|c| &c.thumbnails);
 
+        let new_items_len = items.len();
+        let current_files_len = self.files.len() as usize;
+
         let config_file_icons = &self.config.ui.file_icons;
         let config_folder_icons = &self.config.ui.folder_icons;
-
-        self.files.clear();
 
         for (grid_idx, item) in items.into_iter().enumerate() {
             let custom_icon = config_file_icons
@@ -848,12 +853,30 @@ impl FluxApp {
                 grid_spacing,
             };
 
-            self.files.append(file_item);
+            if (grid_idx as u32) < self.files.len() {
+                if let Some(wrapper) = self.files.get(grid_idx as u32) {
+                    *wrapper.borrow_mut() = file_item;
+                }
+            } else {
+                self.files.append(file_item);
+            }
+        }
+
+        if current_files_len > new_items_len {
+            for _ in new_items_len..current_files_len {
+                if !self.files.is_empty() {
+                    self.files.remove(self.files.len() - 1);
+                }
+            }
         }
 
         self.current_path = path.clone();
         self.update_breadcrumbs();
         self.is_loading = false;
+
+        unsafe {
+            libc::malloc_trim(0);
+        }
 
         if !is_cached {
             if !self.config.ui.lazy_thumbnails {
