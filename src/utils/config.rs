@@ -7,6 +7,7 @@ use adw::prelude::*;
 use gtk::gdk_pixbuf;
 use gtk::gio;
 use gtk::glib;
+use oxipng::{Options, StripChunks};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -737,6 +738,14 @@ pub fn open_file(path: PathBuf) {
     }
 }
 
+/// Optimizes raw PNG bytes in-place using oxipng.
+fn optimize_png_bytes(bytes: &[u8]) -> Vec<u8> {
+    let mut opts = Options::from_preset(2);
+    opts.strip = StripChunks::All;
+
+    oxipng::optimize_from_memory(bytes, &opts).unwrap_or_else(|_| bytes.to_vec())
+}
+
 /// Resolves the FreeDesktop-compliant thumbnail cache path for a given source file.
 ///
 /// Implements §2 of the [Thumbnail Managing Standard] by computing an MD5 digest
@@ -843,8 +852,9 @@ fn pdf_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
         stride,
     );
 
-    if let Some(path_str) = cache_path.to_str() {
-        let _ = pixbuf.savev(path_str, "png", &[("compression", "9")]);
+    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
+        let optimized = optimize_png_bytes(&buffer);
+        let _ = std::fs::write(cache_path, optimized);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))
@@ -1074,8 +1084,9 @@ fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
         stride,
     );
 
-    if let Some(path_str) = cache_path.to_str() {
-        let _ = pixbuf.savev(path_str, "png", &[("compression", "9")]);
+    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
+        let optimized = optimize_png_bytes(&buffer);
+        let _ = std::fs::write(cache_path, optimized);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))
@@ -1295,11 +1306,9 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .unwrap_or(0);
             let tmp_path = cache_d.join(format!(".tmp.{pid}.{nanos}.png"));
 
-            if let Some(tmp_str) = tmp_path.to_str() {
-                if pixbuf
-                    .savev(tmp_str, "png", &[("compression", "9")])
-                    .is_ok()
-                {
+            if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
+                let optimized = optimize_png_bytes(&buffer);
+                if std::fs::write(&tmp_path, optimized).is_ok() {
                     let _ = std::fs::rename(&tmp_path, &cache_p);
                 } else {
                     let _ = std::fs::remove_file(&tmp_path);
@@ -1355,6 +1364,11 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         }
 
         if success && tmp_path.exists() {
+            if let Ok(raw_png) = tokio::fs::read(&tmp_path).await {
+                let optimized = optimize_png_bytes(&raw_png);
+                let _ = tokio::fs::write(&tmp_path, optimized).await;
+            }
+
             let _ = tokio::fs::rename(&tmp_path, &cache_path).await;
             if let Ok(bytes) = tokio::fs::read(&cache_path).await {
                 let glib_bytes = glib::Bytes::from(&bytes);

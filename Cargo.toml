@@ -60,6 +60,7 @@ ignore = "0.4.33"
 memmap2 = "0.9"
 aho-corasick = "1.1.5"
 parking_lot = "0.12.5"
+oxipng = { version = "10.2.0", default-features = false, features = ["parallel"] }
 
 [dev-dependencies]
 tempfile = "3"
