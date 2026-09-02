@@ -163,14 +163,17 @@ impl FluxApp {
                             if let Some(orig) = orig_path {
                                 if paths.iter().any(|p| p.to_string_lossy() == orig) {
                                     let trash_item = trash_root.child(child_info.name());
-                                    let restore_status = std::process::Command::new("gio")
-                                        .args(["trash", "--restore"])
-                                        .arg(trash_item.uri())
-                                        .status();
-
-                                    if matches!(restore_status, Ok(s) if s.success()) {
-                                        restored_paths.push(PathBuf::from(orig));
+                                    let dest = gio::File::for_path(&orig);
+                                    let restore_result = trash_item.move_(
+                                        &dest,
+                                        gio::FileCopyFlags::NONE,
+                                        gio::Cancellable::NONE,
+                                        None,
+                                    );
+                                    if restore_result.is_ok() {
+                                        restored_paths.push(PathBuf::from(&orig));
                                     } else {
+                                        eprintln!("[Restore] move_ failed for {:?}", orig);
                                         success = false;
                                     }
                                 }

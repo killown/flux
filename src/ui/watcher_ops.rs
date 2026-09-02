@@ -11,6 +11,11 @@ use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_file_deleted(&mut self, path: PathBuf) {
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(parent);
+        }
+        self.folder_cache.remove(&path);
+
         if self.is_content_searching {
             // A file can have multiple result rows (one per matching line),
             // remove all of them
@@ -26,16 +31,31 @@ impl FluxApp {
             return;
         }
 
-        if let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) {
-            let target_idx = (0..self.files.len())
-                .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
-            if let Some(idx) = target_idx {
-                self.files.remove(idx);
-            }
+        // Try exact path match first, then fall back to filename match.
+        // The monitor path may be canonicalized (symlinks resolved) while
+        // grid items store current_path.join(name), so they can differ.
+        let target_idx = (0..self.files.len())
+            .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().path == path))
+            .or_else(|| {
+                path.file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .and_then(|name| {
+                        (0..self.files.len())
+                            .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name))
+                    })
+            });
+
+        if let Some(idx) = target_idx {
+            self.files.remove(idx);
         }
     }
 
     pub fn handle_file_changed(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(parent);
+        }
+        self.folder_cache.remove(&path);
+
         if let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) {
             let file = gio::File::for_path(&path);
             let attributes = "standard::name,standard::display-name,standard::type";
@@ -96,6 +116,7 @@ impl FluxApp {
                     sender.input(AppMsg::Refresh);
                 }
             } else {
+                // File no longer exists, treat as deleted, remove from grid directly
                 let target_idx = (0..self.files.len())
                     .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
                 if let Some(idx) = target_idx {
