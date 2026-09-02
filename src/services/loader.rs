@@ -797,8 +797,9 @@ impl FluxApp {
 
         let cached_thumbs = self.folder_cache.get(&path).map(|c| &c.thumbnails);
 
-        let new_items_len = items.len();
-        let current_files_len = self.files.len() as usize;
+        // CLEAR the grid completely so Relm4 drops all old FileItems
+        // and cleans up widget associations, qdata, and MultiSelection state.
+        self.files.clear();
 
         let config_file_icons = &self.config.ui.file_icons;
         let config_folder_icons = &self.config.ui.folder_icons;
@@ -853,24 +854,10 @@ impl FluxApp {
                 grid_spacing,
             };
 
-            if (grid_idx as u32) < self.files.len() {
-                if let Some(wrapper) = self.files.get(grid_idx as u32) {
-                    *wrapper.borrow_mut() = file_item;
-                }
-            } else {
-                self.files.append(file_item);
-            }
+            self.files.append(file_item);
         }
 
-        if current_files_len > new_items_len {
-            for _ in new_items_len..current_files_len {
-                if !self.files.is_empty() {
-                    self.files.remove(self.files.len() - 1);
-                }
-            }
-        }
-
-        self.current_path = path.clone();
+        self.current_path = path;
         self.update_breadcrumbs();
         self.is_loading = false;
 
