@@ -517,6 +517,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
+        widgets.icon_widget.set_paintable(None::<&gdk::Texture>);
         widgets.icon_widget.clear();
         widgets
             .drag_source

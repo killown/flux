@@ -1294,7 +1294,9 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 }
             }
 
-            Some(gdk::Texture::for_pixbuf(&pixbuf))
+            let tex = gdk::Texture::for_pixbuf(&pixbuf);
+            drop(pixbuf);
+            Some(tex)
         })
         .await
         .ok()?;
