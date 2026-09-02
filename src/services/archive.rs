@@ -26,9 +26,41 @@
 use std::collections::HashMap;
 use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::sync::OnceLock;
 
 use crate::model::FileLoadContext;
 use sevenz_rust2::{ArchiveReader, Password};
+
+static FLUX_TEMP_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
+static ACTIVE_TEMP_DIRS: Mutex<Vec<tempfile::TempDir>> = Mutex::new(Vec::new());
+
+/// Registers an extracted directory guard so it stays alive while needed,
+/// but can be cleared when browsing elsewhere.
+pub fn register_temp_dir(dir: tempfile::TempDir) {
+    if let Ok(mut lock) = ACTIVE_TEMP_DIRS.lock() {
+        lock.push(dir);
+    }
+}
+
+/// Cleans up all extracted archive temp directories from `/tmp`.
+pub fn clear_archive_temp_dirs() {
+    if let Ok(mut lock) = ACTIVE_TEMP_DIRS.lock() {
+        lock.clear();
+    }
+}
+
+/// Returns a shared scratch folder for Flux that is automatically purged by RAII on exit.
+pub fn flux_scratch_dir() -> &'static Path {
+    FLUX_TEMP_DIR
+        .get_or_init(|| {
+            tempfile::Builder::new()
+                .prefix(&format!("flux-{}-", std::process::id()))
+                .tempdir()
+                .expect("failed to create flux temp scratch dir")
+        })
+        .path()
+}
 
 // ─── URI scheme ───────────────────────────────────────────────────────────────
 
@@ -738,7 +770,7 @@ pub fn extract_entry_to_tempfile_with_backend(
 
     let mut tmp = tempfile::Builder::new()
         .suffix(&suffix)
-        .tempfile()
+        .tempfile_in(flux_scratch_dir())
         .map_err(|e| ArchiveError::Other(format!("temp file: {e}")))?;
 
     tmp.write_all(&data)
@@ -799,7 +831,7 @@ where
 
     let tmp = tempfile::Builder::new()
         .suffix(&suffix)
-        .tempfile()
+        .tempfile_in(flux_scratch_dir())
         .map_err(|e| ArchiveError::Other(format!("temp file: {e}")))?;
 
     let tmp = extract_fn(archive_path, inner_path, password, tmp)?;
@@ -1119,7 +1151,7 @@ fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathBuf), Archiv
 
     let temp_dir = tempfile::Builder::new()
         .prefix(&format!(".tmp.{}.", folder_name))
-        .tempdir_in(std::env::temp_dir())
+        .tempdir_in(flux_scratch_dir())
         .map_err(|e| ArchiveError::Other(format!("tempdir creation failed: {e}")))?;
 
     let dest_dir = temp_dir.path().join(&folder_name);
@@ -1196,7 +1228,7 @@ fn extract_dir_zip(
     }
 
     let result = dest_dir.clone();
-    std::mem::forget(temp_dir);
+    register_temp_dir(temp_dir);
     Ok(result)
 }
 
@@ -1473,7 +1505,7 @@ fn extract_dir_7z(
         .map_err(|e| ArchiveError::Other(e.to_string()))?;
 
     let result = dest_dir.clone();
-    std::mem::forget(temp_dir);
+    register_temp_dir(temp_dir);
     Ok(result)
 }
 
@@ -1582,7 +1614,7 @@ fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, Archi
     }
 
     let result = dest_dir.clone();
-    std::mem::forget(temp_dir);
+    register_temp_dir(temp_dir);
     Ok(result)
 }
 

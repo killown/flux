@@ -1197,7 +1197,6 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .ok()?;
 
             let texture = Box::pin(get_or_create_thumbnail(tmp_file.path())).await;
-            tmp_file.keep().ok();
             return texture;
         }
         return None;
