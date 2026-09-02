@@ -165,6 +165,12 @@ impl FluxApp {
             && extension_globset.is_none()
         {
             if let Some(cached) = self.folder_cache.get_mut(&path) {
+                cached
+                    .items
+                    .retain(|item| item.target_path.symlink_metadata().is_ok());
+                cached
+                    .media_tasks
+                    .retain(|(_, p)| p.symlink_metadata().is_ok());
                 cached.last_visited = std::time::Instant::now();
                 let cached_items = cached.items.clone();
                 let cached_media = cached.media_tasks.clone();
@@ -209,7 +215,7 @@ impl FluxApp {
                         .flatten()
                         .map(|entry| {
                             let name = entry.file_name().to_string_lossy().to_string();
-                            let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
+                            let is_dir = entry.path().is_dir();
                             (name, is_dir)
                         })
                         .collect(),
@@ -787,11 +793,10 @@ impl FluxApp {
 
         let cached_thumbs = self.folder_cache.get(&path).map(|c| &c.thumbnails);
 
-        let new_items_len = items.len();
-        let current_files_len = self.files.len() as usize;
-
         let config_file_icons = &self.config.ui.file_icons;
         let config_folder_icons = &self.config.ui.folder_icons;
+
+        self.files.clear();
 
         for (grid_idx, item) in items.into_iter().enumerate() {
             let custom_icon = config_file_icons
@@ -843,21 +848,7 @@ impl FluxApp {
                 grid_spacing,
             };
 
-            if (grid_idx as u32) < self.files.len() {
-                if let Some(wrapper) = self.files.get(grid_idx as u32) {
-                    *wrapper.borrow_mut() = file_item;
-                }
-            } else {
-                self.files.append(file_item);
-            }
-        }
-
-        if current_files_len > new_items_len {
-            for _ in new_items_len..current_files_len {
-                if self.files.len() > 0 {
-                    self.files.remove(self.files.len() - 1);
-                }
-            }
+            self.files.append(file_item);
         }
 
         self.current_path = path.clone();
