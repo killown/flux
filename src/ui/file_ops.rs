@@ -434,28 +434,45 @@ impl FluxApp {
         dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
-        let dest_path = dest_path.canonicalize().unwrap_or(dest_path);
+        if dest_path.as_os_str().is_empty() || !dest_path.is_dir() {
+            return;
+        }
+
+        let Ok(dest_canon) = dest_path.canonicalize() else {
+            return;
+        };
+
         let sender_clone = sender.clone();
 
         relm4::spawn_blocking(move || {
             let mut completed_moves = Vec::new();
 
             for source_path in source_paths {
-                if !dest_path.is_dir() {
-                    break;
-                }
-
-                let Some(file_name) = source_path.file_name() else {
+                let Ok(source_canon) = source_path.canonicalize() else {
                     continue;
                 };
 
-                let final_dest = dest_path.join(file_name);
+                // HARD GUARD: If the file's parent directory is the exact same as the destination, skip!
+                if let Some(parent) = source_canon.parent() {
+                    if parent == dest_canon {
+                        continue;
+                    }
+                }
 
-                if source_path == final_dest {
+                if source_canon == dest_canon {
                     continue;
                 }
 
-                let src_file = gio::File::for_path(&source_path);
+                let Some(file_name) = source_canon.file_name() else {
+                    continue;
+                };
+
+                let final_dest = dest_canon.join(file_name);
+                if source_canon == final_dest {
+                    continue;
+                }
+
+                let src_file = gio::File::for_path(&source_canon);
                 let dst_file = gio::File::for_path(&final_dest);
 
                 if src_file
@@ -467,20 +484,20 @@ impl FluxApp {
                     )
                     .is_ok()
                 {
-                    completed_moves.push((source_path.clone(), final_dest.clone()));
+                    completed_moves.push((source_canon.clone(), final_dest.clone()));
                     sender_clone.input(AppMsg::ItemMoved {
-                        old_path: source_path,
+                        old_path: source_canon,
                         new_path: final_dest,
                     });
                 } else {
-                    eprintln!("[DnD Error] Failed to move {:?}", source_path);
+                    eprintln!("[DnD Error] Failed to move {:?}", source_canon);
                 }
             }
 
             if !completed_moves.is_empty() {
                 sender_clone.input(AppMsg::MoveSucceeded {
                     items: completed_moves,
-                    dest_dir: dest_path,
+                    dest_dir: dest_canon,
                 });
             }
 
@@ -492,23 +509,52 @@ impl FluxApp {
     pub fn handle_external_drop_items(
         &self,
         source_paths: Vec<PathBuf>,
-        dest_path: PathBuf,
+        _dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        // FORCE the destination to always be the directory currently viewed in Flux,
+        // preventing window-level drop targets from accidentally dumping files into /home/neo.
+        let dest_path = self.current_path.clone();
+
+        if dest_path.as_os_str().is_empty() || !dest_path.is_dir() {
+            return;
+        }
+
+        let Ok(dest_canon) = dest_path.canonicalize() else {
+            return;
+        };
+
         let sender_clone = sender.clone();
         relm4::spawn_blocking(move || {
+            let mut completed_moves = Vec::new();
+
             for source in source_paths {
-                let Some(file_name) = source.file_name() else {
+                let Ok(source_canon) = source.canonicalize() else {
                     continue;
                 };
 
-                let final_dest = dest_path.join(file_name);
+                // HARD GUARD: If the file is already in the current folder, do not move it!
+                if let Some(parent) = source_canon.parent() {
+                    if parent == dest_canon {
+                        continue;
+                    }
+                }
 
-                if source == final_dest {
+                if source_canon == dest_canon {
                     continue;
                 }
 
-                let src_file = gio::File::for_path(&source);
+                let Some(file_name) = source_canon.file_name() else {
+                    continue;
+                };
+
+                let final_dest = dest_canon.join(file_name);
+
+                if source_canon == final_dest {
+                    continue;
+                }
+
+                let src_file = gio::File::for_path(&source_canon);
                 let dst_file = gio::File::for_path(&final_dest);
 
                 if src_file
@@ -520,13 +566,21 @@ impl FluxApp {
                     )
                     .is_ok()
                 {
+                    completed_moves.push((source_canon.clone(), final_dest.clone()));
                     sender_clone.input(AppMsg::ItemMoved {
-                        old_path: source,
+                        old_path: source_canon,
                         new_path: final_dest,
                     });
                 } else {
                     eprintln!("[File Error] External move failed");
                 }
+            }
+
+            if !completed_moves.is_empty() {
+                sender_clone.input(AppMsg::MoveSucceeded {
+                    items: completed_moves,
+                    dest_dir: dest_canon,
+                });
             }
 
             sender_clone.input(AppMsg::Refresh);
