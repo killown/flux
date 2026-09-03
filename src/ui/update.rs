@@ -24,6 +24,9 @@ impl FluxApp {
 
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
+            AppMsg::SetDisableDragAndDrop(val) => {
+                self.handle_set_disable_drag_and_drop(val);
+            }
             // Sidebar
             AppMsg::RefreshSidebar => self.handle_refresh_sidebar(),
             AppMsg::RemoveFromSidebar(path) => self.handle_remove_from_sidebar(path),

@@ -329,6 +329,9 @@ pub struct UIConfig {
     /// loading all of them eagerly when a directory is opened.
     #[serde(default)]
     pub lazy_thumbnails: bool,
+    /// When true, drag-and-drop operations for files and folders are completely disabled.
+    #[serde(default)]
+    pub disable_drag_and_drop: bool,
 }
 
 impl Default for UIConfig {
@@ -365,6 +368,7 @@ impl Default for UIConfig {
             thumbnail_types: ThumbnailTypes::default(),
             max_content_search_results: crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
             lazy_thumbnails: false,
+            disable_drag_and_drop: false,
         }
     }
 }
@@ -556,6 +560,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the drag-and-drop feature across the grid and sidebar.
+    SetDisableDragAndDrop(bool),
     /// Toggles the lazy thumbnail generation setting.
     SetLazyThumbnails(bool),
     /// Check for visible thumbnails in the current viewport and request generation for any missing ones

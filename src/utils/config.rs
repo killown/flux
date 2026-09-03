@@ -336,6 +336,7 @@ path = "~"
                     max_content_search_results:
                         crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
                     lazy_thumbnails: false,
+                    disable_drag_and_drop: false,
                 },
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),

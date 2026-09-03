@@ -180,9 +180,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
                 },
 
-                add_controller: drag_source.clone(),
-                add_controller: drop_target.clone(),
-
                 add_controller = gtk::GestureLongPress {
                     connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
                         if let Some(s) = sender.get() {
@@ -318,6 +315,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             }
         }
 
+        if !config.ui.disable_drag_and_drop {
+            root.add_controller(drag_source.clone());
+            root.add_controller(drop_target.clone());
+        }
+
         // Append the info label after the scroller so it sits on the far right
         // of the horizontal list row. In grid mode it is hidden.
         root.append(&info_label);
@@ -342,6 +344,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     ///
     /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
+        let config = utils::load_config();
         widgets.label.set_label(&self.name);
 
         if self.is_list_mode {
@@ -491,22 +494,31 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_from_gicon(&self.icon);
         }
 
-        let file = gtk::gio::File::for_path(&self.path);
-        // Advertise both FileList (sidebar drop target) and File (grid-to-grid drop).
-        // A single gio::File value is not reliably coerced to FileList by GTK's
-        // content negotiation, causing sidebar pins to fail most attempts.
-        let uri = format!("{}\r\n", file.uri());
-        let file_list_provider =
-            gdk::ContentProvider::for_bytes("text/uri-list", &glib::Bytes::from(uri.as_bytes()));
-        let file_provider = gdk::ContentProvider::for_value(&file.to_value());
-        let content = gdk::ContentProvider::new_union(&[file_list_provider, file_provider]);
-        widgets.drag_source.set_content(Some(&content));
-
-        widgets.drop_target.set_actions(if self.is_dir {
-            gdk::DragAction::COPY | gdk::DragAction::MOVE
+        if config.ui.disable_drag_and_drop {
+            widgets
+                .drag_source
+                .set_content(None::<&gdk::ContentProvider>);
+            widgets.drop_target.set_actions(gdk::DragAction::empty());
         } else {
-            gdk::DragAction::empty()
-        });
+            let file = gtk::gio::File::for_path(&self.path);
+            // Advertise both FileList (sidebar drop target) and File (grid-to-grid drop).
+            // A single gio::File value is not reliably coerced to FileList by GTK's
+            // content negotiation, causing sidebar pins to fail most attempts.
+            let uri = format!("{}\r\n", file.uri());
+            let file_list_provider = gdk::ContentProvider::for_bytes(
+                "text/uri-list",
+                &glib::Bytes::from(uri.as_bytes()),
+            );
+            let file_provider = gdk::ContentProvider::for_value(&file.to_value());
+            let content = gdk::ContentProvider::new_union(&[file_list_provider, file_provider]);
+            widgets.drag_source.set_content(Some(&content));
+
+            widgets.drop_target.set_actions(if self.is_dir {
+                gdk::DragAction::COPY | gdk::DragAction::MOVE
+            } else {
+                gdk::DragAction::empty()
+            });
+        }
 
         // Update the shared cell with the current path so gestures can read it
         *self.active_path.borrow_mut() = Some(self.path.clone());
@@ -737,8 +749,11 @@ impl FactoryComponent for SidebarPlace {
 
             // Drag source: carry this row's path or label identifier as a plain string
             add_controller = gtk::DragSource {
-                set_actions: gdk::DragAction::MOVE,
+                set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
                 connect_prepare[path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |src, _, _| {
+                    if utils::load_config().ui.disable_drag_and_drop {
+                        return None;
+                    }
                     if let Some(w) = src.widget() {
                         w.add_css_class("sidebar-dragging");
                     }
@@ -758,9 +773,12 @@ impl FactoryComponent for SidebarPlace {
 
             // Drop target: accept a path string or label dropped from another sidebar row
             add_controller = gtk::DropTarget {
-                set_actions: gdk::DragAction::MOVE,
+                set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
                 set_types: &[glib::types::Type::STRING],
                 connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
+                    if utils::load_config().ui.disable_drag_and_drop {
+                        return false;
+                    }
                     if let Ok(from_str) = value.get::<String>() {
                         let to = if is_label {
                             PathBuf::from(format!("label:{}", name))
@@ -781,11 +799,11 @@ impl FactoryComponent for SidebarPlace {
 
             // Drop target: accept any files/folders dragged from the file grid.
             add_controller = gtk::DropTarget {
-                set_actions: gdk::DragAction::COPY | gdk::DragAction::MOVE,
+                set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::COPY | gdk::DragAction::MOVE },
                 set_types: &[gdk::FileList::static_type()],
 
                 connect_enter[path = self.path.clone(), is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target, _, _| {
-                    if is_label || !path.is_dir() {
+                    if utils::load_config().ui.disable_drag_and_drop || is_label || !path.is_dir() {
                         return gdk::DragAction::empty();
                     }
 
@@ -823,6 +841,9 @@ impl FactoryComponent for SidebarPlace {
                 },
 
                 connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target, value, _, _| {
+                    if utils::load_config().ui.disable_drag_and_drop {
+                        return false;
+                    }
                     // Cancel any pending auto-navigate on release.
                     if let Some(id) = hover_timer.take() {
                         id.remove();
