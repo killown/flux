@@ -175,15 +175,55 @@ impl FluxApp {
                     .media_tasks
                     .retain(|(_, p)| p.symlink_metadata().is_ok());
                 cached.last_visited = std::time::Instant::now();
-                let cached_items = cached.items.clone();
-                let cached_media = cached.media_tasks.clone();
-                self.handle_folder_loaded(
-                    path,
-                    current_session,
-                    cached_items,
-                    cached_media,
-                    sender,
-                );
+                let mut cached_items = cached.items.clone();
+
+                // Keep cached items sorted to the currently active sort configuration
+                cached_items.par_sort_unstable_by(move |a, b| {
+                    if a.is_dir != b.is_dir {
+                        return if folders_first {
+                            b.is_dir.cmp(&a.is_dir)
+                        } else {
+                            a.is_dir.cmp(&b.is_dir)
+                        };
+                    }
+
+                    let primary_order = match sort_strategy {
+                        SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                        SortBy::Size => a.size.cmp(&b.size),
+                        SortBy::Date => a.mtime.cmp(&b.mtime),
+                        SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
+                    };
+
+                    let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
+                        a.sort_name.cmp(&b.sort_name)
+                    } else {
+                        primary_order
+                    };
+
+                    if sort_ascending {
+                        tie_breaker
+                    } else {
+                        tie_breaker.reverse()
+                    }
+                });
+
+                let media_tasks: Vec<(u32, PathBuf)> = cached_items
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, item)| {
+                        if item.is_dir {
+                            return None;
+                        }
+                        let source = item
+                            .custom_icon
+                            .as_ref()
+                            .map(PathBuf::from)
+                            .or_else(|| item.thumbnail_path.clone())?;
+                        Some((i as u32, source))
+                    })
+                    .collect();
+
+                self.handle_folder_loaded(path, current_session, cached_items, media_tasks, sender);
                 return;
             }
         }
@@ -245,6 +285,21 @@ impl FluxApp {
                         path_clone.join(&name)
                     };
 
+                    let (size, mtime) = target_path
+                        .metadata()
+                        .ok()
+                        .map(|m| {
+                            let s = if is_dir { 0 } else { m.len() };
+                            let t = m
+                                .modified()
+                                .ok()
+                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                .map(|d| d.as_secs() as i64)
+                                .unwrap_or(0);
+                            (s, t)
+                        })
+                        .unwrap_or((0, 0));
+
                     let mut thumbnail_path = None;
                     if !is_dir {
                         let (is_img, is_vid) = is_visual_media_by_ext(&target_path);
@@ -282,8 +337,8 @@ impl FluxApp {
                         sort_ext,
                         display_name: name,
                         target_path,
-                        size: 0,
-                        mtime: 0,
+                        size,
+                        mtime,
                         is_dir,
                         thumbnail_path,
                         is_foreign_owner: false,
@@ -309,8 +364,10 @@ impl FluxApp {
                 }
 
                 let primary_order = match sort_strategy {
+                    SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                    SortBy::Size => a.size.cmp(&b.size),
+                    SortBy::Date => a.mtime.cmp(&b.mtime),
                     SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
-                    _ => a.sort_name.cmp(&b.sort_name),
                 };
 
                 let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
@@ -421,10 +478,7 @@ impl FluxApp {
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
-        let factory = self.files.view.factory();
-        self.files.view.set_factory(gtk::ListItemFactory::NONE);
         self.files.clear();
-        self.files.view.set_factory(factory.as_ref());
         self.is_loading = true;
         // Bump the session counter and capture the resulting ID so the
         // spawned closure can stamp the message it will later dispatch.
@@ -615,10 +669,7 @@ impl FluxApp {
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
-        let factory = self.files.view.factory();
-        self.files.view.set_factory(gtk::ListItemFactory::NONE);
         self.files.clear();
-        self.files.view.set_factory(factory.as_ref());
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
         self.current_path = std::path::PathBuf::from(crate::ui::constants::RECENT_URI);
@@ -821,10 +872,7 @@ impl FluxApp {
 
         // CLEAR the grid completely so Relm4 drops all old FileItems
         // and cleans up widget associations, qdata, and MultiSelection state.
-        let factory = self.files.view.factory();
-        self.files.view.set_factory(gtk::ListItemFactory::NONE);
         self.files.clear();
-        self.files.view.set_factory(factory.as_ref());
 
         if is_list_mode {
             self.files.view.set_min_columns(1);
