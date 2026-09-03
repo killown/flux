@@ -1634,3 +1634,11 @@ msgstr "Miniaturas Sob Demanda"
 #: src/ui/settings.rs:???
 msgid "Generate thumbnails only for items in view"
 msgstr "Gerar miniaturas apenas para itens visíveis"
+
+#: src/ui/settings.rs:???
+msgid "Disable Drag and Drop"
+msgstr "Desativar arrastar e soltar"
+
+#: src/ui/settings.rs:???
+msgid "Prevent moving or copying files via mouse drag"
+msgstr "Impedir mover ou copiar arquivos arrastando com o mouse"

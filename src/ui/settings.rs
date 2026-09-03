@@ -522,6 +522,19 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Disable Drag and Drop"),
+                        set_subtitle: &tr("Prevent moving or copying files via mouse drag"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.disable_drag_and_drop,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetDisableDragAndDrop(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Default Layout"),
                         set_subtitle: &tr("Start with grid view (off) or list view (on)"),
                         add_suffix = &gtk::Switch {
