@@ -421,7 +421,10 @@ impl FluxApp {
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
+        let factory = self.files.view.factory();
+        self.files.view.set_factory(gtk::ListItemFactory::NONE);
         self.files.clear();
+        self.files.view.set_factory(factory.as_ref());
         self.is_loading = true;
         // Bump the session counter and capture the resulting ID so the
         // spawned closure can stamp the message it will later dispatch.
@@ -543,6 +546,14 @@ impl FluxApp {
                     }
                 });
 
+                if self.is_list_mode {
+                    self.files.view.set_min_columns(1);
+                    self.files.view.set_max_columns(1);
+                } else {
+                    self.files.view.set_min_columns(1);
+                    self.files.view.set_max_columns(20);
+                }
+
                 let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
                 for (grid_idx, item) in (self.files.len()..).zip(items) {
                     let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
@@ -604,7 +615,10 @@ impl FluxApp {
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
+        let factory = self.files.view.factory();
+        self.files.view.set_factory(gtk::ListItemFactory::NONE);
         self.files.clear();
+        self.files.view.set_factory(factory.as_ref());
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
         self.current_path = std::path::PathBuf::from(crate::ui::constants::RECENT_URI);
@@ -647,6 +661,14 @@ impl FluxApp {
         // RFC 3339 timestamps sort lexicographically, so string comparison is correct.
         entries.sort_by(|a, b| b.0.cmp(&a.0));
         entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
+
+        if self.is_list_mode {
+            self.files.view.set_min_columns(1);
+            self.files.view.set_max_columns(1);
+        } else {
+            self.files.view.set_min_columns(1);
+            self.files.view.set_max_columns(20);
+        }
 
         let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
         let extension_globset = self.extension_globset.clone();
@@ -799,7 +821,18 @@ impl FluxApp {
 
         // CLEAR the grid completely so Relm4 drops all old FileItems
         // and cleans up widget associations, qdata, and MultiSelection state.
+        let factory = self.files.view.factory();
+        self.files.view.set_factory(gtk::ListItemFactory::NONE);
         self.files.clear();
+        self.files.view.set_factory(factory.as_ref());
+
+        if is_list_mode {
+            self.files.view.set_min_columns(1);
+            self.files.view.set_max_columns(1);
+        } else {
+            self.files.view.set_min_columns(1);
+            self.files.view.set_max_columns(20);
+        }
 
         let config_file_icons = &self.config.ui.file_icons;
         let config_folder_icons = &self.config.ui.folder_icons;
