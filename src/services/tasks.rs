@@ -310,6 +310,11 @@ impl TaskQueue {
         }
     }
 
+    /// Returns the number of active tasks in the queue.
+    pub fn len(&self) -> usize {
+        self.inner.lock().map(|m| m.len()).unwrap_or(0)
+    }
+
     /// Returns a **sorted** snapshot of all active tasks, cheap clone to avoid
     /// holding the lock across GTK widget operations.
     ///

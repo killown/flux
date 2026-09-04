@@ -22,10 +22,6 @@ impl FluxApp {
         relm4::spawn(async move {
             // Process tasks with bounded concurrency to eliminate task churn
             stream::iter(media_tasks)
-                .take_while(|_| {
-                    let active = session_arc.load(Ordering::Acquire) == current_session;
-                    async move { active }
-                })
                 .map(|(grid_idx, media_path)| {
                     let inner_sender = sender.clone();
                     let inner_session = session_arc.clone();
