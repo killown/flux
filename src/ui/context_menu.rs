@@ -180,56 +180,13 @@ impl FluxApp {
                             let set_icon_action = gio::SimpleAction::new("set-custom-icon", None);
                             let target_clone = target.clone();
                             let sender_ic = sender.clone();
-                            let toast = action_toast.clone();
+                            let toast_clone = action_toast.clone();
                             set_icon_action.connect_activate(move |_, _| {
-                                let filter = gtk::FileFilter::new();
-                                filter.set_name(Some("Images"));
-                                filter.add_mime_type("image/png");
-                                filter.add_mime_type("image/jpeg");
-                                filter.add_mime_type("image/webp");
-                                filter.add_mime_type("image/svg+xml");
-
-                                let toplevels = gtk::Window::list_toplevels();
-                                let parent = toplevels
-                                    .first()
-                                    .and_then(|w| w.downcast_ref::<gtk::Window>())
-                                    .cloned();
-
-                                let chooser = gtk::FileChooserNative::builder()
-                                    .title("Select Custom Icon Image")
-                                    .action(gtk::FileChooserAction::Open)
-                                    .accept_label("Set Icon")
-                                    .cancel_label("Cancel")
-                                    .build();
-
-                                if let Some(ref win) = parent {
-                                    chooser.set_transient_for(Some(win));
-                                }
-                                chooser.add_filter(&filter);
-
-                                let target_path = target_clone.clone();
-                                let s = sender_ic.clone();
-                                let toast_inner = toast.clone();
-
-                                // Keep `chooser` alive across the async response by cloning
-                                // the Arc-like GObject ref into the closure.
-                                let chooser_ref = chooser.clone();
-                                chooser.connect_response(move |_, response| {
-                                    if response == gtk::ResponseType::Accept {
-                                        if let Some(file) = chooser_ref.file() {
-                                            if let Some(image_path) = file.path() {
-                                                s.input(AppMsg::SetFileIcon {
-                                                    path: target_path.clone(),
-                                                    image_path,
-                                                });
-                                                if let Some(ref msg) = toast_inner {
-                                                    s.input(AppMsg::ShowToast(msg.clone()));
-                                                }
-                                            }
-                                        }
-                                    }
-                                });
-                                chooser.show();
+                                FluxApp::show_custom_icon_file_chooser(
+                                    target_clone.clone(),
+                                    toast_clone.clone(),
+                                    sender_ic.clone(),
+                                );
                             });
                             self.action_group.add_action(&set_icon_action);
                         }

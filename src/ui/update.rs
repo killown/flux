@@ -535,9 +535,7 @@ impl FluxApp {
             }
             AppMsg::PromptNewFolder => self.show_prompt_new_folder(&sender),
             AppMsg::PromptNewFile => self.show_prompt_new_file(&sender),
-            AppMsg::PromptLocationDialog => {
-                crate::ui::location_dialog::show_location_dialog(self, sender)
-            }
+            AppMsg::PromptLocationDialog => FluxApp::show_location_dialog(self, sender),
             AppMsg::PromptNetworkCredentials {
                 uri,
                 message,
