@@ -806,15 +806,109 @@ impl FluxApp {
         Some(rest[..end].to_owned())
     }
 
-    /// Applies a completed off-thread folder enumeration to the live UI grid.
-    ///
-    /// Called exclusively from the GTK main thread via `AppMsg::FolderLoaded`.
-    /// All I/O and CPU work has already been done in `load_path`'s
-    /// `spawn_blocking` closure, this method only mutates model state and
-    /// appends pre-built `FileItem` values to the `TypedGridView` store.
-    ///
-    /// Stale results from superseded navigation sessions are discarded via the
-    /// `load_id` guard before touching any shared state.
+    /// construct and append a slice of FileLoadContext items directly to self.files.
+    pub fn append_context_batch(
+        &mut self,
+        items: Vec<FileLoadContext>,
+        load_id: u64,
+        is_cached: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let max_width_chars = self.config.ui.max_width_chars;
+        let grid_spacing = self.config.ui.grid_spacing;
+        let is_list_mode = self.is_list_mode;
+        let list_icon_size = self.current_list_icon_size;
+        let grid_icon_size = self.current_icon_size;
+        let config_file_icons = &self.config.ui.file_icons;
+        let config_folder_icons = &self.config.ui.folder_icons;
+        let cached_thumbs = self
+            .folder_cache
+            .get(&self.current_path)
+            .map(|c| &c.thumbnails);
+
+        let start_idx = self.files.len();
+        let mut chunk_media_tasks: Vec<(u32, PathBuf)> = Vec::new();
+
+        for (offset, item) in items.into_iter().enumerate() {
+            let grid_idx = start_idx + offset as u32;
+
+            let custom_icon = config_file_icons
+                .get(&item.target_path.to_string_lossy().to_string())
+                .cloned()
+                .or_else(|| {
+                    if item.is_dir {
+                        config_folder_icons
+                            .get(&item.target_path.to_string_lossy().to_string())
+                            .cloned()
+                    } else {
+                        None
+                    }
+                })
+                .or(item.custom_icon);
+
+            let icon = if let Some(ref custom) = custom_icon {
+                gtk::gio::Icon::for_string(custom)
+                    .unwrap_or_else(|_| utils::get_icon_for_path(&item.target_path, item.is_dir))
+            } else {
+                utils::get_icon_for_path(&item.target_path, item.is_dir)
+            };
+
+            let thumbnail = cached_thumbs
+                .and_then(|m| m.get(&item.target_path))
+                .cloned();
+
+            // Collect visual media files in this chunk for immediate thumbnail generation
+            if !item.is_dir && !is_cached {
+                let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
+                if is_img || is_vid {
+                    let source = custom_icon
+                        .as_ref()
+                        .map(PathBuf::from)
+                        .or_else(|| item.thumbnail_path.clone())
+                        .unwrap_or_else(|| item.target_path.clone());
+                    chunk_media_tasks.push((grid_idx, source));
+                }
+            }
+
+            let file_item = FileItem {
+                name: item.display_name,
+                icon,
+                thumbnail,
+                is_dir: item.is_dir,
+                path: item.target_path,
+                icon_size: if is_list_mode {
+                    list_icon_size
+                } else {
+                    grid_icon_size
+                },
+                size: item.size,
+                mtime: item.mtime,
+                is_editing: false,
+                is_foreign_owner: item.is_foreign_owner,
+                expand_labels: item.expand_labels,
+                is_list_mode,
+                is_custom_icon: custom_icon.is_some(),
+                active_path: Rc::new(RefCell::new(None)),
+                grid_idx,
+                max_width_chars,
+                grid_spacing,
+            };
+
+            self.files.append(file_item);
+        }
+
+        // Fire thumbnail generation immediately for this chunk's items
+        if !is_cached {
+            if !self.config.ui.lazy_thumbnails {
+                self.spawn_thumbnail_loader(chunk_media_tasks, load_id, sender.clone());
+            } else {
+                sender.input(AppMsg::CheckVisibleThumbnails);
+            }
+        }
+    }
+
+    /// Streams background folder results into the grid in batches.
+    /// Discards stale sessions by checking `load_id`.
     pub fn handle_folder_loaded(
         &mut self,
         path: PathBuf,
@@ -855,26 +949,20 @@ impl FluxApp {
                 path.clone(),
                 crate::model::CachedFolder {
                     items: items.clone(),
-                    media_tasks: media_tasks.clone(),
+                    media_tasks,
                     thumbnails: std::collections::HashMap::new(),
                     last_visited: std::time::Instant::now(),
                 },
             );
         }
 
-        let max_width_chars = self.config.ui.max_width_chars;
-        let grid_spacing = self.config.ui.grid_spacing;
-        let is_list_mode = self.is_list_mode;
-        let list_icon_size = self.current_list_icon_size;
-        let grid_icon_size = self.current_icon_size;
-
-        let cached_thumbs = self.folder_cache.get(&path).map(|c| &c.thumbnails);
-
         // CLEAR the grid completely so Relm4 drops all old FileItems
         // and cleans up widget associations, qdata, and MultiSelection state.
+        // WARNING: this is necessary for folder cache, if no clear here, it will start mixing files
+        // from different folders and cause all sorts of problems.
         self.files.clear();
 
-        if is_list_mode {
+        if self.is_list_mode {
             self.files.view.set_min_columns(1);
             self.files.view.set_max_columns(1);
         } else {
@@ -882,76 +970,51 @@ impl FluxApp {
             self.files.view.set_max_columns(20);
         }
 
-        let config_file_icons = &self.config.ui.file_icons;
-        let config_folder_icons = &self.config.ui.folder_icons;
-
-        for (grid_idx, item) in items.into_iter().enumerate() {
-            let custom_icon = config_file_icons
-                .get(&item.target_path.to_string_lossy().to_string())
-                .cloned()
-                .or_else(|| {
-                    if item.is_dir {
-                        config_folder_icons
-                            .get(&item.target_path.to_string_lossy().to_string())
-                            .cloned()
-                    } else {
-                        None
-                    }
-                })
-                .or(item.custom_icon);
-
-            let icon = if let Some(ref custom) = custom_icon {
-                gtk::gio::Icon::for_string(custom)
-                    .unwrap_or_else(|_| utils::get_icon_for_path(&item.target_path, item.is_dir))
-            } else {
-                utils::get_icon_for_path(&item.target_path, item.is_dir)
-            };
-
-            let thumbnail = cached_thumbs
-                .and_then(|m| m.get(&item.target_path))
-                .cloned();
-
-            let file_item = FileItem {
-                name: item.display_name,
-                icon,
-                thumbnail,
-                is_dir: item.is_dir,
-                path: item.target_path,
-                icon_size: if is_list_mode {
-                    list_icon_size
-                } else {
-                    grid_icon_size
-                },
-                size: item.size,
-                mtime: item.mtime,
-                is_editing: false,
-                is_foreign_owner: item.is_foreign_owner,
-                expand_labels: item.expand_labels,
-                is_list_mode,
-                is_custom_icon: custom_icon.is_some(),
-                active_path: Rc::new(RefCell::new(None)),
-                grid_idx: grid_idx as u32,
-                max_width_chars,
-                grid_spacing,
-            };
-
-            self.files.append(file_item);
-        }
-
         self.current_path = path;
         self.update_breadcrumbs();
-        self.is_loading = false;
 
-        unsafe {
-            libc::malloc_trim(0);
-        }
+        const BATCH_SIZE: usize = 50;
 
-        if !is_cached {
-            if !self.config.ui.lazy_thumbnails {
-                self.spawn_thumbnail_loader(media_tasks, load_id, sender.clone());
-            } else {
-                sender.input(AppMsg::CheckVisibleThumbnails);
+        if items.len() <= BATCH_SIZE {
+            self.append_context_batch(items, load_id, is_cached, sender);
+            self.is_loading = false;
+            unsafe {
+                libc::malloc_trim(0);
             }
+        } else {
+            let mut remaining = items;
+            let first_batch: Vec<FileLoadContext> = remaining.drain(..BATCH_SIZE).collect();
+            // Append and immediately trigger thumbnails for the initial visible batch
+            self.append_context_batch(first_batch, load_id, is_cached, sender);
+
+            let session_arc = self.load_id.clone();
+            let sender_clone = sender.clone();
+            let mut chunks: Vec<Vec<FileLoadContext>> =
+                remaining.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
+            chunks.reverse();
+
+            glib::idle_add_local(move || {
+                if session_arc.load(Ordering::SeqCst) != load_id {
+                    return glib::ControlFlow::Break;
+                }
+
+                if let Some(chunk) = chunks.pop() {
+                    sender_clone.input(AppMsg::FolderLoadedChunk {
+                        load_id,
+                        chunk,
+                        is_cached,
+                    });
+
+                    if chunks.is_empty() {
+                        sender_clone.input(AppMsg::FolderLoadedFinish { load_id });
+                        glib::ControlFlow::Break
+                    } else {
+                        glib::ControlFlow::Continue
+                    }
+                } else {
+                    glib::ControlFlow::Break
+                }
+            });
         }
     }
 }
