@@ -325,7 +325,7 @@ impl FluxApp {
                     });
                     s_cb.input(AppMsg::TaskQueueTick);
                 };
-                let result = perform_file_op(
+                let result = perform_file_op_with_progress(
                     &src_path,
                     &dest,
                     is_cut,
@@ -410,6 +410,15 @@ fn resolve_gio_files(files: Vec<gio::File>) -> Vec<(PathBuf, String, bool)> {
 }
 
 pub fn perform_file_op(
+    src: &Path,
+    dest: &Path,
+    is_cut: bool,
+    cancellable: &gio::Cancellable,
+) -> Result<(), String> {
+    perform_file_op_with_progress(src, dest, is_cut, cancellable, None)
+}
+
+pub fn perform_file_op_with_progress(
     src: &Path,
     dest: &Path,
     is_cut: bool,
