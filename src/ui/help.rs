@@ -275,6 +275,13 @@ impl SimpleComponent for HelpWindow {
                             add_css_class: "keycap",
                         },
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Open memory debug profiler"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Shift + F7",
+                            add_css_class: "keycap",
+                        },
+                    },
                 },
             },
 

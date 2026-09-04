@@ -1642,3 +1642,7 @@ msgstr "Desativar arrastar e soltar"
 #: src/ui/settings.rs:???
 msgid "Prevent moving or copying files via mouse drag"
 msgstr "Impedir mover ou copiar arquivos arrastando com o mouse"
+
+#: src/ui/help.rs:???
+msgid "Open memory debug profiler"
+msgstr "Abrir perfilador de memória"
