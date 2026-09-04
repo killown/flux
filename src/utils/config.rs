@@ -1031,40 +1031,44 @@ fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
     cx.set_source_rgb(1.0, 1.0, 1.0);
     cx.paint().ok()?;
 
-    let pango_cx = pangocairo::functions::create_context(&cx);
+    let font_map = pangocairo::FontMap::default();
+    let pango_cx = font_map.create_context();
+    pangocairo::functions::update_context(&cx, &pango_cx);
 
     // Sample lines: family name hint at top, pangram below.
     let sample_body = "AaBbCc 123\nThe quick fox";
     let body_pt = (size_f * 0.22) as i32;
-    let mut body_desc = pango::FontDescription::from_string(&format!("{} {}", family, body_pt));
-    body_desc.set_size(body_pt * pango::SCALE);
+    let mut body_desc = gtk::pango::FontDescription::new();
+    body_desc.set_family(&family);
+    body_desc.set_size(body_pt * gtk::pango::SCALE);
 
     // Small label at the top: family name in a neutral sans so it's always legible.
     let label_pt = (size_f * 0.09) as i32;
-    let mut label_desc = pango::FontDescription::from_string(&format!("Sans {}", label_pt));
-    label_desc.set_size(label_pt * pango::SCALE);
+    let mut label_desc = gtk::pango::FontDescription::new();
+    label_desc.set_family("Sans");
+    label_desc.set_size(label_pt * gtk::pango::SCALE);
 
     let margin = size_f * 0.06;
 
     // Draw the family name label.
     cx.set_source_rgb(0.4, 0.4, 0.4);
     cx.move_to(margin, margin);
-    let label_layout = pango::Layout::new(&pango_cx);
+    let label_layout = gtk::pango::Layout::new(&pango_cx);
     label_layout.set_font_description(Some(&label_desc));
     label_layout.set_text(&family);
-    label_layout.set_width((size - (margin * 2.0) as i32) * pango::SCALE);
-    label_layout.set_ellipsize(pango::EllipsizeMode::End);
+    label_layout.set_width((size - (margin * 2.0) as i32) * gtk::pango::SCALE);
+    label_layout.set_ellipsize(gtk::pango::EllipsizeMode::End);
     pangocairo::functions::show_layout(&cx, &label_layout);
 
     // Draw the pangram sample in the target font.
     cx.set_source_rgb(0.05, 0.05, 0.05);
     let (_, label_h) = label_layout.pixel_size();
     cx.move_to(margin, margin + label_h as f64 + margin * 0.25);
-    let body_layout = pango::Layout::new(&pango_cx);
+    let body_layout = gtk::pango::Layout::new(&pango_cx);
     body_layout.set_font_description(Some(&body_desc));
     body_layout.set_text(sample_body);
-    body_layout.set_width((size - (margin * 2.0) as i32) * pango::SCALE);
-    body_layout.set_ellipsize(pango::EllipsizeMode::End);
+    body_layout.set_width((size - (margin * 2.0) as i32) * gtk::pango::SCALE);
+    body_layout.set_ellipsize(gtk::pango::EllipsizeMode::End);
     pangocairo::functions::show_layout(&cx, &body_layout);
 
     drop(cx);
