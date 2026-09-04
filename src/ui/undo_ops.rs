@@ -109,6 +109,7 @@ impl FluxApp {
                             &src,
                             true,
                             &gtk::gio::Cancellable::new(),
+                            None,
                         )
                         .is_err()
                         {
@@ -226,6 +227,7 @@ impl FluxApp {
                             &dst,
                             true,
                             &gtk::gio::Cancellable::new(),
+                            None,
                         )
                         .is_err()
                         {
