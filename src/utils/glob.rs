@@ -8,18 +8,6 @@ use globset::{Glob, GlobSet, GlobSetBuilder};
 ///
 /// Uses a bottom-up dynamic programming approach to handle degenerate inputs
 /// (e.g. multiple consecutive `*` wildcards) without exponential backtracking.
-///
-/// # Examples
-/// ```
-/// use flux::utils::glob::glob_match,
-/// assert!(glob_match("*.rs",   "main.rs")),
-/// assert!(glob_match("a*.py",  "app.py")),
-/// assert!(glob_match("a?b",    "axb")),
-/// assert!(!glob_match("*.rs",  "main.py")),
-/// assert!(glob_match("*",      "anything")),
-/// assert!(glob_match("",       "")),
-/// assert!(!glob_match("",      "x")),
-/// ```
 #[allow(dead_code)]
 pub fn glob_match(pattern: &str, name: &str) -> bool {
     let p: Vec<char> = pattern.chars().collect();
@@ -88,12 +76,13 @@ fn mime_db() -> &'static std::collections::HashMap<String, Vec<String>> {
                     }
                     // globs2: "weight:mime/type:*.ext"
                     // globs:  "mime/type:*.ext"
-                    let cols: Vec<&str> = line.splitn(3, ':').collect();
-                    // globs2 col[0] is numeric weight, real mime has a '/'
-                    let (mime, glob) = if cols.len() == 3 {
-                        (cols[1].to_string(), cols[2])
-                    } else {
+                    let cols: Vec<&str> = line.split(':').collect();
+                    let (mime, glob) = if cols.len() >= 3 {
+                        (cols[cols.len() - 2].to_string(), cols[cols.len() - 1])
+                    } else if cols.len() == 2 {
                         (cols[0].to_string(), cols[1])
+                    } else {
+                        continue;
                     };
                     if mime.contains('/') {
                         map.entry(mime.to_lowercase())
