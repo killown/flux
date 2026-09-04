@@ -27,6 +27,9 @@ impl FluxApp {
             AppMsg::SetDisableDragAndDrop(val) => {
                 self.handle_set_disable_drag_and_drop(val);
             }
+            AppMsg::OpenDebugWindow => {
+                crate::ui::debug::show_debug_window(self);
+            }
             // Sidebar
             AppMsg::RefreshSidebar => self.handle_refresh_sidebar(),
             AppMsg::RemoveFromSidebar(path) => self.handle_remove_from_sidebar(path),

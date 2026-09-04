@@ -1311,18 +1311,29 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .unwrap_or(0);
             let tmp_path = cache_d.join(format!(".tmp.{pid}.{nanos}.png"));
 
-            if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
+            let written = if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")])
+            {
                 let optimized = optimize_png_bytes(&buffer);
                 if std::fs::write(&tmp_path, optimized).is_ok() {
-                    let _ = std::fs::rename(&tmp_path, &cache_p);
+                    std::fs::rename(&tmp_path, &cache_p).is_ok()
                 } else {
                     let _ = std::fs::remove_file(&tmp_path);
+                    false
+                }
+            } else {
+                false
+            };
+
+            drop(pixbuf);
+
+            if written {
+                if let Ok(bytes) = std::fs::read(&cache_p) {
+                    let glib_bytes = glib::Bytes::from(&bytes);
+                    return gdk::Texture::from_bytes(&glib_bytes).ok();
                 }
             }
 
-            let tex = gdk::Texture::for_pixbuf(&pixbuf);
-            drop(pixbuf);
-            Some(tex)
+            None
         })
         .await
         .ok()?;

@@ -59,15 +59,10 @@ pub struct FileWidgets {
     pub icon_widget: gtk::Image,
     pub lock_icon: gtk::Image,
     pub label: gtk::Label,
-    pub entry: gtk::Entry,
     pub stack: gtk::Stack,
     pub drag_source: gtk::DragSource,
     pub drop_target: gtk::DropTarget,
-    /// Right-aligned info label shown in list mode: displays file size and
-    /// extension. Hidden for content search results (which carry `size == 0`).
     pub info_label: gtk::Label,
-    /// Scrolled window wrapping the Stack. In list mode it scrolls horizontally
-    /// so a long path never resizes the row or the window.
     pub label_scroller: gtk::ScrolledWindow,
 }
 
@@ -119,11 +114,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             let widget = target.widget().unwrap();
             let sender = crate::model::SENDER.get();
 
-            // Retrieve the active_path cell from widget data (stored as Rc)
             let dest_path_opt: Option<PathBuf> = unsafe {
                 widget
-                    .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
-                    .map(|ptr| ptr.as_ref().clone())
+                    .data::<std::rc::Weak<RefCell<Option<PathBuf>>>>("active_path_cell")
+                    .and_then(|weak_ptr| weak_ptr.as_ref().upgrade())
                     .and_then(|rc| rc.borrow().clone())
             };
 
@@ -265,51 +259,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                 set_hexpand: false,
                                 add_css_class: constants::FLUX_LABEL_CLASS,
                             },
-                        } -> { set_name: constants::VIEW_LABEL },
-
-                        #[name = "entry"]
-                        add_child = &gtk::Entry {
-                            set_halign: gtk::Align::Center,
-                            add_css_class: constants::RENAME_ENTRY_CLASS,
-
-                            // 1. Reliable focus loss detection
-                            add_controller = gtk::EventControllerFocus {
-                                connect_leave[sender = crate::model::SENDER.clone()] => move |_| {
-                                    if let Some(s) = sender.get() {
-                                        s.send(crate::model::AppMsg::Refresh).ok();
-                                    }
-                                }
-                            },
-
-                            // 2. Escape key handling
-                            add_controller = gtk::EventControllerKey {
-                                connect_key_pressed[sender = crate::model::SENDER.clone()] => move |_, keyval, _, _| {
-                                    if keyval == gdk::Key::Escape {
-                                        if let Some(s) = sender.get() {
-                                            s.send(crate::model::AppMsg::Refresh).ok();
-                                            return glib::Propagation::Stop;
-                                        }
-                                    }
-                                    glib::Propagation::Proceed
-                                }
-                            },
-
-                            // 3. Enter key handling
-                            connect_activate[sender = crate::model::SENDER.clone(), #[weak] root] => move |entry| {
-                                if let Some(s) = sender.get() {
-                                    let old_path_opt: Option<PathBuf> = unsafe {
-                                        root
-                                            .data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell")
-                                            .map(|ptr| ptr.as_ref().clone())
-                                            .and_then(|rc| rc.borrow().clone())
-                                    };
-                                    if let Some(old_path) = old_path_opt {
-                                        let new_name = entry.text().to_string();
-                                        s.send(crate::model::AppMsg::PerformRename(old_path, new_name)).ok();
-                                    }
-                                }
-                            },
-                        } -> { set_name: constants::VIEW_ENTRY }
+                        } -> { set_name: constants::VIEW_LABEL }
                     }
                 }
             }
@@ -330,7 +280,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 icon_widget,
                 lock_icon,
                 label,
-                entry,
                 stack,
                 drag_source,
                 drop_target,
@@ -468,21 +417,84 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         if self.is_editing {
+            let entry = match widgets.stack.child_by_name(constants::VIEW_ENTRY) {
+                Some(w) => w.downcast::<gtk::Entry>().unwrap(),
+                None => {
+                    let entry = gtk::Entry::builder()
+                        .halign(gtk::Align::Center)
+                        .css_classes([constants::RENAME_ENTRY_CLASS])
+                        .build();
+
+                    // 1. Reliable focus loss detection
+                    let focus_ctrl = gtk::EventControllerFocus::new();
+                    focus_ctrl.connect_leave(|_| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            s.send(crate::model::AppMsg::Refresh).ok();
+                        }
+                    });
+                    entry.add_controller(focus_ctrl);
+
+                    // 2. Escape key handling
+                    let key_ctrl = gtk::EventControllerKey::new();
+                    key_ctrl.connect_key_pressed(|_, keyval, _, _| {
+                        if keyval == gdk::Key::Escape {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                s.send(crate::model::AppMsg::Refresh).ok();
+                                return glib::Propagation::Stop;
+                            }
+                        }
+                        glib::Propagation::Proceed
+                    });
+                    entry.add_controller(key_ctrl);
+
+                    // 3. Enter key handling
+                    let root_widget = root.clone();
+                    entry.connect_activate(clone!(
+                        #[weak]
+                        root_widget,
+                        move |entry| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let old_path_opt: Option<PathBuf> = unsafe {
+                                    root_widget
+                                        .data::<std::rc::Weak<RefCell<Option<PathBuf>>>>(
+                                            "active_path_cell",
+                                        )
+                                        .and_then(|weak_ptr| weak_ptr.as_ref().upgrade())
+                                        .and_then(|rc| rc.borrow().clone())
+                                };
+                                if let Some(old_path) = old_path_opt {
+                                    let new_name = entry.text().to_string();
+                                    s.send(crate::model::AppMsg::PerformRename(old_path, new_name))
+                                        .ok();
+                                }
+                            }
+                        }
+                    ));
+
+                    widgets.stack.add_named(&entry, Some(constants::VIEW_ENTRY));
+                    entry
+                }
+            };
+
             widgets.stack.set_visible_child_name(constants::VIEW_ENTRY);
-            widgets.entry.set_text(&self.name);
+            entry.set_text(&self.name);
             let dot_pos = self.name.rfind('.').unwrap_or(self.name.len());
-            widgets.entry.select_region(0, dot_pos as i32);
+            entry.select_region(0, dot_pos as i32);
 
             // Defer focus grab to next main loop iteration so the widget
             // is fully realized after the stack transition completes.
             gtk::glib::idle_add_local_once(clone!(
-                #[weak(rename_to = entry)]
-                widgets.entry,
+                #[weak]
+                entry,
                 move || {
                     entry.grab_focus();
                 }
             ));
         } else {
+            // Reclaim memory if a temporary Entry was previously instantiated
+            if let Some(existing_entry) = widgets.stack.child_by_name(constants::VIEW_ENTRY) {
+                widgets.stack.remove(&existing_entry);
+            }
             // Ensure the label is visible when not editing.
             widgets.stack.set_visible_child_name(constants::VIEW_LABEL);
         }
@@ -525,7 +537,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         // Store a clone of the Rc in the widget data so gestures can access the cell
         unsafe {
-            root.set_data("active_path_cell", self.active_path.clone());
+            root.set_data("active_path_cell", Rc::downgrade(&self.active_path));
             root.set_data("grid_item_index", self.grid_idx);
         }
     }
@@ -541,10 +553,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         widgets.drag_source.set_icon(None::<&gdk::Paintable>, 0, 0);
         widgets.label.set_text("");
         widgets.info_label.set_text("");
-        widgets.entry.set_text("");
+        if let Some(existing_entry) = widgets.stack.child_by_name(constants::VIEW_ENTRY) {
+            widgets.stack.remove(&existing_entry);
+        }
         *self.active_path.borrow_mut() = None;
         unsafe {
-            let _ = root.steal_data::<Rc<RefCell<Option<PathBuf>>>>("active_path_cell");
+            let _ = root.steal_data::<std::rc::Weak<RefCell<Option<PathBuf>>>>("active_path_cell");
             let _ = root.steal_data::<u32>("lazy_thumb_requested");
             let _ = root.steal_data::<u32>("grid_item_index");
         }

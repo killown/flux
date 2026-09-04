@@ -225,6 +225,16 @@ pub fn setup_controllers(
         })),
     ));
 
+    // ── Debug window ────────────────────────────────────────────────────────
+    let s_debug = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("<Primary><Shift>F7").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_debug.input(AppMsg::OpenDebugWindow);
+            glib::Propagation::Stop
+        })),
+    ));
+
     let s_sidebar = sender.clone();
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(gtk::ShortcutTrigger::parse_string("F8").unwrap()),

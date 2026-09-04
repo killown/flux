@@ -331,26 +331,26 @@ impl FluxApp {
 
     /// Receives generated thumbnail textures and updates grid items.
     pub fn handle_thumbnail_ready(&mut self, grid_idx: u32, texture: gdk::Texture, load_id: u64) {
-        if load_id == self.load_id.load(Ordering::SeqCst) {
-            if let Some(pos) = (0..self.files.len()).find(|&i| {
-                self.files
-                    .get(i)
-                    .map(|w| w.borrow().grid_idx == grid_idx)
-                    .unwrap_or(false)
-            }) {
-                let target_path = if let Some(wrapper) = self.files.get(pos) {
-                    let mut item = wrapper.borrow().clone();
-                    item.thumbnail = Some(texture.clone());
-                    let path = item.path.clone();
-                    self.files.remove(pos);
-                    self.files.insert(pos, item);
-                    path
-                } else {
-                    return;
-                };
+        if load_id != self.load_id.load(Ordering::SeqCst) {
+            return;
+        }
+
+        if let Some(pos) = (0..self.files.len()).find(|&i| {
+            self.files
+                .get(i)
+                .map(|w| w.borrow().grid_idx == grid_idx)
+                .unwrap_or(false)
+        }) {
+            if let Some(wrapper) = self.files.get(pos) {
+                let mut item = wrapper.borrow().clone();
+                item.thumbnail = Some(texture.clone());
+                let path = item.path.clone();
+
+                self.files.remove(pos);
+                self.files.insert(pos, item);
 
                 if let Some(cached) = self.folder_cache.get_mut(&self.current_path) {
-                    cached.thumbnails.insert(target_path, texture);
+                    cached.thumbnails.insert(path, texture);
                 }
             }
         }

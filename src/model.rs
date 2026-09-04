@@ -560,6 +560,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Open the memory debug window (Ctrl+Shift+F7).
+    OpenDebugWindow,
     /// Delivers an incremental batch of load contexts to the grid view.
     FolderLoadedChunk {
         load_id: u64,
