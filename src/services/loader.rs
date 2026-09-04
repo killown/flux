@@ -10,6 +10,25 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
+use std::sync::OnceLock;
+
+/// Shared Rayon thread pool for directory listing work.
+///
+/// Capped at 4 threads with 2 MiB stacks instead of Rayon's global default
+/// (one thread per CPU core, 8 MiB stacks each). This prevents the one-time
+/// ~50 MiB RSS jump that occurs when the global pool fully commits its stacks
+/// on the first large directory load.
+static LOADER_POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
+
+fn loader_pool() -> &'static rayon::ThreadPool {
+    LOADER_POOL.get_or_init(|| {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(4)
+            .stack_size(2 * 1024 * 1024)
+            .build()
+            .expect("failed to build loader thread pool")
+    })
+}
 
 /// Returns `(is_image, is_video)` by extension only - zero I/O, safe to call inside
 /// a Rayon iterator on the directory listing hot path. Accuracy is intentionally
@@ -178,33 +197,35 @@ impl FluxApp {
                 let mut cached_items = cached.items.clone();
 
                 // Keep cached items sorted to the currently active sort configuration
-                cached_items.par_sort_unstable_by(move |a, b| {
-                    if a.is_dir != b.is_dir {
-                        return if folders_first {
-                            b.is_dir.cmp(&a.is_dir)
-                        } else {
-                            a.is_dir.cmp(&b.is_dir)
+                loader_pool().install(|| {
+                    cached_items.par_sort_unstable_by(move |a, b| {
+                        if a.is_dir != b.is_dir {
+                            return if folders_first {
+                                b.is_dir.cmp(&a.is_dir)
+                            } else {
+                                a.is_dir.cmp(&b.is_dir)
+                            };
+                        }
+
+                        let primary_order = match sort_strategy {
+                            SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                            SortBy::Size => a.size.cmp(&b.size),
+                            SortBy::Date => a.mtime.cmp(&b.mtime),
+                            SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                         };
-                    }
 
-                    let primary_order = match sort_strategy {
-                        SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                        SortBy::Size => a.size.cmp(&b.size),
-                        SortBy::Date => a.mtime.cmp(&b.mtime),
-                        SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
-                    };
+                        let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
+                            a.sort_name.cmp(&b.sort_name)
+                        } else {
+                            primary_order
+                        };
 
-                    let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
-                        a.sort_name.cmp(&b.sort_name)
-                    } else {
-                        primary_order
-                    };
-
-                    if sort_ascending {
-                        tie_breaker
-                    } else {
-                        tie_breaker.reverse()
-                    }
+                        if sort_ascending {
+                            tie_breaker
+                        } else {
+                            tie_breaker.reverse()
+                        }
+                    })
                 });
 
                 let media_tasks: Vec<(u32, PathBuf)> = cached_items
@@ -264,123 +285,127 @@ impl FluxApp {
                 }
             };
 
-            let mut items: Vec<FileLoadContext> = raw_entries
-                .into_par_iter()
-                .filter_map(|(name, is_dir)| {
-                    if !show_hidden && name.starts_with('.') {
-                        return None;
-                    }
+            let mut items: Vec<FileLoadContext> = loader_pool().install(|| {
+                raw_entries
+                    .into_par_iter()
+                    .filter_map(|(name, is_dir)| {
+                        if !show_hidden && name.starts_with('.') {
+                            return None;
+                        }
 
-                    if !is_dir {
-                        if let Some(ref gs) = extension_globset {
-                            if !gs.is_match(name.to_lowercase()) {
-                                return None;
+                        if !is_dir {
+                            if let Some(ref gs) = extension_globset {
+                                if !gs.is_match(name.to_lowercase()) {
+                                    return None;
+                                }
                             }
                         }
-                    }
 
-                    let target_path = if is_trash {
-                        PathBuf::from(format!("trash:///{}", name))
-                    } else {
-                        path_clone.join(&name)
-                    };
+                        let target_path = if is_trash {
+                            PathBuf::from(format!("trash:///{}", name))
+                        } else {
+                            path_clone.join(&name)
+                        };
 
-                    let (size, mtime) = target_path
-                        .metadata()
-                        .ok()
-                        .map(|m| {
-                            let s = if is_dir { 0 } else { m.len() };
-                            let t = m
-                                .modified()
-                                .ok()
-                                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                                .map(|d| d.as_secs() as i64)
-                                .unwrap_or(0);
-                            (s, t)
-                        })
-                        .unwrap_or((0, 0));
-
-                    let mut thumbnail_path = None;
-                    if !is_dir {
-                        let (is_img, is_vid) = is_visual_media_by_ext(&target_path);
-                        if is_img || is_vid {
-                            thumbnail_path = Some(target_path.clone());
-                        }
-                    }
-
-                    let custom_icon = if config_file_icons.is_empty()
-                        && (!is_dir || config_folder_icons.is_empty())
-                    {
-                        None
-                    } else {
-                        let path_key = target_path.to_str();
-                        path_key.and_then(|k| {
-                            config_file_icons.get(k).cloned().or_else(|| {
-                                if is_dir {
-                                    config_folder_icons.get(k).cloned()
-                                } else {
-                                    None
-                                }
+                        let (size, mtime) = target_path
+                            .metadata()
+                            .ok()
+                            .map(|m| {
+                                let s = if is_dir { 0 } else { m.len() };
+                                let t = m
+                                    .modified()
+                                    .ok()
+                                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                                    .map(|d| d.as_secs() as i64)
+                                    .unwrap_or(0);
+                                (s, t)
                             })
+                            .unwrap_or((0, 0));
+
+                        let mut thumbnail_path = None;
+                        if !is_dir {
+                            let (is_img, is_vid) = is_visual_media_by_ext(&target_path);
+                            if is_img || is_vid {
+                                thumbnail_path = Some(target_path.clone());
+                            }
+                        }
+
+                        let custom_icon = if config_file_icons.is_empty()
+                            && (!is_dir || config_folder_icons.is_empty())
+                        {
+                            None
+                        } else {
+                            let path_key = target_path.to_str();
+                            path_key.and_then(|k| {
+                                config_file_icons.get(k).cloned().or_else(|| {
+                                    if is_dir {
+                                        config_folder_icons.get(k).cloned()
+                                    } else {
+                                        None
+                                    }
+                                })
+                            })
+                        };
+
+                        let sort_name = name.to_lowercase();
+                        let sort_ext = std::path::Path::new(&name)
+                            .extension()
+                            .and_then(|e| e.to_str())
+                            .map(|e| e.to_ascii_lowercase())
+                            .unwrap_or_default();
+
+                        Some(FileLoadContext {
+                            sort_name,
+                            sort_ext,
+                            display_name: name,
+                            target_path,
+                            size,
+                            mtime,
+                            is_dir,
+                            thumbnail_path,
+                            is_foreign_owner: false,
+                            expand_labels,
+                            custom_icon,
                         })
-                    };
-
-                    let sort_name = name.to_lowercase();
-                    let sort_ext = std::path::Path::new(&name)
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .map(|e| e.to_ascii_lowercase())
-                        .unwrap_or_default();
-
-                    Some(FileLoadContext {
-                        sort_name,
-                        sort_ext,
-                        display_name: name,
-                        target_path,
-                        size,
-                        mtime,
-                        is_dir,
-                        thumbnail_path,
-                        is_foreign_owner: false,
-                        expand_labels,
-                        custom_icon,
                     })
-                })
-                .collect();
+                    .collect()
+            });
 
             if !filter.is_empty() {
                 let query = filter.to_lowercase();
                 items.retain(|item| item.sort_name.contains(&query));
             }
 
-            // Parallel sort
-            items.par_sort_unstable_by(move |a, b| {
-                if a.is_dir != b.is_dir {
-                    return if folders_first {
-                        b.is_dir.cmp(&a.is_dir)
-                    } else {
-                        a.is_dir.cmp(&b.is_dir)
+            // Sort - run inside the capped pool so no new threads are spawned
+            loader_pool().install(|| {
+                items.par_sort_unstable_by(move |a, b| {
+                    if a.is_dir != b.is_dir {
+                        return if folders_first {
+                            b.is_dir.cmp(&a.is_dir)
+                        } else {
+                            a.is_dir.cmp(&b.is_dir)
+                        };
+                    }
+
+                    let primary_order = match sort_strategy {
+                        SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                        SortBy::Size => a.size.cmp(&b.size),
+                        SortBy::Date => a.mtime.cmp(&b.mtime),
+                        SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                     };
-                }
 
-                let primary_order = match sort_strategy {
-                    SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                    SortBy::Size => a.size.cmp(&b.size),
-                    SortBy::Date => a.mtime.cmp(&b.mtime),
-                    SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
-                };
+                    let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
+                        a.sort_name.cmp(&b.sort_name)
+                    } else {
+                        primary_order
+                    };
 
-                let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
-                    a.sort_name.cmp(&b.sort_name)
-                } else {
-                    primary_order
-                };
-
-                if sort_ascending {
-                    tie_breaker
-                } else {
-                    tie_breaker.reverse()
-                }
+                    if sort_ascending {
+                        tie_breaker
+                    } else {
+                        tie_breaker.reverse()
+                    }
+                });
             });
 
             let media_tasks: Vec<(u32, PathBuf)> = items
@@ -571,33 +596,35 @@ impl FluxApp {
                 }
 
                 // Sort entries
-                items.par_sort_unstable_by(move |a, b| {
-                    if a.is_dir != b.is_dir {
-                        return if folders_first {
-                            b.is_dir.cmp(&a.is_dir)
-                        } else {
-                            a.is_dir.cmp(&b.is_dir)
+                loader_pool().install(|| {
+                    items.par_sort_unstable_by(move |a, b| {
+                        if a.is_dir != b.is_dir {
+                            return if folders_first {
+                                b.is_dir.cmp(&a.is_dir)
+                            } else {
+                                a.is_dir.cmp(&b.is_dir)
+                            };
+                        }
+
+                        let primary_order = match sort_strategy {
+                            SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                            SortBy::Size => a.size.cmp(&b.size),
+                            SortBy::Date => a.mtime.cmp(&b.mtime),
+                            SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                         };
-                    }
 
-                    let primary_order = match sort_strategy {
-                        SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                        SortBy::Size => a.size.cmp(&b.size),
-                        SortBy::Date => a.mtime.cmp(&b.mtime),
-                        SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
-                    };
+                        let tie = if primary_order == std::cmp::Ordering::Equal {
+                            a.sort_name.cmp(&b.sort_name)
+                        } else {
+                            primary_order
+                        };
 
-                    let tie = if primary_order == std::cmp::Ordering::Equal {
-                        a.sort_name.cmp(&b.sort_name)
-                    } else {
-                        primary_order
-                    };
-
-                    if sort_ascending {
-                        tie
-                    } else {
-                        tie.reverse()
-                    }
+                        if sort_ascending {
+                            tie
+                        } else {
+                            tie.reverse()
+                        }
+                    });
                 });
 
                 if self.is_list_mode {
@@ -989,23 +1016,27 @@ impl FluxApp {
 
             let session_arc = self.load_id.clone();
             let sender_clone = sender.clone();
-            let mut chunks: Vec<Vec<FileLoadContext>> =
-                remaining.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
-            chunks.reverse();
+            let mut chunks: Option<Vec<Vec<FileLoadContext>>> = {
+                let mut v: Vec<Vec<FileLoadContext>> =
+                    remaining.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
+                v.reverse();
+                Some(v)
+            };
 
             glib::idle_add_local(move || {
                 if session_arc.load(Ordering::SeqCst) != load_id {
+                    chunks.take(); // free all pending item data immediately
                     return glib::ControlFlow::Break;
                 }
 
-                if let Some(chunk) = chunks.pop() {
+                if let Some(chunk) = chunks.as_mut().and_then(|v| v.pop()) {
                     sender_clone.input(AppMsg::FolderLoadedChunk {
                         load_id,
                         chunk,
                         is_cached,
                     });
 
-                    if chunks.is_empty() {
+                    if chunks.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
                         sender_clone.input(AppMsg::FolderLoadedFinish { load_id });
                         glib::ControlFlow::Break
                     } else {
