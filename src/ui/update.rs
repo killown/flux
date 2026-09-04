@@ -265,6 +265,23 @@ impl FluxApp {
             }
 
             // Navigation & Quick List
+            AppMsg::FolderLoadedChunk {
+                load_id,
+                chunk,
+                is_cached,
+            } => {
+                if self.load_id.load(std::sync::atomic::Ordering::SeqCst) == load_id {
+                    self.append_context_batch(chunk, load_id, is_cached, &sender);
+                }
+            }
+            AppMsg::FolderLoadedFinish { load_id } => {
+                if self.load_id.load(std::sync::atomic::Ordering::SeqCst) == load_id {
+                    self.is_loading = false;
+                    unsafe {
+                        libc::malloc_trim(0);
+                    }
+                }
+            }
             AppMsg::FolderLoaded {
                 path,
                 load_id,

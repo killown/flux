@@ -560,6 +560,14 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Delivers an incremental batch of load contexts to the grid view.
+    FolderLoadedChunk {
+        load_id: u64,
+        chunk: Vec<FileLoadContext>,
+        is_cached: bool,
+    },
+    /// Finalizes directory loading after all chunks are appended.
+    FolderLoadedFinish { load_id: u64 },
     /// Toggles the drag-and-drop feature across the grid and sidebar.
     SetDisableDragAndDrop(bool),
     /// Toggles the lazy thumbnail generation setting.
