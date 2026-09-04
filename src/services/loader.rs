@@ -838,7 +838,7 @@ impl FluxApp {
         &mut self,
         items: Vec<FileLoadContext>,
         load_id: u64,
-        is_cached: bool,
+        _is_cached: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
         let max_width_chars = self.config.ui.max_width_chars;
@@ -884,8 +884,8 @@ impl FluxApp {
                 .and_then(|m| m.get(&item.target_path))
                 .cloned();
 
-            // Collect visual media files in this chunk for immediate thumbnail generation
-            if !item.is_dir && !is_cached {
+            // Collect visual media files that don't have a thumbnail yet
+            if !item.is_dir && thumbnail.is_none() {
                 let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
                 if is_img || is_vid {
                     let source = custom_icon
@@ -924,8 +924,8 @@ impl FluxApp {
             self.files.append(file_item);
         }
 
-        // Fire thumbnail generation immediately for this chunk's items
-        if !is_cached {
+        // Fire thumbnail generation for any items still missing thumbnails
+        if !chunk_media_tasks.is_empty() {
             if !self.config.ui.lazy_thumbnails {
                 self.spawn_thumbnail_loader(chunk_media_tasks, load_id, sender.clone());
             } else {
