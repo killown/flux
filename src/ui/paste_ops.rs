@@ -1,5 +1,4 @@
 use crate::model::{AppMsg, FluxApp};
-use crate::services::tasks::TaskQueue;
 use crate::ui::conflict_policy::{
     auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
 };
@@ -7,8 +6,8 @@ use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{atomic::AtomicUsize, Arc, Mutex};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 // Global operation ID counter, monotonically increasing, unique per session.
 pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
@@ -18,8 +17,6 @@ static CONFLICT_MUTEX: parking_lot::Mutex<()> = parking_lot::Mutex::new(());
 
 /// Minimum number of files that triggers the dialog without a time delay.
 const DIALOG_FILE_THRESHOLD: usize = 5;
-/// Minimum total bytes that triggers the dialog without a time delay (32 MiB).
-const DIALOG_SIZE_THRESHOLD: u64 = 32 * 1_024 * 1_024;
 /// Delay before showing the dialog for small copies that run longer than expected.
 const DIALOG_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
 
@@ -105,7 +102,7 @@ impl FluxApp {
         );
     }
 
-    /// Core execution batch runner for both forced and non-conflicting pastes.
+    /// Core execution batch runner executing paste operations sequentially in one task.
     fn run_paste_batch(
         &self,
         resolved_files: Vec<(PathBuf, String, bool)>,
@@ -115,100 +112,141 @@ impl FluxApp {
         initial_policy: ConflictPolicy,
     ) {
         let total_files = resolved_files.len();
-        let total_bytes: u64 = resolved_files
-            .iter()
-            .map(|(p, _, _)| scan_total_bytes(p))
-            .sum();
+        if total_files == 0 {
+            return;
+        }
 
-        let completed_files = Arc::new(AtomicUsize::new(0));
+        let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+        let cancellable = gio::Cancellable::new();
 
-        // Shared, mutable conflict policy for the batch.
-        // Updated by the GTK thread via `AppMsg::SetConflictPolicy`.
+        let batch_label = if total_files == 1 {
+            resolved_files[0].1.clone()
+        } else {
+            format!(
+                "{} {} items",
+                if is_cut { "Moving" } else { "Copying" },
+                total_files
+            )
+        };
+
+        // Register a single task representing the whole operation
+        self.task_queue.update(
+            task_id,
+            batch_label.clone(),
+            0,
+            0,
+            total_files,
+            cancellable.clone(),
+        );
+
+        sender.input(AppMsg::TaskProgress {
+            id: task_id,
+            label: batch_label.clone(),
+            current: 0,
+            total: 0,
+            total_items: total_files,
+            cancellable: cancellable.clone(),
+        });
+        sender.input(AppMsg::TaskQueueTick);
+
+        // Trigger progress dialog if file count or byte threshold is met
+        if total_files >= DIALOG_FILE_THRESHOLD {
+            sender.input(AppMsg::ShowTransferDialog);
+        } else {
+            let s_delay = sender.clone();
+            relm4::spawn(async move {
+                tokio::time::sleep(DIALOG_DELAY).await;
+                s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id));
+            });
+        }
+
+        let s = sender.clone();
+        let t_queue = self.task_queue.clone();
         let policy = Arc::new(Mutex::new(initial_policy));
 
-        let batch_results = Arc::new(Mutex::new(Vec::new()));
+        relm4::spawn_blocking(move || {
+            // Pre-calculate file sizes once before moving/copying
+            let files_with_sizes: Vec<(PathBuf, String, bool, u64)> = resolved_files
+                .into_iter()
+                .map(|(p, name, is_dir)| {
+                    let size = scan_total_bytes(&p);
+                    (p, name, is_dir, size)
+                })
+                .collect();
 
-        for (batch_index, (src_path, clean_name, is_dir)) in resolved_files.into_iter().enumerate()
-        {
-            let task_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
-            let cancellable = gio::Cancellable::new();
-            let dest_initial = target_dir.join(&clean_name);
+            let total_bytes: u64 = files_with_sizes.iter().map(|(_, _, _, s)| *s).sum();
 
-            let file_bytes = scan_total_bytes(&src_path).max(1);
-
-            self.task_queue.update(
+            t_queue.update(
                 task_id,
-                clean_name.clone(),
+                batch_label.clone(),
                 0,
-                file_bytes,
+                total_bytes,
                 total_files,
                 cancellable.clone(),
             );
+            s.input(AppMsg::TaskQueueTick);
 
-            sender.input(AppMsg::TaskProgress {
-                id: task_id,
-                label: clean_name.clone(),
-                current: 0,
-                total: file_bytes,
-                total_items: total_files,
-                cancellable: cancellable.clone(),
-            });
+            let mut copied_bytes: u64 = 0;
+            let mut successful_ops = Vec::new();
 
-            maybe_show_dialog_immediate(total_files, total_bytes, &sender);
-
-            let s = sender.clone();
-            let completed_clone = completed_files.clone();
-            let t_queue = self.task_queue.clone();
-            let policy_clone = Arc::clone(&policy);
-            let results_clone = Arc::clone(&batch_results);
-            let target_dir_clone = target_dir.clone();
-
+            for (batch_index, (src_path, clean_name, is_dir, file_size)) in
+                files_with_sizes.into_iter().enumerate()
             {
-                let s_delay = s.clone();
-                relm4::spawn(async move {
-                    tokio::time::sleep(DIALOG_DELAY).await;
-                    s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id));
+                if cancellable.is_cancelled() {
+                    break;
+                }
+
+                let dest_initial = target_dir.join(&clean_name);
+
+                // Update current item label and progress
+                let current_label = if total_files > 1 {
+                    format!("({}/{}) {}", batch_index + 1, total_files, clean_name)
+                } else {
+                    clean_name.clone()
+                };
+
+                t_queue.update(
+                    task_id,
+                    current_label.clone(),
+                    copied_bytes,
+                    total_bytes,
+                    total_files,
+                    cancellable.clone(),
+                );
+
+                s.input(AppMsg::TaskProgress {
+                    id: task_id,
+                    label: current_label.clone(),
+                    current: copied_bytes,
+                    total: total_bytes,
+                    total_items: total_files,
+                    cancellable: cancellable.clone(),
                 });
-            }
+                s.input(AppMsg::TaskQueueTick);
 
-            relm4::spawn_blocking(move || {
-                // ── Conflict resolution ──────────────────────────────────────
+                // Conflict Resolution
                 let dest = if !is_dir && dest_initial.exists() {
-                    let current_policy = { policy_clone.lock().unwrap().clone() };
-
+                    let current_policy = { policy.lock().unwrap().clone() };
                     match current_policy {
                         ConflictPolicy::ReplaceAll => dest_initial.clone(),
                         ConflictPolicy::SkipAll => {
-                            s.input(AppMsg::TaskCompleted(task_id));
-                            let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
-                            if count == total_files {
-                                s.input(AppMsg::Refresh);
-                            }
-                            return;
+                            copied_bytes += file_size;
+                            continue;
                         }
                         ConflictPolicy::AutoRenameAll => auto_rename_dest(&dest_initial),
                         ConflictPolicy::Ask => {
-                            // Serialise conflict resolution so only one dialog is shown at a time.
                             let _lock = CONFLICT_MUTEX.lock();
-
-                            // Re-check policy after acquiring the mutex, another thread may have
-                            // updated it while we were waiting.
-                            let rechecked_policy = { policy_clone.lock().unwrap().clone() };
-                            match rechecked_policy {
+                            let rechecked = { policy.lock().unwrap().clone() };
+                            match rechecked {
                                 ConflictPolicy::ReplaceAll => dest_initial.clone(),
                                 ConflictPolicy::SkipAll => {
-                                    s.input(AppMsg::TaskCompleted(task_id));
-                                    let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
-                                    if count == total_files {
-                                        s.input(AppMsg::Refresh);
-                                    }
-                                    return;
+                                    copied_bytes += file_size;
+                                    continue;
                                 }
                                 ConflictPolicy::AutoRenameAll => auto_rename_dest(&dest_initial),
                                 ConflictPolicy::Ask => {
                                     let (tx, rx) =
                                         tokio::sync::oneshot::channel::<(ConflictChoice, bool)>();
-
                                     let ctx = ConflictContext {
                                         src: src_path.clone(),
                                         dest: dest_initial.clone(),
@@ -235,28 +273,17 @@ impl FluxApp {
                                             }
                                             ConflictChoice::Cancel => ConflictPolicy::SkipAll,
                                         };
-                                        *policy_clone.lock().unwrap() = new_policy;
+                                        *policy.lock().unwrap() = new_policy;
                                     }
 
                                     match choice {
                                         ConflictChoice::Cancel => {
                                             cancellable.cancel();
-                                            s.input(AppMsg::TaskCompleted(task_id));
-                                            let count =
-                                                completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
-                                            if count == total_files {
-                                                s.input(AppMsg::Refresh);
-                                            }
-                                            return;
+                                            break;
                                         }
                                         ConflictChoice::Skip => {
-                                            s.input(AppMsg::TaskCompleted(task_id));
-                                            let count =
-                                                completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
-                                            if count == total_files {
-                                                s.input(AppMsg::Refresh);
-                                            }
-                                            return;
+                                            copied_bytes += file_size;
+                                            continue;
                                         }
                                         ConflictChoice::AutoRename => {
                                             auto_rename_dest(&dest_initial)
@@ -271,62 +298,66 @@ impl FluxApp {
                     dest_initial.clone()
                 };
 
-                // ── Progress watcher ─────────────────────────────────────────
-                let final_label = dest
-                    .file_name()
-                    .map(|n| n.to_string_lossy().to_string())
-                    .unwrap_or(clean_name);
-
-                let finished_flag = Arc::new(AtomicBool::new(false));
-
-                spawn_file_watcher(
-                    dest.clone(),
-                    file_bytes,
-                    task_id,
-                    final_label.clone(),
-                    total_files,
-                    cancellable.clone(),
-                    finished_flag.clone(),
-                    t_queue.clone(),
-                    s.input_sender().clone(),
+                // Perform copy/move with byte-level progress reporting
+                let bytes_before = copied_bytes;
+                let s_cb = s.clone();
+                let label_cb = current_label.clone();
+                let t_queue_cb = t_queue.clone();
+                let cancellable_cb = cancellable.clone();
+                let mut progress_cb = move |current_bytes: i64, _total_bytes_file: i64| {
+                    let in_flight = current_bytes.max(0) as u64;
+                    let overall = bytes_before + in_flight;
+                    t_queue_cb.update(
+                        task_id,
+                        label_cb.clone(),
+                        overall,
+                        total_bytes,
+                        total_files,
+                        cancellable_cb.clone(),
+                    );
+                    s_cb.input(AppMsg::TaskProgress {
+                        id: task_id,
+                        label: label_cb.clone(),
+                        current: overall,
+                        total: total_bytes,
+                        total_items: total_files,
+                        cancellable: cancellable_cb.clone(),
+                    });
+                    s_cb.input(AppMsg::TaskQueueTick);
+                };
+                let result = perform_file_op(
+                    &src_path,
+                    &dest,
+                    is_cut,
+                    &cancellable,
+                    Some(&mut progress_cb),
                 );
-
-                // ── Actual I/O ───────────────────────────────────────────────
-                let result = perform_file_op(&src_path, &dest, is_cut, &cancellable);
-
-                finished_flag.store(true, Ordering::SeqCst);
-
-                if cancellable.is_cancelled() {
-                    s.input(AppMsg::TaskCompleted(task_id));
-                    return;
-                }
-
                 if result.is_ok() {
-                    results_clone
-                        .lock()
-                        .unwrap()
-                        .push((src_path.clone(), dest.clone()));
+                    successful_ops.push((src_path.clone(), dest.clone()));
+                    copied_bytes += file_size;
+
                     t_queue.update(
                         task_id,
-                        final_label.clone(),
-                        file_bytes,
-                        file_bytes,
+                        batch_label.clone(),
+                        copied_bytes,
+                        total_bytes,
                         total_files,
                         cancellable.clone(),
                     );
                     s.input(AppMsg::TaskProgress {
                         id: task_id,
-                        label: final_label,
-                        current: file_bytes,
-                        total: file_bytes,
+                        label: batch_label.clone(),
+                        current: copied_bytes,
+                        total: total_bytes,
                         total_items: total_files,
                         cancellable: cancellable.clone(),
                     });
+                    s.input(AppMsg::TaskQueueTick);
 
                     if is_cut {
                         s.input(AppMsg::ItemMoved {
-                            old_path: src_path.clone(),
-                            new_path: dest.clone(),
+                            old_path: src_path,
+                            new_path: dest,
                         });
                     }
                 } else if let Err(ref e) = result {
@@ -334,27 +365,27 @@ impl FluxApp {
                         s.input(AppMsg::ShowToast(format!("Operation failed: {}", e)));
                     }
                 }
+            }
 
-                s.input(AppMsg::TaskCompleted(task_id));
+            t_queue.remove(task_id);
+            s.input(AppMsg::TaskCompleted(task_id));
+            s.input(AppMsg::TaskQueueTick);
 
-                let count = completed_clone.fetch_add(1, Ordering::Relaxed) + 1;
-                if count == total_files {
-                    let recorded = results_clone.lock().unwrap().clone();
-                    if is_cut && !recorded.is_empty() {
-                        s.input(AppMsg::MoveSucceeded {
-                            items: recorded,
-                            dest_dir: target_dir_clone,
-                        });
-                    } else if !is_cut && !recorded.is_empty() {
-                        s.input(AppMsg::CopySucceeded {
-                            copies: recorded,
-                            dest_dir: target_dir_clone,
-                        });
-                    }
-                    s.input(AppMsg::Refresh);
+            if !successful_ops.is_empty() {
+                if is_cut {
+                    s.input(AppMsg::MoveSucceeded {
+                        items: successful_ops,
+                        dest_dir: target_dir,
+                    });
+                } else {
+                    s.input(AppMsg::CopySucceeded {
+                        copies: successful_ops,
+                        dest_dir: target_dir,
+                    });
                 }
-            });
-        }
+                s.input(AppMsg::Refresh);
+            }
+        });
     }
 }
 
@@ -378,52 +409,12 @@ fn resolve_gio_files(files: Vec<gio::File>) -> Vec<(PathBuf, String, bool)> {
         .collect()
 }
 
-#[allow(clippy::too_many_arguments)]
-fn spawn_file_watcher(
-    dest: PathBuf,
-    total_bytes: u64,
-    task_id: u64,
-    label: String,
-    total_items: usize,
-    cancellable: gio::Cancellable,
-    finished: Arc<AtomicBool>,
-    task_queue: Arc<TaskQueue>,
-    sender: relm4::Sender<AppMsg>,
-) {
-    std::thread::spawn(move || {
-        while !finished.load(Ordering::SeqCst) && !cancellable.is_cancelled() {
-            let current_bytes = scan_total_bytes(&dest).min(total_bytes);
-
-            task_queue.update(
-                task_id,
-                label.clone(),
-                current_bytes,
-                total_bytes,
-                total_items,
-                cancellable.clone(),
-            );
-
-            let _ = sender.send(AppMsg::TaskProgress {
-                id: task_id,
-                label: label.clone(),
-                current: current_bytes,
-                total: total_bytes,
-                total_items,
-                cancellable: cancellable.clone(),
-            });
-
-            let _ = sender.send(AppMsg::TaskQueueTick);
-
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-    });
-}
-
 pub fn perform_file_op(
     src: &Path,
     dest: &Path,
     is_cut: bool,
     cancellable: &gio::Cancellable,
+    mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
 ) -> Result<(), String> {
     if src == dest && is_cut {
         return Ok(());
@@ -438,7 +429,10 @@ pub fn perform_file_op(
                 &dst_file,
                 gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
                 Some(cancellable),
-                None,
+                match progress_cb.as_mut() {
+                    Some(f) => Some(&mut **f),
+                    None => None,
+                },
             )
             .map_err(|e| e.to_string());
 
@@ -448,14 +442,26 @@ pub fn perform_file_op(
     }
 
     let copy_res = if src.is_dir() {
-        copy_dir_recursive(src, dest, cancellable).map_err(|e| e.to_string())
+        copy_dir_recursive(
+            src,
+            dest,
+            cancellable,
+            match progress_cb.as_mut() {
+                Some(f) => Some(&mut **f),
+                None => None,
+            },
+        )
+        .map_err(|e| e.to_string())
     } else {
         src_file
             .copy(
                 &dst_file,
                 gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
                 Some(cancellable),
-                None,
+                match progress_cb.as_mut() {
+                    Some(f) => Some(&mut **f),
+                    None => None,
+                },
             )
             .map_err(|e| e.to_string())
     };
@@ -484,6 +490,7 @@ fn copy_dir_recursive(
     src: &Path,
     dest: &Path,
     cancellable: &gio::Cancellable,
+    mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
 ) -> std::io::Result<()> {
     if src == dest {
         return Ok(());
@@ -507,14 +514,25 @@ fn copy_dir_recursive(
         let file_type = entry.file_type()?;
 
         if file_type.is_dir() {
-            copy_dir_recursive(&child_src, &child_dest, cancellable)?;
+            copy_dir_recursive(
+                &child_src,
+                &child_dest,
+                cancellable,
+                match progress_cb.as_mut() {
+                    Some(f) => Some(&mut **f),
+                    None => None,
+                },
+            )?;
         } else {
             gio::File::for_path(&child_src)
                 .copy(
                     &gio::File::for_path(&child_dest),
                     gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
                     Some(cancellable),
-                    None,
+                    match progress_cb.as_mut() {
+                        Some(f) => Some(&mut **f),
+                        None => None,
+                    },
                 )
                 .map_err(|e| std::io::Error::other(e.to_string()))?;
         }
@@ -524,29 +542,21 @@ fn copy_dir_recursive(
 }
 
 fn scan_total_bytes(path: &Path) -> u64 {
-    if path.is_file() {
-        return std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
-    }
-    if path.is_dir() {
-        let mut total = 0u64;
-        if let Ok(entries) = std::fs::read_dir(path) {
-            for entry in entries.flatten() {
-                total += scan_total_bytes(&entry.path());
-            }
+    if let Ok(m) = std::fs::metadata(path).or_else(|_| std::fs::symlink_metadata(path)) {
+        if m.is_file() || m.is_symlink() {
+            return m.len();
         }
-        return total;
+        if m.is_dir() {
+            let mut total = 0u64;
+            if let Ok(entries) = std::fs::read_dir(path) {
+                for entry in entries.flatten() {
+                    total += scan_total_bytes(&entry.path());
+                }
+            }
+            return total;
+        }
     }
     0
-}
-
-fn maybe_show_dialog_immediate(
-    file_count: usize,
-    total_bytes: u64,
-    sender: &AsyncComponentSender<FluxApp>,
-) {
-    if file_count >= DIALOG_FILE_THRESHOLD || total_bytes >= DIALOG_SIZE_THRESHOLD {
-        sender.input(AppMsg::ShowTransferDialog);
-    }
 }
 
 fn clean_tmp_basename(name: &str) -> String {
