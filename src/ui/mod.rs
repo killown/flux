@@ -9,7 +9,6 @@ pub mod debug;
 pub mod init;
 pub mod inputs;
 pub mod keymap;
-pub mod location_dialog;
 pub mod settings;
 pub mod update;
 pub mod view;
