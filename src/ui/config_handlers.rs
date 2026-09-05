@@ -56,6 +56,9 @@ impl FluxApp {
         self.show_hidden = val;
         self.config.ui.show_hidden_by_default = val;
         utils::save_config(&self.config);
+        //WARNING: DO NOT REMOVE THE clear(). The folder cache stores pre-filtered items (dotfiles excluded at load time),
+        // so toggling visibility without clearing it causes Ctrl+H to have no effect.
+        self.folder_cache.clear();
         sender.input(AppMsg::Refresh);
     }
 
