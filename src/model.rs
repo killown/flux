@@ -41,6 +41,14 @@ fn default_max_history() -> usize {
     100
 }
 
+fn default_ffmpeg_threads() -> usize {
+    1
+}
+
+fn default_ffmpeg_seek_seconds() -> f64 {
+    5.0
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -251,6 +259,15 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Number of threads per FFmpeg child process when extracting video frames.
+    #[serde(default = "default_ffmpeg_threads")]
+    pub ffmpeg_threads: usize,
+    /// Initial seek position in seconds when grabbing a video thumbnail frame.
+    #[serde(default = "default_ffmpeg_seek_seconds")]
+    pub ffmpeg_seek_seconds: f64,
+    /// Whether FFmpeg should automatically rotate portrait/smartphone video thumbnails.
+    #[serde(default)]
+    pub ffmpeg_auto_rotate: bool,
     /// Number of items dispatched per chunk into the UI grid.
     #[serde(default = "default_loader_batch_size")]
     pub loader_batch_size: usize,
@@ -409,6 +426,9 @@ impl Default for UIConfig {
             thumbnail_threads: default_thumbnail_threads(),
             max_search_results: default_max_search_results(),
             max_history: default_max_history(),
+            ffmpeg_threads: default_ffmpeg_threads(),
+            ffmpeg_seek_seconds: default_ffmpeg_seek_seconds(),
+            ffmpeg_auto_rotate: false,
         }
     }
 }
@@ -600,6 +620,12 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Set the thread count used by each FFmpeg thumbnail process.
+    SetFfmpegThreads(usize),
+    /// Set the seek offset (in seconds) for video thumbnail frame grabs.
+    SetFfmpegSeekSeconds(f64),
+    /// Toggle automatic rotation based on video container metadata.
+    SetFfmpegAutoRotate(bool),
     /// Set the batch size for streaming directory entries into the UI grid.
     SetLoaderBatchSize(usize),
     /// Set the capacity of the in-memory folder cache.

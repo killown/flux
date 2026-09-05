@@ -24,6 +24,15 @@ impl FluxApp {
 
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
+            AppMsg::SetFfmpegThreads(val) => {
+                self.handle_set_ffmpeg_threads(val);
+            }
+            AppMsg::SetFfmpegSeekSeconds(val) => {
+                self.handle_set_ffmpeg_seek_seconds(val);
+            }
+            AppMsg::SetFfmpegAutoRotate(val) => {
+                self.handle_set_ffmpeg_auto_rotate(val);
+            }
             AppMsg::SetLoaderBatchSize(val) => {
                 self.handle_set_loader_batch_size(val);
             }

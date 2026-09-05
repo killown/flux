@@ -363,6 +363,21 @@ impl FluxApp {
         sender.input(AppMsg::RefreshSidebar);
     }
 
+    pub fn handle_set_ffmpeg_threads(&mut self, val: usize) {
+        self.config.ui.ffmpeg_threads = val;
+        utils::save_config(&self.config);
+    }
+
+    pub fn handle_set_ffmpeg_seek_seconds(&mut self, val: f64) {
+        self.config.ui.ffmpeg_seek_seconds = val;
+        utils::save_config(&self.config);
+    }
+
+    pub fn handle_set_ffmpeg_auto_rotate(&mut self, val: bool) {
+        self.config.ui.ffmpeg_auto_rotate = val;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_set_terminal_config(
         &mut self,
         height: Option<i32>,
