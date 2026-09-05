@@ -43,16 +43,3 @@ fn test_modifier_keyval_matching() {
     assert!(!is_modifier_key("Return"));
     assert!(!is_modifier_key("Escape"));
 }
-
-#[test]
-fn test_swipe_velocity_threshold_detection() {
-    let threshold = 500.0;
-
-    let velocity_right = 750.0;
-    let velocity_left = -800.0;
-    let velocity_slow = 200.0;
-
-    assert!(velocity_right > threshold);
-    assert!(velocity_left < -threshold);
-    assert!(velocity_slow <= threshold && velocity_slow >= -threshold);
-}

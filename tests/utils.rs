@@ -5,4 +5,6 @@ mod utils {
     mod glob_test;
     mod helpers_test;
     mod media_test;
+    mod search_parser_test;
+    mod xattr_test;
 }

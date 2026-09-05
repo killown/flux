@@ -130,3 +130,15 @@ name = "fuzz_size_filter"
 path = "fuzz_targets/fuzz_size_filter.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_rename_path"
+path = "fuzz_targets/fuzz_rename_path.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_xattr_tags"
+path = "fuzz_targets/fuzz_xattr_tags.rs"
+test = false
+doc = false

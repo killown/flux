@@ -7,6 +7,7 @@ use gtk::gio;
 use rayon::prelude::*;
 use relm4::prelude::*;
 use std::cell::RefCell;
+use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
@@ -251,6 +252,8 @@ impl FluxApp {
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
+            let current_uid = unsafe { libc::geteuid() };
+
             // Fast directory reading without individual stat() calls per file
             let raw_entries: Vec<(String, bool)> = if is_trash {
                 let root_bg = gio::File::for_uri(&path_clone.to_string_lossy());
@@ -307,7 +310,7 @@ impl FluxApp {
                             path_clone.join(&name)
                         };
 
-                        let (size, mtime) = target_path
+                        let (size, mtime, is_foreign_owner) = target_path
                             .metadata()
                             .ok()
                             .map(|m| {
@@ -318,9 +321,10 @@ impl FluxApp {
                                     .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
                                     .map(|d| d.as_secs() as i64)
                                     .unwrap_or(0);
-                                (s, t)
+                                let foreign = m.uid() != current_uid;
+                                (s, t, foreign)
                             })
-                            .unwrap_or((0, 0));
+                            .unwrap_or((0, 0, false));
 
                         let mut thumbnail_path = None;
                         if !is_dir {
@@ -363,7 +367,7 @@ impl FluxApp {
                             mtime,
                             is_dir,
                             thumbnail_path,
-                            is_foreign_owner: false,
+                            is_foreign_owner,
                             expand_labels,
                             custom_icon,
                         })
