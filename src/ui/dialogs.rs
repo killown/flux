@@ -72,7 +72,7 @@ impl FluxApp {
                                 "Directory or file already exists",
                             )));
                         } else if std::fs::create_dir(&folder_path).is_ok() {
-                            s.input(AppMsg::Navigate(folder_path));
+                            s.input(AppMsg::InvalidateCacheAndNavigate(folder_path));
                         }
                     }
                 } else if names.len() > 1 {

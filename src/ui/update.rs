@@ -24,6 +24,10 @@ impl FluxApp {
 
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
+            AppMsg::SetShowEmptyDirEmblem(val) => {
+                self.config.ui.show_empty_dir_emblem = val;
+                utils::save_config(&self.config);
+            }
             AppMsg::SetFfmpegThreads(val) => {
                 self.handle_set_ffmpeg_threads(val);
             }
@@ -35,6 +39,10 @@ impl FluxApp {
             }
             AppMsg::SetLoaderBatchSize(val) => {
                 self.handle_set_loader_batch_size(val);
+            }
+            AppMsg::InvalidateCacheAndNavigate(path) => {
+                self.folder_cache.remove(&self.current_path);
+                sender.input(AppMsg::Navigate(path));
             }
             AppMsg::SetFolderCacheCapacity(val) => {
                 self.handle_set_folder_cache_capacity(val);

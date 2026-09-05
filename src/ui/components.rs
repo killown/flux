@@ -58,6 +58,7 @@ pub struct FileItem {
 pub struct FileWidgets {
     pub icon_widget: gtk::Image,
     pub lock_icon: gtk::Image,
+    pub empty_icon: gtk::Image,
     pub label: gtk::Label,
     pub stack: gtk::Stack,
     pub drag_source: gtk::DragSource,
@@ -161,108 +162,116 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         info_label.add_css_class("flux-list-info");
 
         relm4::view! {
-            #[root]
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
-                set_halign: gtk::Align::Center,
-                set_spacing: 0,
-                set_valign: gtk::Align::Center,
-                add_css_class: constants::CARD_CSS_CLASS,
+                            #[root]
+                            root = gtk::Box {
+                                set_orientation: gtk::Orientation::Vertical,
+                                set_halign: gtk::Align::Center,
+                                set_spacing: 0,
+                                set_valign: gtk::Align::Center,
+                                add_css_class: constants::CARD_CSS_CLASS,
 
-                // only if single_click is enabled
-                connect_realize => move |w| {
-                    FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
-                },
+                                // only if single_click is enabled
+                                connect_realize => move |w| {
+                                    FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
+                                },
 
-                add_controller = gtk::GestureLongPress {
-                    connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
-                        if let Some(s) = sender.get() {
-                            let widget = gesture.widget().unwrap();
-                            let idx_opt: Option<u32> = unsafe {
-                                widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
-                            };
+                                add_controller = gtk::GestureLongPress {
+                                    connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
+                                        if let Some(s) = sender.get() {
+                                            let widget = gesture.widget().unwrap();
+                                            let idx_opt: Option<u32> = unsafe {
+                                                widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
+                                            };
 
-                            if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
-                            }
-                        }
-                    }
-                },
+                                            if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                                let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
+                                            }
+                                        }
+                                    }
+                                },
 
-                add_controller = gtk::GestureClick {
-                    set_button: 0,
-                    connect_pressed => |gesture, _, _, _| {
-                        let button = gesture.current_button();
-                        if button == constants::MOUSE_RIGHT_CLICK {
-                            gesture.set_state(gtk::EventSequenceState::Claimed);
-                        }
-                    },
-                    connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
-                        if gesture.current_button() == MOUSE_RIGHT_CLICK {
-                            if let Some(s) = sender.get() {
-                                let widget = gesture.widget().unwrap();
+                                add_controller = gtk::GestureClick {
+                                    set_button: 0,
+                                    connect_pressed => |gesture, _, _, _| {
+                                        let button = gesture.current_button();
+                                        if button == constants::MOUSE_RIGHT_CLICK {
+                                            gesture.set_state(gtk::EventSequenceState::Claimed);
+                                        }
+                                    },
+                                    connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
+                                        if gesture.current_button() == MOUSE_RIGHT_CLICK {
+                                            if let Some(s) = sender.get() {
+                                                let widget = gesture.widget().unwrap();
 
-                                let idx_opt: Option<u32> = unsafe {
-                                    widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
-                                };
+                                                let idx_opt: Option<u32> = unsafe {
+                                                    widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
+                                                };
 
-                                if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                    let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
+                                                if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                                    let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+
+                                #[name = "icon_widget"]
+                                gtk::Image {
+                                    set_halign: gtk::Align::Center,
+                                    set_valign: gtk::Align::End,
+                                    set_vexpand: false,
+                                    add_css_class: constants::THUMBNAIL_CLASS,
+                                },
+
+                                #[name = "label_scroller"]
+                                gtk::ScrolledWindow {
+                                    set_hscrollbar_policy: gtk::PolicyType::Never,
+                                    set_vscrollbar_policy: gtk::PolicyType::Never,
+                                    set_propagate_natural_width: true,
+                                    set_hexpand: false,
+                                    set_vexpand: false,
+
+                                    #[name = "stack"]
+                                    #[wrap(Some)]
+                                    set_child = &gtk::Stack {
+                                        set_transition_type: gtk::StackTransitionType::Crossfade,
+                                        set_halign: gtk::Align::Center,
+                                        set_vexpand: false,
+
+                                        add_child = &gtk::Box {
+                                            set_orientation: gtk::Orientation::Horizontal,
+                                            set_halign: gtk::Align::Center,
+                                            set_spacing: 4,
+
+                                            #[name = "lock_icon"]
+                                            gtk::Image {
+                                                set_icon_name: Some("changes-prevent-symbolic"),
+                                                set_pixel_size: 12,
+                                                set_visible: false,
+                                                add_css_class: "flux-lock-badge",
+                                            },
+
+                                            #[name = "empty_icon"]
+                                            gtk::Image {
+                                                set_icon_name: Some("folder-open-symbolic"),
+                                                set_pixel_size: 12,
+                                                set_visible: false,
+                                                add_css_class: "flux-empty-badge",
+                                            },
+
+                                            #[name = "label"]
+                                            gtk::Label {
+                                                set_justify: gtk::Justification::Center,
+                                                set_ellipsize: gtk::pango::EllipsizeMode::End,
+                                                set_hexpand: false,
+                                                add_css_class: constants::FLUX_LABEL_CLASS,
+                                            },
+                                        } -> { set_name: constants::VIEW_LABEL }
+                                    }
                                 }
                             }
-                        }
-                    }
-                },
-
-                #[name = "icon_widget"]
-                gtk::Image {
-                    set_halign: gtk::Align::Center,
-                    set_valign: gtk::Align::End,
-                    set_vexpand: false,
-                    add_css_class: constants::THUMBNAIL_CLASS,
-                },
-
-                #[name = "label_scroller"]
-                gtk::ScrolledWindow {
-                    set_hscrollbar_policy: gtk::PolicyType::Never,
-                    set_vscrollbar_policy: gtk::PolicyType::Never,
-                    set_propagate_natural_width: true,
-                    set_hexpand: false,
-                    set_vexpand: false,
-
-                    #[name = "stack"]
-                    #[wrap(Some)]
-                    set_child = &gtk::Stack {
-                        set_transition_type: gtk::StackTransitionType::Crossfade,
-                        set_halign: gtk::Align::Center,
-                        set_vexpand: false,
-
-                        add_child = &gtk::Box {
-                            set_orientation: gtk::Orientation::Horizontal,
-                            set_halign: gtk::Align::Center,
-                            set_spacing: 4,
-
-                            #[name = "lock_icon"]
-                            gtk::Image {
-                                set_icon_name: Some("changes-prevent-symbolic"),
-                                set_pixel_size: 12,
-                                set_visible: false,
-                                add_css_class: "flux-lock-badge",
-                            },
-
-                            #[name = "label"]
-                            gtk::Label {
-                                set_justify: gtk::Justification::Center,
-                                set_ellipsize: gtk::pango::EllipsizeMode::End,
-                                set_hexpand: false,
-                                add_css_class: constants::FLUX_LABEL_CLASS,
-                            },
-                        } -> { set_name: constants::VIEW_LABEL }
-                    }
-                }
-            }
         }
 
         if !config.ui.disable_drag_and_drop {
@@ -279,6 +288,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             FileWidgets {
                 icon_widget,
                 lock_icon,
+                empty_icon,
                 label,
                 stack,
                 drag_source,
@@ -414,6 +424,21 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         } else {
             root.remove_css_class("flux-card--restricted");
             widgets.lock_icon.set_visible(false);
+        }
+
+        if self.is_dir && config.ui.show_empty_dir_emblem {
+            let is_empty = std::fs::read_dir(&self.path)
+                .map(|mut rd| rd.next().is_none())
+                .unwrap_or(false);
+            widgets.empty_icon.set_visible(is_empty);
+            if is_empty {
+                root.add_css_class("flux-card--empty");
+            } else {
+                root.remove_css_class("flux-card--empty");
+            }
+        } else {
+            widgets.empty_icon.set_visible(false);
+            root.remove_css_class("flux-card--empty");
         }
 
         if self.is_editing {

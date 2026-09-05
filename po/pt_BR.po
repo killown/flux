@@ -1742,3 +1742,9 @@ msgstr "Girar miniaturas com base nos metadados de orientação do vídeo"
 #: src/ui/settings.rs:???
 msgid "Max Content Search Results"
 msgstr "Máx. Resultados de Conteúdo"
+
+msgid "Show Empty Folder Emblem"
+msgstr "Mostrar emblema de pasta vazia"
+
+msgid "Display a small badge on folders that contain no items"
+msgstr "Exibir um pequeno emblema em pastas que não contêm itens"
