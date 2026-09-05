@@ -1738,3 +1738,7 @@ msgstr "Rotacionar vídeos automaticamente"
 #: src/ui/settings.rs:???
 msgid "Rotate thumbnails based on container orientation metadata"
 msgstr "Girar miniaturas com base nos metadados de orientação do vídeo"
+
+#: src/ui/settings.rs:???
+msgid "Max Content Search Results"
+msgstr "Máx. Resultados de Conteúdo"
