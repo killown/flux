@@ -1,5 +1,4 @@
 use crate::model::{AppMsg, FluxApp};
-use crate::services::constants;
 use crate::utils;
 use futures::stream::{self, StreamExt};
 use relm4::prelude::*;
@@ -18,6 +17,8 @@ impl FluxApp {
         if media_tasks.is_empty() {
             return;
         }
+
+        let max_threads = self.config.ui.thumbnail_threads.max(1);
 
         relm4::spawn(async move {
             // Process tasks with bounded concurrency to eliminate task churn
@@ -47,7 +48,7 @@ impl FluxApp {
                         }
                     }
                 })
-                .buffer_unordered(constants::MAX_THUMBNAIL_THREADS)
+                .buffer_unordered(max_threads)
                 .collect::<Vec<()>>()
                 .await;
         });

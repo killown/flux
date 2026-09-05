@@ -719,10 +719,131 @@ impl SimpleComponent for SettingsWindow {
                 },
             },
 
+            // --- System Page ---
+            add = &adw::PreferencesPage {
+                set_title: &tr("System"),
+                set_icon_name: Some("applications-system-symbolic"),
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Performance & Engine"),
+                    set_description: Some(&tr("Configure background worker limits and streaming chunk sizes")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("UI Batch Streaming Size"),
+                        set_subtitle: &tr("Number of items appended per frame when loading directories"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.loader_batch_size as f64,
+                                10.0,
+                                500.0,
+                                10.0,
+                                50.0,
+                                0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetLoaderBatchSize(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Thumbnail Workers"),
+                        set_subtitle: &tr("Concurrent background threads used to render thumbnails"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.thumbnail_threads as f64,
+                                1.0,
+                                16.0,
+                                1.0,
+                                2.0,
+                                0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetThumbnailThreads(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                },
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Memory & Limits"),
+                    set_description: Some(&tr("Tune caching thresholds and search result cutoffs")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Folder Cache Capacity"),
+                        set_subtitle: &tr("Maximum number of recently visited folders kept in RAM (0 to disable)"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.folder_cache_capacity as f64,
+                                0.0,
+                                30.0,
+                                1.0,
+                                5.0,
+                                0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetFolderCacheCapacity(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Max Search Results"),
+                        set_subtitle: &tr("Maximum files indexed per filename/extension search run"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.max_search_results as f64,
+                                500.0,
+                                50000.0,
+                                500.0,
+                                2500.0,
+                                0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetMaxSearchResults(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Navigation History Depth"),
+                        set_subtitle: &tr("Maximum number of backward/forward directory jumps saved"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.max_history as f64,
+                                10.0,
+                                500.0,
+                                10.0,
+                                50.0,
+                                0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetMaxHistory(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                },
+            },
+
             // --- Shortcuts Page ---
             add = &adw::PreferencesPage {
                 set_title: &tr("Shortcuts"),
-                set_icon_name: Some("keyboard-shortcuts-symbolic"),
+                set_icon_name: Some("org.gnome.Settings-keyboard-symbolic"),
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("Navigation"),

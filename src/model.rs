@@ -21,6 +21,26 @@ fn default_true() -> bool {
     true
 }
 
+fn default_loader_batch_size() -> usize {
+    50
+}
+
+fn default_folder_cache_capacity() -> usize {
+    3
+}
+
+fn default_thumbnail_threads() -> usize {
+    4
+}
+
+fn default_max_search_results() -> usize {
+    5000
+}
+
+fn default_max_history() -> usize {
+    100
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -231,6 +251,21 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Number of items dispatched per chunk into the UI grid.
+    #[serde(default = "default_loader_batch_size")]
+    pub loader_batch_size: usize,
+    /// Number of recently visited directory snapshots kept in memory.
+    #[serde(default = "default_folder_cache_capacity")]
+    pub folder_cache_capacity: usize,
+    /// Maximum concurrent background thumbnail generation workers.
+    #[serde(default = "default_thumbnail_threads")]
+    pub thumbnail_threads: usize,
+    /// Maximum matches allowed during recursive filename/extension search.
+    #[serde(default = "default_max_search_results")]
+    pub max_search_results: usize,
+    /// Maximum history entries retained for back/forward navigation.
+    #[serde(default = "default_max_history")]
+    pub max_history: usize,
     /// Maximum number of results returned by content search.
     /// Higher values may impact performance on large directories.
     #[serde(default)]
@@ -369,6 +404,11 @@ impl Default for UIConfig {
             max_content_search_results: crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
             lazy_thumbnails: false,
             disable_drag_and_drop: false,
+            loader_batch_size: default_loader_batch_size(),
+            folder_cache_capacity: default_folder_cache_capacity(),
+            thumbnail_threads: default_thumbnail_threads(),
+            max_search_results: default_max_search_results(),
+            max_history: default_max_history(),
         }
     }
 }
@@ -560,6 +600,16 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Set the batch size for streaming directory entries into the UI grid.
+    SetLoaderBatchSize(usize),
+    /// Set the capacity of the in-memory folder cache.
+    SetFolderCacheCapacity(usize),
+    /// Set the maximum concurrent thumbnail rendering tasks.
+    SetThumbnailThreads(usize),
+    /// Set the maximum search results limit.
+    SetMaxSearchResults(usize),
+    /// Set the maximum navigation history depth.
+    SetMaxHistory(usize),
     /// Open the memory debug window (Ctrl+Shift+F7).
     OpenDebugWindow,
     /// Delivers an incremental batch of load contexts to the grid view.

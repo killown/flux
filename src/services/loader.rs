@@ -962,16 +962,19 @@ impl FluxApp {
             && self.extension_globset.is_none()
             && !is_cached
         {
-            if self.folder_cache.len() >= 3 {
-                if let Some(oldest) = self
-                    .folder_cache
-                    .iter()
-                    .min_by_key(|(_, v)| v.last_visited)
-                    .map(|(k, _)| k.clone())
-                {
-                    self.folder_cache.remove(&oldest);
-                    unsafe {
-                        libc::malloc_trim(0);
+            let cache_cap = self.config.ui.folder_cache_capacity;
+            if cache_cap > 0 && !is_cached {
+                if self.folder_cache.len() >= cache_cap {
+                    if let Some(oldest) = self
+                        .folder_cache
+                        .iter()
+                        .min_by_key(|(_, v)| v.last_visited)
+                        .map(|(k, _)| k.clone())
+                    {
+                        self.folder_cache.remove(&oldest);
+                        unsafe {
+                            libc::malloc_trim(0);
+                        }
                     }
                 }
             }
@@ -1004,9 +1007,9 @@ impl FluxApp {
         self.current_path = path;
         self.update_breadcrumbs();
 
-        const BATCH_SIZE: usize = 50;
+        let batch_size = self.config.ui.loader_batch_size.max(10);
 
-        if items.len() <= BATCH_SIZE {
+        if items.len() <= batch_size {
             self.append_context_batch(items, load_id, is_cached, sender);
             self.is_loading = false;
             unsafe {
@@ -1014,7 +1017,7 @@ impl FluxApp {
             }
         } else {
             let mut remaining = items;
-            let first_batch: Vec<FileLoadContext> = remaining.drain(..BATCH_SIZE).collect();
+            let first_batch: Vec<FileLoadContext> = remaining.drain(..batch_size).collect();
             // Append and immediately trigger thumbnails for the initial visible batch
             self.append_context_batch(first_batch, load_id, is_cached, sender);
 
@@ -1022,7 +1025,7 @@ impl FluxApp {
             let sender_clone = sender.clone();
             let mut chunks: Option<Vec<Vec<FileLoadContext>>> = {
                 let mut v: Vec<Vec<FileLoadContext>> =
-                    remaining.chunks(BATCH_SIZE).map(|c| c.to_vec()).collect();
+                    remaining.chunks(batch_size).map(|c| c.to_vec()).collect();
                 v.reverse();
                 Some(v)
             };
