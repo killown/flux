@@ -1707,3 +1707,34 @@ msgstr "Profundidade do histórico de navegação"
 msgid "Maximum number of backward/forward directory jumps saved"
 msgstr "Número máximo de saltos para trás/para frente salvos no histórico"
 
+#: src/ui/settings.rs:???
+msgid "Video Extraction (FFmpeg)"
+msgstr "Extração de Vídeo (FFmpeg)"
+
+#: src/ui/settings.rs:???
+msgid "Configure video frame extraction and decoding options"
+msgstr "Configurar opções de extração e decodificação de quadros de vídeo"
+
+#: src/ui/settings.rs:???
+msgid "Initial Frame Offset"
+msgstr "Deslocamento inicial do quadro"
+
+#: src/ui/settings.rs:???
+msgid "Timestamp in seconds into the video to capture thumbnail"
+msgstr "Momento em segundos do vídeo para capturar a miniatura"
+
+#: src/ui/settings.rs:???
+msgid "FFmpeg Decoder Threads"
+msgstr "Threads do decodificador FFmpeg"
+
+#: src/ui/settings.rs:???
+msgid "Threads allocated to each video frame capture task"
+msgstr "Threads alocadas para cada processo de captura de quadros de vídeo"
+
+#: src/ui/settings.rs:???
+msgid "Auto-Rotate Videos"
+msgstr "Rotacionar vídeos automaticamente"
+
+#: src/ui/settings.rs:???
+msgid "Rotate thumbnails based on container orientation metadata"
+msgstr "Girar miniaturas com base nos metadados de orientação do vídeo"

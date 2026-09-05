@@ -838,6 +838,67 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                 },
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Video Extraction (FFmpeg)"),
+                    set_description: Some(&tr("Configure video frame extraction and decoding options")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Initial Frame Offset"),
+                        set_subtitle: &tr("Timestamp in seconds into the video to capture thumbnail"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.ffmpeg_seek_seconds,
+                                0.0,
+                                60.0,
+                                0.5,
+                                5.0,
+                                0.0,
+                            ),
+                            set_digits: 1,
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetFfmpegSeekSeconds(spin.value()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("FFmpeg Decoder Threads"),
+                        set_subtitle: &tr("Threads allocated to each video frame capture task"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.ffmpeg_threads as f64,
+                                1.0,
+                                8.0,
+                                1.0,
+                                2.0,
+                                0.0,
+                            ),
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetFfmpegThreads(spin.value() as usize));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Auto-Rotate Videos"),
+                        set_subtitle: &tr("Rotate thumbnails based on container orientation metadata"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.ffmpeg_auto_rotate,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetFfmpegAutoRotate(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                },
             },
 
             // --- Shortcuts Page ---

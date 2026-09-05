@@ -342,6 +342,9 @@ path = "~"
                     thumbnail_threads: 4,
                     max_search_results: 5000,
                     max_history: 100,
+                    ffmpeg_threads: 1,
+                    ffmpeg_seek_seconds: 5.0,
+                    ffmpeg_auto_rotate: false,
                 },
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),
@@ -1352,19 +1355,31 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .unwrap_or(0);
         let tmp_path = cache_dir.join(format!(".tmp.{pid}.{nanos}.png"));
 
-        async fn try_ffmpeg(path: &Path, out_path: &Path, seek: &str) -> bool {
-            tokio::process::Command::new("ffmpeg")
-                .arg("-y")
-                .arg("-loglevel")
-                .arg("panic")
-                .arg("-noautorotate")
-                .arg("-ss")
+        let ffmpeg_threads = config.ui.ffmpeg_threads.max(1).to_string();
+        let auto_rotate = config.ui.ffmpeg_auto_rotate;
+        let seek_str = format!("{:.3}", config.ui.ffmpeg_seek_seconds.max(0.0));
+
+        async fn try_ffmpeg(
+            path: &Path,
+            out_path: &Path,
+            seek: &str,
+            threads: &str,
+            auto_rotate: bool,
+        ) -> bool {
+            let mut cmd = tokio::process::Command::new("ffmpeg");
+            cmd.arg("-y").arg("-loglevel").arg("panic");
+
+            if !auto_rotate {
+                cmd.arg("-noautorotate");
+            }
+
+            cmd.arg("-ss")
                 .arg(seek)
                 .arg("-i")
                 .arg(path)
                 .arg("-an")
                 .arg("-threads")
-                .arg("1")
+                .arg(threads)
                 .arg("-vframes")
                 .arg("1")
                 .arg("-vf")
@@ -1379,9 +1394,10 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .unwrap_or(false)
         }
 
-        let mut success = try_ffmpeg(path, &tmp_path, "5.000").await;
+        let mut success =
+            try_ffmpeg(path, &tmp_path, &seek_str, &ffmpeg_threads, auto_rotate).await;
         if !success || !tmp_path.exists() {
-            success = try_ffmpeg(path, &tmp_path, "0.000").await;
+            success = try_ffmpeg(path, &tmp_path, "0.000", &ffmpeg_threads, auto_rotate).await;
         }
 
         if success && tmp_path.exists() {
