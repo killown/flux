@@ -11,9 +11,6 @@ use std::sync::{mpsc, Arc};
 /// `*.png` that can match tens of thousands of files).
 const BATCH_SIZE: usize = 50;
 
-/// Maximum number of search results to prevent hanging or excessive memory usage.
-const MAX_SEARCH_RESULTS: usize = 5000;
-
 /// A single matched file, carried inside [`AppMsg::ExtensionSearchBatch`].
 #[derive(Debug, Clone)]
 pub struct ExtensionMatch {
@@ -39,6 +36,8 @@ pub struct AdvancedSearchParams {
     pub size_bytes: Option<(bool, u64)>,
     /// When `true`, dotfiles are included even if the global toggle is off.
     pub include_hidden: bool,
+    /// Maximum matches allowed during the search walk before stopping.
+    pub max_results: usize,
 }
 
 /// Launch a recursive filename search from `app.current_path` using `ignore`'s
@@ -59,6 +58,7 @@ pub fn start_extension_search(
     let params = AdvancedSearchParams {
         patterns,
         include_hidden: app.show_hidden,
+        max_results: app.config.ui.max_search_results,
         ..Default::default()
     };
     start_walk(app, params, sender);
@@ -74,8 +74,14 @@ pub fn start_advanced_search(
     // When the dialog's "include hidden" toggle is off, respect the session
     // flag, when it's on, override it regardless of the global setting.
     let effective_hidden = params.include_hidden || app.show_hidden;
+    let effective_max_results = if params.max_results == 0 {
+        app.config.ui.max_search_results
+    } else {
+        params.max_results
+    };
     let params = AdvancedSearchParams {
         include_hidden: effective_hidden,
+        max_results: effective_max_results,
         ..params
     };
     start_walk(app, params, sender);
@@ -138,6 +144,7 @@ fn start_walk(
     let include_hidden = params.include_hidden;
     let date_seconds = params.date_seconds;
     let size_bytes = params.size_bytes;
+    let max_results = params.max_results;
 
     // Compute the mtime boundary once, outside the hot loop.
     let mtime_boundary: Option<std::time::SystemTime> = date_seconds
@@ -219,13 +226,14 @@ fn start_walk(
             load_id: Arc<AtomicU64>,
             session_id: u64,
             total_count: Arc<AtomicUsize>,
+            max_results: usize,
         }
 
         impl ParallelVisitor for SearchVisitor {
             fn visit(&mut self, result: Result<ignore::DirEntry, ignore::Error>) -> WalkState {
                 if self.load_id.load(Ordering::Acquire) != self.session_id
                     || self.cancellable.is_cancelled()
-                    || self.total_count.load(Ordering::Relaxed) >= MAX_SEARCH_RESULTS
+                    || self.total_count.load(Ordering::Relaxed) >= self.max_results
                 {
                     return WalkState::Quit;
                 }
@@ -296,6 +304,7 @@ fn start_walk(
             load_id: Arc<AtomicU64>,
             session_id: u64,
             total_count: Arc<AtomicUsize>,
+            max_results: usize,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for SearchVisitorBuilder {
@@ -310,6 +319,7 @@ fn start_walk(
                     load_id: self.load_id.clone(),
                     session_id: self.session_id,
                     total_count: self.total_count.clone(),
+                    max_results: self.max_results,
                 })
             }
         }
@@ -324,6 +334,7 @@ fn start_walk(
             load_id: load_id.clone(),
             session_id,
             total_count,
+            max_results,
         };
 
         walker.visit(&mut visitor_builder);

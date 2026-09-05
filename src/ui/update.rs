@@ -24,6 +24,21 @@ impl FluxApp {
 
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
+            AppMsg::SetLoaderBatchSize(val) => {
+                self.handle_set_loader_batch_size(val);
+            }
+            AppMsg::SetFolderCacheCapacity(val) => {
+                self.handle_set_folder_cache_capacity(val);
+            }
+            AppMsg::SetThumbnailThreads(val) => {
+                self.handle_set_thumbnail_threads(val);
+            }
+            AppMsg::SetMaxSearchResults(val) => {
+                self.handle_set_max_search_results(val);
+            }
+            AppMsg::SetMaxHistory(val) => {
+                self.handle_set_max_history(val);
+            }
             AppMsg::SetDisableDragAndDrop(val) => {
                 self.handle_set_disable_drag_and_drop(val);
             }

@@ -1646,3 +1646,64 @@ msgstr "Impedir mover ou copiar arquivos arrastando com o mouse"
 #: src/ui/help.rs:???
 msgid "Open memory debug profiler"
 msgstr "Abrir perfilador de memória"
+
+#: src/ui/settings.rs:???
+msgid "System"
+msgstr "Sistema"
+
+#: src/ui/settings.rs:???
+msgid "Performance & Engine"
+msgstr "Desempenho e motor"
+
+#: src/ui/settings.rs:???
+msgid "Configure background worker limits and streaming chunk sizes"
+msgstr "Configurar limites dos processos em segundo plano e tamanhos de lote de carregamento"
+
+#: src/ui/settings.rs:???
+msgid "UI Batch Streaming Size"
+msgstr "Tamanho do lote na interface"
+
+#: src/ui/settings.rs:???
+msgid "Number of items appended per frame when loading directories"
+msgstr "Número de itens adicionados por quadro ao carregar diretórios"
+
+#: src/ui/settings.rs:???
+msgid "Thumbnail Workers"
+msgstr "Processos de miniaturas"
+
+#: src/ui/settings.rs:???
+msgid "Concurrent background threads used to render thumbnails"
+msgstr "Threads simultâneas em segundo plano para renderizar miniaturas"
+
+#: src/ui/settings.rs:???
+msgid "Memory & Limits"
+msgstr "Memória e limites"
+
+#: src/ui/settings.rs:???
+msgid "Tune caching thresholds and search result cutoffs"
+msgstr "Ajustar limites de cache e cortes de resultados de pesquisa"
+
+#: src/ui/settings.rs:???
+msgid "Folder Cache Capacity"
+msgstr "Capacidade de cache de pastas"
+
+#: src/ui/settings.rs:???
+msgid "Maximum number of recently visited folders kept in RAM (0 to disable)"
+msgstr "Número máximo de pastas visitadas recentemente mantidas na RAM (0 para desativar)"
+
+#: src/ui/settings.rs:???
+msgid "Max Search Results"
+msgstr "Máximo de resultados de pesquisa"
+
+#: src/ui/settings.rs:???
+msgid "Maximum files indexed per filename/extension search run"
+msgstr "Máximo de arquivos indexados por busca de nome/extensão"
+
+#: src/ui/settings.rs:???
+msgid "Navigation History Depth"
+msgstr "Profundidade do histórico de navegação"
+
+#: src/ui/settings.rs:???
+msgid "Maximum number of backward/forward directory jumps saved"
+msgstr "Número máximo de saltos para trás/para frente salvos no histórico"
+

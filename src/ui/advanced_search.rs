@@ -357,6 +357,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
                     date_seconds,
                     size_bytes,
                     include_hidden,
+                    max_results: 0,
                 }));
                 return;
             }

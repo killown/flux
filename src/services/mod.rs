@@ -19,8 +19,6 @@ pub mod trash;
 
 /// Service-level constants, such as cache limits or thread counts.
 pub mod constants {
-    /// Maximum number of concurrent thumbnail generation tasks.
-    pub const MAX_THUMBNAIL_THREADS: usize = 4;
     /// max content search results to return from the content search service
     pub const MAX_CONTENT_SEARCH_RESULTS: usize = 100;
 }
