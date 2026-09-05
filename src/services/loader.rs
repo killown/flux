@@ -963,18 +963,16 @@ impl FluxApp {
             && !is_cached
         {
             let cache_cap = self.config.ui.folder_cache_capacity;
-            if cache_cap > 0 && !is_cached {
-                if self.folder_cache.len() >= cache_cap {
-                    if let Some(oldest) = self
-                        .folder_cache
-                        .iter()
-                        .min_by_key(|(_, v)| v.last_visited)
-                        .map(|(k, _)| k.clone())
-                    {
-                        self.folder_cache.remove(&oldest);
-                        unsafe {
-                            libc::malloc_trim(0);
-                        }
+            if cache_cap > 0 && !is_cached && self.folder_cache.len() >= cache_cap {
+                if let Some(oldest) = self
+                    .folder_cache
+                    .iter()
+                    .min_by_key(|(_, v)| v.last_visited)
+                    .map(|(k, _)| k.clone())
+                {
+                    self.folder_cache.remove(&oldest);
+                    unsafe {
+                        libc::malloc_trim(0);
                     }
                 }
             }
