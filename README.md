@@ -15,7 +15,7 @@
 #Methodology: High-precision time.perf_counter() differential, IPC event stream.
 
 ~ ❯❯❯ python measure_app_speed.py flux-fm
-Startup Time: 214.79 ms
+Startup Time: 121.52 ms
 ~ ❯❯❯ python measure_app_speed.py thunar
 Startup Time: 250.01 ms   # warm: 189.40 ms
 ~ ❯❯❯ python measure_app_speed.py nautilus
