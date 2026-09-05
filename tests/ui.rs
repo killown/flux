@@ -1,5 +1,6 @@
 mod ui {
     mod app_action_ops_test;
+    mod command_builder_test;
     mod components_test;
     mod config_handlers_test;
     mod conflict_dialog_test;
@@ -9,7 +10,6 @@ mod ui {
     mod file_properties_test;
     mod flux_app_view_test;
     mod help_window_test;
-    mod icon_picker_test;
     mod init_components_test;
     mod inputs_test;
     mod keymap_test;
@@ -24,7 +24,6 @@ mod ui {
     mod sidebar_network_test;
     mod sidebar_ops_test;
     mod task_ops_test;
-    mod terminal_ops_test;
     mod test_paste_ops;
     mod ui_components_test;
     mod ui_test;

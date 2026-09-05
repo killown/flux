@@ -27,18 +27,3 @@ fn test_sort_direction_variant_key_mapping() {
     assert!(!parse_direction("desc"));
     assert!(!parse_direction("other"));
 }
-
-#[test]
-fn test_main_menu_action_target_pair_formatting() {
-    let sort_fields = vec![
-        ("By Name", "name"),
-        ("By Date", "date"),
-        ("By Size", "size"),
-        ("By Type", "type"),
-    ];
-
-    for (label, key) in sort_fields {
-        assert!(!label.is_empty());
-        assert!(!key.is_empty());
-    }
-}

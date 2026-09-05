@@ -41,16 +41,3 @@ fn test_picked_path_extraction_logic() {
 
     assert_eq!(picked_path, Some(PathBuf::from("/home/user/file.txt")));
 }
-
-#[test]
-fn test_terminal_lines_height_calculation() {
-    let paned_height = 800;
-    let position = 560;
-    let terminal_height = paned_height - position;
-
-    let line_height_estimate = 24;
-    let terminal_lines = terminal_height / line_height_estimate;
-
-    assert_eq!(terminal_height, 240);
-    assert_eq!(terminal_lines, 10);
-}

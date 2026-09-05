@@ -378,7 +378,7 @@ impl StateManager {
     /// Adds or updates a URI in location history, keeping the maximum size capped at 10000.
     pub fn add_location(&self, uri: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
-        let now = chrono::Utc::now().timestamp();
+        let now = chrono::Utc::now().timestamp_micros();
 
         conn.execute(
             "INSERT INTO location_history (uri, timestamp) VALUES (?1, ?2)
@@ -388,7 +388,7 @@ impl StateManager {
 
         conn.execute(
             "DELETE FROM location_history WHERE id NOT IN (
-                SELECT id FROM location_history ORDER BY timestamp DESC LIMIT 10000
+                SELECT id FROM location_history ORDER BY timestamp DESC, id DESC LIMIT 10000
             )",
             [],
         )?;
@@ -407,7 +407,8 @@ impl StateManager {
     #[allow(dead_code)]
     pub fn get_location_history(&self) -> Result<Vec<String>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare("SELECT uri FROM location_history ORDER BY timestamp DESC")?;
+        let mut stmt =
+            conn.prepare("SELECT uri FROM location_history ORDER BY timestamp DESC, id DESC")?;
 
         let iter = stmt.query_map([], |row| row.get(0))?;
         let mut history = Vec::new();

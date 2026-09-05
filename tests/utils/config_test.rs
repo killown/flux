@@ -1,14 +1,13 @@
 use flux::model::{CustomAction, MenuEntry};
-use flux::utils::config::save_menu_config;
 use flux::utils::config::{
     ensure_config_file, get_system_mounts, load_menu_config, remove_recents, rename_path,
+    save_menu_config, split_mime_cmd,
 };
-
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use tempfile::TempDir;
+use tempfile::{tempdir, TempDir};
 
 // Global lock to prevent parallel env variable race conditions across test threads
 static ENV_LOCK: Mutex<()> = Mutex::new(());
@@ -328,4 +327,51 @@ fn test_save_and_load_menu_config_with_no_command_dialog() {
     assert!(loaded[0].no_command_dialog);
 
     std::env::remove_var("XDG_CONFIG_HOME");
+}
+
+#[test]
+fn test_rename_path_rejects_slash_in_name() {
+    let dir = tempdir().unwrap();
+    let file = dir.path().join("original.txt");
+    fs::write(&file, b"content").unwrap();
+
+    assert!(rename_path(&file, "../../etc/passwd").is_err());
+    assert!(rename_path(&file, "subdir/file.txt").is_err());
+    assert!(
+        file.exists(),
+        "source must be untouched after rejected rename"
+    );
+}
+
+#[test]
+fn test_rename_path_rejects_already_exists() {
+    let dir = tempdir().unwrap();
+    let file = dir.path().join("original.txt");
+    let existing = dir.path().join("existing.txt");
+    fs::write(&file, b"content").unwrap();
+    fs::write(&existing, b"other").unwrap();
+
+    let result = rename_path(&file, "existing.txt");
+    assert!(result.is_err());
+    assert!(file.exists(), "source must be untouched");
+    assert!(existing.exists(), "target must be untouched");
+}
+
+#[test]
+fn test_split_mime_cmd_no_command_dialog_flag() {
+    let input = r#""all", "builtin::copy", "Copied", "no_command_dialog""#;
+    let (mime, cmd, toast, no_dialog) = split_mime_cmd(input).expect("must parse");
+    assert_eq!(mime, "all");
+    assert_eq!(cmd, "builtin::copy");
+    assert_eq!(toast.as_deref(), Some("Copied"));
+    assert!(no_dialog);
+
+    let input_no_flag = r#""all", "builtin::copy", "Copied""#;
+    let (_, _, _, no_dialog2) = split_mime_cmd(input_no_flag).expect("must parse");
+    assert!(!no_dialog2);
+
+    let input_no_toast = r#""all", "builtin::copy", "no_command_dialog""#;
+    let (_, _, toast3, no_dialog3) = split_mime_cmd(input_no_toast).expect("must parse");
+    assert!(no_dialog3);
+    assert!(toast3.is_none());
 }
