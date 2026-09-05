@@ -1,4 +1,11 @@
+use crate::i18n::tr;
+use crate::model::{AppMsg, FluxApp};
+use crate::ui::{constants, FileItem};
+use crate::utils;
 use adw::prelude::*;
+use futures::try_join;
+use gtk::gio;
+use gtk::glib;
 use relm4::factory::FactoryVecDeque;
 use relm4::prelude::*;
 use relm4::typed_view::grid::TypedGridView;
@@ -6,19 +13,12 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
-use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
-use crate::ui::{constants, FileItem};
-use crate::utils;
-use gtk::gio;
-use gtk::glib;
-
 impl FluxApp {
     /// Performs the imperative setup for the Flux application.
     ///
     /// This method decouples the complex state initialization and system monitoring
     /// from the main component file to improve maintainability and compilation speed.
-    pub(crate) fn init_components(
+    pub(crate) async fn init_components(
         start_path: PathBuf,
         quick_list: Option<Vec<PathBuf>>,
         root: &adw::Window,
@@ -28,11 +28,30 @@ impl FluxApp {
         let _ = crate::model::SENDER.set(sender.input_sender().clone());
         relm4::set_global_css(include_str!("style.css"));
 
-        // 2. Resource Loading
-        let config = utils::load_config();
-        let menu_actions_list = utils::load_menu_config();
+        // 2. Resource Loading (asynchronous, parallel)
+        let (config_tx, config_rx) = tokio::sync::oneshot::channel();
+        let (menu_tx, menu_rx) = tokio::sync::oneshot::channel();
+
+        tokio::spawn(async move {
+            let cfg = utils::load_config();
+            let _ = config_tx.send(cfg);
+        });
+        tokio::spawn(async move {
+            let menu = utils::load_menu_config();
+            let _ = menu_tx.send(menu);
+        });
+
+        // Wait for both to complete concurrently
+        let (config, menu_actions_list) = try_join!(config_rx, menu_rx)
+            .expect("Config and menu loading tasks should always complete");
+
         let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
-        let state_db = Arc::new(crate::services::db::StateManager::new().expect("DB Init Failed"));
+        let (db_tx, db_rx) = tokio::sync::oneshot::channel();
+        tokio::spawn(async move {
+            let db = crate::services::db::StateManager::new().expect("DB Init Failed");
+            let _ = db_tx.send(db);
+        });
+        let state_db = Arc::new(db_rx.await.expect("DB init failed"));
 
         // 3. Action and Input Controllers
         let shortcut_controller = gtk::ShortcutController::new();
