@@ -304,6 +304,7 @@ path = "~"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    show_empty_dir_emblem: false,
                     default_icon_size: 128,
                     list_icon_size: 24,
                     startup_window_width: crate::ui::constants::DEFAULT_WIDTH,

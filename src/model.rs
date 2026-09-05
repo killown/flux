@@ -259,6 +259,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Show a small emblem next to the label of directories that contain no visible items.
+    #[serde(default)]
+    pub show_empty_dir_emblem: bool,
     /// Number of threads per FFmpeg child process when extracting video frames.
     #[serde(default = "default_ffmpeg_threads")]
     pub ffmpeg_threads: usize,
@@ -389,6 +392,7 @@ pub struct UIConfig {
 impl Default for UIConfig {
     fn default() -> Self {
         Self {
+            show_empty_dir_emblem: false,
             file_icons: HashMap::new(),
             default_icon_size: 0,
             list_icon_size: 24,
@@ -620,6 +624,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the empty folder emblem feature.
+    SetShowEmptyDirEmblem(bool),
+    /// Evicts the current directory from the folder cache and navigates to the given path.
+    InvalidateCacheAndNavigate(PathBuf),
     /// Set the thread count used by each FFmpeg thumbnail process.
     SetFfmpegThreads(usize),
     /// Set the seek offset (in seconds) for video thumbnail frame grabs.

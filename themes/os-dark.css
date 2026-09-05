@@ -1029,3 +1029,11 @@ toast label {
   background: alpha(#ff9500, 0.08);
   color: #ff9500;
 }
+
+.flux-card--empty {
+  border-left: 2px solid alpha(@theme_fg_color, 0.3);
+}
+
+.flux-empty-badge {
+  color: alpha(@theme_fg_color, 0.3);
+}
