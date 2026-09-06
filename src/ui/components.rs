@@ -543,9 +543,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
             // Default: use the icon as-is
+            widgets.icon_widget.set_pixel_size(self.icon_size);
+
             let display = root.display();
             let icon_theme = gtk::IconTheme::for_display(&display);
-            let scale = root.scale_factor();
+            let scale = root.scale_factor().max(1);
             let paintable = icon_theme.lookup_by_gicon(
                 &self.icon,
                 self.icon_size,
