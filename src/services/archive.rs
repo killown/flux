@@ -646,8 +646,9 @@ pub struct ArchiveEntry {
     pub mtime: i64,
     /// Full inner path relative to the archive root, used to build child URIs.
     pub inner_path: String,
-    /// True when the entry belongs to a password-protected archive that has not
-    /// yet been unlocked (i.e. listed without a password).
+    /// Number of direct children inside this directory at the listed level.
+    /// Always `0` for file entries. Populated by `collect_entry`.
+    pub child_count: u64,
     #[allow(dead_code)]
     pub is_encrypted: bool,
 }
@@ -691,6 +692,13 @@ pub fn entries_to_load_contexts(
         .iter()
         .map(|e| {
             let target_path = build_archive_uri(archive_path, &e.inner_path);
+
+            // For directories, count the immediate children visible in this listing
+            // (i.e. the other entries that were returned alongside this one).
+            // `e.size` is always 0 for synthesised archive directory nodes, so we
+            // derive the count from the sibling entries instead.
+            let size = if e.is_dir { e.child_count } else { e.size };
+
             FileLoadContext {
                 display_name: e.name.clone(),
                 sort_name: e.name.to_lowercase(),
@@ -700,7 +708,7 @@ pub fn entries_to_load_contexts(
                     .map(|e| e.to_ascii_lowercase())
                     .unwrap_or_default(),
                 target_path,
-                size: e.size,
+                size,
                 mtime: e.mtime,
                 is_dir: e.is_dir,
                 thumbnail_path: None,
@@ -1648,6 +1656,7 @@ fn single_file_listing(
             .unwrap_or(0),
         inner_path: inner_name.to_owned(),
         is_encrypted: false,
+        child_count: 0,
     }])
 }
 
@@ -1674,7 +1683,7 @@ fn collect_entry(
         }
     };
 
-    let (child_name, is_dir, child_inner) = match relative.find('/') {
+    let (child_name, is_dir, child_inner, contributes_child) = match relative.find('/') {
         Some(slash_pos) => {
             let dir_name = &relative[..slash_pos];
             let inner = if prefix.is_empty() {
@@ -1682,7 +1691,8 @@ fn collect_entry(
             } else {
                 format!("{}/{}", prefix.trim_end_matches('/'), dir_name)
             };
-            (dir_name.to_owned(), true, inner)
+            // This raw entry contributes a child to the synthesised dir node
+            (dir_name.to_owned(), true, inner, true)
         }
         None => {
             let inner = if prefix.is_empty() {
@@ -1690,22 +1700,24 @@ fn collect_entry(
             } else {
                 format!("{}/{}", prefix.trim_end_matches('/'), relative)
             };
-            // Only set is_dir if explicitly flagged as directory AND not a leaf filename
-            (relative, is_entry_dir, inner)
+            // Leaf entry at this level, contributes itself, not a child to a dir
+            (relative, is_entry_dir, inner, false)
         }
     };
 
-    // Synthesized directory nodes must always have size = 0
     let entry_size = if is_dir { 0 } else { size };
 
-    seen.entry(child_name.clone())
+    let _entry = seen
+        .entry(child_name.clone())
         .and_modify(|existing| {
-            // If we encounter a real file payload for a synthesised directory node,
-            // preserve the real entry metadata.
             if !is_dir {
                 existing.is_dir = false;
                 existing.size = size;
                 existing.mtime = mtime;
+            }
+            // Every raw entry that maps to this dir node is a direct child
+            if contributes_child {
+                existing.child_count += 1;
             }
         })
         .or_insert(ArchiveEntry {
@@ -1714,6 +1726,7 @@ fn collect_entry(
             size: entry_size,
             mtime,
             inner_path: child_inner,
+            child_count: if contributes_child { 1 } else { 0 },
             is_encrypted,
         });
 }
