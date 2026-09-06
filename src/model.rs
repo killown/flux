@@ -259,6 +259,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// When true, window controls appear on the left (macOS-style) instead of the right.
+    #[serde(default)]
+    pub window_controls_left: bool,
     /// Show a small emblem next to the label of directories that contain no visible items.
     #[serde(default)]
     pub show_empty_dir_emblem: bool,
@@ -433,6 +436,7 @@ impl Default for UIConfig {
             ffmpeg_threads: default_ffmpeg_threads(),
             ffmpeg_seek_seconds: default_ffmpeg_seek_seconds(),
             ffmpeg_auto_rotate: false,
+            window_controls_left: false,
         }
     }
 }
@@ -624,6 +628,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Moves the window control buttons (close, minimize, maximize) to the left
+    SetWindowControlsLeft(bool),
     /// Toggles the empty folder emblem feature.
     SetShowEmptyDirEmblem(bool),
     /// Evicts the current directory from the folder cache and navigates to the given path.

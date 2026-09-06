@@ -111,7 +111,12 @@ impl FluxApp {
 
     pub fn handle_set_show_csd(&mut self, val: bool) {
         self.config.ui.show_csd = val;
-        utils::save_config(&self.config);
+        crate::utils::save_config(&self.config);
+    }
+
+    pub fn handle_set_window_controls_left(&mut self, val: bool) {
+        self.config.ui.window_controls_left = val;
+        crate::utils::save_config(&self.config);
     }
 
     pub fn handle_set_show_xdg_dirs(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {

@@ -146,6 +146,22 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Window Controls on Left"),
+                        set_subtitle: &tr("Move close/minimize/maximize buttons to the left (macOS style)"),
+                        #[watch]
+                        set_sensitive: model.config.ui.show_csd,
+                        add_suffix = &gtk::Switch {
+                            #[watch]
+                            set_active: model.config.ui.window_controls_left,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetWindowControlsLeft(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Startup Width"),
                         set_subtitle: &tr("Initial window width in pixels"),
                         add_suffix = &gtk::SpinButton {

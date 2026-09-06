@@ -127,6 +127,8 @@ impl FluxApp {
     }
 
     pub fn handle_start_rename(&mut self, path: PathBuf) {
+        self.active_item_path = Some(path.clone());
+
         let target_idx = (0..self.files.len())
             .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().path == path));
 

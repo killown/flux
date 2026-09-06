@@ -84,8 +84,10 @@ impl FluxApp {
             .map(|f| f.type_().is_a(gtk::Editable::static_type()))
             .unwrap_or(false);
 
-        if is_editable && (header_view == "search" || header_view == "entry") {
-            if keyval == gdk::Key::Escape {
+        // If any text entry in the window is focused (rename entry, search, etc.),
+        // do not steal Return, Escape, or typing!
+        if is_editable {
+            if (header_view == "search" || header_view == "entry") && keyval == gdk::Key::Escape {
                 sender.input(AppMsg::CancelContentSearch);
                 sender.input(AppMsg::UpdateFilter(String::new()));
                 sender.input(AppMsg::SwitchHeader("path".to_string()));
