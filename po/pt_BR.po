@@ -1756,3 +1756,7 @@ msgstr "Controles da janela à esquerda"
 #: src/ui/settings.rs:???
 msgid "Move close/minimize/maximize buttons to the left"
 msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda"
+
+#: src/ui/components.rs:???
+msgid "items"
+msgstr "itens"
