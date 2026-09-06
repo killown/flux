@@ -314,7 +314,13 @@ impl FluxApp {
                             .metadata()
                             .ok()
                             .map(|m| {
-                                let s = if is_dir { 0 } else { m.len() };
+                                let s = if is_dir {
+                                    std::fs::read_dir(&target_path)
+                                        .map(|rd| rd.count())
+                                        .unwrap_or(0) as u64
+                                } else {
+                                    m.len()
+                                };
                                 let t = m
                                     .modified()
                                     .ok()
