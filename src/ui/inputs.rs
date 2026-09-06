@@ -34,31 +34,41 @@ pub fn setup_controllers(
     });
     window.add_controller(nav_controller);
 
-    // 2. Single-Click Toggle (Control/Shift)
+    // 2. Single-Click Toggle, disabled while ANY key is held
     let click_toggle = gtk::EventControllerKey::new();
     click_toggle.set_propagation_phase(gtk::PropagationPhase::Capture);
 
     let grid_view_t1 = grid_view.clone();
-    click_toggle.connect_key_pressed(move |_, keyval, _, _| {
-        let is_mod = keyval == gdk::Key::Control_L
-            || keyval == gdk::Key::Control_R
-            || keyval == gdk::Key::Shift_L
-            || keyval == gdk::Key::Shift_R;
-
-        if is_mod {
-            grid_view_t1.set_single_click_activate(false);
-        }
+    click_toggle.connect_key_pressed(move |_, _keyval, _, _| {
+        grid_view_t1.set_single_click_activate(false);
         glib::Propagation::Proceed
     });
 
     let grid_view_t2 = grid_view.clone();
-    click_toggle.connect_key_released(move |_, keyval, _, _| {
-        let is_mod = keyval == gdk::Key::Control_L
-            || keyval == gdk::Key::Control_R
-            || keyval == gdk::Key::Shift_L
-            || keyval == gdk::Key::Shift_R;
+    click_toggle.connect_key_released(move |_, keyval, _, state| {
+        // GTK reports state *before* the release, so the released key's
+        // modifier bit is still set. Strip it out manually so we can tell
+        // whether any other key is still held.
+        let released_mask = match keyval {
+            gdk::Key::Control_L | gdk::Key::Control_R => gdk::ModifierType::CONTROL_MASK,
+            gdk::Key::Shift_L | gdk::Key::Shift_R => gdk::ModifierType::SHIFT_MASK,
+            gdk::Key::Alt_L | gdk::Key::Alt_R => gdk::ModifierType::ALT_MASK,
+            gdk::Key::Super_L | gdk::Key::Super_R => gdk::ModifierType::SUPER_MASK,
+            gdk::Key::Hyper_L | gdk::Key::Hyper_R => gdk::ModifierType::HYPER_MASK,
+            gdk::Key::Meta_L | gdk::Key::Meta_R => gdk::ModifierType::META_MASK,
+            _ => gdk::ModifierType::empty(),
+        };
 
-        if is_mod && config_single_click {
+        let relevant = gdk::ModifierType::CONTROL_MASK
+            | gdk::ModifierType::SHIFT_MASK
+            | gdk::ModifierType::ALT_MASK
+            | gdk::ModifierType::SUPER_MASK
+            | gdk::ModifierType::HYPER_MASK
+            | gdk::ModifierType::META_MASK;
+
+        let remaining = (state & relevant) - released_mask;
+
+        if remaining.is_empty() && config_single_click {
             grid_view_t2.set_single_click_activate(true);
         }
     });
