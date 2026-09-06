@@ -17,6 +17,10 @@ impl FluxApp {
             .map(|k| k.modifier_state())
             .unwrap_or(gdk::ModifierType::empty());
 
+        if modifiers.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK) {
+            return;
+        }
+
         let is_selecting =
             modifiers.intersects(gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK);
         if is_selecting {

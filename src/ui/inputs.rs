@@ -21,7 +21,7 @@ pub fn setup_controllers(
     keymap: &KeyMap,
     terminal_area: &gtk::DrawingArea,
 ) {
-    grid_view.set_enable_rubberband(false);
+    grid_view.set_enable_rubberband(true);
 
     // 1. Primary Navigation
     let nav_controller = gtk::EventControllerKey::new();
@@ -36,8 +36,9 @@ pub fn setup_controllers(
 
     // 2. Single-Click Toggle (Control/Shift)
     let click_toggle = gtk::EventControllerKey::new();
-    let grid_view_t1 = grid_view.clone();
+    click_toggle.set_propagation_phase(gtk::PropagationPhase::Capture);
 
+    let grid_view_t1 = grid_view.clone();
     click_toggle.connect_key_pressed(move |_, keyval, _, _| {
         let is_mod = keyval == gdk::Key::Control_L
             || keyval == gdk::Key::Control_R
@@ -45,10 +46,7 @@ pub fn setup_controllers(
             || keyval == gdk::Key::Shift_R;
 
         if is_mod {
-            grid_view_t1.set_enable_rubberband(true);
-            if config_single_click {
-                grid_view_t1.set_single_click_activate(false);
-            }
+            grid_view_t1.set_single_click_activate(false);
         }
         glib::Propagation::Proceed
     });
@@ -60,11 +58,8 @@ pub fn setup_controllers(
             || keyval == gdk::Key::Shift_L
             || keyval == gdk::Key::Shift_R;
 
-        if is_mod {
-            grid_view_t2.set_enable_rubberband(false);
-            if config_single_click {
-                grid_view_t2.set_single_click_activate(true);
-            }
+        if is_mod && config_single_click {
+            grid_view_t2.set_single_click_activate(true);
         }
     });
     window.add_controller(click_toggle);
