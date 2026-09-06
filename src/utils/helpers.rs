@@ -14,6 +14,39 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
+    /// Returns true if the current path is inside an archive that supports full extraction.
+    pub fn can_extract_current_archive(&self) -> bool {
+        let path_str = self.current_path.to_string_lossy();
+        if !path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            return false;
+        }
+        crate::services::archive::parse_archive_uri(&path_str)
+            .map(|(archive_path, _)| {
+                let name = archive_path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+
+                // Exclude ISO images and single-file stream formats (.gz, .xz, etc.)
+                name.ends_with(".zip")
+                    || name.ends_with(".7z")
+                    || name.ends_with(".rar")
+                    || name.ends_with(".tar")
+                    || name.ends_with(".tar.gz")
+                    || name.ends_with(".tgz")
+                    || name.ends_with(".tar.bz2")
+                    || name.ends_with(".tbz2")
+                    || name.ends_with(".tar.xz")
+                    || name.ends_with(".txz")
+                    || name.ends_with(".tar.zst")
+                    || name.ends_with(".tzst")
+                    || name.ends_with(".tar.lz4")
+                    || name.ends_with(".deb")
+            })
+            .unwrap_or(false)
+    }
+
     /// Returns the display-friendly string for the current sorting state.
     pub fn sort_status(&self) -> String {
         let arrow = if self.sort_ascending { " ↑" } else { " ↓" };

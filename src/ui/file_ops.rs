@@ -18,6 +18,20 @@ fn shell_safe(s: &str) -> Option<String> {
     Some(format!("'{}'", s.replace('\'', "'\\''")))
 }
 
+fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
+        } else {
+            std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
 /// Pure helper: builds the final shell command string and human-readable task label.
 pub fn build_execution_command(
     cmd_template: &str,
@@ -112,6 +126,82 @@ impl FluxApp {
         {
             sender.input(AppMsg::ShowToast(toast));
         }
+    }
+
+    pub fn handle_extract_archive(&self, sender: &AsyncComponentSender<Self>) {
+        let uri = self.current_path.to_string_lossy().to_string();
+        let Some((archive_path, _)) = crate::services::archive::parse_archive_uri(&uri) else {
+            return;
+        };
+        let stem = archive_path
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let parent = archive_path
+            .parent()
+            .unwrap_or(std::path::Path::new("."))
+            .to_path_buf();
+        let base_name = format!("{}_extracted", stem);
+        let mut dest = parent.join(&base_name);
+        let mut counter = 2;
+        while dest.exists() {
+            dest = parent.join(format!("{}_{}", base_name, counter));
+            counter += 1;
+        }
+
+        let task_id = crate::ui::paste_ops::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+        let cancellable = gtk::gio::Cancellable::new();
+        let label = format!(
+            "Extracting {}",
+            archive_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+        );
+
+        sender.input(AppMsg::TaskProgress {
+            id: task_id,
+            label,
+            current: 0,
+            total: 0,
+            total_items: 1,
+            cancellable,
+        });
+
+        let password = self.cached_archive_password.clone();
+        let s = sender.clone();
+        relm4::spawn_blocking(move || {
+            match crate::services::archive::extract_archive(&archive_path, password.as_deref()) {
+                Ok(tmp_path) => {
+                    let result = std::fs::rename(&tmp_path, &dest).or_else(|e| {
+                        if e.raw_os_error() == Some(libc::EXDEV) {
+                            copy_dir_all(&tmp_path, &dest)
+                                .and_then(|_| std::fs::remove_dir_all(&tmp_path))
+                        } else {
+                            Err(e)
+                        }
+                    });
+                    s.input(AppMsg::TaskCompleted(task_id));
+                    match result {
+                        Ok(_) => {
+                            s.input(AppMsg::ShowToast(format!(
+                                "Extracted to {}",
+                                dest.display()
+                            )));
+                            s.input(AppMsg::InvalidateCacheAndNavigate(dest));
+                        }
+                        Err(e) => {
+                            s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                        }
+                    }
+                }
+                Err(e) => {
+                    s.input(AppMsg::TaskCompleted(task_id));
+                    s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                }
+            }
+        });
     }
 
     /// Handles file and directory renames with error handling for permissions.
