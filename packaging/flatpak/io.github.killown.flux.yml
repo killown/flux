@@ -29,6 +29,7 @@ finish-args:
   - --talk-name=org.freedesktop.FileManager1
   # Device access for mount operations
   - --device=all
+  - --filesystem=xdg-config/flux:create
 
 modules:
   # ── poppler (PDF thumbnails) ────────────────────────────────────────────────
