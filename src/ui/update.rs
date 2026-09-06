@@ -515,6 +515,7 @@ impl FluxApp {
             }
             AppMsg::CopySucceeded { copies, dest_dir } => {
                 let copy_dests = copies.into_iter().map(|(_, dest)| dest).collect();
+                self.folder_cache.remove(&dest_dir);
                 self.file_op_history
                     .push_undo(crate::ui::undo_redo::FileOp::Copy {
                         copies: copy_dests,
@@ -804,6 +805,7 @@ impl FluxApp {
             AppMsg::SetShowHidden(val) => self.handle_set_show_hidden(val, &sender),
             AppMsg::ToggleHidden => self.handle_set_show_hidden(!self.show_hidden, &sender),
             AppMsg::SetShowCsd(val) => self.handle_set_show_csd(val),
+            AppMsg::SetWindowControlsLeft(val) => self.handle_set_window_controls_left(val),
             AppMsg::SetShowXdgDirs(val) => self.handle_set_show_xdg_dirs(val, &sender),
             AppMsg::SetTheme(theme) => self.handle_set_theme(theme),
             AppMsg::SetShortcut(key, val) => self.handle_set_shortcut(key, val),

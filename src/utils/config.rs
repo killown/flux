@@ -346,6 +346,7 @@ path = "~"
                     ffmpeg_threads: 1,
                     ffmpeg_seek_seconds: 5.0,
                     ffmpeg_auto_rotate: false,
+                    window_controls_left: false,
                 },
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),
@@ -1040,7 +1041,7 @@ fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
     cx.set_source_rgb(1.0, 1.0, 1.0);
     cx.paint().ok()?;
 
-    let font_map = pangocairo::FontMap::default();
+    let font_map = pangocairo::FontMap::new();
     let pango_cx = font_map.create_context();
     pangocairo::functions::update_context(&cx, &pango_cx);
 

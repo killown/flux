@@ -1748,3 +1748,11 @@ msgstr "Mostrar emblema de pasta vazia"
 
 msgid "Display a small badge on folders that contain no items"
 msgstr "Exibir um pequeno emblema em pastas que não contêm itens"
+
+#: src/ui/settings.rs:???
+msgid "Window Controls on Left"
+msgstr "Controles da janela à esquerda"
+
+#: src/ui/settings.rs:???
+msgid "Move close/minimize/maximize buttons to the left (macOS style)"
+msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda (estilo macOS)"

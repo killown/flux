@@ -450,64 +450,79 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         .css_classes([constants::RENAME_ENTRY_CLASS])
                         .build();
 
-                    // 1. Reliable focus loss detection
+                    // Store the path directly as widget data on the entry itself
+                    unsafe {
+                        entry.set_data("target_rename_path", self.path.clone());
+                    }
+
+                    let submitted = std::rc::Rc::new(std::cell::Cell::new(false));
+
                     let focus_ctrl = gtk::EventControllerFocus::new();
-                    focus_ctrl.connect_leave(|_| {
-                        if let Some(s) = crate::model::SENDER.get() {
-                            s.send(crate::model::AppMsg::Refresh).ok();
+                    let submitted_focus = submitted.clone();
+                    focus_ctrl.connect_leave(move |_| {
+                        if !submitted_focus.get() {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                s.send(crate::model::AppMsg::Refresh).ok();
+                            }
                         }
                     });
                     entry.add_controller(focus_ctrl);
 
-                    // 2. Escape key handling
                     let key_ctrl = gtk::EventControllerKey::new();
-                    key_ctrl.connect_key_pressed(|_, keyval, _, _| {
-                        if keyval == gdk::Key::Escape {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                s.send(crate::model::AppMsg::Refresh).ok();
-                                return glib::Propagation::Stop;
-                            }
-                        }
-                        glib::Propagation::Proceed
-                    });
-                    entry.add_controller(key_ctrl);
+                    key_ctrl.set_propagation_phase(gtk::PropagationPhase::Capture);
 
-                    // 3. Enter key handling
-                    let root_widget = root.clone();
-                    entry.connect_activate(clone!(
+                    let submitted_key = submitted.clone();
+                    key_ctrl.connect_key_pressed(clone!(
                         #[weak]
-                        root_widget,
-                        move |entry| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let old_path_opt: Option<PathBuf> = unsafe {
-                                    root_widget
-                                        .data::<std::rc::Weak<RefCell<Option<PathBuf>>>>(
-                                            "active_path_cell",
-                                        )
-                                        .and_then(|weak_ptr| weak_ptr.as_ref().upgrade())
-                                        .and_then(|rc| rc.borrow().clone())
+                        entry,
+                        #[upgrade_or]
+                        glib::Propagation::Proceed,
+                        move |_, keyval, _, _| {
+                            if keyval == gdk::Key::Escape {
+                                submitted_key.set(true);
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    s.send(crate::model::AppMsg::Refresh).ok();
+                                    return glib::Propagation::Stop;
+                                }
+                            } else if keyval == gdk::Key::Return || keyval == gdk::Key::KP_Enter {
+                                submitted_key.set(true);
+                                let target_path = unsafe {
+                                    entry
+                                        .data::<PathBuf>("target_rename_path")
+                                        .map(|p| p.as_ref().clone())
                                 };
-                                if let Some(old_path) = old_path_opt {
+
+                                if let Some(old_path) = target_path {
                                     let new_name = entry.text().to_string();
-                                    s.send(crate::model::AppMsg::PerformRename(old_path, new_name))
+                                    if let Some(s) = crate::model::SENDER.get() {
+                                        s.send(crate::model::AppMsg::PerformRename(
+                                            old_path, new_name,
+                                        ))
                                         .ok();
+                                        return glib::Propagation::Stop;
+                                    }
                                 }
                             }
+                            glib::Propagation::Proceed
                         }
                     ));
+                    entry.add_controller(key_ctrl);
 
                     widgets.stack.add_named(&entry, Some(constants::VIEW_ENTRY));
                     entry
                 }
             };
 
+            // Update the data on existing entries if reused by the factory
+            unsafe {
+                entry.set_data("target_rename_path", self.path.clone());
+            }
+
             widgets.stack.set_visible_child_name(constants::VIEW_ENTRY);
             entry.set_text(&self.name);
             let dot_pos = self.name.rfind('.').unwrap_or(self.name.len());
             entry.select_region(0, dot_pos as i32);
 
-            // Defer focus grab to next main loop iteration so the widget
-            // is fully realized after the stack transition completes.
             gtk::glib::idle_add_local_once(clone!(
                 #[weak]
                 entry,

@@ -28,7 +28,7 @@ impl SimpleAsyncComponent for FluxApp {
             }),
 
             #[watch]
-            set_decorated: model.config.ui.show_csd,
+            set_decorated: model.config.ui.show_csd || model.config.ui.window_controls_left,
 
             /// UI LAYOUT
             gtk::Box {
@@ -44,6 +44,16 @@ impl SimpleAsyncComponent for FluxApp {
                     add_css_class: constants::SIDEBAR_CSS_CLASS,
                     #[watch]
                     set_visible: model.sidebar_visible,
+
+                    gtk::WindowControls {
+                        #[watch]
+                        set_visible: model.config.ui.show_csd && model.config.ui.window_controls_left,
+                        set_side: gtk::PackType::Start,
+                        set_decoration_layout: Some("close,minimize,maximize"),
+                        set_margin_top: 8,
+                        set_margin_start: 8,
+                        set_margin_bottom: 8,
+                    },
 
                     #[name = "sidebar_container"]
                     gtk::ScrolledWindow {
@@ -61,9 +71,10 @@ impl SimpleAsyncComponent for FluxApp {
                         /// Top-level navigation and state toolbar.
                         adw::HeaderBar {
                             #[watch]
-                            set_show_start_title_buttons: model.config.ui.show_csd,
+                            set_show_start_title_buttons: false,
                             #[watch]
-                            set_show_end_title_buttons: model.config.ui.show_csd,
+                            set_show_end_title_buttons: false,
+
 
                             pack_start = &gtk::Button {
                                 set_icon_name: constants::ICON_BACK,
