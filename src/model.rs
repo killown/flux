@@ -259,7 +259,7 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
-    /// When true, window controls appear on the left (macOS-style) instead of the right.
+    /// When true, window controls appear on the left instead of the right.
     #[serde(default)]
     pub window_controls_left: bool,
     /// Show a small emblem next to the label of directories that contain no visible items.

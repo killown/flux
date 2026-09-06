@@ -1754,5 +1754,5 @@ msgid "Window Controls on Left"
 msgstr "Controles da janela à esquerda"
 
 #: src/ui/settings.rs:???
-msgid "Move close/minimize/maximize buttons to the left (macOS style)"
-msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda (estilo macOS)"
+msgid "Move close/minimize/maximize buttons to the left"
+msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda"
