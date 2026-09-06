@@ -26,8 +26,6 @@ finish-args:
   # D-Bus for GVfs mounts (network shares, MTP, trash)
   - --talk-name=org.gtk.vfs.*
   - --talk-name=org.freedesktop.FileManager1
-  # Thumbnails / portal
-  - --talk-name=org.freedesktop.portal.Desktop
   # Device access for mount operations
   - --device=all
 
@@ -88,7 +86,8 @@ modules:
     sources:
       - type: git
         url: https://github.com/killown/flux.git
-        branch: main
+        tag: v0.1.0
+        commit: 1df084a5492fbcd01f4d9af1084ade350919de069bbc9974d6dfdb04f47ab60f
       - cargo-sources.json
       - type: file
         path: io.github.killown.flux.desktop
