@@ -271,16 +271,26 @@ impl FluxApp {
     /// are updated instead. Only items matching the current mode have their `icon_size`
     /// field mutated, so switching modes always restores the independent size.
     pub fn handle_zoom(&mut self, delta: f64) {
-        let change = if delta > 0.0 {
-            -constants::ZOOM_STEP
-        } else {
-            constants::ZOOM_STEP
-        };
+        if delta == 0.0 {
+            return;
+        }
+
+        let direction = if delta > 0.0 { -1 } else { 1 };
 
         if self.is_list_mode {
-            let new_size = (self.current_list_icon_size + change)
-                .clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
+            let current_size = self.current_list_icon_size;
+            let current_idx = constants::CRISP_ICON_SIZES
+                .iter()
+                .position(|&s| s >= current_size)
+                .unwrap_or(constants::CRISP_ICON_SIZES.len() - 1);
 
+            let new_idx = if direction > 0 {
+                (current_idx + 1).min(constants::CRISP_ICON_SIZES.len() - 1)
+            } else {
+                current_idx.saturating_sub(1)
+            };
+
+            let new_size = constants::CRISP_ICON_SIZES[new_idx];
             if new_size == self.current_list_icon_size {
                 return;
             }
@@ -300,9 +310,19 @@ impl FluxApp {
                 }
             }
         } else {
-            let new_size =
-                (self.current_icon_size + change).clamp(constants::ZOOM_MIN, constants::ZOOM_MAX);
+            let current_size = self.current_icon_size;
+            let current_idx = constants::CRISP_ICON_SIZES
+                .iter()
+                .position(|&s| s >= current_size)
+                .unwrap_or(constants::CRISP_ICON_SIZES.len() - 1);
 
+            let new_idx = if direction > 0 {
+                (current_idx + 1).min(constants::CRISP_ICON_SIZES.len() - 1)
+            } else {
+                current_idx.saturating_sub(1)
+            };
+
+            let new_size = constants::CRISP_ICON_SIZES[new_idx];
             if new_size == self.current_icon_size {
                 return;
             }

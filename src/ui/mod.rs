@@ -105,11 +105,6 @@ pub mod constants {
     pub const OPACITY_ICON: f64 = 0.6;
     pub const OPACITY_LABEL: f64 = 0.8;
 
-    // Zoom Limits
-    pub const ZOOM_STEP: i32 = 32;
-    pub const ZOOM_MIN: i32 = 16;
-    pub const ZOOM_MAX: i32 = 480;
-
     // MIME Types
     pub const MIME_DIR: &str = "inode/directory";
     pub const MIME_TEXT: &str = "text/plain";
@@ -132,6 +127,7 @@ pub mod constants {
     pub const ICON_SORT_INDICATOR: &str = "view-sort-ascending-symbolic";
     pub const TRASH_URI: &str = "trash:///";
     pub const RECENT_URI: &str = "recent:///";
+    pub const CRISP_ICON_SIZES: &[i32] = &[16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256];
 
     // Mouse Buttons
     pub const MOUSE_BACK: u32 = 8;
