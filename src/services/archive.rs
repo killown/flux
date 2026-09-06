@@ -403,13 +403,70 @@ impl ArchiveBackend for RarBackend {
 
     fn extract_dir(
         &self,
-        _archive_path: &Path,
-        _inner_dir: &str,
-        _password: Option<&str>,
+        archive_path: &Path,
+        inner_dir: &str,
+        password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError> {
-        Err(ArchiveError::Other(
-            "Directory extraction from RAR archives is not supported yet".to_string(),
-        ))
+        let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+
+        let tool = rar_tool().ok_or_else(|| {
+            ArchiveError::Other(
+                "RAR support requires 'unar' or 'unrar' (install via your package manager)"
+                    .to_owned(),
+            )
+        })?;
+
+        let mut cmd = std::process::Command::new(tool);
+        match tool {
+            "unar" => {
+                cmd.arg("-no-directory")
+                    .arg("-output-directory")
+                    .arg(&dest_dir);
+                if let Some(pwd) = password {
+                    cmd.arg("-password").arg(pwd);
+                }
+                cmd.arg(archive_path);
+                if !inner_dir.is_empty() {
+                    cmd.arg(inner_dir);
+                }
+            }
+            _ => {
+                cmd.arg("x").arg("-y");
+                if let Some(pwd) = password {
+                    cmd.arg(format!("-p{pwd}"));
+                } else {
+                    cmd.arg("-p-");
+                }
+                cmd.arg(archive_path);
+                if !inner_dir.is_empty() {
+                    cmd.arg(inner_dir);
+                }
+                cmd.arg(format!("{}/", dest_dir.display()));
+            }
+        }
+
+        let output = cmd
+            .output()
+            .map_err(|e| ArchiveError::Other(format!("{tool} spawn: {e}")))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("password") || stderr.contains("encrypted") {
+                return Err(if password.is_none() {
+                    ArchiveError::PasswordRequired
+                } else {
+                    ArchiveError::WrongPassword
+                });
+            }
+            return Err(ArchiveError::Other(format!(
+                "{tool} extract failed: {}",
+                stderr.trim()
+            )));
+        }
+
+        let result = dest_dir.clone();
+        register_temp_dir(temp_dir);
+        Ok(result)
     }
 }
 
@@ -587,7 +644,7 @@ impl ArchiveBackend for UnsupportedBackend {
 
 // ─── Factory ─────────────────────────────────────────────────────────────────
 
-fn get_backend(
+pub fn get_backend(
     archive_path: &Path,
     backend: Option<Box<dyn ArchiveBackend>>,
 ) -> Box<dyn ArchiveBackend> {
@@ -631,6 +688,17 @@ fn get_backend(
     } else {
         Box::new(UnsupportedBackend)
     }
+}
+
+/// Extracts the entire archive to a caller-supplied destination directory.
+///
+/// Equivalent to calling `extract_dir` with `inner_dir = ""` on the
+/// backend selected for `archive_path`.
+pub fn extract_archive(
+    archive_path: &Path,
+    password: Option<&str>,
+) -> Result<PathBuf, ArchiveError> {
+    get_backend(archive_path, None).extract_dir(archive_path, "", password)
 }
 
 // ─── Public entry point ───────────────────────────────────────────────────────
@@ -1177,7 +1245,11 @@ fn extract_dir_zip(
 ) -> Result<PathBuf, ArchiveError> {
     let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
 
-    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+    let prefix = if inner_dir.is_empty() {
+        String::new()
+    } else {
+        format!("{}/", inner_dir.trim_matches('/'))
+    };
 
     let file = std::fs::File::open(archive_path)
         .map_err(|e| ArchiveError::Other(format!("open archive failed: {e}")))?;
@@ -1464,7 +1536,11 @@ fn extract_dir_7z(
 ) -> Result<PathBuf, ArchiveError> {
     let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
 
-    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+    let prefix = if inner_dir.is_empty() {
+        String::new()
+    } else {
+        format!("{}/", inner_dir.trim_matches('/'))
+    };
 
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
@@ -1580,7 +1656,11 @@ fn extract_tar<R: Read>(
 fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
     let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
 
-    let prefix = format!("{}/", inner_dir.trim_end_matches('/'));
+    let prefix = if inner_dir.is_empty() {
+        String::new()
+    } else {
+        format!("{}/", inner_dir.trim_matches('/'))
+    };
 
     let mut archive = tar::Archive::new(reader);
     for entry in archive

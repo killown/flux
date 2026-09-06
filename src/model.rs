@@ -628,6 +628,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Extracts the currently browsed archive to a sibling folder named.
+    ExtractArchive,
     /// Moves the window control buttons (close, minimize, maximize) to the left
     SetWindowControlsLeft(bool),
     /// Toggles the empty folder emblem feature.

@@ -140,6 +140,9 @@ impl FluxApp {
                 self.handle_folder_loaded(path, load_id, items, media_tasks, &sender);
             }
             AppMsg::InvalidateCacheAndNavigate(path) => {
+                if let Some(parent) = path.parent() {
+                    self.folder_cache.remove(parent);
+                }
                 self.folder_cache.remove(&self.current_path);
                 sender.input(AppMsg::Navigate(path));
             }
@@ -153,6 +156,9 @@ impl FluxApp {
             // ==========================================
             // Archives
             // ==========================================
+            AppMsg::ExtractArchive => {
+                self.handle_extract_archive(&sender);
+            }
             AppMsg::EnterArchive(archive_path) => self.handle_enter_archive(archive_path, &sender),
             AppMsg::ArchiveLoaded {
                 archive_path,

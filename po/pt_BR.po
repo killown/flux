@@ -1760,3 +1760,7 @@ msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda"
 #: src/ui/components.rs:???
 msgid "items"
 msgstr "itens"
+
+#: src/ui/view.rs:???
+msgid "Extract"
+msgstr "Extrair"

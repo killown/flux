@@ -381,6 +381,27 @@ impl SimpleAsyncComponent for FluxApp {
                                 }
                             },
 
+                            pack_end = &gtk::Button {
+                                #[watch]
+                                set_visible: model.can_extract_current_archive(),
+                                connect_clicked => AppMsg::ExtractArchive,
+                                set_tooltip_text: Some(&tr("Extract Archive")),
+                                add_css_class: "suggested-action",
+                                connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+
+                                gtk::Box {
+                                    set_orientation: gtk::Orientation::Horizontal,
+                                    set_spacing: constants::HEADER_BTN_SPACING,
+
+                                    gtk::Image {
+                                        set_icon_name: Some("archive-extract-symbolic"),
+                                    },
+                                    gtk::Label {
+                                        set_label: &tr("Extract"),
+                                    }
+                                }
+                            },
+
                             /// Contextual button for Recents
                             pack_end = &gtk::Button {
                                 #[watch]

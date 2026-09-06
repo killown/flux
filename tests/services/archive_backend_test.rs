@@ -104,6 +104,7 @@ fn test_list_success() {
         size: 123,
         mtime: 0,
         inner_path: "file1.txt".into(),
+        child_count: 0,
         is_encrypted: false,
     }];
     let mock = MockBackend::new().with_list(Ok(entries));

@@ -302,6 +302,7 @@ fn test_entries_to_load_contexts() {
             size: 123,
             mtime: 456,
             inner_path: "file.txt".to_string(),
+            child_count: 0,
             is_encrypted: false,
         },
         ArchiveEntry {
@@ -310,6 +311,7 @@ fn test_entries_to_load_contexts() {
             size: 0,
             mtime: 0,
             inner_path: "sub".to_string(),
+            child_count: 0,
             is_encrypted: false,
         },
     ];
@@ -435,6 +437,7 @@ Attributes = D
                         size: cur_size,
                         mtime: 0,
                         inner_path: cur_path.clone(),
+                        child_count: 0,
                         is_encrypted: false,
                     },
                 );
