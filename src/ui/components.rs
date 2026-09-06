@@ -354,7 +354,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     let count_str = if self.size == 1 {
                         "1 item".to_string()
                     } else {
-                        format!("{} items", self.size)
+                        format!("{} {}", self.size, tr("items"))
                     };
                     info_parts.push(count_str);
                 } else if self.size > 0 {
