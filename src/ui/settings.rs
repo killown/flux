@@ -147,7 +147,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Window Controls on Left"),
-                        set_subtitle: &tr("Move close/minimize/maximize buttons to the left (macOS style)"),
+                        set_subtitle: &tr("Move close/minimize/maximize buttons to the left"),
                         #[watch]
                         set_sensitive: model.config.ui.show_csd,
                         add_suffix = &gtk::Switch {
