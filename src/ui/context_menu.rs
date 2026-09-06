@@ -25,7 +25,6 @@ impl FluxApp {
         let root_menu = gio::Menu::new();
         let main_section = gio::Menu::new();
 
-        let mut open_with_item: Option<gio::MenuItem> = None;
         let mut submenu_map: indexmap::IndexMap<String, gio::Menu> = indexmap::IndexMap::new();
 
         for action in &self.menu_actions {
@@ -107,6 +106,35 @@ impl FluxApp {
                 // Capture toast before the match so builtin connect_activate closures can
                 // emit ShowToast directly.
                 let action_toast = action.toast.clone();
+
+                if action.command.as_str() == "builtin::open_with" {
+                    let open_with_menu = gio::Menu::new();
+                    let apps = gio::AppInfo::all_for_type(&mime);
+                    for app in apps {
+                        let label = app.display_name();
+                        let app_id = app
+                            .id()
+                            .map(|id| id.to_string())
+                            .unwrap_or_else(|| app.name().to_string());
+                        let item = gio::MenuItem::new(Some(&label), Some("win.launch-with"));
+                        item.set_action_and_target_value(
+                            Some("win.launch-with"),
+                            Some(&app_id.to_variant()),
+                        );
+                        open_with_menu.append_item(&item);
+                    }
+
+                    let menu_item =
+                        gio::MenuItem::new_submenu(Some(&action.label), &open_with_menu);
+
+                    if let Some(group_name) = &action.submenu {
+                        let menu = submenu_map.entry(group_name.clone()).or_default();
+                        menu.append_item(&menu_item);
+                    } else {
+                        main_section.append_item(&menu_item);
+                    }
+                    continue;
+                }
 
                 let (full_action_name, lookup_name) = match action.command.as_str() {
                     "builtin::copy" => ("win.copy".to_string(), "copy"),
@@ -244,30 +272,6 @@ impl FluxApp {
                         self.action_group.add_action(&action);
                         ("win.new-file".to_string(), "new-file")
                     }
-                    "builtin::open_with" => {
-                        let open_with_menu = gio::Menu::new();
-                        let apps = gio::AppInfo::all_for_type(&mime);
-                        for app in apps {
-                            let label = app.display_name();
-                            let app_id = app
-                                .id()
-                                .map(|id| id.to_string())
-                                .unwrap_or_else(|| app.name().to_string());
-                            let item = gio::MenuItem::new(Some(&label), Some("win.launch-with"));
-                            item.set_action_and_target_value(
-                                Some("win.launch-with"),
-                                Some(&app_id.to_variant()),
-                            );
-                            open_with_menu.append_item(&item);
-                        }
-
-                        let menu_item = gio::MenuItem::new_submenu(None, &open_with_menu);
-                        let spaced_label = "󰱝\u{a0} \u{a0} \u{a0} Open With...".to_string();
-                        menu_item.set_label(Some(&spaced_label));
-
-                        open_with_item = Some(menu_item);
-                        continue;
-                    }
                     _ => (
                         format!("win.{}", action.action_name),
                         action.action_name.as_str(),
@@ -293,9 +297,6 @@ impl FluxApp {
 
         // Assemble root popover menu
         root_menu.append_section(None, &main_section);
-        if let Some(item) = open_with_item {
-            root_menu.append_item(&item);
-        }
 
         for (name, menu) in submenu_map {
             root_menu.append_submenu(Some(&name), &menu);
