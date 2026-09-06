@@ -543,7 +543,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
             // Default: use the icon as-is
-            widgets.icon_widget.set_from_gicon(&self.icon);
+            let display = root.display();
+            let icon_theme = gtk::IconTheme::for_display(&display);
+            let scale = root.scale_factor();
+            let paintable = icon_theme.lookup_by_gicon(
+                &self.icon,
+                self.icon_size,
+                scale,
+                gtk::TextDirection::None,
+                gtk::IconLookupFlags::PRELOAD,
+            );
+            widgets.icon_widget.set_paintable(Some(&paintable));
         }
 
         if config.ui.disable_drag_and_drop {
