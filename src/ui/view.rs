@@ -28,7 +28,7 @@ impl SimpleAsyncComponent for FluxApp {
             }),
 
             #[watch]
-            set_decorated: model.config.ui.show_csd || model.config.ui.window_controls_left,
+            set_decorated: model.config.ui.show_csd,
 
             /// UI LAYOUT
             gtk::Box {
@@ -352,6 +352,13 @@ impl SimpleAsyncComponent for FluxApp {
                                 } -> { set_name: constants::VIEW_FILTER },
                             },
 
+                            pack_end = &gtk::WindowControls {
+                                #[watch]
+                                set_visible: model.config.ui.show_csd && !model.config.ui.window_controls_left,
+                                set_side: gtk::PackType::End,
+                                set_decoration_layout: Some("maximize,minimize,close"),
+                            },
+
                             /// Destructive action button to purge the Trash directory.
                             pack_end = &gtk::Button {
                                 #[watch]
@@ -469,6 +476,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_label: &model.sort_status(),
                                 }
                             },
+
                         },
 
                         // Filter chip bar, slides in below the header when patterns are active.
