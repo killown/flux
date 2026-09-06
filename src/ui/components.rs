@@ -345,12 +345,19 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             }
 
-            // Populate the right-aligned info label with size and modification date.
+            // Populate the right-aligned info label with item count (for folders) or size (for files), plus modification date.
             // Content search results carry size == 0 and mtime == 0, hide the column for those.
             {
                 let mut info_parts: Vec<String> = Vec::new();
 
-                if !self.is_dir && self.size > 0 {
+                if self.is_dir {
+                    let count_str = if self.size == 1 {
+                        "1 item".to_string()
+                    } else {
+                        format!("{} items", self.size)
+                    };
+                    info_parts.push(count_str);
+                } else if self.size > 0 {
                     info_parts.push(format_size(self.size));
                 }
 
@@ -430,7 +437,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             let is_empty = std::fs::read_dir(&self.path)
                 .map(|mut rd| rd.next().is_none())
                 .unwrap_or(false);
-            widgets.empty_icon.set_visible(is_empty);
+
+            // Only show the icon emblem in grid mode, hide it in list mode
+            widgets
+                .empty_icon
+                .set_visible(is_empty && !self.is_list_mode);
+
             if is_empty {
                 root.add_css_class("flux-card--empty");
             } else {
