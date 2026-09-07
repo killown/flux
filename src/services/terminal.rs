@@ -1509,19 +1509,19 @@ impl Terminal {
                                 return glib::Propagation::Stop;
                             }
                         }
+                        return glib::Propagation::Proceed;
                     }
+
                     if let Some(ch) = keyval.to_unicode() {
                         if !ch.is_control() {
                             let mut buf = [0u8; 4];
                             let bytes = ch.encode_utf8(&mut buf);
                             pty_write(fd, bytes.as_bytes());
-                            glib::Propagation::Stop
-                        } else {
-                            glib::Propagation::Proceed
+                            return glib::Propagation::Stop;
                         }
-                    } else {
-                        glib::Propagation::Proceed
                     }
+
+                    glib::Propagation::Proceed
                 }
             }
         });
@@ -1794,7 +1794,6 @@ impl Terminal {
         });
         term
     }
-
     /// Schedules a shell respawn in the given directory.
     ///
     /// Writes the target path into a shared slot and returns immediately,
