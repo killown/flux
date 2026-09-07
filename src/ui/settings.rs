@@ -658,8 +658,24 @@ impl SimpleComponent for SettingsWindow {
                 set_icon_name: Some("utilities-terminal-symbolic"),
 
                 add = &adw::PreferencesGroup {
-                    set_title: &tr("Appearance"),
-                    set_description: Some(&tr("Customize the embedded terminal look and feel")),
+                    set_title: &tr("Appearance & Execution"),
+                    set_description: Some(&tr("Customize the embedded terminal look, feel, and executable")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Shell Executable"),
+                        set_subtitle: &tr("Custom shell path (e.g., '/bin/zsh'). Leave blank for default"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.ui.terminal.shell.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("/bin/bash"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shell = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetTerminalShell(shell));
+                                }
+                            }
+                        }
+                    },
                     add = &adw::ActionRow {
                         set_title: &tr("Height (lines)"),
                         set_subtitle: &tr("Number of character lines in the terminal"),

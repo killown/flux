@@ -816,6 +816,10 @@ impl FluxApp {
             // ==========================================
             // Embedded Terminal
             // ==========================================
+            AppMsg::SetTerminalShell(shell) => {
+                self.config.ui.terminal.shell = shell;
+                crate::utils::save_config(&self.config);
+            }
             AppMsg::ToggleTerminal => self.handle_toggle_terminal(),
             AppMsg::SetTerminalHeight(h) => {
                 self.handle_set_terminal_config(Some(h), None, None, None)

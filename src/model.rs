@@ -464,6 +464,7 @@ pub struct TerminalConfig {
     pub fg_color: String,
     pub bg_color: String,
     pub font: String,
+    pub shell: Option<String>,
 }
 
 impl Default for TerminalConfig {
@@ -473,6 +474,7 @@ impl Default for TerminalConfig {
             fg_color: "#E5E5E5".to_string(),
             bg_color: "#1A1A1A".to_string(),
             font: "JetBrains Mono 13".to_string(),
+            shell: None,
         }
     }
 }
@@ -628,6 +630,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Sets a custom shell executable path for the embedded terminal (e.g., `Some("/bin/fish".to_string())`).
+    SetTerminalShell(Option<String>),
     /// Extracts the currently browsed archive to a sibling folder named.
     ExtractArchive,
     /// Moves the window control buttons (close, minimize, maximize) to the left
