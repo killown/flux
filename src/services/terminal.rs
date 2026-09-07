@@ -1052,6 +1052,10 @@ impl Terminal {
         // Set size request to 1 character line so GTK allows shrinking when resized
         drawing_area.set_size_request(-1, char_height);
 
+        // Input method context
+        let im_context = gtk::IMMulticontext::new();
+        im_context.set_use_preedit(false);
+
         // Dirty flag shared between the PTY reader thread (writer) and the GTK
         // main thread (reader).
         let needs_redraw = Arc::new(AtomicBool::new(false));
@@ -1070,6 +1074,40 @@ impl Terminal {
 
         let state = Arc::new(Mutex::new(TerminalState::new(80, 24)));
         state.lock().unwrap().font_desc = font_desc;
+
+        {
+            let state_for_im = state.clone();
+            im_context.connect_commit(move |_, text| {
+                let state = state_for_im.lock().unwrap();
+                if let Some(fd) = state.pty_fd {
+                    unsafe {
+                        libc::write(fd, text.as_ptr() as *const libc::c_void, text.len());
+                    }
+                }
+            });
+        }
+
+        {
+            let im_for_widget = im_context.clone();
+            drawing_area.connect_realize(move |w| {
+                im_for_widget.set_client_widget(Some(w));
+            });
+            let im_for_unrealize = im_context.clone();
+            drawing_area.connect_unrealize(move |_| {
+                im_for_unrealize.set_client_widget(None::<&gtk::Widget>);
+            });
+        }
+
+        {
+            let im_focus = im_context.clone();
+            drawing_area.connect_has_focus_notify(move |w| {
+                if w.has_focus() {
+                    im_focus.focus_in();
+                } else {
+                    im_focus.focus_out();
+                }
+            });
+        }
 
         {
             let state = state.clone();
@@ -1114,9 +1152,10 @@ impl Terminal {
 
         let state_for_keys = state.clone();
         let drawing_area_for_keys = drawing_area.clone();
+        let im_context_for_keys = im_context.clone();
         let key_controller = gtk::EventControllerKey::new();
         key_controller.set_propagation_phase(gtk::PropagationPhase::Capture);
-        key_controller.connect_key_pressed(move |_ctrl, keyval, _keycode, modifiers| {
+        key_controller.connect_key_pressed(move |ctrl, keyval, _keycode, modifiers| {
             if !drawing_area_for_keys.has_focus() {
                 return glib::Propagation::Proceed;
             }
@@ -1185,6 +1224,12 @@ impl Terminal {
                         return glib::Propagation::Stop;
                     }
                     _ => {}
+                }
+            }
+
+            if let Some(event) = ctrl.current_event() {
+                if im_context_for_keys.filter_keypress(&event) {
+                    return glib::Propagation::Stop;
                 }
             }
 
@@ -1452,7 +1497,7 @@ impl Terminal {
                     // for word-navigation and meta-bindings (Alt+f, Alt+b, etc.).
                     if is_alt {
                         if let Some(ch) = keyval.to_unicode() {
-                            if ch.is_ascii_graphic() || ch == ' ' {
+                            if !ch.is_control() {
                                 let mut seq = [0u8; 5];
                                 seq[0] = 0x1b;
                                 let mut tmp = [0u8; 4];
@@ -1464,7 +1509,7 @@ impl Terminal {
                         }
                     }
                     if let Some(ch) = keyval.to_unicode() {
-                        if ch.is_ascii_graphic() || ch == ' ' {
+                        if !ch.is_control() {
                             let mut buf = [0u8; 4];
                             let bytes = ch.encode_utf8(&mut buf);
                             pty_write(fd, bytes.as_bytes());
