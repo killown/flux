@@ -2,6 +2,7 @@ PREFIX     ?= $(HOME)/.local
 BINDIR     = $(PREFIX)/bin
 APPDIR     = $(PREFIX)/share/applications
 ICONDIR    = $(PREFIX)/share/icons/hicolor/scalable/apps
+METAINFODIR= $(PREFIX)/share/metainfo
 CONFDIR    = $(PREFIX)/share/flux
 SCRIPTDIR  = $(CONFDIR)/scripts
 LOCALEDIR  = $(PREFIX)/share/locale
@@ -30,6 +31,7 @@ install: translations
 		$(DESTDIR)$(BINDIR) \
 		$(DESTDIR)$(APPDIR) \
 		$(DESTDIR)$(ICONDIR) \
+		$(DESTDIR)$(METAINFODIR) \
 		$(DESTDIR)$(CONFDIR)/themes \
 		$(DESTDIR)$(CONFDIR)/menus \
 		$(DESTDIR)$(SCRIPTDIR)
@@ -39,21 +41,24 @@ install: translations
 
 	# 3. Desktop file
 	@sed "s|@BIN_PATH@|$(BINDIR)/flux-fm|g" flux.desktop.in > flux.desktop.tmp
-	@install -m 644 flux.desktop.tmp $(DESTDIR)$(APPDIR)/flux.desktop
+	@install -m 644 flux.desktop.tmp $(DESTDIR)$(APPDIR)/io.github.killown.flux.desktop
 	@rm -f flux.desktop.tmp
 
 	# 4. Icon
-	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/flux.svg
+	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/io.github.killown.flux.svg
 
-	# 5. Themes & Shared Menus
+	# 5. AppStream Metainfo
+	@install -m 644 packaging/flatpak/io.github.killown.flux.metainfo.xml $(DESTDIR)$(METAINFODIR)/io.github.killown.flux.metainfo.xml
+
+	# 6. Themes & Shared Menus
 	@cp -r themes/. $(DESTDIR)$(CONFDIR)/themes/
 	@cp themes/default.css $(DESTDIR)$(CONFDIR)/style.css
 	@if [ -d menus ]; then cp -r menus/. $(DESTDIR)$(CONFDIR)/menus/; fi
 
-	# 6. Scripts
+	# 7. Scripts
 	@install -m 755 scripts/*.py $(DESTDIR)$(SCRIPTDIR)/
 
-	# 7. Copy default menus to ~/.config/flux/menus/ if not already present
+	# 8. Copy default menus to ~/.config/flux/menus/ if not already present
 	@if [ -z "$(DESTDIR)" ] && [ -d menus ]; then \
 		mkdir -p $(USER_CONFDIR)/menus; \
 		for file in menus/*.rs; do \
@@ -67,7 +72,7 @@ install: translations
 		done; \
 	fi
 
-	# 8. Refresh desktop database (skip when packaging)
+	# 9. Refresh desktop database (skip when packaging)
 	@if [ -z "$(DESTDIR)" ]; then \
 		update-desktop-database $(PREFIX)/share/applications; \
 		echo "Successfully installed to $(PREFIX)"; \
