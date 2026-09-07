@@ -1454,6 +1454,33 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     let mut mounts = Vec::new();
     let home_dir = dirs::home_dir().unwrap_or_default();
 
+    let mut media_roots = vec![PathBuf::from("/media")];
+    if let Ok(user) = std::env::var("USER") {
+        media_roots.push(PathBuf::from(format!("/run/media/{user}")));
+    }
+    if let Ok(entries) = fs::read_dir("/run/media") {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_dir() && !media_roots.contains(&p) {
+                media_roots.push(p);
+            }
+        }
+    }
+
+    for root in media_roots {
+        if let Ok(entries) = fs::read_dir(&root) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() && path != home_dir {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if !name.is_empty() && !mounts.iter().any(|(_, p)| p == &path) {
+                        mounts.push((name, path));
+                    }
+                }
+            }
+        }
+    }
+
     if let Ok(content) = fs::read_to_string("/proc/self/mounts") {
         for line in content.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
@@ -1464,22 +1491,31 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
                 let fs_type = parts[2];
                 let path = PathBuf::from(path_str);
 
-                let is_external = path_str.starts_with("/run/media/")
-                    || path_str.starts_with("/media/")
-                    || path_str.starts_with("/mnt/");
+                if path_str == "/"
+                    || path_str == "/home"
+                    || path_str == "/var/home"
+                    || path == home_dir
+                    || path_str.starts_with("/home/") && path.components().count() <= 3
+                    || path_str.starts_with("/app")
+                    || path_str.starts_with("/run/flatpak")
+                {
+                    continue;
+                }
 
-                let is_user_fuse = fs_type.contains("fuse") && path.starts_with(&home_dir);
+                let is_mnt = path_str.starts_with("/mnt/") && path_str != "/mnt";
+                let is_user_fuse =
+                    fs_type.contains("fuse") && path.starts_with(&home_dir) && path != home_dir;
 
-                if is_external || is_user_fuse {
-                    if path == home_dir {
-                        continue;
-                    }
-
+                if is_mnt || is_user_fuse {
                     // Check if this mount originates from a LUKS loop backing file
                     let mut display_name = path
                         .file_name()
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
+
+                    if display_name.is_empty() || display_name == "home" {
+                        continue;
+                    }
 
                     if let Some(luks_name) = resolve_luks_loop_name(dev_node) {
                         display_name = luks_name;
