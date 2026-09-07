@@ -2157,6 +2157,8 @@ impl Terminal {
 
         let mut command = Command::new(&shell);
         command.env("TERM", "xterm-256color");
+        command.env_remove("LD_LIBRARY_PATH");
+        command.env_remove("LD_PRELOAD");
 
         if let Some(dir) = &working_dir {
             if !dir.is_empty() && std::path::Path::new(dir).is_dir() {
