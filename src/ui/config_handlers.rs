@@ -267,16 +267,28 @@ impl FluxApp {
         }
 
         let path_str = path.to_string_lossy().to_string();
-        if let Some(device) = self.config.ui.device_renames.get_mut(&path_str) {
+        let device_updated = if let Some(device) = self.config.ui.device_renames.get_mut(&path_str)
+        {
             device.name = new_name.clone();
-            modified = true;
+            true
         } else {
             let path_trimmed = path_str.trim_end_matches('/').to_string();
             if let Some(device) = self.config.ui.device_renames.get_mut(&path_trimmed) {
                 device.name = new_name.clone();
-                modified = true;
+                true
+            } else {
+                self.config.ui.device_renames.insert(
+                    path_str.clone(),
+                    crate::model::DeviceRename {
+                        name: new_name.clone(),
+                        icon: None,
+                    },
+                );
+                true
             }
-        }
+        };
+
+        modified |= device_updated;
 
         if modified {
             utils::save_config(&self.config);
