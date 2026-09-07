@@ -18,20 +18,6 @@ fn shell_safe(s: &str) -> Option<String> {
     Some(format!("'{}'", s.replace('\'', "'\\''")))
 }
 
-fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
-    std::fs::create_dir_all(dst)?;
-    for entry in std::fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
-        } else {
-            std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
 /// Pure helper: builds the final shell command string and human-readable task label.
 pub fn build_execution_command(
     cmd_template: &str,
@@ -150,6 +136,11 @@ impl FluxApp {
             counter += 1;
         }
 
+        if let Err(e) = std::fs::create_dir_all(&dest) {
+            sender.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+            return;
+        }
+
         let task_id = crate::ui::paste_ops::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
         let cancellable = gtk::gio::Cancellable::new();
         let label = format!(
@@ -160,44 +151,92 @@ impl FluxApp {
                 .to_string_lossy()
         );
 
+        let total_bytes = crate::services::archive::archive_total_bytes(
+            &archive_path,
+            self.cached_archive_password.as_deref(),
+        );
+
         sender.input(AppMsg::TaskProgress {
             id: task_id,
-            label,
+            label: label.clone(),
             current: 0,
-            total: 0,
+            total: total_bytes,
             total_items: 1,
-            cancellable,
+            cancellable: cancellable.clone(),
         });
 
         let password = self.cached_archive_password.clone();
         let s = sender.clone();
-        relm4::spawn_blocking(move || {
-            match crate::services::archive::extract_archive(&archive_path, password.as_deref()) {
-                Ok(tmp_path) => {
-                    let result = std::fs::rename(&tmp_path, &dest).or_else(|e| {
-                        if e.raw_os_error() == Some(libc::EXDEV) {
-                            copy_dir_all(&tmp_path, &dest)
-                                .and_then(|_| std::fs::remove_dir_all(&tmp_path))
-                        } else {
-                            Err(e)
-                        }
-                    });
-                    s.input(AppMsg::TaskCompleted(task_id));
-                    match result {
-                        Ok(_) => {
-                            s.input(AppMsg::ShowToast(format!(
-                                "Extracted to {}",
-                                dest.display()
-                            )));
-                            s.input(AppMsg::InvalidateCacheAndNavigate(dest));
-                        }
-                        Err(e) => {
-                            s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
-                        }
+
+        // ── Polling thread: reads dest dir size every 150 ms ─────────────────
+        let dest_poll = dest.clone();
+        let label_poll = label.clone();
+        let cancellable_poll = cancellable.clone();
+        let s_poll = s.clone();
+        let done_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let done_flag_extractor = done_flag.clone();
+
+        std::thread::spawn(move || {
+            fn dir_size(path: &std::path::Path) -> u64 {
+                let Ok(rd) = std::fs::read_dir(path) else {
+                    return 0;
+                };
+                rd.flatten().fold(0u64, |acc, e| {
+                    let p = e.path();
+                    if p.is_dir() {
+                        acc + dir_size(&p)
+                    } else {
+                        acc + p.metadata().map(|m| m.len()).unwrap_or(0)
                     }
+                })
+            }
+            loop {
+                if done_flag.load(std::sync::atomic::Ordering::Relaxed) {
+                    break;
+                }
+                let current = dir_size(&dest_poll);
+                s_poll.input(AppMsg::TaskProgress {
+                    id: task_id,
+                    label: label_poll.clone(),
+                    current,
+                    total: total_bytes,
+                    total_items: 1,
+                    cancellable: cancellable_poll.clone(),
+                });
+                std::thread::sleep(std::time::Duration::from_millis(150));
+            }
+        });
+
+        // ── Extraction thread ─────────────────────────────────────────────────
+        relm4::spawn_blocking(move || {
+            let result = crate::services::archive::extract_archive_to_dir(
+                &archive_path,
+                &dest,
+                password.as_deref(),
+            );
+
+            done_flag_extractor.store(true, std::sync::atomic::Ordering::Relaxed);
+
+            s.input(AppMsg::TaskProgress {
+                id: task_id,
+                label: label.clone(),
+                current: total_bytes,
+                total: total_bytes,
+                total_items: 1,
+                cancellable: cancellable.clone(),
+            });
+            s.input(AppMsg::TaskCompleted(task_id));
+
+            match result {
+                Ok(()) => {
+                    s.input(AppMsg::ShowToast(format!(
+                        "Extracted to {}",
+                        dest.display()
+                    )));
+                    s.input(AppMsg::InvalidateCacheAndNavigate(dest));
                 }
                 Err(e) => {
-                    s.input(AppMsg::TaskCompleted(task_id));
+                    let _ = std::fs::remove_dir_all(&dest);
                     s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
                 }
             }

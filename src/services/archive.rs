@@ -694,11 +694,110 @@ pub fn get_backend(
 ///
 /// Equivalent to calling `extract_dir` with `inner_dir = ""` on the
 /// backend selected for `archive_path`.
+#[allow(dead_code)]
 pub fn extract_archive(
     archive_path: &Path,
     password: Option<&str>,
 ) -> Result<PathBuf, ArchiveError> {
     get_backend(archive_path, None).extract_dir(archive_path, "", password)
+}
+
+/// Extracts the entire archive directly into `dest_dir` (which must already exist).
+///
+/// Unlike `extract_archive` this skips the internal temp-dir + rename dance, so
+/// the caller can poll `dest_dir` while extraction is in progress and get real
+/// byte counts.
+pub fn extract_archive_to_dir(
+    archive_path: &Path,
+    dest_dir: &Path,
+    password: Option<&str>,
+) -> Result<(), ArchiveError> {
+    let name_lc = lc_name(archive_path);
+
+    if name_lc.ends_with(".zip") {
+        extract_dir_zip_at(archive_path, "", password, Some(dest_dir))?;
+    } else if name_lc.ends_with(".7z") {
+        extract_dir_7z_at(archive_path, "", password, Some(dest_dir))?;
+    } else if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+        extract_dir_tar_at(
+            flate2::read::GzDecoder::new(open_buf(archive_path)?),
+            "",
+            Some(dest_dir),
+        )?;
+    } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+        extract_dir_tar_at(
+            bzip2::read::BzDecoder::new(open_buf(archive_path)?),
+            "",
+            Some(dest_dir),
+        )?;
+    } else if name_lc.ends_with(".tar.xz")
+        || name_lc.ends_with(".txz")
+        || name_lc.ends_with(".tar.lzma")
+        || name_lc.ends_with(".tlz")
+    {
+        extract_dir_tar_at(
+            xz2::read::XzDecoder::new(open_buf(archive_path)?),
+            "",
+            Some(dest_dir),
+        )?;
+    } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+        let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
+            .map_err(|e| ArchiveError::Other(format!("zstd: {e}")))?;
+        extract_dir_tar_at(dec, "", Some(dest_dir))?;
+    } else if name_lc.ends_with(".tar.lz4") {
+        extract_dir_tar_at(
+            lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?),
+            "",
+            Some(dest_dir),
+        )?;
+    } else if name_lc.ends_with(".tar") {
+        extract_dir_tar_at(open_buf(archive_path)?, "", Some(dest_dir))?;
+    } else {
+        // Formats without direct extraction support fall back to temporary directory extraction.
+        let tmp_path = get_backend(archive_path, None).extract_dir(archive_path, "", password)?;
+        for entry in std::fs::read_dir(&tmp_path)
+            .map_err(|e| ArchiveError::Other(format!("readdir: {e}")))?
+            .flatten()
+        {
+            let src = entry.path();
+            let dst = dest_dir.join(entry.file_name());
+            if std::fs::rename(&src, &dst).is_err() {
+                if src.is_dir() {
+                    copy_dir_recursive(&src, &dst).and_then(|_| std::fs::remove_dir_all(&src))
+                } else {
+                    std::fs::copy(&src, &dst)
+                        .map(|_| ())
+                        .and_then(|_| std::fs::remove_file(&src))
+                }
+                .map_err(|e| ArchiveError::Other(format!("move to dest: {e}")))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(dst)?;
+    for entry in std::fs::read_dir(src)?.flatten() {
+        let d = dst.join(entry.file_name());
+        if entry.path().is_dir() {
+            copy_dir_recursive(&entry.path(), &d)?;
+        } else {
+            std::fs::copy(entry.path(), d)?;
+        }
+    }
+    Ok(())
+}
+
+/// Returns the total uncompressed byte size of all file entries in the archive.
+///
+/// Used by the UI to seed a real `total` value for the progress bar before
+/// extraction starts.  Returns `0` when the format cannot report sizes without
+/// full decompression (e.g. standalone `.gz`).
+pub fn archive_total_bytes(archive_path: &Path, password: Option<&str>) -> u64 {
+    list_archive_entries(archive_path, "", password)
+        .map(|entries| entries.iter().filter(|e| !e.is_dir).map(|e| e.size).sum())
+        .unwrap_or(0)
 }
 
 // ─── Public entry point ───────────────────────────────────────────────────────
@@ -1221,6 +1320,23 @@ fn list_zip(
 }
 
 fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
+    make_dest_dir_at(inner_dir, None)
+}
+
+fn make_dest_dir_at(
+    inner_dir: &str,
+    override_dest: Option<&Path>,
+) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
+    if let Some(dest) = override_dest {
+        std::fs::create_dir_all(dest)
+            .map_err(|e| ArchiveError::Other(format!("create_dir_all failed: {e}")))?;
+        let dummy = tempfile::Builder::new()
+            .prefix(".flux-dummy.")
+            .tempdir_in(flux_scratch_dir())
+            .map_err(|e| ArchiveError::Other(format!("dummy tempdir: {e}")))?;
+        return Ok((dummy, dest.to_path_buf()));
+    }
+
     let folder_name = Path::new(inner_dir)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -1243,7 +1359,16 @@ fn extract_dir_zip(
     inner_dir: &str,
     password: Option<&str>,
 ) -> Result<PathBuf, ArchiveError> {
-    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+    extract_dir_zip_at(archive_path, inner_dir, password, None)
+}
+
+fn extract_dir_zip_at(
+    archive_path: &Path,
+    inner_dir: &str,
+    password: Option<&str>,
+    override_dest: Option<&Path>,
+) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
 
     let prefix = if inner_dir.is_empty() {
         String::new()
@@ -1534,7 +1659,16 @@ fn extract_dir_7z(
     inner_dir: &str,
     password: Option<&str>,
 ) -> Result<PathBuf, ArchiveError> {
-    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+    extract_dir_7z_at(archive_path, inner_dir, password, None)
+}
+
+fn extract_dir_7z_at(
+    archive_path: &Path,
+    inner_dir: &str,
+    password: Option<&str>,
+    override_dest: Option<&Path>,
+) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
 
     let prefix = if inner_dir.is_empty() {
         String::new()
@@ -1654,7 +1788,15 @@ fn extract_tar<R: Read>(
 }
 
 fn extract_dir_tar<R: Read>(reader: R, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
-    let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
+    extract_dir_tar_at(reader, inner_dir, None)
+}
+
+fn extract_dir_tar_at<R: Read>(
+    reader: R,
+    inner_dir: &str,
+    override_dest: Option<&Path>,
+) -> Result<PathBuf, ArchiveError> {
+    let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
 
     let prefix = if inner_dir.is_empty() {
         String::new()
