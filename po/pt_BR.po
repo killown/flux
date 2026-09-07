@@ -1764,3 +1764,15 @@ msgstr "itens"
 #: src/ui/view.rs:???
 msgid "Extract"
 msgstr "Extrair"
+
+#: src/ui/settings.rs:347
+msgid "Customize the embedded terminal look, feel, and executable"
+msgstr "Personalizar a aparência e o executável do terminal integrado"
+
+#: src/ui/settings.rs:349
+msgid "Shell Executable"
+msgstr "Executável do Shell"
+
+#: src/ui/settings.rs:350
+msgid "Custom shell path (e.g., '/bin/zsh'). Leave blank for default"
+msgstr "Caminho do shell personalizado (ex.: '/bin/zsh'). Deixe em branco para o padrão"

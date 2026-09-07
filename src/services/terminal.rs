@@ -965,6 +965,7 @@ impl Perform for TerminalHandler {
 }
 
 pub struct Terminal {
+    pub config: TerminalConfig,
     pub drawing_area: DrawingArea,
     pub state: Arc<Mutex<TerminalState>>,
     _pty_reader: Option<std::thread::JoinHandle<()>>,
@@ -988,6 +989,7 @@ impl Clone for Terminal {
         Self {
             drawing_area: self.drawing_area.clone(),
             state: self.state.clone(),
+            config: self.config.clone(),
             _pty_reader: None,
             needs_redraw: self.needs_redraw.clone(),
             pending_dir: self.pending_dir.clone(),
@@ -1725,6 +1727,7 @@ impl Terminal {
         let term = Self {
             drawing_area,
             state,
+            config: config.clone(),
             _pty_reader: None,
             needs_redraw,
             pending_dir: Arc::new(Mutex::new(None)),
@@ -2124,7 +2127,6 @@ impl Terminal {
     ) where
         F: Fn() + 'static + Send,
     {
-        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
         let working_dir = working_dir.map(str::to_owned);
 
         let (width, height) = (self.drawing_area.width(), self.drawing_area.height());
@@ -2200,8 +2202,39 @@ impl Terminal {
             state.needs_initial_sigwinch = spawned_hidden;
         }
 
-        let mut command = Command::new(&shell);
-        command.env("TERM", "xterm-256color");
+        let target_shell = self
+            .config
+            .shell
+            .as_deref()
+            .filter(|s| !s.trim().is_empty())
+            .map(String::from)
+            .unwrap_or_else(|| std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string()));
+
+        let is_flatpak = std::path::Path::new("/.flatpak-info").exists();
+
+        let mut command = if is_flatpak {
+            let mut cmd = Command::new("flatpak-spawn");
+            cmd.args([
+                "--host",
+                "--env=TERM=xterm-256color",
+                "script",
+                "-q",
+                "-c",
+                &format!("exec {} -l", target_shell),
+                "/dev/null",
+            ]);
+            cmd
+        } else {
+            let mut cmd = Command::new("script");
+            cmd.args([
+                "-q",
+                "-c",
+                &format!("exec {} -l", target_shell),
+                "/dev/null",
+            ]);
+            cmd
+        };
+
         command.env_remove("LD_LIBRARY_PATH");
         command.env_remove("LD_PRELOAD");
 
