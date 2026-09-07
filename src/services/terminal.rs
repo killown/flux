@@ -2209,32 +2209,10 @@ impl Terminal {
             .map(String::from)
             .unwrap_or_else(|| std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string()));
 
-        let is_flatpak = std::path::Path::new("/.flatpak-info").exists();
-
-        let mut command = if is_flatpak {
-            let mut cmd = Command::new("flatpak-spawn");
-            cmd.args([
-                "--host",
-                "--env=TERM=xterm-256color",
-                "script",
-                "-q",
-                "-c",
-                &format!("export TERM=xterm-256color; exec {} -l", target_shell),
-                "/dev/null",
-            ]);
-            cmd
-        } else {
-            let mut cmd = Command::new("script");
-            cmd.env("TERM", "xterm-256color");
-            cmd.args([
-                "-q",
-                "-c",
-                &format!("export TERM=xterm-256color; exec {} -l", target_shell),
-                "/dev/null",
-            ]);
-            cmd
-        };
-
+        // Spawn the shell directly on the PTY slave
+        let mut command = Command::new(&target_shell);
+        command.arg("-l");
+        command.env("TERM", "xterm-256color");
         command.env_remove("LD_LIBRARY_PATH");
         command.env_remove("LD_PRELOAD");
 
@@ -2248,18 +2226,25 @@ impl Terminal {
 
         unsafe {
             command
-                .stdin(Stdio::from_raw_fd(slave_fd))
+                .stdin(Stdio::from_raw_fd(libc::dup(slave_fd)))
                 .stdout(Stdio::from_raw_fd(libc::dup(slave_fd)))
                 .stderr(Stdio::from_raw_fd(libc::dup(slave_fd)))
                 .pre_exec(move || {
-                    libc::setsid();
-                    libc::ioctl(0, libc::TIOCSCTTY as _, 0);
+                    if libc::setsid() < 0 {
+                        return Err(std::io::Error::last_os_error());
+                    }
+                    if libc::ioctl(0, libc::TIOCSCTTY as _, 0) < 0 {
+                        return Err(std::io::Error::last_os_error());
+                    }
                     Ok(())
                 });
         }
 
         match command.spawn() {
             Ok(mut child) => {
+                // Parent closes its copy of slave_fd so EOF propagates on master_fd when the child exits
+                unsafe { libc::close(slave_fd) };
+
                 let pid = glib::Pid(child.id() as i32);
 
                 {
@@ -2297,7 +2282,10 @@ impl Terminal {
                 callback(Ok(pid));
             }
             Err(e) => {
-                unsafe { libc::close(master_fd) };
+                unsafe {
+                    libc::close(slave_fd);
+                    libc::close(master_fd);
+                };
                 callback(Err(glib::Error::new(
                     glib::FileError::Failed,
                     &e.to_string(),
