@@ -2220,16 +2220,17 @@ impl Terminal {
                 "script",
                 "-q",
                 "-c",
-                &format!("exec {} -l", target_shell),
+                &format!("export TERM=xterm-256color; exec {} -l", target_shell),
                 "/dev/null",
             ]);
             cmd
         } else {
             let mut cmd = Command::new("script");
+            cmd.env("TERM", "xterm-256color");
             cmd.args([
                 "-q",
                 "-c",
-                &format!("exec {} -l", target_shell),
+                &format!("export TERM=xterm-256color; exec {} -l", target_shell),
                 "/dev/null",
             ]);
             cmd
