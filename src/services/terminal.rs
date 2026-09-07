@@ -2207,7 +2207,19 @@ impl Terminal {
             .as_deref()
             .filter(|s| !s.trim().is_empty())
             .map(String::from)
-            .unwrap_or_else(|| std::env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string()));
+            .unwrap_or_else(|| {
+                if let Ok(env_shell) = std::env::var("SHELL") {
+                    if !env_shell.trim().is_empty() && std::path::Path::new(&env_shell).exists() {
+                        return env_shell;
+                    }
+                }
+
+                if std::path::Path::new("/app/bin/fish").exists() {
+                    "/app/bin/fish".to_string()
+                } else {
+                    "/bin/bash".to_string()
+                }
+            });
 
         // Spawn the shell directly on the PTY slave
         let mut command = Command::new(&target_shell);
