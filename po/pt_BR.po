@@ -1800,3 +1800,15 @@ msgstr "Excluir permanentemente \"{}\"?"
 #: src/ui/dialogs.rs:???
 msgid "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone."
 msgstr "Este item será excluído permanentemente do arquivo. Esta ação é irreversível e não pode ser desfeita."
+
+#: src/ui/help.rs:???
+msgid "Copy absolute path of selected items"
+msgstr "Copiar caminho absoluto dos itens selecionados"
+
+#: src/ui/help.rs:???
+msgid "Create symbolic link from clipboard paths"
+msgstr "Criar link simbólico a partir dos caminhos na área de transferência"
+
+#: src/ui/help.rs:???
+msgid "Create hard link from clipboard paths"
+msgstr "Criar link físico a partir dos caminhos na área de transferência"
