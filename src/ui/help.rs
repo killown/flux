@@ -276,6 +276,27 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Copy absolute path of selected items"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.copy_path.clone(), "Ctrl + Shift + C"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Create symbolic link from clipboard paths"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.create_symlink.clone(), "Ctrl + Shift + V"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Create hard link from clipboard paths"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.create_hardlink.clone(), "Ctrl + Alt + Shift + V"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Open memory debug profiler"),
                         add_suffix = &gtk::Label {
                             set_label: "Ctrl + Shift + F7",
