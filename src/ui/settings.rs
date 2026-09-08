@@ -377,6 +377,21 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Autoplay Video Previews"),
+                        set_subtitle: &tr("Play a muted preview when a single video card is selected"),
+                        set_sensitive: model.config.ui.show_thumbnails,
+                        add_suffix = &gtk::Switch {
+                            set_valign: gtk::Align::Center,
+                            set_active: model.config.ui.autoplay_video_previews,
+                            connect_state_set => move |_, state| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetAutoplayVideoPreviews(state));
+                                }
+                                gtk::glib::Propagation::Proceed
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Images"),
                         set_subtitle: &tr("PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"),
                         set_sensitive: model.config.ui.show_thumbnails,

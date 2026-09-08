@@ -1784,3 +1784,11 @@ msgstr "Tamanho das Miniaturas"
 #: src/ui/settings.rs:???
 msgid "Target resolution for media previews (higher values increase memory usage)"
 msgstr "Resolução alvo para pré-visualizações (valores maiores aumentam o uso de memória)"
+
+#: src/ui/settings.rs:???
+msgid "Autoplay Video Previews"
+msgstr "Reprodução Automática de Vídeos"
+
+#: src/ui/settings.rs:???
+msgid "Play a muted preview when a single video card is selected"
+msgstr "Reproduzir pré-visualização sem som ao selecionar um único cartão de vídeo"
