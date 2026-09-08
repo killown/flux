@@ -1,6 +1,5 @@
 use crate::model::CustomAction;
 use crate::model::MenuEntry;
-use crate::ui::constants;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
@@ -334,6 +333,7 @@ path = "~"
                     recents_row: 0,
                     show_thumbnails: true,
                     thumbnail_types: crate::model::ThumbnailTypes::default(),
+                    thumbnail_size: 256,
                     max_content_search_results:
                         crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
                     lazy_thumbnails: false,
@@ -776,12 +776,12 @@ fn optimize_png_bytes(bytes: &[u8]) -> Vec<u8> {
 /// `(cache_dir, cache_path)` where `cache_dir` is the resolved size-tier directory
 /// and `cache_path` is the full `.png` destination. Returns `None` if
 /// `dirs::cache_dir()` is unavailable or `path` contains non-UTF-8 bytes.
-fn thumbnail_cache_path(path: &Path) -> Option<(PathBuf, PathBuf)> {
-    let thumb_folder = match constants::CACHED_THUMBNAIL_SIZE {
-        512 => "xx-large",
-        256 => "x-large",
-        128 => "large",
-        _ => "normal",
+fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathBuf)> {
+    let thumb_folder = match target_size {
+        768 => "xx-large",
+        384 | 512 => "x-large",
+        144 | 160 | 192 | 256 => "large",
+        _ => "normal", // 16, 24, 32, 48, 64, 96, 128
     };
 
     let cache_dir = dirs::cache_dir()?.join("thumbnails").join(thumb_folder);
@@ -817,12 +817,12 @@ fn is_pdf(path: &Path) -> bool {
 ///
 /// `Some(texture)` on success, `None` if the document cannot be opened, contains
 /// no pages, or the Cairo surface cannot be serialised to PNG.
-fn pdf_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
+fn pdf_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
     let doc = poppler::PopplerDocument::new_from_file(path, None).ok()?;
     let page = doc.get_page(0)?;
     let (page_w, page_h) = page.get_size();
 
-    let size = constants::CACHED_THUMBNAIL_SIZE as f64;
+    let size = target_size as f64;
     let scale = size / page_w.max(page_h);
     let render_w = (page_w * scale).round() as i32;
     let render_h = (page_h * scale).round() as i32;
@@ -1019,7 +1019,7 @@ fn register_font_with_fontconfig(path: &Path) {
     }
 }
 
-fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
+fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
     // Register the font file with fontconfig so Pango can load it by family
     // name without requiring system installation.
     register_font_with_fontconfig(path);
@@ -1030,7 +1030,7 @@ fn font_thumbnail(path: &Path, cache_path: &Path) -> Option<gdk::Texture> {
         .or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned()))
         .unwrap_or_else(|| "Sans".to_string());
 
-    let size = constants::CACHED_THUMBNAIL_SIZE;
+    let size = target_size;
     let size_f = size as f64;
 
     let mut surface =
@@ -1233,6 +1233,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         return None;
     }
 
+    let target_size = config.ui.thumbnail_size.clamp(16, 768);
     let is_pdf_file = is_pdf(path);
     let is_font_file = !is_pdf_file && is_font(path);
     let (is_img, is_vid) = if !is_pdf_file && !is_font_file {
@@ -1250,7 +1251,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         return None;
     }
 
-    let (cache_dir, cache_path) = thumbnail_cache_path(path)?;
+    let (cache_dir, cache_path) = thumbnail_cache_path(path, target_size)?;
 
     // ── 1. Cache Check with Auto-Eviction of Corrupted Files ─────────────────
     let source_meta = tokio::fs::metadata(path).await.ok();
@@ -1283,7 +1284,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     if is_pdf_file {
         let cache_p = cache_path.clone();
         let path_p = path.to_path_buf();
-        return tokio::task::spawn_blocking(move || pdf_thumbnail(&path_p, &cache_p))
+        return tokio::task::spawn_blocking(move || pdf_thumbnail(&path_p, &cache_p, target_size))
             .await
             .ok()?;
     }
@@ -1291,7 +1292,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     if is_font_file {
         let cache_p = cache_path.clone();
         let path_p = path.to_path_buf();
-        return tokio::task::spawn_blocking(move || font_thumbnail(&path_p, &cache_p))
+        return tokio::task::spawn_blocking(move || font_thumbnail(&path_p, &cache_p, target_size))
             .await
             .ok()?;
     }
@@ -1302,7 +1303,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         let cache_d = cache_dir.clone();
 
         return tokio::task::spawn_blocking(move || {
-            let max_dim = constants::CACHED_THUMBNAIL_SIZE;
+            let max_dim = target_size;
             let pixbuf =
                 gdk_pixbuf::Pixbuf::from_file_at_scale(&path_buf, max_dim, max_dim, true).ok()?;
 
@@ -1367,6 +1368,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             seek: &str,
             threads: &str,
             auto_rotate: bool,
+            target_size: i32,
         ) -> bool {
             let mut cmd = tokio::process::Command::new("ffmpeg");
             cmd.arg("-y").arg("-loglevel").arg("panic");
@@ -1387,7 +1389,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .arg("-vf")
                 .arg(format!(
                     "scale={}:-1:force_original_aspect_ratio=decrease",
-                    constants::CACHED_THUMBNAIL_SIZE
+                    target_size
                 ))
                 .arg(out_path)
                 .status()
@@ -1396,10 +1398,25 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .unwrap_or(false)
         }
 
-        let mut success =
-            try_ffmpeg(path, &tmp_path, &seek_str, &ffmpeg_threads, auto_rotate).await;
+        let mut success = try_ffmpeg(
+            path,
+            &tmp_path,
+            &seek_str,
+            &ffmpeg_threads,
+            auto_rotate,
+            target_size,
+        )
+        .await;
         if !success || !tmp_path.exists() {
-            success = try_ffmpeg(path, &tmp_path, "0.000", &ffmpeg_threads, auto_rotate).await;
+            success = try_ffmpeg(
+                path,
+                &tmp_path,
+                "0.000",
+                &ffmpeg_threads,
+                auto_rotate,
+                target_size,
+            )
+            .await;
         }
 
         if success && tmp_path.exists() {

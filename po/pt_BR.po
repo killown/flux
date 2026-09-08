@@ -1776,3 +1776,11 @@ msgstr "Executável do Shell"
 #: src/ui/settings.rs:350
 msgid "Custom shell path (e.g., '/bin/zsh'). Leave blank for default"
 msgstr "Caminho do shell personalizado (ex.: '/bin/zsh'). Deixe em branco para o padrão"
+
+#: src/ui/settings.rs:???
+msgid "Thumbnail Size"
+msgstr "Tamanho das Miniaturas"
+
+#: src/ui/settings.rs:???
+msgid "Target resolution for media previews (higher values increase memory usage)"
+msgstr "Resolução alvo para pré-visualizações (valores maiores aumentam o uso de memória)"
