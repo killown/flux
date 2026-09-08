@@ -1792,3 +1792,11 @@ msgstr "Reprodução Automática de Vídeos"
 #: src/ui/settings.rs:???
 msgid "Play a muted preview when a single video card is selected"
 msgstr "Reproduzir pré-visualização sem som ao selecionar um único cartão de vídeo"
+
+#: src/ui/dialogs.rs:???
+msgid "Permanently delete \"{}\"?"
+msgstr "Excluir permanentemente \"{}\"?"
+
+#: src/ui/dialogs.rs:???
+msgid "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone."
+msgstr "Este item será excluído permanentemente do arquivo. Esta ação é irreversível e não pode ser desfeita."

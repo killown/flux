@@ -83,7 +83,21 @@ pub fn encode_archive_host(archive_path: &Path) -> String {
 /// Decodes the host component of an archive URI back to an absolute filesystem path.
 #[inline]
 pub fn decode_archive_host(host: &str) -> PathBuf {
-    PathBuf::from(host.replace("%2F", "/").replace("%25", "%"))
+    // Decode percent encodings reliably, handling both uppercase and lowercase hex,
+    // and ensuring %2f / %2F becomes '/'
+    let mut decoded = host.to_string();
+    // Handle double-encoded or normalized cases
+    decoded = decoded.replace("%2F", "/").replace("%2f", "/");
+    decoded = decoded.replace("%25", "%");
+
+    // In case GIO normalized leading '%2' without the 'F'
+    if decoded.starts_with("%2/") {
+        decoded = decoded.replacen("%2/", "/", 1);
+    } else if decoded.starts_with("%2") && !decoded.starts_with("%25") {
+        decoded = decoded.replacen("%2", "/", 1);
+    }
+
+    PathBuf::from(decoded)
 }
 
 /// Splits an `archive://` URI into `(archive_path_on_disk, inner_prefix)`.
@@ -91,18 +105,25 @@ pub fn decode_archive_host(host: &str) -> PathBuf {
 /// `inner_prefix` is the path inside the archive being browsed (`""` = root).
 #[allow(dead_code)]
 pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
-    // Strip either the absolute form (/archive://) or bare form (archive://)
-    let rest = uri
+    // Strip all possible URI prefixes that GTK / GIO / PathBuf might produce.
+    let mut rest = uri
         .strip_prefix(ARCHIVE_URI)
-        .or_else(|| uri.strip_prefix("archive://"))?;
+        .or_else(|| uri.strip_prefix("archive://"))
+        .or_else(|| uri.strip_prefix("/archive:/"))
+        .or_else(|| uri.strip_prefix("archive:/"))?;
+
+    // CRITICAL: Strip any leftover leading slashes so rest doesn't start with '/'
+    rest = rest.trim_start_matches('/');
 
     let (host, inner) = match rest.find('/') {
         Some(idx) => (&rest[..idx], &rest[idx + 1..]),
         None => (rest, ""),
     };
+
     if host.is_empty() {
         return None;
     }
+
     Some((decode_archive_host(host), inner.to_owned()))
 }
 
@@ -200,6 +221,45 @@ pub trait ArchiveBackend: Send + Sync {
         inner_dir: &str,
         password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError>;
+
+    /// Deletes an inner path entry from the archive on disk.
+    fn remove_entry(
+        &self,
+        _archive_path: &Path,
+        _inner_path: &str,
+        _password: Option<&str>,
+        _progress_cb: Option<&mut dyn FnMut(u64)>,
+    ) -> Result<(), ArchiveError> {
+        Err(ArchiveError::Other(
+            "In-archive deletion is not supported for this format".into(),
+        ))
+    }
+
+    /// Adds or replaces an entry inside the archive from a local file on disk.
+    fn write_entry(
+        &self,
+        _archive_path: &Path,
+        _source_file: &Path,
+        _inner_path: &str,
+        _password: Option<&str>,
+        _progress_cb: Option<&mut dyn FnMut(u64)>,
+    ) -> Result<(), ArchiveError> {
+        Err(ArchiveError::Other(
+            "In-archive write is not supported for this format".into(),
+        ))
+    }
+
+    /// Creates an empty directory entry inside the archive.
+    fn create_directory(
+        &self,
+        _archive_path: &Path,
+        _inner_path: &str,
+        _password: Option<&str>,
+    ) -> Result<(), ArchiveError> {
+        Err(ArchiveError::Other(
+            "In-archive directory creation is not supported for this format".into(),
+        ))
+    }
 }
 
 // ─── Real backends ────────────────────────────────────────────────────────────
@@ -241,6 +301,260 @@ impl ArchiveBackend for ZipBackend {
         password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError> {
         extract_dir_zip(archive_path, inner_dir, password)
+    }
+
+    fn remove_entry(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        _password: Option<&str>,
+        mut progress_cb: Option<&mut dyn FnMut(u64)>,
+    ) -> Result<(), ArchiveError> {
+        let src_file = std::fs::File::open(archive_path)
+            .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+        let mut zip_in = zip::ZipArchive::new(src_file)
+            .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+        let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
+        let mut tmp = tempfile::Builder::new()
+            .prefix(".flux-update-")
+            .suffix(".tmp")
+            .tempfile_in(parent_dir)
+            .map_err(|e| ArchiveError::Other(format!("create tempfile: {e}")))?;
+
+        let target = inner_path.trim_start_matches('/');
+        let target_dir_prefix = format!("{}/", target);
+
+        {
+            let mut zip_out = zip::ZipWriter::new(&mut tmp);
+
+            for i in 0..zip_in.len() {
+                let raw_entry = zip_in
+                    .by_index_raw(i)
+                    .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
+                let name = raw_entry.name().replace('\\', "/");
+                let entry_size = raw_entry.compressed_size();
+
+                // Skip the entry being deleted (or any child if deleting a directory)
+                if name == target || name.starts_with(&target_dir_prefix) {
+                    continue;
+                }
+
+                zip_out
+                    .raw_copy_file(raw_entry)
+                    .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+
+                if let Some(ref mut cb) = progress_cb {
+                    cb(entry_size);
+                }
+            }
+
+            zip_out
+                .finish()
+                .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
+        }
+
+        tmp.persist(archive_path)
+            .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
+
+        Ok(())
+    }
+
+    fn create_directory(
+        &self,
+        archive_path: &Path,
+        inner_path: &str,
+        _password: Option<&str>,
+    ) -> Result<(), ArchiveError> {
+        let src_file = std::fs::File::open(archive_path)
+            .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+        let mut zip_in = zip::ZipArchive::new(src_file)
+            .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+        let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
+        let mut tmp = tempfile::Builder::new()
+            .prefix(".flux-update-")
+            .suffix(".tmp")
+            .tempfile_in(parent_dir)
+            .map_err(|e| ArchiveError::Other(format!("create tempfile: {e}")))?;
+
+        // Normalise: strip leading slash, ensure trailing slash
+        let target = inner_path.trim_start_matches('/');
+        let dir_entry_name = if target.ends_with('/') {
+            target.to_string()
+        } else {
+            format!("{}/", target)
+        };
+
+        {
+            let mut zip_out = zip::ZipWriter::new(&mut tmp);
+
+            // Copy all existing entries, skipping a duplicate if it already exists
+            for i in 0..zip_in.len() {
+                let raw_entry = zip_in
+                    .by_index_raw(i)
+                    .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
+                let name = raw_entry.name().replace('\\', "/");
+                if name == dir_entry_name {
+                    // Directory already exists, just copy it and we're done
+                    zip_out
+                        .raw_copy_file(raw_entry)
+                        .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+                    continue;
+                }
+                zip_out
+                    .raw_copy_file(raw_entry)
+                    .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+            }
+
+            // Add the new directory entry
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored);
+            zip_out
+                .add_directory(&dir_entry_name, options)
+                .map_err(|e| ArchiveError::Other(format!("add directory: {e}")))?;
+
+            zip_out
+                .finish()
+                .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
+        }
+
+        tmp.persist(archive_path)
+            .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
+
+        Ok(())
+    }
+
+    fn write_entry(
+        &self,
+        archive_path: &Path,
+        source_file: &Path,
+        inner_path: &str,
+        _password: Option<&str>,
+        mut progress_cb: Option<&mut dyn FnMut(u64)>,
+    ) -> Result<(), ArchiveError> {
+        let src_file = std::fs::File::open(archive_path)
+            .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+        let mut zip_in = zip::ZipArchive::new(src_file)
+            .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+        let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
+        let mut tmp = tempfile::Builder::new()
+            .prefix(".flux-update-")
+            .suffix(".tmp")
+            .tempfile_in(parent_dir)
+            .map_err(|e| ArchiveError::Other(format!("create tempfile: {e}")))?;
+
+        let target = inner_path.trim_start_matches('/');
+        // For directories we must also evict all child entries so we get a clean write
+        let target_dir_prefix = if target.is_empty() {
+            String::new()
+        } else {
+            format!("{}/", target.trim_end_matches('/'))
+        };
+
+        {
+            let mut zip_out = zip::ZipWriter::new(&mut tmp);
+
+            // Copy entries that do not collide with the target path (file or dir)
+            for i in 0..zip_in.len() {
+                let raw_entry = zip_in
+                    .by_index_raw(i)
+                    .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
+                let name = raw_entry.name().replace('\\', "/");
+
+                if name == target
+                    || name == target_dir_prefix
+                    || (!target_dir_prefix.is_empty() && name.starts_with(&target_dir_prefix))
+                {
+                    continue;
+                }
+
+                zip_out
+                    .raw_copy_file(raw_entry)
+                    .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+            }
+
+            // Write the source (file or directory tree) at inner_path
+            fn write_recursive(
+                writer: &mut zip::ZipWriter<&mut tempfile::NamedTempFile>,
+                src: &Path,
+                base_inner: &str,
+                progress_cb: &mut Option<&mut dyn FnMut(u64)>,
+            ) -> Result<(), ArchiveError> {
+                let options = zip::write::SimpleFileOptions::default()
+                    .compression_method(zip::CompressionMethod::Deflated);
+
+                if src.is_dir() {
+                    let dir_name = if base_inner.is_empty() {
+                        String::new()
+                    } else if base_inner.ends_with('/') {
+                        base_inner.to_string()
+                    } else {
+                        format!("{}/", base_inner)
+                    };
+
+                    if !dir_name.is_empty() {
+                        writer
+                            .add_directory(&dir_name, options)
+                            .map_err(|e| ArchiveError::Other(format!("add directory: {e}")))?;
+                    }
+
+                    for entry in std::fs::read_dir(src)
+                        .map_err(|e| ArchiveError::Other(format!("read dir: {e}")))?
+                        .flatten()
+                    {
+                        let child_path = entry.path();
+                        let file_name = entry.file_name();
+                        let name_str = file_name.to_string_lossy();
+
+                        let child_inner = if dir_name.is_empty() {
+                            name_str.to_string()
+                        } else {
+                            format!("{}{}", dir_name, name_str)
+                        };
+
+                        write_recursive(writer, &child_path, &child_inner, progress_cb)?;
+                    }
+                } else {
+                    writer
+                        .start_file(base_inner, options)
+                        .map_err(|e| ArchiveError::Other(format!("start new entry: {e}")))?;
+
+                    let mut input_data = std::fs::File::open(src)
+                        .map_err(|e| ArchiveError::Other(format!("open source file: {e}")))?;
+
+                    let mut buf = [0u8; 65536];
+                    loop {
+                        let n = input_data
+                            .read(&mut buf)
+                            .map_err(|e| ArchiveError::Other(format!("read source file: {e}")))?;
+                        if n == 0 {
+                            break;
+                        }
+                        writer
+                            .write_all(&buf[..n])
+                            .map_err(|e| ArchiveError::Other(format!("write entry chunk: {e}")))?;
+
+                        if let Some(ref mut cb) = progress_cb {
+                            cb(n as u64);
+                        }
+                    }
+                }
+                Ok(())
+            }
+
+            write_recursive(&mut zip_out, source_file, target, &mut progress_cb)?;
+
+            zip_out
+                .finish()
+                .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
+        }
+
+        tmp.persist(archive_path)
+            .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
+
+        Ok(())
     }
 }
 
@@ -981,6 +1295,42 @@ pub fn extract_dir_to_tempdir_with_backend(
     backend.extract_dir(archive_path, inner_dir, password)
 }
 
+/// Deletes an inner path entry from an archive file on disk.
+#[allow(dead_code)]
+pub fn remove_archive_entry(
+    archive_path: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+    progress_cb: Option<&mut dyn FnMut(u64)>,
+) -> Result<(), ArchiveError> {
+    let backend = get_backend(archive_path, None);
+    backend.remove_entry(archive_path, inner_path, password, progress_cb)
+}
+
+/// Adds or replaces an entry inside an archive file using a local file on disk.
+#[allow(dead_code)]
+pub fn write_archive_entry(
+    archive_path: &Path,
+    source_file: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+    progress_cb: Option<&mut dyn FnMut(u64)>,
+) -> Result<(), ArchiveError> {
+    let backend = get_backend(archive_path, None);
+    backend.write_entry(archive_path, source_file, inner_path, password, progress_cb)
+}
+
+/// Creates an empty directory entry inside an archive file.
+#[allow(dead_code)]
+pub fn create_archive_directory(
+    archive_path: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+) -> Result<(), ArchiveError> {
+    let backend = get_backend(archive_path, None);
+    backend.create_directory(archive_path, inner_path, password)
+}
+
 // ─── Helper to extract bytes via a temporary file ────────────────────────────
 
 /// Generic helper that calls an extraction function that writes to a tempfile,
@@ -1019,9 +1369,6 @@ where
         .map_err(|e| ArchiveError::Other(format!("read temp: {e}")))?;
     Ok(data)
 }
-
-// ─── The rest of the file (helpers, format-specific implementations) ────────
-// (All existing helper functions remain exactly as they were, unchanged.)
 
 // ─── RAR ─────────────────────────────────────────────────────────────────────
 //

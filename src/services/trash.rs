@@ -102,6 +102,22 @@ pub fn delete_items(
         }
 
         let path_str = path.to_string_lossy().into_owned();
+
+        if path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+            || path_str.starts_with("/archive:/")
+            || path_str.starts_with("archive://")
+        {
+            if let Some((archive_path, inner_path)) =
+                crate::services::archive::parse_archive_uri(&path_str)
+            {
+                sender_clone.input(AppMsg::PromptArchiveDeletion {
+                    archive_path,
+                    inner_path,
+                });
+            }
+            continue;
+        }
+
         let is_network = crate::services::network::is_network_uri(&path);
 
         eprintln!(
@@ -139,13 +155,15 @@ pub fn delete_items(
                         Err(ref e) => {
                             eprintln!(
                                 "[delete_recursive] query_info failed uri={:?} err={:?}",
-                                uri, e.message()
+                                uri,
+                                e.message()
                             );
                         }
                         Ok(ref info) => {
                             eprintln!(
                                 "[delete_recursive] file_type={:?} uri={:?}",
-                                info.file_type(), uri
+                                info.file_type(),
+                                uri
                             );
                             if info.file_type() == gio::FileType::Directory {
                                 match f.enumerate_children(
@@ -156,7 +174,8 @@ pub fn delete_items(
                                     Err(ref e) => {
                                         eprintln!(
                                             "[delete_recursive] enumerate_children failed uri={:?} err={:?}",
-                                            uri, e.message()
+                                            uri,
+                                            e.message()
                                         );
                                     }
                                     Ok(enumerator) => {
@@ -238,7 +257,8 @@ pub fn delete_items(
                                     ) {
                                         eprintln!(
                                             "[delete_recursive/local] file_type={:?} uri={:?}",
-                                            info.file_type(), uri
+                                            info.file_type(),
+                                            uri
                                         );
                                         if info.file_type() == gio::FileType::Directory {
                                             if let Ok(enumerator) = f.enumerate_children(
@@ -253,7 +273,10 @@ pub fn delete_items(
                                             }
                                         }
                                     }
-                                    eprintln!("[delete_recursive/local] calling f.delete() uri={:?}", uri);
+                                    eprintln!(
+                                        "[delete_recursive/local] calling f.delete() uri={:?}",
+                                        uri
+                                    );
                                     f.delete(gio::Cancellable::NONE)?;
                                     Ok(())
                                 }

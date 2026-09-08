@@ -517,6 +517,41 @@ impl FluxApp {
         dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        let dest_str = dest_path.to_string_lossy();
+
+        // ── Archive Drop Intercept ───────────────────────────────────────────
+        if dest_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            if let Some((archive_path, prefix)) =
+                crate::services::archive::parse_archive_uri(&dest_str)
+            {
+                let s_clone = sender.clone();
+                relm4::spawn_blocking(move || {
+                    for src in source_paths {
+                        if let Some(file_name) = src.file_name().and_then(|n| n.to_str()) {
+                            let inner = if prefix.is_empty() {
+                                file_name.to_string()
+                            } else {
+                                format!("{}/{}", prefix.trim_end_matches('/'), file_name)
+                            };
+
+                            if let Err(e) = crate::services::archive::write_archive_entry(
+                                &archive_path,
+                                &src,
+                                &inner,
+                                None,
+                                None,
+                            ) {
+                                s_clone.input(AppMsg::ShowToast(format!("Archive error: {e}")));
+                                return;
+                            }
+                        }
+                    }
+                    s_clone.input(AppMsg::Refresh);
+                });
+            }
+            return;
+        }
+
         if dest_path.as_os_str().is_empty() || !dest_path.is_dir() {
             return;
         }
