@@ -38,6 +38,9 @@ pub struct KeyMap {
     pub change_icon: gtk::ShortcutTrigger,
     pub reset_icon: gtk::ShortcutTrigger,
     pub toggle_terminal: gtk::ShortcutTrigger,
+    pub copy_path: gtk::ShortcutTrigger,
+    pub create_symlink: gtk::ShortcutTrigger,
+    pub create_hardlink: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -58,6 +61,9 @@ impl KeyMap {
             change_icon: parse_trigger(&config.change_icon, constants::CHANGE_ICON),
             reset_icon: parse_trigger(&config.reset_icon, constants::RESET_ICON),
             toggle_terminal: parse_trigger(&None, constants::TOGGLE_TERMINAL),
+            copy_path: parse_trigger(&config.copy_path, "<Primary><Shift>c"),
+            create_symlink: parse_trigger(&config.create_symlink, "<Primary><Shift>v"),
+            create_hardlink: parse_trigger(&config.create_hardlink, "<Primary><Alt><Shift>v"),
         }
     }
 }
@@ -73,7 +79,7 @@ fn parse_trigger(user_val: &Option<String>, default: &str) -> gtk::ShortcutTrigg
             );
             // Try the default, then a minimal safe fallback
             gtk::ShortcutTrigger::parse_string(default)
-                .or_else(|| gtk::ShortcutTrigger::parse_string("Escape")) // Use a known-valid key
+                .or_else(|| gtk::ShortcutTrigger::parse_string("Escape"))
                 .expect("Failed to parse fallback shortcut 'Escape'")
         }
     }

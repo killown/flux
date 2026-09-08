@@ -124,6 +124,15 @@ pub struct CustomAction {
 /// User-defined keyboard shortcuts for core application operations.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
+    /// Copy absolute paths of selected items to clipboard.
+    #[serde(default)]
+    pub copy_path: Option<String>,
+    /// Create symlinks from clipboard paths, auto-rename conflicts.
+    #[serde(default)]
+    pub create_symlink: Option<String>,
+    /// Create hardlinks from clipboard paths (directories not supported).
+    #[serde(default)]
+    pub create_hardlink: Option<String>,
     /// Key combination to open the folder icon picker.
     pub change_icon: Option<String>,
     /// Key combination to reset a folder's icon to default.
@@ -646,6 +655,12 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Copy absolute paths of selected items to clipboard.
+    CopyPath,
+    /// Create symbolic links from clipboard paths.
+    CreateSymlink,
+    /// Create hard links from clipboard paths (directories not supported).
+    CreateHardlink,
     /// Prompts the user for confirmation before permanently deleting an entry from an archive.
     PromptArchiveDeletion {
         archive_path: PathBuf,

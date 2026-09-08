@@ -258,6 +258,33 @@ pub fn setup_controllers(
         })),
     ));
 
+    let s_copy_path = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.copy_path.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_copy_path.input(AppMsg::CopyPath);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_create_symlink = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.create_symlink.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_create_symlink.input(AppMsg::CreateSymlink);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_create_hardlink = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.create_hardlink.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_create_hardlink.input(AppMsg::CreateHardlink);
+            glib::Propagation::Stop
+        })),
+    ));
+
     let s_terminal = sender.clone();
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(gtk::ShortcutTrigger::parse_string("F4").unwrap()),
