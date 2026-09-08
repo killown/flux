@@ -243,6 +243,8 @@ impl FluxApp {
 
         // 7. Model Assembly
         let mut model = FluxApp {
+            active_video_preview: None,
+            video_preview_source: None,
             files,
             sidebar,
             breadcrumbs,

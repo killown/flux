@@ -263,6 +263,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// When true, selecting a single video card plays a muted loop preview.
+    #[serde(default = "default_true")]
+    pub autoplay_video_previews: bool,
     /// Target dimension (in pixels) for generated and cached media preview thumbnails.
     #[serde(default = "default_thumbnail_size")]
     pub thumbnail_size: i32,
@@ -432,6 +435,7 @@ impl Default for UIConfig {
             recents_row: 0,
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
+            autoplay_video_previews: true,
             max_content_search_results: crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
             lazy_thumbnails: false,
             disable_drag_and_drop: false,
@@ -499,6 +503,10 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Path of the video currently playing inline in the selected card.
+    pub active_video_preview: Option<PathBuf>,
+    /// Active GLib timeout source ID used to debounce rapid selection changes for video previews.
+    pub video_preview_source: Option<glib::SourceId>,
     /// In-memory folder session cache mapped by directory path.
     pub folder_cache: std::collections::HashMap<PathBuf, CachedFolder>,
     /// The last thumbnail index that was scrolled into view
@@ -638,6 +646,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles automatic muted video playback on card selection.
+    SetAutoplayVideoPreviews(bool),
+    /// Triggers deferred inline video playback after a debounce timeout.
+    TriggerVideoPreview(PathBuf),
     /// Updates the target pixel dimension for rendered and cached thumbnails.
     SetThumbnailSize(i32),
     /// Sets a custom shell executable path for the embedded terminal (e.g., `Some("/bin/fish".to_string())`).

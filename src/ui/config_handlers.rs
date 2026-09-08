@@ -256,6 +256,16 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    pub fn handle_set_autoplay_video_previews(&mut self, val: bool) {
+        self.config.ui.autoplay_video_previews = val;
+        utils::save_config(&self.config);
+        if !val {
+            self.stop_video_preview();
+        } else {
+            self.sync_video_preview();
+        }
+    }
+
     pub fn handle_rename_sidebar_place(
         &mut self,
         path: PathBuf,

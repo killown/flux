@@ -347,6 +347,7 @@ path = "~"
                     ffmpeg_seek_seconds: 5.0,
                     ffmpeg_auto_rotate: false,
                     window_controls_left: false,
+                    autoplay_video_previews: true,
                 },
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),

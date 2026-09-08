@@ -57,6 +57,8 @@ pub struct FileItem {
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
 pub struct FileWidgets {
     pub icon_widget: gtk::Image,
+    pub video_widget: gtk::Video,
+    pub preview_stack: gtk::Stack,
     pub lock_icon: gtk::Image,
     pub empty_icon: gtk::Image,
     pub label: gtk::Label,
@@ -161,6 +163,33 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         info_label.add_css_class("caption");
         info_label.add_css_class("flux-list-info");
 
+        let icon_widget = gtk::Image::builder()
+            .halign(gtk::Align::Center)
+            .valign(gtk::Align::End)
+            .vexpand(false)
+            .css_classes([constants::THUMBNAIL_CLASS])
+            .build();
+
+        let video_widget = gtk::Video::builder()
+            .autoplay(true)
+            .loop_(true)
+            .halign(gtk::Align::Center)
+            .valign(gtk::Align::End)
+            .vexpand(false)
+            .css_classes([constants::THUMBNAIL_CLASS])
+            .build();
+
+        let preview_stack = gtk::Stack::builder()
+            .transition_type(gtk::StackTransitionType::Crossfade)
+            .halign(gtk::Align::Center)
+            .valign(gtk::Align::End)
+            .vexpand(false)
+            .build();
+
+        preview_stack.add_named(&icon_widget, Some("icon"));
+        preview_stack.add_named(&video_widget, Some("video"));
+        preview_stack.set_visible_child_name("icon");
+
         relm4::view! {
                             #[root]
                             root = gtk::Box {
@@ -217,13 +246,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                     }
                                 },
 
-                                #[name = "icon_widget"]
-                                gtk::Image {
-                                    set_halign: gtk::Align::Center,
-                                    set_valign: gtk::Align::End,
-                                    set_vexpand: false,
-                                    add_css_class: constants::THUMBNAIL_CLASS,
-                                },
+                                append: &preview_stack,
 
                                 #[name = "label_scroller"]
                                 gtk::ScrolledWindow {
@@ -283,10 +306,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         // of the horizontal list row. In grid mode it is hidden.
         root.append(&info_label);
 
+        unsafe {
+            root.set_data("preview_stack", preview_stack.clone());
+            root.set_data("video_widget", video_widget.clone());
+        }
+
         (
             root,
             FileWidgets {
                 icon_widget,
+                video_widget,
+                preview_stack,
                 lock_icon,
                 empty_icon,
                 label,
@@ -315,6 +345,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_pixel_size(self.icon_size);
             widgets.icon_widget.set_valign(gtk::Align::Center);
             widgets.icon_widget.set_halign(gtk::Align::Start);
+            widgets
+                .video_widget
+                .set_size_request(self.icon_size, self.icon_size);
+            widgets.preview_stack.set_valign(gtk::Align::Center);
+            widgets.preview_stack.set_halign(gtk::Align::Start);
+            widgets.preview_stack.set_visible_child_name("icon");
             widgets.label.set_halign(gtk::Align::Start);
             widgets.label.set_hexpand(true);
             widgets.label.set_justify(gtk::Justification::Left);
@@ -385,6 +421,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_pixel_size(self.icon_size);
             widgets.icon_widget.set_valign(gtk::Align::End);
             widgets.icon_widget.set_halign(gtk::Align::Center);
+            widgets
+                .video_widget
+                .set_size_request(self.icon_size, self.icon_size);
+            widgets.preview_stack.set_valign(gtk::Align::End);
+            widgets.preview_stack.set_halign(gtk::Align::Center);
+            widgets.preview_stack.set_visible_child_name("icon");
             widgets.label.set_halign(gtk::Align::Center);
             widgets.label.set_hexpand(false);
             widgets.label.set_justify(gtk::Justification::Center);
@@ -609,6 +651,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
+        if let Some(stream) = widgets.video_widget.media_stream() {
+            stream.pause();
+        }
+        widgets
+            .video_widget
+            .set_media_stream(None::<&gtk::MediaStream>);
+        widgets.preview_stack.set_visible_child_name("icon");
         widgets.icon_widget.set_paintable(None::<&gdk::Texture>);
         widgets.icon_widget.clear();
         widgets

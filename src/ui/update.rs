@@ -90,9 +90,18 @@ impl FluxApp {
             // ==========================================
             // Navigation & History
             // ==========================================
-            AppMsg::Navigate(path) => self.handle_navigate(path, &sender),
-            AppMsg::GoBack => self.handle_go_back(&sender),
-            AppMsg::GoForward => self.handle_go_forward(&sender),
+            AppMsg::Navigate(path) => {
+                self.stop_video_preview();
+                self.handle_navigate(path, &sender);
+            }
+            AppMsg::GoBack => {
+                self.stop_video_preview();
+                self.handle_go_back(&sender);
+            }
+            AppMsg::GoForward => {
+                self.stop_video_preview();
+                self.handle_go_forward(&sender);
+            }
             AppMsg::SyncPathEntry => {}
             AppMsg::PromptLocationDialog => FluxApp::show_location_dialog(self, sender),
             AppMsg::JumpToRecent(rank) => {
@@ -137,6 +146,7 @@ impl FluxApp {
                 items,
                 media_tasks,
             } => {
+                self.active_video_preview = None;
                 self.handle_folder_loaded(path, load_id, items, media_tasks, &sender);
             }
             AppMsg::InvalidateCacheAndNavigate(path) => {
@@ -266,6 +276,12 @@ impl FluxApp {
             // ==========================================
             // Thumbnails & FFmpeg
             // ==========================================
+            AppMsg::TriggerVideoPreview(path) => {
+                self.handle_trigger_video_preview(path);
+            }
+            AppMsg::SetAutoplayVideoPreviews(val) => {
+                self.handle_set_autoplay_video_previews(val);
+            }
             AppMsg::SetThumbnailSize(val) => {
                 self.handle_set_thumbnail_size(val, &sender);
             }
@@ -863,6 +879,7 @@ impl FluxApp {
             // Window, Shell & General Preferences
             // ==========================================
             AppMsg::Refresh => {
+                self.active_video_preview = None;
                 self.folder_cache.remove(&self.current_path);
                 self.handle_refresh_path(&sender);
             }

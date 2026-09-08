@@ -195,6 +195,8 @@ impl FluxApp {
                 format!("{} folders, {} files ({})", dir_count, count, size_str)
             }
         };
+
+        self.sync_video_preview();
     }
 
     /// Toggles between grid card layout and compact list view.
@@ -489,5 +491,130 @@ impl FluxApp {
         }
 
         self.spawn_single_thumbnail(grid_idx, path, current_session, sender.clone());
+    }
+
+    /// Locates the rendered child widget in the grid view matching the given file path.
+    pub fn find_widget_by_path(&self, path: &std::path::Path) -> Option<gtk::Widget> {
+        let name = path.to_string_lossy();
+
+        fn search(widget: &gtk::Widget, target: &str) -> Option<gtk::Widget> {
+            if widget.widget_name().as_str() == target {
+                return Some(widget.clone());
+            }
+            let mut child = widget.first_child();
+            while let Some(c) = child {
+                if let Some(found) = search(&c, target) {
+                    return Some(found);
+                }
+                child = c.next_sibling();
+            }
+            None
+        }
+
+        search(self.files.view.as_ref(), name.as_ref())
+    }
+
+    pub fn stop_video_preview(&mut self) {
+        // Just take the source ID out. Dropping a SourceId or letting GLib handle expired ones
+        // prevents "Source ID was not found" panic crashes.
+        self.video_preview_source = None;
+
+        if let Some(ref old_path) = self.active_video_preview.take() {
+            if let Some(child) = self.find_widget_by_path(old_path) {
+                unsafe {
+                    if let Some(stack_ptr) = child.data::<gtk::Stack>("preview_stack") {
+                        stack_ptr.as_ref().set_visible_child_name("icon");
+                    }
+                    if let Some(video_ptr) = child.data::<gtk::Video>("video_widget") {
+                        let video = video_ptr.as_ref();
+                        if let Some(stream) = video.media_stream() {
+                            stream.pause();
+                        }
+                        video.set_media_stream(None::<&gtk::MediaStream>);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn sync_video_preview(&mut self) {
+        if !self.config.ui.autoplay_video_previews {
+            return;
+        }
+
+        self.video_preview_source = None;
+
+        let selection = self.get_selection();
+        let target_video = if selection.len() == 1 {
+            let path = &selection[0];
+            let ext = path
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            match ext.as_str() {
+                "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" => {
+                    Some(path.clone())
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        if self.active_video_preview == target_video {
+            return;
+        }
+
+        self.stop_video_preview();
+
+        if let Some(ref new_path) = target_video {
+            let path_clone = new_path.clone();
+            // 250ms threshold: rapid key presses skip starting the decoder entirely
+            let source =
+                glib::timeout_add_local(std::time::Duration::from_millis(250), move || {
+                    if let Some(s) = crate::model::SENDER.get() {
+                        let _ = s.send(AppMsg::TriggerVideoPreview(path_clone.clone()));
+                    }
+                    glib::ControlFlow::Break
+                });
+            self.video_preview_source = Some(source);
+        }
+    }
+
+    pub fn handle_trigger_video_preview(&mut self, path: std::path::PathBuf) {
+        let selection = self.get_selection();
+        if selection.len() != 1 || selection[0] != path {
+            return;
+        }
+
+        // Ensure any active preview is fully torn down first
+        self.stop_video_preview();
+
+        self.active_video_preview = Some(path.clone());
+
+        if let Some(child) = self.find_widget_by_path(&path) {
+            let gfile = gtk::gio::File::for_path(&path);
+            let media_file = gtk::MediaFile::for_file(&gfile);
+            media_file.set_muted(true);
+            media_file.set_loop(true);
+            media_file.play();
+
+            unsafe {
+                if let Some(video_ptr) = child.data::<gtk::Video>("video_widget") {
+                    let video = video_ptr.as_ref();
+                    // Detach old stream cleanly if present
+                    if let Some(old_stream) = video.media_stream() {
+                        old_stream.pause();
+                    }
+                    video.set_autoplay(true);
+                    video.set_loop(true);
+                    video.set_media_stream(Some(&media_file));
+                }
+                if let Some(stack_ptr) = child.data::<gtk::Stack>("preview_stack") {
+                    stack_ptr.as_ref().set_visible_child_name("video");
+                }
+            }
+        }
     }
 }
