@@ -32,6 +32,7 @@ Startup Time: 742.84 ms   # warm: 449.54 ms
 
 ### Navigation
 
+- **Autoplay video previews** - automatically plays a loop preview when a single video file is selected.
 - Dual view modes: responsive grid cards and compact list view
 - Breadcrumb navigation supporting local paths, `/archive://` virtual roots, and network URIs
 - Forward/backward history (`Alt+Left`, `Alt+Right`, `Backspace`, mouse side buttons)
