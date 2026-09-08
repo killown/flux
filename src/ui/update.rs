@@ -166,6 +166,12 @@ impl FluxApp {
             // ==========================================
             // Archives
             // ==========================================
+            AppMsg::PromptArchiveDeletion {
+                archive_path,
+                inner_path,
+            } => {
+                self.show_archive_deletion_warning(archive_path, inner_path, &sender);
+            }
             AppMsg::ExtractArchive => {
                 self.handle_extract_archive(&sender);
             }

@@ -646,6 +646,11 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Prompts the user for confirmation before permanently deleting an entry from an archive.
+    PromptArchiveDeletion {
+        archive_path: PathBuf,
+        inner_path: String,
+    },
     /// Toggles automatic muted video playback on card selection.
     SetAutoplayVideoPreviews(bool),
     /// Triggers deferred inline video playback after a debounce timeout.

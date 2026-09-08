@@ -605,59 +605,56 @@ impl FluxApp {
         for (path, is_dir) in items {
             let path_str = path.to_string_lossy();
 
-            // 1. Check if we are inside a virtual archive path (/archive://...)
-            if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-                if let Some((archive_path, inner)) =
-                    crate::services::archive::parse_archive_uri(&path_str)
-                {
-                    if is_dir {
-                        // Navigating deeper into a virtual archive folder
-                        sender.input(AppMsg::Navigate(path));
-                    } else if crate::services::archive::is_browsable_archive(Path::new(&inner)) {
-                        sender.input(AppMsg::EnterArchive(path));
-                    } else {
-                        // Extracting and launching a file from inside the archive
-                        let sender_clone = sender.clone();
-                        let cached_pwd = self.cached_archive_password.clone();
+            // 1. Check if this is an archive URI (/archive://... or archive://... or /archive:/...)
+            if let Some((archive_path, inner)) =
+                crate::services::archive::parse_archive_uri(&path_str)
+            {
+                if is_dir {
+                    // Navigating deeper into a virtual archive folder
+                    sender.input(AppMsg::Navigate(path));
+                } else if crate::services::archive::is_browsable_archive(Path::new(&inner)) {
+                    sender.input(AppMsg::EnterArchive(path));
+                } else {
+                    // Extracting and launching a file from inside the archive
+                    let sender_clone = sender.clone();
+                    let cached_pwd = self.cached_archive_password.clone();
 
-                        // Compute parent directory prefix for password re-prompting
-                        let parent_prefix = Path::new(&inner)
-                            .parent()
-                            .and_then(|p| p.to_str())
-                            .unwrap_or("")
-                            .to_string();
+                    let parent_prefix = Path::new(&inner)
+                        .parent()
+                        .and_then(|p| p.to_str())
+                        .unwrap_or("")
+                        .to_string();
 
-                        relm4::spawn_blocking(move || {
-                            match crate::services::archive::extract_entry_to_tempfile(
-                                &archive_path,
-                                &inner,
-                                cached_pwd.as_deref(),
-                            ) {
-                                Ok(tmp) => {
-                                    let tmp_path = tmp.path().to_path_buf();
-                                    tmp.keep().ok();
-                                    crate::utils::open_file(tmp_path);
-                                }
-                                Err(crate::services::archive::ArchiveError::PasswordRequired) => {
-                                    sender_clone.input(AppMsg::PromptArchivePassword {
-                                        archive_path,
-                                        prefix: parent_prefix.clone(),
-                                        wrong_password: false,
-                                    });
-                                }
-                                Err(crate::services::archive::ArchiveError::WrongPassword) => {
-                                    sender_clone.input(AppMsg::PromptArchivePassword {
-                                        archive_path,
-                                        prefix: parent_prefix,
-                                        wrong_password: true,
-                                    });
-                                }
-                                Err(e) => {
-                                    sender_clone.input(AppMsg::ShowToast(e.to_string()));
+                    relm4::spawn_blocking(move || {
+                        match crate::services::archive::extract_entry_to_tempfile(
+                            &archive_path,
+                            &inner,
+                            cached_pwd.as_deref(),
+                        ) {
+                            Ok(tmp) => {
+                                if let Ok((_file, path_buf)) = tmp.keep() {
+                                    crate::utils::open_file(path_buf);
                                 }
                             }
-                        });
-                    }
+                            Err(crate::services::archive::ArchiveError::PasswordRequired) => {
+                                sender_clone.input(AppMsg::PromptArchivePassword {
+                                    archive_path,
+                                    prefix: parent_prefix,
+                                    wrong_password: false,
+                                });
+                            }
+                            Err(crate::services::archive::ArchiveError::WrongPassword) => {
+                                sender_clone.input(AppMsg::PromptArchivePassword {
+                                    archive_path,
+                                    prefix: parent_prefix,
+                                    wrong_password: true,
+                                });
+                            }
+                            Err(e) => {
+                                sender_clone.input(AppMsg::ShowToast(e.to_string()));
+                            }
+                        }
+                    });
                 }
                 break;
             }

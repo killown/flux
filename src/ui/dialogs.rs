@@ -3,6 +3,7 @@ use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
 use relm4::RelmRemoveAllExt;
+use std::path::Path;
 use std::path::PathBuf;
 
 impl FluxApp {
@@ -49,7 +50,29 @@ impl FluxApp {
 
                 if names.len() == 1 {
                     let name = &names[0];
-                    if crate::services::network::is_network_uri(&current_path) {
+                    let current_str = current_path.to_string_lossy();
+                    if current_str.starts_with(crate::services::archive::ARCHIVE_URI)
+                        || current_str.starts_with("/archive:/")
+                        || current_str.starts_with("archive://")
+                    {
+                        if let Some((archive_path, prefix)) =
+                            crate::services::archive::parse_archive_uri(&current_str)
+                        {
+                            let inner = if prefix.is_empty() {
+                                name.to_string()
+                            } else {
+                                format!("{}/{}", prefix.trim_end_matches('/'), name)
+                            };
+                            match crate::services::archive::create_archive_directory(
+                                &archive_path,
+                                &inner,
+                                None,
+                            ) {
+                                Ok(()) => s.input(AppMsg::Refresh),
+                                Err(e) => s.input(AppMsg::ShowToast(format!("Archive error: {e}"))),
+                            }
+                        }
+                    } else if crate::services::network::is_network_uri(&current_path) {
                         let uri = format!(
                             "{}/{}",
                             current_path.to_string_lossy().trim_end_matches('/'),
@@ -77,10 +100,36 @@ impl FluxApp {
                     }
                 } else if names.len() > 1 {
                     let mut created_count = 0;
+                    let current_str = current_path.to_string_lossy();
+                    let is_archive = current_str.starts_with(crate::services::archive::ARCHIVE_URI)
+                        || current_str.starts_with("/archive:/")
+                        || current_str.starts_with("archive://");
+                    let parsed_archive = if is_archive {
+                        crate::services::archive::parse_archive_uri(&current_str)
+                    } else {
+                        None
+                    };
                     let is_network = crate::services::network::is_network_uri(&current_path);
 
                     for name in &names {
-                        if is_network {
+                        if is_archive {
+                            if let Some((ref archive_path, ref prefix)) = parsed_archive {
+                                let inner = if prefix.is_empty() {
+                                    name.to_string()
+                                } else {
+                                    format!("{}/{}", prefix.trim_end_matches('/'), name)
+                                };
+                                if crate::services::archive::create_archive_directory(
+                                    archive_path,
+                                    &inner,
+                                    None,
+                                )
+                                .is_ok()
+                                {
+                                    created_count += 1;
+                                }
+                            }
+                        } else if is_network {
                             let uri = format!(
                                 "{}/{}",
                                 current_path.to_string_lossy().trim_end_matches('/'),
@@ -1162,5 +1211,113 @@ impl FluxApp {
         }
 
         about.present();
+    }
+
+    pub fn show_archive_deletion_warning(
+        &self,
+        archive_path: PathBuf,
+        inner_path: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let parent = gtk::Application::default().active_window();
+        let s = sender.clone();
+
+        let file_name = Path::new(&inner_path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&inner_path)
+            .to_string();
+
+        let title = crate::i18n::tr("Permanently delete \"{}\"?").replace("{}", &file_name);
+        let dialog = gtk::MessageDialog::new(
+            parent.as_ref(),
+            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
+            gtk::MessageType::Warning,
+            gtk::ButtonsType::None,
+            &title,
+        );
+
+        dialog.set_secondary_text(Some(&crate::i18n::tr(
+            "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone.",
+        )));
+
+        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
+        let delete_btn = dialog.add_button(&crate::i18n::tr("Delete"), gtk::ResponseType::Ok);
+        delete_btn.style_context().add_class("destructive-action");
+        dialog.set_default_response(gtk::ResponseType::Cancel);
+
+        dialog.connect_response(move |dlg, resp| {
+            if resp == gtk::ResponseType::Ok {
+                let s_clone = s.clone();
+                let a_path = archive_path.clone();
+                let i_path = inner_path.clone();
+                let file_name_clone = file_name.clone();
+
+                relm4::spawn_blocking(move || {
+                    let total_bytes = std::fs::metadata(&a_path).map(|m| m.len()).unwrap_or(0);
+                    let show_progress = total_bytes >= 100 * 1024 * 1024;
+                    let task_id = crate::ui::paste_ops::NEXT_TASK_ID
+                        .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    let cancellable = gtk::gio::Cancellable::new();
+                    let label = format!("Deleting {}", file_name_clone);
+
+                    if show_progress {
+                        s_clone.input(AppMsg::TaskProgress {
+                            id: task_id,
+                            label: label.clone(),
+                            current: 0,
+                            total: total_bytes,
+                            total_items: 1,
+                            cancellable: cancellable.clone(),
+                        });
+                        s_clone.input(AppMsg::TaskQueueTick);
+                    }
+
+                    let mut copied_bytes = 0u64;
+                    let s_cb = s_clone.clone();
+                    let label_cb = label.clone();
+                    let cancellable_cb = cancellable.clone();
+
+                    let mut progress_cb = move |chunk: u64| {
+                        copied_bytes += chunk;
+                        if show_progress {
+                            s_cb.input(AppMsg::TaskProgress {
+                                id: task_id,
+                                label: label_cb.clone(),
+                                current: copied_bytes.min(total_bytes),
+                                total: total_bytes,
+                                total_items: 1,
+                                cancellable: cancellable_cb.clone(),
+                            });
+                            s_cb.input(AppMsg::TaskQueueTick);
+                        }
+                    };
+
+                    let result = crate::services::archive::remove_archive_entry(
+                        &a_path,
+                        &i_path,
+                        None,
+                        Some(&mut progress_cb),
+                    );
+
+                    if show_progress {
+                        s_clone.input(AppMsg::TaskCompleted(task_id));
+                        s_clone.input(AppMsg::TaskQueueTick);
+                    }
+
+                    match result {
+                        Ok(()) => {
+                            s_clone.input(AppMsg::Refresh);
+                        }
+                        Err(e) => {
+                            s_clone.input(AppMsg::ShowToast(format!("Archive error: {e}")));
+                        }
+                    }
+                });
+            }
+            dlg.close();
+        });
+
+        dialog.present();
     }
 }
