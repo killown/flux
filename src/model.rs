@@ -49,6 +49,10 @@ fn default_ffmpeg_seek_seconds() -> f64 {
     5.0
 }
 
+fn default_thumbnail_size() -> i32 {
+    256
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -259,6 +263,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Target dimension (in pixels) for generated and cached media preview thumbnails.
+    #[serde(default = "default_thumbnail_size")]
+    pub thumbnail_size: i32,
     /// When true, window controls appear on the left instead of the right.
     #[serde(default)]
     pub window_controls_left: bool,
@@ -431,6 +438,7 @@ impl Default for UIConfig {
             loader_batch_size: default_loader_batch_size(),
             folder_cache_capacity: default_folder_cache_capacity(),
             thumbnail_threads: default_thumbnail_threads(),
+            thumbnail_size: 256,
             max_search_results: default_max_search_results(),
             max_history: default_max_history(),
             ffmpeg_threads: default_ffmpeg_threads(),
@@ -630,6 +638,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Updates the target pixel dimension for rendered and cached thumbnails.
+    SetThumbnailSize(i32),
     /// Sets a custom shell executable path for the embedded terminal (e.g., `Some("/bin/fish".to_string())`).
     SetTerminalShell(Option<String>),
     /// Extracts the currently browsed archive to a sibling folder named.

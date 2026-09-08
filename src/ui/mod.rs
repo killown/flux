@@ -83,9 +83,6 @@ pub mod constants {
     pub const FILTER_BAR_CSS_CLASS: &str = "flux-filter-bar";
     pub const MAX_HISTORY: usize = 100;
 
-    // Thumbnails
-    pub const CACHED_THUMBNAIL_SIZE: i32 = 256;
-
     // Layout Constraints
     pub const SCROLLED_WINDOW_MIN_WIDTH: i32 = 480;
     pub const LOCATION_ENTRY_WIDTH_REQUEST: i32 = 450;
@@ -127,7 +124,9 @@ pub mod constants {
     pub const ICON_SORT_INDICATOR: &str = "view-sort-ascending-symbolic";
     pub const TRASH_URI: &str = "trash:///";
     pub const RECENT_URI: &str = "recent:///";
-    pub const CRISP_ICON_SIZES: &[i32] = &[16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256];
+    pub const CRISP_ICON_SIZES: &[i32] = &[
+        16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768,
+    ];
 
     // Mouse Buttons
     pub const MOUSE_BACK: u32 = 8;

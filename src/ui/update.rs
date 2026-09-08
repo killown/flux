@@ -266,6 +266,9 @@ impl FluxApp {
             // ==========================================
             // Thumbnails & FFmpeg
             // ==========================================
+            AppMsg::SetThumbnailSize(val) => {
+                self.handle_set_thumbnail_size(val, &sender);
+            }
             AppMsg::SetShowThumbnails(val) => self.handle_set_show_thumbnails(val, &sender),
             AppMsg::SetLazyThumbnails(val) => {
                 self.handle_set_lazy_thumbnails(val);

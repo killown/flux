@@ -333,6 +333,36 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Thumbnail Size"),
+                        set_subtitle: &tr("Target resolution for media previews (higher values increase memory usage)"),
+                        set_sensitive: model.config.ui.show_thumbnails,
+                        add_suffix = &gtk::DropDown {
+                            set_valign: gtk::Align::Center,
+                            set_model: Some(&{
+                                let sl = gtk::StringList::new(&[]);
+                                for sz in [16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768] {
+                                    sl.append(&format!("{} px", sz));
+                                }
+                                sl
+                            }),
+                            set_selected: {
+                                const SIZES: &[i32] = &[16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768];
+                                SIZES.iter()
+                                    .position(|&sz| sz == model.config.ui.thumbnail_size)
+                                    .unwrap_or(10) as u32 // 256 is at index 10
+                            },
+                            connect_selected_notify => move |drop| {
+                                const SIZES: &[i32] = &[16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768];
+                                let idx = drop.selected() as usize;
+                                if let Some(&size) = SIZES.get(idx) {
+                                    if let Some(s) = crate::model::SENDER.get() {
+                                        let _ = s.send(AppMsg::SetThumbnailSize(size));
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Lazy Thumbnails"),
                         set_subtitle: &tr("Generate thumbnails only for items in view"),
                         set_sensitive: model.config.ui.show_thumbnails,

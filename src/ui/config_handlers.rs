@@ -250,6 +250,12 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_set_thumbnail_size(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
+        self.config.ui.thumbnail_size = val;
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
+
     pub fn handle_rename_sidebar_place(
         &mut self,
         path: PathBuf,
