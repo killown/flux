@@ -169,7 +169,10 @@ impl FluxApp {
             AppMsg::ExtractArchive => {
                 self.handle_extract_archive(&sender);
             }
-            AppMsg::EnterArchive(archive_path) => self.handle_enter_archive(archive_path, &sender),
+            AppMsg::EnterArchive(archive_path) => {
+                self.stop_video_preview();
+                self.handle_enter_archive(archive_path, &sender)
+            }
             AppMsg::ArchiveLoaded {
                 archive_path,
                 prefix,
@@ -703,8 +706,14 @@ impl FluxApp {
             // ==========================================
             // Commands & External Apps
             // ==========================================
-            AppMsg::Open(position) => self.handle_open(position, &sender),
-            AppMsg::Activate => self.handle_activate(&sender),
+            AppMsg::Open(position) => {
+                self.stop_video_preview();
+                self.handle_open(position, &sender)
+            }
+            AppMsg::Activate => {
+                self.stop_video_preview();
+                self.handle_activate(&sender)
+            }
             AppMsg::LaunchWithApp(app_id) => self.handle_launch_with_app(app_id),
             AppMsg::ExecuteCommand(cmd_template) => {
                 self.handle_execute_command(cmd_template, &sender)
