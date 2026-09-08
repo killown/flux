@@ -696,7 +696,8 @@ impl FactoryComponent for PathSegment {
                 #[watch]
                 set_label: &self.name,
                 set_ellipsize: gtk::pango::EllipsizeMode::End,
-                set_max_width_chars: -1,
+                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
+                set_wrap: false,
             },
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
