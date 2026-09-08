@@ -593,8 +593,36 @@ impl FluxApp {
 
         self.active_video_preview = Some(path.clone());
 
+        // Resolve real disk path: if it's an archive virtual path, extract to a tempfile first
+        let resolved_file = if let Some((archive_path, inner_path)) =
+            crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+        {
+            match crate::services::archive::extract_entry_to_tempfile(
+                &archive_path,
+                &inner_path,
+                None,
+            ) {
+                Ok(tmp) => {
+                    let tmp_path = tmp.path().to_path_buf();
+                    // Keep the temp file alive until preview stops or app exits
+                    if let Ok(file) = tmp.keep() {
+                        let (_, path_buf) = file;
+                        Some(gtk::gio::File::for_path(path_buf))
+                    } else {
+                        Some(gtk::gio::File::for_path(tmp_path))
+                    }
+                }
+                Err(_) => None,
+            }
+        } else {
+            Some(gtk::gio::File::for_path(&path))
+        };
+
+        let Some(gfile) = resolved_file else {
+            return;
+        };
+
         if let Some(child) = self.find_widget_by_path(&path) {
-            let gfile = gtk::gio::File::for_path(&path);
             let media_file = gtk::MediaFile::for_file(&gfile);
             media_file.set_muted(true);
             media_file.set_loop(true);
@@ -603,7 +631,6 @@ impl FluxApp {
             unsafe {
                 if let Some(video_ptr) = child.data::<gtk::Video>("video_widget") {
                     let video = video_ptr.as_ref();
-                    // Detach old stream cleanly if present
                     if let Some(old_stream) = video.media_stream() {
                         old_stream.pause();
                     }
