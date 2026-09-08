@@ -96,7 +96,7 @@ pub mod constants {
     pub const HEADER_BTN_SPACING: i32 = 6;
     pub const STATUS_ICON_SPACING: i32 = 8;
     pub const HEADER_MARGIN_END: i32 = 12;
-    pub const MAX_BREADCRUMBS: usize = 5;
+    pub const MAX_BREADCRUMBS: usize = 3;
 
     // Widget Specifics
     pub const STATUS_ICON_SIZE: i32 = 16;
