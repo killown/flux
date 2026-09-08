@@ -87,21 +87,22 @@ pub fn delete_items(
 
     let sender_clone = sender.clone();
     for raw_path in selection {
-        let path = raw_path.canonicalize().unwrap_or_else(|_| raw_path.clone());
+        // Canonicalize only for protection checks, use raw_path for deletion
+        let canon_path = raw_path.canonicalize().unwrap_or_else(|_| raw_path.clone());
 
-        if is_protected_target(&path) {
+        if is_protected_target(&canon_path) {
             eprintln!(
                 "[Delete] Blocked attempt to delete protected system path: {:?}",
-                path
+                canon_path
             );
             sender_clone.input(AppMsg::ShowToast(format!(
                 "Cannot delete protected path: {}",
-                path.display()
+                canon_path.display()
             )));
             continue;
         }
 
-        let path_str = path.to_string_lossy().into_owned();
+        let path_str = raw_path.to_string_lossy().into_owned();
 
         if path_str.starts_with(crate::services::archive::ARCHIVE_URI)
             || path_str.starts_with("/archive:/")
@@ -118,7 +119,7 @@ pub fn delete_items(
             continue;
         }
 
-        let is_network = crate::services::network::is_network_uri(&path);
+        let is_network = crate::services::network::is_network_uri(&raw_path);
 
         eprintln!(
             "[Delete] path={:?} is_network={} contains_scheme={}",
@@ -130,7 +131,7 @@ pub fn delete_items(
         let file = if path_str.contains("://") {
             gio::File::for_uri(&path_str)
         } else {
-            gio::File::for_path(&path)
+            gio::File::for_path(&raw_path)
         };
 
         let s = sender_clone.clone();
@@ -229,7 +230,7 @@ pub fn delete_items(
             });
         } else {
             let file_for_fallback = file.clone();
-            let trashed_path = path.clone();
+            let trashed_path = raw_path.clone();
             file.trash_async(
                 glib::Priority::DEFAULT,
                 gio::Cancellable::NONE,

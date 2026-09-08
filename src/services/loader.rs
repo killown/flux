@@ -182,12 +182,14 @@ impl FluxApp {
         let path_clone = path.clone();
         let sender_clone = sender.clone();
 
+        let cache_key = path.canonicalize().unwrap_or_else(|_| path.clone());
+
         if !is_trash
             && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
             && filter.is_empty()
             && extension_globset.is_none()
         {
-            if let Some(cached) = self.folder_cache.get_mut(&path) {
+            if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
                 cached
                     .items
                     .retain(|item| item.target_path.symlink_metadata().is_ok());

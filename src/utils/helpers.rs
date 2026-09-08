@@ -956,6 +956,12 @@ impl FluxApp {
             }
         }
     }
+
+    /// Returns the canonical path to use as the folder cache key.
+    /// If canonicalization fails, falls back to the given path.
+    pub fn cache_key(&self, path: &Path) -> PathBuf {
+        path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+    }
 }
 
 thread_local! {

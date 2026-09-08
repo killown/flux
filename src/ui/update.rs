@@ -151,9 +151,10 @@ impl FluxApp {
             }
             AppMsg::InvalidateCacheAndNavigate(path) => {
                 if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(parent);
+                    self.folder_cache.remove(&self.cache_key(parent));
                 }
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 sender.input(AppMsg::Navigate(path));
             }
             AppMsg::SetFolderCacheCapacity(val) => {
@@ -465,6 +466,9 @@ impl FluxApp {
             // ==========================================
             // File Operations & Clipboard
             // ==========================================
+            AppMsg::CopyPath => self.handle_copy_path(&sender),
+            AppMsg::CreateSymlink => self.handle_create_link(false, &sender),
+            AppMsg::CreateHardlink => self.handle_create_link(true, &sender),
             AppMsg::Copy => self.handle_copy_or_cut(false, &sender),
             AppMsg::Cut => self.handle_copy_or_cut(true, &sender),
             AppMsg::Paste => self.handle_paste_from_clipboard(&sender),
@@ -509,15 +513,17 @@ impl FluxApp {
                 );
             }
             AppMsg::EmptyTrash => {
-                self.folder_cache
-                    .remove(&std::path::PathBuf::from(crate::ui::constants::TRASH_URI));
+                self.folder_cache.remove(
+                    &self.cache_key(&std::path::PathBuf::from(crate::ui::constants::TRASH_URI)),
+                );
                 self.handle_empty_trash(&sender);
             }
             AppMsg::RestoreItem(path) => {
                 if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(parent);
+                    self.folder_cache.remove(&self.cache_key(parent));
                 }
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::PromptNewFolder => self.show_prompt_new_folder(&sender),
@@ -550,21 +556,22 @@ impl FluxApp {
             AppMsg::TrashSucceeded(paths) => {
                 for p in &paths {
                     if let Some(parent) = p.parent() {
-                        self.folder_cache.remove(parent);
+                        self.folder_cache.remove(&self.cache_key(parent));
                     }
                 }
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 self.file_op_history
                     .push_undo(crate::ui::undo_redo::FileOp::Trash { paths });
             }
             AppMsg::MoveSucceeded { items, dest_dir } => {
-                self.folder_cache.remove(&dest_dir);
+                self.folder_cache.remove(&self.cache_key(&dest_dir));
                 self.file_op_history
                     .push_undo(crate::ui::undo_redo::FileOp::Move { items, dest_dir });
             }
             AppMsg::CopySucceeded { copies, dest_dir } => {
                 let copy_dests = copies.into_iter().map(|(_, dest)| dest).collect();
-                self.folder_cache.remove(&dest_dir);
+                self.folder_cache.remove(&self.cache_key(&dest_dir));
                 self.file_op_history
                     .push_undo(crate::ui::undo_redo::FileOp::Copy {
                         copies: copy_dests,
@@ -575,7 +582,7 @@ impl FluxApp {
                 redo_items,
                 dest_dir,
             } => {
-                self.folder_cache.remove(&dest_dir);
+                self.folder_cache.remove(&self.cache_key(&dest_dir));
                 self.handle_undo_move_complete(redo_items, dest_dir, &sender);
             }
             AppMsg::UndoMoveFailed(op) => {
@@ -584,18 +591,20 @@ impl FluxApp {
             AppMsg::UndoTrashComplete { paths } => {
                 for p in &paths {
                     if let Some(parent) = p.parent() {
-                        self.folder_cache.remove(parent);
+                        self.folder_cache.remove(&self.cache_key(parent));
                     }
                 }
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 self.handle_undo_trash_complete(paths, &sender);
             }
             AppMsg::UndoTrashFailed(op) => {
                 self.handle_undo_trash_failed(op);
             }
             AppMsg::RedoMoveComplete { items, dest_dir } => {
-                self.folder_cache.remove(&dest_dir);
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache.remove(&self.cache_key(&dest_dir));
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 self.handle_redo_move_complete(items, dest_dir, &sender);
             }
             AppMsg::RedoMoveFailed(op) => {
@@ -604,10 +613,11 @@ impl FluxApp {
             AppMsg::RedoTrashComplete { paths } => {
                 for p in &paths {
                     if let Some(parent) = p.parent() {
-                        self.folder_cache.remove(parent);
+                        self.folder_cache.remove(&self.cache_key(parent));
                     }
                 }
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 self.handle_redo_trash_complete(paths, &sender);
             }
             AppMsg::RedoTrashFailed(op) => {
@@ -656,13 +666,13 @@ impl FluxApp {
             // ==========================================
             AppMsg::FileDeleted(path) => {
                 if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(parent);
+                    self.folder_cache.remove(&self.cache_key(parent));
                 }
                 self.handle_file_deleted(path);
             }
             AppMsg::FileChanged(path) => {
                 if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(parent);
+                    self.folder_cache.remove(&self.cache_key(parent));
                 }
                 self.handle_file_changed(path, &sender);
             }
@@ -670,12 +680,13 @@ impl FluxApp {
             AppMsg::TriggerRenameSelection => self.handle_trigger_rename_selection(&sender),
             AppMsg::ItemMoved { old_path, new_path } => {
                 if let Some(p) = old_path.parent() {
-                    self.folder_cache.remove(p);
+                    self.folder_cache.remove(&self.cache_key(p));
                 }
                 if let Some(p) = new_path.parent() {
-                    self.folder_cache.remove(p);
+                    self.folder_cache.remove(&self.cache_key(p));
                 }
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 let old_key = old_path.to_string_lossy().to_string();
                 let new_key = new_path.to_string_lossy().to_string();
                 if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
@@ -778,7 +789,8 @@ impl FluxApp {
                 exit_code,
             } => {
                 if success {
-                    self.folder_cache.remove(&self.current_path);
+                    self.folder_cache
+                        .remove(&self.cache_key(&self.current_path));
                 }
                 if !success {
                     let msg = if let Some(code) = exit_code {
@@ -895,7 +907,8 @@ impl FluxApp {
             // ==========================================
             AppMsg::Refresh => {
                 self.active_video_preview = None;
-                self.folder_cache.remove(&self.current_path);
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
                 self.handle_refresh_path(&sender);
             }
             AppMsg::SetSingleClick(val) => self.handle_set_single_click(val),

@@ -97,17 +97,32 @@ impl FluxApp {
                 if let Some(ref item) = selected_item {
                     let path = item.path.clone();
                     let s = sender.clone();
-                    relm4::spawn_blocking(move || {
-                        let mime = utils::get_mime_type(&path);
 
+                    // Compute symlink target synchronously before moving `path`
+                    let symlink_info = if let Ok(meta) = std::fs::symlink_metadata(&path) {
+                        if meta.is_symlink() {
+                            path.canonicalize()
+                                .map(|real| format!(" → {}", real.display()))
+                                .unwrap_or_default()
+                        } else {
+                            String::new()
+                        }
+                    } else {
+                        String::new()
+                    };
+
+                    // Spawn async tasks for MIME, dimensions, media duration
+                    let path_for_async = path.clone();
+                    relm4::spawn_blocking(move || {
+                        let mime = utils::get_mime_type(&path_for_async);
                         let dimensions = if mime.starts_with("image/") {
-                            crate::utils::media::probe_image_dimensions(&path)
+                            crate::utils::media::probe_image_dimensions(&path_for_async)
                         } else {
                             None
                         };
 
                         if mime.starts_with("audio/") || mime.starts_with("video/") {
-                            let path_c = path.clone();
+                            let path_c = path_for_async.clone();
                             let s_c = s.clone();
                             relm4::spawn(async move {
                                 let dur = crate::utils::media::probe_media_duration(&path_c).await;
@@ -117,9 +132,8 @@ impl FluxApp {
 
                         s.input(AppMsg::FileMetaReady { mime, dimensions });
                     });
-                }
 
-                if let Some(item) = selected_item {
+                    // Build the base status string (name, size, date)
                     let date_str = if item.mtime > 0 {
                         use chrono::TimeZone;
                         match chrono::Local.timestamp_opt(item.mtime, 0) {
@@ -132,11 +146,17 @@ impl FluxApp {
                         None
                     };
 
-                    if let Some(dt_formatted) = date_str {
+                    let mut status = if let Some(dt_formatted) = date_str {
                         format!("{} ({}) · {}", item.name, size_str, dt_formatted)
                     } else {
                         format!("{} ({})", item.name, size_str)
+                    };
+
+                    if !symlink_info.is_empty() {
+                        status.push_str(&symlink_info);
                     }
+
+                    status
                 } else {
                     format!("{} ({})", single_name, size_str)
                 }
@@ -170,11 +190,22 @@ impl FluxApp {
                         None
                     };
 
-                    if let Some(dt_formatted) = date_str {
+                    let mut status = if let Some(dt_formatted) = date_str {
                         format!("{} ({} items) · {}", single_name, child_count, dt_formatted)
                     } else {
                         format!("{} ({} items)", single_name, child_count)
+                    };
+
+                    // Append symlink target (canonicalized)
+                    if let Ok(meta) = std::fs::symlink_metadata(&path) {
+                        if meta.is_symlink() {
+                            if let Ok(real) = path.canonicalize() {
+                                status.push_str(&format!(" → {}", real.display()));
+                            }
+                        }
                     }
+
+                    status
                 } else {
                     single_name
                 }
