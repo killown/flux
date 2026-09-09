@@ -168,33 +168,48 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 
 ## ⌨️ Keyboard Shortcuts
 
-| Key                | Action                                 |
-| :----------------- | :------------------------------------- |
-| `F1`               | Keyboard shortcut reference            |
-| `F2` / `Ctrl+I`    | Inline rename                          |
-| `F3`               | Set custom icon                        |
-| `Ctrl+F3`          | Reset custom icon                      |
-| `F4`               | Toggle integrated terminal             |
-| `F9`               | Visual menu editor                     |
-| `F12`              | Advanced search dialog                 |
-| `Ctrl+F`           | Search / filter bar                    |
-| `Ctrl+H`           | Toggle hidden files                    |
-| `Ctrl+L`           | Go to location                         |
-| `Ctrl+Shift+L`     | Connect to server                      |
-| `Ctrl+S`           | Cycle sort criteria                    |
-| `Ctrl+Shift+S`     | Toggle sort order                      |
-| `Shift+S`          | Toggle folders first                   |
-| `Ctrl+A`           | Select all                             |
-| `Ctrl+C / X / V`   | Copy / Cut / Paste                     |
-| `Delete`           | Move to trash                          |
-| `Ctrl+Z`           | Undo                                   |
-| `Ctrl+Shift+Z`     | Redo                                   |
-| `Alt+Left/Right`   | Back / Forward                         |
-| `Insert`           | Pin to quick list                      |
-| `Tab`              | Next quick list entry                  |
-| `Ctrl+PageUp/Down` | Previous / next quick list entry       |
-| `Ctrl+End`         | Clear quick list                       |
-| `Ctrl+Insert`      | Pin current dir to sidebar permanently |
+| Key                       | Action                                    |
+| :------------------------ | :---------------------------------------- |
+| `F1`                      | Keyboard shortcut reference               |
+| `F2` / `Ctrl+I`           | Inline rename                             |
+| `F3`                      | Set custom icon                           |
+| `Ctrl+F3`                 | Reset custom icon                         |
+| `F4`                      | Toggle integrated terminal                |
+| `F5`                      | Refresh current directory                 |
+| `F9`                      | Visual menu editor                        |
+| `F10`                     | Open preferences                          |
+| `F12`                     | Advanced search dialog                    |
+| `Ctrl+F`                  | Search / filter bar                       |
+| `:term` / `:.ext:term`    | Start content search                      |
+| `Esc`                     | Cancel content search                     |
+| `Ctrl+H`                  | Toggle hidden files                       |
+| `Ctrl+L`                  | Go to location                            |
+| `Ctrl+Shift+L`            | Connect to server                         |
+| `Ctrl+T`                  | Edit tags for selection                   |
+| `Ctrl+Shift+T`            | Open tag navigator                        |
+| `Ctrl+S`                  | Cycle sort criteria                       |
+| `Ctrl+Shift+S`            | Toggle sort order                         |
+| `Shift+S`                 | Toggle folders first                      |
+| `Ctrl+A`                  | Select all                                |
+| `Ctrl+C / X / V`          | Copy / Cut / Paste                        |
+| `Ctrl+Shift+C`            | Copy absolute path of selected items      |
+| `Ctrl+Shift+V`            | Create symbolic link from clipboard paths |
+| `Ctrl+Alt+Shift+V`        | Create hard link from clipboard paths     |
+| `Delete`                  | Move to trash                             |
+| `Ctrl+Z`                  | Undo                                      |
+| `Ctrl+Shift+Z` / `Ctrl+Y` | Redo                                      |
+| `Backspace` / `Alt+Left`  | Go back in history                        |
+| `Alt+Right`               | Go forward in history                     |
+| `Enter`                   | Open selected file or directory           |
+| `/`                       | Navigate to root directory                |
+| `Insert`                  | Pin to quick list                         |
+| `Tab`                     | Next quick list entry                     |
+| `Ctrl+PageUp/Down`        | Previous / next quick list entry          |
+| `Ctrl+End`                | Clear quick list                          |
+| `Ctrl+Insert`             | Pin current dir to sidebar permanently    |
+| `Ctrl+Scroll`             | Resize grid items                         |
+| `Ctrl+Middle Click`       | Open folder in new window                 |
+| `Ctrl+Shift+F7`           | Open memory debug profiler                |
 
 ---
 
