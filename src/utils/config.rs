@@ -485,7 +485,7 @@ pub fn extract_exe_icon(
                 .and_then(|s| s.to_str())
                 .and_then(|s| {
                     s.rsplit('_')
-                        .find_map(|part| part.splitn(2, 'x').next()?.parse::<u32>().ok())
+                        .find_map(|part| part.split('x').next()?.parse::<u32>().ok())
                 })
                 .unwrap_or(0);
 
@@ -1335,11 +1335,13 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         (false, false)
     };
 
+    let is_audio = !is_pdf_file && !is_font_file && !is_exe_file && is_audio_file(path);
     let is_supported = (is_pdf_file && config.ui.thumbnail_types.pdfs)
         || (is_font_file && config.ui.thumbnail_types.fonts)
         || (is_img && config.ui.thumbnail_types.images)
         || (is_vid && config.ui.thumbnail_types.videos)
-        || (is_exe_file && config.ui.thumbnail_types.executables);
+        || (is_exe_file && config.ui.thumbnail_types.executables)
+        || (is_audio && config.ui.thumbnail_types.audio);
 
     if !is_supported {
         return None;
@@ -1389,6 +1391,15 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     tokio::fs::create_dir_all(&cache_dir).await.ok()?;
 
     // ── 2. Generation via Atomic Temp File ────────────────────────────────────
+    if is_audio {
+        let cache_p = cache_path.clone();
+        let path_p = path.to_path_buf();
+        return tokio::task::spawn_blocking(move || {
+            audio_thumbnail(&path_p, &cache_p, target_size)
+        })
+        .await
+        .ok()?;
+    }
     if is_exe_file {
         let cache_p = cache_path.clone();
         let path_p = path.to_path_buf();
@@ -1553,6 +1564,55 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     }
 
     None
+}
+
+pub fn is_audio_file(path: &Path) -> bool {
+    path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
+        matches!(
+            e.to_ascii_lowercase().as_str(),
+            "mp3" | "flac" | "m4a" | "ogg" | "wav"
+        )
+    })
+}
+
+fn audio_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
+    use lofty::prelude::*;
+    use lofty::probe::Probe;
+
+    let tagged_file = Probe::open(path).ok()?.read().ok()?;
+    let tag = tagged_file
+        .primary_tag()
+        .or_else(|| tagged_file.first_tag())?;
+    let picture = tag.pictures().first()?;
+    let picture_data = picture.data();
+
+    let loader = gdk_pixbuf::PixbufLoader::new();
+    loader.write(picture_data).ok()?;
+    loader.close().ok()?;
+    let pixbuf = loader.pixbuf()?;
+
+    let max_dim = target_size;
+    let orig_w = pixbuf.width();
+    let orig_h = pixbuf.height();
+
+    let scale = (max_dim as f64 / orig_w.max(orig_h) as f64).min(1.0);
+    let new_w = (orig_w as f64 * scale) as i32;
+    let new_h = (orig_h as f64 * scale) as i32;
+
+    let scaled = pixbuf.scale_simple(new_w, new_h, gdk_pixbuf::InterpType::Bilinear)?;
+
+    let canvas = gdk_pixbuf::Pixbuf::new(gdk_pixbuf::Colorspace::Rgb, true, 8, max_dim, max_dim)?;
+
+    let x_offset = (max_dim - new_w) / 2;
+    let y_offset = (max_dim - new_h) / 2;
+    scaled.copy_area(0, 0, new_w, new_h, &canvas, x_offset, y_offset);
+
+    if let Ok(buffer) = canvas.save_to_bufferv("png", &[("compression", "9")]) {
+        let optimized = optimize_png_bytes(&buffer);
+        let _ = std::fs::write(cache_path, optimized);
+    }
+
+    Some(gdk::Texture::for_pixbuf(&canvas))
 }
 
 fn get_fs_label(dev_node: &str) -> Option<String> {

@@ -476,6 +476,23 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Audio"),
+                        set_subtitle: &tr("MP3, FLAC, M4A, OGG, WAV (embedded album art)"),
+                        set_sensitive: model.config.ui.show_thumbnails,
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.thumbnail_types.audio && model.config.ui.show_thumbnails,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetThumbnailType {
+                                        type_name: "audio".to_string(),
+                                        enabled: switch.is_active()
+                                    });
+                                }
+                            }
+                        }
+                    },
                 },
 
                 add = &adw::PreferencesGroup {
@@ -594,6 +611,28 @@ impl SimpleComponent for SettingsWindow {
                                 set_halign: gtk::Align::Center,
                                 #[watch]
                                 add_css_class: if model.config.ui.thumbnail_types.executables && model.config.ui.show_thumbnails { "success" } else { "dim-label" },
+                            },
+                        },
+
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
+                            set_halign: gtk::Align::Center,
+                            set_spacing: 6,
+                            gtk::Image {
+                                set_icon_name: Some("audio-x-generic-symbolic"),
+                                set_pixel_size: 64,
+                                set_opacity: if model.config.ui.thumbnail_types.audio && model.config.ui.show_thumbnails { 1.0 } else { 0.3 },
+                            },
+                            gtk::Label {
+                                set_label: &tr("Audio"),
+                                set_css_classes: &["caption", "dim-label"],
+                            },
+                            gtk::Label {
+                                set_label: if model.config.ui.thumbnail_types.audio && model.config.ui.show_thumbnails { "✓" } else { "✗" },
+                                set_css_classes: &["caption"],
+                                set_halign: gtk::Align::Center,
+                                #[watch]
+                                add_css_class: if model.config.ui.thumbnail_types.audio && model.config.ui.show_thumbnails { "success" } else { "dim-label" },
                             },
                         },
                     },

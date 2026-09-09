@@ -259,6 +259,8 @@ pub struct ThumbnailTypes {
     pub pdfs: bool,
     /// Generate thumbnails for Windows PE executable files (.exe).
     pub executables: bool,
+    /// Generate thumbnails and extract embedded artwork for audio files (.mp3, .flac, .m4a, etc.).
+    pub audio: bool,
 }
 
 impl Default for ThumbnailTypes {
@@ -269,6 +271,7 @@ impl Default for ThumbnailTypes {
             fonts: true,
             pdfs: true,
             executables: false,
+            audio: true,
         }
     }
 }

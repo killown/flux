@@ -2,6 +2,7 @@ use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
 use crate::services::archive;
 use crate::ui::FileItem;
 use crate::utils;
+use crate::utils::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
 use rayon::prelude::*;
@@ -345,8 +346,9 @@ impl FluxApp {
                                 .extension()
                                 .and_then(|e| e.to_str())
                                 .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
+                            let is_audio = is_audio_file(&target_path);
 
-                            if is_img || is_vid || is_exe {
+                            if is_img || is_vid || is_exe || is_audio {
                                 thumbnail_path = Some(target_path.clone());
                             }
                         }
@@ -663,7 +665,8 @@ impl FluxApp {
                     // Collect visual media files for thumbnail generation
                     if !item.is_dir {
                         let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
-                        if is_img || is_vid {
+                        let is_audio = is_audio_file(&item.target_path);
+                        if is_img || is_vid || is_audio {
                             media_tasks.push((grid_idx, item.target_path.clone()));
                         }
                     }
@@ -798,7 +801,8 @@ impl FluxApp {
             let icon = utils::get_icon_for_path(&path, is_dir);
 
             let (is_img, is_vid) = is_visual_media_by_ext(&path);
-            if is_img || is_vid {
+            let is_audio = is_audio_file(&path);
+            if is_img || is_vid || is_audio {
                 media_tasks.push((self.files.len(), path.clone()));
             }
 
@@ -917,8 +921,9 @@ impl FluxApp {
                     .extension()
                     .and_then(|e| e.to_str())
                     .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
+                let is_audio = is_audio_file(&item.target_path);
 
-                if is_img || is_vid || is_exe {
+                if is_img || is_vid || is_exe || is_audio {
                     let source = custom_icon
                         .as_ref()
                         .map(PathBuf::from)
