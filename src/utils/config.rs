@@ -432,6 +432,99 @@ pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bo
     Some((mime.to_string(), cmd.to_string(), toast, no_command_dialog))
 }
 
+/// Extracts the highest resolution icon embedded inside a Windows PE executable.
+pub fn extract_exe_icon(
+    exe_path: &Path,
+    cache_path: &Path,
+    target_size: i32,
+) -> Option<gdk::Texture> {
+    let temp_dir = tempfile::Builder::new()
+        .prefix("flux-exe-icon-")
+        .tempdir()
+        .ok()?;
+
+    // Step 1: Find the actual group_icon name (not always "1")
+    let list_out = std::process::Command::new("wrestool")
+        .args(["--list", "--type=14"])
+        .arg(exe_path)
+        .output()
+        .ok()?;
+
+    let list_str = String::from_utf8_lossy(&list_out.stdout);
+    let icon_name = list_str.lines().find_map(|line| {
+        line.split_whitespace()
+            .find(|tok| tok.starts_with("--name="))
+            .and_then(|tok| tok.strip_prefix("--name="))
+    })?;
+
+    // Step 2: Extract to a single .ico file (not a directory)
+    let ico_path = temp_dir.path().join("icon.ico");
+
+    let status = std::process::Command::new("wrestool")
+        .args(["-x", "--type=14"])
+        .arg(format!("--name={icon_name}"))
+        .arg("-o")
+        .arg(&ico_path) // <-- file, not directory
+        .arg(exe_path)
+        .status()
+        .ok()?;
+
+    if !status.success() || !ico_path.exists() {
+        return None;
+    }
+
+    let png_dir = temp_dir.path().join("png");
+    std::fs::create_dir_all(&png_dir).ok()?;
+
+    let icotool_status = std::process::Command::new("icotool")
+        .args(["-x", "-o"])
+        .arg(&png_dir)
+        .arg(&ico_path)
+        .status()
+        .ok()?;
+
+    if !icotool_status.success() {
+        return None;
+    }
+
+    let mut best_img: Option<PathBuf> = None;
+    let mut best_dim: u32 = 0;
+
+    if let Ok(entries) = std::fs::read_dir(&png_dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.extension().and_then(|e| e.to_str()) != Some("png") {
+                continue;
+            }
+            let dim = p
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .and_then(|s| {
+                    s.rsplit('_')
+                        .find_map(|part| part.splitn(2, 'x').next()?.parse::<u32>().ok())
+                })
+                .unwrap_or(0);
+
+            if dim > best_dim {
+                best_dim = dim;
+                best_img = Some(p);
+            }
+        }
+    }
+
+    let source_png = best_img?;
+
+    let pixbuf =
+        gdk_pixbuf::Pixbuf::from_file_at_scale(&source_png, target_size, target_size, true).ok()?;
+
+    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
+        let optimized = optimize_png_bytes(&buffer);
+        let _ = std::fs::write(cache_path, optimized);
+    }
+
+    Some(gdk::Texture::for_pixbuf(&pixbuf))
+}
+
 pub fn load_menu_config() -> Vec<CustomAction> {
     let config_path = ensure_config_file();
     let content = std::fs::read_to_string(config_path).unwrap_or_default();
@@ -779,10 +872,10 @@ fn optimize_png_bytes(bytes: &[u8]) -> Vec<u8> {
 /// `dirs::cache_dir()` is unavailable or `path` contains non-UTF-8 bytes.
 fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathBuf)> {
     let thumb_folder = match target_size {
-        768 => "xx-large",
-        384 | 512 => "x-large",
-        144 | 160 | 192 | 256 => "large",
-        _ => "normal", // 16, 24, 32, 48, 64, 96, 128
+        s if s > 512 => "xx-large",
+        s if s > 256 => "x-large",
+        s if s > 128 => "large",
+        _ => "normal",
     };
 
     let cache_dir = dirs::cache_dir()?.join("thumbnails").join(thumb_folder);
@@ -1213,6 +1306,15 @@ pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
 pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let path_str = path.to_string_lossy();
 
+    // WARNING: Never generate thumbnails for files inside the thumbnail cache itself.
+    // Prevents an infinite recursive generation loop when browsing ~/.cache/thumbnails/
+    if let Some(cache_root) = dirs::cache_dir() {
+        let thumb_root = cache_root.join("thumbnails");
+        if path.starts_with(&thumb_root) {
+            return None;
+        }
+    }
+
     if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
         if let Some((archive_path, inner)) = crate::services::archive::parse_archive_uri(&path_str)
         {
@@ -1237,7 +1339,13 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let target_size = config.ui.thumbnail_size.clamp(16, 768);
     let is_pdf_file = is_pdf(path);
     let is_font_file = !is_pdf_file && is_font(path);
-    let (is_img, is_vid) = if !is_pdf_file && !is_font_file {
+    let is_exe_file = !is_pdf_file
+        && !is_font_file
+        && path
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
+    let (is_img, is_vid) = if !is_pdf_file && !is_font_file && !is_exe_file {
         is_visual_media(path)
     } else {
         (false, false)
@@ -1246,7 +1354,8 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     let is_supported = (is_pdf_file && config.ui.thumbnail_types.pdfs)
         || (is_font_file && config.ui.thumbnail_types.fonts)
         || (is_img && config.ui.thumbnail_types.images)
-        || (is_vid && config.ui.thumbnail_types.videos);
+        || (is_vid && config.ui.thumbnail_types.videos)
+        || is_exe_file;
 
     if !is_supported {
         return None;
@@ -1254,34 +1363,57 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     let (cache_dir, cache_path) = thumbnail_cache_path(path, target_size)?;
 
-    // ── 1. Cache Check with Auto-Eviction of Corrupted Files ─────────────────
+    // ── 1. Cache Check across standard XDG tiers ────────────────────────────
     let source_meta = tokio::fs::metadata(path).await.ok();
-    if cache_path.exists() {
-        if let Ok(meta) = tokio::fs::metadata(&cache_path).await {
+    let uri = gio::File::for_path(path).uri();
+    let hash = format!("{:x}", md5::compute(uri.as_bytes()));
+
+    let existing_thumbnail = if cache_path.exists() {
+        Some(cache_path.clone())
+    } else if let Some(base_cache) = dirs::cache_dir().map(|c| c.join("thumbnails")) {
+        ["xx-large", "x-large", "large", "normal"]
+            .iter()
+            .map(|tier| base_cache.join(tier).join(format!("{}.png", hash)))
+            .find(|p| p.exists())
+    } else {
+        None
+    };
+
+    if let Some(ref existing) = existing_thumbnail {
+        if let Ok(meta) = tokio::fs::metadata(existing).await {
             if meta.len() > 1024 * 1024 {
-                let _ = tokio::fs::remove_file(&cache_path).await;
-            }
-        }
+                let _ = tokio::fs::remove_file(existing).await;
+            } else {
+                let is_valid = source_meta
+                    .as_ref()
+                    .map(|m| thumbnail_is_valid(existing, m))
+                    .unwrap_or(true);
 
-        let is_valid = source_meta
-            .as_ref()
-            .map(|m| thumbnail_is_valid(&cache_path, m))
-            .unwrap_or(true);
-
-        if is_valid && cache_path.exists() {
-            if let Ok(bytes) = tokio::fs::read(&cache_path).await {
-                let glib_bytes = glib::Bytes::from(&bytes);
-                if let Ok(texture) = gdk::Texture::from_bytes(&glib_bytes) {
-                    return Some(texture);
+                if is_valid {
+                    if let Ok(bytes) = tokio::fs::read(existing).await {
+                        let glib_bytes = glib::Bytes::from(&bytes);
+                        if let Ok(texture) = gdk::Texture::from_bytes(&glib_bytes) {
+                            return Some(texture);
+                        }
+                    }
                 }
+                let _ = tokio::fs::remove_file(existing).await;
             }
         }
-        let _ = tokio::fs::remove_file(&cache_path).await;
     }
 
     tokio::fs::create_dir_all(&cache_dir).await.ok()?;
 
     // ── 2. Generation via Atomic Temp File ────────────────────────────────────
+    if is_exe_file {
+        let cache_p = cache_path.clone();
+        let path_p = path.to_path_buf();
+        return tokio::task::spawn_blocking(move || {
+            extract_exe_icon(&path_p, &cache_p, target_size)
+        })
+        .await
+        .ok()?;
+    }
     if is_pdf_file {
         let cache_p = cache_path.clone();
         let path_p = path.to_path_buf();

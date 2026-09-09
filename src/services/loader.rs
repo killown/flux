@@ -45,7 +45,7 @@ fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
     match ext.as_deref() {
         Some(
             "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
-            | "tif" | "jxl" | "svg" | "pdf" | "ttf" | "otf" | "woff" | "woff2" | "ttc",
+            | "tif" | "jxl" | "svg" | "pdf" | "ttf" | "otf" | "woff" | "woff2" | "ttc" | "ico",
         ) => (true, false),
         Some(
             "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ts"
@@ -290,6 +290,10 @@ impl FluxApp {
                 }
             };
 
+            let is_inside_thumb_cache = dirs::cache_dir()
+                .map(|c| path_clone.starts_with(c.join("thumbnails")))
+                .unwrap_or(false);
+
             let mut items: Vec<FileLoadContext> = loader_pool().install(|| {
                 raw_entries
                     .into_par_iter()
@@ -335,9 +339,14 @@ impl FluxApp {
                             .unwrap_or((0, 0, false));
 
                         let mut thumbnail_path = None;
-                        if !is_dir {
+                        if !is_dir && !is_inside_thumb_cache {
                             let (is_img, is_vid) = is_visual_media_by_ext(&target_path);
-                            if is_img || is_vid {
+                            let is_exe = target_path
+                                .extension()
+                                .and_then(|e| e.to_str())
+                                .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
+
+                            if is_img || is_vid || is_exe {
                                 thumbnail_path = Some(target_path.clone());
                             }
                         }
@@ -896,10 +905,20 @@ impl FluxApp {
                 .and_then(|m| m.get(&item.target_path))
                 .cloned();
 
+            let is_inside_thumb_cache = dirs::cache_dir()
+                .map(|c| item.target_path.starts_with(c.join("thumbnails")))
+                .unwrap_or(false);
+
             // Collect visual media files that don't have a thumbnail yet
-            if !item.is_dir && thumbnail.is_none() {
+            if !item.is_dir && thumbnail.is_none() && !is_inside_thumb_cache {
                 let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
-                if is_img || is_vid {
+                let is_exe = item
+                    .target_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
+
+                if is_img || is_vid || is_exe {
                     let source = custom_icon
                         .as_ref()
                         .map(PathBuf::from)
