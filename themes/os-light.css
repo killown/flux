@@ -1154,3 +1154,41 @@ adwtoast button label {
 .flux-empty-badge {
   color: alpha(@theme_fg_color, 0.3);
 }
+
+/* ── Window Controls ── */
+windowcontrols button {
+  background-color: transparent;
+  border: none;
+  border-color: transparent;
+  border-radius: none;
+  padding: 6px 6px;
+  min-width: 24px;
+  min-height: 24px;
+  color: @headerbar_fg_color;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+windowcontrols button:hover {
+  background-color: alpha(@headerbar_fg_color, 0.12);
+}
+
+windowcontrols button:active {
+  background-color: alpha(@headerbar_fg_color, 0.2);
+}
+
+windowcontrols button.close:hover {
+  background-color: alpha(#ff3b30, 0.25);
+  color: #ff3b30;
+}
+
+windowcontrols button.close:active {
+  background-color: alpha(#ff3b30, 0.4);
+  color: #ff3b30;
+}
+
+windowcontrols button.minimize:hover,
+windowcontrols button.maximize:hover {
+  background-color: alpha(@headerbar_fg_color, 0.15);
+}
