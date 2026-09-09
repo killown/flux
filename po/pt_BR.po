@@ -1812,3 +1812,9 @@ msgstr "Criar link simbólico a partir dos caminhos na área de transferência"
 #: src/ui/help.rs:???
 msgid "Create hard link from clipboard paths"
 msgstr "Criar link físico a partir dos caminhos na área de transferência"
+
+msgid "Windows Executables"
+msgstr "Executáveis do Windows"
+
+msgid "EXE"
+msgstr "EXE"

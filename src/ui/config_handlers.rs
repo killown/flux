@@ -378,6 +378,7 @@ impl FluxApp {
             "videos" => self.config.ui.thumbnail_types.videos = enabled,
             "fonts" => self.config.ui.thumbnail_types.fonts = enabled,
             "pdfs" => self.config.ui.thumbnail_types.pdfs = enabled,
+            "executables" => self.config.ui.thumbnail_types.executables = enabled,
             _ => {}
         }
         utils::save_config(&self.config);

@@ -443,28 +443,12 @@ pub fn extract_exe_icon(
         .tempdir()
         .ok()?;
 
-    // Step 1: Find the actual group_icon name (not always "1")
-    let list_out = std::process::Command::new("wrestool")
-        .args(["--list", "--type=14"])
-        .arg(exe_path)
-        .output()
-        .ok()?;
-
-    let list_str = String::from_utf8_lossy(&list_out.stdout);
-    let icon_name = list_str.lines().find_map(|line| {
-        line.split_whitespace()
-            .find(|tok| tok.starts_with("--name="))
-            .and_then(|tok| tok.strip_prefix("--name="))
-    })?;
-
-    // Step 2: Extract to a single .ico file (not a directory)
     let ico_path = temp_dir.path().join("icon.ico");
 
+    // Extract default group icon (type 14) directly to .ico
     let status = std::process::Command::new("wrestool")
-        .args(["-x", "--type=14"])
-        .arg(format!("--name={icon_name}"))
-        .arg("-o")
-        .arg(&ico_path) // <-- file, not directory
+        .args(["-x", "-t14", "-o"])
+        .arg(&ico_path)
         .arg(exe_path)
         .status()
         .ok()?;
@@ -1355,7 +1339,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         || (is_font_file && config.ui.thumbnail_types.fonts)
         || (is_img && config.ui.thumbnail_types.images)
         || (is_vid && config.ui.thumbnail_types.videos)
-        || is_exe_file;
+        || (is_exe_file && config.ui.thumbnail_types.executables);
 
     if !is_supported {
         return None;
