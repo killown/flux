@@ -185,6 +185,8 @@ fn test_thumbnail_types_serialization() {
                 videos: true,
                 fonts: false,
                 pdfs: true,
+                executables: false,
+                audio: true,
             },
             ..Default::default()
         },
