@@ -238,6 +238,8 @@ pub struct ContextAction {
     pub command: String,
     /// List of file types or categories where this action is valid.
     pub mime_types: Vec<String>,
+    /// Generate thumbnails for Windows PE executable files (.exe).
+    pub executables: bool,
 }
 
 /// Per-type thumbnail generation settings for file previews.
@@ -255,6 +257,8 @@ pub struct ThumbnailTypes {
     pub fonts: bool,
     /// Generate thumbnails for PDF documents
     pub pdfs: bool,
+    /// Generate thumbnails for Windows PE executable files (.exe).
+    pub executables: bool,
 }
 
 impl Default for ThumbnailTypes {
@@ -264,6 +268,7 @@ impl Default for ThumbnailTypes {
             videos: true,
             fonts: true,
             pdfs: true,
+            executables: false,
         }
     }
 }
