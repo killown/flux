@@ -44,10 +44,9 @@ pub fn ensure_config_file() -> PathBuf {
 "󰑕      Rename" => "all", "builtin::rename"
 "󰱝      Open With..." => "file", "builtin::open_with"
 "🆃      Edit Tags" => "file", "builtin::tagfile", "Opening tag editor..."
-"󰩹      Move to Trash" => "all", "gio trash %p", "Moved to trash"
+"󰩹      Move to Trash" => "all", "builtin::delete", "Moved to trash"
 "󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
-"󰆴      Shred File (Permanent)" => "all", "python $HOME/.local/share/flux/scripts/flux_shredder.py %p", "Shredder initialized"
-"󰛖      Compress > To ZIP" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p", "Compressing to ZIP..."
+"󰆴      Shred File (Permanent)" => "all", "python3 $HOME/.local/share/flux/scripts/flux_shredder.py %p", "no_command_dialog"
 
 # --- Navigation & System ---
 "      Open Terminal" => "directory", "alacritty --working-directory=%p"
@@ -57,8 +56,18 @@ pub fn ensure_config_file() -> PathBuf {
 "󰋊      Folder Info" => "directory", "baobab %p"
 "󰉋      New Folder" => "directory", "builtin::new_folder", "Folder created"
 "󰈔      New File" => "directory", "builtin::new_file", "File created"
-"󰸉      Set Custom Icon" => "all", "builtin::set_custom_icon", "Custom icon set"
-"󰸉      Reset Custom Icon" => "all", "builtin::reset_custom_icon", "Custom icon Reseted"
+
+# --- Icon Customization ---
+"󰸉      Icons > Set File Icon" => "all", "builtin::set_custom_icon", "Custom icon set"
+"󰸉      Icons > Reset File Icon" => "all", "builtin::reset_custom_icon", "Custom icon reset"
+"󰸉      Icons > Set Extension Icon" => "file", "builtin::set_extension_icon", "Custom extension icon set"
+"󰸉      Icons > Reset Extension Icon" => "file", "builtin::reset_extension_icon", "Extension icon reset"
+
+# --- Archives & Compression ---
+"󰛖      Compress > To ZIP" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p", "Compressing to ZIP..."
+"󰛖      Compress > To 7Z" => "all", "7z a -m0=lzma2 -mx=9 archive.7z %f", "Compressing to 7Z..."
+"󰛖      Compress > To TAR.GZ" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p", "Compressing to TAR.GZ..."
+"󰛖      Extract Here!" => "application/zip, application/x-7z-compressed, application/x-rar, application/x-tar", "7z x %p -o%p_extracted", "Extracting archive..."
 
 # --- Media Edit ---
 "󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p", "Joining videos..."
@@ -76,11 +85,11 @@ pub fn ensure_config_file() -> PathBuf {
 # --- Media Optimization & Extraction ---
 "󰠝      Media Extract > MP3 from Video" => "video/all", "ffmpeg -i %p -vn -acodec libmp3lame -q:a 2 %p.mp3", "Extracting MP3..."
 "󰕧      Media Optimize > Reduce Video Size" => "video/all", "ffmpeg -i %p -vcodec libx265 -crf 28 -tag:v hvc1 -preset faster %p_reduced.mp4", "Reducing video size..."
-"󰛖      Extract Here!" => "application/zip, application/x-7z-compressed, application/x-rar, application/x-tar", "7z x %p -o%p_extracted", "Extracting archive..."
 
 # --- Images & Wallpaper ---
 "󰸉      Image Wallpaper > Set (swww)" => "image/all", "swww img %p", "Wallpaper set (swww)"
-"󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && wbg -s ~/Images/fav.jpg", "Wallpaper set (wbg)"
+"󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && (killall wbg 2>/dev/null; (wbg -s $HOME/Images/fav.jpg </dev/null >/dev/null 2>&1 &))", "Wallpaper set (wbg)", "no_command_dialog"
+"󰸉      Image Convert > To PNG" => "image/webp", "magick %p %p.png", "Converted to PNG"
 "󰸉      Image Convert > To AVIF" => "image/all", "avifenc --jobs all -q 65 %p %p.avif", "Image converted to AVIF"
 "󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg", "Image converted to JPG"
 "󰏦      Convert to PDF" => "image/all, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document", "python3 $HOME/.local/share/flux/scripts/pdf_converter.py %p", "Converting to PDF..."
@@ -679,111 +688,7 @@ pub fn get_mime_type(path: &Path) -> String {
 
 fn guess_mime_from_extension(filename: &str) -> Option<String> {
     let ext = std::path::Path::new(filename).extension()?.to_str()?;
-    let mime = match ext.to_lowercase().as_str() {
-        // Text & Data
-        "txt" | "log" | "text" => "text/plain",
-        "csv" => "text/csv",
-        "tsv" => "text/tab-separated-values",
-        "json" => "application/json",
-        "jsonld" => "application/ld+json",
-        "xml" => "application/xml",
-        "yaml" | "yml" => "application/yaml",
-        "toml" => "application/toml",
-        "ini" | "conf" | "cfg" => "text/plain",
-        "md" | "markdown" => "text/markdown",
-        "rtf" => "application/rtf",
-
-        // Web & Scripts
-        "html" | "htm" | "xhtml" => "text/html",
-        "css" => "text/css",
-        "js" | "mjs" | "cjs" => "text/javascript",
-        "ts" | "mts" | "cts" => "text/typescript",
-        "jsx" => "text/jsx",
-        "tsx" => "text/tsx",
-        "wasm" => "application/wasm",
-        "php" => "application/x-httpd-php",
-
-        // Source Code & Shell
-        "py" | "pyw" => "text/x-python",
-        "rs" => "text/x-rust",
-        "c" | "h" => "text/x-c",
-        "cpp" | "cxx" | "cc" | "hpp" | "hxx" | "hh" => "text/x-c++",
-        "go" => "text/x-go",
-        "java" => "text/x-java-source",
-        "sh" | "bash" | "zsh" => "application/x-sh",
-        "sql" => "application/sql",
-        "lua" => "text/x-lua",
-        "diff" | "patch" => "text/x-diff",
-
-        // Images
-        "jpg" | "jpeg" | "jpe" => "image/jpeg",
-        "png" => "image/png",
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        "avif" => "image/avif",
-        "heic" | "heif" => "image/heic",
-        "jxl" => "image/jxl",
-        "svg" | "svgz" => "image/svg+xml",
-        "bmp" => "image/bmp",
-        "tiff" | "tif" => "image/tiff",
-        "ico" => "image/vnd.microsoft.icon",
-
-        // Audio
-        "mp3" => "audio/mpeg",
-        "ogg" | "oga" => "audio/ogg",
-        "opus" => "audio/opus",
-        "wav" => "audio/wav",
-        "flac" => "audio/flac",
-        "aac" => "audio/aac",
-        "m4a" => "audio/mp4",
-        "mid" | "midi" => "audio/midi",
-
-        // Video
-        "mp4" | "m4v" => "video/mp4",
-        "mkv" => "video/x-matroska",
-        "webm" => "video/webm",
-        "avi" => "video/x-msvideo",
-        "mov" => "video/quicktime",
-        "wmv" => "video/x-ms-wmv",
-        "flv" => "video/x-flv",
-        "m2ts" => "video/mp2t",
-
-        // Documents & Office (MS Office & OpenDocument)
-        "pdf" => "application/pdf",
-        "doc" => "application/msword",
-        "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "xls" => "application/vnd.ms-excel",
-        "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "ppt" => "application/vnd.ms-powerpoint",
-        "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "odt" => "application/vnd.oasis.opendocument.text",
-        "ods" => "application/vnd.oasis.opendocument.spreadsheet",
-        "odp" => "application/vnd.oasis.opendocument.presentation",
-        "epub" => "application/epub+zip",
-
-        // Archives & Compression
-        "zip" => "application/zip",
-        "tar" => "application/x-tar",
-        "gz" => "application/gzip",
-        "tgz" => "application/gzip",
-        "bz2" => "application/x-bzip2",
-        "xz" => "application/x-xz",
-        "zst" => "application/zstd",
-        "7z" => "application/x-7z-compressed",
-        "rar" => "application/x-rar",
-        "iso" | "img" => "application/x-cd-image",
-        "deb" => "application/vnd.debian.binary-package",
-        "rpm" => "application/x-rpm",
-
-        // Fonts
-        "woff" => "font/woff",
-        "woff2" => "font/woff2",
-        "ttf" => "font/ttf",
-        "otf" => "font/otf",
-
-        _ => "application/octet-stream",
-    };
-    Some(mime.to_string())
+    crate::utils::extension_template::lookup_system_extension_mime(ext)
 }
 
 pub fn is_visual_media(path: &Path) -> (bool, bool) {

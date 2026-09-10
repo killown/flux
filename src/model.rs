@@ -663,6 +663,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Removes any custom icon override associated with the given file extension.
+    ResetExtensionIcon(String),
     /// Copy absolute paths of selected items to clipboard.
     CopyPath,
     /// Create symbolic links from clipboard paths.
