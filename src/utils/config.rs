@@ -604,10 +604,43 @@ pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
 
 #[inline]
 fn is_generic_icon_name(name: &str) -> bool {
-    name.ends_with("-x-generic")
-        || name == "application-octet-stream"
-        || name == "text-plain"
-        || name == "unknown"
+    name.ends_with("-x-generic") || name == "application-octet-stream" || name == "unknown"
+}
+
+/// Returns `true` when the theme's icon for `content_type` is a hit on a
+/// container MIME that many unrelated extensions share (`.conf`, `.dat`,
+/// `.cfg` all collapse to `application/xml` or `text/plain`), and the
+/// extension itself is not that container's subtype. In that case the theme
+/// icon is not evidence the theme can draw this extension, so generation
+/// should run instead.
+#[inline]
+fn container_mime_masks_extension(ext: &str, content_type: &str) -> bool {
+    if ext.is_empty() {
+        return false;
+    }
+
+    let is_container = matches!(
+        content_type,
+        "application/xml"
+            | "text/xml"
+            | "application/json"
+            | "application/octet-stream"
+            | "application/x-zerosize"
+            | "application/x-empty"
+    );
+    if !is_container {
+        return false;
+    }
+
+    // If the extension literally IS the subtype (`.xml` → `xml`), the MIME is
+    // specific and the theme icon is authoritative.
+    let ext_is_subtype = content_type
+        .split('/')
+        .nth(1)
+        .map(|s| s.trim_start_matches("x-").eq_ignore_ascii_case(ext))
+        .unwrap_or(false);
+
+    !ext_is_subtype
 }
 
 /// Returns a GIO icon for the given path, applying a custom icon name override when provided.
@@ -666,21 +699,47 @@ pub fn get_icon_for_path_with_override(
         ct.to_string()
     };
 
+    // WARNING: keep the cache two-tiered. Do not serve `content_type`
+    // entries to extensioned lookups, and do not merge the tiers into one
+    // map. Extensionless files plant a shared fallback that would then
+    // short-circuit every .txt / .conf / .log past generation, killing
+    // generated icons for the rest of the session.
     THEMED_ICON_CACHE.with(|cache| {
         let mut map = cache.borrow_mut();
-        if let Some(icon) = map.get(&content_type) {
-            return icon.clone();
+
+        let gen_key = if ext.is_empty() {
+            String::new()
+        } else {
+            format!("ext:{}", ext)
+        };
+
+        if !gen_key.is_empty() {
+            if let Some(icon) = map.get(&gen_key) {
+                return icon.clone();
+            }
         }
+
+        if gen_key.is_empty() {
+            if let Some(icon) = map.get(&content_type) {
+                return icon.clone();
+            }
+        }
+
         let icon = adw::gio::content_type_get_icon(&content_type);
 
-        // Check if the theme has an icon that IS NOT a generic fallback
+        // WARNING: do not drop either condition. Without the theme check,
+        // .png / .mp4 / .pdf ignore purpose-drawn theme icons. Without
+        // `container_mime_masks_extension`, .conf / .cfg / .dat inherit
+        // the application/xml icon instead of generating.
         let has_specific_theme_icon = if let Some(display) = gdk::Display::default() {
             let theme = gtk::IconTheme::for_display(&display);
             if let Some(themed) = icon.downcast_ref::<gio::ThemedIcon>() {
-                themed
+                let theme_hit = themed
                     .names()
                     .iter()
-                    .any(|name| !is_generic_icon_name(name.as_str()) && theme.has_icon(name))
+                    .any(|name| !is_generic_icon_name(name.as_str()) && theme.has_icon(name));
+
+                theme_hit && !container_mime_masks_extension(ext, &content_type)
             } else {
                 false
             }
@@ -693,12 +752,7 @@ pub fn get_icon_for_path_with_override(
             return icon;
         }
 
-        if !ext.is_empty() {
-            let gen_key = format!("ext:{}", ext);
-            if let Some(icon) = map.get(&gen_key) {
-                return icon.clone();
-            }
-
+        if !gen_key.is_empty() {
             let cfg = load_config();
             if cfg.ui.auto_generate_mime_icons {
                 if let Ok(generated_path) =
@@ -717,8 +771,14 @@ pub fn get_icon_for_path_with_override(
                     }
                 }
             }
+
+            // WARNING: do not cache this fallback under `content_type`.
+            // It would poison the slot for every other extension sharing
+            // the MIME. Do not merge with the tail insert.
+            return icon;
         }
 
+        // Extensionless only: safe to populate content_type here.
         map.insert(content_type, icon.clone());
         icon
     })
