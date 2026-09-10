@@ -224,6 +224,24 @@ impl FluxApp {
             // ==========================================
             // Icons & Metadata
             // ==========================================
+            AppMsg::SetAutoGenerateMimeIcons(enabled) => {
+                self.config.ui.auto_generate_mime_icons = enabled;
+                crate::utils::save_config(&self.config);
+                crate::services::loader::invalidate_extension_icon_cache();
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetAutoMimeAccentColor(color) => {
+                self.config.ui.auto_mime_accent_color = color;
+                crate::utils::save_config(&self.config);
+                crate::services::loader::invalidate_extension_icon_cache();
+                sender.input(AppMsg::Refresh);
+            }
+            AppMsg::SetAutoMimeFontSize(size) => {
+                self.config.ui.auto_mime_font_size = size;
+                crate::utils::save_config(&self.config);
+                crate::services::loader::invalidate_extension_icon_cache();
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::ResetExtensionIcon(ext) => {
                 let clean_ext = ext.trim().trim_start_matches('.').to_ascii_lowercase();
                 if !clean_ext.is_empty() {

@@ -9,14 +9,16 @@ use parking_lot::RwLock;
 use rayon::prelude::*;
 use relm4::prelude::*;
 use std::cell::RefCell;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::sync::OnceLock;
+use std::time::SystemTime;
 
 static EXT_ICON_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
+static RESOLVED_EXT_CACHE: OnceLock<RwLock<HashMap<String, Option<PathBuf>>>> = OnceLock::new();
 
 fn scan_extension_icons() -> HashSet<String> {
     let mut set = HashSet::new();
@@ -32,34 +34,124 @@ fn scan_extension_icons() -> HashSet<String> {
     set
 }
 
+/// Returns the newest modification time between template.svg and config.toml.
+fn get_template_and_config_mtime() -> Option<SystemTime> {
+    let template_mtime = dirs::data_dir()
+        .map(|d| d.join("flux/icons/template.svg"))
+        .and_then(|p| std::fs::metadata(p).ok())
+        .and_then(|m| m.modified().ok());
+
+    let config_mtime = dirs::config_dir()
+        .map(|d| d.join("flux/config.toml"))
+        .and_then(|p| std::fs::metadata(p).ok())
+        .and_then(|m| m.modified().ok());
+
+    match (template_mtime, config_mtime) {
+        (Some(t1), Some(t2)) => Some(t1.max(t2)),
+        (Some(t), None) | (None, Some(t)) => Some(t),
+        (None, None) => None,
+    }
+}
+
 /// Returns the custom icon path for a given file extension if present in `~/.local/share/flux/icons/extensions/`.
 pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
     if ext.is_empty() {
         return None;
     }
-    let icons_dir = dirs::data_local_dir()?.join("flux/icons/extensions");
     let ext_lower = ext.to_ascii_lowercase();
 
-    let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
-    let exists = cache_lock.read().contains(&ext_lower);
+    let resolved_map = RESOLVED_EXT_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
 
-    if exists {
+    // Fast-path: check in-memory cache first
+    {
+        let read_guard = resolved_map.read();
+        if let Some(cached_result) = read_guard.get(&ext_lower) {
+            return cached_result.clone();
+        }
+    }
+
+    let icons_dir = dirs::data_local_dir()?.join("flux/icons/extensions");
+    let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
+
+    let exists = cache_lock.read().contains(&ext_lower);
+    let latest_source_mtime = get_template_and_config_mtime();
+
+    let result = if exists {
+        let mut found = None;
         for format in &["png", "svg", "webp", "jpg", "jpeg"] {
             let candidate = icons_dir.join(format!("{}.{}", ext_lower, format));
             if candidate.exists() {
-                return Some(candidate);
+                // If it's an SVG and template/config was modified AFTER this icon was generated, re-generate it
+                if *format == "svg" {
+                    if let (Some(source_mt), Ok(meta)) =
+                        (latest_source_mtime, std::fs::metadata(&candidate))
+                    {
+                        if let Ok(icon_mt) = meta.modified() {
+                            if source_mt > icon_mt {
+                                let cfg = crate::utils::load_config();
+                                if cfg.ui.auto_generate_mime_icons {
+                                    if let Ok(rebuilt) =
+                                        crate::utils::extension_template::save_custom_extension_icon(
+                                            &ext_lower,
+                                            &cfg.ui.auto_mime_accent_color,
+                                            cfg.ui.auto_mime_font_size,
+                                        )
+                                    {
+                                        found = Some(rebuilt);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                found = Some(candidate);
+                break;
             }
         }
-    }
-    None
+        found
+    } else {
+        let cfg = crate::utils::load_config();
+        if cfg.ui.auto_generate_mime_icons {
+            let has_dedicated_mime =
+                match crate::utils::extension_template::lookup_system_extension_mime(&ext_lower) {
+                    Some(mime) => {
+                        mime != "application/octet-stream" && mime != "application/x-zerosize"
+                    }
+                    None => false,
+                };
+
+            if !has_dedicated_mime {
+                if let Ok(generated) = crate::utils::extension_template::save_custom_extension_icon(
+                    &ext_lower,
+                    &cfg.ui.auto_mime_accent_color,
+                    cfg.ui.auto_mime_font_size,
+                ) {
+                    cache_lock.write().insert(ext_lower.clone());
+                    Some(generated)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    };
+
+    resolved_map.write().insert(ext_lower, result.clone());
+    result
 }
 
 /// Invalidates the extension icon lookup cache.
 pub fn invalidate_extension_icon_cache() {
     let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
     *cache_lock.write() = scan_extension_icons();
-}
 
+    let resolved_map = RESOLVED_EXT_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+    resolved_map.write().clear();
+}
 /// Shared Rayon thread pool for directory listing work.
 ///
 /// Capped at 4 threads with 2 MiB stacks instead of Rayon's global default

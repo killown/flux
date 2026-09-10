@@ -309,6 +309,67 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                 },
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Generated Extension Icons"),
+                    set_description: Some(&tr("Settings for dynamically generated icons when system themes lack a dedicated icon")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Auto-Generate Icons"),
+                        set_subtitle: &tr("Synthesize SVG icons for unknown file extensions using template.svg"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.auto_generate_mime_icons,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetAutoGenerateMimeIcons(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Accent Color"),
+                        set_subtitle: &tr("Hex color code for extension badges (e.g., '#1273b2')"),
+                        #[watch]
+                        set_sensitive: model.config.ui.auto_generate_mime_icons,
+                        add_suffix = &gtk::Entry {
+                            set_text: &model.config.ui.auto_mime_accent_color,
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("#1273b2"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                if !val.trim().is_empty() {
+                                    if let Some(s) = crate::model::SENDER.get() {
+                                        let _ = s.send(AppMsg::SetAutoMimeAccentColor(val.trim().to_string()));
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Base Font Size"),
+                        set_subtitle: &tr("Base font scale for extension labels inside generated badges"),
+                        #[watch]
+                        set_sensitive: model.config.ui.auto_generate_mime_icons,
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.auto_mime_font_size,
+                                4.0,
+                                32.0,
+                                0.5,
+                                1.0,
+                                0.0,
+                            ),
+                            set_digits: 1,
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetAutoMimeFontSize(spin.value()));
+                                }
+                            }
+                        }
+                    },
+                },
             },
 
             // --- Thumbnails Page ---
