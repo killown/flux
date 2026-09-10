@@ -1322,97 +1322,63 @@ impl FluxApp {
     }
 
     pub fn show_extension_icon_file_chooser(
-        extension: String,
+        ext: String,
         toast: Option<String>,
-        sender: AsyncComponentSender<Self>,
+        sender: relm4::AsyncComponentSender<Self>,
     ) {
-        let clean_ext = extension
-            .trim()
-            .trim_start_matches('.')
-            .to_ascii_lowercase();
-        if clean_ext.is_empty() {
-            return;
-        }
-
-        let filter = gtk::FileFilter::new();
-        filter.set_name(Some("Images"));
-        filter.add_mime_type("image/png");
-        filter.add_mime_type("image/jpeg");
-        filter.add_mime_type("image/webp");
-        filter.add_mime_type("image/svg+xml");
-
-        let toplevels = gtk::Window::list_toplevels();
-        let parent = toplevels
-            .first()
-            .and_then(|w| w.downcast_ref::<gtk::Window>())
-            .cloned();
-
-        let title = format!(
-            "{} (.{})",
-            crate::i18n::tr("Select Custom Icon Image"),
-            clean_ext
+        let chooser = gtk::FileChooserNative::new(
+            Some("Select Extension Icon"),
+            gtk::Window::NONE,
+            gtk::FileChooserAction::Open,
+            Some("Open"),
+            Some("Cancel"),
         );
 
-        let chooser = gtk::FileChooserNative::builder()
-            .title(&title)
-            .action(gtk::FileChooserAction::Open)
-            .accept_label(crate::i18n::tr("Set Icon"))
-            .cancel_label(crate::i18n::tr("Cancel"))
-            .build();
-
-        if let Some(ref win) = parent {
-            chooser.set_transient_for(Some(win));
-        }
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some("Image Files"));
+        filter.add_mime_type("image/png");
+        filter.add_mime_type("image/svg+xml");
+        filter.add_mime_type("image/webp");
+        filter.add_mime_type("image/jpeg");
         chooser.add_filter(&filter);
 
-        let chooser_ref = chooser.clone();
-        chooser.connect_response(move |_, response| {
+        chooser.connect_response(move |dialog, response| {
             if response == gtk::ResponseType::Accept {
-                if let Some(file) = chooser_ref.file() {
-                    if let Some(image_path) = file.path() {
-                        let ext_target = clean_ext.clone();
-                        let s = sender.clone();
-                        let t = toast.clone();
+                if let Some(file) = dialog.file() {
+                    if let Some(src_path) = file.path() {
+                        if let Some(mut target_dir) = dirs::data_local_dir() {
+                            target_dir.push("flux/icons/extensions/custom");
+                            let _ = std::fs::create_dir_all(&target_dir);
 
-                        relm4::spawn_blocking(move || {
-                            let Some(ext_dir) =
-                                dirs::data_local_dir().map(|d| d.join("flux/icons/extensions"))
-                            else {
-                                return;
-                            };
-                            let _ = std::fs::create_dir_all(&ext_dir);
-
-                            let img_ext = image_path
+                            let file_ext = src_path
                                 .extension()
                                 .and_then(|e| e.to_str())
-                                .unwrap_or("png")
-                                .to_ascii_lowercase();
+                                .unwrap_or("png");
 
-                            // Remove existing variations to prevent collision
-                            for format in &["png", "svg", "webp", "jpg", "jpeg"] {
-                                let _ = std::fs::remove_file(
-                                    ext_dir.join(format!("{}.{}", ext_target, format)),
-                                );
+                            let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
+                            let dest_path = target_dir.join(format!("{}.{}", clean_ext, file_ext));
+
+                            for fmt in &["png", "svg", "webp", "jpg", "jpeg"] {
+                                let old = target_dir.join(format!("{}.{}", clean_ext, fmt));
+                                let _ = std::fs::remove_file(old);
                             }
 
-                            let dest = ext_dir.join(format!("{}.{}", ext_target, img_ext));
-                            if std::fs::copy(&image_path, &dest).is_ok() {
+                            if std::fs::copy(&src_path, &dest_path).is_ok() {
                                 crate::services::loader::invalidate_extension_icon_cache();
-                                s.input(AppMsg::Refresh);
-                                if let Some(msg) = t {
-                                    s.input(AppMsg::ShowToast(msg));
-                                } else {
-                                    s.input(AppMsg::ShowToast(format!(
-                                        "Custom icon set for .{}",
-                                        ext_target
-                                    )));
+                                crate::utils::invalidate_themed_icon_cache();
+                                sender.input(AppMsg::Refresh);
+
+                                if let Some(ref msg) = toast {
+                                    sender.input(AppMsg::ShowToast(msg.clone()));
                                 }
                             }
-                        });
+                        }
                     }
                 }
             }
+            dialog.destroy();
         });
+
         chooser.show();
     }
 }

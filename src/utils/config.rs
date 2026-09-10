@@ -123,6 +123,12 @@ pub fn save_config(config: &crate::model::Config) {
         }
     }
 }
+/// Clears the cached GIO icons so they can be re-resolved under a new GTK theme.
+pub fn invalidate_themed_icon_cache() {
+    THEMED_ICON_CACHE.with(|cache| {
+        cache.borrow_mut().clear();
+    });
+}
 
 pub fn rename_path(old_path: &Path, new_name: &str) -> std::io::Result<PathBuf> {
     // Reject any name containing a path separator to prevent directory traversal
@@ -596,6 +602,14 @@ pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
     get_icon_for_path_with_override(path, is_dir, None)
 }
 
+#[inline]
+fn is_generic_icon_name(name: &str) -> bool {
+    name.ends_with("-x-generic")
+        || name == "application-octet-stream"
+        || name == "text-plain"
+        || name == "unknown"
+}
+
 /// Returns a GIO icon for the given path, applying a custom icon name override when provided.
 ///
 /// # Arguments
@@ -634,7 +648,7 @@ pub fn get_icon_for_path_with_override(
         .unwrap_or("");
 
     if !ext.is_empty() {
-        if let Some(icon_path) = crate::services::loader::get_extension_icon_path(ext) {
+        if let Some(icon_path) = crate::services::loader::get_custom_extension_icon_path(ext) {
             if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
                 return icon;
             }
@@ -663,16 +677,10 @@ pub fn get_icon_for_path_with_override(
         let has_specific_theme_icon = if let Some(display) = gdk::Display::default() {
             let theme = gtk::IconTheme::for_display(&display);
             if let Some(themed) = icon.downcast_ref::<gio::ThemedIcon>() {
-                themed.names().iter().any(|name| {
-                    let name_str = name.as_str();
-                    // If it only matches generic fallbacks, consider it missing so we generate an SVG
-                    let is_generic = name_str == "text-x-generic"
-                        || name_str == "application-octet-stream"
-                        || name_str == "text-plain"
-                        || name_str == "unknown";
-
-                    !is_generic && theme.has_icon(name)
-                })
+                themed
+                    .names()
+                    .iter()
+                    .any(|name| !is_generic_icon_name(name.as_str()) && theme.has_icon(name))
             } else {
                 false
             }
@@ -680,12 +688,21 @@ pub fn get_icon_for_path_with_override(
             false
         };
 
-        // If the theme only has a generic fallback and auto-generation is enabled, synthesize one
-        if !has_specific_theme_icon && !ext.is_empty() {
+        if has_specific_theme_icon {
+            map.insert(content_type, icon.clone());
+            return icon;
+        }
+
+        if !ext.is_empty() {
+            let gen_key = format!("ext:{}", ext);
+            if let Some(icon) = map.get(&gen_key) {
+                return icon.clone();
+            }
+
             let cfg = load_config();
             if cfg.ui.auto_generate_mime_icons {
                 if let Ok(generated_path) =
-                    crate::utils::extension_template::save_custom_extension_icon(
+                    crate::utils::extension_template::save_generated_extension_icon(
                         ext,
                         &cfg.ui.auto_mime_accent_color,
                         cfg.ui.auto_mime_font_size,
@@ -695,7 +712,7 @@ pub fn get_icon_for_path_with_override(
                     if let Ok(generated_icon) =
                         gio::Icon::for_string(&generated_path.to_string_lossy())
                     {
-                        map.insert(content_type, generated_icon.clone());
+                        map.insert(gen_key, generated_icon.clone());
                         return generated_icon;
                     }
                 }

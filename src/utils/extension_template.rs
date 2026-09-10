@@ -58,19 +58,40 @@ pub fn generate_mime_svg(extension: &str, accent_color: &str, base_font_size: f6
         .replace("{{EXT}}", &clean_ext)
 }
 
-/// Generates and writes the SVG icon to `~/.local/share/flux/icons/extensions/<ext>.svg`.
+/// Generates and writes the SVG icon to `~/.local/share/flux/icons/extensions/custom/<ext>.svg`.
+#[allow(dead_code)]
 pub fn save_custom_extension_icon(
     extension: &str,
     accent_color: &str,
     base_font_size: f64,
 ) -> std::io::Result<PathBuf> {
     let clean_ext = extension.trim_start_matches('.').to_ascii_lowercase();
-    let icons_dir = dirs::data_local_dir()
-        .map(|d| d.join("flux/icons/extensions"))
-        .unwrap_or_else(|| PathBuf::from("icons/extensions"));
+    let base_dir = dirs::data_local_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("flux/icons/extensions/custom");
 
-    fs::create_dir_all(&icons_dir)?;
-    let target_path = icons_dir.join(format!("{}.svg", clean_ext));
+    fs::create_dir_all(&base_dir)?;
+    let target_path = base_dir.join(format!("{}.svg", clean_ext));
+
+    let svg_content = generate_mime_svg(&clean_ext, accent_color, base_font_size);
+    fs::write(&target_path, svg_content)?;
+
+    Ok(target_path)
+}
+
+/// Generates and writes the SVG icon to `~/.local/share/flux/icons/extensions/generated/<ext>.svg`.
+pub fn save_generated_extension_icon(
+    extension: &str,
+    accent_color: &str,
+    base_font_size: f64,
+) -> std::io::Result<PathBuf> {
+    let clean_ext = extension.trim_start_matches('.').to_ascii_lowercase();
+    let base_dir = dirs::data_local_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("flux/icons/extensions/generated");
+
+    fs::create_dir_all(&base_dir)?;
+    let target_path = base_dir.join(format!("{}.svg", clean_ext));
 
     let svg_content = generate_mime_svg(&clean_ext, accent_color, base_font_size);
     fs::write(&target_path, svg_content)?;

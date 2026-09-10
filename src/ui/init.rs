@@ -406,6 +406,26 @@ impl FluxApp {
         app.add_action(&action_about);
         app.set_accels_for_action("app.show-about", &[]);
 
+        // 9.5. Icon Theme Change Listeners
+        if let Some(display) = gtk::gdk::Display::default() {
+            let icon_theme = gtk::IconTheme::for_display(&display);
+            let s_icon = sender.clone();
+            icon_theme.connect_changed(move |_| {
+                crate::utils::config::invalidate_themed_icon_cache();
+                crate::services::loader::invalidate_extension_icon_cache();
+                s_icon.input(AppMsg::Refresh);
+            });
+        }
+
+        if let Some(settings) = gtk::Settings::default() {
+            let s_settings = sender.clone();
+            settings.connect_gtk_icon_theme_name_notify(move |_| {
+                crate::utils::config::invalidate_themed_icon_cache();
+                crate::services::loader::invalidate_extension_icon_cache();
+                s_settings.input(AppMsg::Refresh);
+            });
+        }
+
         // 10. Defer background maintenance and initial data fetching to unblock window presentation
         // WARNING: CRITICAL PERFORMANCE GUARD:
         // Defer non-essential I/O (DB orphan scrub, sidebar mount discovery, and directory reads)
