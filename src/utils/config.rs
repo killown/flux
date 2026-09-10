@@ -613,15 +613,39 @@ pub fn get_icon_for_path_with_override(
     if is_dir {
         return gio::Icon::for_string("folder").unwrap();
     }
-    let filename = path.file_name().unwrap_or_default().to_string_lossy();
 
-    // Fast-path: check static extension mapping before calling GIO content_type_guess.
+    let path_str = path.to_string_lossy();
+
+    let filename = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        path_str.rsplit('/').next().unwrap_or("").to_string()
+    } else {
+        path.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    };
+
+    let ext = std::path::Path::new(&filename)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    if !ext.is_empty() {
+        if let Some(icon_path) = crate::services::loader::get_extension_icon_path(ext) {
+            if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
+                return icon;
+            }
+        }
+    }
+
     let content_type = if let Some(mime) = guess_mime_from_extension(&filename) {
         mime
-    } else if crate::services::network::is_network_uri(path) {
+    } else if crate::services::network::is_network_uri(path)
+        || path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+    {
         "application/octet-stream".to_string()
     } else {
-        let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+        let (ct, _) = adw::gio::content_type_guess(Some(filename.as_str()), None::<&[u8]>);
         ct.to_string()
     };
 
@@ -638,6 +662,15 @@ pub fn get_icon_for_path_with_override(
 
 pub fn get_mime_type(path: &Path) -> String {
     let path_str = path.to_string_lossy();
+
+    if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            if let Some(mime) = guess_mime_from_extension(ext) {
+                return mime;
+            }
+        }
+        return "application/octet-stream".to_string();
+    }
 
     if crate::services::network::is_network_uri(path) {
         if path_str.ends_with('/') {

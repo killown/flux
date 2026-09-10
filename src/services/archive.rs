@@ -144,13 +144,31 @@ pub fn build_archive_uri(archive_path: &Path, inner_path: &str) -> PathBuf {
 /// Returns `true` for archives that `list_archive_entries` can browse.
 #[allow(dead_code)]
 pub fn is_browsable_archive(path: &Path) -> bool {
-    matches_extension(
+    if matches_extension(
         path,
         &[
             "zip", "tar", "tar.gz", "tgz", "tar.bz2", "tbz2", "tar.xz", "txz", "tar.lzma", "tlz",
             "tar.zst", "tzst", "tar.lz4", "7z", "rar", "gz", "bz2", "xz", "lzma", "zst", "zstd",
             "lz4", "iso", "deb",
         ],
+    ) {
+        return true;
+    }
+
+    // Fall back to MIME type for custom extension mappings (e.g. .cbz -> zip, .cbr -> rar)
+    let mime = crate::utils::config::get_mime_type(path);
+    matches!(
+        mime.as_str(),
+        "application/zip"
+            | "application/x-zip-compressed"
+            | "application/x-7z-compressed"
+            | "application/x-tar"
+            | "application/x-rar"
+            | "application/x-rar-compressed"
+            | "application/gzip"
+            | "application/x-bzip2"
+            | "application/x-xz"
+            | "application/zstd"
     )
 }
 
@@ -966,10 +984,11 @@ pub fn get_backend(
         return b;
     }
     let name_lc = lc_name(archive_path);
+
     if name_lc.ends_with(".zip") {
-        Box::new(ZipBackend)
+        return Box::new(ZipBackend);
     } else if name_lc.ends_with(".7z") {
-        Box::new(SevenZBackend)
+        return Box::new(SevenZBackend);
     } else if name_lc.ends_with(".tar.gz")
         || name_lc.ends_with(".tgz")
         || name_lc.ends_with(".tar.bz2")
@@ -983,24 +1002,25 @@ pub fn get_backend(
         || name_lc.ends_with(".tar.lz4")
         || name_lc.ends_with(".tar")
     {
-        Box::new(TarBackend)
+        return Box::new(TarBackend);
     } else if name_lc.ends_with(".rar") {
-        Box::new(RarBackend)
+        return Box::new(RarBackend);
     } else if name_lc.ends_with(".iso") {
-        Box::new(IsoBackend)
+        return Box::new(IsoBackend);
     } else if name_lc.ends_with(".deb") {
-        Box::new(DebBackend)
-    } else if name_lc.ends_with(".gz")
-        || name_lc.ends_with(".bz2")
-        || name_lc.ends_with(".xz")
-        || name_lc.ends_with(".lzma")
-        || name_lc.ends_with(".zstd")
-        || name_lc.ends_with(".zst")
-        || name_lc.ends_with(".lz4")
-    {
-        Box::new(SingleFileBackend)
-    } else {
-        Box::new(UnsupportedBackend)
+        return Box::new(DebBackend);
+    }
+
+    let mime = crate::utils::config::get_mime_type(archive_path);
+    match mime.as_str() {
+        "application/zip" | "application/x-zip-compressed" => Box::new(ZipBackend),
+        "application/x-7z-compressed" => Box::new(SevenZBackend),
+        "application/x-tar" => Box::new(TarBackend),
+        "application/x-rar" | "application/x-rar-compressed" => Box::new(RarBackend),
+        "application/gzip" | "application/x-bzip2" | "application/x-xz" | "application/zstd" => {
+            Box::new(SingleFileBackend)
+        }
+        _ => Box::new(UnsupportedBackend),
     }
 }
 
@@ -1180,14 +1200,23 @@ pub fn entries_to_load_contexts(
             // derive the count from the sibling entries instead.
             let size = if e.is_dir { e.child_count } else { e.size };
 
+            let sort_ext = std::path::Path::new(&e.name)
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| e.to_ascii_lowercase())
+                .unwrap_or_default();
+
+            let custom_icon = if !e.is_dir && !sort_ext.is_empty() {
+                crate::services::loader::get_extension_icon_path(&sort_ext)
+                    .map(|p| p.to_string_lossy().into_owned())
+            } else {
+                None
+            };
+
             FileLoadContext {
                 display_name: e.name.clone(),
                 sort_name: e.name.to_lowercase(),
-                sort_ext: std::path::Path::new(&e.name)
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .map(|e| e.to_ascii_lowercase())
-                    .unwrap_or_default(),
+                sort_ext,
                 target_path,
                 size,
                 mtime: e.mtime,
@@ -1195,7 +1224,7 @@ pub fn entries_to_load_contexts(
                 thumbnail_path: None,
                 is_foreign_owner: false,
                 expand_labels,
-                custom_icon: None,
+                custom_icon,
             }
         })
         .collect()
