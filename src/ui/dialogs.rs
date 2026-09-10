@@ -1320,4 +1320,99 @@ impl FluxApp {
 
         dialog.present();
     }
+
+    pub fn show_extension_icon_file_chooser(
+        extension: String,
+        toast: Option<String>,
+        sender: AsyncComponentSender<Self>,
+    ) {
+        let clean_ext = extension
+            .trim()
+            .trim_start_matches('.')
+            .to_ascii_lowercase();
+        if clean_ext.is_empty() {
+            return;
+        }
+
+        let filter = gtk::FileFilter::new();
+        filter.set_name(Some("Images"));
+        filter.add_mime_type("image/png");
+        filter.add_mime_type("image/jpeg");
+        filter.add_mime_type("image/webp");
+        filter.add_mime_type("image/svg+xml");
+
+        let toplevels = gtk::Window::list_toplevels();
+        let parent = toplevels
+            .first()
+            .and_then(|w| w.downcast_ref::<gtk::Window>())
+            .cloned();
+
+        let title = format!(
+            "{} (.{})",
+            crate::i18n::tr("Select Custom Icon Image"),
+            clean_ext
+        );
+
+        let chooser = gtk::FileChooserNative::builder()
+            .title(&title)
+            .action(gtk::FileChooserAction::Open)
+            .accept_label(crate::i18n::tr("Set Icon"))
+            .cancel_label(crate::i18n::tr("Cancel"))
+            .build();
+
+        if let Some(ref win) = parent {
+            chooser.set_transient_for(Some(win));
+        }
+        chooser.add_filter(&filter);
+
+        let chooser_ref = chooser.clone();
+        chooser.connect_response(move |_, response| {
+            if response == gtk::ResponseType::Accept {
+                if let Some(file) = chooser_ref.file() {
+                    if let Some(image_path) = file.path() {
+                        let ext_target = clean_ext.clone();
+                        let s = sender.clone();
+                        let t = toast.clone();
+
+                        relm4::spawn_blocking(move || {
+                            let Some(ext_dir) =
+                                dirs::data_local_dir().map(|d| d.join("flux/icons/extensions"))
+                            else {
+                                return;
+                            };
+                            let _ = std::fs::create_dir_all(&ext_dir);
+
+                            let img_ext = image_path
+                                .extension()
+                                .and_then(|e| e.to_str())
+                                .unwrap_or("png")
+                                .to_ascii_lowercase();
+
+                            // Remove existing variations to prevent collision
+                            for format in &["png", "svg", "webp", "jpg", "jpeg"] {
+                                let _ = std::fs::remove_file(
+                                    ext_dir.join(format!("{}.{}", ext_target, format)),
+                                );
+                            }
+
+                            let dest = ext_dir.join(format!("{}.{}", ext_target, img_ext));
+                            if std::fs::copy(&image_path, &dest).is_ok() {
+                                crate::services::loader::invalidate_extension_icon_cache();
+                                s.input(AppMsg::Refresh);
+                                if let Some(msg) = t {
+                                    s.input(AppMsg::ShowToast(msg));
+                                } else {
+                                    s.input(AppMsg::ShowToast(format!(
+                                        "Custom icon set for .{}",
+                                        ext_target
+                                    )));
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        });
+        chooser.show();
+    }
 }

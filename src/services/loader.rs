@@ -5,14 +5,60 @@ use crate::utils;
 use crate::utils::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
+use parking_lot::RwLock;
 use rayon::prelude::*;
 use relm4::prelude::*;
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::sync::OnceLock;
+
+static EXT_ICON_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
+
+fn scan_extension_icons() -> HashSet<String> {
+    let mut set = HashSet::new();
+    if let Some(icons_dir) = dirs::data_local_dir().map(|d| d.join("flux/icons/extensions")) {
+        if let Ok(entries) = std::fs::read_dir(&icons_dir) {
+            for entry in entries.flatten() {
+                if let Some(stem) = entry.path().file_stem().and_then(|s| s.to_str()) {
+                    set.insert(stem.to_ascii_lowercase());
+                }
+            }
+        }
+    }
+    set
+}
+
+/// Returns the custom icon path for a given file extension if present in `~/.local/share/flux/icons/extensions/`.
+pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
+    if ext.is_empty() {
+        return None;
+    }
+    let icons_dir = dirs::data_local_dir()?.join("flux/icons/extensions");
+    let ext_lower = ext.to_ascii_lowercase();
+
+    let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
+    let exists = cache_lock.read().contains(&ext_lower);
+
+    if exists {
+        for format in &["png", "svg", "webp", "jpg", "jpeg"] {
+            let candidate = icons_dir.join(format!("{}.{}", ext_lower, format));
+            if candidate.exists() {
+                return Some(candidate);
+            }
+        }
+    }
+    None
+}
+
+/// Invalidates the extension icon lookup cache.
+pub fn invalidate_extension_icon_cache() {
+    let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
+    *cache_lock.write() = scan_extension_icons();
+}
 
 /// Shared Rayon thread pool for directory listing work.
 ///
@@ -353,29 +399,37 @@ impl FluxApp {
                             }
                         }
 
-                        let custom_icon = if config_file_icons.is_empty()
-                            && (!is_dir || config_folder_icons.is_empty())
-                        {
-                            None
-                        } else {
-                            let path_key = target_path.to_str();
-                            path_key.and_then(|k| {
-                                config_file_icons.get(k).cloned().or_else(|| {
-                                    if is_dir {
-                                        config_folder_icons.get(k).cloned()
-                                    } else {
-                                        None
-                                    }
-                                })
-                            })
-                        };
-
                         let sort_name = name.to_lowercase();
                         let sort_ext = std::path::Path::new(&name)
                             .extension()
                             .and_then(|e| e.to_str())
                             .map(|e| e.to_ascii_lowercase())
                             .unwrap_or_default();
+
+                        let custom_icon = if config_file_icons.is_empty()
+                            && (!is_dir || config_folder_icons.is_empty())
+                        {
+                            if !is_dir && !sort_ext.is_empty() {
+                                get_extension_icon_path(&sort_ext)
+                                    .map(|p| p.to_string_lossy().into_owned())
+                            } else {
+                                None
+                            }
+                        } else {
+                            let path_key = target_path.to_str();
+                            path_key.and_then(|k| {
+                                config_file_icons.get(k).cloned().or_else(|| {
+                                    if is_dir {
+                                        config_folder_icons.get(k).cloned()
+                                    } else if !sort_ext.is_empty() {
+                                        get_extension_icon_path(&sort_ext)
+                                            .map(|p| p.to_string_lossy().into_owned())
+                                    } else {
+                                        None
+                                    }
+                                })
+                            })
+                        };
 
                         Some(FileLoadContext {
                             sort_name,
@@ -892,6 +946,9 @@ impl FluxApp {
                         config_folder_icons
                             .get(&item.target_path.to_string_lossy().to_string())
                             .cloned()
+                    } else if !item.sort_ext.is_empty() {
+                        get_extension_icon_path(&item.sort_ext)
+                            .map(|p| p.to_string_lossy().into_owned())
                     } else {
                         None
                     }

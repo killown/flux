@@ -156,6 +156,56 @@ impl FluxApp {
                         self.action_group.add_action(&action);
                         ("win.rename-item".to_string(), "rename-item")
                     }
+                    "builtin::set_extension_icon" => {
+                        let ext_opt = path.as_ref().and_then(|p| {
+                            p.extension()
+                                .and_then(|e| e.to_str())
+                                .map(|s| s.to_string())
+                        });
+
+                        if let Some(ext_owned) = ext_opt {
+                            let set_ext_action = gio::SimpleAction::new("set-extension-icon", None);
+                            let sender_ic = sender.clone();
+                            let toast_clone = action_toast.clone();
+                            set_ext_action.connect_activate(move |_, _| {
+                                FluxApp::show_extension_icon_file_chooser(
+                                    ext_owned.clone(),
+                                    toast_clone.clone(),
+                                    sender_ic.clone(),
+                                );
+                            });
+                            self.action_group.add_action(&set_ext_action);
+                            ("win.set-extension-icon".to_string(), "set-extension-icon")
+                        } else {
+                            continue;
+                        }
+                    }
+                    "builtin::reset_extension_icon" => {
+                        let ext_opt = path.as_ref().and_then(|p| {
+                            p.extension()
+                                .and_then(|e| e.to_str())
+                                .map(|s| s.to_string())
+                        });
+
+                        if let Some(ext_owned) = ext_opt {
+                            let reset_action = gio::SimpleAction::new("reset-extension-icon", None);
+                            let s = sender.clone();
+                            let toast_clone = action_toast.clone();
+                            reset_action.connect_activate(move |_, _| {
+                                s.input(AppMsg::ResetExtensionIcon(ext_owned.clone()));
+                                if let Some(ref msg) = toast_clone {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
+                            });
+                            self.action_group.add_action(&reset_action);
+                            (
+                                "win.reset-extension-icon".to_string(),
+                                "reset-extension-icon",
+                            )
+                        } else {
+                            continue;
+                        }
+                    }
                     "builtin::add_to_quick_list" => {
                         let quick_action = gio::SimpleAction::new("add-to-quick-list", None);
                         let sender_q = sender.clone();
