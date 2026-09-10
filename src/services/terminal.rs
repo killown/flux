@@ -43,6 +43,13 @@ impl Cell {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum CursorStyle {
+    Block,     // DECSCUSR 1/2
+    Underline, // DECSCUSR 3/4
+    Bar,       // DECSCUSR 5/6
+}
+
 /// Returns `true` when the PTY slave is in raw or cbreak mode (`ICANON` clear).
 ///
 /// Terminal emulators use this to decide whether to apply readline-style key
@@ -62,6 +69,8 @@ fn pty_is_raw(fd: libc::c_int) -> bool {
 }
 
 pub struct TerminalState {
+    pub cursor_style: CursorStyle,
+    pub cursor_blink_visible: bool,
     pub cleaned_up: bool,
     pub grid: Vec<Vec<Cell>>,
     pub cursor_x: usize,
@@ -149,6 +158,8 @@ impl TerminalState {
         let fg = gtk::gdk::RGBA::new(0.9, 0.9, 0.9, 1.0);
         let bg = gtk::gdk::RGBA::new(0.1, 0.1, 0.1, 1.0);
         Self {
+            cursor_style: CursorStyle::Bar,
+            cursor_blink_visible: true,
             cleaned_up: false,
             grid,
             cursor_x: 0,
@@ -895,6 +906,16 @@ impl Perform for TerminalHandler {
                 state.cursor_x = state.saved_cursor_x;
                 state.cursor_y = state.saved_cursor_y;
             }
+            // DECSCUSR - Set cursor style.
+            // Ps: 0 = default (reset to Bar), 1/2 = block, 3/4 = underline, 5/6 = bar.
+            'q' if intermediates.first().copied() == Some(b' ') => {
+                state.cursor_style = match p.first().copied().unwrap_or(0) {
+                    1 | 2 => CursorStyle::Block,
+                    3 | 4 => CursorStyle::Underline,
+                    0 | 5 | 6 => CursorStyle::Bar,
+                    _ => CursorStyle::Bar,
+                };
+            }
             // Ignore unknown sequences per ECMA-48.
             _ => {}
         }
@@ -1075,7 +1096,19 @@ impl Terminal {
         );
 
         let state = Arc::new(Mutex::new(TerminalState::new(80, 24)));
-        state.lock().unwrap().font_desc = font_desc;
+        state.lock().unwrap().font_desc = font_desc.clone();
+
+        // ── Cursor blink timer (~500 ms) ──────────────────────────────────────
+        let state_blink = state.clone();
+        let drawing_area_blink = drawing_area.clone();
+        glib::timeout_add_local(std::time::Duration::from_millis(500), move || {
+            {
+                let mut s = state_blink.lock().unwrap_or_else(|e| e.into_inner());
+                s.cursor_blink_visible = !s.cursor_blink_visible;
+            }
+            drawing_area_blink.queue_allocate();
+            glib::ControlFlow::Continue
+        });
 
         {
             let state_for_im = state.clone();
@@ -2625,24 +2658,39 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
     }
 
     if state.scroll_offset == 0 && state.cursor_visible {
-        let cursor_x = state.cursor_x;
-        let cursor_y = state.cursor_y;
-        if cursor_y < state.rows && cursor_x < state.cols {
-            let x_pos = cursor_x as f64 * char_width;
-            let y_pos = cursor_y as f64 * char_height;
-            // Use accent color for the cursor when the theme has provided one.
-            if let Some(acc) = state.accent_color {
-                cr.set_source_rgba(
-                    acc.red() as f64,
-                    acc.green() as f64,
-                    acc.blue() as f64,
-                    0.75,
-                );
-            } else {
-                cr.set_source_rgba(1.0, 1.0, 1.0, 0.3);
+        if state.cursor_blink_visible {
+            let cursor_x = state.cursor_x;
+            let cursor_y = state.cursor_y;
+            if cursor_y < state.rows && cursor_x < state.cols {
+                let x_pos = cursor_x as f64 * char_width;
+                let y_pos = cursor_y as f64 * char_height;
+
+                if let Some(acc) = state.accent_color {
+                    cr.set_source_rgba(
+                        acc.red() as f64,
+                        acc.green() as f64,
+                        acc.blue() as f64,
+                        0.85,
+                    );
+                } else {
+                    cr.set_source_rgba(1.0, 1.0, 1.0, 0.85);
+                }
+
+                match state.cursor_style {
+                    CursorStyle::Block => {
+                        cr.rectangle(x_pos, y_pos, char_width, char_height);
+                    }
+                    CursorStyle::Underline => {
+                        let bar_h = (char_height * 0.1).max(2.0);
+                        cr.rectangle(x_pos, y_pos + char_height - bar_h, char_width, bar_h);
+                    }
+                    CursorStyle::Bar => {
+                        let bar_w = (char_width * 0.12).max(2.0);
+                        cr.rectangle(x_pos, y_pos, bar_w, char_height);
+                    }
+                }
+                cr.fill().unwrap();
             }
-            cr.rectangle(x_pos, y_pos, char_width, char_height);
-            cr.fill().unwrap();
         }
     }
 
