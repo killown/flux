@@ -34,6 +34,7 @@ install: translations
 		$(DESTDIR)$(METAINFODIR) \
 		$(DESTDIR)$(CONFDIR)/themes \
 		$(DESTDIR)$(CONFDIR)/menus \
+		$(DESTDIR)$(CONFDIR)/icons \
 		$(DESTDIR)$(SCRIPTDIR)
 
 	# 2. Binary
@@ -44,8 +45,9 @@ install: translations
 	@install -m 644 flux.desktop.tmp $(DESTDIR)$(APPDIR)/io.github.killown.flux.desktop
 	@rm -f flux.desktop.tmp
 
-	# 4. Icon
+	# 4. Icon & Template
 	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/io.github.killown.flux.svg
+	@if [ -f template.svg ]; then install -m 644 template.svg $(DESTDIR)$(CONFDIR)/icons/template.svg; fi
 
 	# 5. AppStream Metainfo
 	@install -m 644 packaging/flatpak/io.github.killown.flux.metainfo.xml $(DESTDIR)$(METAINFODIR)/io.github.killown.flux.metainfo.xml

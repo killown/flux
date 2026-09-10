@@ -53,6 +53,14 @@ fn default_thumbnail_size() -> i32 {
     256
 }
 
+fn default_accent_color() -> String {
+    "#1273b2".to_string()
+}
+
+fn default_mime_font_size() -> f64 {
+    9.0
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -280,6 +288,15 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Base font size used for auto-generated document icons.
+    #[serde(default = "default_mime_font_size")]
+    pub auto_mime_font_size: f64,
+    /// When true, automatically generates and caches an SVG document icon if the active theme lacks one.
+    #[serde(default = "default_true")]
+    pub auto_generate_mime_icons: bool,
+    /// Default accent color used for auto-generated document icons.
+    #[serde(default = "default_accent_color")]
+    pub auto_mime_accent_color: String,
     /// When true, selecting a single video card plays a muted loop preview.
     #[serde(default = "default_true")]
     pub autoplay_video_previews: bool,
@@ -466,6 +483,9 @@ impl Default for UIConfig {
             ffmpeg_seek_seconds: default_ffmpeg_seek_seconds(),
             ffmpeg_auto_rotate: false,
             window_controls_left: false,
+            auto_generate_mime_icons: true,
+            auto_mime_accent_color: default_accent_color(),
+            auto_mime_font_size: default_mime_font_size(),
         }
     }
 }
@@ -663,6 +683,12 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles automatic generation of SVG icons for unknown extensions.
+    SetAutoGenerateMimeIcons(bool),
+    /// Sets the accent color for auto-generated extension icons.
+    SetAutoMimeAccentColor(String),
+    /// Sets the base font size for auto-generated extension icons.
+    SetAutoMimeFontSize(f64),
     /// Removes any custom icon override associated with the given file extension.
     ResetExtensionIcon(String),
     /// Copy absolute paths of selected items to clipboard.

@@ -1,7 +1,82 @@
 use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::OnceLock;
 
 static EXT_MIME_CACHE: OnceLock<HashMap<String, String>> = OnceLock::new();
+
+const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="fold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <!-- Document Sheet -->
+  <path d="M 14 6 L 38 6 L 50 18 L 50 58 L 14 58 Z" fill="#f6f6f6" stroke="#dedede" stroke-width="2"/>
+  <!-- Corner Fold -->
+  <path d="M 38 6 L 38 18 L 50 18 Z" fill="{{ACCENT_COLOR}}"/>
+  <!-- Extension Tag Box -->
+  <rect x="18" y="36" width="28" height="14" rx="3" fill="{{ACCENT_COLOR}}"/>
+  <text x="32" y="47" font-family="Cantarell, sans-serif" font-size="{{FONT_SIZE}}" font-weight="bold" 
+        fill="#ffffff" text-anchor="middle">{{EXT}}</text>
+</svg>"##;
+
+/// Resolves `~/.local/share/flux/icons/template.svg`, auto-populating it with the default if absent.
+fn get_or_create_template() -> String {
+    let template_path = dirs::data_dir()
+        .map(|d| d.join("flux/icons/template.svg"))
+        .unwrap_or_else(|| PathBuf::from("template.svg"));
+
+    if let Ok(content) = fs::read_to_string(&template_path) {
+        return content;
+    }
+
+    if let Some(parent) = template_path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let _ = fs::write(&template_path, EMBEDDED_DEFAULT_TEMPLATE);
+
+    EMBEDDED_DEFAULT_TEMPLATE.to_string()
+}
+
+/// Generates an SVG string using the template and injected parameters.
+pub fn generate_mime_svg(extension: &str, accent_color: &str, base_font_size: f64) -> String {
+    let clean_ext = extension.trim_start_matches('.').to_ascii_uppercase();
+    let template = get_or_create_template();
+
+    let font_size = match clean_ext.len() {
+        0..=3 => base_font_size,
+        4 => base_font_size * 0.83,
+        5 => base_font_size * 0.69,
+        _ => base_font_size * 0.55,
+    };
+
+    template
+        .replace("{{ACCENT_COLOR}}", accent_color)
+        .replace("{{FONT_SIZE}}", &format!("{:.1}", font_size))
+        .replace("{{EXT}}", &clean_ext)
+}
+
+/// Generates and writes the SVG icon to `~/.local/share/flux/icons/extensions/<ext>.svg`.
+pub fn save_custom_extension_icon(
+    extension: &str,
+    accent_color: &str,
+    base_font_size: f64,
+) -> std::io::Result<PathBuf> {
+    let clean_ext = extension.trim_start_matches('.').to_ascii_lowercase();
+    let icons_dir = dirs::data_local_dir()
+        .map(|d| d.join("flux/icons/extensions"))
+        .unwrap_or_else(|| PathBuf::from("icons/extensions"));
+
+    fs::create_dir_all(&icons_dir)?;
+    let target_path = icons_dir.join(format!("{}.svg", clean_ext));
+
+    let svg_content = generate_mime_svg(&clean_ext, accent_color, base_font_size);
+    fs::write(&target_path, svg_content)?;
+
+    Ok(target_path)
+}
 
 /// Returns the system-registered MIME type for any extension using the FreeDesktop database.
 pub fn lookup_system_extension_mime(ext: &str) -> Option<String> {

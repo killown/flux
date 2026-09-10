@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="fold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <!-- Document Sheet -->
+  <path d="M 17 0 L 44 0 L 60 16 L 60 59 A 5 5 0 0 1 55 64 L 17 64 A 5 5 0 0 1 12 59 L 12 5 A 5 5 0 0 1 17 0 Z" fill="#e1e6ea"/>
+  <!-- Corner Fold -->
+  <path d="M 44 0 L 44 11 A 5 5 0 0 0 49 16 L 60 16 Z" fill="#b0bec5"/>
+  <!-- Extension Tag Box -->
+  <rect x="4" y="31.5" width="48" height="24" rx="2.5" fill="#b0bec5"/>
+  <rect x="4" y="30" width="48" height="24" rx="2.5" fill="{{ACCENT_COLOR}}"/>
+  <text x="28" y="47.5" font-family="Cantarell, sans-serif" font-size="{{FONT_SIZE}}" font-weight="bold" 
+        fill="#ffffff" text-anchor="middle">{{EXT}}</text>
+</svg>

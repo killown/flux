@@ -1813,8 +1813,43 @@ msgstr "Criar link simbólico a partir dos caminhos na área de transferência"
 msgid "Create hard link from clipboard paths"
 msgstr "Criar link físico a partir dos caminhos na área de transferência"
 
+#: src/ui/settings.rs:294
 msgid "Windows Executables"
 msgstr "Executáveis do Windows"
 
+#: src/ui/settings.rs:295 src/ui/settings.rs:372
 msgid "EXE"
 msgstr "EXE"
+
+#: src/ui/settings.rs:???
+msgid "Generated Extension Icons"
+msgstr "Ícones de Extensão Gerados"
+
+#: src/ui/settings.rs:???
+msgid "Settings for dynamically generated icons when system themes lack a dedicated icon"
+msgstr "Configurações para ícones gerados dinamicamente quando o tema do sistema não possui um ícone específico"
+
+#: src/ui/settings.rs:???
+msgid "Auto-Generate Icons"
+msgstr "Gerar Ícones Automaticamente"
+
+#: src/ui/settings.rs:???
+msgid "Synthesize SVG icons for unknown file extensions using template.svg"
+msgstr "Criar ícones SVG para extensões de arquivo desconhecidas usando template.svg"
+
+#: src/ui/settings.rs:???
+msgid "Accent Color"
+msgstr "Cor de Destaque"
+
+#: src/ui/settings.rs:???
+msgid "Hex color code for extension badges (e.g., '#1273b2')"
+msgstr "Código de cor hexadecimal para a etiqueta de extensão (ex.: '#1273b2')"
+
+#: src/ui/settings.rs:???
+msgid "Base Font Size"
+msgstr "Tamanho Base da Fonte"
+
+#: src/ui/settings.rs:???
+msgid "Base font scale for extension labels inside generated badges"
+msgstr "Escala base da fonte para os rótulos de extensão dentro dos emblemas gerados"
+

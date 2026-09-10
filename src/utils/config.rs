@@ -312,6 +312,9 @@ path = "~"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    auto_generate_mime_icons: true,
+                    auto_mime_accent_color: "#1273b2".to_string(),
+                    auto_mime_font_size: 9.0,
                     show_empty_dir_emblem: false,
                     default_icon_size: 128,
                     list_icon_size: 24,
@@ -655,6 +658,50 @@ pub fn get_icon_for_path_with_override(
             return icon.clone();
         }
         let icon = adw::gio::content_type_get_icon(&content_type);
+
+        // Check if the theme has an icon that IS NOT a generic fallback
+        let has_specific_theme_icon = if let Some(display) = gdk::Display::default() {
+            let theme = gtk::IconTheme::for_display(&display);
+            if let Some(themed) = icon.downcast_ref::<gio::ThemedIcon>() {
+                themed.names().iter().any(|name| {
+                    let name_str = name.as_str();
+                    // If it only matches generic fallbacks, consider it missing so we generate an SVG
+                    let is_generic = name_str == "text-x-generic"
+                        || name_str == "application-octet-stream"
+                        || name_str == "text-plain"
+                        || name_str == "unknown";
+
+                    !is_generic && theme.has_icon(name)
+                })
+            } else {
+                false
+            }
+        } else {
+            false
+        };
+
+        // If the theme only has a generic fallback and auto-generation is enabled, synthesize one
+        if !has_specific_theme_icon && !ext.is_empty() {
+            let cfg = load_config();
+            if cfg.ui.auto_generate_mime_icons {
+                if let Ok(generated_path) =
+                    crate::utils::extension_template::save_custom_extension_icon(
+                        ext,
+                        &cfg.ui.auto_mime_accent_color,
+                        cfg.ui.auto_mime_font_size,
+                    )
+                {
+                    crate::services::loader::invalidate_extension_icon_cache();
+                    if let Ok(generated_icon) =
+                        gio::Icon::for_string(&generated_path.to_string_lossy())
+                    {
+                        map.insert(content_type, generated_icon.clone());
+                        return generated_icon;
+                    }
+                }
+            }
+        }
+
         map.insert(content_type, icon.clone());
         icon
     })
