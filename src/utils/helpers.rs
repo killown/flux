@@ -496,17 +496,41 @@ impl FluxApp {
                 current = iter.next();
             }
 
-            if self.filter.is_empty() {
+            let query_lc = self.filter.to_lowercase();
+
+            if self.filter.is_empty() || self.is_content_searching {
                 // Scenario A: No filter. Map indices directly to the file list.
                 for idx in visual_indices {
                     if let Some(wrapper) = self.files.get(idx) {
                         selected_paths.push(wrapper.borrow().path.clone());
                     }
                 }
+            } else if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query_lc) {
+                let rest_clean = rest.trim().to_lowercase();
+                let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
+                let mut match_count = 0u32;
+
+                for i in 0..self.files.len() {
+                    if let Some(wrapper) = self.files.get(i) {
+                        let item = wrapper.borrow();
+                        let name_ok =
+                            rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
+                        if name_ok {
+                            let file_tags = crate::utils::xattr::read_tags(&item.path);
+                            let file_tags_lc: Vec<String> =
+                                file_tags.into_iter().map(|t| t.to_lowercase()).collect();
+                            if target_tags.iter().all(|req| file_tags_lc.contains(req)) {
+                                if visual_indices.contains(&match_count) {
+                                    selected_paths.push(item.path.clone());
+                                }
+                                match_count += 1;
+                            }
+                        }
+                    }
+                }
             } else {
                 // Scenario B: Filter is active. We must find which actual items
                 // correspond to the visual indices (e.g., visual index 0 is the 1st match).
-                let query_lc = self.filter.to_lowercase();
                 let mut match_count = 0;
 
                 for i in 0..self.files.len() {
@@ -552,15 +576,39 @@ impl FluxApp {
                 current = iter.next();
             }
 
-            if self.filter.is_empty() {
+            let query_lc = self.filter.to_lowercase();
+
+            if self.filter.is_empty() || self.is_content_searching {
                 for idx in visual_indices {
                     if let Some(wrapper) = self.files.get(idx) {
                         let item = wrapper.borrow();
                         result.push((item.path.clone(), item.is_dir));
                     }
                 }
+            } else if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query_lc) {
+                let rest_clean = rest.trim().to_lowercase();
+                let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
+                let mut match_count = 0u32;
+
+                for i in 0..self.files.len() {
+                    if let Some(wrapper) = self.files.get(i) {
+                        let item = wrapper.borrow();
+                        let name_ok =
+                            rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
+                        if name_ok {
+                            let file_tags = crate::utils::xattr::read_tags(&item.path);
+                            let file_tags_lc: Vec<String> =
+                                file_tags.into_iter().map(|t| t.to_lowercase()).collect();
+                            if target_tags.iter().all(|req| file_tags_lc.contains(req)) {
+                                if visual_indices.contains(&match_count) {
+                                    result.push((item.path.clone(), item.is_dir));
+                                }
+                                match_count += 1;
+                            }
+                        }
+                    }
+                }
             } else {
-                let query_lc = self.filter.to_lowercase();
                 let mut match_count = 0u32;
 
                 for i in 0..self.files.len() {
