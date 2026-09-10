@@ -17,12 +17,13 @@ use std::sync::atomic::Ordering;
 use std::sync::OnceLock;
 use std::time::SystemTime;
 
-static EXT_ICON_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
+static CUSTOM_EXT_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
+static GENERATED_EXT_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
 static RESOLVED_EXT_CACHE: OnceLock<RwLock<HashMap<String, Option<PathBuf>>>> = OnceLock::new();
 
-fn scan_extension_icons() -> HashSet<String> {
+fn scan_directory_extensions(subpath: &str) -> HashSet<String> {
     let mut set = HashSet::new();
-    if let Some(icons_dir) = dirs::data_local_dir().map(|d| d.join("flux/icons/extensions")) {
+    if let Some(icons_dir) = dirs::data_local_dir().map(|d| d.join(subpath)) {
         if let Ok(entries) = std::fs::read_dir(&icons_dir) {
             for entry in entries.flatten() {
                 if let Some(stem) = entry.path().file_stem().and_then(|s| s.to_str()) {
@@ -32,6 +33,14 @@ fn scan_extension_icons() -> HashSet<String> {
         }
     }
     set
+}
+
+fn scan_custom_extension_icons() -> HashSet<String> {
+    scan_directory_extensions("flux/icons/extensions/custom")
+}
+
+fn scan_generated_extension_icons() -> HashSet<String> {
+    scan_directory_extensions("flux/icons/extensions/generated")
 }
 
 /// Returns the newest modification time between template.svg and config.toml.
@@ -53,33 +62,43 @@ fn get_template_and_config_mtime() -> Option<SystemTime> {
     }
 }
 
-/// Returns the custom icon path for a given file extension if present in `~/.local/share/flux/icons/extensions/`.
-pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
+/// Returns the path to a user-customized extension icon from `icons/extensions/custom/`.
+pub fn get_custom_extension_icon_path(ext: &str) -> Option<PathBuf> {
     if ext.is_empty() {
         return None;
     }
     let ext_lower = ext.to_ascii_lowercase();
-
-    let resolved_map = RESOLVED_EXT_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
-
-    // Fast-path: check in-memory cache first
-    {
-        let read_guard = resolved_map.read();
-        if let Some(cached_result) = read_guard.get(&ext_lower) {
-            return cached_result.clone();
-        }
+    let cache_lock = CUSTOM_EXT_CACHE.get_or_init(|| RwLock::new(scan_custom_extension_icons()));
+    if !cache_lock.read().contains(&ext_lower) {
+        return None;
     }
 
-    let icons_dir = dirs::data_local_dir()?.join("flux/icons/extensions");
-    let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
+    let custom_dir = dirs::data_local_dir()?.join("flux/icons/extensions/custom");
+    for format in &["png", "svg", "webp", "jpg", "jpeg"] {
+        let candidate = custom_dir.join(format!("{}.{}", ext_lower, format));
+        if candidate.exists() {
+            return Some(candidate);
+        }
+    }
+    None
+}
+
+/// Returns the path to an auto-generated extension icon from `icons/extensions/generated/`.
+pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
+    if ext.is_empty() {
+        return None;
+    }
+    let ext_lower = ext.to_ascii_lowercase();
+    let cache_lock =
+        GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));
 
     let exists = cache_lock.read().contains(&ext_lower);
+    let gen_dir = dirs::data_local_dir()?.join("flux/icons/extensions/generated");
     let latest_source_mtime = get_template_and_config_mtime();
 
-    let result = if exists {
-        let mut found = None;
+    if exists {
         for format in &["png", "svg", "webp", "jpg", "jpeg"] {
-            let candidate = icons_dir.join(format!("{}.{}", ext_lower, format));
+            let candidate = gen_dir.join(format!("{}.{}", ext_lower, format));
             if candidate.exists() {
                 // If it's an SVG and template/config was modified AFTER this icon was generated, re-generate it
                 if *format == "svg" {
@@ -91,67 +110,82 @@ pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
                                 let cfg = crate::utils::load_config();
                                 if cfg.ui.auto_generate_mime_icons {
                                     if let Ok(rebuilt) =
-                                        crate::utils::extension_template::save_custom_extension_icon(
+                                        crate::utils::extension_template::save_generated_extension_icon(
                                             &ext_lower,
                                             &cfg.ui.auto_mime_accent_color,
                                             cfg.ui.auto_mime_font_size,
                                         )
                                     {
-                                        found = Some(rebuilt);
-                                        break;
+                                        return Some(rebuilt);
                                     }
                                 }
                             }
                         }
                     }
                 }
-                found = Some(candidate);
-                break;
+                return Some(candidate);
             }
         }
-        found
-    } else {
-        let cfg = crate::utils::load_config();
-        if cfg.ui.auto_generate_mime_icons {
-            let has_dedicated_mime =
-                match crate::utils::extension_template::lookup_system_extension_mime(&ext_lower) {
-                    Some(mime) => {
-                        mime != "application/octet-stream" && mime != "application/x-zerosize"
-                    }
-                    None => false,
-                };
+    }
 
-            if !has_dedicated_mime {
-                if let Ok(generated) = crate::utils::extension_template::save_custom_extension_icon(
-                    &ext_lower,
-                    &cfg.ui.auto_mime_accent_color,
-                    cfg.ui.auto_mime_font_size,
-                ) {
-                    cache_lock.write().insert(ext_lower.clone());
-                    Some(generated)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
+    None
+}
+
+/// Returns the effective icon path for an extension, prioritizing `custom/` over `generated/`,
+/// and generating into `generated/` on demand if absent.
+pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
+    if ext.is_empty() {
+        return None;
+    }
+    let ext_lower = ext.to_ascii_lowercase();
+
+    let resolved_map = RESOLVED_EXT_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
+    {
+        let read_guard = resolved_map.read();
+        if let Some(cached_result) = read_guard.get(&ext_lower) {
+            return cached_result.clone();
         }
+    }
+
+    if let Some(custom) = get_custom_extension_icon_path(&ext_lower) {
+        resolved_map.write().insert(ext_lower, Some(custom.clone()));
+        return Some(custom);
+    }
+
+    if let Some(gen) = get_generated_extension_icon_path(&ext_lower) {
+        resolved_map.write().insert(ext_lower, Some(gen.clone()));
+        return Some(gen);
+    }
+
+    let cfg = crate::utils::load_config();
+    let result = if cfg.ui.auto_generate_mime_icons {
+        crate::utils::extension_template::save_generated_extension_icon(
+            &ext_lower,
+            &cfg.ui.auto_mime_accent_color,
+            cfg.ui.auto_mime_font_size,
+        )
+        .ok()
+    } else {
+        None
     };
 
     resolved_map.write().insert(ext_lower, result.clone());
     result
 }
 
-/// Invalidates the extension icon lookup cache.
+/// Invalidates all extension icon lookup caches.
 pub fn invalidate_extension_icon_cache() {
-    let cache_lock = EXT_ICON_CACHE.get_or_init(|| RwLock::new(scan_extension_icons()));
-    *cache_lock.write() = scan_extension_icons();
+    let custom_lock = CUSTOM_EXT_CACHE.get_or_init(|| RwLock::new(scan_custom_extension_icons()));
+    *custom_lock.write() = scan_custom_extension_icons();
+
+    let gen_lock =
+        GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));
+    *gen_lock.write() = scan_generated_extension_icons();
 
     let resolved_map = RESOLVED_EXT_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
     resolved_map.write().clear();
 }
+
 /// Shared Rayon thread pool for directory listing work.
 ///
 /// Capped at 4 threads with 2 MiB stacks instead of Rayon's global default
@@ -502,7 +536,7 @@ impl FluxApp {
                             && (!is_dir || config_folder_icons.is_empty())
                         {
                             if !is_dir && !sort_ext.is_empty() {
-                                get_extension_icon_path(&sort_ext)
+                                get_custom_extension_icon_path(&sort_ext)
                                     .map(|p| p.to_string_lossy().into_owned())
                             } else {
                                 None
@@ -514,7 +548,7 @@ impl FluxApp {
                                     if is_dir {
                                         config_folder_icons.get(k).cloned()
                                     } else if !sort_ext.is_empty() {
-                                        get_extension_icon_path(&sort_ext)
+                                        get_custom_extension_icon_path(&sort_ext)
                                             .map(|p| p.to_string_lossy().into_owned())
                                     } else {
                                         None
@@ -852,6 +886,7 @@ impl FluxApp {
             }
         }
     }
+
     /// Populates the file grid with entries from the GTK recent-files registry.
     ///
     /// Parses `~/.local/share/recently-used.xbel` with the standard XML reader.
@@ -1039,7 +1074,7 @@ impl FluxApp {
                             .get(&item.target_path.to_string_lossy().to_string())
                             .cloned()
                     } else if !item.sort_ext.is_empty() {
-                        get_extension_icon_path(&item.sort_ext)
+                        get_custom_extension_icon_path(&item.sort_ext)
                             .map(|p| p.to_string_lossy().into_owned())
                     } else {
                         None

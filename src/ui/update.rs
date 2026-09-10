@@ -243,21 +243,20 @@ impl FluxApp {
                 sender.input(AppMsg::Refresh);
             }
             AppMsg::ResetExtensionIcon(ext) => {
-                let clean_ext = ext.trim().trim_start_matches('.').to_ascii_lowercase();
-                if !clean_ext.is_empty() {
-                    if let Some(ext_dir) =
-                        dirs::data_local_dir().map(|d| d.join("flux/icons/extensions"))
-                    {
-                        for format in &["png", "svg", "webp", "jpg", "jpeg"] {
-                            let candidate = ext_dir.join(format!("{}.{}", clean_ext, format));
-                            println!("Removing extension icon: {:?}", candidate);
-                            let _ = std::fs::remove_file(candidate);
-                        }
+                let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
+                if let Some(custom_dir) =
+                    dirs::data_local_dir().map(|d| d.join("flux/icons/extensions/custom"))
+                {
+                    for fmt in &["png", "svg", "webp", "jpg", "jpeg"] {
+                        let p = custom_dir.join(format!("{}.{}", clean_ext, fmt));
+                        let _ = std::fs::remove_file(p);
                     }
-                    crate::services::loader::invalidate_extension_icon_cache();
-                    sender.input(AppMsg::Refresh);
-                    sender.input(AppMsg::ShowToast(format!("Reset icon for .{}", clean_ext)));
                 }
+
+                crate::services::loader::invalidate_extension_icon_cache();
+                crate::utils::invalidate_themed_icon_cache();
+                self.files.clear();
+                self.load_path(self.current_path.clone(), &sender);
             }
             AppMsg::SetIconSize(val) => self.handle_set_icon_size(val, &sender),
             AppMsg::SetListIconSize(val) => self.handle_set_list_icon_size(val, &sender),
