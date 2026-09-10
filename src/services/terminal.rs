@@ -2657,40 +2657,38 @@ fn draw_terminal(area: &DrawingArea, cr: &Context, state: &TerminalState, width:
         abs_row += 1;
     }
 
-    if state.scroll_offset == 0 && state.cursor_visible {
-        if state.cursor_blink_visible {
-            let cursor_x = state.cursor_x;
-            let cursor_y = state.cursor_y;
-            if cursor_y < state.rows && cursor_x < state.cols {
-                let x_pos = cursor_x as f64 * char_width;
-                let y_pos = cursor_y as f64 * char_height;
+    if state.scroll_offset == 0 && state.cursor_visible && state.cursor_blink_visible {
+        let cursor_x = state.cursor_x;
+        let cursor_y = state.cursor_y;
+        if cursor_y < state.rows && cursor_x < state.cols {
+            let x_pos = cursor_x as f64 * char_width;
+            let y_pos = cursor_y as f64 * char_height;
 
-                if let Some(acc) = state.accent_color {
-                    cr.set_source_rgba(
-                        acc.red() as f64,
-                        acc.green() as f64,
-                        acc.blue() as f64,
-                        0.85,
-                    );
-                } else {
-                    cr.set_source_rgba(1.0, 1.0, 1.0, 0.85);
-                }
-
-                match state.cursor_style {
-                    CursorStyle::Block => {
-                        cr.rectangle(x_pos, y_pos, char_width, char_height);
-                    }
-                    CursorStyle::Underline => {
-                        let bar_h = (char_height * 0.1).max(2.0);
-                        cr.rectangle(x_pos, y_pos + char_height - bar_h, char_width, bar_h);
-                    }
-                    CursorStyle::Bar => {
-                        let bar_w = (char_width * 0.12).max(2.0);
-                        cr.rectangle(x_pos, y_pos, bar_w, char_height);
-                    }
-                }
-                cr.fill().unwrap();
+            if let Some(acc) = state.accent_color {
+                cr.set_source_rgba(
+                    acc.red() as f64,
+                    acc.green() as f64,
+                    acc.blue() as f64,
+                    0.85,
+                );
+            } else {
+                cr.set_source_rgba(1.0, 1.0, 1.0, 0.85);
             }
+
+            match state.cursor_style {
+                CursorStyle::Block => {
+                    cr.rectangle(x_pos, y_pos, char_width, char_height);
+                }
+                CursorStyle::Underline => {
+                    let bar_h = (char_height * 0.1).max(2.0);
+                    cr.rectangle(x_pos, y_pos + char_height - bar_h, char_width, bar_h);
+                }
+                CursorStyle::Bar => {
+                    let bar_w = (char_width * 0.12).max(2.0);
+                    cr.rectangle(x_pos, y_pos, bar_w, char_height);
+                }
+            }
+            cr.fill().unwrap();
         }
     }
 
