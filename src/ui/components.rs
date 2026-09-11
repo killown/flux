@@ -780,6 +780,11 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::GestureClick {
                 connect_released[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
                     if !is_label && gesture.current_button() == 1 {
+                        if let Some(row) = gesture.widget().and_downcast::<gtk::ListBoxRow>() {
+                            if let Some(lb) = row.parent().and_downcast::<gtk::ListBox>() {
+                                lb.select_row(Some(&row));
+                            }
+                        }
                         let _ = sender.output(SidebarMsg::Navigate(path.clone()));
                     }
                 }
