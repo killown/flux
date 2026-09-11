@@ -288,6 +288,10 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Hex color code used for the base page body of auto-generated extension icons (e.g. `"#e4e4e4"`).
+    pub auto_mime_body_color: String,
+    /// Hex color code used for the extension text label inside auto-generated icons (e.g. `"#ffffff"`).
+    pub auto_mime_font_color: String,
     /// Base font size used for auto-generated document icons.
     #[serde(default = "default_mime_font_size")]
     pub auto_mime_font_size: f64,
@@ -486,6 +490,8 @@ impl Default for UIConfig {
             auto_generate_mime_icons: true,
             auto_mime_accent_color: default_accent_color(),
             auto_mime_font_size: default_mime_font_size(),
+            auto_mime_body_color: "#e4e4e4".to_string(),
+            auto_mime_font_color: "#ffffff".to_string(),
         }
     }
 }
@@ -683,6 +689,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Sets the base page body hex color for auto-generated extension icons and triggers a cache invalidation.
+    SetAutoMimeBodyColor(String),
+    /// Sets the label font hex color for auto-generated extension icons and triggers a cache invalidation.
+    SetAutoMimeFontColor(String),
     /// Toggles automatic generation of SVG icons for unknown extensions.
     SetAutoGenerateMimeIcons(bool),
     /// Sets the accent color for auto-generated extension icons.

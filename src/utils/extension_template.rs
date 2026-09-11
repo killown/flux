@@ -5,21 +5,35 @@ use std::sync::OnceLock;
 
 static EXT_MIME_CACHE: OnceLock<HashMap<String, String>> = OnceLock::new();
 
-const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <defs>
-    <linearGradient id="fold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
-    </linearGradient>
-  </defs>
-  <!-- Document Sheet -->
-  <path d="M 14 6 L 38 6 L 50 18 L 50 58 L 14 58 Z" fill="#f6f6f6" stroke="#dedede" stroke-width="2"/>
-  <!-- Corner Fold -->
-  <path d="M 38 6 L 38 18 L 50 18 Z" fill="{{ACCENT_COLOR}}"/>
-  <!-- Extension Tag Box -->
-  <rect x="18" y="36" width="28" height="14" rx="3" fill="{{ACCENT_COLOR}}"/>
-  <text x="32" y="47" font-family="Cantarell, sans-serif" font-size="{{FONT_SIZE}}" font-weight="bold" 
-        fill="#ffffff" text-anchor="middle">{{EXT}}</text>
+const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1.1">
+  <!-- Outer soft shadow -->
+  <path style="opacity:0.2" d="M 12.75,5 C 11.2265,5 10,6.2488 10,7.8 v 50.4 c 0,1.55008 1.2265,2.8 2.75,2.8 h 38.5 C 52.7724,61 54,59.75008 54,58.2 V 7.8 C 54,6.2488 52.7724,5 51.25,5 Z"/>
+
+  <!-- Page body -->
+  <path style="fill:{{BODY_COLOR}}" d="M 12.75,4 C 11.2265,4 10,5.2488 10,6.8 v 50.4 c 0,1.55008 1.2265,2.8 2.75,2.8 h 38.5 C 52.7724,60 54,58.75008 54,57.2 V 6.8 C 54,5.2488 52.7724,4 51.25,4 Z"/>
+
+  <!-- Top edge highlight -->
+  <path style="opacity:0.2;fill:#ffffff" d="M 12.75,4 C 11.2265,4 10,5.24958 10,6.80078 L 10,7.80078 C 10,6.24958 11.2265,5 12.75,5 h 38.5 C 52.7724,5 54,6.24958 54,7.80078 L 54,6.80078 C 54,5.24958 52.7724,4 51.25,4 Z"/>
+
+  <!-- Content lines (subtle, above the accent) -->
+  <path style="opacity:0.5" d="m 20,20 v 2.5 h 24 v -2.5 z m 0,5 v 2.5 h 24 v -2.5 z m 0,5 v 2.5 h 24 v -2.5 z m 0,5 v 2.5 h 15 v -2.5 z"/>
+
+  <!-- Accent block at the bottom with subtle 3D -->
+  <path style="fill:{{ACCENT_COLOR}}" d="M 10,42 H 54 V 57.2 C 54,58.75008 52.7724,60 51.25,60 H 12.75 C 11.2265,60 10,58.75008 10,57.2 Z"/>
+  <path style="opacity:0.15;fill:#ffffff" d="M 10,42 H 54 V 43.2 H 10 Z"/>
+  <path style="opacity:0.15;fill:#000000" d="M 10,58.8 H 54 V 57.2 C 54,58.75008 52.7724,60 51.25,60 H 12.75 C 11.2265,60 10,58.75008 10,57.2 Z"/>
+
+  <!-- Extension text, nudged below center of the accent block -->
+  <text x="32" y="53.5"
+        font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="{{FONT_SIZE}}"
+        font-weight="700"
+        letter-spacing="0.3"
+        fill="{{FONT_COLOR}}"
+        text-anchor="middle"
+        dominant-baseline="central"
+        textLength="38"
+        lengthAdjust="spacingAndGlyphs">{{EXT}}</text>
 </svg>"##;
 
 /// Resolves `~/.local/share/flux/icons/template.svg`, auto-populating it with the default if absent.
@@ -41,7 +55,13 @@ fn get_or_create_template() -> String {
 }
 
 /// Generates an SVG string using the template and injected parameters.
-pub fn generate_mime_svg(extension: &str, accent_color: &str, base_font_size: f64) -> String {
+pub fn generate_mime_svg(
+    extension: &str,
+    accent_color: &str,
+    body_color: &str,
+    font_color: &str,
+    base_font_size: f64,
+) -> String {
     let clean_ext = extension.trim_start_matches('.').to_ascii_uppercase();
     let template = get_or_create_template();
 
@@ -54,6 +74,8 @@ pub fn generate_mime_svg(extension: &str, accent_color: &str, base_font_size: f6
 
     template
         .replace("{{ACCENT_COLOR}}", accent_color)
+        .replace("{{BODY_COLOR}}", body_color)
+        .replace("{{FONT_COLOR}}", font_color)
         .replace("{{FONT_SIZE}}", &format!("{:.1}", font_size))
         .replace("{{EXT}}", &clean_ext)
 }
@@ -63,6 +85,8 @@ pub fn generate_mime_svg(extension: &str, accent_color: &str, base_font_size: f6
 pub fn save_custom_extension_icon(
     extension: &str,
     accent_color: &str,
+    body_color: &str,
+    font_color: &str,
     base_font_size: f64,
 ) -> std::io::Result<PathBuf> {
     let clean_ext = extension.trim_start_matches('.').to_ascii_lowercase();
@@ -73,7 +97,13 @@ pub fn save_custom_extension_icon(
     fs::create_dir_all(&base_dir)?;
     let target_path = base_dir.join(format!("{}.svg", clean_ext));
 
-    let svg_content = generate_mime_svg(&clean_ext, accent_color, base_font_size);
+    let svg_content = generate_mime_svg(
+        &clean_ext,
+        accent_color,
+        body_color,
+        font_color,
+        base_font_size,
+    );
     fs::write(&target_path, svg_content)?;
 
     Ok(target_path)
@@ -83,6 +113,8 @@ pub fn save_custom_extension_icon(
 pub fn save_generated_extension_icon(
     extension: &str,
     accent_color: &str,
+    body_color: &str,
+    font_color: &str,
     base_font_size: f64,
 ) -> std::io::Result<PathBuf> {
     let clean_ext = extension.trim_start_matches('.').to_ascii_lowercase();
@@ -93,7 +125,13 @@ pub fn save_generated_extension_icon(
     fs::create_dir_all(&base_dir)?;
     let target_path = base_dir.join(format!("{}.svg", clean_ext));
 
-    let svg_content = generate_mime_svg(&clean_ext, accent_color, base_font_size);
+    let svg_content = generate_mime_svg(
+        &clean_ext,
+        accent_color,
+        body_color,
+        font_color,
+        base_font_size,
+    );
     fs::write(&target_path, svg_content)?;
 
     Ok(target_path)

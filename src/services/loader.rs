@@ -113,6 +113,8 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
                                         crate::utils::extension_template::save_generated_extension_icon(
                                             &ext_lower,
                                             &cfg.ui.auto_mime_accent_color,
+                                            &cfg.ui.auto_mime_body_color,
+                                            &cfg.ui.auto_mime_font_color,
                                             cfg.ui.auto_mime_font_size,
                                         )
                                     {
@@ -159,12 +161,20 @@ pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
 
     let cfg = crate::utils::load_config();
     let result = if cfg.ui.auto_generate_mime_icons {
-        crate::utils::extension_template::save_generated_extension_icon(
+        if let Ok(generated) = crate::utils::extension_template::save_generated_extension_icon(
             &ext_lower,
             &cfg.ui.auto_mime_accent_color,
+            &cfg.ui.auto_mime_body_color,
+            &cfg.ui.auto_mime_font_color,
             cfg.ui.auto_mime_font_size,
-        )
-        .ok()
+        ) {
+            let gen_lock =
+                GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));
+            gen_lock.write().insert(ext_lower.clone());
+            Some(generated)
+        } else {
+            None
+        }
     } else {
         None
     };

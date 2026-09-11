@@ -318,6 +318,8 @@ path = "~"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    auto_mime_body_color: "#e4e4e4".to_string(),
+                    auto_mime_font_color: "#ffffff".to_string(),
                     auto_generate_mime_icons: true,
                     auto_mime_accent_color: "#1273b2".to_string(),
                     auto_mime_font_size: 9.0,
@@ -748,21 +750,20 @@ pub fn get_icon_for_path_with_override(
         };
 
         if has_specific_theme_icon {
-            map.insert(content_type, icon.clone());
+            if !gen_key.is_empty() {
+                map.insert(gen_key, icon.clone());
+            } else {
+                map.insert(content_type, icon.clone());
+            }
             return icon;
         }
 
-        if !gen_key.is_empty() {
+        // Theme has no dedicated icon: generate ONLY if <= 9 chars
+        if !ext.is_empty() && ext.len() <= 9 {
             let cfg = load_config();
             if cfg.ui.auto_generate_mime_icons {
-                if let Ok(generated_path) =
-                    crate::utils::extension_template::save_generated_extension_icon(
-                        ext,
-                        &cfg.ui.auto_mime_accent_color,
-                        cfg.ui.auto_mime_font_size,
-                    )
+                if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext)
                 {
-                    crate::services::loader::invalidate_extension_icon_cache();
                     if let Ok(generated_icon) =
                         gio::Icon::for_string(&generated_path.to_string_lossy())
                     {
@@ -771,15 +772,16 @@ pub fn get_icon_for_path_with_override(
                     }
                 }
             }
-
-            // WARNING: do not cache this fallback under `content_type`.
-            // It would poison the slot for every other extension sharing
-            // the MIME. Do not merge with the tail insert.
-            return icon;
         }
 
-        // Extensionless only: safe to populate content_type here.
-        map.insert(content_type, icon.clone());
+        // Generic theme fallback when no dedicated or generated icon matched.
+        // NOTE: Cache under `gen_key` for extensioned files to avoid poisoning
+        // the shared `content_type` slot for other extensions.
+        if !gen_key.is_empty() {
+            map.insert(gen_key, icon.clone());
+        } else {
+            map.insert(content_type, icon.clone());
+        }
         icon
     })
 }
