@@ -310,7 +310,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                 },
 
-                add = &adw::PreferencesGroup {
+               add = &adw::PreferencesGroup {
                     set_title: &tr("Generated Extension Icons"),
                     set_description: Some(&tr("Settings for dynamically generated icons when system themes lack a dedicated icon")),
                     add = &adw::ActionRow {
@@ -340,6 +340,44 @@ impl SimpleComponent for SettingsWindow {
                                 if !val.trim().is_empty() {
                                     if let Some(s) = crate::model::SENDER.get() {
                                         let _ = s.send(AppMsg::SetAutoMimeAccentColor(val.trim().to_string()));
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Body Color"),
+                        set_subtitle: &tr("Hex color code for icon body (e.g., '#e4e4e4')"),
+                        #[watch]
+                        set_sensitive: model.config.ui.auto_generate_mime_icons,
+                        add_suffix = &gtk::Entry {
+                            set_text: &model.config.ui.auto_mime_body_color,
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("#e4e4e4"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                if !val.trim().is_empty() {
+                                    if let Some(s) = crate::model::SENDER.get() {
+                                        let _ = s.send(AppMsg::SetAutoMimeBodyColor(val.trim().to_string()));
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Font Color"),
+                        set_subtitle: &tr("Hex color code for extension text (e.g., '#ffffff')"),
+                        #[watch]
+                        set_sensitive: model.config.ui.auto_generate_mime_icons,
+                        add_suffix = &gtk::Entry {
+                            set_text: &model.config.ui.auto_mime_font_color,
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("#ffffff"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                if !val.trim().is_empty() {
+                                    if let Some(s) = crate::model::SENDER.get() {
+                                        let _ = s.send(AppMsg::SetAutoMimeFontColor(val.trim().to_string()));
                                     }
                                 }
                             }

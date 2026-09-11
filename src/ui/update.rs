@@ -224,6 +224,20 @@ impl FluxApp {
             // ==========================================
             // Icons & Metadata
             // ==========================================
+            AppMsg::SetAutoMimeBodyColor(color) => {
+                self.config.ui.auto_mime_body_color = color;
+                crate::utils::save_config(&self.config);
+                crate::services::loader::invalidate_extension_icon_cache();
+                crate::utils::invalidate_themed_icon_cache();
+                self.load_path(self.current_path.clone(), &sender);
+            }
+            AppMsg::SetAutoMimeFontColor(color) => {
+                self.config.ui.auto_mime_font_color = color;
+                crate::utils::save_config(&self.config);
+                crate::services::loader::invalidate_extension_icon_cache();
+                crate::utils::invalidate_themed_icon_cache();
+                self.load_path(self.current_path.clone(), &sender);
+            }
             AppMsg::SetAutoGenerateMimeIcons(enabled) => {
                 self.config.ui.auto_generate_mime_icons = enabled;
                 crate::utils::save_config(&self.config);
