@@ -48,11 +48,25 @@ impl FluxApp {
     /// Handles forward navigation in the directory history stack.
     pub fn handle_go_forward(&mut self, sender: &AsyncComponentSender<Self>) {
         self.reset_from_content_search();
-        if let Some(next) = self.forward_stack.pop() {
+
+        while let Some(next) = self.forward_stack.pop() {
+            let s = next.to_string_lossy();
+            let is_valid = s == "/"
+                || next.exists()
+                || s.starts_with("trash:///")
+                || s.starts_with("recent:///")
+                || crate::services::network::is_network_uri(&next)
+                || s.starts_with(crate::services::archive::ARCHIVE_URI);
+
+            if !is_valid {
+                continue;
+            }
+
             self.history.push(self.current_path.clone());
             if self.history.len() > constants::MAX_HISTORY {
                 self.history.remove(0);
             }
+
             if crate::services::network::is_network_uri(&next) {
                 self.current_path = next.clone();
                 self.sync_sidebar_selection();
@@ -62,11 +76,13 @@ impl FluxApp {
                 self.sync_sidebar_selection();
                 self.load_path(next, sender);
             }
+
             self.update_breadcrumbs();
             if let Some(entry) = self.header_path_entry.upgrade() {
                 entry.set_text(&self.current_path.to_string_lossy());
                 entry.set_position(entry.text_length() as i32);
             }
+            break;
         }
     }
 

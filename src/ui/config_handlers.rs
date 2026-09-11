@@ -221,6 +221,21 @@ impl FluxApp {
             "refresh" => self.config.shortcuts.refresh = val,
             "search" => self.config.shortcuts.search = val,
             "toggle_hidden" => self.config.shortcuts.toggle_hidden = val,
+            "home" => self.config.shortcuts.home = val,
+            "toggle_header" => self.config.shortcuts.toggle_header = val,
+            "root" => self.config.shortcuts.root = val,
+            "open_properties" => self.config.shortcuts.open_properties = val,
+            "change_icon" => self.config.shortcuts.change_icon = val,
+            "reset_icon" => self.config.shortcuts.reset_icon = val,
+            "cycle_sort" => self.config.shortcuts.cycle_sort = val,
+            "toggle_sort_order" => self.config.shortcuts.toggle_sort_order = val,
+            "toggle_folders_first" => self.config.shortcuts.toggle_folders_first = val,
+            "copy_path" => self.config.shortcuts.copy_path = val,
+            "create_symlink" => self.config.shortcuts.create_symlink = val,
+            "create_hardlink" => self.config.shortcuts.create_hardlink = val,
+            "settings" => self.config.shortcuts.settings = val,
+            "menu_editor" => self.config.shortcuts.menu_editor = val,
+            "quit" => self.config.shortcuts.quit = val,
             _ => {}
         }
         utils::save_config(&self.config);
@@ -383,6 +398,16 @@ impl FluxApp {
         }
         utils::save_config(&self.config);
         sender.input(AppMsg::Refresh);
+    }
+
+    pub fn handle_toggle_header_bar(&mut self) {
+        self.header_visible = !self.header_visible;
+        self.config.ui.header_visible = self.header_visible;
+        utils::save_config(&self.config);
+
+        if let Some(ref widget) = self.header_widget {
+            widget.set_visible(self.header_visible);
+        }
     }
 
     pub fn handle_toggle_current_folders_first(

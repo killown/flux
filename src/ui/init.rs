@@ -289,6 +289,8 @@ impl FluxApp {
             terminal_paned: None,
             sidebar_visible: config.ui.sidebar_visible,
             sidebar_widget: Some(sidebar_container.upcast()),
+            header_visible: config.ui.header_visible,
+            header_widget: None,
             recents_has_selection: false,
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),

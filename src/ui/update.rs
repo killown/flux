@@ -101,6 +101,7 @@ impl FluxApp {
             AppMsg::GoForward => {
                 self.stop_video_preview();
                 self.handle_go_forward(&sender);
+                sender.input(AppMsg::Refresh);
             }
             AppMsg::SyncPathEntry => {}
             AppMsg::PromptLocationDialog => FluxApp::show_location_dialog(self, sender),
@@ -953,6 +954,9 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::ToggleHeaderBar => {
+                self.handle_toggle_header_bar();
+            }
             AppMsg::ToggleCurrentFoldersFirst => {
                 self.handle_toggle_current_folders_first(&sender);
             }

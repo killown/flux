@@ -448,7 +448,7 @@ impl SimpleComponent for SettingsWindow {
                                 const SIZES: &[i32] = &[16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768];
                                 SIZES.iter()
                                     .position(|&sz| sz == model.config.ui.thumbnail_size)
-                                    .unwrap_or(10) as u32 // 256 is at index 10
+                                    .unwrap_or(10) as u32
                             },
                             connect_selected_notify => move |drop| {
                                 const SIZES: &[i32] = &[16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768];
@@ -1197,6 +1197,38 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Home"),
+                        set_subtitle: &tr("Navigate to user's home directory"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.home.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>Home"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("home".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Root"),
+                        set_subtitle: &tr("Navigate to filesystem root directory"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.root.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("slash"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("root".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Open"),
                         set_subtitle: &tr("Open selected file or directory"),
                         add_suffix = &gtk::Entry {
@@ -1249,11 +1281,91 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Properties"),
+                        set_subtitle: &tr("Inspect file properties or metadata"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.open_properties.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>i"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("open_properties".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Copy Path"),
+                        set_subtitle: &tr("Copy absolute path of selected items to clipboard"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.copy_path.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary><Shift>c"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("copy_path".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Create Symbolic Link"),
+                        set_subtitle: &tr("Create symlink from clipboard path"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.create_symlink.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary><Shift>v"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("create_symlink".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Create Hard Link"),
+                        set_subtitle: &tr("Create hardlink from clipboard path"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.create_hardlink.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary><Alt><Shift>v"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("create_hardlink".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
                 },
 
                 add = &adw::PreferencesGroup {
-                    set_title: &tr("View"),
-                    set_description: Some(&tr("Shortcuts for controlling the interface")),
+                    set_title: &tr("View & Customization"),
+                    set_description: Some(&tr("Shortcuts for controlling the interface and icons")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle Header Bar"),
+                        set_subtitle: &tr("Show or hide the top navigation toolbar"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.toggle_header.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("F6"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("toggle_header".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
                     add = &adw::ActionRow {
                         set_title: &tr("Refresh"),
                         set_subtitle: &tr("Reload current directory"),
@@ -1266,22 +1378,6 @@ impl SimpleComponent for SettingsWindow {
                                 let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetShortcut("refresh".to_string(), shortcut));
-                                }
-                            }
-                        }
-                    },
-                    add = &adw::ActionRow {
-                        set_title: &tr("Toggle Folders First"),
-                        set_subtitle: &tr("Toggle folders first placement in current directory"),
-                        add_suffix = &gtk::Entry {
-                            set_text: model.config.shortcuts.toggle_folders_first.as_deref().unwrap_or(""),
-                            set_valign: gtk::Align::Center,
-                            set_placeholder_text: Some("F7"),
-                            connect_changed => move |entry: &gtk::Entry| {
-                                let val = entry.text().to_string();
-                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
-                                if let Some(s) = crate::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetShortcut("toggle_folders_first".to_string(), shortcut));
                                 }
                             }
                         }
@@ -1314,6 +1410,139 @@ impl SimpleComponent for SettingsWindow {
                                 let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetShortcut("toggle_hidden".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle Folders First"),
+                        set_subtitle: &tr("Toggle folders first placement in current directory"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.toggle_folders_first.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("F7"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("toggle_folders_first".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Cycle Sort"),
+                        set_subtitle: &tr("Cycle through sorting modes"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.cycle_sort.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>s"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("cycle_sort".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle Sort Order"),
+                        set_subtitle: &tr("Toggle ascending/descending order"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.toggle_sort_order.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary><Shift>s"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("toggle_sort_order".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Change Icon"),
+                        set_subtitle: &tr("Open icon picker for the current folder"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.change_icon.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("F3"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("change_icon".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Reset Icon"),
+                        set_subtitle: &tr("Reset folder icon to system default"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.reset_icon.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>F3"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("reset_icon".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                },
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Application"),
+                    set_description: Some(&tr("Shortcuts for opening preferences and application tools")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Settings"),
+                        set_subtitle: &tr("Open preferences window"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.settings.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("F10"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("settings".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Menu Editor"),
+                        set_subtitle: &tr("Open context menu editor"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.menu_editor.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("F9"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("menu_editor".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Quit"),
+                        set_subtitle: &tr("Exit the application"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.quit.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>q"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("quit".to_string(), shortcut));
                                 }
                             }
                         }

@@ -1861,3 +1861,126 @@ msgstr "Alternar Pastas Primeiro"
 msgid "Toggle folders first placement in current directory"
 msgstr "Alternar exibição de pastas primeiro no diretório atual"
 
+#: src/ui/help.rs:???
+msgid "Navigate to home directory"
+msgstr "Navegar para a pasta pessoal"
+
+#: src/ui/help.rs:???
+msgid "Toggle header bar"
+msgstr "Mostrar/ocultar barra de cabeçalho"
+
+#: src/ui/settings.rs:???
+msgid "Home"
+msgstr "Início"
+
+#: src/ui/settings.rs:???
+msgid "Navigate to user's home directory"
+msgstr "Navegar para a pasta pessoal do usuário"
+
+#: src/ui/settings.rs:???
+msgid "Root"
+msgstr "Raiz"
+
+#: src/ui/settings.rs:???
+msgid "Navigate to filesystem root directory"
+msgstr "Navegar para o diretório raiz do sistema de arquivos"
+
+#: src/ui/settings.rs:???
+msgid "Properties"
+msgstr "Propriedades"
+
+#: src/ui/settings.rs:???
+msgid "Inspect file properties or metadata"
+msgstr "Inspecionar propriedades ou metadados do arquivo"
+
+#: src/ui/settings.rs:???
+msgid "Copy Path"
+msgstr "Copiar caminho"
+
+#: src/ui/settings.rs:???
+msgid "Copy absolute path of selected items to clipboard"
+msgstr "Copiar caminho absoluto dos itens selecionados para a área de transferência"
+
+#: src/ui/settings.rs:???
+msgid "Create Symbolic Link"
+msgstr "Criar link simbólico"
+
+#: src/ui/settings.rs:???
+msgid "Create symlink from clipboard path"
+msgstr "Criar link simbólico a partir do caminho na área de transferência"
+
+#: src/ui/settings.rs:???
+msgid "Create Hard Link"
+msgstr "Criar link físico"
+
+#: src/ui/settings.rs:???
+msgid "Create hardlink from clipboard path"
+msgstr "Criar link físico a partir do caminho na área de transferência"
+
+#: src/ui/settings.rs:???
+msgid "View & Customization"
+msgstr "Exibição e personalização"
+
+#: src/ui/settings.rs:???
+msgid "Shortcuts for controlling the interface and icons"
+msgstr "Atalhos para controlar a interface e ícones"
+
+#: src/ui/settings.rs:???
+msgid "Toggle Header Bar"
+msgstr "Alternar barra de cabeçalho"
+
+#: src/ui/settings.rs:???
+msgid "Show or hide the top navigation toolbar"
+msgstr "Mostrar ou ocultar a barra de ferramentas de navegação superior"
+
+#: src/ui/settings.rs:???
+msgid "Cycle Sort"
+msgstr "Alternar ordenação"
+
+#: src/ui/settings.rs:???
+msgid "Toggle Sort Order"
+msgstr "Alternar ordem de classificação"
+
+#: src/ui/settings.rs:???
+msgid "Toggle ascending/descending order"
+msgstr "Alternar ordem crescente/decrescente"
+
+#: src/ui/settings.rs:???
+msgid "Change Icon"
+msgstr "Alterar ícone"
+
+#: src/ui/settings.rs:???
+msgid "Open icon picker for the current folder"
+msgstr "Abrir seletor de ícones para a pasta atual"
+
+#: src/ui/settings.rs:???
+msgid "Reset Icon"
+msgstr "Restaurar ícone"
+
+#: src/ui/settings.rs:???
+msgid "Reset folder icon to system default"
+msgstr "Restaurar ícone da pasta para o padrão do sistema"
+
+#: src/ui/settings.rs:???
+msgid "Shortcuts for opening preferences and application tools"
+msgstr "Atalhos para abrir preferências e ferramentas do aplicativo"
+
+#: src/ui/settings.rs:???
+msgid "Settings"
+msgstr "Configurações"
+
+#: src/ui/settings.rs:???
+msgid "Open preferences window"
+msgstr "Abrir janela de preferências"
+
+#: src/ui/settings.rs:???
+msgid "Menu Editor"
+msgstr "Editor de menu"
+
+#: src/ui/settings.rs:???
+msgid "Quit"
+msgstr "Sair"
+
+#: src/ui/settings.rs:???
+msgid "Exit the application"
+msgstr "Sair do aplicativo"
