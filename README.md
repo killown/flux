@@ -14,22 +14,26 @@
 #CPU: AMD Ryzen 5 5600X (6 Cores, 12 Threads @ 3.7GHz Base / 4.6GHz Boost)
 #Methodology: High-precision time.perf_counter() differential, IPC event stream.
 
-~ ❯❯❯ python measure_app_speed.py flux-fm
-Startup Time: 113.18 ms    # 18-run mean (range: 110.73 - 117.08 ms, uncached)
-
 # --- GUI File Managers ---
+~ ❯❯❯ python measure_app_speed.py flux-fm
+Startup Time: 112.55 ms    # cold: 114.57 ms | warm: 112.48 ms (±1.94 ms, 29 runs)
+
 ~ ❯❯❯ python measure_app_speed.py pcmanfm
 Startup Time: 134.43 ms    # warm: 132.32 ms
+
 ~ ❯❯❯ python measure_app_speed.py spacefm
 Startup Time: 169.31 ms    # warm: 169.15 ms
+
 ~ ❯❯❯ python measure_app_speed.py thunar
 Startup Time: 289.60 ms    # warm: 182.37 ms
+
 ~ ❯❯❯ python measure_app_speed.py nautilus
 Startup Time: 742.84 ms    # warm: 449.54 ms
 
 # --- Terminal Emulators (Performance Baseline) ---
 ~ ❯❯❯ python measure_app_speed.py kitty
 Startup Time: 107.45 ms    # warm: 107.29 ms
+
 ~ ❯❯❯ python measure_app_speed.py alacritty
 Startup Time: 107.44 ms    # warm: 71.08 ms
 ```
@@ -189,6 +193,8 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `Ctrl+F3`                 | Reset custom icon                         |
 | `F4`                      | Toggle integrated terminal                |
 | `F5`                      | Refresh current directory                 |
+| `F6`                      | Toggle header bar                         |
+| `F7`                      | Toggle folders first                      |
 | `F9`                      | Visual menu editor                        |
 | `F10`                     | Open preferences                          |
 | `F12`                     | Advanced search dialog                    |
@@ -196,13 +202,13 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `:term` / `:.ext:term`    | Start content search                      |
 | `Esc`                     | Cancel content search                     |
 | `Ctrl+H`                  | Toggle hidden files                       |
+| `Ctrl+Home`               | Navigate to home directory                |
 | `Ctrl+L`                  | Go to location                            |
 | `Ctrl+Shift+L`            | Connect to server                         |
 | `Ctrl+T`                  | Edit tags for selection                   |
 | `Ctrl+Shift+T`            | Open tag navigator                        |
 | `Ctrl+S`                  | Cycle sort criteria                       |
 | `Ctrl+Shift+S`            | Toggle sort order                         |
-| `Shift+S`                 | Toggle folders first                      |
 | `Ctrl+A`                  | Select all                                |
 | `Ctrl+C / X / V`          | Copy / Cut / Paste                        |
 | `Ctrl+Shift+C`            | Copy absolute path of selected items      |
@@ -223,6 +229,7 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `Ctrl+Scroll`             | Resize grid items                         |
 | `Ctrl+Middle Click`       | Open folder in new window                 |
 | `Ctrl+Shift+F7`           | Open memory debug profiler                |
+| `Ctrl+Q`                  | Quit application                          |
 
 ---
 
