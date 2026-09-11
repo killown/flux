@@ -17,6 +17,7 @@ pub mod constants {
     pub const CHANGE_ICON: &str = "F3";
     pub const RESET_ICON: &str = "<ctrl>F3";
     pub const TOGGLE_TERMINAL: &str = "F4";
+    pub const TOGGLE_FOLDERS_FIRST: &str = "F7";
 }
 
 /// A collection of resolved GTK ShortcutTriggers.
@@ -41,6 +42,7 @@ pub struct KeyMap {
     pub copy_path: gtk::ShortcutTrigger,
     pub create_symlink: gtk::ShortcutTrigger,
     pub create_hardlink: gtk::ShortcutTrigger,
+    pub toggle_folders_first: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -64,6 +66,10 @@ impl KeyMap {
             copy_path: parse_trigger(&config.copy_path, "<Primary><Shift>c"),
             create_symlink: parse_trigger(&config.create_symlink, "<Primary><Shift>v"),
             create_hardlink: parse_trigger(&config.create_hardlink, "<Primary><Alt><Shift>v"),
+            toggle_folders_first: parse_trigger(
+                &config.toggle_folders_first,
+                constants::TOGGLE_FOLDERS_FIRST,
+            ),
         }
     }
 }

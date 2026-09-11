@@ -221,6 +221,9 @@ delete = "Delete"
 # Triggers a reload of the current directory.
 refresh = "F5"
 
+# Toggles folder grouping placement (first vs last) in the current directory.
+toggle_folders_first = "F7"
+
 # Focuses the search/filter entry bar.
 search = "<Primary>f"
 

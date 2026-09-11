@@ -139,6 +139,10 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }
+            gdk::Key::F7 => {
+                sender_cap.input(AppMsg::ToggleCurrentFoldersFirst);
+                glib::Propagation::Stop
+            }
             gdk::Key::F8 => {
                 sender_cap.input(AppMsg::ToggleSidebar);
                 glib::Propagation::Stop

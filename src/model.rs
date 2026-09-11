@@ -132,6 +132,8 @@ pub struct CustomAction {
 /// User-defined keyboard shortcuts for core application operations.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
+    /// Toggles folder grouping placement (first vs last) for the active folder.
+    pub toggle_folders_first: Option<String>,
     /// Copy absolute paths of selected items to clipboard.
     #[serde(default)]
     pub copy_path: Option<String>,
@@ -689,6 +691,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles whether folders are grouped first or last for the current directory.
+    ToggleCurrentFoldersFirst,
     /// Sets the base page body hex color for auto-generated extension icons and triggers a cache invalidation.
     SetAutoMimeBodyColor(String),
     /// Sets the label font hex color for auto-generated extension icons and triggers a cache invalidation.

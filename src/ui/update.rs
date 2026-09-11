@@ -953,6 +953,9 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::ToggleCurrentFoldersFirst => {
+                self.handle_toggle_current_folders_first(&sender);
+            }
             AppMsg::Refresh => {
                 self.active_video_preview = None;
                 self.folder_cache

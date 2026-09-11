@@ -294,7 +294,14 @@ impl FluxApp {
         }
 
         // ── Persistent per-folder view state ─────────────────────────────────────
-        let mut folders_first = self.config.ui.folders_first;
+        let mut folders_first = self
+            .config
+            .ui
+            .current_folders_first
+            .get(&path_str)
+            .copied()
+            .unwrap_or(self.config.ui.folders_first);
+
         if let Ok(Some((sort, rev, size, ff))) = self.state_db.get_view(&path) {
             self.sort_by = match sort.as_str() {
                 "Date" => SortBy::Date,
@@ -304,7 +311,12 @@ impl FluxApp {
             };
             self.sort_ascending = !rev;
             self.current_icon_size = size as i32;
-            folders_first = ff;
+
+            // If current_folders_first has an explicit override, prioritize it,
+            // otherwise use the state_db value.
+            if !self.config.ui.current_folders_first.contains_key(&path_str) {
+                folders_first = ff;
+            }
         } else {
             self.sort_by = self.config.ui.default_sort;
             self.sort_ascending = true;

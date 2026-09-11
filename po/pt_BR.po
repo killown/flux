@@ -1853,3 +1853,11 @@ msgstr "Tamanho Base da Fonte"
 msgid "Base font scale for extension labels inside generated badges"
 msgstr "Escala base da fonte para os rótulos de extensão dentro dos emblemas gerados"
 
+#: src/ui/settings.rs:???
+msgid "Toggle Folders First"
+msgstr "Alternar Pastas Primeiro"
+
+#: src/ui/settings.rs:???
+msgid "Toggle folders first placement in current directory"
+msgstr "Alternar exibição de pastas primeiro no diretório atual"
+

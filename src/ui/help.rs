@@ -220,6 +220,13 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Toggle folders first in current directory"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_folders_first.clone(), "F7"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Search files"),
                         add_suffix = &gtk::Label {
                             set_label: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
