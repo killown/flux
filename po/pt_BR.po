@@ -1984,3 +1984,39 @@ msgstr "Sair"
 #: src/ui/settings.rs:???
 msgid "Exit the application"
 msgstr "Sair do aplicativo"
+
+#: src/ui/help.rs:48
+msgid "Navigation Shortcuts"
+msgstr "Atalhos de navegação"
+
+#: src/ui/help.rs:107
+msgid "Quick List"
+msgstr "Lista rápida"
+
+#: src/ui/help.rs:111
+msgid "Quick List Shortcuts"
+msgstr "Atalhos da lista rápida"
+
+#: src/ui/help.rs:152
+msgid "Open advanced search dialog"
+msgstr "Abrir diálogo de pesquisa avançada"
+
+#: src/ui/help.rs:188
+msgid "System & View Shortcuts"
+msgstr "Atalhos de sistema e exibição"
+
+#: src/ui/help.rs:232
+msgid "Toggle folders first in current directory"
+msgstr "Alternar pastas primeiro no diretório atual"
+
+#: src/ui/help.rs:246
+msgid "Resize grid items"
+msgstr "Redimensionar itens da grade"
+
+#: src/ui/help.rs:253
+msgid "Open folder in new window"
+msgstr "Abrir pasta em nova janela"
+
+#: src/ui/help.rs:324
+msgid "Application Shortcuts"
+msgstr "Atalhos do aplicativo"
