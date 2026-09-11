@@ -13,6 +13,22 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 
+/// Parses a string representation of a pointer button into its corresponding numeric identifier.
+///
+/// Maps standard identifiers (such as button/pointer names or back/forward aliases)
+/// to their numerical button values (e.g., 8 for Back and 9 for Forward).
+pub fn parse_mouse_button(raw: &str) -> Option<u32> {
+    let s = raw.trim().to_lowercase();
+    match s.as_str() {
+        "button8" | "pointer8" | "mouse8" | "back" => Some(8),
+        "button9" | "pointer9" | "mouse9" | "forward" => Some(9),
+        "button2" | "pointer2" | "mouse2" | "middle" => Some(2),
+        "button1" | "pointer1" | "mouse1" | "left" => Some(1),
+        "button3" | "pointer3" | "mouse3" | "right" => Some(3),
+        _ => None,
+    }
+}
+
 impl FluxApp {
     /// Returns true if the current path is inside an archive that supports full extraction.
     pub fn can_extract_current_archive(&self) -> bool {

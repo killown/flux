@@ -978,6 +978,42 @@ impl SimpleAsyncComponent for FluxApp {
             &model.terminal.drawing_area,
         );
 
+        // ── Mouse Navigation (Side Buttons 8 & 9) ──
+        {
+            let mouse_nav = gtk::GestureClick::new();
+            mouse_nav.set_button(0);
+
+            let s_back = sender.clone();
+            let s_forward = sender.clone();
+            let back_btn = model
+                .config
+                .shortcuts
+                .back
+                .as_deref()
+                .and_then(crate::utils::helpers::parse_mouse_button)
+                .unwrap_or(8);
+            let forward_btn = model
+                .config
+                .shortcuts
+                .forward
+                .as_deref()
+                .and_then(crate::utils::helpers::parse_mouse_button)
+                .unwrap_or(9);
+
+            mouse_nav.connect_pressed(move |gesture, _, _, _| {
+                let btn = gesture.current_button();
+                if btn == back_btn {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    s_back.input(AppMsg::GoBack);
+                } else if btn == forward_btn {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    s_forward.input(AppMsg::GoForward);
+                }
+            });
+
+            root.add_controller(mouse_nav);
+        }
+
         root.set_default_size(
             model.config.ui.startup_window_width,
             model.config.ui.startup_window_height,
