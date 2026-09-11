@@ -321,6 +321,7 @@ path = "~"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    header_visible: true,
                     auto_mime_body_color: "#e4e4e4".to_string(),
                     auto_mime_font_color: "#ffffff".to_string(),
                     auto_generate_mime_icons: true,

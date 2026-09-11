@@ -69,7 +69,10 @@ impl SimpleAsyncComponent for FluxApp {
                         set_hexpand: true,
 
                         /// Top-level navigation and state toolbar.
+                        #[name = "header_bar"]
                         adw::HeaderBar {
+                            #[watch]
+                            set_visible: model.header_visible,
                             #[watch]
                             set_show_start_title_buttons: false,
                             #[watch]
@@ -805,6 +808,8 @@ impl SimpleAsyncComponent for FluxApp {
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
         let widgets = view_output!();
+
+        model.header_widget = Some(widgets.header_bar.clone().upcast());
 
         let main_menu = Self::build_main_menu();
         widgets.main_menu_popover.set_menu_model(Some(&main_menu));

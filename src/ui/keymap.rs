@@ -2,6 +2,7 @@ use crate::model::ShortcutsConfig;
 
 /// Hardcoded fallback shortcuts.
 pub mod constants {
+    pub const HOME: &str = "<ctrl>Home";
     pub const QUIT: &str = "<ctrl>q";
     pub const OPEN: &str = "Return";
     pub const DELETE: &str = "Delete";
@@ -17,6 +18,7 @@ pub mod constants {
     pub const CHANGE_ICON: &str = "F3";
     pub const RESET_ICON: &str = "<ctrl>F3";
     pub const TOGGLE_TERMINAL: &str = "F4";
+    pub const TOGGLE_HEADER: &str = "F6";
     pub const TOGGLE_FOLDERS_FIRST: &str = "F7";
 }
 
@@ -43,6 +45,8 @@ pub struct KeyMap {
     pub create_symlink: gtk::ShortcutTrigger,
     pub create_hardlink: gtk::ShortcutTrigger,
     pub toggle_folders_first: gtk::ShortcutTrigger,
+    pub toggle_header: gtk::ShortcutTrigger,
+    pub home: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -70,6 +74,8 @@ impl KeyMap {
                 &config.toggle_folders_first,
                 constants::TOGGLE_FOLDERS_FIRST,
             ),
+            toggle_header: parse_trigger(&config.toggle_header, constants::TOGGLE_HEADER),
+            home: parse_trigger(&config.home, constants::HOME),
         }
     }
 }

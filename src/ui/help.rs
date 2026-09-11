@@ -63,6 +63,13 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Navigate to home directory"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.home.clone(), "Ctrl + Home"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Open selected file or directory"),
                         add_suffix = &gtk::Label {
                             set_label: &model.format_shortcut(model.config.shortcuts.open.clone(), "Enter"),
@@ -209,6 +216,13 @@ impl SimpleComponent for HelpWindow {
                         set_title: &tr("Toggle embedded terminal"),
                         add_suffix = &gtk::Label {
                             set_label: "F4",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle header bar"),
+                        add_suffix = &gtk::Label {
+                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_header.clone(), "F6"),
                             add_css_class: "keycap",
                         },
                     },

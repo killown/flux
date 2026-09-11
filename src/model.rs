@@ -132,6 +132,10 @@ pub struct CustomAction {
 /// User-defined keyboard shortcuts for core application operations.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
+    /// Key combination to navigate to the user's home directory.
+    pub home: Option<String>,
+    /// Key combination to toggle the visibility of the header bar.
+    pub toggle_header: Option<String>,
     /// Toggles folder grouping placement (first vs last) for the active folder.
     pub toggle_folders_first: Option<String>,
     /// Copy absolute paths of selected items to clipboard.
@@ -290,6 +294,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Persisted across sessions, whether the header bar is visible. Defaults to `true`.
+    #[serde(default = "default_true")]
+    pub header_visible: bool,
     /// Hex color code used for the base page body of auto-generated extension icons (e.g. `"#e4e4e4"`).
     pub auto_mime_body_color: String,
     /// Hex color code used for the extension text label inside auto-generated icons (e.g. `"#ffffff"`).
@@ -494,6 +501,7 @@ impl Default for UIConfig {
             auto_mime_font_size: default_mime_font_size(),
             auto_mime_body_color: "#e4e4e4".to_string(),
             auto_mime_font_color: "#ffffff".to_string(),
+            header_visible: true,
         }
     }
 }
@@ -548,6 +556,10 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Whether the top header bar is currently visible.
+    pub header_visible: bool,
+    /// Weak or cloned handle to the header bar widget for toggling visibility dynamically.
+    pub header_widget: Option<gtk::Widget>,
     /// Path of the video currently playing inline in the selected card.
     pub active_video_preview: Option<PathBuf>,
     /// Active GLib timeout source ID used to debounce rapid selection changes for video previews.
@@ -691,6 +703,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the visibility state of the top header bar.
+    ToggleHeaderBar,
     /// Toggles whether folders are grouped first or last for the current directory.
     ToggleCurrentFoldersFirst,
     /// Sets the base page body hex color for auto-generated extension icons and triggers a cache invalidation.

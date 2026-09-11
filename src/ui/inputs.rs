@@ -139,6 +139,27 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }
+            gdk::Key::Home if is_ctrl => {
+                if terminal_area_cap.has_focus() {
+                    return glib::Propagation::Proceed;
+                }
+                let is_editable = _ctrl
+                    .widget()
+                    .and_then(|w| w.root())
+                    .and_then(|r| r.focus())
+                    .map(|f| f.type_().is_a(gtk::Editable::static_type()))
+                    .unwrap_or(false);
+                if is_editable {
+                    return glib::Propagation::Proceed;
+                }
+                let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+                sender_cap.input(AppMsg::Navigate(home_dir));
+                glib::Propagation::Stop
+            }
+            gdk::Key::F6 => {
+                sender_cap.input(AppMsg::ToggleHeaderBar);
+                glib::Propagation::Stop
+            }
             gdk::Key::F7 => {
                 sender_cap.input(AppMsg::ToggleCurrentFoldersFirst);
                 glib::Propagation::Stop
@@ -294,6 +315,15 @@ pub fn setup_controllers(
         Some(gtk::ShortcutTrigger::parse_string("F4").unwrap()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_terminal.input(AppMsg::ToggleTerminal);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_header = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.toggle_header.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_header.input(AppMsg::ToggleHeaderBar);
             glib::Propagation::Stop
         })),
     ));
