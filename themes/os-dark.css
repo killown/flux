@@ -63,9 +63,9 @@ headerbar togglebutton:active {
 
 /* ── Sidebar & Navigation Tree ── */
 .sidebar {
-  background-color: @window_bg_color;
+  background-color: color-mix(in srgb, @window_bg_color 20%, #000000 20%);
   border: none;
-  box-shadow: inset -1px 0 0 0 rgba(255, 255, 255, 0.05);
+  box-shadow: inset -1px 0 0 0 rgba(255, 255, 255, 0.12);
 }
 
 .sidebar-row:not(.sidebar-section) {
@@ -192,7 +192,7 @@ button.eject-button:active {
 /* ── Grid & List Item Views ── */
 gridview,
 listview {
-  background-color: transparent;
+  background-color: @window_bg_color;
   padding: 16px 24px;
 }
 
@@ -208,7 +208,7 @@ gridview child {
   margin: 6px;
   border: none;
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
     0 2px 8px var(--shadow);
   transition:
     background-color 200ms ease,
