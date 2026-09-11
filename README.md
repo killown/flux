@@ -4,7 +4,7 @@
 ![GTK4](https://img.shields.io/badge/GTK-4-green?logo=gnome)
 ![License](https://img.shields.io/badge/License-GPLv3-blue.svg)
 
-**Flux** is a minimalist, high-performance file manager for Linux built for those who love the clean look of GNOME but want a tool that stays out of their way.
+**Flux** is the fastest modern GUI file manager on Linux. It combines a minimalist, high-performance architecture with the sleek aesthetic of Libadwaita, delivering a native desktop experience with zero compromise on speed.
 
 <img width="1940" height="1056" alt="flux-screenshot" src="https://github.com/user-attachments/assets/bdcdead3-883b-4a29-9148-9b16278f9f5f" />
 
@@ -15,16 +15,29 @@
 #Methodology: High-precision time.perf_counter() differential, IPC event stream.
 
 ~ ❯❯❯ python measure_app_speed.py flux-fm
-Startup Time: 121.52 ms
+Startup Time: 113.18 ms    # 18-run mean (range: 110.73 - 117.08 ms, uncached)
+
+# --- GUI File Managers ---
+~ ❯❯❯ python measure_app_speed.py pcmanfm
+Startup Time: 134.43 ms    # warm: 132.32 ms
+~ ❯❯❯ python measure_app_speed.py spacefm
+Startup Time: 169.31 ms    # warm: 169.15 ms
 ~ ❯❯❯ python measure_app_speed.py thunar
-Startup Time: 250.01 ms   # warm: 189.40 ms
+Startup Time: 289.60 ms    # warm: 182.37 ms
 ~ ❯❯❯ python measure_app_speed.py nautilus
-Startup Time: 742.84 ms   # warm: 449.54 ms
+Startup Time: 742.84 ms    # warm: 449.54 ms
+
+# --- Terminal Emulators (Performance Baseline) ---
+~ ❯❯❯ python measure_app_speed.py kitty
+Startup Time: 107.45 ms    # warm: 107.29 ms
+~ ❯❯❯ python measure_app_speed.py alacritty
+Startup Time: 107.44 ms    # warm: 71.08 ms
 ```
 
-- **Zero Clutter:** A smart dynamic header shows exactly what you need.
-- **Asynchronous Heart:** Throttled async pipeline for thumbnails and directory loads, never freezes.
-- **Shortcut First:** Designed for keyboard-driven power users.
+- **Unrivaled Cold Launch:** The fastest modern GUI file manager on Linux-outperforming traditional lightweight C benchmarks like PCManFM and Thunar while launching up faster than mainstream alternatives, with zero background pre-warming daemons.
+- **Asynchronous Heart:** Driven by a non-blocking Tokio and Rayon pipeline, chunked directory loading and background thumbnail workers ensure the UI thread never stutters or drops frames.
+- **Zero Clutter:** A sleek, native Libadwaita interface with a dynamic header and adaptable grid/list views that prioritize your files over bulky window chrome.
+- **Shortcut First:** Built from the ground up for keyboard-centric workflows, featuring vim-like speed, editable breadcrumb navigation, and an embedded VTE terminal that syncs directories on the fly.
 
 ---
 
