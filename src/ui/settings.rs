@@ -310,7 +310,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                 },
 
-               add = &adw::PreferencesGroup {
+                add = &adw::PreferencesGroup {
                     set_title: &tr("Generated Extension Icons"),
                     set_description: Some(&tr("Settings for dynamically generated icons when system themes lack a dedicated icon")),
                     add = &adw::ActionRow {
@@ -1266,6 +1266,22 @@ impl SimpleComponent for SettingsWindow {
                                 let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
                                 if let Some(s) = crate::model::SENDER.get() {
                                     let _ = s.send(AppMsg::SetShortcut("refresh".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle Folders First"),
+                        set_subtitle: &tr("Toggle folders first placement in current directory"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.toggle_folders_first.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("F7"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("toggle_folders_first".to_string(), shortcut));
                                 }
                             }
                         }

@@ -385,6 +385,42 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    pub fn handle_toggle_current_folders_first(
+        &mut self,
+        sender: &relm4::AsyncComponentSender<Self>,
+    ) {
+        let key = self.current_path.to_string_lossy().to_string();
+        let current_val = self
+            .config
+            .ui
+            .current_folders_first
+            .get(&key)
+            .copied()
+            .unwrap_or(self.config.ui.folders_first);
+
+        let new_val = !current_val;
+        self.config.ui.current_folders_first.insert(key, new_val);
+
+        let sort_col = match self.sort_by {
+            crate::model::SortBy::Name => "Name",
+            crate::model::SortBy::Date => "Date",
+            crate::model::SortBy::Size => "Size",
+            crate::model::SortBy::Type => "Type",
+        };
+
+        let _ = self.state_db.save_view(
+            &self.current_path,
+            sort_col,
+            !self.sort_ascending,
+            self.current_icon_size as u32,
+            new_val,
+        );
+
+        crate::utils::save_config(&self.config);
+        self.folder_cache.remove(&self.current_path);
+        self.load_path(self.current_path.clone(), sender);
+    }
+
     pub fn handle_set_show_recents(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.show_recents = val;
         utils::save_config(&self.config);
