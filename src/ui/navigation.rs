@@ -13,8 +13,11 @@ impl FluxApp {
             self.forward_stack.push(self.current_path.clone());
             if crate::services::network::is_network_uri(&prev) {
                 self.current_path = prev.clone();
+                self.sync_sidebar_selection();
                 self.load_network(&prev.to_string_lossy(), None, sender.clone());
             } else {
+                self.current_path = prev.clone();
+                self.sync_sidebar_selection();
                 self.load_path(prev, sender);
             }
             self.update_breadcrumbs();
@@ -27,8 +30,11 @@ impl FluxApp {
             self.forward_stack.push(self.current_path.clone());
             if crate::services::network::is_network_uri(&parent_path) {
                 self.current_path = parent_path.clone();
+                self.sync_sidebar_selection();
                 self.load_network(&parent_path.to_string_lossy(), None, sender.clone());
             } else {
+                self.current_path = parent_path.clone();
+                self.sync_sidebar_selection();
                 self.load_path(parent_path, sender);
             }
             self.update_breadcrumbs();
@@ -49,8 +55,11 @@ impl FluxApp {
             }
             if crate::services::network::is_network_uri(&next) {
                 self.current_path = next.clone();
+                self.sync_sidebar_selection();
                 self.load_network(&next.to_string_lossy(), None, sender.clone());
             } else {
+                self.current_path = next.clone();
+                self.sync_sidebar_selection();
                 self.load_path(next, sender);
             }
             self.update_breadcrumbs();
@@ -127,6 +136,8 @@ impl FluxApp {
         if crate::services::network::is_network_uri(&path) {
             let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
+            self.sync_sidebar_selection();
+
             self.recent_stack.retain(|p| p != &path && p != &old_path);
             self.recent_stack.push_front(old_path.clone());
             self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
@@ -160,6 +171,8 @@ impl FluxApp {
                 crate::services::archive::parse_archive_uri(&path_str)
             {
                 let old_path = std::mem::replace(&mut self.current_path, path.clone());
+
+                self.sync_sidebar_selection();
 
                 self.recent_stack.retain(|p| p != &path && p != &old_path);
                 self.recent_stack.push_front(old_path.clone());
@@ -218,6 +231,8 @@ impl FluxApp {
             self.archive_locked = false;
             let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
+            self.sync_sidebar_selection();
+
             if path.is_absolute() {
                 let _ = std::env::set_current_dir(&path);
             }
@@ -268,6 +283,8 @@ impl FluxApp {
             &mut self.current_path,
             crate::services::archive::build_archive_uri(&archive_path, ""),
         );
+
+        self.sync_sidebar_selection();
 
         self.recent_stack
             .retain(|p| p != &self.current_path && p != &old_path);

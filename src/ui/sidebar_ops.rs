@@ -33,6 +33,48 @@ impl FluxApp {
         self.refresh_sidebar();
     }
 
+    /// Immediately selects the sidebar row matching `current_path`, without waiting
+    /// for the folder load to complete. This prevents the hover animation from
+    /// staying active during slow directory loads (e.g. 500 wallpapers).
+    pub fn sync_sidebar_selection(&self) {
+        let listbox = match self.sidebar.widget().downcast_ref::<gtk::ListBox>() {
+            Some(lb) => lb.clone(),
+            None => return,
+        };
+
+        let current = &self.current_path;
+
+        let mut match_idx: Option<i32> = None;
+        for i in 0..self.sidebar.len() {
+            if let Some(place) = self.sidebar.get(i) {
+                if place.is_section_label {
+                    continue;
+                }
+                if &place.path == current {
+                    match_idx = Some(i as i32);
+                    break;
+                }
+                if let (Ok(a), Ok(b)) = (place.path.canonicalize(), current.canonicalize()) {
+                    if a == b {
+                        match_idx = Some(i as i32);
+                        break;
+                    }
+                }
+            }
+        }
+
+        match match_idx {
+            Some(idx) => {
+                if let Some(row) = listbox.row_at_index(idx) {
+                    listbox.select_row(Some(&row));
+                }
+            }
+            None => {
+                listbox.unselect_all();
+            }
+        }
+    }
+
     pub fn handle_system_mounts_ready(&mut self, mounts: Vec<(String, std::path::PathBuf)>) {
         let mut guard = self.sidebar.guard();
 
