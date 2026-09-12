@@ -229,6 +229,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         preview_stack.add_named(&video_widget, Some("video"));
         preview_stack.set_visible_child_name("icon");
 
+        let grab_timer = std::rc::Rc::new(std::cell::Cell::new(None::<glib::SourceId>));
+
         relm4::view! {
                             #[root]
                             root = gtk::Box {
@@ -243,11 +245,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                     FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
                                 },
 
-                                // Sets hand/grabbing cursor immediately on mouse press, restores on release or cancel
+                                // Sets hand/grabbing cursor on sustained mouse press, restores on release or cancel
                                 add_controller = gtk::GestureClick {
                                     set_button: 1,
                                     set_propagation_phase: gtk::PropagationPhase::Capture,
-                                    connect_pressed => |gesture, _, _, _| {
+                                    connect_pressed[timer = grab_timer.clone()] => move |gesture, _, _, _| {
                                         if let Some(event) = gesture.current_event() {
                                             if let Some(device) = event.device() {
                                                 if device.source() == gdk::InputSource::Touchscreen {
@@ -255,16 +257,35 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                                 }
                                             }
                                         }
+
+                                        if let Some(id) = timer.take() {
+                                            id.remove();
+                                        }
+
                                         if let Some(widget) = gesture.widget() {
-                                            if let Some(native) = widget.native() {
-                                                if let Some(surface) = native.surface() {
-                                                    surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
-                                                }
-                                            }
-                                            widget.set_cursor_from_name(Some("grabbing"));
+                                            let widget_weak = widget.downgrade();
+                                            let timer_clone = timer.clone();
+                                            let id = glib::timeout_add_local_once(
+                                                std::time::Duration::from_millis(300),
+                                                move || {
+                                                    timer_clone.set(None);
+                                                    if let Some(w) = widget_weak.upgrade() {
+                                                        if let Some(native) = w.native() {
+                                                            if let Some(surface) = native.surface() {
+                                                                surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
+                                                            }
+                                                        }
+                                                        w.set_cursor_from_name(Some("grabbing"));
+                                                    }
+                                                },
+                                            );
+                                            timer.set(Some(id));
                                         }
                                     },
-                                    connect_released[single_click] => move |gesture, _, _, _| {
+                                    connect_released[single_click, timer = grab_timer.clone()] => move |gesture, _, _, _| {
+                                        if let Some(id) = timer.take() {
+                                            id.remove();
+                                        }
                                         if let Some(widget) = gesture.widget() {
                                             if let Some(native) = widget.native() {
                                                 if let Some(surface) = native.surface() {
@@ -278,7 +299,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                             }
                                         }
                                     },
-                                    connect_cancel[single_click] => move |gesture, _| {
+                                    connect_cancel[single_click, timer = grab_timer] => move |gesture, _| {
+                                        if let Some(id) = timer.take() {
+                                            id.remove();
+                                        }
                                         if let Some(widget) = gesture.widget() {
                                             if let Some(native) = widget.native() {
                                                 if let Some(surface) = native.surface() {
