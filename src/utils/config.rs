@@ -176,7 +176,8 @@ default_sort = "Name"
 show_hidden_by_default = false
 folders_first = true
 theme = "default"
-show_csd = false
+show_csd = true
+window_controls_left = true
 start_maximized = true
 show_thumbnails = true
 
@@ -230,9 +231,20 @@ search = "<Primary>f"
 # Toggles the visibility of hidden files (dotfiles).
 toggle_hidden = "<Primary>h"
 
-
 [[sidebar]]
 name = "Default"
+kind = "label"
+icon = ""
+path = ""
+
+[[sidebar]]
+name = "Flux Config DIR"
+icon = "folder-documents-symbolic"
+path = "~/.config/flux"
+
+
+[[sidebar]]
+name = "Shortcuts"
 kind = "label"
 icon = ""
 path = ""
@@ -246,11 +258,6 @@ path = "tags://"
 name = "Search"
 icon = "system-search-symbolic"
 path = "search://"
-
-[[sidebar]]
-name = "Home"
-icon = "user-home-symbolic"
-path = "~"
 "#,
         );
 
