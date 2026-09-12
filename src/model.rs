@@ -58,7 +58,7 @@ fn default_accent_color() -> String {
 }
 
 fn default_mime_font_size() -> f64 {
-    9.0
+    13.0
 }
 
 /// Type alias for the conflict resolution channel used in file copy/move operations.
