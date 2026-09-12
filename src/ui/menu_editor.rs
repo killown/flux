@@ -851,7 +851,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         &entry.command,
     );
     let cmd_hint = adw::ActionRow::builder()
-        .title("builtin::copy │ builtin::cut │ builtin::paste │ builtin::rename │ builtin::delete │ builtin::new_folder │ builtin::new_file │ builtin::add_to_quick_list │ builtin::set_custom_icon │ builtin::reset_custom_icon │ builtin::tagfile │ builtin::open_with | builtin::set_extension_icon | builtin::reset_extension_icon")
+        .title("builtin::copy │ builtin::cut │ builtin::paste │ builtin::rename │ builtin::delete │ builtin::new_folder │ builtin::new_file │ builtin::add_to_quick_list │ builtin::set_custom_icon │ builtin::reset_custom_icon │ builtin::tagfile │ builtin::open_with | builtin::open_with_dialog | builtin::set_extension_icon | builtin::reset_extension_icon")
         .css_classes(["property"])
         .build();
     let (toast_row, toast_entry) = make_stacked_entry_row(
