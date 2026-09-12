@@ -2020,3 +2020,19 @@ msgstr "Abrir pasta em nova janela"
 #: src/ui/help.rs:324
 msgid "Application Shortcuts"
 msgstr "Atalhos do aplicativo"
+
+#: src/ui/dialogs.rs:???
+msgid "Open With…"
+msgstr "Abrir com…"
+
+#: src/ui/dialogs.rs:???
+msgid "Search applications…"
+msgstr "Pesquisar aplicativos…"
+
+#: src/ui/dialogs.rs:???
+msgid "Default"
+msgstr "Padrão"
+
+#: src/ui/dialogs.rs:???
+msgid "Always use for this file type"
+msgstr "Sempre usar para este tipo de arquivo"

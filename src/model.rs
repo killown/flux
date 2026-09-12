@@ -703,6 +703,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Opens the custom Open With dialog for a given path.
+    ShowOpenWithDialog(PathBuf),
     /// Terminal changed directory via OSC 7.
     TerminalCwdChanged(PathBuf),
     /// Toggles the visibility state of the top header bar.

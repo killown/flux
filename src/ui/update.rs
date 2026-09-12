@@ -676,6 +676,9 @@ impl FluxApp {
             // ==========================================
             // File Conflicts & Dialogs
             // ==========================================
+            AppMsg::ShowOpenWithDialog(path) => {
+                self.show_open_with_dialog(path, &sender);
+            }
             AppMsg::FileConflictDetected { context, resolver } => {
                 if let Some(mut dialog) = self.transfer_dialog.take() {
                     dialog.close();

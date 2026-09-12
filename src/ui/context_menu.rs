@@ -180,6 +180,24 @@ impl FluxApp {
                             continue;
                         }
                     }
+                    "builtin::open_with_dialog" => {
+                        if let Some(ref target) = path {
+                            let action = gio::SimpleAction::new("open-with-dialog", None);
+                            let target_clone = target.clone();
+                            let s = sender.clone();
+                            let toast = action_toast.clone();
+                            action.connect_activate(move |_, _| {
+                                s.input(AppMsg::ShowOpenWithDialog(target_clone.clone()));
+                                if let Some(ref msg) = toast {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
+                            });
+                            self.action_group.add_action(&action);
+                            ("win.open-with-dialog".to_string(), "open-with-dialog")
+                        } else {
+                            continue;
+                        }
+                    }
                     "builtin::reset_extension_icon" => {
                         let ext_opt = path.as_ref().and_then(|p| {
                             p.extension()
