@@ -149,7 +149,7 @@ impl FluxApp {
         {
             let s = sender.clone();
             terminal.set_cwd_callback(move |path| {
-                s.input(AppMsg::Navigate(path));
+                s.input(AppMsg::TerminalCwdChanged(path));
             });
         }
 

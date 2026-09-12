@@ -703,6 +703,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Terminal changed directory via OSC 7.
+    TerminalCwdChanged(PathBuf),
     /// Toggles the visibility state of the top header bar.
     ToggleHeaderBar,
     /// Toggles whether folders are grouped first or last for the current directory.

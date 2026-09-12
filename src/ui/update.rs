@@ -911,6 +911,9 @@ impl FluxApp {
             // ==========================================
             // Embedded Terminal
             // ==========================================
+            AppMsg::TerminalCwdChanged(path) => {
+                self.handle_terminal_cwd_changed(path, &sender);
+            }
             AppMsg::SetTerminalShell(shell) => {
                 self.config.ui.terminal.shell = shell;
                 crate::utils::save_config(&self.config);
