@@ -774,20 +774,60 @@ impl FluxApp {
                 }
             };
 
-            let targets: Vec<PathBuf> = text
-                .lines()
-                .map(|line| {
-                    let trimmed = line.trim();
-                    // Strip file:// if present
-                    let stripped = trimmed
-                        .strip_prefix("file://")
-                        .unwrap_or(trimmed)
-                        .strip_prefix("FILE://")
-                        .unwrap_or(trimmed);
-                    PathBuf::from(stripped)
-                })
-                .filter(|p| !p.as_os_str().is_empty())
-                .collect();
+            let mut targets = Vec::new();
+            let mut current_token = String::new();
+            let mut in_quote: Option<char> = None;
+            let mut chars = text.chars().peekable();
+
+            while let Some(c) = chars.next() {
+                if let Some(q) = in_quote {
+                    if c == q {
+                        if q == '\'' && chars.peek() == Some(&'\\') {
+                            chars.next();
+                            if chars.peek() == Some(&'\'') {
+                                chars.next();
+                                current_token.push('\'');
+                                continue;
+                            }
+                        }
+                        in_quote = None;
+                    } else {
+                        current_token.push(c);
+                    }
+                } else {
+                    match c {
+                        '\'' | '"' => in_quote = Some(c),
+                        ' ' | '\t' | '\r' | '\n' => {
+                            if !current_token.is_empty() {
+                                let trimmed = current_token.trim();
+                                let stripped = trimmed
+                                    .strip_prefix("file://")
+                                    .unwrap_or(trimmed)
+                                    .strip_prefix("FILE://")
+                                    .unwrap_or(trimmed);
+                                let p = PathBuf::from(stripped);
+                                if !p.as_os_str().is_empty() {
+                                    targets.push(p);
+                                }
+                                current_token.clear();
+                            }
+                        }
+                        _ => current_token.push(c),
+                    }
+                }
+            }
+            if !current_token.is_empty() {
+                let trimmed = current_token.trim();
+                let stripped = trimmed
+                    .strip_prefix("file://")
+                    .unwrap_or(trimmed)
+                    .strip_prefix("FILE://")
+                    .unwrap_or(trimmed);
+                let p = PathBuf::from(stripped);
+                if !p.as_os_str().is_empty() {
+                    targets.push(p);
+                }
+            }
 
             if targets.is_empty() {
                 s.input(AppMsg::ShowToast(crate::i18n::tr(
