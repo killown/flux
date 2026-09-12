@@ -96,11 +96,50 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
             .build();
 
+        let single_click = config.ui.single_click;
+
         drag_source.connect_drag_begin(|src, _| {
             if let Some(widget) = src.widget() {
                 let paintable = gtk::WidgetPaintable::new(Some(&widget));
                 src.set_icon(Some(&paintable), 0, 0);
+                if let Some(native) = widget.native() {
+                    if let Some(surface) = native.surface() {
+                        surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
+                    }
+                }
+                widget.set_cursor_from_name(Some("grabbing"));
             }
+        });
+
+        drag_source.connect_drag_end(move |src, _, _| {
+            if let Some(widget) = src.widget() {
+                if let Some(native) = widget.native() {
+                    if let Some(surface) = native.surface() {
+                        surface.set_cursor(None);
+                    }
+                }
+                if single_click {
+                    widget.set_cursor_from_name(Some("pointer"));
+                } else {
+                    widget.set_cursor(None);
+                }
+            }
+        });
+
+        drag_source.connect_drag_cancel(move |src, _, _| {
+            if let Some(widget) = src.widget() {
+                if let Some(native) = widget.native() {
+                    if let Some(surface) = native.surface() {
+                        surface.set_cursor(None);
+                    }
+                }
+                if single_click {
+                    widget.set_cursor_from_name(Some("pointer"));
+                } else {
+                    widget.set_cursor(None);
+                }
+            }
+            false
         });
 
         let formats = gdk::ContentFormats::builder()
@@ -204,8 +243,81 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                     FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
                                 },
 
+                                // Sets hand/grabbing cursor immediately on mouse press, restores on release or cancel
+                                add_controller = gtk::GestureClick {
+                                    set_button: 1,
+                                    set_propagation_phase: gtk::PropagationPhase::Capture,
+                                    connect_pressed => |gesture, _, _, _| {
+                                        if let Some(event) = gesture.current_event() {
+                                            if let Some(device) = event.device() {
+                                                if device.source() == gdk::InputSource::Touchscreen {
+                                                    return;
+                                                }
+                                            }
+                                        }
+                                        if let Some(widget) = gesture.widget() {
+                                            if let Some(native) = widget.native() {
+                                                if let Some(surface) = native.surface() {
+                                                    surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
+                                                }
+                                            }
+                                            widget.set_cursor_from_name(Some("grabbing"));
+                                        }
+                                    },
+                                    connect_released[single_click] => move |gesture, _, _, _| {
+                                        if let Some(widget) = gesture.widget() {
+                                            if let Some(native) = widget.native() {
+                                                if let Some(surface) = native.surface() {
+                                                    surface.set_cursor(None);
+                                                }
+                                            }
+                                            if single_click {
+                                                widget.set_cursor_from_name(Some("pointer"));
+                                            } else {
+                                                widget.set_cursor(None);
+                                            }
+                                        }
+                                    },
+                                    connect_cancel[single_click] => move |gesture, _| {
+                                        if let Some(widget) = gesture.widget() {
+                                            if let Some(native) = widget.native() {
+                                                if let Some(surface) = native.surface() {
+                                                    surface.set_cursor(None);
+                                                }
+                                            }
+                                            if single_click {
+                                                widget.set_cursor_from_name(Some("pointer"));
+                                            } else {
+                                                widget.set_cursor(None);
+                                            }
+                                        }
+                                    }
+                                },
+
                                 add_controller = gtk::GestureLongPress {
+                                    // Only claim or handle long press on touch input, preventing mouse drag conflicts
                                     connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
+                                        if let Some(event) = gesture.current_event() {
+                                            // Reject any event originating from a mouse button press
+                                            if let Some(btn_event) = event.downcast_ref::<gdk::ButtonEvent>() {
+                                                if btn_event.button() != 0 {
+                                                    gesture.set_state(gtk::EventSequenceState::Denied);
+                                                    return;
+                                                }
+                                            }
+
+                                            // Strictly require touchscreen input source
+                                            if let Some(device) = event.device() {
+                                                if device.source() != gdk::InputSource::Touchscreen {
+                                                    gesture.set_state(gtk::EventSequenceState::Denied);
+                                                    return;
+                                                }
+                                            }
+                                        } else {
+                                            gesture.set_state(gtk::EventSequenceState::Denied);
+                                            return;
+                                        }
+
                                         if let Some(s) = sender.get() {
                                             let widget = gesture.widget().unwrap();
                                             let idx_opt: Option<u32> = unsafe {
@@ -214,12 +326,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
                                             if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                                 let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                                gesture.set_state(gtk::EventSequenceState::Claimed);
                                                 s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
                                             }
                                         }
                                     }
                                 },
-
                                 add_controller = gtk::GestureClick {
                                     set_button: 0,
                                     connect_pressed => |gesture, _, _, _| {
