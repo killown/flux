@@ -730,9 +730,16 @@ impl FluxApp {
 
         let paths: Vec<String> = selection
             .iter()
-            .map(|p| p.to_string_lossy().into_owned())
+            .map(|p| {
+                let s = p.to_string_lossy();
+                if s.contains(' ') {
+                    format!("'{}'", s.replace('\'', "'\\'\\'"))
+                } else {
+                    s.into_owned()
+                }
+            })
             .collect();
-        let text = paths.join("\n");
+        let text = paths.join(" ");
 
         if let Some(display) = gtk::gdk::Display::default() {
             display.clipboard().set_text(&text);
