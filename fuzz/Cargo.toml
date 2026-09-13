@@ -13,79 +13,14 @@ serde_json = "1.0.151"
 tempfile = "3"
 toml = "1.0"
 url = "2.5.8"
+vte = "0.15"
 
 [dependencies.flux]
 path = ".."
 
 [[bin]]
-name = "fuzz_menu_parser"
-path = "fuzz_targets/fuzz_menu_parser.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_config_toml"
-path = "fuzz_targets/fuzz_config_toml.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_path_expansion"
-path = "fuzz_targets/fuzz_path_expansion.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_media_dimensions"
-path = "fuzz_targets/fuzz_media_dimensions.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_target_1"
-path = "fuzz_targets/fuzz_target_1.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_media_duration"
-path = "fuzz_targets/fuzz_media_duration.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_query_filter"
-path = "fuzz_targets/fuzz_query_filter.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_color_parser"
-path = "fuzz_targets/fuzz_color_parser.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_url_parser"
-path = "fuzz_targets/fuzz_url_parser.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_keybinding_parser"
-path = "fuzz_targets/fuzz_keybinding_parser.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_theme_deserializer"
-path = "fuzz_targets/fuzz_theme_deserializer.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_menu_dsl"
-path = "fuzz_targets/fuzz_menu_dsl.rs"
+name = "fuzz_archive_tree"
+path = "fuzz_targets/fuzz_archive_tree.rs"
 test = false
 doc = false
 
@@ -96,14 +31,14 @@ test = false
 doc = false
 
 [[bin]]
-name = "fuzz_glob"
-path = "fuzz_targets/fuzz_glob.rs"
+name = "fuzz_config_toml"
+path = "fuzz_targets/fuzz_config_toml.rs"
 test = false
 doc = false
 
 [[bin]]
-name = "fuzz_search_query"
-path = "fuzz_targets/fuzz_search_query.rs"
+name = "fuzz_conflict_name"
+path = "fuzz_targets/fuzz_conflict_name.rs"
 test = false
 doc = false
 
@@ -114,8 +49,38 @@ test = false
 doc = false
 
 [[bin]]
-name = "fuzz_network_uri_breadcrumbs"
-path = "fuzz_targets/fuzz_network_uri_breadcrumbs.rs"
+name = "fuzz_glob"
+path = "fuzz_targets/fuzz_glob.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_icon_filter"
+path = "fuzz_targets/fuzz_icon_filter.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_media_dimensions"
+path = "fuzz_targets/fuzz_media_dimensions.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_media_duration"
+path = "fuzz_targets/fuzz_media_duration.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_menu_dsl"
+path = "fuzz_targets/fuzz_menu_dsl.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_menu_parser"
+path = "fuzz_targets/fuzz_menu_parser.rs"
 test = false
 doc = false
 
@@ -126,8 +91,8 @@ test = false
 doc = false
 
 [[bin]]
-name = "fuzz_size_filter"
-path = "fuzz_targets/fuzz_size_filter.rs"
+name = "fuzz_path_expansion"
+path = "fuzz_targets/fuzz_path_expansion.rs"
 test = false
 doc = false
 
@@ -138,7 +103,97 @@ test = false
 doc = false
 
 [[bin]]
+name = "fuzz_search_query"
+path = "fuzz_targets/fuzz_search_query.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_size_filter"
+path = "fuzz_targets/fuzz_size_filter.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_split_mime_cmd"
+path = "fuzz_targets/fuzz_split_mime_cmd.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_terminal_vte"
+path = "fuzz_targets/fuzz_terminal_vte.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_url_parser"
+path = "fuzz_targets/fuzz_url_parser.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "fuzz_xattr_tags"
 path = "fuzz_targets/fuzz_xattr_tags.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_network_protocol"
+path = "fuzz_targets/fuzz_network_protocol.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_expand_mime_category"
+path = "fuzz_targets/fuzz_expand_mime_category.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_archive_host_codec"
+path = "fuzz_targets/fuzz_archive_host_codec.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_execution_command"
+path = "fuzz_targets/fuzz_execution_command.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_tag_filter"
+path = "fuzz_targets/fuzz_tag_filter.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_aspect_ratio_label"
+path = "fuzz_targets/fuzz_aspect_ratio_label.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_secondary_menu_parser"
+path = "fuzz_targets/fuzz_secondary_menu_parser.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_recursive_paste"
+path = "fuzz_targets/fuzz_recursive_paste.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_describe_network_location"
+path = "fuzz_targets/fuzz_describe_network_location.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_mouse_button"
+path = "fuzz_targets/fuzz_mouse_button.rs"
 test = false
 doc = false
