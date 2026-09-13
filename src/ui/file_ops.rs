@@ -733,6 +733,7 @@ impl FluxApp {
     }
 
     /// Copies the absolute paths of selected items to the clipboard.
+    /// Resolves symlinks to their canonical target path when available.
     pub fn handle_copy_path(&self, sender: &AsyncComponentSender<Self>) {
         let selection = self.get_selection();
         if selection.is_empty() {
@@ -743,7 +744,8 @@ impl FluxApp {
         let paths: Vec<String> = selection
             .iter()
             .map(|p| {
-                let s = p.to_string_lossy();
+                let resolved = p.canonicalize().unwrap_or_else(|_| p.clone());
+                let s = resolved.to_string_lossy();
                 if s.contains(' ') {
                     format!("'{}'", s.replace('\'', "'\\'\\'"))
                 } else {

@@ -703,6 +703,9 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Initiates a background scan and opens the native directory inspector dialog
+    /// for the specified directory path.
+    InspectDirectory(std::path::PathBuf),
     /// Opens the custom Open With dialog for a given path.
     ShowOpenWithDialog(PathBuf),
     /// Terminal changed directory via OSC 7.

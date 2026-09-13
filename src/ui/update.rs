@@ -693,6 +693,9 @@ impl FluxApp {
                 self.conflict_dialog_active = true;
                 crate::ui::conflict_dialog::show_conflict_dialog(context, tx, sender.clone());
             }
+            AppMsg::InspectDirectory(path) => {
+                self.show_dir_inspector_dialog(path, &sender);
+            }
             AppMsg::ConflictDialogClosed => {
                 self.conflict_dialog_active = false;
             }

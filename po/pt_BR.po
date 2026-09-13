@@ -2036,3 +2036,59 @@ msgstr "Padrão"
 #: src/ui/dialogs.rs:???
 msgid "Always use for this file type"
 msgstr "Sempre usar para este tipo de arquivo"
+
+#: src/ui/dialogs.rs:???
+msgid "Directory Inspector"
+msgstr "Inspetor de Diretório"
+
+#: src/ui/dialogs.rs:???
+msgid "Directory Overview"
+msgstr "Visão Geral do Diretório"
+
+#: src/ui/dialogs.rs:???
+msgid "Close"
+msgstr "Fechar"
+
+#: src/ui/dialogs.rs:???
+msgid "Scanning directory tree…"
+msgstr "Analisando estrutura de diretórios…"
+
+#: src/ui/dialogs.rs:???
+msgid "Storage Summary"
+msgstr "Resumo do Armazenamento"
+
+#: src/ui/dialogs.rs:???
+msgid "Total Size"
+msgstr "Tamanho Total"
+
+#: src/ui/dialogs.rs:???
+msgid "Items"
+msgstr "Itens"
+
+#: src/ui/dialogs.rs:???
+msgid "Filter by name, extension (.mp4), or size (>10M, <1G)..."
+msgstr "Filtrar por nome, extensão (.mp4) ou tamanho (>10M, <1G)..."
+
+#: src/ui/dialogs.rs:???
+msgid "Largest Files (Top 100)"
+msgstr "Maiores Arquivos (Top 100)"
+
+#: src/ui/dialogs.rs:???
+msgid "Open enclosing folder"
+msgstr "Abrir pasta recipiente"
+
+#: src/ui/dialogs.rs:???
+msgid "Move to trash"
+msgstr "Mover para a lixeira"
+
+#: src/ui/dialogs.rs:???
+msgid "Item moved to trash."
+msgstr "Item movido para a lixeira."
+
+#: src/ui/dialogs.rs:???
+msgid "Scanned in {} ms"
+msgstr "Analisado em {} ms"
+
+#: src/ui/dialogs.rs:???
+msgid "{} files, {} subfolders"
+msgstr "{} arquivos, {} subpastas"
