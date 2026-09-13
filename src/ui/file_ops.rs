@@ -44,18 +44,25 @@ pub fn build_execution_command(
         };
 
         let mut cmd = cmd_template
+            .replace("\"%p\"", &p_arg)
+            .replace("'%p'", &p_arg)
             .replace("%p", &p_arg)
+            .replace("\"%d\"", &d_arg)
+            .replace("'%d'", &d_arg)
             .replace("%d", &d_arg)
+            .replace("\"%f\"", &f_arg)
+            .replace("'%f'", &f_arg)
             .replace("%f", &f_arg);
 
         if cmd.contains(constants::TEMPLATE_CWD) {
-            cmd = cmd.replace(
-                constants::TEMPLATE_CWD,
-                &match shell_safe(&current_path.to_string_lossy()) {
-                    Some(a) => a,
-                    None => return (String::new(), String::new()),
-                },
-            );
+            let cwd_arg = match shell_safe(&current_path.to_string_lossy()) {
+                Some(a) => a,
+                None => return (String::new(), String::new()),
+            };
+            cmd = cmd
+                .replace(&format!("\"{}\"", constants::TEMPLATE_CWD), &cwd_arg)
+                .replace(&format!("'{}'", constants::TEMPLATE_CWD), &cwd_arg)
+                .replace(constants::TEMPLATE_CWD, &cwd_arg);
         }
 
         let label = path
@@ -73,15 +80,20 @@ pub fn build_execution_command(
             None => return (String::new(), String::new()),
         };
 
-        let mut cmd = cmd_template.replace(constants::TEMPLATE_PATHS, &paths_arg);
+        let mut cmd = cmd_template
+            .replace(&format!("\"{}\"", constants::TEMPLATE_PATHS), &paths_arg)
+            .replace(&format!("'{}'", constants::TEMPLATE_PATHS), &paths_arg)
+            .replace(constants::TEMPLATE_PATHS, &paths_arg);
+
         if cmd.contains(constants::TEMPLATE_CWD) {
-            cmd = cmd.replace(
-                constants::TEMPLATE_CWD,
-                &match shell_safe(&current_path.to_string_lossy()) {
-                    Some(a) => a,
-                    None => return (String::new(), String::new()),
-                },
-            );
+            let cwd_arg = match shell_safe(&current_path.to_string_lossy()) {
+                Some(a) => a,
+                None => return (String::new(), String::new()),
+            };
+            cmd = cmd
+                .replace(&format!("\"{}\"", constants::TEMPLATE_CWD), &cwd_arg)
+                .replace(&format!("'{}'", constants::TEMPLATE_CWD), &cwd_arg)
+                .replace(constants::TEMPLATE_CWD, &cwd_arg);
         }
         let label = format!("{} items", targets.len());
         (cmd, label)

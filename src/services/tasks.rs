@@ -258,7 +258,7 @@ impl TaskQueue {
             Ok(mut map) => {
                 let collected = map
                     .values()
-                    .map(|t| (t.cancellable.clone(), t.pid.filter(|&p| p != 0)))
+                    .map(|t| (t.cancellable.clone(), t.pid.filter(|&p| p > 1)))
                     .collect();
                 map.clear();
                 collected
@@ -269,8 +269,13 @@ impl TaskQueue {
         for (cancellable, pid) in tasks {
             cancellable.cancel();
             if let Some(pid) = pid {
-                unsafe {
-                    libc::kill(-(pid as i32), libc::SIGKILL);
+                let pid_i32 = pid as i32;
+                if pid_i32 > 1 {
+                    unsafe {
+                        if libc::kill(-pid_i32, libc::SIGKILL) != 0 {
+                            libc::kill(pid_i32, libc::SIGKILL);
+                        }
+                    }
                 }
             }
         }
