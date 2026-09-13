@@ -1305,7 +1305,7 @@ impl Terminal {
                     }
                     glib::Propagation::Stop
                 }
-                gtk::gdk::Key::Return => {
+                gtk::gdk::Key::Return | gtk::gdk::Key::KP_Enter => {
                     pty_write(fd, b"\r");
                     glib::Propagation::Stop
                 }
