@@ -233,22 +233,26 @@ pub fn create_command_dialog(
     queue: Arc<TaskQueue>,
     sender: relm4::Sender<AppMsg>,
 ) -> CommandDialogHandle {
-    let window = adw::Window::builder()
+    let window = gtk::Application::default().active_window();
+
+    let dialog = adw::Window::builder()
         .title(crate::i18n::tr("Command Output"))
+        .modal(true)
         .default_width(720)
         .default_height(650)
-        .modal(true)
-        .resizable(true)
+        .resizable(false)
         .build();
 
-    if let Some(parent) = gtk::Application::default().active_window() {
-        window.set_transient_for(Some(&parent));
+    if let Some(ref win) = window {
+        dialog.set_transient_for(Some(win));
     }
 
     // ─── Header bar ──────────────────────────────────────────────────────────
 
-    let header = adw::HeaderBar::new();
-    header.set_show_end_title_buttons(true);
+    let header = adw::HeaderBar::builder()
+        .show_start_title_buttons(false)
+        .show_end_title_buttons(false)
+        .build();
 
     // Get action_name from task for the switch
     let action_name = queue
@@ -285,12 +289,10 @@ pub fn create_command_dialog(
 
     // ─── Title widget (centered) ───────────────────────────────────────────
 
-    let title_label = gtk::Label::builder()
-        .label(crate::i18n::tr("Command Output"))
-        .halign(gtk::Align::Center)
-        .css_classes(["title-4"])
+    let title_widget = adw::WindowTitle::builder()
+        .title(crate::i18n::tr("Command Output"))
         .build();
-    header.set_title_widget(Some(&title_label));
+    header.set_title_widget(Some(&title_widget));
 
     // ─── Cancel button on the RIGHT side ──────────────────────────────────
 
@@ -304,6 +306,8 @@ pub fn create_command_dialog(
 
     let content_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
+        .hexpand(true)
+        .vexpand(true)
         .spacing(0)
         .build();
     content_box.append(&header);
@@ -435,29 +439,41 @@ pub fn create_command_dialog(
         .build();
     content_box.append(&scrolled);
 
-    window.set_content(Some(&content_box));
+    dialog.set_content(Some(&content_box));
 
     // ─── Signals ────────────────────────────────────────────────────────────
 
     // Cancel button
     let s_cancel = sender.clone();
-    let window_cancel = window.clone();
+    let dialog_cancel = dialog.clone();
     cancel_btn.connect_clicked(move |_| {
         let _ = s_cancel.send(AppMsg::CancelTask(task_id));
-        window_cancel.close();
+        dialog_cancel.close();
     });
+
+    // Escape closes dialog
+    let d_esc = dialog.clone();
+    let key_ctrl = gtk::EventControllerKey::new();
+    key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
+        if keyval == adw::gdk::Key::Escape {
+            d_esc.close();
+            return gtk::glib::Propagation::Stop;
+        }
+        gtk::glib::Propagation::Proceed
+    });
+    dialog.add_controller(key_ctrl);
 
     // Switch: toggle flag and close dialog if suppressing
     let sender_switch = sender.clone();
     let action_name_switch = action_name.clone();
-    let window_switch = window.clone();
+    let dialog_switch = dialog.clone();
     no_dialog_switch.connect_state_set(move |_switch, state| {
         if let Some(ref name) = action_name_switch {
             let _ = sender_switch.send(AppMsg::ToggleNoCommandDialog(name.clone()));
             if state {
-                // Hide the window instead of closing it, so the task keeps running
+                // Hide the dialog instead of closing it, so the task keeps running
                 let _ = sender_switch.send(AppMsg::CommandDialogClosed);
-                window_switch.hide();
+                dialog_switch.hide();
             }
         }
         glib::Propagation::Proceed
@@ -526,7 +542,7 @@ pub fn create_command_dialog(
     // Timer
     let queue_clone = queue.clone();
     let task_id_clone = task_id;
-    let window_weak = window.downgrade();
+    let dialog_weak = dialog.downgrade();
 
     let pid_label_timer = pid_label.clone();
     let state_label_timer = state_label.clone();
@@ -541,7 +557,7 @@ pub fn create_command_dialog(
     let sender_timer = sender.clone();
 
     glib::timeout_add_local(std::time::Duration::from_secs(1), move || {
-        let Some(win) = window_weak.upgrade() else {
+        let Some(win) = dialog_weak.upgrade() else {
             return glib::ControlFlow::Break;
         };
 
@@ -635,16 +651,16 @@ pub fn create_command_dialog(
 
     // Close request
     let s_close = sender.clone();
-    window.connect_close_request(move |_| {
+    dialog.connect_close_request(move |_| {
         let _ = s_close.send(AppMsg::CommandDialogClosed);
         let _ = s_close.send(AppMsg::CancelTask(task_id));
         glib::Propagation::Proceed
     });
 
-    window.present();
+    dialog.present();
 
     CommandDialogHandle {
-        window,
+        window: dialog,
         text_view,
         task_id,
         action_name,
