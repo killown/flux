@@ -345,30 +345,33 @@ impl StateManager {
             .collect();
 
         if !orphans.is_empty() || !tag_orphans.is_empty() || !icon_orphans.is_empty() {
-            let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
-            let tx = conn.transaction()?;
             {
-                if !orphans.is_empty() {
-                    let mut del_stmt = tx.prepare("DELETE FROM folder_settings WHERE path = ?1")?;
-                    for orphan in &orphans {
-                        let _ = del_stmt.execute(params![orphan]);
+                let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+                let tx = conn.transaction()?;
+                {
+                    if !orphans.is_empty() {
+                        let mut stmt = tx.prepare("DELETE FROM folder_settings WHERE path = ?1")?;
+                        for orphan in &orphans {
+                            let _ = stmt.execute(params![orphan]);
+                        }
+                    }
+                    if !tag_orphans.is_empty() {
+                        let mut stmt = tx.prepare("DELETE FROM file_tags WHERE path = ?1")?;
+                        for orphan in &tag_orphans {
+                            let _ = stmt.execute(params![orphan]);
+                        }
+                    }
+                    if !icon_orphans.is_empty() {
+                        let mut stmt = tx.prepare("DELETE FROM folder_icons WHERE path = ?1")?;
+                        for orphan in &icon_orphans {
+                            let _ = stmt.execute(params![orphan]);
+                        }
                     }
                 }
-                if !tag_orphans.is_empty() {
-                    let mut del_tag_stmt = tx.prepare("DELETE FROM file_tags WHERE path = ?1")?;
-                    for orphan in &tag_orphans {
-                        let _ = del_tag_stmt.execute(params![orphan]);
-                    }
-                }
-                if !icon_orphans.is_empty() {
-                    let mut del_icon_stmt =
-                        tx.prepare("DELETE FROM folder_icons WHERE path = ?1")?;
-                    for orphan in &icon_orphans {
-                        let _ = del_icon_stmt.execute(params![orphan]);
-                    }
-                }
+                tx.commit()?;
             }
-            tx.commit()?;
+
+            let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let _ = conn.execute("VACUUM", []);
         }
 
