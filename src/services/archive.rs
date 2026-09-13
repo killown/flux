@@ -87,8 +87,10 @@ pub fn decode_archive_host(host: &str) -> PathBuf {
     // and ensuring %2f / %2F becomes '/'
     let mut decoded = host.to_string();
     // Handle double-encoded or normalized cases
-    decoded = decoded.replace("%2F", "/").replace("%2f", "/");
+    // MUST decode %25 → % FIRST, then %2F → /
+    // Doing it the other way corrupts paths containing literal %25
     decoded = decoded.replace("%25", "%");
+    decoded = decoded.replace("%2F", "/").replace("%2f", "/");
 
     // In case GIO normalized leading '%2' without the 'F'
     if decoded.starts_with("%2/") {
@@ -2308,7 +2310,7 @@ fn collect_entry(
     let _entry = seen
         .entry(child_name.clone())
         .and_modify(|existing| {
-            if !is_dir {
+            if !is_dir && !is_entry_dir {
                 existing.is_dir = false;
                 existing.size = size;
                 existing.mtime = mtime;
@@ -2353,14 +2355,12 @@ fn strip_ext<'a>(name: &'a str, ext: &str) -> &'a str {
 fn zip_mtime<R: Read + Seek>(entry: &zip::read::ZipFile<'_, R>) -> i64 {
     entry
         .last_modified()
-        .map(|dt| {
-            let y = dt.year() as i64;
-            let m = dt.month() as i64;
-            let d = dt.day() as i64;
-            let h = dt.hour() as i64;
-            let min = dt.minute() as i64;
-            let s = dt.second() as i64;
-            (y - 1970) * 31_557_600 + m * 2_629_800 + d * 86_400 + h * 3_600 + min * 60 + s
+        .and_then(|dt| {
+            chrono::NaiveDate::from_ymd_opt(dt.year() as i32, dt.month() as u32, dt.day() as u32)
+                .and_then(|d| {
+                    d.and_hms_opt(dt.hour() as u32, dt.minute() as u32, dt.second() as u32)
+                })
+                .map(|ndt| ndt.and_utc().timestamp())
         })
         .unwrap_or(0)
 }
