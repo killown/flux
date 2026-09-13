@@ -2092,3 +2092,23 @@ msgstr "Analisado em {} ms"
 #: src/ui/dialogs.rs:???
 msgid "{} files, {} subfolders"
 msgstr "{} arquivos, {} subpastas"
+
+#: src/ui/tag_picker.rs:???
+msgid "Edit Tags"
+msgstr "Editar Etiquetas"
+
+#: src/ui/tag_picker.rs:???
+msgid "Delete tag everywhere"
+msgstr "Excluir etiqueta em todos os lugares"
+
+#: src/ui/tag_picker.rs:???
+msgid "Press Enter to create and assign this tag"
+msgstr "Pressione Enter para criar e atribuir esta etiqueta"
+
+#: src/ui/tag_picker.rs:???
+msgid "Apply"
+msgstr "Aplicar"
+
+#: src/ui/tag_picker.rs:81
+msgid "Search or type new tag…"
+msgstr "Pesquisar ou digitar nova etiqueta…"
