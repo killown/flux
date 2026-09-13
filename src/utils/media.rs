@@ -63,10 +63,50 @@ pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
 /// `Some((width, height))` in pixels on success, `None` otherwise.
 #[allow(dead_code)]
 pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
+    // Only invoke image loaders for paths with recognized image extensions
+    let ext = path.extension().and_then(|e| e.to_str())?;
+    let is_img_ext = matches!(
+        ext.to_ascii_lowercase().as_str(),
+        "png"
+            | "jpg"
+            | "jpeg"
+            | "webp"
+            | "gif"
+            | "bmp"
+            | "tiff"
+            | "tif"
+            | "avif"
+            | "ico"
+            | "cur"
+            | "heic"
+            | "heif"
+            | "jxl"
+            | "svg"
+            | "svgz"
+            | "icns"
+            | "tga"
+            | "xpm"
+            | "xbm"
+            | "pnm"
+            | "pbm"
+            | "pgm"
+            | "ppm"
+    );
+    if !is_img_ext {
+        return None;
+    }
+
     let path_str = path.to_str()?;
     let (_, w, h) = gdk_pixbuf::Pixbuf::file_info(path_str)?;
     // file_info returns i32, treat negatives (malformed headers) as unknown
-    Some((u32::try_from(w).ok()?, u32::try_from(h).ok()?))
+    let w = u32::try_from(w).ok()?;
+    let h = u32::try_from(h).ok()?;
+
+    if w == 0 || h == 0 || w > 65_536 || h > 65_536 {
+        return None;
+    }
+
+    Some((w, h))
 }
 
 /// Returns a canonical aspect ratio label for a given resolution.

@@ -409,6 +409,10 @@ pub fn entries_to_load_contexts(
 }
 
 pub fn describe_network_location(uri: &str) -> (String, String) {
+    if uri.is_empty() || uri.contains('\0') {
+        return (String::new(), "folder-remote-symbolic".to_owned());
+    }
+
     let file = gio::File::for_uri(uri);
     let display = file
         .query_info(
