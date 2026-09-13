@@ -2204,7 +2204,21 @@ fn extract_dir_tar_at<R: Read>(
             continue;
         }
 
-        let out_path = dest_dir.join(relative);
+        let rel_path = Path::new(relative);
+        let has_traversal = rel_path.components().any(|c| {
+            matches!(
+                c,
+                std::path::Component::ParentDir
+                    | std::path::Component::RootDir
+                    | std::path::Component::Prefix(_)
+            )
+        });
+
+        let out_path = dest_dir.join(rel_path);
+        if has_traversal || !out_path.starts_with(&dest_dir) {
+            continue;
+        }
+
         let is_dir = entry.header().entry_type().is_dir();
 
         if is_dir {
