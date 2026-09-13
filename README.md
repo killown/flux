@@ -87,6 +87,44 @@ Supported units: `B`, `KB`, `MB`, `GB`, `TB`.
 
 **Tag search** - FreeDesktop `user.xdg.tags` xattr system with SQLite indexing. Use `#tagname` or `:tag:name` to filter globally, with a dedicated tag navigator.
 
+### Built-in Actions
+
+Flux provides internal routines that can be configured either via the built-in **Menu Editor** or directly inside `~/.config/flux/menu.rs` using the `builtin::` namespace.
+
+Unlike shell actions, built-in commands run internal app routines without spawning an external process.
+
+#### Reference
+
+| Identifier                      | Description                                                                                                                 | Target Scope         |
+| :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------- | :------------------- |
+| `builtin::inspect_dir`          | Opens the **Directory Inspector** modal (storage summary, top files, realtime search, enclosing folder jump, move to trash) | Directories          |
+| `builtin::open_with`            | Dynamically populates a submenu containing registered system apps for the target MIME type                                  | Files                |
+| `builtin::open_with_dialog`     | Opens the custom application chooser dialog                                                                                 | Files                |
+| `builtin::copy`                 | Copies selected items to clipboard                                                                                          | Any                  |
+| `builtin::cut`                  | Cuts selected items to clipboard                                                                                            | Any                  |
+| `builtin::paste`                | Pastes clipboard items into the target/current folder                                                                       | Directories          |
+| `builtin::rename`               | Enters inline renaming mode                                                                                                 | Any                  |
+| `builtin::delete`               | Moves selected items directly to the system trash                                                                           | Any                  |
+| `builtin::new_folder`           | Opens the batch folder creation dialog                                                                                      | Directories          |
+| `builtin::new_file`             | Opens the batch file creation dialog                                                                                        | Directories          |
+| `builtin::toggle_pin`           | Pins or unpins the folder in the sidebar                                                                                    | Directories          |
+| `builtin::add_to_quick_list`    | Adds the item to the Quick List                                                                                             | Any                  |
+| `builtin::tagfile`              | Opens the tag manager modal for the selected file                                                                           | Files                |
+| `builtin::set_custom_icon`      | Opens a file picker to assign a custom icon to an item                                                                      | Any                  |
+| `builtin::reset_custom_icon`    | Restores an item's default system icon                                                                                      | Any                  |
+| `builtin::set_extension_icon`   | Sets a global icon for the target's file extension                                                                          | Files with extension |
+| `builtin::reset_extension_icon` | Restores the default icon for that file extension                                                                           | Files with extension |
+
+#### Configuration Examples
+
+**In `~/.config/flux/menu.rs`:**
+
+```rust
+"󰉋   Inspect Directory" => "directory", "builtin::inspect_dir"
+"󰋜   Open With…"        => "all", "builtin::open_with_dialog"
+"󰆴   Move to Trash"     => "all", "builtin::delete"
+```
+
 ### Quick List / Triage Panel
 
 Temporary pinned directory panel for fast multi-directory cycling:
