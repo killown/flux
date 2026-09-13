@@ -180,6 +180,16 @@ impl FluxApp {
                             continue;
                         }
                     }
+                    "builtin::inspect_dir" => {
+                        let target = path.clone().unwrap_or_else(|| self.current_path.clone());
+                        let s = sender.clone();
+                        let action = gio::SimpleAction::new("inspect-dir", None);
+                        action.connect_activate(move |_, _| {
+                            s.input(AppMsg::InspectDirectory(target.clone()));
+                        });
+                        self.action_group.add_action(&action);
+                        ("win.inspect-dir".to_string(), "inspect-dir")
+                    }
                     "builtin::open_with_dialog" => {
                         if let Some(ref target) = path {
                             let action = gio::SimpleAction::new("open-with-dialog", None);
