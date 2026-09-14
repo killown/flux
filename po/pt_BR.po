@@ -2510,3 +2510,6 @@ msgstr "Editar etiquetas da seleção"
 
 msgid "free"
 msgstr "livre"
+
+msgid "Name"
+msgstr "Nome"
