@@ -49,6 +49,9 @@ install: translations
 	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/io.github.killown.flux.svg
 	@if [ -f template.svg ]; then install -m 644 template.svg $(DESTDIR)$(CONFDIR)/icons/template.svg; fi
 
+	# 4.1 Nerd Font Dataset
+	@if [ -f assets/nerd_fonts.json ]; then install -m 644 assets/nerd_fonts.json $(DESTDIR)$(CONFDIR)/nerd_fonts.json; fi
+
 	# 5. AppStream Metainfo
 	@install -m 644 packaging/flatpak/io.github.killown.flux.metainfo.xml $(DESTDIR)$(METAINFODIR)/io.github.killown.flux.metainfo.xml
 

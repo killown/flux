@@ -835,7 +835,72 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .build();
     line_row.add_suffix(&spin_btn);
 
-    let (label_row, label_entry) = make_stacked_entry_row(tr("Label").as_str(), &entry.label);
+    let label_entry = gtk::Entry::builder()
+        .text(&entry.label)
+        .hexpand(true)
+        .build();
+
+    let icon_button = gtk::Button::builder()
+        .label(tr("Pick Icon").as_str())
+        .valign(gtk::Align::Center)
+        .build();
+
+    let label_entry_clone = label_entry.clone();
+    let window_weak = dialog.downgrade();
+
+    icon_button.connect_clicked(move |_| {
+        let entry_ref = label_entry_clone.clone();
+        let parent_win = window_weak.upgrade();
+
+        crate::ui::icon_picker::show_menu_icon_picker(
+            parent_win.as_ref().map(|w| w.upcast_ref()),
+            move |glyph| {
+                let current = entry_ref.text().to_string();
+                let cleaned = current
+                    .chars()
+                    .skip_while(|c| !c.is_alphanumeric() && *c != '(')
+                    .collect::<String>();
+
+                entry_ref.set_text(&format!(
+                    "{}{}{}",
+                    glyph,
+                    crate::ui::icon_picker::MENU_ICON_PADDING,
+                    cleaned
+                ));
+            },
+        );
+    });
+
+    let label_input_box = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .margin_top(4)
+        .margin_bottom(8)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+    label_input_box.append(&label_entry);
+    label_input_box.append(&icon_button);
+
+    let label_vbox = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .margin_top(8)
+        .margin_bottom(4)
+        .build();
+
+    let label_header = gtk::Label::builder()
+        .label(tr("Label").as_str())
+        .halign(gtk::Align::Start)
+        .margin_start(12)
+        .css_classes(["heading"])
+        .build();
+
+    label_vbox.append(&label_header);
+    label_vbox.append(&label_input_box);
+
+    let label_row = adw::PreferencesRow::builder().build();
+    label_row.set_child(Some(&label_vbox));
+
     let (sub_row, sub_entry) = make_stacked_entry_row(
         tr("Submenu (blank = top-level)").as_str(),
         entry.submenu.as_deref().unwrap_or(""),

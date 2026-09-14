@@ -300,6 +300,10 @@ cp flux-themes/themes/* ~/.local/share/flux/themes/
 
 ## Installation
 
+### Prerequisites
+
+Flux requires GTK4, Libadwaita, and system media/icon utilities. A **Nerd Font** (or standalone Nerd Font symbols font) must be installed to render the icons in `menu.rs` and the menu editor.
+
 **Ubuntu / Debian**
 
 ```bash
@@ -307,10 +311,20 @@ sudo apt install libadwaita-1-dev libgtk-4-dev libpango1.0-dev libgraphene-1.0-d
   libcairo2-dev libgdk-pixbuf-2.0-dev libpoppler-glib-dev ffmpeg imagemagick icoutils
 ```
 
+> _Note:_ Debian/Ubuntu repositories do not package standalone Nerd Fonts by default. Install the symbol glyphs with:
+>
+> ```bash
+> mkdir -p ~/.local/share/fonts
+> curl -fLo ~/.local/share/fonts/SymbolsNerdFont-Regular.ttf \
+>   https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/NerdFontsSymbolsOnly/SymbolsNerdFont-Regular.ttf
+> fc-cache -f -v
+> ```
+
 **Arch Linux**
 
 ```bash
-sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 poppler-glib ffmpeg imagemagick icoutils
+sudo pacman -S libadwaita gtk4 glib2 pango graphene cairo gdk-pixbuf2 poppler-glib \
+  ffmpeg imagemagick icoutils ttf-nerd-fonts-symbols
 ```
 
 **Fedora**
@@ -320,10 +334,22 @@ sudo dnf install libadwaita-devel gtk4-devel pango-devel graphene-devel cairo-de
   gdk-pixbuf2-devel poppler-glib-devel ffmpeg ImageMagick icoutils
 ```
 
+> _Note:_ To install the symbol glyphs on Fedora:
+>
+> ```bash
+> sudo dnf copr enable che/nerd-fonts
+> sudo dnf install nerd-fonts-SymbolsOnly
+> ```
+
+---
+
+### Build & Install
+
 ```bash
 git clone https://github.com/killown/flux.git
 cd flux
 cargo build --release
+make install
 ```
 
 ---
