@@ -6,6 +6,7 @@
 // --- 1. Submodule Declarations ---
 pub mod advanced_search;
 pub mod debug;
+pub mod icon_picker;
 pub mod init;
 pub mod inputs;
 pub mod keymap;

@@ -2320,3 +2320,17 @@ msgstr "Etiquetas"
 
 msgid "free"
 msgstr "livre"
+
+#: src/ui/menu_editor.rs:843
+msgid "Pick Icon"
+msgstr "Escolher Ícone"
+
+#: src/ui/icon_picker.rs:188
+msgid "Select Nerd Font Icon"
+msgstr "Selecionar Ícone Nerd Font"
+
+#: src/ui/icon_picker.rs:271
+msgid "Search icons (copy, folder, file, rust)..."
+msgstr "Pesquisar ícones (copiar, pasta, arquivo, rust)..."
+
+
