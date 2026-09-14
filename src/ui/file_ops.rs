@@ -378,10 +378,12 @@ impl FluxApp {
             .find(|action| action.command == cmd_template)
             .and_then(|a| a.toast.clone());
 
-        let needs_refresh = self
+        let is_restore = cmd_template.contains("trash --restore");
+        let is_in_trash = self
             .current_path
             .to_string_lossy()
             .starts_with(constants::TRASH_URI);
+        let needs_refresh = is_in_trash || is_restore;
 
         let (final_cmd, label) =
             build_execution_command(&cmd_template, &final_targets, &current_path);

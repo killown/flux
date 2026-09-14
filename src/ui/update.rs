@@ -971,8 +971,7 @@ impl FluxApp {
             }
             AppMsg::Refresh => {
                 self.active_video_preview = None;
-                self.folder_cache
-                    .remove(&self.cache_key(&self.current_path));
+                self.folder_cache.clear();
                 self.handle_refresh_path(&sender);
             }
             AppMsg::SetSingleClick(val) => self.handle_set_single_click(val),
