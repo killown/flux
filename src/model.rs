@@ -703,6 +703,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Overwrites the quick-list entry at the given index with the current directory path.
+    UpdateExclusiveSlot(usize),
     /// Initiates a background scan and opens the native directory inspector dialog
     /// for the specified directory path.
     InspectDirectory(std::path::PathBuf),

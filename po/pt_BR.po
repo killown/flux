@@ -33,6 +33,27 @@ msgstr "Código-fonte"
 msgid "Copy failed: {}"
 msgstr "Falha ao copiar: {}"
 
+
+# ============================================================
+# Quick List (src/ui/navigation.rs & src/ui/update.rs)
+# ============================================================
+
+#: src/ui/navigation.rs:???
+msgid "Set to Current Folder"
+msgstr "Definir como Pasta Atual"
+
+#: src/ui/navigation.rs:???
+msgid "Open in New Window"
+msgstr "Abrir em Nova Janela"
+
+#: src/ui/navigation.rs:???
+msgid "Remove from Quick List"
+msgstr "Remover da Lista Rápida"
+
+#: src/ui/update.rs:???
+msgid "Quick list slot updated"
+msgstr "Slot da lista rápida atualizado"
+
 # ============================================================
 # src/utils/config.rs (menu de contexto)
 # ============================================================
@@ -2513,3 +2534,5 @@ msgstr "livre"
 
 msgid "Name"
 msgstr "Nome"
+
+

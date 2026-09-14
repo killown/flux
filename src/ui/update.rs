@@ -134,7 +134,7 @@ impl FluxApp {
                 }
             }
             AppMsg::FolderLoadedFinish { load_id } => {
-                if self.load_id.load(std::sync::atomic::Ordering::SeqCst) == load_id {
+                if self.load_id.load(Ordering::SeqCst) == load_id {
                     self.is_loading = false;
                     unsafe {
                         libc::malloc_trim(0);
@@ -973,6 +973,16 @@ impl FluxApp {
                 self.active_video_preview = None;
                 self.folder_cache.clear();
                 self.handle_refresh_path(&sender);
+            }
+            AppMsg::UpdateExclusiveSlot(index) => {
+                if index < self.exclusive_list.len() {
+                    self.exclusive_list[index] = self.current_path.clone();
+                    self.exclusive_index = Some(index);
+                    self.handle_rebuild_quick_panel(&sender);
+                    sender.input(AppMsg::ShowToast(crate::i18n::tr(
+                        "Quick list slot updated",
+                    )));
+                }
             }
             AppMsg::SetSingleClick(val) => self.handle_set_single_click(val),
             AppMsg::ToggleSingleClick => self.handle_toggle_single_click(),
