@@ -39,6 +39,7 @@ pub fn ensure_config_file() -> PathBuf {
         let default_config = r#"
 # --- Core Operations ---
 "󰋼      Add to Quick List" => "directory", "builtin::add_to_quick_list"
+"󰪶      Send to Quick List" => "all", "builtin::quick_list_transfer"
 "󰱝      Other Application..." => "file", "builtin::open_with_dialog"
 "󰉋      Inspect Directory" => "directory", "builtin::inspect_dir"
 "󰆏      Copy" => "all", "builtin::copy"

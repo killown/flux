@@ -109,6 +109,7 @@ Unlike shell actions, built-in commands run internal app routines without spawni
 | `builtin::new_file`             | Opens the batch file creation dialog                                                                                        | Directories          |
 | `builtin::toggle_pin`           | Pins or unpins the folder in the sidebar                                                                                    | Directories          |
 | `builtin::add_to_quick_list`    | Adds the item to the Quick List                                                                                             | Any                  |
+| `builtin::quick_list_transfer`  | Opens a submenu to quickly move or copy selected items directly to any pinned Quick List destination                        | Any                  |
 | `builtin::tagfile`              | Opens the tag manager modal for the selected file                                                                           | Files                |
 | `builtin::set_custom_icon`      | Opens a file picker to assign a custom icon to an item                                                                      | Any                  |
 | `builtin::reset_custom_icon`    | Restores an item's default system icon                                                                                      | Any                  |

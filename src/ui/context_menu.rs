@@ -107,6 +107,65 @@ impl FluxApp {
                 // emit ShowToast directly.
                 let action_toast = action.toast.clone();
 
+                if action.command.as_str() == "builtin::quick_list_transfer" {
+                    if self.exclusive_list.is_empty() {
+                        continue;
+                    }
+
+                    let transfer_menu = gio::Menu::new();
+                    let move_menu = gio::Menu::new();
+                    let copy_menu = gio::Menu::new();
+
+                    for (idx, target_path) in self.exclusive_list.iter().enumerate() {
+                        let raw_name = target_path
+                            .file_name()
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_else(|| target_path.to_string_lossy().to_string());
+
+                        // Truncate to a max visible width to avoid ballooning the popup menu
+                        let max_chars = 26;
+                        let char_count = raw_name.chars().count();
+                        let label = if char_count > max_chars {
+                            let truncated: String = raw_name.chars().take(max_chars - 1).collect();
+                            format!("{}…", truncated)
+                        } else {
+                            raw_name
+                        };
+
+                        let target_str = format!("{}:{}", idx, target_path.display());
+
+                        let move_item =
+                            gio::MenuItem::new(Some(&label), Some("win.quick-transfer-move"));
+                        move_item.set_action_and_target_value(
+                            Some("win.quick-transfer-move"),
+                            Some(&target_str.to_variant()),
+                        );
+                        move_menu.append_item(&move_item);
+
+                        let copy_item =
+                            gio::MenuItem::new(Some(&label), Some("win.quick-transfer-copy"));
+                        copy_item.set_action_and_target_value(
+                            Some("win.quick-transfer-copy"),
+                            Some(&target_str.to_variant()),
+                        );
+                        copy_menu.append_item(&copy_item);
+                    }
+
+                    transfer_menu.append_submenu(Some(&crate::i18n::tr("Move to")), &move_menu);
+                    transfer_menu.append_submenu(Some(&crate::i18n::tr("Copy to")), &copy_menu);
+
+                    let menu_label = format!("󰪶   {}", crate::i18n::tr("Send to Quick List"));
+                    let menu_item = gio::MenuItem::new_submenu(Some(&menu_label), &transfer_menu);
+
+                    if let Some(group_name) = &action.submenu {
+                        let menu = submenu_map.entry(group_name.clone()).or_default();
+                        menu.append_item(&menu_item);
+                    } else {
+                        main_section.append_item(&menu_item);
+                    }
+                    continue;
+                }
+
                 if action.command.as_str() == "builtin::open_with" {
                     let open_with_menu = gio::Menu::new();
                     let apps = gio::AppInfo::all_for_type(&mime);
