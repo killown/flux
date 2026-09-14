@@ -62,6 +62,11 @@ fn resolve_nerd_fonts_file() -> Option<PathBuf> {
         }
     }
 
+    let flatpak_path = PathBuf::from("/app/share/flux/nerd_fonts.json");
+    if flatpak_path.exists() {
+        return Some(flatpak_path);
+    }
+
     let sys_path = PathBuf::from("/usr/share/flux/nerd_fonts.json");
     if sys_path.exists() {
         return Some(sys_path);
