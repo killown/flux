@@ -172,7 +172,7 @@ Temporary pinned directory panel for fast multi-directory cycling:
 
 ## 📦 Archive Browsing (`/archive://`)
 
-Browse archive contents as a virtual filesystem without extraction.
+Browse archive contents as a virtual filesystem without extraction, with full support for on-the-fly file extraction while navigating, copying and pasting files, and editing zip archives directly.
 
 | Format                                            | Backend                           | Password |
 | :------------------------------------------------ | :-------------------------------- | :------: |
