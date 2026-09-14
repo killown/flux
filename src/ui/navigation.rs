@@ -1,5 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
+use gtk::gio;
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
@@ -423,6 +424,67 @@ impl FluxApp {
             });
             btn.add_controller(middle);
 
+            // ── Right-Click Context Menu on Quick-List Tab ──
+            let right_click = gtk::GestureClick::new();
+            right_click.set_button(3);
+
+            let s_rc = sender.clone();
+            let target_path = path.clone();
+
+            right_click.connect_released(move |gesture, _, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+
+                let popover = gtk::PopoverMenu::builder().has_arrow(true).build();
+                let menu = gio::Menu::new();
+                let action_group = gio::SimpleActionGroup::new();
+
+                menu.append(
+                    Some(&format!("󰑮   {}", crate::i18n::tr("Set to Current Folder"))),
+                    Some("slot.update"),
+                );
+                let act_update = gio::SimpleAction::new("update", None);
+                let s_update = s_rc.clone();
+                act_update.connect_activate(move |_, _| {
+                    s_update.input(AppMsg::UpdateExclusiveSlot(idx));
+                });
+                action_group.add_action(&act_update);
+
+                menu.append(
+                    Some(&format!("󱇤   {}", crate::i18n::tr("Open in New Window"))),
+                    Some("slot.new_window"),
+                );
+                let act_win = gio::SimpleAction::new("new_window", None);
+                let win_path = target_path.clone();
+                act_win.connect_activate(move |_, _| {
+                    crate::utils::helpers::open_new_instance(&win_path);
+                });
+                action_group.add_action(&act_win);
+
+                menu.append(
+                    Some(&format!(
+                        "󰅖   {}",
+                        crate::i18n::tr("Remove from Quick List")
+                    )),
+                    Some("slot.remove"),
+                );
+                let act_rm_action = gio::SimpleAction::new("remove", None);
+                let s_rm_action = s_rc.clone();
+                let rm_path = target_path.clone();
+                act_rm_action.connect_activate(move |_, _| {
+                    s_rm_action.input(AppMsg::RemoveQuickItem(rm_path.clone()));
+                });
+                action_group.add_action(&act_rm_action);
+
+                popover.set_menu_model(Some(&menu));
+                if let Some(widget) = gesture.widget() {
+                    popover.set_parent(&widget);
+                    let rect = gtk::gdk::Rectangle::new(x as i32, y as i32, 1, 1);
+                    popover.set_pointing_to(Some(&rect));
+                    widget.insert_action_group("slot", Some(&action_group));
+                    popover.popup();
+                }
+            });
+            btn.add_controller(right_click);
             // ── Add Drop Target for quick-list button ──
             let formats = gtk::gdk::ContentFormats::builder()
                 .add_type(gtk::gdk::FileList::static_type())
