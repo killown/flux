@@ -437,7 +437,6 @@ msgstr "Cor de fundo"
 msgid "Background color (hex, e.g., '#1A1A1A')"
 msgstr "Cor de fundo (hex, ex.: '#1A1A1A')"
 
-#: src/ui/settings.rs:414
 msgid "Shortcuts"
 msgstr "Atalhos"
 
@@ -473,7 +472,6 @@ msgstr "Exibição e aplicativo"
 msgid "Refresh"
 msgstr "Atualizar"
 
-#: src/ui/settings.rs:504
 msgid "Search"
 msgstr "Pesquisar"
 
@@ -2029,7 +2027,6 @@ msgstr "Abrir com…"
 msgid "Search applications…"
 msgstr "Pesquisar aplicativos…"
 
-#: src/ui/dialogs.rs:???
 msgid "Default"
 msgstr "Padrão"
 
@@ -2093,7 +2090,6 @@ msgstr "Analisado em {} ms"
 msgid "{} files, {} subfolders"
 msgstr "{} arquivos, {} subpastas"
 
-#: src/ui/tag_picker.rs:???
 msgid "Edit Tags"
 msgstr "Editar Etiquetas"
 
@@ -2112,3 +2108,212 @@ msgstr "Aplicar"
 #: src/ui/tag_picker.rs:81
 msgid "Search or type new tag…"
 msgstr "Pesquisar ou digitar nova etiqueta…"
+
+# right-click menu
+#: src/utils/config.rs:???
+msgid "Add to Quick List"
+msgstr "Adicionar à Lista Rápida"
+
+#: src/utils/config.rs:???
+msgid "Other Application..."
+msgstr "Outro Aplicativo..."
+
+#: src/utils/config.rs:???
+msgid "Inspect Directory"
+msgstr "Inspecionar Diretório"
+
+#: src/utils/config.rs:???
+msgid "Shred File (Permanent)"
+msgstr "Destruir Arquivo (Permanente)"
+
+#: src/utils/config.rs:???
+msgid "Toggle Pin"
+msgstr "Fixar/Desafixar"
+
+#: src/utils/config.rs:???
+msgid "Open in VSCode"
+msgstr "Abrir no VS Code"
+
+#: src/utils/config.rs:???
+msgid "File Properties"
+msgstr "Propriedades do Arquivo"
+
+#: src/utils/config.rs:???
+msgid "Folder Info"
+msgstr "Informações da Pasta"
+
+#: src/utils/config.rs:???
+msgid "Icons"
+msgstr "Ícones"
+
+#: src/utils/config.rs:???
+msgid "Set File Icon"
+msgstr "Definir Ícone do Arquivo"
+
+#: src/utils/config.rs:???
+msgid "Reset File Icon"
+msgstr "Restaurar Ícone do Arquivo"
+
+#: src/utils/config.rs:???
+msgid "Set Extension Icon"
+msgstr "Definir Ícone da Extensão"
+
+#: src/utils/config.rs:???
+msgid "Reset Extension Icon"
+msgstr "Restaurar Ícone da Extensão"
+
+#: src/utils/config.rs:???
+msgid "Compress"
+msgstr "Compactar"
+
+#: src/utils/config.rs:???
+msgid "To ZIP"
+msgstr "Para ZIP"
+
+#: src/utils/config.rs:???
+msgid "To 7Z"
+msgstr "Para 7Z"
+
+#: src/utils/config.rs:???
+msgid "To TAR.GZ"
+msgstr "Para TAR.GZ"
+
+#: src/utils/config.rs:???
+msgid "Extract Here!"
+msgstr "Extrair Aqui!"
+
+#: src/utils/config.rs:???
+msgid "Media Edit"
+msgstr "Edição de Mídia"
+
+#: src/utils/config.rs:???
+msgid "Join Videos"
+msgstr "Juntar Vídeos"
+
+#: src/utils/config.rs:???
+msgid "Cut Video"
+msgstr "Cortar Vídeo"
+
+#: src/utils/config.rs:???
+msgid "Mix Audio"
+msgstr "Misturar Áudio"
+
+#: src/utils/config.rs:???
+msgid "Merge Video + Audio"
+msgstr "Mesclar Vídeo + Áudio"
+
+#: src/utils/config.rs:???
+msgid "Media Convert"
+msgstr "Conversão de Mídia"
+
+#: src/utils/config.rs:???
+msgid "To MP4"
+msgstr "Para MP4"
+
+#: src/utils/config.rs:???
+msgid "To MKV"
+msgstr "Para MKV"
+
+#: src/utils/config.rs:???
+msgid "To WebM"
+msgstr "Para WebM"
+
+#: src/utils/config.rs:???
+msgid "To MOV"
+msgstr "Para MOV"
+
+#: src/utils/config.rs:???
+msgid "Audio to MP3"
+msgstr "Áudio para MP3"
+
+#: src/utils/config.rs:???
+msgid "Media Extract"
+msgstr "Extração de Mídia"
+
+#: src/utils/config.rs:???
+msgid "MP3 from Video"
+msgstr "MP3 do Vídeo"
+
+#: src/utils/config.rs:???
+msgid "Media Optimize"
+msgstr "Otimização de Mídia"
+
+#: src/utils/config.rs:???
+msgid "Reduce Video Size"
+msgstr "Reduzir Tamanho do Vídeo"
+
+#: src/utils/config.rs:???
+msgid "Image Wallpaper"
+msgstr "Papel de Parede"
+
+#: src/utils/config.rs:???
+msgid "Set (swww)"
+msgstr "Definir (swww)"
+
+#: src/utils/config.rs:???
+msgid "Set (wbg)"
+msgstr "Definir (wbg)"
+
+#: src/utils/config.rs:???
+msgid "Image Convert"
+msgstr "Conversão de Imagem"
+
+#: src/utils/config.rs:???
+msgid "To PNG"
+msgstr "Para PNG"
+
+#: src/utils/config.rs:???
+msgid "To AVIF"
+msgstr "Para AVIF"
+
+#: src/utils/config.rs:???
+msgid "To JPG"
+msgstr "Para JPG"
+
+#: src/utils/config.rs:???
+msgid "Convert to PDF"
+msgstr "Converter para PDF"
+
+#: src/utils/config.rs:???
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: src/utils/config.rs:???
+msgid "Git Gui"
+msgstr "Git Gui"
+
+#: src/utils/config.rs:???
+msgid "Download Video (1080p)"
+msgstr "Baixar Vídeo (1080p)"
+
+#: src/utils/config.rs:???
+msgid "Copy Name"
+msgstr "Copiar Nome"
+
+#: src/utils/config.rs:???
+msgid "Advanced Archive Manager"
+msgstr "Compactador Avançado"
+
+#: src/utils/config.rs:???
+msgid "Copy"
+msgstr "Copiar"
+
+#: src/utils/config.rs:???
+msgid "Cut"
+msgstr "Cortar"
+
+#: src/utils/config.rs:???
+msgid "Paste"
+msgstr "Colar"
+
+#: src/utils/config.rs:???
+msgid "Change Owner"
+msgstr "Alterar Proprietário"
+
+#: src/utils/config.rs:???
+msgid "Advanced Shredder"
+msgstr "Destruidor Avançado"
+
+#: src/utils/config.rs:???
+msgid "Tags"
+msgstr "Etiquetas"
