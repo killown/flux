@@ -26,6 +26,7 @@ impl FluxApp {
         let main_section = gio::Menu::new();
 
         let mut submenu_map: indexmap::IndexMap<String, gio::Menu> = indexmap::IndexMap::new();
+        let mut quick_list_transfer_item: Option<gio::MenuItem> = None;
 
         for action in &self.menu_actions {
             let mut matches = false;
@@ -155,14 +156,10 @@ impl FluxApp {
                     transfer_menu.append_submenu(Some(&crate::i18n::tr("Copy to")), &copy_menu);
 
                     let menu_label = format!("󰪶   {}", crate::i18n::tr("Send to Quick List"));
-                    let menu_item = gio::MenuItem::new_submenu(Some(&menu_label), &transfer_menu);
-
-                    if let Some(group_name) = &action.submenu {
-                        let menu = submenu_map.entry(group_name.clone()).or_default();
-                        menu.append_item(&menu_item);
-                    } else {
-                        main_section.append_item(&menu_item);
-                    }
+                    quick_list_transfer_item = Some(gio::MenuItem::new_submenu(
+                        Some(&menu_label),
+                        &transfer_menu,
+                    ));
                     continue;
                 }
 
@@ -432,11 +429,16 @@ impl FluxApp {
             }
         }
 
-        // Assemble root popover menu
+        // Assemble root popover menu: main items first, then named submenus
         root_menu.append_section(None, &main_section);
 
         for (name, menu) in submenu_map {
             let item = gio::MenuItem::new_submenu(Some(&name), &menu);
+            root_menu.append_item(&item);
+        }
+
+        // Place Quick List Transfer at the very bottom
+        if let Some(item) = quick_list_transfer_item {
             root_menu.append_item(&item);
         }
 
