@@ -571,16 +571,26 @@ pub fn load_menu_config() -> Vec<CustomAction> {
             let raw_label = left.trim().trim_matches('"');
 
             // Separate icon/spacing prefix from the actual text content
-            let (icon_prefix, text_content) =
-                if let Some(idx) = raw_label.find(|c: char| c.is_alphanumeric() || c == '(') {
-                    raw_label.split_at(idx)
-                } else {
-                    ("", raw_label)
-                };
+            let (main_icon_prefix, text_content) = if let Some(idx) =
+                raw_label.find(|c: char| c.is_alphanumeric() || c == '(' || c == '>')
+            {
+                raw_label.split_at(idx)
+            } else {
+                ("", raw_label)
+            };
 
             let translated_text = if text_content.contains(" > ") {
                 let parts: Vec<&str> = text_content.splitn(2, " > ").collect();
-                let cat = match parts[0].trim() {
+                let raw_sub = parts[0];
+
+                let (sub_icon, sub_pure) =
+                    if let Some(idx) = raw_sub.find(|c: char| c.is_alphanumeric() || c == '(') {
+                        raw_sub.split_at(idx)
+                    } else {
+                        ("", raw_sub)
+                    };
+
+                let cat = match sub_pure.trim() {
                     "Icons" => tr("Icons"),
                     "Compress" => tr("Compress"),
                     "Media Edit" => tr("Media Edit"),
@@ -592,7 +602,16 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "Tools" => tr("Tools"),
                     other => other.to_string(),
                 };
-                let act = match parts[1].trim() {
+
+                let raw_act = parts[1];
+                let (act_icon, act_pure) =
+                    if let Some(idx) = raw_act.find(|c: char| c.is_alphanumeric() || c == '(') {
+                        raw_act.split_at(idx)
+                    } else {
+                        ("", raw_act)
+                    };
+
+                let act = match act_pure.trim() {
                     "Set File Icon" => tr("Set File Icon"),
                     "Reset File Icon" => tr("Reset File Icon"),
                     "Set Extension Icon" => tr("Set Extension Icon"),
@@ -623,7 +642,11 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "Advanced Archive Manager" => tr("Advanced Archive Manager"),
                     other => other.to_string(),
                 };
-                format!("{} > {}", cat, act)
+
+                let full_sub = format!("{}{}", sub_icon, cat);
+                let full_act = format!("{}{}", act_icon, act);
+
+                format!("{} > {}", full_sub, full_act)
             } else {
                 match text_content.trim() {
                     "Add to Quick List" => tr("Add to Quick List"),
@@ -650,18 +673,17 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 }
             };
 
-            let final_full_label = format!("{}{}", icon_prefix, translated_text);
+            let final_full_label = format!("{}{}", main_icon_prefix, translated_text);
 
             let (submenu, label) = if final_full_label.contains(" > ") {
                 let parts: Vec<&str> = final_full_label.splitn(2, " > ").collect();
-                let sub_clean = parts[0]
-                    .trim_start_matches(|c: char| !c.is_alphanumeric())
-                    .to_string();
-                (Some(sub_clean), parts[1].to_string())
+                (
+                    Some(parts[0].trim().to_string()),
+                    parts[1].trim().to_string(),
+                )
             } else {
                 (None, final_full_label)
             };
-
             if let Some((mimes_part, cmd_part, toast, no_command_dialog)) = split_mime_cmd(right) {
                 let mime_types: Vec<String> = mimes_part
                     .split(',')
