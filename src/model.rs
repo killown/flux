@@ -703,6 +703,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Initiates a copy or move of selected items directly to a quick list destination.
+    PerformQuickTransfer { dest: PathBuf, is_cut: bool },
     /// Overwrites the quick-list entry at the given index with the current directory path.
     UpdateExclusiveSlot(usize),
     /// Initiates a background scan and opens the native directory inspector dialog

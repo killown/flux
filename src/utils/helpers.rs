@@ -860,6 +860,9 @@ impl FluxApp {
         });
         self.action_group.add_action(&launch_action);
 
+        // 5.1 Quick List Direct Transfers (Move and Copy Actions)
+        self.setup_quick_transfer_actions(sender);
+
         // 6. Dynamic Context Menu Actions (Shell Commands)
         for action_def in &self.menu_actions {
             // Skip builtins as they are handled by the explicit actions above

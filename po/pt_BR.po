@@ -58,6 +58,18 @@ msgstr "Slot da lista rápida atualizado"
 # src/utils/config.rs (menu de contexto)
 # ============================================================
 
+#: src/ui/context_menu.rs:???
+msgid "Send to Quick List"
+msgstr "Enviar para a Lista Rápida"
+
+#: src/ui/context_menu.rs:???
+msgid "Move to"
+msgstr "Mover para"
+
+#: src/ui/context_menu.rs:???
+msgid "Copy to"
+msgstr "Copiar para"
+
 #: src/utils/config.rs:???
 msgid "Add to Quick List"
 msgstr "Adicionar à Lista Rápida"

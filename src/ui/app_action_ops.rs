@@ -9,6 +9,40 @@ use relm4::prelude::*;
 use std::path::PathBuf;
 
 impl FluxApp {
+    /// Registers actions for quick transfer operations (move and copy) from the context menu.
+    pub fn setup_quick_transfer_actions(&self, sender: &AsyncComponentSender<Self>) {
+        let q_move =
+            gio::SimpleAction::new("quick-transfer-move", Some(&String::static_variant_type()));
+        let s_move = sender.clone();
+        q_move.connect_activate(move |_, param| {
+            if let Some(dest_str) = param.and_then(|p| p.str()) {
+                let parts: Vec<&str> = dest_str.splitn(2, ':').collect();
+                if parts.len() == 2 {
+                    let dest = PathBuf::from(parts[1]);
+                    s_move.input(AppMsg::PerformQuickTransfer { dest, is_cut: true });
+                }
+            }
+        });
+        self.action_group.add_action(&q_move);
+
+        let q_copy =
+            gio::SimpleAction::new("quick-transfer-copy", Some(&String::static_variant_type()));
+        let s_copy = sender.clone();
+        q_copy.connect_activate(move |_, param| {
+            if let Some(dest_str) = param.and_then(|p| p.str()) {
+                let parts: Vec<&str> = dest_str.splitn(2, ':').collect();
+                if parts.len() == 2 {
+                    let dest = PathBuf::from(parts[1]);
+                    s_copy.input(AppMsg::PerformQuickTransfer {
+                        dest,
+                        is_cut: false,
+                    });
+                }
+            }
+        });
+        self.action_group.add_action(&q_copy);
+    }
+
     /// Dispatches opening for a specific grid position or current multi-selection.
     pub fn handle_open(&self, position: Option<u32>, sender: &AsyncComponentSender<Self>) {
         let modifiers = gdk::Display::default()
