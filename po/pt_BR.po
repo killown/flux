@@ -2317,3 +2317,6 @@ msgstr "Destruidor Avançado"
 #: src/utils/config.rs:???
 msgid "Tags"
 msgstr "Etiquetas"
+
+msgid "free"
+msgstr "livre"

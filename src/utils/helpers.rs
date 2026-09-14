@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
 use crate::ui::{constants, SidebarPlace};
 use crate::utils;
@@ -1116,7 +1117,11 @@ pub fn format_right_status(current_path: &Path, extension_filter: Option<&[Strin
             if unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) } == 0 {
                 let stat = unsafe { stat.assume_init() };
                 let free_bytes = (stat.f_bsize) * (stat.f_bavail);
-                parts.push(format!("{} free", gtk::glib::format_size(free_bytes)));
+                parts.push(format!(
+                    "{} {}",
+                    gtk::glib::format_size(free_bytes),
+                    tr("free")
+                ));
             }
         }
     }
