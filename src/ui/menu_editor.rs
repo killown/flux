@@ -901,10 +901,72 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     let label_row = adw::PreferencesRow::builder().build();
     label_row.set_child(Some(&label_vbox));
 
-    let (sub_row, sub_entry) = make_stacked_entry_row(
-        tr("Submenu (blank = top-level)").as_str(),
-        entry.submenu.as_deref().unwrap_or(""),
-    );
+    let sub_entry = gtk::Entry::builder()
+        .text(entry.submenu.as_deref().unwrap_or(""))
+        .hexpand(true)
+        .build();
+
+    let sub_icon_button = gtk::Button::builder()
+        .label(tr("Pick Icon").as_str())
+        .valign(gtk::Align::Center)
+        .build();
+
+    let sub_entry_clone = sub_entry.clone();
+    let sub_window_weak = dialog.downgrade();
+
+    sub_icon_button.connect_clicked(move |_| {
+        let entry_ref = sub_entry_clone.clone();
+        let parent_win = sub_window_weak.upgrade();
+
+        crate::ui::icon_picker::show_menu_icon_picker(
+            parent_win.as_ref().map(|w| w.upcast_ref()),
+            move |glyph| {
+                let current = entry_ref.text().to_string();
+                let cleaned = current
+                    .chars()
+                    .skip_while(|c| !c.is_alphanumeric() && *c != '(')
+                    .collect::<String>();
+
+                entry_ref.set_text(&format!(
+                    "{}{}{}",
+                    glyph,
+                    crate::ui::icon_picker::MENU_ICON_PADDING,
+                    cleaned
+                ));
+            },
+        );
+    });
+
+    let sub_input_box = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .margin_top(4)
+        .margin_bottom(8)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+    sub_input_box.append(&sub_entry);
+    sub_input_box.append(&sub_icon_button);
+
+    let sub_vbox = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .margin_top(8)
+        .margin_bottom(4)
+        .build();
+
+    let sub_header = gtk::Label::builder()
+        .label(tr("Submenu (blank = top-level)").as_str())
+        .halign(gtk::Align::Start)
+        .margin_start(12)
+        .css_classes(["heading"])
+        .build();
+
+    sub_vbox.append(&sub_header);
+    sub_vbox.append(&sub_input_box);
+
+    let sub_row = adw::PreferencesRow::builder().build();
+    sub_row.set_child(Some(&sub_vbox));
+
     let (mime_row, mime_entry) =
         make_stacked_entry_row(tr("MIME Types").as_str(), &entry.mime_types);
     let mime_hint = adw::ActionRow::builder()

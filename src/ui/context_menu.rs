@@ -377,7 +377,8 @@ impl FluxApp {
         root_menu.append_section(None, &main_section);
 
         for (name, menu) in submenu_map {
-            root_menu.append_submenu(Some(&name), &menu);
+            let item = gio::MenuItem::new_submenu(Some(&name), &menu);
+            root_menu.append_item(&item);
         }
 
         self.context_menu_popover.set_menu_model(Some(&root_menu));
