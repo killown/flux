@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::CustomAction;
 use crate::model::MenuEntry;
 use crate::utils::PathExt;
@@ -38,68 +39,69 @@ pub fn ensure_config_file() -> PathBuf {
         let default_config = r#"
 # --- Core Operations ---
 "󰋼      Add to Quick List" => "directory", "builtin::add_to_quick_list"
-"󰆏      Copy" => "all", "builtin::copy", "Copied to clipboard"
-"󰆐      Cut" => "all", "builtin::cut", "Cut to clipboard"
-"󰏊      Paste" => "all", "builtin::paste", "Pasted items"
+"󰱝      Other Application..." => "file", "builtin::open_with_dialog"
+"󰉋      Inspect Directory" => "directory", "builtin::inspect_dir"
+"󰆏      Copy" => "all", "builtin::copy"
+"󰆐      Cut" => "all", "builtin::cut"
+"󰏊      Paste" => "all", "builtin::paste"
 "󰑕      Rename" => "all", "builtin::rename"
-"󰱝      Open With..." => "file", "builtin::open_with"
-"🆃      Edit Tags" => "file", "builtin::tagfile", "Opening tag editor..."
-"󰩹      Move to Trash" => "all", "builtin::delete", "Moved to trash"
-"󰦬      Restore File" => "trash", "gio trash --restore %p", "File restored"
+"󰓹      Edit Tags" => "file", "builtin::tagfile"
+"󰩹      Delete" => "all", "builtin::delete"
+"󰦬      Restore File" => "trash", "gio trash --restore %p"
 "󰆴      Shred File (Permanent)" => "all", "python3 $HOME/.local/share/flux/scripts/flux_shredder.py %p", "no_command_dialog"
 
 # --- Navigation & System ---
-"      Open Terminal" => "directory", "alacritty --working-directory=%p"
-"󰋜      Toggle Pin" => "directory", "builtin::toggle_pin", "Sidebar updated"
-"󰨞      Open in VSCode" => "text/all, application/all", "code %p"
-"󰋽      File Properties" => "file", "flux-fm --file-properties %p"
-"󰋊      Folder Info" => "directory", "baobab %p"
-"󰉋      New Folder" => "directory", "builtin::new_folder", "Folder created"
-"󰈔      New File" => "directory", "builtin::new_file", "File created"
+"      Open Terminal" => "directory", "alacritty --working-directory=%p", "no_command_dialog"
+"󰋜      Toggle Pin" => "directory", "builtin::toggle_pin"
+"󰨞      Open in VSCode" => "text/all, application/all", "code %p", "no_command_dialog"
+"󰋽      File Properties" => "file", "flux-fm --file-properties %p", "no_command_dialog"
+"󰋊      Folder Info" => "directory", "baobab %p", "no_command_dialog"
+"󰉋      New Folder" => "directory", "builtin::new_folder"
+"󰈔      New File" => "directory", "builtin::new_file"
 
 # --- Icon Customization ---
-"󰸉      Icons > Set File Icon" => "all", "builtin::set_custom_icon", "Custom icon set"
-"󰸉      Icons > Reset File Icon" => "all", "builtin::reset_custom_icon", "Custom icon reset"
-"󰸉      Icons > Set Extension Icon" => "file", "builtin::set_extension_icon", "Custom extension icon set"
-"󰸉      Icons > Reset Extension Icon" => "file", "builtin::reset_extension_icon", "Extension icon reset"
+"󰸉      Icons > Set File Icon" => "all", "builtin::set_custom_icon"
+"󰸉      Icons > Reset File Icon" => "all", "builtin::reset_custom_icon"
+"󰸉      Icons > Set Extension Icon" => "file", "builtin::set_extension_icon"
+"󰸉      Icons > Reset Extension Icon" => "file", "builtin::reset_extension_icon"
 
 # --- Archives & Compression ---
-"󰛖      Compress > To ZIP" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p", "Compressing to ZIP..."
-"󰛖      Compress > To 7Z" => "all", "7z a -m0=lzma2 -mx=9 archive.7z %f", "Compressing to 7Z..."
-"󰛖      Compress > To TAR.GZ" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p", "Compressing to TAR.GZ..."
-"󰛖      Extract Here!" => "application/zip, application/x-7z-compressed, application/x-rar, application/x-tar", "7z x %p -o%p_extracted", "Extracting archive..."
+"󰛖      Compress > To ZIP" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p"
+"󰛖      Compress > To 7Z" => "all", "7z a -m0=lzma2 -mx=9 archive.7z %f"
+"󰛖      Compress > To TAR.GZ" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_simple_compressor.py %p"
+"󰛖      Extract Here!" => "application/zip, application/x-7z-compressed, application/x-rar, application/x-tar", "7z x %p -o%p_extracted"
 
 # --- Media Edit ---
-"󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p", "Joining videos..."
-"󰽰      Media Edit > Cut Video" => "video/all", "python $HOME/.local/share/flux/scripts/video_cutter.py %p", "Opening Video Cutter..."
-"󰽰      Media Edit > Mix Audio" => "audio/", "python3 $HOME/.local/share/flux/scripts/mix_audio.py %p", "Mixing audio..."
-"󰽰      Media Edit > Merge Video + Audio" => "video/all+audio/all", "python3 $HOME/.local/share/flux/scripts/join_mp4_mp3.py %p", "Merging media..."
+"󰽰      Media Edit > Join Videos" => "video/all", "python3 $HOME/.local/share/flux/scripts/join_videos.py %p"
+"󰽰      Media Edit > Cut Video" => "video/all", "python $HOME/.local/share/flux/scripts/video_cutter.py %p", "no_command_dialog"
+"󰽰      Media Edit > Mix Audio" => "audio/", "python3 $HOME/.local/share/flux/scripts/mix_audio.py %p"
+"󰽰      Media Edit > Merge Video + Audio" => "video/all+audio/all", "python3 $HOME/.local/share/flux/scripts/join_mp4_mp3.py %p"
 
 # --- Media Convert ---
-"󰽰      Media Convert > To MP4" => "video/all", "ffmpeg -i %p -codec copy %p.mp4", "Converting to MP4..."
-"󰽰      Media Convert > To MKV" => "video/all", "ffmpeg -i %p -codec copy %p.mkv", "Converting to MKV..."
-"󰽰      Media Convert > To WebM" => "video/all", "ffmpeg -i %p -codec copy %p.webm", "Converting to WebM..."
-"󰽰      Media Convert > To MOV" => "video/all", "ffmpeg -i %p -codec copy %p.mov", "Converting to MOV..."
-"󰝚      Media Convert > Audio to MP3" => "audio/x-opus+ogg, audio/vnd.wave, audio/ogg", "ffmpeg -i %p -vn -ab 192k -ar 44100 -y %p.mp3", "Converting to MP3..."
+"󰽰      Media Convert > To MP4" => "video/all", "ffmpeg -i %p -codec copy %p.mp4"
+"󰽰      Media Convert > To MKV" => "video/all", "ffmpeg -i %p -codec copy %p.mkv"
+"󰽰      Media Convert > To WebM" => "video/all", "ffmpeg -i %p -codec copy %p.webm"
+"󰽰      Media Convert > To MOV" => "video/all", "ffmpeg -i %p -codec copy %p.mov"
+"󰝚      Media Convert > Audio to MP3" => "audio/x-opus+ogg, audio/vnd.wave, audio/ogg", "ffmpeg -i %p -vn -ab 192k -ar 44100 -y %p.mp3"
 
 # --- Media Optimization & Extraction ---
-"󰠝      Media Extract > MP3 from Video" => "video/all", "ffmpeg -i %p -vn -acodec libmp3lame -q:a 2 %p.mp3", "Extracting MP3..."
-"󰕧      Media Optimize > Reduce Video Size" => "video/all", "ffmpeg -i %p -vcodec libx265 -crf 28 -tag:v hvc1 -preset faster %p_reduced.mp4", "Reducing video size..."
+"󰠝      Media Extract > MP3 from Video" => "video/all", "ffmpeg -i %p -vn -acodec libmp3lame -q:a 2 %p.mp3"
+"󰕧      Media Optimize > Reduce Video Size" => "video/all", "ffmpeg -i %p -vcodec libx265 -crf 28 -tag:v hvc1 -preset faster %p_reduced.mp4"
 
 # --- Images & Wallpaper ---
-"󰸉      Image Wallpaper > Set (swww)" => "image/all", "swww img %p", "Wallpaper set (swww)"
-"󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && (killall wbg 2>/dev/null; (wbg -s $HOME/Images/fav.jpg </dev/null >/dev/null 2>&1 &))", "Wallpaper set (wbg)", "no_command_dialog"
-"󰸉      Image Convert > To PNG" => "image/webp", "magick %p %p.png", "Converted to PNG"
-"󰸉      Image Convert > To AVIF" => "image/all", "avifenc --jobs all -q 65 %p %p.avif", "Image converted to AVIF"
-"󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg", "Image converted to JPG"
-"󰏦      Convert to PDF" => "image/all, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document", "python3 $HOME/.local/share/flux/scripts/pdf_converter.py %p", "Converting to PDF..."
+"󰸉      Image Wallpaper > Set (swww)" => "image/all", "swww img %p"
+"󰸉      Image Wallpaper > Set (wbg)" => "image/all", "cp %p ~/Images/fav.jpg && (killall wbg 2>/dev/null; (wbg -s $HOME/Images/fav.jpg </dev/null >/dev/null 2>&1 &))", "no_command_dialog"
+"󰸉      Image Convert > To PNG" => "image/webp", "magick %p %p.png"
+"󰸉      Image Convert > To AVIF" => "image/all", "avifenc --jobs all -q 65 %p %p.avif"
+"󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg"
+"󰏦      Convert to PDF" => "image/all, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document", "python3 $HOME/.local/share/flux/scripts/pdf_converter.py %p"
 
 # --- Tools ---
-"󰯦      Tools > Git Gui" => "directory", "git gui"
-"󰯦      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)", "Video download started"
-"󰯦      Tools > Copy Path" => "all", "echo -n %p | wl-copy", "Path copied to clipboard"
-"󰯦      Tools > Copy Name" => "all", "basename %p | tr -d '\n' | wl-copy", "Name copied to clipboard"
-"󰯦      Tools > Advanced Archive Manager" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_compressor.py %p"
+"󰯦      Tools > Git Gui" => "directory", "git gui", "no_command_dialog"
+"󰯦      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)"
+"󰯦      Tools > Copy Path" => "all", "echo -n %p | wl-copy"
+"󰯦      Tools > Copy Name" => "all", "basename %p | tr -d '\n' | wl-copy"
+"󰯦      Tools > Advanced Archive Manager" => "all", "/usr/bin/python $HOME/.local/share/flux/scripts/flux_compressor.py %p", "no_command_dialog"
 "#;
 
         if let Ok(mut file) = fs::File::create(&config_path) {
@@ -238,7 +240,7 @@ icon = ""
 path = ""
 
 [[sidebar]]
-name = "Flux Config DIR"
+name = "Flux"
 icon = "folder-documents-symbolic"
 path = "~/.config/flux"
 
@@ -387,6 +389,18 @@ path = "search://"
             }
         }
     };
+
+    // Translate standard sidebar headers and items dynamically
+    for item in &mut config.sidebar {
+        item.name = match item.name.as_str() {
+            "Default" => tr("Default"),
+            "Shortcuts" => tr("Shortcuts"),
+            "Tags" => tr("Tags"),
+            "Search" => tr("Search"),
+            other => other.to_string(),
+        };
+    }
+
     let mut changed = false;
 
     config.ui.folder_sort.retain(|path_str, _| {
@@ -554,13 +568,98 @@ pub fn load_menu_config() -> Vec<CustomAction> {
         }
 
         if let Some((left, right)) = line.split_once("=>") {
-            let full_label = left.trim().trim_matches('"');
+            let raw_label = left.trim().trim_matches('"');
 
-            let (submenu, label) = if full_label.contains(" > ") {
-                let parts: Vec<&str> = full_label.splitn(2, " > ").collect();
-                (Some(parts[0].to_string()), parts[1].to_string())
+            // Separate icon/spacing prefix from the actual text content
+            let (icon_prefix, text_content) =
+                if let Some(idx) = raw_label.find(|c: char| c.is_alphanumeric() || c == '(') {
+                    raw_label.split_at(idx)
+                } else {
+                    ("", raw_label)
+                };
+
+            let translated_text = if text_content.contains(" > ") {
+                let parts: Vec<&str> = text_content.splitn(2, " > ").collect();
+                let cat = match parts[0].trim() {
+                    "Icons" => tr("Icons"),
+                    "Compress" => tr("Compress"),
+                    "Media Edit" => tr("Media Edit"),
+                    "Media Convert" => tr("Media Convert"),
+                    "Media Extract" => tr("Media Extract"),
+                    "Media Optimize" => tr("Media Optimize"),
+                    "Image Wallpaper" => tr("Image Wallpaper"),
+                    "Image Convert" => tr("Image Convert"),
+                    "Tools" => tr("Tools"),
+                    other => other.to_string(),
+                };
+                let act = match parts[1].trim() {
+                    "Set File Icon" => tr("Set File Icon"),
+                    "Reset File Icon" => tr("Reset File Icon"),
+                    "Set Extension Icon" => tr("Set Extension Icon"),
+                    "Reset Extension Icon" => tr("Reset Extension Icon"),
+                    "To ZIP" => tr("To ZIP"),
+                    "To 7Z" => tr("To 7Z"),
+                    "To TAR.GZ" => tr("To TAR.GZ"),
+                    "Join Videos" => tr("Join Videos"),
+                    "Cut Video" => tr("Cut Video"),
+                    "Mix Audio" => tr("Mix Audio"),
+                    "Merge Video + Audio" => tr("Merge Video + Audio"),
+                    "To MP4" => tr("To MP4"),
+                    "To MKV" => tr("To MKV"),
+                    "To WebM" => tr("To WebM"),
+                    "To MOV" => tr("To MOV"),
+                    "Audio to MP3" => tr("Audio to MP3"),
+                    "MP3 from Video" => tr("MP3 from Video"),
+                    "Reduce Video Size" => tr("Reduce Video Size"),
+                    "Set (swww)" => tr("Set (swww)"),
+                    "Set (wbg)" => tr("Set (wbg)"),
+                    "To PNG" => tr("To PNG"),
+                    "To AVIF" => tr("To AVIF"),
+                    "To JPG" => tr("To JPG"),
+                    "Git Gui" => tr("Git Gui"),
+                    "Download Video (1080p)" => tr("Download Video (1080p)"),
+                    "Copy Path" => tr("Copy Path"),
+                    "Copy Name" => tr("Copy Name"),
+                    "Advanced Archive Manager" => tr("Advanced Archive Manager"),
+                    other => other.to_string(),
+                };
+                format!("{} > {}", cat, act)
             } else {
-                (None, full_label.to_string())
+                match text_content.trim() {
+                    "Add to Quick List" => tr("Add to Quick List"),
+                    "Other Application..." => tr("Other Application..."),
+                    "Inspect Directory" => tr("Inspect Directory"),
+                    "Copy" => tr("Copy"),
+                    "Cut" => tr("Cut"),
+                    "Paste" => tr("Paste"),
+                    "Rename" => tr("Rename"),
+                    "Edit Tags" => tr("Edit Tags"),
+                    "Delete" => tr("Delete"),
+                    "Restore File" => tr("Restore File"),
+                    "Shred File (Permanent)" => tr("Shred File (Permanent)"),
+                    "Open Terminal" => tr("Open Terminal"),
+                    "Toggle Pin" => tr("Toggle Pin"),
+                    "Open in VSCode" => tr("Open in VSCode"),
+                    "File Properties" => tr("File Properties"),
+                    "Folder Info" => tr("Folder Info"),
+                    "New Folder" => tr("New Folder"),
+                    "New File" => tr("New File"),
+                    "Extract Here!" => tr("Extract Here!"),
+                    "Convert to PDF" => tr("Convert to PDF"),
+                    other => other.to_string(),
+                }
+            };
+
+            let final_full_label = format!("{}{}", icon_prefix, translated_text);
+
+            let (submenu, label) = if final_full_label.contains(" > ") {
+                let parts: Vec<&str> = final_full_label.splitn(2, " > ").collect();
+                let sub_clean = parts[0]
+                    .trim_start_matches(|c: char| !c.is_alphanumeric())
+                    .to_string();
+                (Some(sub_clean), parts[1].to_string())
+            } else {
+                (None, final_full_label)
             };
 
             if let Some((mimes_part, cmd_part, toast, no_command_dialog)) = split_mime_cmd(right) {
