@@ -876,6 +876,7 @@ impl FactoryComponent for PathSegment {
         #[root]
         gtk::Button {
             add_css_class: constants::BREADCRUMB_BTN_CLASS,
+            set_tooltip_text: Some(&crate::i18n::tr("Left-click to open · Middle-click to add to Quick List")),
             #[wrap(Some)]
             set_child = &gtk::Label {
                 #[watch]
@@ -884,8 +885,21 @@ impl FactoryComponent for PathSegment {
                 set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
                 set_wrap: false,
             },
+
+            // Left-click: standard navigation
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
+            },
+
+            // Middle-click: add this specific breadcrumb folder to Quick List
+            add_controller = gtk::GestureClick {
+                set_button: 2, // constants::MOUSE_MIDDLE
+                connect_pressed[path = self.path.clone()] => move |gesture, _, _, _| {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    if let Some(s) = crate::model::SENDER.get() {
+                        let _ = s.send(crate::model::AppMsg::AddExclusive(Some(path.clone())));
+                    }
+                }
             }
         }
     }
