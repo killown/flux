@@ -795,8 +795,61 @@ pub fn get_icon_for_path_with_override(
             return icon;
         }
     }
+
+    let cfg = load_config();
+    let path_str = path.to_string_lossy();
+    let canon_str = path
+        .canonicalize()
+        .ok()
+        .map(|p| p.to_string_lossy().into_owned());
+
     if is_dir {
+        let folder_match = cfg
+            .ui
+            .folder_icons
+            .get(path_str.as_ref())
+            .or_else(|| canon_str.as_ref().and_then(|k| cfg.ui.folder_icons.get(k)));
+
+        if let Some(custom) = folder_match {
+            if let Ok(icon) = gio::Icon::for_string(custom) {
+                return icon;
+            }
+        }
         return gio::Icon::for_string("folder").unwrap();
+    }
+
+    let file_match = cfg
+        .ui
+        .file_icons
+        .get(path_str.as_ref())
+        .or_else(|| canon_str.as_ref().and_then(|k| cfg.ui.file_icons.get(k)));
+
+    if let Some(custom) = file_match {
+        if let Ok(icon) = gio::Icon::for_string(custom) {
+            return icon;
+        }
+    }
+
+    let filename = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        path_str.rsplit('/').next().unwrap_or("").to_string()
+    } else {
+        path.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    };
+
+    let ext = std::path::Path::new(&filename)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    if !ext.is_empty() {
+        if let Some(icon_path) = crate::services::loader::get_custom_extension_icon_path(ext) {
+            if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
+                return icon;
+            }
+        }
     }
 
     let path_str = path.to_string_lossy();
