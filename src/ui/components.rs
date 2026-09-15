@@ -876,7 +876,6 @@ impl FactoryComponent for PathSegment {
         #[root]
         gtk::Button {
             add_css_class: constants::BREADCRUMB_BTN_CLASS,
-            set_tooltip_text: Some(&crate::i18n::tr("Left-click to open · Middle-click to add to Quick List")),
             #[wrap(Some)]
             set_child = &gtk::Label {
                 #[watch]
