@@ -108,6 +108,7 @@ pub fn show_tag_navigator(
         let all_tags = all_tags.clone();
         let list_box = list_box.clone();
         let stack = stack.clone();
+        let sender = sender.clone();
 
         Rc::new(move |query: &str| {
             while let Some(child) = list_box.first_child() {
@@ -145,8 +146,22 @@ pub fn show_tag_navigator(
                     .hexpand(true)
                     .build();
 
+                let pin_btn = gtk::Button::builder()
+                    .icon_name("bookmark-new-symbolic")
+                    .tooltip_text(tr("Pin to Sidebar").as_str())
+                    .css_classes(["flat", "circular"])
+                    .valign(gtk::Align::Center)
+                    .build();
+
+                let sender_pin = sender.clone();
+                let tag_pin = tag.clone();
+                pin_btn.connect_clicked(move |_| {
+                    sender_pin.input(AppMsg::AddTagToSidebar(tag_pin.clone()));
+                });
+
                 row_box.append(&icon);
                 row_box.append(&label);
+                row_box.append(&pin_btn);
                 row.set_child(Some(&row_box));
                 list_box.append(&row);
             }
@@ -188,8 +203,13 @@ pub fn show_tag_navigator(
         list_box.connect_selected_rows_changed(move |box_| {
             if let Some(selected_row) = box_.selected_row() {
                 if let Some(row_box) = selected_row.child().and_downcast::<gtk::Box>() {
-                    if let Some(lbl) = row_box.last_child().and_downcast::<gtk::Label>() {
-                        update_filter(lbl.text().to_string());
+                    let mut child = row_box.first_child();
+                    while let Some(w) = child {
+                        if let Some(lbl) = w.downcast_ref::<gtk::Label>() {
+                            update_filter(lbl.text().to_string());
+                            break;
+                        }
+                        child = w.next_sibling();
                     }
                 }
             }
@@ -203,10 +223,15 @@ pub fn show_tag_navigator(
         let tag_submitted = tag_submitted.clone();
         list_box.connect_row_activated(move |_, row| {
             if let Some(row_box) = row.child().and_downcast::<gtk::Box>() {
-                if let Some(lbl) = row_box.last_child().and_downcast::<gtk::Label>() {
-                    tag_submitted.store(true, Ordering::SeqCst);
-                    update_filter(lbl.text().to_string());
-                    dialog.close();
+                let mut child = row_box.first_child();
+                while let Some(w) = child {
+                    if let Some(lbl) = w.downcast_ref::<gtk::Label>() {
+                        tag_submitted.store(true, Ordering::SeqCst);
+                        update_filter(lbl.text().to_string());
+                        dialog.close();
+                        break;
+                    }
+                    child = w.next_sibling();
                 }
             }
         });
@@ -221,9 +246,14 @@ pub fn show_tag_navigator(
         search_entry.connect_activate(move |_| {
             if let Some(selected_row) = list_box.selected_row() {
                 if let Some(row_box) = selected_row.child().and_downcast::<gtk::Box>() {
-                    if let Some(lbl) = row_box.last_child().and_downcast::<gtk::Label>() {
-                        tag_submitted.store(true, Ordering::SeqCst);
-                        update_filter(lbl.text().to_string());
+                    let mut child = row_box.first_child();
+                    while let Some(w) = child {
+                        if let Some(lbl) = w.downcast_ref::<gtk::Label>() {
+                            tag_submitted.store(true, Ordering::SeqCst);
+                            update_filter(lbl.text().to_string());
+                            break;
+                        }
+                        child = w.next_sibling();
                     }
                 }
             }

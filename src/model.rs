@@ -705,6 +705,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Pin a specific tag to the user's sidebar bookmarks in `config.toml`.
+    AddTagToSidebar(String),
     /// Message triggered when the file grid scroll position reaches or leaves the bottom boundary.
     SetScrolledToBottom(bool),
     /// Initiates a copy or move of selected items directly to a quick list destination.

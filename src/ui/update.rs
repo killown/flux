@@ -432,6 +432,9 @@ impl FluxApp {
             // ==========================================
             // Tags
             // ==========================================
+            AppMsg::AddTagToSidebar(tag) => {
+                self.handle_add_tag_to_sidebar(tag);
+            }
             AppMsg::OpenTagPicker => {
                 let selection = self.get_selection();
                 let paths = if selection.is_empty() {
