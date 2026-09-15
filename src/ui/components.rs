@@ -6,7 +6,6 @@ use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
 use adw::gdk;
 use adw::prelude::*;
-use chrono::TimeZone;
 use gtk::gio;
 use gtk::glib;
 use gtk::glib::clone;
@@ -534,13 +533,46 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
 
                 if self.mtime > 0 {
-                    // SAFETY: timestamp_opt returns None only for out-of-range values,
-                    // valid mtime values from the filesystem are always in range.
-                    if let chrono::LocalResult::Single(dt) =
-                        chrono::Local.timestamp_opt(self.mtime, 0)
-                    {
-                        info_parts.push(dt.format("%Y-%m-%d %H:%M").to_string());
+                    if let (Ok(file_dt), Ok(now_dt)) = (
+                        glib::DateTime::from_unix_local(self.mtime),
+                        glib::DateTime::now_local(),
+                    ) {
+                        let (f_y, f_m, f_d) =
+                            (file_dt.year(), file_dt.month(), file_dt.day_of_month());
+                        let (n_y, n_m, n_d) =
+                            (now_dt.year(), now_dt.month(), now_dt.day_of_month());
+
+                        let time_str = file_dt
+                            .format("%H:%M")
+                            .map(|g| g.to_string())
+                            .unwrap_or_default();
+
+                        // Exact localized timestamp for the tooltip
+                        if let Ok(exact) = file_dt.format("%x %X") {
+                            widgets.info_label.set_tooltip_text(Some(exact.as_str()));
+                        }
+
+                        if f_y == n_y && f_m == n_m && f_d == n_d {
+                            info_parts.push(format!("{}, {}", tr("Today"), time_str));
+                        } else {
+                            let is_yesterday = now_dt
+                                .add_days(-1)
+                                .map(|y_dt| {
+                                    y_dt.year() == f_y
+                                        && y_dt.month() == f_m
+                                        && y_dt.day_of_month() == f_d
+                                })
+                                .unwrap_or(false);
+
+                            if is_yesterday {
+                                info_parts.push(format!("{}, {}", tr("Yesterday"), time_str));
+                            } else if let Ok(formatted) = file_dt.format("%x %H:%M") {
+                                info_parts.push(formatted.to_string());
+                            }
+                        }
                     }
+                } else {
+                    widgets.info_label.set_tooltip_text(None::<&str>);
                 }
 
                 if !info_parts.is_empty() {

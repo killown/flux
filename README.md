@@ -6,7 +6,7 @@
 
 **Flux** is the fastest modern GUI file manager on Linux. It combines a minimalist, high-performance architecture with the sleek aesthetic of Libadwaita, delivering a native desktop experience with zero compromise on speed.
 
-<img width="1940" height="1056" alt="flux-screenshot" src="https://github.com/user-attachments/assets/bdcdead3-883b-4a29-9148-9b16278f9f5f" />
+<img width="1940" height="1056" alt="flux-screenshot" src="https://github.com/killown/flux/blob/main/screenshots/flux.png" />
 
 ## Why Flux?
 
