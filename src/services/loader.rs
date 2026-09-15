@@ -293,6 +293,12 @@ impl FluxApp {
             return;
         }
 
+        if path_str.starts_with("tags://") {
+            let clean_tag = path_str.trim_start_matches("tags://");
+            sender.input(AppMsg::NavigateTag(clean_tag.to_string()));
+            return;
+        }
+
         // ── Persistent per-folder view state ─────────────────────────────────────
         let mut folders_first = self
             .config

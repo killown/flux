@@ -176,9 +176,19 @@ impl FluxApp {
             return;
         }
 
-        self.is_loading = true;
         let p = self.current_path.clone();
         let path_str = p.to_string_lossy();
+
+        // Check both the virtual URI and active tag filter
+        if path_str.starts_with("tags://")
+            || self.filter.starts_with('#')
+            || self.filter.starts_with(":tag:")
+            || self.filter.starts_with(":t:")
+        {
+            return;
+        }
+
+        self.is_loading = true;
 
         if crate::services::network::is_network_uri(&p) {
             self.load_network(&path_str, None, sender.clone());
