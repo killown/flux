@@ -556,6 +556,8 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Tracks whether the file grid scrollable container has reached the bottom boundary.
+    pub scrolled_to_bottom: bool,
     /// Whether the top header bar is currently visible.
     pub header_visible: bool,
     /// Weak or cloned handle to the header bar widget for toggling visibility dynamically.
@@ -703,6 +705,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Message triggered when the file grid scroll position reaches or leaves the bottom boundary.
+    SetScrolledToBottom(bool),
     /// Initiates a copy or move of selected items directly to a quick list destination.
     PerformQuickTransfer { dest: PathBuf, is_cut: bool },
     /// Overwrites the quick-list entry at the given index with the current directory path.

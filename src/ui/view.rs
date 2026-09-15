@@ -567,6 +567,10 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_vscrollbar_policy: gtk::PolicyType::Automatic,
                                         set_propagate_natural_width: false,
 
+                                        // Dynamically expand bottom clearance when the quick list panel is active
+                                        #[watch]
+                                        set_margin_bottom: if !model.exclusive_list.is_empty() && model.scrolled_to_bottom { 50 } else { 0 },
+
                                         /// Scroll event controller for UI zooming (Ctrl + Scroll).
                                         add_controller = gtk::EventControllerScroll {
                                             set_flags: gtk::EventControllerScrollFlags::VERTICAL,
@@ -832,8 +836,12 @@ impl SimpleAsyncComponent for FluxApp {
 
         let vadj = widgets.grid_scroller.vadjustment();
         let s_vadj = sender.clone();
-        vadj.connect_value_changed(move |_| {
+        vadj.connect_value_changed(move |vadj| {
             s_vadj.input(AppMsg::CheckVisibleThumbnails);
+
+            // Check if scrollbar has reached the end (with a small 5px tolerance)
+            let at_bottom = vadj.value() >= vadj.upper() - vadj.page_size() - 5.0;
+            s_vadj.input(AppMsg::SetScrolledToBottom(at_bottom));
         });
 
         let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
