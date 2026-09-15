@@ -544,12 +544,14 @@ impl SimpleAsyncComponent for FluxApp {
                             set_orientation: gtk::Orientation::Vertical,
                             set_vexpand: true,
 
-                            #[name = "grid_overlay"]
-                            gtk::Overlay {
-                                set_vexpand: true,
+                            #[local_ref]
+                            toast_overlay -> adw::ToastOverlay {
+                                #[watch]
+                                set_class_active: ("quick-dock-active", !model.exclusive_list.is_empty()),
+                                #[name = "grid_overlay"]
+                                gtk::Overlay {
+                                    set_vexpand: true,
 
-                                #[local_ref]
-                                toast_overlay -> adw::ToastOverlay {
                                     #[name = "grid_scroller"]
                                     gtk::ScrolledWindow {
                                         set_vexpand: true,
@@ -592,73 +594,77 @@ impl SimpleAsyncComponent for FluxApp {
                                                 }
                                             }
                                         },
-                                    }
-                                },
-
-                                /// Lock overlay shown when the current archive requires a password.
-                                add_overlay = &gtk::Box {
-                                    set_orientation: gtk::Orientation::Vertical,
-                                    set_halign: gtk::Align::Center,
-                                    set_valign: gtk::Align::Center,
-                                    set_spacing: 12,
-                                    set_margin_all: 24,
-                                    set_can_target: false,
-                                    #[watch]
-                                    set_visible: model.archive_locked,
-
-                                    gtk::Image {
-                                        set_icon_name: Some("changes-prevent-symbolic"),
-                                        set_pixel_size: 64,
-                                        add_css_class: "dim-label",
                                     },
 
-                                    gtk::Label {
-                                        set_label: &crate::i18n::tr("Archive is password-protected"),
-                                        add_css_class: "title-3",
-                                    },
-
-                                    gtk::Label {
-                                        set_label: &crate::i18n::tr("Enter the password to browse its contents."),
-                                        add_css_class: "dim-label",
-                                    },
-                                },
-
-                                /// Loading overlay spinner for slow directories/archives.
-                                add_overlay = &gtk::Spinner {
-                                    set_halign: gtk::Align::Center,
-                                    set_valign: gtk::Align::Center,
-                                    set_size_request: (48, 48),
-                                    set_spinning: true,
-                                    #[watch]
-                                    set_visible: model.is_loading,
-                                },
-                            },
-
-                            gtk::Revealer {
-                                set_transition_type: gtk::RevealerTransitionType::SlideUp,
-                                set_transition_duration: 150,
-                                #[watch]
-                                set_reveal_child: !model.exclusive_list.is_empty(),
-                                #[watch]
-                                set_visible: !model.exclusive_list.is_empty(),
-
-                                gtk::ScrolledWindow {
-                                    set_hscrollbar_policy: gtk::PolicyType::Automatic,
-                                    set_vscrollbar_policy: gtk::PolicyType::Never,
-                                    set_propagate_natural_height: true,
-                                    add_css_class: "quick-panel-scroll",
-
-                                    #[local_ref]
-                                    quick_panel_box -> gtk::Box {
-                                        set_orientation: gtk::Orientation::Horizontal,
+                                    /// Floating Quick List Dock overlay
+                                    add_overlay = &gtk::Revealer {
+                                        set_transition_type: gtk::RevealerTransitionType::SlideUp,
+                                        set_transition_duration: 150,
+                                        set_valign: gtk::Align::End,
                                         set_halign: gtk::Align::Center,
-                                        add_css_class: "quick-panel",
-                                        set_spacing: 4,
-                                        set_margin_start: 6,
-                                        set_margin_end: 6,
-                                        set_margin_top: 6,
-                                        set_margin_bottom: 6,
-                                    }
+                                        #[watch]
+                                        set_reveal_child: !model.exclusive_list.is_empty(),
+                                        #[watch]
+                                        set_visible: !model.exclusive_list.is_empty(),
+
+                                        gtk::ScrolledWindow {
+                                            set_hscrollbar_policy: gtk::PolicyType::Automatic,
+                                            set_vscrollbar_policy: gtk::PolicyType::Never,
+                                            set_propagate_natural_height: true,
+                                            set_propagate_natural_width: true,
+                                            add_css_class: "quick-panel-scroll",
+
+                                            #[local_ref]
+                                            quick_panel_box -> gtk::Box {
+                                                set_orientation: gtk::Orientation::Horizontal,
+                                                set_halign: gtk::Align::Center,
+                                                add_css_class: "quick-panel",
+                                                set_spacing: 6,
+                                                set_margin_start: 12,
+                                                set_margin_end: 12,
+                                                set_margin_top: 8,
+                                                set_margin_bottom: 3,
+                                            }
+                                        }
+                                    },
+
+                                    /// Lock overlay shown when the current archive requires a password.
+                                    add_overlay = &gtk::Box {
+                                        set_orientation: gtk::Orientation::Vertical,
+                                        set_halign: gtk::Align::Center,
+                                        set_valign: gtk::Align::Center,
+                                        set_spacing: 12,
+                                        set_margin_all: 24,
+                                        set_can_target: false,
+                                        #[watch]
+                                        set_visible: model.archive_locked,
+
+                                        gtk::Image {
+                                            set_icon_name: Some("changes-prevent-symbolic"),
+                                            set_pixel_size: 64,
+                                            add_css_class: "dim-label",
+                                        },
+
+                                        gtk::Label {
+                                            set_label: &crate::i18n::tr("Archive is password-protected"),
+                                            add_css_class: "title-3",
+                                        },
+
+                                        gtk::Label {
+                                            set_label: &crate::i18n::tr("Enter the password to browse its contents."),
+                                            add_css_class: "dim-label",
+                                        },
+                                    },
+
+                                    /// Loading overlay spinner for slow directories/archives.
+                                    add_overlay = &gtk::Spinner {
+                                        set_halign: gtk::Align::Center,
+                                        set_valign: gtk::Align::Center,
+                                        set_size_request: (48, 48),
+                                        set_spinning: true,
+                                        #[watch]
+                                        set_visible: model.is_loading,
+                                    },
                                 }
                             },
                         },
