@@ -255,6 +255,18 @@ impl FluxApp {
         }
     }
 
+    pub fn handle_add_tag_to_sidebar(&mut self, tag: String) {
+        let uri = format!("tags://{}", tag.trim_start_matches('#'));
+        self.config.sidebar.push(crate::model::CustomPlace {
+            name: format!("# {}", tag.trim_start_matches('#')),
+            kind: None,
+            icon: "tag-symbolic".to_string(),
+            path: uri,
+        });
+        crate::utils::save_config(&self.config);
+        self.refresh_sidebar();
+    }
+
     pub fn handle_set_window_size(&mut self, width: Option<i32>, height: Option<i32>) {
         if let Some(w) = width {
             self.config.ui.startup_window_width = w;
