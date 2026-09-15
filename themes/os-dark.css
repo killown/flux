@@ -585,13 +585,11 @@ window:backdrop .selection-status label {
   color: alpha(@theme_fg_color, 0.35);
 }
 
-/* ── Quick Panel ── */
+/* ── Quick Panel (Floating Dock) ── */
 .quick-panel-scroll {
-  background: rgba(18, 18, 18, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 4px 12px rgba(0, 0, 0, 0.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 .quick-panel-scroll undershoot.left,
@@ -599,56 +597,91 @@ window:backdrop .selection-status label {
   background: none;
 }
 
+/* Floating capsule container */
+.quick-panel {
+  background: rgba(30, 30, 32, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 4px 6px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+/* Distinct clickable button pill with readable light text */
 .quick-panel button,
 .quick-panel-tab {
-  min-width: 80px;
-  padding: 5px 14px;
-  font-size: 0.85em;
-  border-radius: 6px;
-  background-color: transparent;
+  min-width: 82px;
+  min-height: 26px;
+  padding: 3px 14px;
+  border-radius: 8px;
+  
+  /* Tactile dark button fill with top highlight */
+  background-color: rgba(255, 255, 255, 0.07);
   background-image: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.12),
-    rgba(255, 255, 255, 0.04)
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.02) 100%
   );
-  color: #f5f5f7;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Defined perimeter */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.22);
   box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transition: all 0.15s ease;
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    
+  color: alpha(@theme_fg_color, 0.88);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
 .quick-panel button label,
 .quick-panel-tab label {
-  color: #f5f5f7;
+  color: alpha(@theme_fg_color, 0.88);
+  font-family: var(--font-main);
+  font-size: 9.5pt;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.quick-panel button:hover,
-.quick-panel-tab:hover {
-  background-color: transparent;
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.2),
-    rgba(255, 255, 255, 0.08)
-  );
+/* Hover: subtle glow and fill illumination without vertical movement */
+.quick-panel button:hover:not(:checked):not(:active):not(.suggested-action),
+.quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) {
+  background-color: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.35);
   box-shadow:
     0 2px 6px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+.quick-panel button:hover:not(:checked):not(:active):not(.suggested-action) label,
+.quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) label {
+  color: #ffffff;
+}
+
+/* Active / Selected: locked flush in place */
 .quick-panel button:active,
 .quick-panel button:checked,
 .quick-panel button.suggested-action,
 .quick-panel-tab:active,
 .quick-panel-tab:checked,
 .quick-panel-tab.suggested-action {
-  background-color: #1e1e1e;
-  background-image: none;
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  background-color: @accent_bg_color;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  border: 1px solid alpha(@accent_color, 0.5);
+  border-top-color: rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 2px 8px alpha(@accent_color, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
   color: #ffffff;
 }
 
@@ -659,7 +692,8 @@ window:backdrop .selection-status label {
 .quick-panel-tab:checked label,
 .quick-panel-tab.suggested-action label {
   color: #ffffff;
-  font-weight: bold;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ── Standard Buttons & Actions ── */
@@ -1074,4 +1108,9 @@ windowcontrols button.close:active {
 windowcontrols button.minimize:hover,
 windowcontrols button.maximize:hover {
   background-color: alpha(@headerbar_fg_color, 0.15);
+}
+
+/* Position toasts cleanly above the floating dock capsule */
+toastoverlay.quick-dock-active toast {
+  margin-bottom: 60px;
 }

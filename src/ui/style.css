@@ -367,30 +367,140 @@ entry.flux-rename-entry {
   opacity: 1;
 }
 
-/* ── Quick Panel ── */
+/* ── Quick Panel (Floating Dock) ── */
 .quick-panel-scroll {
-  background: alpha(@window_bg_color, 0.7);
-  border-top: 1px solid alpha(@window_fg_color, 0.08);
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
+.quick-panel-scroll undershoot.left,
+.quick-panel-scroll undershoot.right {
+  background: none;
+}
+
+/* Floating capsule container */
+.quick-panel {
+  background: alpha(@window_bg_color, 0.85);
+  border: 1px solid alpha(@window_fg_color, 0.12);
+  border-radius: 12px;
+  padding: 4px 6px;
+  box-shadow:
+    0 8px 24px alpha(#000000, 0.12),
+    inset 0 1px 0 alpha(@window_fg_color, 0.08);
+}
+
+/* Direct tab/button items within the dock */
+.quick-panel > button,
 .quick-panel-tab {
-  min-width: 80px;
-  padding: 4px 12px;
-  font-size: 0.85em;
-  border-radius: 6px;
+  min-width: 82px;
+  min-height: 26px;
+  padding: 3px 14px;
+  border-radius: 8px;
   background-color: alpha(@window_fg_color, 0.05);
-  border: 1px solid alpha(@window_fg_color, 0.08);
-  transition: all 0.15s ease;
+  border: 1px solid alpha(@window_fg_color, 0.1);
+  box-shadow: 0 1px 2px alpha(#000000, 0.05);
+  color: alpha(@window_fg_color, 0.85);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
 }
 
-.quick-panel-tab:hover {
+.quick-panel > button label,
+.quick-panel-tab label {
+  color: alpha(@window_fg_color, 0.85);
+  font-family: var(--font-main);
+  font-size: 9.5pt;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+/* Hover: highlights cleanly without shifting vertically */
+.quick-panel > button:hover:not(:checked):not(:active):not(.suggested-action),
+.quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) {
   background-color: alpha(@accent_color, 0.12);
+  border-color: alpha(@accent_color, 0.3);
+  box-shadow: 0 2px 4px alpha(#000000, 0.08);
 }
 
+.quick-panel > button:hover:not(:checked):not(:active):not(.suggested-action) label,
+.quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) label {
+  color: @accent_color;
+}
+
+/* Active / Selected state */
+.quick-panel > button:active,
+.quick-panel > button:checked,
+.quick-panel > button.suggested-action,
+.quick-panel-tab:active,
 .quick-panel-tab:checked,
-.quick-panel-tab:active {
+.quick-panel-tab.suggested-action {
+  background-color: @accent_color;
+  border: 1px solid alpha(@accent_color, 0.4);
+  box-shadow: 0 2px 8px alpha(@accent_color, 0.3);
+  color: @accent_fg_color;
+}
+
+.quick-panel > button:active label,
+.quick-panel > button:checked label,
+.quick-panel > button.suggested-action label,
+.quick-panel-tab:active label,
+.quick-panel-tab:checked label,
+.quick-panel-tab.suggested-action label {
+  color: @accent_fg_color;
+  font-weight: 700;
+  text-shadow: none;
+}
+
+/* Popover menu isolation: prevents white-on-white text in dropdowns */
+.quick-panel popover.menu contents,
+.quick-panel-tab popover.menu contents {
+  background-color: @window_bg_color;
+  color: @window_fg_color;
+  border: 1px solid alpha(@window_fg_color, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px alpha(#000000, 0.15);
+  padding: 4px;
+}
+
+.quick-panel popover.menu modelbutton,
+.quick-panel-tab popover.menu modelbutton {
+  background-color: transparent;
+  color: @window_fg_color;
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.quick-panel popover.menu modelbutton label,
+.quick-panel-tab popover.menu modelbutton label {
+  color: @window_fg_color !important;
+  font-weight: 500;
+}
+
+.quick-panel popover.menu modelbutton:hover,
+.quick-panel-tab popover.menu modelbutton:hover {
   background-color: @accent_color;
   color: @accent_fg_color;
+}
+
+.quick-panel popover.menu modelbutton:hover label,
+.quick-panel-tab popover.menu modelbutton:hover label {
+  color: @accent_fg_color !important;
+}
+
+.quick-panel popover.menu separator,
+.quick-panel-tab popover.menu separator {
+  background-color: alpha(@window_fg_color, 0.08);
+  min-height: 1px;
+  margin: 4px 8px;
+}
+
+/* Toast offset: ensures toasts clear the floating dock */
+toastoverlay.quick-dock-active toast {
+  margin-bottom: 56px;
 }
 
 /* ── Status Bar & Transfers ── */
