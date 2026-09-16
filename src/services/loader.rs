@@ -267,9 +267,6 @@ impl FluxApp {
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        unsafe {
-            libc::malloc_trim(0);
-        }
         self.is_loading = true;
         let path_str = path.to_string_lossy().to_string();
 
@@ -1216,9 +1213,6 @@ impl FluxApp {
                     .map(|(k, _)| k.clone())
                 {
                     self.folder_cache.remove(&oldest);
-                    unsafe {
-                        libc::malloc_trim(0);
-                    }
                 }
             }
 
@@ -1255,9 +1249,6 @@ impl FluxApp {
         if items.len() <= batch_size {
             self.append_context_batch(items, load_id, is_cached, sender);
             self.is_loading = false;
-            unsafe {
-                libc::malloc_trim(0);
-            }
         } else {
             let mut remaining = items;
             let first_batch: Vec<FileLoadContext> = remaining.drain(..batch_size).collect();
