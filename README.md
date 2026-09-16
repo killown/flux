@@ -6,7 +6,11 @@
 
 **Flux** is the fastest modern GUI file manager on Linux. It combines a minimalist, high-performance architecture with the sleek aesthetic of Libadwaita, delivering a native desktop experience with zero compromise on speed.
 
-<img width="1940" height="1056" alt="flux-screenshot" src="https://github.com/killown/flux/blob/main/screenshots/flux.png" />
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=CUsf3Xyxw-k">
+    <img src="https://github.com/killown/flux/raw/main/screenshots/flux.png" alt="Flux YouTube Showcase" width="100%">
+  </a>
+</p>
 
 ## Why Flux?
 
@@ -224,51 +228,46 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 
 ## ⌨️ Keyboard Shortcuts
 
-| Key                       | Action                                    |
-| :------------------------ | :---------------------------------------- |
-| `F1`                      | Keyboard shortcut reference               |
-| `F2` / `Ctrl+I`           | Inline rename                             |
-| `F3`                      | Set custom icon                           |
-| `Ctrl+F3`                 | Reset custom icon                         |
-| `F4`                      | Toggle integrated terminal                |
-| `F5`                      | Refresh current directory                 |
-| `F6`                      | Toggle header bar                         |
-| `F7`                      | Toggle folders first                      |
-| `F9`                      | Visual menu editor                        |
-| `F10`                     | Open preferences                          |
-| `F12`                     | Advanced search dialog                    |
-| `Ctrl+F`                  | Search / filter bar                       |
-| `:term` / `:.ext:term`    | Start content search                      |
-| `Esc`                     | Cancel content search                     |
-| `Ctrl+H`                  | Toggle hidden files                       |
-| `Ctrl+Home`               | Navigate to home directory                |
-| `Ctrl+L`                  | Go to location                            |
-| `Ctrl+Shift+L`            | Connect to server                         |
-| `Ctrl+T`                  | Edit tags for selection                   |
-| `Ctrl+Shift+T`            | Open tag navigator                        |
-| `Ctrl+S`                  | Cycle sort criteria                       |
-| `Ctrl+Shift+S`            | Toggle sort order                         |
-| `Ctrl+A`                  | Select all                                |
-| `Ctrl+C / X / V`          | Copy / Cut / Paste                        |
-| `Ctrl+Shift+C`            | Copy absolute path of selected items      |
-| `Ctrl+Shift+V`            | Create symbolic link from clipboard paths |
-| `Ctrl+Alt+Shift+V`        | Create hard link from clipboard paths     |
-| `Delete`                  | Move to trash                             |
-| `Ctrl+Z`                  | Undo                                      |
-| `Ctrl+Shift+Z` / `Ctrl+Y` | Redo                                      |
-| `Backspace` / `Alt+Left`  | Go back in history                        |
-| `Alt+Right`               | Go forward in history                     |
-| `Enter`                   | Open selected file or directory           |
-| `/`                       | Navigate to root directory                |
-| `Insert`                  | Pin to quick list                         |
-| `Tab`                     | Next quick list entry                     |
-| `Ctrl+PageUp/Down`        | Previous / next quick list entry          |
-| `Ctrl+End`                | Clear quick list                          |
-| `Ctrl+Insert`             | Pin current dir to sidebar permanently    |
-| `Ctrl+Scroll`             | Resize grid items                         |
-| `Ctrl+Middle Click`       | Open folder in new window                 |
-| `Ctrl+Shift+F7`           | Open memory debug profiler                |
-| `Ctrl+Q`                  | Quit application                          |
+| Key                           | Action                                                 |
+| :---------------------------- | :----------------------------------------------------- |
+| `Backspace` / `Alt + Left`    | Go back in history                                     |
+| `Alt + Right`                 | Go forward in history                                  |
+| `Ctrl + Home`                 | Navigate to home directory                             |
+| `Enter`                       | Open selected file or directory                        |
+| `/`                           | Navigate to root directory                             |
+| `Ctrl + L`                    | Open location dialog                                   |
+| `Ctrl + Shift + L`            | Connect to server                                      |
+| `Ctrl + Shift + T`            | Open tag navigator                                     |
+| `Insert`                      | Add selection or current folder to list                |
+| `Ctrl + Insert`               | Pin selection or current folder to sidebar permanently |
+| `Tab`                         | Cycle to the next folder in the list                   |
+| `Ctrl + End`                  | Clear the entire list                                  |
+| `F12`                         | Open advanced search dialog                            |
+| `:term` / `:.ext:term`        | Start content search                                   |
+| `Esc`                         | Cancel content search                                  |
+| `F2`                          | Rename selected item                                   |
+| `F3`                          | Toggle folders first in current directory              |
+| `F4`                          | Toggle embedded terminal                               |
+| `F5`                          | Refresh current directory                              |
+| `F6`                          | Toggle header bar                                      |
+| `F7`                          | Toggle status bar                                      |
+| `F8`                          | Toggle sidebar                                         |
+| `Ctrl + F`                    | Search files                                           |
+| `Ctrl + Scroll`               | Resize grid items                                      |
+| `Ctrl + Middle Click`         | Open folder in new window                              |
+| `Ctrl + H`                    | Toggle hidden files                                    |
+| `Delete`                      | Move selected items to trash                           |
+| `Ctrl + Z`                    | Undo file operation                                    |
+| `Ctrl + Shift + Z / Ctrl + Y` | Redo file operation                                    |
+| `Ctrl + T`                    | Edit tags for selection                                |
+| `Ctrl + Shift + C`            | Copy absolute path of selected items                   |
+| `Ctrl + Shift + V`            | Create symbolic link from clipboard paths              |
+| `Ctrl + Alt + Shift + V`      | Create hard link from clipboard paths                  |
+| `Ctrl + Shift + F7`           | Open memory debug profiler                             |
+| `F9`                          | Open context menu editor                               |
+| `F10`                         | Open preferences                                       |
+| `Ctrl + S`                    | Cycle through sorting modes                            |
+| `Ctrl + Shift + S`            | Toggle ascending/descending sort order                 |
 
 ---
 
