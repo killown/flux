@@ -2,8 +2,26 @@
 use flux::services::archive::{entries_to_load_contexts, ArchiveEntry};
 use libfuzzer_sys::fuzz_target;
 use std::path::Path;
+use std::sync::Once;
+
+static INIT_FUZZ_ENV: Once = Once::new();
 
 fuzz_target!(|data: &[u8]| {
+    INIT_FUZZ_ENV.call_once(|| {
+        let sandbox_cfg = std::env::temp_dir().join("flux-fuzz-cfg");
+        let flux_cfg = sandbox_cfg.join("flux");
+        let _ = std::fs::create_dir_all(&flux_cfg);
+
+        // Turn off auto_generate_mime_icons so fuzz runs don't dump thousands of SVGs to disk
+        let _ = std::fs::write(
+            flux_cfg.join("config.toml"),
+            b"[ui]\nauto_generate_mime_icons = false\n",
+        );
+
+        std::env::set_var("XDG_CONFIG_HOME", &sandbox_cfg);
+        std::env::set_var("XDG_DATA_HOME", std::env::temp_dir().join("flux-fuzz-data"));
+    });
+
     if let Ok(raw_listing) = std::str::from_utf8(data) {
         let entries: Vec<ArchiveEntry> = raw_listing
             .lines()
