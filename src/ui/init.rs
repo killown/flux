@@ -22,6 +22,9 @@ impl FluxApp {
         start_path: PathBuf,
         quick_list: Option<Vec<PathBuf>>,
         initial_tag_search: Option<String>,
+        no_sidebar: bool,
+        no_header: bool,
+        no_statusbar: bool,
         root: &adw::Window,
         sender: AsyncComponentSender<Self>,
     ) -> (Self, gtk::Box) {
@@ -248,6 +251,17 @@ impl FluxApp {
             .map(|(_, _, size, _)| size as i32)
             .unwrap_or(config.ui.default_icon_size);
 
+        let effective_sidebar_visible = if no_sidebar {
+            false
+        } else {
+            config.ui.sidebar_visible
+        };
+        let effective_header_visible = if no_header {
+            false
+        } else {
+            config.ui.header_visible
+        };
+
         let mut model = FluxApp {
             active_video_preview: None,
             video_preview_source: None,
@@ -293,10 +307,11 @@ impl FluxApp {
             terminal_spawned: false,
             terminal_cleared: false,
             terminal_paned: None,
-            sidebar_visible: config.ui.sidebar_visible,
+            sidebar_visible: effective_sidebar_visible,
             sidebar_widget: Some(sidebar_container.upcast()),
-            header_visible: config.ui.header_visible,
+            header_visible: effective_header_visible,
             header_widget: None,
+            statusbar_visible: !no_statusbar,
             recents_has_selection: false,
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),

@@ -173,6 +173,9 @@ fn launch_main_app(
     open_archive: Option<PathBuf>,
     quick_list: Option<Vec<PathBuf>>,
     tag_search: Option<String>,
+    no_sidebar: bool,
+    no_header: bool,
+    no_statusbar: bool,
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
@@ -214,6 +217,9 @@ fn launch_main_app(
         open_archive,
         quick_list,
         tag_search,
+        no_sidebar,
+        no_header,
+        no_statusbar,
     });
 }
 
@@ -238,6 +244,9 @@ fn main() {
             println!("Options:");
             println!("  -h, --help                  Print this help message");
             println!("  -v, --version               Print version information");
+            println!("      --no-sidebar            Disable sidebar for this session");
+            println!("      --no-header             Disable header bar for this session");
+            println!("      --no-statusbar          Disable statusbar for this session");
             println!("      --file-properties PATH  Open the file properties window for PATH");
             println!("      --set-icon TARGET IMAGE Set a custom icon/image for TARGET");
             println!(
@@ -274,20 +283,59 @@ fn main() {
 
         StartupAction::OpenArchive(archive_path) => {
             let start_path = archive_path.parent().unwrap_or(&archive_path).to_path_buf();
-            launch_main_app(start_path, Some(archive_path), None, None);
+            launch_main_app(
+                start_path,
+                Some(archive_path),
+                None,
+                None,
+                false,
+                false,
+                false,
+            );
         }
 
-        StartupAction::Launch(start_path) => {
-            launch_main_app(start_path, None, None, None);
+        StartupAction::Launch {
+            path,
+            no_sidebar,
+            no_header,
+            no_statusbar,
+        } => {
+            launch_main_app(path, None, None, None, no_sidebar, no_header, no_statusbar);
         }
 
-        StartupAction::TagSearch(tag) => {
-            launch_main_app(home_dir, None, None, Some(tag));
+        StartupAction::TagSearch {
+            tag,
+            no_sidebar,
+            no_header,
+            no_statusbar,
+        } => {
+            launch_main_app(
+                home_dir,
+                None,
+                None,
+                Some(tag),
+                no_sidebar,
+                no_header,
+                no_statusbar,
+            );
         }
 
-        StartupAction::QuickList(paths) => {
+        StartupAction::QuickList {
+            paths,
+            no_sidebar,
+            no_header,
+            no_statusbar,
+        } => {
             let first = paths.first().cloned().unwrap_or_else(|| home_dir.clone());
-            launch_main_app(first, None, Some(paths), None);
+            launch_main_app(
+                first,
+                None,
+                Some(paths),
+                None,
+                no_sidebar,
+                no_header,
+                no_statusbar,
+            );
         }
 
         StartupAction::SetIcon { target, image } => {

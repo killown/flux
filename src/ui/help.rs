@@ -199,16 +199,9 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Change current folder icon"),
+                        set_title: &tr("Toggle folders first in current directory"),
                         add_suffix = &gtk::Label {
-                            set_label: &model.format_shortcut(model.config.shortcuts.change_icon.clone(), "F3"),
-                            add_css_class: "keycap",
-                        },
-                    },
-                    add = &adw::ActionRow {
-                        set_title: &tr("Reset current folder icon to default"),
-                        add_suffix = &gtk::Label {
-                            set_label: &model.format_shortcut(model.config.shortcuts.reset_icon.clone(), "Ctrl + F3"),
+                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_folders_first.clone(), "F3"),
                             add_css_class: "keycap",
                         },
                     },
@@ -220,13 +213,6 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Toggle header bar"),
-                        add_suffix = &gtk::Label {
-                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_header.clone(), "F6"),
-                            add_css_class: "keycap",
-                        },
-                    },
-                    add = &adw::ActionRow {
                         set_title: &tr("Refresh current directory"),
                         add_suffix = &gtk::Label {
                             set_label: &model.format_shortcut(model.config.shortcuts.refresh.clone(), "F5"),
@@ -234,9 +220,23 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Toggle folders first in current directory"),
+                        set_title: &tr("Toggle header bar"),
                         add_suffix = &gtk::Label {
-                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_folders_first.clone(), "F7"),
+                            set_label: &model.format_shortcut(model.config.shortcuts.toggle_header.clone(), "F6"),
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle status bar"),
+                        add_suffix = &gtk::Label {
+                            set_label: "F7",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Toggle sidebar"),
+                        add_suffix = &gtk::Label {
+                            set_label: "F8",
                             add_css_class: "keycap",
                         },
                     },

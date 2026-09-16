@@ -1040,6 +1040,9 @@ impl FluxApp {
             AppMsg::SetSingleClick(val) => self.handle_set_single_click(val),
             AppMsg::ToggleSingleClick => self.handle_toggle_single_click(),
             AppMsg::SetShowHidden(val) => self.handle_set_show_hidden(val, &sender),
+            AppMsg::ToggleStatusBar => {
+                self.statusbar_visible = !self.statusbar_visible;
+            }
             AppMsg::ToggleHidden => self.handle_set_show_hidden(!self.show_hidden, &sender),
             AppMsg::SetShowCsd(val) => self.handle_set_show_csd(val),
             AppMsg::SetWindowControlsLeft(val) => self.handle_set_window_controls_left(val),
