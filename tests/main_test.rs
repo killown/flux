@@ -12,6 +12,24 @@ fn home() -> PathBuf {
     PathBuf::from(FAKE_HOME)
 }
 
+fn launch_action(path: PathBuf) -> StartupAction {
+    StartupAction::Launch {
+        path,
+        no_sidebar: false,
+        no_header: false,
+        no_statusbar: false,
+    }
+}
+
+fn quick_list_action(paths: Vec<PathBuf>) -> StartupAction {
+    StartupAction::QuickList {
+        paths,
+        no_sidebar: false,
+        no_header: false,
+        no_statusbar: false,
+    }
+}
+
 // ── No-arg / default path ────────────────────────────────────────────────
 
 #[test]
@@ -20,13 +38,13 @@ fn no_args_launches_home_dir() {
     // path), which was the root cause of the bug where `cargo run -- /home/`
     // opened the workspace root instead of /home/.
     let action = resolve_startup_action(&args(&["flux-fm"]), home());
-    assert_eq!(action, StartupAction::Launch(PathBuf::from(FAKE_HOME)));
+    assert_eq!(action, launch_action(PathBuf::from(FAKE_HOME)));
 }
 
 #[test]
 fn no_args_launch_path_is_never_empty() {
     let action = resolve_startup_action(&args(&["flux-fm"]), home());
-    if let StartupAction::Launch(path) = action {
+    if let StartupAction::Launch { path, .. } = action {
         assert!(
             !path.as_os_str().is_empty(),
             "Launch path must never be PathBuf::new() (empty string): \
@@ -39,7 +57,7 @@ fn no_args_launch_path_is_never_empty() {
 fn empty_args_slice_launches_home_dir() {
     // Edge case: completely empty slice (no argv[0]).
     let action = resolve_startup_action(&[], home());
-    assert_eq!(action, StartupAction::Launch(PathBuf::from(FAKE_HOME)));
+    assert_eq!(action, launch_action(PathBuf::from(FAKE_HOME)));
 }
 
 // ── Explicit path argument ───────────────────────────────────────────────
@@ -47,26 +65,26 @@ fn empty_args_slice_launches_home_dir() {
 #[test]
 fn absolute_path_arg_launches_that_path() {
     let action = resolve_startup_action(&args(&["flux-fm", "/home/"]), home());
-    assert_eq!(action, StartupAction::Launch(PathBuf::from("/home/")));
+    assert_eq!(action, launch_action(PathBuf::from("/home/")));
 }
 
 #[test]
 fn absolute_path_arg_is_not_home_dir() {
     // Validates that the supplied path, not the home fallback, is used.
     let action = resolve_startup_action(&args(&["flux-fm", "/home/"]), home());
-    assert_ne!(action, StartupAction::Launch(home()));
+    assert_ne!(action, launch_action(home()));
 }
 
 #[test]
 fn root_path_arg_launches_root() {
     let action = resolve_startup_action(&args(&["flux-fm", "/"]), home());
-    assert_eq!(action, StartupAction::Launch(PathBuf::from("/")));
+    assert_eq!(action, launch_action(PathBuf::from("/")));
 }
 
 #[test]
 fn relative_path_arg_launches_that_relative_path() {
     let action = resolve_startup_action(&args(&["flux-fm", "Documents"]), home());
-    assert_eq!(action, StartupAction::Launch(PathBuf::from("Documents")));
+    assert_eq!(action, launch_action(PathBuf::from("Documents")));
 }
 
 #[test]
@@ -74,7 +92,7 @@ fn tilde_path_arg_is_passed_through_as_literal() {
     // resolve_startup_action does NOT expand tildes, that is the caller's
     // responsibility (utils::expand_path).  This test documents the contract.
     let action = resolve_startup_action(&args(&["flux-fm", "~"]), home());
-    assert_eq!(action, StartupAction::Launch(PathBuf::from("~")));
+    assert_eq!(action, launch_action(PathBuf::from("~")));
 }
 
 #[test]
@@ -82,7 +100,7 @@ fn path_with_spaces_is_preserved() {
     let action = resolve_startup_action(&args(&["flux-fm", "/home/user/My Documents"]), home());
     assert_eq!(
         action,
-        StartupAction::Launch(PathBuf::from("/home/user/My Documents"))
+        launch_action(PathBuf::from("/home/user/My Documents"))
     );
 }
 
@@ -190,7 +208,7 @@ fn launch_path_is_never_path_buf_new_for_any_path_arg() {
     let cases = ["/home/", "/", "/tmp", ".", "Documents", "~"];
     for input in cases {
         let action = resolve_startup_action(&args(&["flux-fm", input]), home());
-        if let StartupAction::Launch(path) = action {
+        if let StartupAction::Launch { path, .. } = action {
             assert!(
                 !path.as_os_str().is_empty(),
                 "input '{input}' produced empty PathBuf - init_components regression risk"
@@ -204,7 +222,7 @@ fn home_fallback_is_never_path_buf_new() {
     // Ensures that even a degenerate home_dir argument (PathBuf::new()) is
     // caught: callers must supply a real fallback.
     let action = resolve_startup_action(&args(&["flux-fm"]), PathBuf::from("."));
-    if let StartupAction::Launch(path) = action {
+    if let StartupAction::Launch { path, .. } = action {
         assert!(
             !path.as_os_str().is_empty(),
             "home fallback produced empty path"
@@ -300,7 +318,7 @@ fn quick_list_multiple_paths() {
     );
     assert_eq!(
         action,
-        StartupAction::QuickList(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2"),])
+        quick_list_action(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2")])
     );
 }
 
@@ -320,6 +338,6 @@ fn quick_list_stdin_action() {
     );
     assert_eq!(
         action,
-        StartupAction::QuickList(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2"),])
+        quick_list_action(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2")])
     );
 }
