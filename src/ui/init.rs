@@ -18,6 +18,7 @@ impl FluxApp {
     ///
     /// This method decouples the complex state initialization and system monitoring
     /// from the main component file to improve maintainability and compilation speed.
+    #[allow(clippy::too_many_arguments)]
     pub(crate) async fn init_components(
         start_path: PathBuf,
         quick_list: Option<Vec<PathBuf>>,
