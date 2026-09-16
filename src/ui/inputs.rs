@@ -164,7 +164,7 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::ToggleCurrentFoldersFirst);
                 glib::Propagation::Stop
             }
-            gdk::Key::F7 => {
+            gdk::Key::F7 if !is_ctrl && !is_shift => {
                 sender_cap.input(AppMsg::ToggleStatusBar);
                 glib::Propagation::Stop
             }
