@@ -2517,6 +2517,26 @@ msgid "Enter a new title for this section:"
 msgstr "Digite um novo título para esta seção:"
 
 # ============================================================
+# Novas entradas: Barra de status e atalhos
+# ============================================================
+
+#: src/ui/help.rs:??? src/ui/settings.rs:???
+msgid "Toggle status bar"
+msgstr "Mostrar/ocultar barra de status"
+
+#: src/ui/settings.rs:???
+msgid "Toggle Status Bar"
+msgstr "Alternar barra de status"
+
+#: src/ui/settings.rs:???
+msgid "Show or hide the bottom status bar"
+msgstr "Mostrar ou ocultar a barra de status inferior"
+
+#: src/ui/help.rs:???
+msgid "Toggle sidebar"
+msgstr "Mostrar/ocultar barra lateral"
+
+# ============================================================
 # Etiquetas / Tag Navigator (sem referência mapeada)
 # ============================================================
 

@@ -1349,7 +1349,7 @@ impl SimpleComponent for SettingsWindow {
 
                 add = &adw::PreferencesGroup {
                     set_title: &tr("View & Customization"),
-                    set_description: Some(&tr("Shortcuts for controlling the interface and icons")),
+                    set_description: Some(&tr("Shortcuts for controlling the interface")),
                     add = &adw::ActionRow {
                         set_title: &tr("Toggle Header Bar"),
                         set_subtitle: &tr("Show or hide the top navigation toolbar"),
@@ -1468,7 +1468,7 @@ impl SimpleComponent for SettingsWindow {
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.change_icon.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
-                            set_placeholder_text: Some("F3"),
+                            set_placeholder_text: Some(""),
                             connect_changed => move |entry: &gtk::Entry| {
                                 let val = entry.text().to_string();
                                 let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
@@ -1484,7 +1484,7 @@ impl SimpleComponent for SettingsWindow {
                         add_suffix = &gtk::Entry {
                             set_text: model.config.shortcuts.reset_icon.as_deref().unwrap_or(""),
                             set_valign: gtk::Align::Center,
-                            set_placeholder_text: Some("<Primary>F3"),
+                            set_placeholder_text: Some(""),
                             connect_changed => move |entry: &gtk::Entry| {
                                 let val = entry.text().to_string();
                                 let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };

@@ -280,8 +280,13 @@ impl StateManager {
 
     /// Removes a folder icon entry.
     pub fn remove_folder_icon(&self, path: &str) -> Result<()> {
+        let clean = path.trim_end_matches('/');
+        let with_slash = format!("{}/", clean);
         let conn = self.conn.lock().unwrap();
-        conn.execute("DELETE FROM folder_icons WHERE path = ?1", params![path])?;
+        conn.execute(
+            "DELETE FROM folder_icons WHERE path = ?1 OR path = ?2",
+            params![clean, with_slash],
+        )?;
         Ok(())
     }
 

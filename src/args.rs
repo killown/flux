@@ -13,11 +13,26 @@ fn uri_to_path(s: &str) -> PathBuf {
 #[derive(Debug, PartialEq)]
 pub enum StartupAction {
     /// Launch the main file-manager window starting at the given path.
-    Launch(PathBuf),
+    Launch {
+        path: PathBuf,
+        no_sidebar: bool,
+        no_header: bool,
+        no_statusbar: bool,
+    },
     /// Launch the main window with an active tag search filter applied.
-    TagSearch(String),
+    TagSearch {
+        tag: String,
+        no_sidebar: bool,
+        no_header: bool,
+        no_statusbar: bool,
+    },
     /// Launch the main window with pre-seeded quick-panel triage items.
-    QuickList(Vec<PathBuf>),
+    QuickList {
+        paths: Vec<PathBuf>,
+        no_sidebar: bool,
+        no_header: bool,
+        no_statusbar: bool,
+    },
     /// Open the archive-explorer window for the given path.
     OpenArchive(PathBuf),
     /// Open the standalone file-properties dialog for the given path.
@@ -52,17 +67,39 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
     home_dir: PathBuf,
     reader: R,
 ) -> StartupAction {
-    let positional = args.get(1).map(String::as_str);
+    let mut no_sidebar = false;
+    let mut no_header = false;
+    let mut no_statusbar = false;
+    let mut filtered_args = Vec::new();
+
+    for (i, arg) in args.iter().enumerate() {
+        if i == 0 {
+            continue;
+        }
+        match arg.as_str() {
+            "--no-sidebar" => no_sidebar = true,
+            "--no-header" => no_header = true,
+            "--no-statusbar" => no_statusbar = true,
+            _ => filtered_args.push(arg.as_str()),
+        }
+    }
+
+    let positional = filtered_args.first().copied();
     match positional {
-        None => StartupAction::Launch(home_dir),
+        None => StartupAction::Launch {
+            path: home_dir,
+            no_sidebar,
+            no_header,
+            no_statusbar,
+        },
         Some("--version" | "-v") => StartupAction::PrintVersion,
         Some("--help" | "-h") => StartupAction::PrintHelp,
         Some("--menu-editor") => StartupAction::MenuEditor,
-        Some("--file-properties") => match args.get(2) {
+        Some("--file-properties") => match filtered_args.get(1) {
             Some(path) => StartupAction::FileProperties(uri_to_path(path)),
             None => StartupAction::PrintHelp,
         },
-        Some("--set-icon") => match (args.get(2), args.get(3)) {
+        Some("--set-icon") => match (filtered_args.get(1), filtered_args.get(2)) {
             (Some(target), Some(image)) => StartupAction::SetIcon {
                 target: uri_to_path(target),
                 image: uri_to_path(image),
@@ -70,13 +107,13 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             _ => StartupAction::PrintHelp,
         },
         Some("--set-icons-stdin") => StartupAction::SetIconsStdin,
-        Some("--reset-icon") => match args.get(2) {
+        Some("--reset-icon") => match filtered_args.get(1) {
             Some(target) => StartupAction::ResetIcon(uri_to_path(target)),
             None => StartupAction::PrintHelp,
         },
         Some("--reset-icons-stdin") => StartupAction::ResetIconsStdin,
         Some("--quick-list") => {
-            let list: Vec<PathBuf> = args[2..]
+            let list: Vec<PathBuf> = filtered_args[1..]
                 .iter()
                 .filter(|a| !a.starts_with('-'))
                 .map(|p| uri_to_path(p))
@@ -84,7 +121,12 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             if list.is_empty() {
                 StartupAction::PrintHelp
             } else {
-                StartupAction::QuickList(list)
+                StartupAction::QuickList {
+                    paths: list,
+                    no_sidebar,
+                    no_header,
+                    no_statusbar,
+                }
             }
         }
         Some("--quick-list-stdin") => {
@@ -96,9 +138,19 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
                 }
             }
             if list.is_empty() {
-                StartupAction::Launch(home_dir)
+                StartupAction::Launch {
+                    path: home_dir,
+                    no_sidebar,
+                    no_header,
+                    no_statusbar,
+                }
             } else {
-                StartupAction::QuickList(list)
+                StartupAction::QuickList {
+                    paths: list,
+                    no_sidebar,
+                    no_header,
+                    no_statusbar,
+                }
             }
         }
         Some(arg) if arg.starts_with('-') => StartupAction::UnknownFlag(arg.to_string()),
@@ -113,13 +165,23 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
                     .trim_start_matches(":tag:")
                     .trim_start_matches(":t:")
                     .trim_start_matches('#');
-                StartupAction::TagSearch(format!("#{clean}"))
+                StartupAction::TagSearch {
+                    tag: format!("#{clean}"),
+                    no_sidebar,
+                    no_header,
+                    no_statusbar,
+                }
             } else {
                 let p = uri_to_path(path);
                 if p.is_file() && crate::services::archive::is_supported_archive(&p) {
                     StartupAction::OpenArchive(p)
                 } else {
-                    StartupAction::Launch(p)
+                    StartupAction::Launch {
+                        path: p,
+                        no_sidebar,
+                        no_header,
+                        no_statusbar,
+                    }
                 }
             }
         }

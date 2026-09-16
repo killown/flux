@@ -236,6 +236,21 @@ impl FluxApp {
                             continue;
                         }
                     }
+                    "builtin::select_folder_icon" => {
+                        let target = path.clone().unwrap_or_else(|| self.current_path.clone());
+                        let action = gio::SimpleAction::new("select-folder-icon", None);
+                        action.set_enabled(true);
+                        let s = sender.clone();
+                        let toast = action_toast.clone();
+                        action.connect_activate(move |_, _| {
+                            s.input(AppMsg::ShowIconPicker(target.clone()));
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
+                            }
+                        });
+                        self.action_group.add_action(&action);
+                        ("win.select-folder-icon".to_string(), "select-folder-icon")
+                    }
                     "builtin::inspect_dir" => {
                         let target = path.clone().unwrap_or_else(|| self.current_path.clone());
                         let s = sender.clone();

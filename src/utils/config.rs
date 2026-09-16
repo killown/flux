@@ -61,6 +61,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰈔      New File" => "directory", "builtin::new_file"
 
 # --- Icon Customization ---
+"󰸉      Icons > Select Folder Icon" => "directory", "builtin::select_folder_icon"
 "󰸉      Icons > Set File Icon" => "all", "builtin::set_custom_icon"
 "󰸉      Icons > Reset File Icon" => "all", "builtin::reset_custom_icon"
 "󰸉      Icons > Set Extension Icon" => "file", "builtin::set_extension_icon"

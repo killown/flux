@@ -727,6 +727,8 @@ impl SimpleAsyncComponent for FluxApp {
 
                     /// Selection status bar at the bottom of the main content view.
                     gtk::Box {
+                        #[watch]
+                        set_visible: model.statusbar_visible,
                         set_margin_start: 8,
                         set_margin_end: 8,
                         set_margin_bottom: 2,
@@ -820,11 +822,22 @@ impl SimpleAsyncComponent for FluxApp {
             open_archive,
             quick_list,
             tag_search,
+            no_sidebar,
+            no_header,
+            no_statusbar,
         } = init;
 
-        let (mut model, breadcrumb_box) =
-            FluxApp::init_components(start_path, quick_list, tag_search, &root, sender.clone())
-                .await;
+        let (mut model, breadcrumb_box) = FluxApp::init_components(
+            start_path,
+            quick_list,
+            tag_search,
+            no_sidebar,
+            no_header,
+            no_statusbar,
+            &root,
+            sender.clone(),
+        )
+        .await;
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
         let widgets = view_output!();

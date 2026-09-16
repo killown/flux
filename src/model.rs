@@ -75,6 +75,12 @@ pub struct AppInit {
     /// Optional tag search filter (e.g. `"#games"`) to seed into the search entry
     /// and activate on initial application startup.
     pub tag_search: Option<String>,
+    /// Temporary CLI override to hide the sidebar without persisting to config.
+    pub no_sidebar: bool,
+    /// Temporary CLI override to hide the top header bar without persisting to config.
+    pub no_header: bool,
+    /// Temporary CLI override to hide the bottom status bar without persisting to config.
+    pub no_statusbar: bool,
 }
 
 /// Internal metadata container for parallel directory processing.
@@ -559,6 +565,8 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Whether the bottom status bar is currently visible.
+    pub statusbar_visible: bool,
     /// Tracks whether the file grid scrollable container has reached the bottom boundary.
     pub scrolled_to_bottom: bool,
     /// Whether the top header bar is currently visible.
@@ -708,6 +716,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the visibility state of the bottom status bar.
+    ToggleStatusBar,
     /// Pin a specific tag to the user's sidebar bookmarks in `config.toml`.
     AddTagToSidebar(String),
     /// Message triggered when the file grid scroll position reaches or leaves the bottom boundary.

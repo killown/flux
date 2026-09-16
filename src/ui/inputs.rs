@@ -160,8 +160,12 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::ToggleHeaderBar);
                 glib::Propagation::Stop
             }
-            gdk::Key::F7 => {
+            gdk::Key::F3 => {
                 sender_cap.input(AppMsg::ToggleCurrentFoldersFirst);
+                glib::Propagation::Stop
+            }
+            gdk::Key::F7 => {
+                sender_cap.input(AppMsg::ToggleStatusBar);
                 glib::Propagation::Stop
             }
             gdk::Key::F8 => {
@@ -261,6 +265,15 @@ pub fn setup_controllers(
         Some(gtk::ShortcutTrigger::parse_string("<Primary><Shift>F7").unwrap()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_debug.input(AppMsg::OpenDebugWindow);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_status = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(gtk::ShortcutTrigger::parse_string("F7").unwrap()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_status.input(AppMsg::ToggleStatusBar);
             glib::Propagation::Stop
         })),
     ));
