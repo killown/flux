@@ -27,7 +27,7 @@ impl FluxApp {
             .files
             .view
             .model()
-            .and_downcast::<gtk::MultiSelection>()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
         {
             let selection = selection_model.selection();
             let n_selected = selection.size();
@@ -88,7 +88,7 @@ impl FluxApp {
                     .files
                     .view
                     .model()
-                    .and_downcast::<gtk::MultiSelection>()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                     .and_then(|m| {
                         let pos = m.selection().nth(0);
                         self.files.get(pos).map(|w| w.borrow().clone())
@@ -168,7 +168,7 @@ impl FluxApp {
                     .files
                     .view
                     .model()
-                    .and_downcast::<gtk::MultiSelection>()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                     .and_then(|m| {
                         let pos = m.selection().nth(0);
                         self.files.get(pos)
@@ -176,7 +176,10 @@ impl FluxApp {
                 if let Some(wrapper) = item {
                     let borrowed = wrapper.borrow();
                     let path = borrowed.path.clone();
-                    let child_count = std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0);
+                    let real_path = path.canonicalize().unwrap_or_else(|_| path.clone());
+                    let child_count = std::fs::read_dir(&real_path)
+                        .map(|rd| rd.count())
+                        .unwrap_or(0);
 
                     let date_str = if borrowed.mtime > 0 {
                         use chrono::TimeZone;
@@ -190,20 +193,16 @@ impl FluxApp {
                         None
                     };
 
-                    let mut status = if let Some(dt_formatted) = date_str {
-                        format!("{} ({} items) · {}", single_name, child_count, dt_formatted)
-                    } else {
-                        format!("{} ({} items)", single_name, child_count)
-                    };
+                    let path_display = real_path.display().to_string();
 
-                    // Append symlink target (canonicalized)
-                    if let Ok(meta) = std::fs::symlink_metadata(&path) {
-                        if meta.is_symlink() {
-                            if let Ok(real) = path.canonicalize() {
-                                status.push_str(&format!(" → {}", real.display()));
-                            }
-                        }
-                    }
+                    let status = if let Some(dt_formatted) = date_str {
+                        format!(
+                            "{} ({} items) · {}",
+                            path_display, child_count, dt_formatted
+                        )
+                    } else {
+                        format!("{} ({} items)", path_display, child_count)
+                    };
 
                     status
                 } else {
