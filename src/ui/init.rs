@@ -21,6 +21,7 @@ impl FluxApp {
     pub(crate) async fn init_components(
         start_path: PathBuf,
         quick_list: Option<Vec<PathBuf>>,
+        initial_tag_search: Option<String>,
         root: &adw::Window,
         sender: AsyncComponentSender<Self>,
     ) -> (Self, gtk::Box) {
@@ -242,6 +243,11 @@ impl FluxApp {
         }
 
         // 7. Model Assembly
+        let initial_icon_size = dirs::home_dir()
+            .and_then(|home| state_db.get_view(&home).ok().flatten())
+            .map(|(_, _, size, _)| size as i32)
+            .unwrap_or(config.ui.default_icon_size);
+
         let mut model = FluxApp {
             active_video_preview: None,
             video_preview_source: None,
@@ -249,10 +255,10 @@ impl FluxApp {
             sidebar,
             breadcrumbs,
             current_path: start_path.clone(),
+            current_icon_size: initial_icon_size,
             history: Vec::new(),
             forward_stack: Vec::new(),
             load_id: Arc::new(AtomicU64::new(0)),
-            current_icon_size: config.ui.default_icon_size,
             current_list_icon_size: config.ui.list_icon_size,
             context_menu_popover,
             menu_actions: menu_actions_list,
@@ -437,6 +443,7 @@ impl FluxApp {
         // And hey you from the future, dont remove this timeout, it is critical for performance.
         let s_init = sender.clone();
         let scrub_db = state_db.clone();
+        let tag_to_apply = initial_tag_search;
         glib::timeout_add_local_once(std::time::Duration::from_millis(75), move || {
             // Spawn DB maintenance thread after window is on screen
             std::thread::spawn(move || {
@@ -446,7 +453,13 @@ impl FluxApp {
             });
 
             s_init.input(AppMsg::RefreshSidebar);
-            s_init.input(AppMsg::Refresh);
+
+            if let Some(tag) = tag_to_apply {
+                s_init.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
+                s_init.input(AppMsg::UpdateFilter(tag));
+            } else {
+                s_init.input(AppMsg::Refresh);
+            }
         });
 
         (model, breadcrumb_box)

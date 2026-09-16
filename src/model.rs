@@ -72,6 +72,9 @@ pub struct AppInit {
     pub open_archive: Option<PathBuf>,
     /// Pre-seeded list of directory paths to populate the quick-panel triage queue on startup.
     pub quick_list: Option<Vec<PathBuf>>,
+    /// Optional tag search filter (e.g. `"#games"`) to seed into the search entry
+    /// and activate on initial application startup.
+    pub tag_search: Option<String>,
 }
 
 /// Internal metadata container for parallel directory processing.

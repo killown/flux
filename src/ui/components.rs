@@ -264,17 +264,27 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                         if let Some(widget) = gesture.widget() {
                                             let widget_weak = widget.downgrade();
                                             let timer_clone = timer.clone();
+                                            let gesture_weak = gesture.downgrade();
+
                                             let id = glib::timeout_add_local_once(
                                                 std::time::Duration::from_millis(300),
                                                 move || {
                                                     timer_clone.set(None);
-                                                    if let Some(w) = widget_weak.upgrade() {
-                                                        if let Some(native) = w.native() {
-                                                            if let Some(surface) = native.surface() {
-                                                                surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
+                                                    // Ensure the gesture is still active and the pointer button is still pressed
+                                                    let is_still_holding = gesture_weak
+                                                        .upgrade()
+                                                        .map(|g| g.is_recognized())
+                                                        .unwrap_or(false);
+
+                                                    if is_still_holding {
+                                                        if let Some(w) = widget_weak.upgrade() {
+                                                            if let Some(native) = w.native() {
+                                                                if let Some(surface) = native.surface() {
+                                                                    surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
+                                                                }
                                                             }
+                                                            w.set_cursor_from_name(Some("grabbing"));
                                                         }
-                                                        w.set_cursor_from_name(Some("grabbing"));
                                                     }
                                                 },
                                             );

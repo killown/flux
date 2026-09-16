@@ -294,6 +294,7 @@ impl FluxApp {
         }
 
         if path_str.starts_with("tags://") {
+            self.is_loading = false;
             let clean_tag = path_str.trim_start_matches("tags://");
             sender.input(AppMsg::NavigateTag(clean_tag.to_string()));
             return;
