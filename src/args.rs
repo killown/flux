@@ -14,6 +14,8 @@ fn uri_to_path(s: &str) -> PathBuf {
 pub enum StartupAction {
     /// Launch the main file-manager window starting at the given path.
     Launch(PathBuf),
+    /// Launch the main window with an active tag search filter applied.
+    TagSearch(String),
     /// Launch the main window with pre-seeded quick-panel triage items.
     QuickList(Vec<PathBuf>),
     /// Open the archive-explorer window for the given path.
@@ -101,11 +103,24 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         }
         Some(arg) if arg.starts_with('-') => StartupAction::UnknownFlag(arg.to_string()),
         Some(path) => {
-            let p = uri_to_path(path);
-            if p.is_file() && crate::services::archive::is_supported_archive(&p) {
-                StartupAction::OpenArchive(p)
+            if path.starts_with('#')
+                || path.starts_with(":tag:")
+                || path.starts_with(":t:")
+                || path.starts_with("tags://")
+            {
+                let clean = path
+                    .trim_start_matches("tags://")
+                    .trim_start_matches(":tag:")
+                    .trim_start_matches(":t:")
+                    .trim_start_matches('#');
+                StartupAction::TagSearch(format!("#{clean}"))
             } else {
-                StartupAction::Launch(p)
+                let p = uri_to_path(path);
+                if p.is_file() && crate::services::archive::is_supported_archive(&p) {
+                    StartupAction::OpenArchive(p)
+                } else {
+                    StartupAction::Launch(p)
+                }
             }
         }
     }

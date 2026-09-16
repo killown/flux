@@ -172,6 +172,7 @@ fn launch_main_app(
     start_path: PathBuf,
     open_archive: Option<PathBuf>,
     quick_list: Option<Vec<PathBuf>>,
+    tag_search: Option<String>,
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
@@ -212,6 +213,7 @@ fn launch_main_app(
         start_path,
         open_archive,
         quick_list,
+        tag_search,
     });
 }
 
@@ -272,16 +274,20 @@ fn main() {
 
         StartupAction::OpenArchive(archive_path) => {
             let start_path = archive_path.parent().unwrap_or(&archive_path).to_path_buf();
-            launch_main_app(start_path, Some(archive_path), None);
+            launch_main_app(start_path, Some(archive_path), None, None);
         }
 
         StartupAction::Launch(start_path) => {
-            launch_main_app(start_path, None, None);
+            launch_main_app(start_path, None, None, None);
+        }
+
+        StartupAction::TagSearch(tag) => {
+            launch_main_app(home_dir, None, None, Some(tag));
         }
 
         StartupAction::QuickList(paths) => {
             let first = paths.first().cloned().unwrap_or_else(|| home_dir.clone());
-            launch_main_app(first, None, Some(paths));
+            launch_main_app(first, None, Some(paths), None);
         }
 
         StartupAction::SetIcon { target, image } => {

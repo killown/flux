@@ -225,7 +225,8 @@ impl FluxApp {
         let path_valid = path_str == "/"
             || path.exists()
             || path_str.starts_with(constants::TRASH_URI)
-            || path_str.starts_with(constants::RECENT_URI);
+            || path_str.starts_with(constants::RECENT_URI)
+            || path_str.starts_with("tags://");
 
         if !path_valid {
             sender.input(AppMsg::ShowToast(format!(

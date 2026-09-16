@@ -740,6 +740,28 @@ impl FluxApp {
                 relm4::spawn_blocking(move || {
                     if crate::services::luks::is_luks_image(&path_clone) {
                         sender_clone.input(AppMsg::UnlockLuksImage { path: path_clone });
+                    } else if path_clone.extension().and_then(|e| e.to_str()) == Some("desktop") {
+                        if let Some(desktop_app) =
+                            gio_unix::DesktopAppInfo::from_filename(&path_clone)
+                        {
+                            let app_name = desktop_app.display_name().to_string();
+                            let context = gdk::Display::default().map(|d| d.app_launch_context());
+                            match desktop_app.launch(&[], context.as_ref()) {
+                                Ok(_) => {
+                                    let msg = tr("Opening {}").replace("{}", &app_name);
+                                    sender_clone.input(AppMsg::ShowToast(msg));
+                                }
+                                Err(e) => {
+                                    eprintln!("[flux] Failed to launch desktop file: {e}");
+                                    let msg = tr("Failed to open {}: {}")
+                                        .replacen("{}", &app_name, 1)
+                                        .replacen("{}", &e.to_string(), 1);
+                                    sender_clone.input(AppMsg::ShowToast(msg));
+                                }
+                            }
+                        } else {
+                            crate::utils::open_file(path_clone);
+                        }
                     } else {
                         crate::utils::open_file(path_clone);
                     }
