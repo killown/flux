@@ -830,17 +830,12 @@ pub fn show_debug_window(app: &FluxApp) {
         .icon_name("view-refresh-symbolic")
         .tooltip_text("Refresh (re-samples /proc/self/smaps)")
         .build();
-    let trim_button = gtk::Button::builder()
-        .label("malloc_trim(0)")
-        .tooltip_text("Call libc::malloc_trim(0) to release free arena pages to kernel")
-        .build();
     let export_button = gtk::Button::builder()
         .icon_name("document-save-symbolic")
         .tooltip_text("Save to /tmp/flux_debug.txt")
         .build();
 
     header_bar.pack_start(&refresh_button);
-    header_bar.pack_start(&trim_button);
     header_bar.pack_end(&export_button);
 
     let view = gtk::TextView::builder()
@@ -886,15 +881,6 @@ pub fn show_debug_window(app: &FluxApp) {
     layout_root.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
     layout_root.append(&status_bar);
     window.set_content(Some(&layout_root));
-
-    trim_button.connect_clicked(|_| {
-        unsafe {
-            libc::malloc_trim(0);
-        }
-        if let Some(chan) = crate::model::SENDER.get() {
-            let _ = chan.send(crate::model::AppMsg::OpenDebugWindow);
-        }
-    });
 
     {
         let report_payload = output.clone();

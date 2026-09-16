@@ -4,6 +4,9 @@ mod services;
 mod ui;
 mod utils;
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use crate::model::{AppInit, AppMsg, Config, FluxApp};
 use crate::ui::FileProperties;
 use adw::prelude::*;
