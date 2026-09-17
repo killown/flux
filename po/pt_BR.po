@@ -2032,10 +2032,6 @@ msgstr "Abrir com"
 msgid "Copied to clipboard"
 msgstr "Copiado para a área de transferência"
 
-#: src/ui/properties.rs:579
-msgid "Set as default:"
-msgstr "Definido como padrão:"
-
 # ============================================================
 # src/ui/command_dialog.rs
 # ============================================================
@@ -2300,105 +2296,97 @@ msgstr "Falha ao salvar o HTML"
 # src/ui/advanced_search.rs
 # ============================================================
 
-#: src/ui/advanced_search.rs:36 src/ui/advanced_search.rs:52
-msgid "Advanced Search"
-msgstr "Pesquisa Avançada"
+#: src/ui/advanced_search.rs:???
+msgid "What to find"
+msgstr "O que encontrar"
 
-#: src/ui/advanced_search.rs:114
+#: src/ui/advanced_search.rs:???
 msgid "File name"
 msgstr "Nome do arquivo"
 
-#: src/ui/advanced_search.rs:115
-msgid "Search Criteria"
-msgstr "Critérios de Pesquisa"
-
-#: src/ui/advanced_search.rs:118
-msgid "Pattern(s)"
-msgstr "Padrão(ões)"
-
-#: src/ui/advanced_search.rs:119
+#: src/ui/advanced_search.rs:???
 msgid "Inside files"
 msgstr "Dentro dos arquivos"
 
-#: src/ui/advanced_search.rs:130
-msgid "At least 3 characters"
-msgstr "Pelo menos 3 caracteres"
+#: src/ui/advanced_search.rs:???
+msgid "Requires 3+ characters"
+msgstr "Requer 3+ caracteres"
 
-#: src/ui/advanced_search.rs:132
-msgid "Limit to extension"
-msgstr "Limitar à extensão"
+#: src/ui/advanced_search.rs:???
+msgid "Glob pattern"
+msgstr "Padrão glob"
 
-#: src/ui/advanced_search.rs:134
-msgid "Filter by Tag"
-msgstr "Filtrar por Tag"
+#: src/ui/advanced_search.rs:???
+msgid "Tag"
+msgstr "Etiqueta"
 
-#: src/ui/advanced_search.rs:141
-msgid "Modified within"
-msgstr "Modificado em"
+#: src/ui/advanced_search.rs:???
+msgid "Where to look"
+msgstr "Onde procurar"
 
-#: src/ui/advanced_search.rs:143
+#: src/ui/advanced_search.rs:???
+msgid "Search inside subfolders"
+msgstr "Pesquisar dentro das subpastas"
+
+#: src/ui/advanced_search.rs:???
+msgid "Include hidden files"
+msgstr "Incluir arquivos ocultos"
+
+#: src/ui/advanced_search.rs:???
+msgid "Files beginning with a dot"
+msgstr "Arquivos que começam com ponto"
+
+#: src/ui/advanced_search.rs:???
+msgid "Filters"
+msgstr "Filtros"
+
+#: src/ui/advanced_search.rs:???
+msgid "Narrow results"
+msgstr "Restringir resultados"
+
+#: src/ui/advanced_search.rs:???
 msgid "Any time"
 msgstr "Qualquer momento"
 
-#: src/ui/advanced_search.rs:144
+#: src/ui/advanced_search.rs:???
 msgid "Last hour"
 msgstr "Última hora"
 
-#: src/ui/advanced_search.rs:145
+#: src/ui/advanced_search.rs:???
 msgid "Today"
 msgstr "Hoje"
 
-#: src/ui/advanced_search.rs:146
+#: src/ui/advanced_search.rs:???
 msgid "Last 7 days"
 msgstr "Últimos 7 dias"
 
-#: src/ui/advanced_search.rs:147
+#: src/ui/advanced_search.rs:???
 msgid "Last 30 days"
 msgstr "Últimos 30 dias"
 
-#: src/ui/advanced_search.rs:148
+#: src/ui/advanced_search.rs:???
 msgid "Last year"
 msgstr "Último ano"
 
-#: src/ui/advanced_search.rs:161
-msgid "Condition"
-msgstr "Condição"
+#: src/ui/advanced_search.rs:???
+msgid "File size"
+msgstr "Tamanho do arquivo"
 
-#: src/ui/advanced_search.rs:162
+#: src/ui/advanced_search.rs:???
 msgid "Any size"
 msgstr "Qualquer tamanho"
 
-#: src/ui/advanced_search.rs:162
+#: src/ui/advanced_search.rs:???
 msgid "Larger than"
 msgstr "Maior que"
 
-#: src/ui/advanced_search.rs:162
+#: src/ui/advanced_search.rs:???
 msgid "Smaller than"
 msgstr "Menor que"
 
-#: src/ui/advanced_search.rs:175
+#: src/ui/advanced_search.rs:???
 msgid "Amount"
 msgstr "Valor"
-
-#: src/ui/advanced_search.rs:182
-msgid "Unit"
-msgstr "Unidade"
-
-#: src/ui/advanced_search.rs:199
-msgid "Search Scope"
-msgstr "Escopo da Pesquisa"
-
-#: src/ui/advanced_search.rs:200
-msgid "Options"
-msgstr "Opções"
-
-#: src/ui/advanced_search.rs:204
-msgid "Search subdirectories"
-msgstr "Pesquisar subdiretórios"
-
-#: src/ui/advanced_search.rs:214
-msgid "Include hidden files"
-msgstr "Incluir arquivos ocultos"
 
 # ============================================================
 # src/ui/tag_picker.rs
