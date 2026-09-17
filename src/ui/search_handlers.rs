@@ -180,7 +180,6 @@ impl FluxApp {
                     max_width_chars: self.config.ui.max_width_chars,
                     grid_spacing: self.config.ui.grid_spacing,
                     is_symlink: false,
-                    symlink_target: None,
                     is_broken_symlink: false,
                     show_symlink_emblem: self.config.ui.show_symlink_emblem,
                 });
@@ -329,7 +328,6 @@ impl FluxApp {
             max_width_chars: self.config.ui.max_width_chars,
             grid_spacing: self.config.ui.grid_spacing,
             is_symlink: false,
-            symlink_target: None,
             is_broken_symlink: false,
             show_symlink_emblem: self.config.ui.show_symlink_emblem,
         });

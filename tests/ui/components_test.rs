@@ -124,7 +124,6 @@ fn test_file_item_preserves_foreign_owner_flag() {
                 max_width_chars: 20,
                 grid_spacing: 10,
                 is_symlink: false,
-                symlink_target: None,
                 is_broken_symlink: false,
                 show_symlink_emblem: true,
             }
@@ -176,7 +175,6 @@ fn test_lock_icon_and_restricted_class_binding() {
         max_width_chars: 20,
         grid_spacing: 10,
         is_symlink: false,
-        symlink_target: None,
         is_broken_symlink: false,
         show_symlink_emblem: true,
     };
