@@ -5,6 +5,7 @@ use crate::utils;
 use crate::utils::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
+use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use parking_lot::RwLock;
 use rayon::prelude::*;
 use relm4::prelude::*;
@@ -13,6 +14,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
+use std::sync::mpsc;
 use std::sync::OnceLock;
 use std::time::SystemTime;
 
@@ -474,17 +476,61 @@ impl FluxApp {
                     Vec::new()
                 }
             } else {
-                match std::fs::read_dir(&path_clone) {
-                    Ok(read_dir) => read_dir
-                        .flatten()
-                        .map(|entry| {
-                            let name = entry.file_name().to_string_lossy().to_string();
-                            let is_dir = entry.path().is_dir();
-                            (name, is_dir)
-                        })
-                        .collect(),
-                    Err(_) => Vec::new(),
+                let mut builder = WalkBuilder::new(&path_clone);
+                builder
+                    .hidden(false)
+                    .parents(false)
+                    .ignore(false)
+                    .git_ignore(false)
+                    .max_depth(Some(1))
+                    .follow_links(false);
+
+                let walker = builder.build_parallel();
+                let (tx, rx) = mpsc::channel::<(String, bool)>();
+
+                struct EntryVisitor {
+                    tx: mpsc::Sender<(String, bool)>,
                 }
+
+                impl ParallelVisitor for EntryVisitor {
+                    fn visit(
+                        &mut self,
+                        result: Result<ignore::DirEntry, ignore::Error>,
+                    ) -> WalkState {
+                        let entry = match result {
+                            Ok(e) => e,
+                            Err(_) => return WalkState::Continue,
+                        };
+
+                        if entry.depth() == 0 {
+                            return WalkState::Continue;
+                        }
+
+                        let name = entry.file_name().to_string_lossy().to_string();
+                        let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
+
+                        let _ = self.tx.send((name, is_dir));
+                        WalkState::Continue
+                    }
+                }
+
+                struct EntryVisitorBuilder {
+                    tx: mpsc::Sender<(String, bool)>,
+                }
+
+                impl<'s> ParallelVisitorBuilder<'s> for EntryVisitorBuilder {
+                    fn build(&mut self) -> Box<dyn ParallelVisitor + 's> {
+                        Box::new(EntryVisitor {
+                            tx: self.tx.clone(),
+                        })
+                    }
+                }
+
+                let mut visitor_builder = EntryVisitorBuilder { tx };
+                walker.visit(&mut visitor_builder);
+                drop(visitor_builder);
+
+                rx.into_iter().collect()
             };
 
             let is_inside_thumb_cache = dirs::cache_dir()
