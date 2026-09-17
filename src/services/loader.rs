@@ -507,7 +507,7 @@ impl FluxApp {
                         }
 
                         let name = entry.file_name().to_string_lossy().to_string();
-                        let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
+                        let is_dir = entry.path().is_dir();
 
                         let _ = self.tx.send((name, is_dir));
                         WalkState::Continue
