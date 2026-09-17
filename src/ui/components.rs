@@ -52,6 +52,14 @@ pub struct FileItem {
     pub max_width_chars: i32,
     /// Cached from config at construction time - avoids a config.toml read per bind() call.
     pub grid_spacing: i32,
+    /// Whether the target is a symbolic link.
+    pub is_symlink: bool,
+    /// Path pointed to by the symbolic link, if available.
+    pub symlink_target: Option<PathBuf>,
+    /// Whether the symbolic link target does not exist.
+    pub is_broken_symlink: bool,
+    /// User setting controlling whether the visual symbolic link badge is shown.
+    pub show_symlink_emblem: bool,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -61,6 +69,7 @@ pub struct FileWidgets {
     pub preview_stack: gtk::Stack,
     pub lock_icon: gtk::Image,
     pub empty_icon: gtk::Image,
+    pub symlink_icon: gtk::Image,
     pub label: gtk::Label,
     pub stack: gtk::Stack,
     pub drag_source: gtk::DragSource,
@@ -223,6 +232,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             .halign(gtk::Align::Center)
             .valign(gtk::Align::End)
             .vexpand(false)
+            .hhomogeneous(false)
+            .vhomogeneous(false)
             .build();
 
         preview_stack.add_named(&icon_widget, Some("icon"));
@@ -437,6 +448,14 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                                                 set_hexpand: false,
                                                 add_css_class: constants::FLUX_LABEL_CLASS,
                                             },
+
+                                            #[name = "symlink_icon"]
+                                            gtk::Image {
+                                                set_icon_name: Some("emblem-symbolic-link"),
+                                                set_pixel_size: 12,
+                                                set_visible: false,
+                                                add_css_class: "symlink-badge",
+                                            },
                                         } -> { set_name: constants::VIEW_LABEL }
                                     }
                                 }
@@ -465,6 +484,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 preview_stack,
                 lock_icon,
                 empty_icon,
+                symlink_icon,
                 label,
                 stack,
                 drag_source,
@@ -487,12 +507,21 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root.set_orientation(gtk::Orientation::Horizontal);
             root.set_halign(gtk::Align::Fill);
             root.set_hexpand(true);
-            root.set_spacing(8);
+            root.set_spacing(10);
+
             widgets.icon_widget.set_pixel_size(self.icon_size);
+            widgets
+                .icon_widget
+                .set_size_request(self.icon_size, self.icon_size);
             widgets.icon_widget.set_valign(gtk::Align::Center);
             widgets.icon_widget.set_halign(gtk::Align::Start);
+
             widgets
                 .video_widget
+                .set_size_request(self.icon_size, self.icon_size);
+
+            widgets
+                .preview_stack
                 .set_size_request(self.icon_size, self.icon_size);
             widgets.preview_stack.set_valign(gtk::Align::Center);
             widgets.preview_stack.set_halign(gtk::Align::Start);
@@ -532,6 +561,16 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             {
                 let mut info_parts: Vec<String> = Vec::new();
 
+                if self.is_symlink {
+                    if let Some(ref target) = self.symlink_target {
+                        if self.is_broken_symlink {
+                            info_parts.push(format!("→ {} (broken)", target.display()));
+                        } else {
+                            info_parts.push(format!("→ {}", target.display()));
+                        }
+                    }
+                }
+
                 if self.is_dir {
                     let count_str = if self.size == 1 {
                         "1 item".to_string()
@@ -541,6 +580,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     info_parts.push(count_str);
                 } else if self.size > 0 {
                     info_parts.push(format_size(self.size));
+                }
+
+                if self.is_symlink && !self.is_broken_symlink {
+                    info_parts.push("symlink".to_string());
                 }
 
                 if self.mtime > 0 {
@@ -598,11 +641,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root.set_halign(gtk::Align::Center);
             root.set_spacing(0);
             widgets.icon_widget.set_pixel_size(self.icon_size);
+            widgets.icon_widget.set_size_request(-1, -1);
             widgets.icon_widget.set_valign(gtk::Align::End);
             widgets.icon_widget.set_halign(gtk::Align::Center);
             widgets
                 .video_widget
                 .set_size_request(self.icon_size, self.icon_size);
+            widgets.preview_stack.set_size_request(-1, -1);
             widgets.preview_stack.set_valign(gtk::Align::End);
             widgets.preview_stack.set_halign(gtk::Align::Center);
             widgets.preview_stack.set_visible_child_name("icon");
@@ -652,6 +697,21 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         } else {
             root.remove_css_class("flux-card--restricted");
             widgets.lock_icon.set_visible(false);
+        }
+
+        let show_indicator = self.show_symlink_emblem && self.is_symlink;
+        widgets.symlink_icon.set_visible(show_indicator);
+
+        if self.is_broken_symlink && show_indicator {
+            widgets
+                .symlink_icon
+                .set_icon_name(Some("dialog-warning-symbolic"));
+            widgets.symlink_icon.add_css_class("warning");
+        } else {
+            widgets
+                .symlink_icon
+                .set_icon_name(Some("emblem-symbolic-link"));
+            widgets.symlink_icon.remove_css_class("warning");
         }
 
         if self.is_dir && config.ui.show_empty_dir_emblem {
@@ -840,6 +900,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         widgets.drag_source.set_icon(None::<&gdk::Paintable>, 0, 0);
         widgets.label.set_text("");
         widgets.info_label.set_text("");
+        widgets.symlink_icon.set_visible(false);
+        widgets.symlink_icon.remove_css_class("warning");
         if let Some(existing_entry) = widgets.stack.child_by_name(constants::VIEW_ENTRY) {
             widgets.stack.remove(&existing_entry);
         }

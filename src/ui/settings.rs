@@ -786,6 +786,19 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Show Symlink Emblem"),
+                        set_subtitle: &tr("Display a badge for symbolic links"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.show_symlink_emblem,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShowSymlinkEmblem(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Default Layout"),
                         set_subtitle: &tr("Start with grid view (off) or list view (on)"),
                         add_suffix = &gtk::Switch {

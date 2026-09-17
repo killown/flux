@@ -85,6 +85,16 @@ impl FluxApp {
                         false
                     };
 
+                    let is_symlink = path.is_symlink();
+                    let (symlink_target, is_broken_symlink) = if is_symlink {
+                        (
+                            std::fs::read_link(&path).ok(),
+                            std::fs::metadata(&path).is_err(),
+                        )
+                    } else {
+                        (None, false)
+                    };
+
                     let item = FileItem {
                         name: display_name.clone(),
                         icon,
@@ -111,6 +121,10 @@ impl FluxApp {
                         grid_idx: self.files.len(),
                         max_width_chars: self.config.ui.max_width_chars,
                         grid_spacing: self.config.ui.grid_spacing,
+                        is_symlink,
+                        symlink_target,
+                        is_broken_symlink,
+                        show_symlink_emblem: self.config.ui.show_symlink_emblem,
                     };
                     self.files.append(item);
 

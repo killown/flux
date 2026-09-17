@@ -62,6 +62,10 @@ impl FluxApp {
                 grid_idx,
                 max_width_chars: self.config.ui.max_width_chars,
                 grid_spacing: self.config.ui.grid_spacing,
+                is_symlink: item.is_symlink,
+                symlink_target: item.symlink_target,
+                is_broken_symlink: item.is_broken_symlink,
+                show_symlink_emblem: self.config.ui.show_symlink_emblem,
             });
         }
         self.update_breadcrumbs();

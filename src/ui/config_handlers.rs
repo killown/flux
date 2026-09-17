@@ -458,6 +458,16 @@ impl FluxApp {
         self.load_path(self.current_path.clone(), sender);
     }
 
+    pub fn handle_set_show_symlink_emblem(
+        &mut self,
+        val: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.show_symlink_emblem = val;
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
+
     pub fn handle_set_show_recents(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.show_recents = val;
         utils::save_config(&self.config);

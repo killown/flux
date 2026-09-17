@@ -123,6 +123,10 @@ fn test_file_item_preserves_foreign_owner_flag() {
                 grid_idx: idx as u32,
                 max_width_chars: 20,
                 grid_spacing: 10,
+                is_symlink: false,
+                symlink_target: None,
+                is_broken_symlink: false,
+                show_symlink_emblem: true,
             }
         })
         .collect();
@@ -171,6 +175,10 @@ fn test_lock_icon_and_restricted_class_binding() {
         grid_idx: 0,
         max_width_chars: 20,
         grid_spacing: 10,
+        is_symlink: false,
+        symlink_target: None,
+        is_broken_symlink: false,
+        show_symlink_emblem: true,
     };
 
     item.bind(&mut widgets, &mut root_box);

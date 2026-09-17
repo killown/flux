@@ -706,6 +706,14 @@ msgstr "Mostrar/ocultar barra de cabeçalho"
 # src/ui/settings.rs
 # ============================================================
 
+#: src/ui/settings.rs:???
+msgid "Show Symlink Emblem"
+msgstr "Mostrar emblema de link simbólico"
+
+#: src/ui/settings.rs:???
+msgid "Display a badge for symbolic links"
+msgstr "Exibir um emblema para links simbólicos"
+
 #: src/ui/settings.rs:27
 msgid "Appearance"
 msgstr "Aparência"

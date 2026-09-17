@@ -1016,6 +1016,9 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::SetShowSymlinkEmblem(val) => {
+                self.handle_set_show_symlink_emblem(val, &sender);
+            }
             AppMsg::SetScrolledToBottom(at_bottom) => {
                 self.scrolled_to_bottom = at_bottom;
             }
