@@ -165,15 +165,14 @@ fn start_walk(
         // Filter out pseudo-filesystems, virtual Wine/Proton drives, and prefix loops.
         let walker = builder
             .filter_entry(|entry| {
-                let path = entry.path();
-                let s = path.to_string_lossy();
-                !s.contains("/proc/")
-                    && !s.contains("/sys/")
-                    && !s.contains("/dev/")
-                    && !s.contains("/dosdevices/")
-                    && !s.contains("/Prefixes/")
-                    && !s.contains("/compatdata/")
-                    && !s.contains("/drive_c/")
+                let bytes = crate::utils::osstr_to_bytes(entry.path().as_os_str());
+                !bytes.windows(6).any(|w| w == b"/proc/")
+                    && !bytes.windows(5).any(|w| w == b"/sys/")
+                    && !bytes.windows(5).any(|w| w == b"/dev/")
+                    && !bytes.windows(12).any(|w| w == b"/dosdevices/")
+                    && !bytes.windows(10).any(|w| w == b"/Prefixes/")
+                    && !bytes.windows(12).any(|w| w == b"/compatdata/")
+                    && !bytes.windows(9).any(|w| w == b"/drive_c/")
             })
             .build_parallel();
 
@@ -248,8 +247,31 @@ fn start_walk(
                     return WalkState::Continue;
                 }
 
-                let name = entry.file_name().to_string_lossy();
-                if !self.globset.is_match(name.to_lowercase()) {
+                let file_name = entry.file_name();
+                let name_bytes = crate::utils::osstr_to_bytes(file_name);
+
+                let matches_glob = if name_bytes.is_ascii() {
+                    let mut lower = [0u8; 256];
+                    if name_bytes.len() <= lower.len() {
+                        let buf = &mut lower[..name_bytes.len()];
+                        buf.copy_from_slice(name_bytes);
+                        buf.make_ascii_lowercase();
+                        if let Ok(s) = std::str::from_utf8(buf) {
+                            self.globset.is_match(s)
+                        } else {
+                            let name = file_name.to_string_lossy();
+                            self.globset.is_match(name.to_lowercase())
+                        }
+                    } else {
+                        let name = file_name.to_string_lossy();
+                        self.globset.is_match(name.to_lowercase())
+                    }
+                } else {
+                    let name = file_name.to_string_lossy();
+                    self.globset.is_match(name.to_lowercase())
+                };
+
+                if !matches_glob {
                     return WalkState::Continue;
                 }
 
@@ -282,10 +304,11 @@ fn start_walk(
                 }
 
                 let path = entry.into_path();
-                let display = path
+                let rel = path
                     .strip_prefix(&self.current_dir)
-                    .map(|p| p.to_string_lossy().into_owned())
-                    .unwrap_or_else(|_| path.to_string_lossy().into_owned());
+                    .map(crate::utils::strip_current_dir)
+                    .unwrap_or(&path);
+                let display = rel.to_string_lossy().into_owned();
 
                 self.total_count.fetch_add(1, Ordering::Relaxed);
                 let _ = self.tx.send(ExtensionMatch { path, display });

@@ -144,6 +144,12 @@ impl FluxApp {
                     }
                 }
 
+                let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
+                    FluxApp::is_dir_empty(&path)
+                } else {
+                    false
+                };
+
                 self.files.append(crate::ui::FileItem {
                     name,
                     icon,
@@ -159,6 +165,7 @@ impl FluxApp {
                     mtime,
                     is_editing: false,
                     is_foreign_owner: false,
+                    is_empty,
                     expand_labels: self.config.ui.expand_labels,
                     is_list_mode: self.is_list_mode,
                     is_custom_icon: false,
@@ -263,10 +270,11 @@ impl FluxApp {
         let icon = utils::get_icon_for_path(&path, false);
 
         // Show relative path tree location if under current_path, else full path
-        let relative_path = path
+        let rel_path = path
             .strip_prefix(&self.current_path)
-            .map(|p| p.to_string_lossy().into_owned())
-            .unwrap_or_else(|_| path.to_string_lossy().into_owned());
+            .map(crate::utils::strip_current_dir)
+            .unwrap_or(&path);
+        let relative_path = rel_path.to_string_lossy();
 
         let trimmed_line = line.trim();
         let snippet = if trimmed_line.chars().count() > 180 {
@@ -302,6 +310,7 @@ impl FluxApp {
             mtime,
             is_editing: false,
             is_foreign_owner: false,
+            is_empty: false,
             expand_labels: false,
             is_list_mode: true,
             is_custom_icon: false,

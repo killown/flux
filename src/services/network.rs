@@ -391,19 +391,18 @@ pub fn entries_to_load_contexts(
                 None
             };
 
-            FileLoadContext {
-                display_name: e.display_name.clone(),
+            FileLoadContext::with_stats(
+                e.display_name.clone(),
+                target_path,
+                e.is_dir,
                 sort_name,
                 sort_ext,
-                target_path,
-                size: e.size,
-                mtime: e.mtime,
-                is_dir: e.is_dir,
-                thumbnail_path: None,
-                is_foreign_owner: false,
+                e.size,
+                e.mtime,
+                None,
                 expand_labels,
                 custom_icon,
-            }
+            )
         })
         .collect()
 }

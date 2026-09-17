@@ -10,7 +10,6 @@ use rayon::prelude::*;
 use relm4::prelude::*;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::atomic::Ordering;
@@ -409,10 +408,11 @@ impl FluxApp {
                             };
                         }
 
+                        // In cached folder sort comparator:
                         let primary_order = match sort_strategy {
                             SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                            SortBy::Size => a.size.cmp(&b.size),
-                            SortBy::Date => a.mtime.cmp(&b.mtime),
+                            SortBy::Size => a.size().cmp(&b.size()),
+                            SortBy::Date => a.mtime().cmp(&b.mtime()),
                             SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                         };
 
@@ -453,8 +453,6 @@ impl FluxApp {
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
-            let current_uid = unsafe { libc::geteuid() };
-
             // Fast directory reading without individual stat() calls per file
             let raw_entries: Vec<(String, bool)> = if is_trash {
                 let root_bg = gio::File::for_uri(&path_clone.to_string_lossy());
@@ -515,28 +513,6 @@ impl FluxApp {
                             path_clone.join(&name)
                         };
 
-                        let (size, mtime, is_foreign_owner) = target_path
-                            .metadata()
-                            .ok()
-                            .map(|m| {
-                                let s = if is_dir {
-                                    std::fs::read_dir(&target_path)
-                                        .map(|rd| rd.count())
-                                        .unwrap_or(0) as u64
-                                } else {
-                                    m.len()
-                                };
-                                let t = m
-                                    .modified()
-                                    .ok()
-                                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                                    .map(|d| d.as_secs() as i64)
-                                    .unwrap_or(0);
-                                let foreign = m.uid() != current_uid;
-                                (s, t, foreign)
-                            })
-                            .unwrap_or((0, 0, false));
-
                         let mut thumbnail_path = None;
                         if !is_dir && !is_inside_thumb_cache {
                             let (is_img, is_vid) = is_visual_media_by_ext(&target_path);
@@ -583,23 +559,19 @@ impl FluxApp {
                             })
                         };
 
-                        Some(FileLoadContext {
+                        Some(FileLoadContext::new(
+                            name,
+                            target_path,
+                            is_dir,
                             sort_name,
                             sort_ext,
-                            display_name: name,
-                            target_path,
-                            size,
-                            mtime,
-                            is_dir,
                             thumbnail_path,
-                            is_foreign_owner,
                             expand_labels,
                             custom_icon,
-                        })
+                        ))
                     })
                     .collect()
             });
-
             if !filter.is_empty() {
                 let query = filter.to_lowercase();
                 items.retain(|item| item.sort_name.contains(&query));
@@ -618,8 +590,8 @@ impl FluxApp {
 
                     let primary_order = match sort_strategy {
                         SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                        SortBy::Size => a.size.cmp(&b.size),
-                        SortBy::Date => a.mtime.cmp(&b.mtime),
+                        SortBy::Size => a.size().cmp(&b.size()),
+                        SortBy::Date => a.mtime().cmp(&b.mtime()),
                         SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                     };
 
@@ -835,10 +807,11 @@ impl FluxApp {
                             };
                         }
 
+                        // In directory scan sort comparator:
                         let primary_order = match sort_strategy {
                             SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                            SortBy::Size => a.size.cmp(&b.size),
-                            SortBy::Date => a.mtime.cmp(&b.mtime),
+                            SortBy::Size => a.size().cmp(&b.size()),
+                            SortBy::Date => a.mtime().cmp(&b.mtime()),
                             SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                         };
 
@@ -866,6 +839,14 @@ impl FluxApp {
 
                 let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
                 for (grid_idx, item) in (self.files.len()..).zip(items) {
+                    let size = item.size();
+                    let mtime = item.mtime();
+                    let is_empty = if item.is_dir && self.config.ui.show_empty_dir_emblem {
+                        item.is_empty()
+                    } else {
+                        false
+                    };
+
                     let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
 
                     // Collect visual media files for thumbnail generation
@@ -888,10 +869,11 @@ impl FluxApp {
                         } else {
                             self.current_icon_size
                         },
-                        size: item.size,
-                        mtime: item.mtime,
+                        size,
+                        mtime,
                         is_editing: false,
                         is_foreign_owner: false,
+                        is_empty,
                         expand_labels: item.expand_labels,
                         is_list_mode: self.is_list_mode,
                         is_custom_icon: false,
@@ -1013,6 +995,12 @@ impl FluxApp {
                 media_tasks.push((self.files.len(), path.clone()));
             }
 
+            let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
+                FluxApp::is_dir_empty(&path)
+            } else {
+                false
+            };
+
             self.files.append(crate::ui::FileItem {
                 name: display_name,
                 icon,
@@ -1028,6 +1016,7 @@ impl FluxApp {
                 mtime: 0,
                 is_editing: false,
                 is_foreign_owner: false,
+                is_empty,
                 expand_labels: self.config.ui.expand_labels,
                 is_list_mode: self.is_list_mode,
                 is_custom_icon: false,
@@ -1090,6 +1079,15 @@ impl FluxApp {
 
         for (offset, item) in items.into_iter().enumerate() {
             let grid_idx = start_idx + offset as u32;
+            let current_uid = unsafe { libc::geteuid() };
+            let size = item.size();
+            let mtime = item.mtime();
+            let is_foreign_owner = item.is_foreign_owner(current_uid);
+            let is_empty = if item.is_dir && self.config.ui.show_empty_dir_emblem {
+                item.is_empty()
+            } else {
+                false
+            };
 
             let custom_icon = config_file_icons
                 .get(&item.target_path.to_string_lossy().to_string())
@@ -1106,7 +1104,7 @@ impl FluxApp {
                         None
                     }
                 })
-                .or(item.custom_icon);
+                .or_else(|| item.custom_icon.clone());
 
             let icon = if let Some(ref custom) = custom_icon {
                 gtk::gio::Icon::for_string(custom)
@@ -1154,10 +1152,11 @@ impl FluxApp {
                 } else {
                     grid_icon_size
                 },
-                size: item.size,
-                mtime: item.mtime,
+                size,
+                mtime,
                 is_editing: false,
-                is_foreign_owner: item.is_foreign_owner,
+                is_foreign_owner,
+                is_empty,
                 expand_labels: item.expand_labels,
                 is_list_mode,
                 is_custom_icon: custom_icon.is_some(),

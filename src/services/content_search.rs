@@ -96,15 +96,14 @@ pub fn start_content_search(
 
         let walker = builder
             .filter_entry(|entry| {
-                let path = entry.path();
-                let s = path.to_string_lossy();
-                !s.contains("/proc/")
-                    && !s.contains("/sys/")
-                    && !s.contains("/dev/")
-                    && !s.contains("/dosdevices/")
-                    && !s.contains("/Prefixes/")
-                    && !s.contains("/compatdata/")
-                    && !s.contains("/drive_c/")
+                let bytes = crate::utils::osstr_to_bytes(entry.path().as_os_str());
+                !bytes.windows(6).any(|w| w == b"/proc/")
+                    && !bytes.windows(5).any(|w| w == b"/sys/")
+                    && !bytes.windows(5).any(|w| w == b"/dev/")
+                    && !bytes.windows(12).any(|w| w == b"/dosdevices/")
+                    && !bytes.windows(10).any(|w| w == b"/Prefixes/")
+                    && !bytes.windows(12).any(|w| w == b"/compatdata/")
+                    && !bytes.windows(9).any(|w| w == b"/drive_c/")
             })
             .build_parallel();
 

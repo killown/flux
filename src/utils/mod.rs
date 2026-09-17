@@ -15,9 +15,8 @@ pub mod search;
 pub mod xattr;
 
 // 2. Public Re-exports
-// This allows the rest of the app to use `utils::resolve` instead of `utils::path::resolve`.
 pub use config::*;
-pub use path::PathExt;
+pub use path::{osstr_to_bytes, strip_current_dir, PathExt};
 
 /// System-level configuration constants for utilities.
 pub mod constants {}

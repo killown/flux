@@ -79,6 +79,12 @@ impl FluxApp {
                         self.files.insert(idx, item);
                     }
                 } else {
+                    let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
+                        FluxApp::is_dir_empty(&path)
+                    } else {
+                        false
+                    };
+
                     let item = FileItem {
                         name: display_name.clone(),
                         icon,
@@ -97,6 +103,7 @@ impl FluxApp {
                             .unwrap_or(0),
                         is_editing: false,
                         is_foreign_owner: false,
+                        is_empty,
                         expand_labels: self.config.ui.expand_labels,
                         is_list_mode: self.is_list_mode,
                         is_custom_icon: false,

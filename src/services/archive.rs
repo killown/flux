@@ -1215,19 +1215,18 @@ pub fn entries_to_load_contexts(
                 None
             };
 
-            FileLoadContext {
-                display_name: e.name.clone(),
-                sort_name: e.name.to_lowercase(),
-                sort_ext,
+            FileLoadContext::with_stats(
+                e.name.clone(),
                 target_path,
+                e.is_dir,
+                e.name.to_lowercase(),
+                sort_ext,
                 size,
-                mtime: e.mtime,
-                is_dir: e.is_dir,
-                thumbnail_path: None,
-                is_foreign_owner: false,
+                e.mtime,
+                None,
                 expand_labels,
                 custom_icon,
-            }
+            )
         })
         .collect()
 }
@@ -2118,12 +2117,11 @@ fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, Archi
     {
         let entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
         let header = entry.header();
-        let raw_name = entry
+        let entry_path = entry
             .path()
-            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
-            .to_string_lossy()
-            .replace('\\', "/");
-        let raw_name = raw_name.strip_prefix("./").unwrap_or(&raw_name);
+            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?;
+        let stripped_path = crate::utils::strip_current_dir(&entry_path);
+        let raw_name = stripped_path.to_string_lossy().replace('\\', "/");
         if raw_name.is_empty() {
             continue;
         }
@@ -2148,12 +2146,11 @@ fn extract_tar<R: Read>(
         .map_err(|e| ArchiveError::Other(format!("TAR: {e}")))?
     {
         let mut entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
-        let path = entry
+        let entry_path = entry
             .path()
-            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
-            .to_string_lossy()
-            .replace('\\', "/");
-        let path = path.strip_prefix("./").unwrap_or(&path);
+            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?;
+        let stripped_path = crate::utils::strip_current_dir(&entry_path);
+        let path = stripped_path.to_string_lossy().replace('\\', "/");
         if path.trim_end_matches('/') == inner_path {
             std::io::copy(&mut entry, &mut tmp)
                 .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
@@ -2188,13 +2185,11 @@ fn extract_dir_tar_at<R: Read>(
         .map_err(|e| ArchiveError::Other(format!("TAR: {e}")))?
     {
         let mut entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
-        let raw_path = entry
+        let entry_path = entry
             .path()
-            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?
-            .to_string_lossy()
-            .replace('\\', "/");
-
-        let raw_path = raw_path.strip_prefix("./").unwrap_or(&raw_path);
+            .map_err(|e| ArchiveError::Other(format!("TAR path: {e}")))?;
+        let stripped_path = crate::utils::strip_current_dir(&entry_path);
+        let raw_path = stripped_path.to_string_lossy().replace('\\', "/");
 
         if !raw_path.starts_with(&prefix) {
             continue;
@@ -2751,11 +2746,9 @@ fn extract_deb(
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
     let (_dir, data_tar) = extract_deb_data(archive_path)?;
     // Deb data tarballs store entries as "./usr/bin/foo" - prepend "./" if absent.
-    let normalized = if inner_path.starts_with("./") {
-        inner_path.to_owned()
-    } else {
-        format!("./{inner_path}")
-    };
+    let inner_p = Path::new(inner_path);
+    let stripped = crate::utils::strip_current_dir(inner_p);
+    let normalized = format!("./{}", stripped.display());
     let name_lc = lc_name(&data_tar);
     if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
         extract_tar(
