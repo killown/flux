@@ -3,6 +3,7 @@ use crate::ui::paste_ops::NEXT_TASK_ID;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use relm4::prelude::*;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{mpsc, Arc};
 
@@ -117,6 +118,7 @@ fn start_walk(
     }
 
     app.is_content_searching = true;
+    app.is_loading = true;
     app.files.clear();
     app.filter.clear();
 
@@ -139,6 +141,8 @@ fn start_walk(
 
     let current_dir = app.current_path.clone();
     let load_id = app.load_id.clone();
+    let visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>> =
+        Arc::new(parking_lot::Mutex::new(std::collections::HashSet::new()));
 
     // Snapshot the params that the walk thread needs.
     let include_hidden = params.include_hidden;
@@ -169,6 +173,8 @@ fn start_walk(
                 !bytes.windows(6).any(|w| w == b"/proc/")
                     && !bytes.windows(5).any(|w| w == b"/sys/")
                     && !bytes.windows(5).any(|w| w == b"/dev/")
+                    && !bytes.windows(5).any(|w| w == b"/run/")
+                    && !bytes.windows(9).any(|w| w == b"/var/run/")
                     && !bytes.windows(12).any(|w| w == b"/dosdevices/")
                     && !bytes.windows(10).any(|w| w == b"/Prefixes/")
                     && !bytes.windows(12).any(|w| w == b"/compatdata/")
@@ -226,6 +232,7 @@ fn start_walk(
             session_id: u64,
             total_count: Arc<AtomicUsize>,
             max_results: usize,
+            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
         }
 
         impl ParallelVisitor for SearchVisitor {
@@ -275,12 +282,21 @@ fn start_walk(
                     return WalkState::Continue;
                 }
 
-                let path = entry.path();
+                if entry.path_is_symlink() {
+                    let path = entry.path();
+                    let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+                    let mut visited = self.visited_paths.lock();
+                    if !visited.insert(canonical_path) {
+                        return WalkState::Continue;
+                    }
+                }
+
+                let path = entry.into_path();
 
                 // ── Advanced predicates ──────────────────────────────────────
                 // Only call std::fs::metadata when at least one predicate is active.
                 if self.mtime_boundary.is_some() || self.size_bytes.is_some() {
-                    match std::fs::metadata(path) {
+                    match std::fs::metadata(&path) {
                         Ok(meta) => {
                             if let Some(boundary) = self.mtime_boundary {
                                 match meta.modified() {
@@ -303,7 +319,6 @@ fn start_walk(
                     }
                 }
 
-                let path = entry.into_path();
                 let rel = path
                     .strip_prefix(&self.current_dir)
                     .map(crate::utils::strip_current_dir)
@@ -328,6 +343,7 @@ fn start_walk(
             session_id: u64,
             total_count: Arc<AtomicUsize>,
             max_results: usize,
+            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for SearchVisitorBuilder {
@@ -343,6 +359,7 @@ fn start_walk(
                     session_id: self.session_id,
                     total_count: self.total_count.clone(),
                     max_results: self.max_results,
+                    visited_paths: self.visited_paths.clone(),
                 })
             }
         }
@@ -358,6 +375,7 @@ fn start_walk(
             session_id,
             total_count,
             max_results,
+            visited_paths,
         };
 
         walker.visit(&mut visitor_builder);

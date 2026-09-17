@@ -2297,6 +2297,22 @@ msgstr "Falha ao salvar o HTML"
 # ============================================================
 
 #: src/ui/advanced_search.rs:???
+msgid "invoice, draft*, photo"
+msgstr "fatura, rascunho*, foto"
+
+#: src/ui/advanced_search.rs:???
+msgid "#work, #project"
+msgstr "#trabalho, #projeto"
+
+#: src/ui/advanced_search.rs:???
+msgid "Exact match"
+msgstr "Correspondência exata"
+
+#: src/ui/advanced_search.rs:???
+msgid "Match exact filename without wildcards"
+msgstr "Corresponder nome exato do arquivo sem curingas"
+
+#: src/ui/advanced_search.rs:???
 msgid "What to find"
 msgstr "O que encontrar"
 
@@ -2554,5 +2570,11 @@ msgstr "livre"
 
 msgid "Name"
 msgstr "Nome"
+
+msgid "No Results Found"
+msgstr "Nenhum Resultado Encontrado"
+
+msgid "No matching files found in this location."
+msgstr "Nenhum arquivo correspondente encontrado neste local."
 
 

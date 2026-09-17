@@ -19,6 +19,7 @@ fn submit_search(
     size_unit_dd: &gtk::DropDown,
     recursive_sw: &gtk::Switch,
     hidden_sw: &gtk::Switch,
+    exact_match_sw: &gtk::Switch,
     search_submitted: &std::rc::Rc<std::cell::Cell<bool>>,
 ) {
     search_submitted.set(true);
@@ -35,6 +36,7 @@ fn submit_search(
     let size_unit_sel = size_unit_dd.selected();
     let mut recursive = recursive_sw.is_active();
     let include_hidden = hidden_sw.is_active();
+    let exact_match = exact_match_sw.is_active();
 
     let date_seconds: Option<u64> = match date_sel {
         1 => Some(3_600),
@@ -80,7 +82,7 @@ fn submit_search(
             if term.contains('*') {
                 recursive = true;
             }
-            if !term.starts_with('*') && !term.ends_with('*') {
+            if !exact_match && !term.starts_with('*') && !term.ends_with('*') {
                 term = format!("*{}*", term);
             }
             patterns.push(term.to_lowercase());
@@ -246,6 +248,12 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
         .build();
 
     let name_entry = make_entry_row(&what_group, &tr("File name"), "invoice, draft*, photo");
+    let exact_match_sw = make_switch_row(
+        &what_group,
+        &tr("Exact match"),
+        &tr("Match exact filename without wildcards"),
+        false,
+    );
     let content_entry = make_entry_row(
         &what_group,
         &tr("Inside files"),
@@ -389,6 +397,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
             let size_unit_combo = size_unit_combo.clone();
             let recursive_sw = recursive_sw.clone();
             let hidden_sw = hidden_sw.clone();
+            let exact_match_sw = exact_match_sw.clone();
             move || {
                 submit_search(
                     &sender,
@@ -404,6 +413,7 @@ pub fn show_advanced_search(app: &mut FluxApp, sender: AsyncComponentSender<Flux
                     &size_unit_combo,
                     &recursive_sw,
                     &hidden_sw,
+                    &exact_match_sw,
                     &submitted,
                 );
             }

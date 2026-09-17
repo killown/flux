@@ -289,9 +289,9 @@ impl SimpleAsyncComponent for FluxApp {
                                 /// Activity indicator for content search.
                                 append = &gtk::Spinner {
                                     #[watch]
-                                    set_spinning: model.is_content_searching,
+                                    set_spinning: model.is_loading || model.is_content_searching,
                                     #[watch]
-                                    set_visible: model.is_content_searching,
+                                    set_visible: model.is_loading || model.is_content_searching,
                                 },
 
                                 /// Cancellation button for content search operations.
@@ -666,6 +666,30 @@ impl SimpleAsyncComponent for FluxApp {
                                         },
                                     },
 
+                                   // No Results Found status page shown when search/filter returns nothing.
+                                    add_overlay = &adw::StatusPage {
+                                        set_icon_name: Some("system-search-symbolic"),
+                                        set_title: &crate::i18n::tr("No Results Found"),
+                                        set_description: Some(&crate::i18n::tr("No matching files found in this location.")),
+                                        set_vexpand: true,
+                                        set_hexpand: true,
+                                        set_halign: gtk::Align::Fill,
+                                        set_valign: gtk::Align::Fill,
+                                        set_can_target: false,
+                                        #[watch]
+                                        set_visible: model.files.is_empty()
+                                            && !model.is_loading
+                                            && !model.is_content_searching
+                                            && !model.archive_locked
+                                            && (
+                                                model.header_view == constants::VIEW_SEARCH
+                                                || model.header_view == constants::VIEW_FILTER
+                                                || model.last_search_was_advanced
+                                                || !model.filter.is_empty()
+                                                || model.extension_filter.is_some()
+                                            ),
+                                    },
+
                                     /// Loading overlay spinner for slow directories/archives.
                                     add_overlay = &gtk::Spinner {
                                         set_halign: gtk::Align::Center,
@@ -674,8 +698,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_spinning: true,
                                         #[watch]
                                         set_visible: model.is_loading,
-                                    },
-                                }
+                                    },                                }
                             },
                         },
 

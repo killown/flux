@@ -10,6 +10,7 @@ impl FluxApp {
     /// Handles backward navigation in the directory history stack.
     pub fn handle_go_back(&mut self, sender: &AsyncComponentSender<Self>) {
         self.reset_from_content_search();
+        self.last_search_was_advanced = false;
         if let Some(prev) = self.history.pop() {
             self.forward_stack.push(self.current_path.clone());
             if crate::services::network::is_network_uri(&prev) {
@@ -49,6 +50,7 @@ impl FluxApp {
     /// Handles forward navigation in the directory history stack.
     pub fn handle_go_forward(&mut self, sender: &AsyncComponentSender<Self>) {
         self.reset_from_content_search();
+        self.last_search_was_advanced = false;
 
         while let Some(next) = self.forward_stack.pop() {
             let s = next.to_string_lossy();
@@ -116,6 +118,7 @@ impl FluxApp {
         }
 
         self.reset_from_content_search();
+        self.last_search_was_advanced = false;
 
         //--------------------------------------------------------------------------------------//
         //NOTE: this block of code is where in can intercept and handle special URIs or commands before
@@ -297,6 +300,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         self.reset_from_content_search();
+        self.last_search_was_advanced = false;
         let old_path = std::mem::replace(
             &mut self.current_path,
             crate::services::archive::build_archive_uri(&archive_path, ""),
