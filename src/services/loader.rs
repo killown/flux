@@ -605,16 +605,11 @@ impl FluxApp {
                             })
                         };
 
-                        let (is_symlink, symlink_target, is_broken_symlink) =
-                            if target_path.is_symlink() {
-                                (
-                                    true,
-                                    std::fs::read_link(&target_path).ok(),
-                                    std::fs::metadata(&target_path).is_err(),
-                                )
-                            } else {
-                                (false, None, false)
-                            };
+                        let (is_symlink, is_broken_symlink) = if target_path.is_symlink() {
+                            (true, std::fs::metadata(&target_path).is_err())
+                        } else {
+                            (false, false)
+                        };
 
                         Some(FileLoadContext::new(
                             name,
@@ -626,7 +621,6 @@ impl FluxApp {
                             expand_labels,
                             custom_icon,
                             is_symlink,
-                            symlink_target,
                             is_broken_symlink,
                         ))
                     })
@@ -942,7 +936,6 @@ impl FluxApp {
                         max_width_chars: self.config.ui.max_width_chars,
                         grid_spacing: self.config.ui.grid_spacing,
                         is_symlink: false,
-                        symlink_target: None,
                         is_broken_symlink: false,
                         show_symlink_emblem: self.config.ui.show_symlink_emblem,
                     });
@@ -1065,14 +1058,10 @@ impl FluxApp {
                 false
             };
 
-            let (is_symlink, symlink_target, is_broken_symlink) = if path.is_symlink() {
-                (
-                    true,
-                    std::fs::read_link(&path).ok(),
-                    std::fs::metadata(&path).is_err(),
-                )
+            let (is_symlink, is_broken_symlink) = if path.is_symlink() {
+                (true, std::fs::metadata(&path).is_err())
             } else {
-                (false, None, false)
+                (false, false)
             };
 
             self.files.append(crate::ui::FileItem {
@@ -1099,7 +1088,6 @@ impl FluxApp {
                 max_width_chars: self.config.ui.max_width_chars,
                 grid_spacing: self.config.ui.grid_spacing,
                 is_symlink,
-                symlink_target,
                 is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
             });
@@ -1243,7 +1231,6 @@ impl FluxApp {
                 max_width_chars,
                 grid_spacing,
                 is_symlink: item.is_symlink,
-                symlink_target: item.symlink_target,
                 is_broken_symlink: item.is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
             };

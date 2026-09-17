@@ -54,8 +54,6 @@ pub struct FileItem {
     pub grid_spacing: i32,
     /// Whether the target is a symbolic link.
     pub is_symlink: bool,
-    /// Path pointed to by the symbolic link, if available.
-    pub symlink_target: Option<PathBuf>,
     /// Whether the symbolic link target does not exist.
     pub is_broken_symlink: bool,
     /// User setting controlling whether the visual symbolic link badge is shown.
@@ -561,16 +559,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             {
                 let mut info_parts: Vec<String> = Vec::new();
 
-                if self.is_symlink {
-                    if let Some(ref target) = self.symlink_target {
-                        if self.is_broken_symlink {
-                            info_parts.push(format!("→ {} (broken)", target.display()));
-                        } else {
-                            info_parts.push(format!("→ {}", target.display()));
-                        }
-                    }
-                }
-
                 if self.is_dir {
                     let count_str = if self.size == 1 {
                         "1 item".to_string()
@@ -701,6 +689,26 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         let show_indicator = self.show_symlink_emblem && self.is_symlink;
         widgets.symlink_icon.set_visible(show_indicator);
+
+        if show_indicator {
+            root.add_css_class("flux-card--symlink");
+            if self.is_broken_symlink {
+                root.add_css_class("flux-card--broken-symlink");
+                widgets
+                    .symlink_icon
+                    .set_icon_name(Some("dialog-warning-symbolic"));
+                widgets.symlink_icon.add_css_class("warning");
+            } else {
+                root.remove_css_class("flux-card--broken-symlink");
+                widgets
+                    .symlink_icon
+                    .set_icon_name(Some("emblem-symbolic-link"));
+                widgets.symlink_icon.remove_css_class("warning");
+            }
+        } else {
+            root.remove_css_class("flux-card--symlink");
+            root.remove_css_class("flux-card--broken-symlink");
+        }
 
         if self.is_broken_symlink && show_indicator {
             widgets
@@ -900,8 +908,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         widgets.drag_source.set_icon(None::<&gdk::Paintable>, 0, 0);
         widgets.label.set_text("");
         widgets.info_label.set_text("");
+
+        root.remove_css_class("flux-card--symlink");
+        root.remove_css_class("flux-card--broken-symlink");
         widgets.symlink_icon.set_visible(false);
         widgets.symlink_icon.remove_css_class("warning");
+
         if let Some(existing_entry) = widgets.stack.child_by_name(constants::VIEW_ENTRY) {
             widgets.stack.remove(&existing_entry);
         }

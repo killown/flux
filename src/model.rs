@@ -106,8 +106,6 @@ pub struct FileLoadContext {
 
     /// True if the target item is a symbolic link.
     pub is_symlink: bool,
-    /// The destination path the symbolic link points to, if readable.
-    pub symlink_target: Option<PathBuf>,
     /// True if the symbolic link points to a non-existent target.
     pub is_broken_symlink: bool,
 
@@ -132,7 +130,6 @@ impl FileLoadContext {
         expand_labels: bool,
         custom_icon: Option<String>,
         is_symlink: bool,
-        symlink_target: Option<PathBuf>,
         is_broken_symlink: bool,
     ) -> Self {
         Self {
@@ -145,7 +142,6 @@ impl FileLoadContext {
             expand_labels,
             custom_icon,
             is_symlink,
-            symlink_target,
             is_broken_symlink,
             is_empty: OnceLock::new(),
             metadata: OnceLock::new(),
@@ -195,7 +191,6 @@ impl FileLoadContext {
             expand_labels,
             custom_icon,
             is_symlink: false,
-            symlink_target: None,
             is_broken_symlink: false,
             is_empty: OnceLock::from(size == 0),
             metadata: OnceLock::new(),
