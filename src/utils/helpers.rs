@@ -771,6 +771,13 @@ impl FluxApp {
         }
     }
 
+    #[inline]
+    pub fn is_dir_empty(path: &Path) -> bool {
+        fs::read_dir(path)
+            .map(|mut entries| entries.next().is_none())
+            .unwrap_or(false)
+    }
+
     /// Moves a collection of source files/directories into a target destination directory.
     pub fn handle_move_files_to_target(
         &mut self,
@@ -1017,6 +1024,7 @@ impl FluxApp {
                 mtime,
                 is_editing: false,
                 is_foreign_owner: false,
+                is_empty: false,
                 expand_labels: false,
                 is_list_mode: true,
                 is_custom_icon: false,

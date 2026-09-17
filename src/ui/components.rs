@@ -26,6 +26,7 @@ pub struct FileItem {
     pub path: PathBuf,
     pub icon_size: i32,
     pub is_editing: bool,
+    pub is_empty: bool,
     pub is_foreign_owner: bool,
     /// Whether the label should wrap to multiple lines instead of ellipsizing.
     pub expand_labels: bool,
@@ -654,16 +655,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         if self.is_dir && config.ui.show_empty_dir_emblem {
-            let is_empty = std::fs::read_dir(&self.path)
-                .map(|mut rd| rd.next().is_none())
-                .unwrap_or(false);
-
-            // Only show the icon emblem in grid mode, hide it in list mode
             widgets
                 .empty_icon
-                .set_visible(is_empty && !self.is_list_mode);
+                .set_visible(self.is_empty && !self.is_list_mode);
 
-            if is_empty {
+            if self.is_empty {
                 root.add_css_class("flux-card--empty");
             } else {
                 root.remove_css_class("flux-card--empty");

@@ -321,8 +321,8 @@ fn test_entries_to_load_contexts() {
     let c1 = &contexts[0];
     assert_eq!(c1.display_name, "file.txt");
     assert!(!c1.is_dir);
-    assert_eq!(c1.size, 123);
-    assert_eq!(c1.mtime, 456);
+    assert_eq!(c1.size(), 123);
+    assert_eq!(c1.mtime(), 456);
     assert!(c1.expand_labels);
     assert_eq!(c1.target_path, build_archive_uri(archive_path, "file.txt"));
     let c2 = &contexts[1];

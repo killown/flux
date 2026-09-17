@@ -33,19 +33,18 @@ fn xbel_attr(tag: &str, name: &str) -> Option<String> {
 
 #[allow(dead_code)]
 fn mock_ctx(name: &str, is_dir: bool, size: u64, mtime: i64) -> FileLoadContext {
-    FileLoadContext {
-        display_name: name.to_string(),
-        sort_name: name.to_lowercase(),
-        sort_ext: String::new(),
-        target_path: PathBuf::from(name),
+    FileLoadContext::with_stats(
+        name.to_string(),
+        PathBuf::from(name),
+        is_dir,
+        name.to_lowercase(),
+        String::new(),
         size,
         mtime,
-        is_dir,
-        thumbnail_path: None,
-        is_foreign_owner: false,
-        expand_labels: false,
-        custom_icon: None,
-    }
+        None,
+        false,
+        None,
+    )
 }
 
 #[allow(dead_code)]
@@ -60,8 +59,8 @@ fn sort_items(items: &mut [FileLoadContext], by: SortBy, folders_first: bool, as
         }
         let primary = match by {
             SortBy::Name => a.sort_name.cmp(&b.sort_name),
-            SortBy::Size => a.size.cmp(&b.size),
-            SortBy::Date => a.mtime.cmp(&b.mtime),
+            SortBy::Size => a.size().cmp(&b.size()),
+            SortBy::Date => a.mtime().cmp(&b.mtime()),
             SortBy::Type => {
                 let ext_a = Path::new(&a.display_name)
                     .extension()

@@ -1,5 +1,18 @@
 use std::env;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Component, Path, PathBuf};
+
+/// Strips leading `.` components in-place without heap allocation.
+#[inline]
+pub fn strip_current_dir(path: &Path) -> &Path {
+    path.strip_prefix(".").unwrap_or(path)
+}
+
+/// Borrows raw path bytes directly without allocation or UTF-8 validation.
+#[inline]
+pub fn osstr_to_bytes(input: &std::ffi::OsStr) -> &[u8] {
+    input.as_bytes()
+}
 
 /// Path utilities for flux.
 pub trait PathExt {

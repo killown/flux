@@ -29,8 +29,18 @@ impl FluxApp {
                 crate::utils::get_icon_for_path(&item.target_path, item.is_dir)
             };
 
+            let size = item.size();
+            let mtime = item.mtime();
+            let is_foreign_owner = item.is_foreign_owner(unsafe { libc::geteuid() });
+            let is_empty = if item.is_dir && self.config.ui.show_empty_dir_emblem {
+                item.is_empty()
+            } else {
+                false
+            };
+            let grid_idx = self.files.len();
+
             self.files.append(FileItem {
-                name: item.display_name.clone(),
+                name: item.display_name,
                 icon,
                 thumbnail: None,
                 is_dir: item.is_dir,
@@ -40,15 +50,16 @@ impl FluxApp {
                 } else {
                     self.current_icon_size
                 },
-                size: item.size,
-                mtime: item.mtime,
+                size,
+                mtime,
                 is_editing: false,
-                is_foreign_owner: false,
+                is_foreign_owner,
+                is_empty,
                 expand_labels: item.expand_labels,
                 is_list_mode: self.is_list_mode,
                 is_custom_icon: item.custom_icon.is_some(),
                 active_path: Rc::new(RefCell::new(None)),
-                grid_idx: self.files.len(),
+                grid_idx,
                 max_width_chars: self.config.ui.max_width_chars,
                 grid_spacing: self.config.ui.grid_spacing,
             });

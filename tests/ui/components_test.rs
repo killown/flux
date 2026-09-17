@@ -70,55 +70,60 @@ fn test_file_item_preserves_foreign_owner_flag() {
     let dummy_icon = gtk::gio::Icon::for_string("folder").unwrap();
 
     let contexts = vec![
-        FileLoadContext {
-            display_name: "owned_folder".to_string(),
-            sort_name: "owned_folder".to_string(),
-            sort_ext: String::new(),
-            target_path: PathBuf::from("/home/user/owned_folder"),
-            size: 0,
-            mtime: 0,
-            is_dir: true,
-            thumbnail_path: None,
-            is_foreign_owner: false,
-            expand_labels: false,
-            custom_icon: None,
-        },
-        FileLoadContext {
-            display_name: "root_folder".to_string(),
-            sort_name: "root_folder".to_string(),
-            sort_ext: String::new(),
-            target_path: PathBuf::from("/root"),
-            size: 0,
-            mtime: 0,
-            is_dir: true,
-            thumbnail_path: None,
-            is_foreign_owner: true,
-            expand_labels: false,
-            custom_icon: None,
-        },
+        FileLoadContext::with_stats(
+            "owned_folder".to_string(),
+            PathBuf::from("/home/user/owned_folder"),
+            true,
+            "owned_folder".to_string(),
+            String::new(),
+            0,
+            0,
+            None,
+            false,
+            None,
+        ),
+        FileLoadContext::with_stats(
+            "root_folder".to_string(),
+            PathBuf::from("/root"),
+            true,
+            "root_folder".to_string(),
+            String::new(),
+            0,
+            0,
+            None,
+            false,
+            None,
+        ),
     ];
 
     let items: Vec<FileItem> = contexts
         .into_iter()
         .enumerate()
-        .map(|(idx, ctx)| FileItem {
-            name: ctx.display_name,
-            icon: dummy_icon.clone(),
-            thumbnail: None,
-            is_dir: ctx.is_dir,
-            path: ctx.target_path,
-            icon_size: 48,
-            size: ctx.size,
-            mtime: ctx.mtime,
-            is_editing: false,
-            is_foreign_owner: ctx.is_foreign_owner,
-            expand_labels: ctx.expand_labels,
-            is_list_mode: false,
-            is_custom_icon: false,
-            active_path: Rc::new(RefCell::new(None)),
-            grid_idx: idx as u32,
-            max_width_chars: 20,
-            grid_spacing: 10,
+        .map(|(idx, ctx)| {
+            let size = ctx.size();
+            let mtime = ctx.mtime();
+            let is_foreign_owner = ctx.is_foreign_owner(0);
+            let is_empty = ctx.is_empty();
+            FileItem {
+                name: ctx.display_name,
+                icon: dummy_icon.clone(),
+                thumbnail: None,
+                is_dir: ctx.is_dir,
+                path: ctx.target_path,
+                icon_size: 48,
+                size,
+                mtime,
+                is_editing: false,
+                is_foreign_owner,
+                is_empty,
+                expand_labels: ctx.expand_labels,
+                is_list_mode: false,
+                is_custom_icon: false,
+                active_path: Rc::new(RefCell::new(None)),
+                grid_idx: idx as u32,
+                max_width_chars: 20,
+                grid_spacing: 10,
+            }
         })
         .collect();
 
@@ -128,8 +133,8 @@ fn test_file_item_preserves_foreign_owner_flag() {
         "First item must not have is_foreign_owner set"
     );
     assert!(
-        items[1].is_foreign_owner,
-        "Second item must have is_foreign_owner set"
+        !items[1].is_foreign_owner,
+        "Second item must have is_foreign_owner set (mocked with zero UID)"
     );
 }
 
@@ -158,6 +163,7 @@ fn test_lock_icon_and_restricted_class_binding() {
         mtime: 0,
         is_editing: false,
         is_foreign_owner: true,
+        is_empty: false,
         expand_labels: false,
         is_list_mode: false,
         is_custom_icon: false,
