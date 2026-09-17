@@ -80,6 +80,14 @@ impl FluxApp {
             self.files.clear_filters();
             self.files.clear();
 
+            if self.is_list_mode {
+                self.files.view.set_min_columns(1);
+                self.files.view.set_max_columns(1);
+            } else {
+                self.files.view.set_min_columns(1);
+                self.files.view.set_max_columns(20);
+            }
+
             let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
             let filter_text = rest_query.trim().to_lowercase();
 
@@ -142,7 +150,7 @@ impl FluxApp {
                     }
                 }
 
-                let _is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
+                let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
                     FluxApp::is_dir_empty(&path)
                 } else {
                     false
@@ -152,16 +160,20 @@ impl FluxApp {
                     name,
                     icon,
                     thumbnail: None,
-                    is_dir: false,
+                    is_dir,
                     path: path.clone(),
-                    icon_size: self.current_list_icon_size,
+                    icon_size: if self.is_list_mode {
+                        self.current_list_icon_size
+                    } else {
+                        self.current_icon_size
+                    },
                     size,
                     mtime,
                     is_editing: false,
                     is_foreign_owner: false,
-                    is_empty: false,
-                    expand_labels: false,
-                    is_list_mode: true,
+                    is_empty,
+                    expand_labels: self.config.ui.expand_labels,
+                    is_list_mode: self.is_list_mode,
                     is_custom_icon: false,
                     active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
                     grid_idx: self.files.len(),
