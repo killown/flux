@@ -81,10 +81,10 @@ headerbar togglebutton:active {
   background-color: color-mix(in srgb, @window_bg_color 20%, #000000 20%);
   border-radius: 14px;
   border: none; /* Removes the harsh literal border entirely */
-  box-shadow: 
-    0 0 0 1px rgba(0, 0, 0, 0.15), /* Soft universal dark outline that adapts anywhere */
-    0 4px 20px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.15),
+    /* Soft universal dark outline that adapts anywhere */ 0 4px 20px
+      rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-inner {
@@ -447,7 +447,9 @@ entry.flux-rename-entry {
   box-shadow: 0 2px 4px alpha(#000000, 0.08);
 }
 
-.quick-panel > button:hover:not(:checked):not(:active):not(.suggested-action) label,
+.quick-panel
+  > button:hover:not(:checked):not(:active):not(.suggested-action)
+  label,
 .quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) label {
   color: @accent_color;
 }
@@ -524,23 +526,27 @@ toastoverlay.quick-dock-active toast {
 
 /* ── Status Bar & Transfers (Floating Card Style) ── */
 .selection-status {
-  background-color: color-mix(in srgb, @window_bg_color 88%, @window_fg_color 12%);
+  background-color: color-mix(
+    in srgb,
+    @window_bg_color 88%,
+    @window_fg_color 12%
+  );
   border-radius: 12px;
-  
+
   /* Forcefully strip any native theme-injected borders */
   border: none;
   border-style: none;
   border-image: none;
-  
+
   padding: 6px 16px;
   min-height: 28px;
   margin: 0px 8px 8px 8px;
-  
+
   /* Use a clean shadow outline instead of a real border to prevent white line artifacts */
-  box-shadow: 
+  box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.12),
     0 4px 16px rgba(0, 0, 0, 0.2);
-  
+
   transition: all 201ms ease;
 }
 
@@ -601,4 +607,13 @@ scrollbar.vertical slider:hover {
 
 .flux-empty-badge {
   color: alpha(@window_fg_color, 0.3);
+}
+
+.symlink-badge {
+  opacity: 0.9;
+}
+
+.symlink-badge.warning {
+  color: @warning_color;
+  opacity: 1;
 }

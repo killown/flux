@@ -104,6 +104,13 @@ pub struct FileLoadContext {
     /// Optional override icon name for the item.
     pub custom_icon: Option<String>,
 
+    /// True if the target item is a symbolic link.
+    pub is_symlink: bool,
+    /// The destination path the symbolic link points to, if readable.
+    pub symlink_target: Option<PathBuf>,
+    /// True if the symbolic link points to a non-existent target.
+    pub is_broken_symlink: bool,
+
     // Lazy metadata caches
     /// Cached emptiness flag determined lazily without consuming entire directory streams.
     is_empty: OnceLock<bool>,
@@ -124,6 +131,9 @@ impl FileLoadContext {
         thumbnail_path: Option<PathBuf>,
         expand_labels: bool,
         custom_icon: Option<String>,
+        is_symlink: bool,
+        symlink_target: Option<PathBuf>,
+        is_broken_symlink: bool,
     ) -> Self {
         Self {
             display_name,
@@ -134,6 +144,9 @@ impl FileLoadContext {
             thumbnail_path,
             expand_labels,
             custom_icon,
+            is_symlink,
+            symlink_target,
+            is_broken_symlink,
             is_empty: OnceLock::new(),
             metadata: OnceLock::new(),
             size: OnceLock::new(),
@@ -146,7 +159,15 @@ impl FileLoadContext {
     #[inline]
     pub fn metadata(&self) -> Option<&Metadata> {
         self.metadata
-            .get_or_init(|| self.target_path.symlink_metadata().ok())
+            .get_or_init(|| {
+                if self.is_symlink {
+                    std::fs::metadata(&self.target_path)
+                        .ok()
+                        .or_else(|| self.target_path.symlink_metadata().ok())
+                } else {
+                    self.target_path.symlink_metadata().ok()
+                }
+            })
             .as_ref()
     }
 
@@ -173,6 +194,9 @@ impl FileLoadContext {
             thumbnail_path,
             expand_labels,
             custom_icon,
+            is_symlink: false,
+            symlink_target: None,
+            is_broken_symlink: false,
             is_empty: OnceLock::from(size == 0),
             metadata: OnceLock::new(),
             size: OnceLock::from(size),
@@ -425,6 +449,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Show a symbolic link badge and target hints in file views.
+    #[serde(default = "default_true")]
+    pub show_symlink_emblem: bool,
     /// Persisted across sessions, whether the header bar is visible. Defaults to `true`.
     #[serde(default = "default_true")]
     pub header_visible: bool,
@@ -584,6 +611,7 @@ impl Default for UIConfig {
     fn default() -> Self {
         Self {
             show_empty_dir_emblem: false,
+            show_symlink_emblem: true,
             file_icons: HashMap::new(),
             default_icon_size: 0,
             list_icon_size: 24,
@@ -841,6 +869,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggle whether symbolic link indicators and badges are displayed.
+    SetShowSymlinkEmblem(bool),
     /// Toggles the visibility state of the bottom status bar.
     ToggleStatusBar,
     /// Pin a specific tag to the user's sidebar bookmarks in `config.toml`.

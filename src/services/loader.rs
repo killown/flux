@@ -559,6 +559,17 @@ impl FluxApp {
                             })
                         };
 
+                        let (is_symlink, symlink_target, is_broken_symlink) =
+                            if target_path.is_symlink() {
+                                (
+                                    true,
+                                    std::fs::read_link(&target_path).ok(),
+                                    std::fs::metadata(&target_path).is_err(),
+                                )
+                            } else {
+                                (false, None, false)
+                            };
+
                         Some(FileLoadContext::new(
                             name,
                             target_path,
@@ -568,6 +579,9 @@ impl FluxApp {
                             thumbnail_path,
                             expand_labels,
                             custom_icon,
+                            is_symlink,
+                            symlink_target,
+                            is_broken_symlink,
                         ))
                     })
                     .collect()
@@ -881,6 +895,10 @@ impl FluxApp {
                         grid_idx,
                         max_width_chars: self.config.ui.max_width_chars,
                         grid_spacing: self.config.ui.grid_spacing,
+                        is_symlink: false,
+                        symlink_target: None,
+                        is_broken_symlink: false,
+                        show_symlink_emblem: self.config.ui.show_symlink_emblem,
                     });
                 }
 
@@ -1001,6 +1019,16 @@ impl FluxApp {
                 false
             };
 
+            let (is_symlink, symlink_target, is_broken_symlink) = if path.is_symlink() {
+                (
+                    true,
+                    std::fs::read_link(&path).ok(),
+                    std::fs::metadata(&path).is_err(),
+                )
+            } else {
+                (false, None, false)
+            };
+
             self.files.append(crate::ui::FileItem {
                 name: display_name,
                 icon,
@@ -1024,6 +1052,10 @@ impl FluxApp {
                 grid_idx: grid_idx as u32,
                 max_width_chars: self.config.ui.max_width_chars,
                 grid_spacing: self.config.ui.grid_spacing,
+                is_symlink,
+                symlink_target,
+                is_broken_symlink,
+                show_symlink_emblem: self.config.ui.show_symlink_emblem,
             });
         }
 
@@ -1164,6 +1196,10 @@ impl FluxApp {
                 grid_idx,
                 max_width_chars,
                 grid_spacing,
+                is_symlink: item.is_symlink,
+                symlink_target: item.symlink_target,
+                is_broken_symlink: item.is_broken_symlink,
+                show_symlink_emblem: self.config.ui.show_symlink_emblem,
             };
 
             self.files.append(file_item);

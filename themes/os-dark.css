@@ -67,7 +67,6 @@ headerbar togglebutton:active {
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
 }
 
 .sidebar-inner {
@@ -740,7 +739,9 @@ window:backdrop .selection-status button.destructive-action {
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.quick-panel button:hover:not(:checked):not(:active):not(.suggested-action) label,
+.quick-panel
+  button:hover:not(:checked):not(:active):not(.suggested-action)
+  label,
 .quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) label {
   color: #ffffff;
 }

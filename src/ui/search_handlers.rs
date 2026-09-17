@@ -5,8 +5,6 @@ use crate::utils::search::{parse_size_filter, SizeOp};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
@@ -144,7 +142,7 @@ impl FluxApp {
                     }
                 }
 
-                let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
+                let _is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
                     FluxApp::is_dir_empty(&path)
                 } else {
                     false
@@ -154,25 +152,25 @@ impl FluxApp {
                     name,
                     icon,
                     thumbnail: None,
-                    is_dir,
-                    path,
-                    icon_size: if self.is_list_mode {
-                        self.current_list_icon_size
-                    } else {
-                        self.current_icon_size
-                    },
+                    is_dir: false,
+                    path: path.clone(),
+                    icon_size: self.current_list_icon_size,
                     size,
                     mtime,
                     is_editing: false,
                     is_foreign_owner: false,
-                    is_empty,
-                    expand_labels: self.config.ui.expand_labels,
-                    is_list_mode: self.is_list_mode,
+                    is_empty: false,
+                    expand_labels: false,
+                    is_list_mode: true,
                     is_custom_icon: false,
-                    active_path: Rc::new(RefCell::new(None)),
-                    grid_idx,
+                    active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
+                    grid_idx: self.files.len(),
                     max_width_chars: self.config.ui.max_width_chars,
                     grid_spacing: self.config.ui.grid_spacing,
+                    is_symlink: false,
+                    symlink_target: None,
+                    is_broken_symlink: false,
+                    show_symlink_emblem: self.config.ui.show_symlink_emblem,
                 });
                 grid_idx += 1;
             }
@@ -304,7 +302,7 @@ impl FluxApp {
             icon,
             thumbnail: None,
             is_dir: false,
-            path,
+            path: path.clone(),
             icon_size: self.current_list_icon_size,
             size,
             mtime,
@@ -318,6 +316,10 @@ impl FluxApp {
             grid_idx: self.files.len(),
             max_width_chars: self.config.ui.max_width_chars,
             grid_spacing: self.config.ui.grid_spacing,
+            is_symlink: false,
+            symlink_target: None,
+            is_broken_symlink: false,
+            show_symlink_emblem: self.config.ui.show_symlink_emblem,
         });
     }
 
