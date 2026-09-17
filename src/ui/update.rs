@@ -396,6 +396,8 @@ impl FluxApp {
                 crate::ui::advanced_search::show_advanced_search(self, sender.clone());
             }
             AppMsg::StartAdvancedSearch(params) => {
+                self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
+                self.last_search_was_advanced = true;
                 crate::services::extension_search::start_advanced_search(self, params, sender);
             }
             AppMsg::StartExtensionSearch(patterns) => {
@@ -405,6 +407,7 @@ impl FluxApp {
                 self.handle_extension_search_batch(results, session);
             }
             AppMsg::StartContentSearch(term, ext_filter) => {
+                self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
                 crate::services::content_search::start_content_search(
                     self, term, ext_filter, sender,
                 )

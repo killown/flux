@@ -16,6 +16,9 @@ pub struct DirStats {
 }
 
 pub fn scan_directory_native(target: &Path) -> DirStats {
+    let target = target
+        .canonicalize()
+        .unwrap_or_else(|_| target.to_path_buf());
     let start = Instant::now();
     let total_bytes = Arc::new(AtomicU64::new(0));
     let total_files = Arc::new(AtomicUsize::new(0));
@@ -24,7 +27,7 @@ pub fn scan_directory_native(target: &Path) -> DirStats {
     let exts = Arc::new(Mutex::new(HashMap::<String, (usize, u64)>::new()));
     let largest_files = Arc::new(Mutex::new(Vec::<(PathBuf, u64)>::new()));
 
-    let walker = ignore::WalkBuilder::new(target)
+    let walker = ignore::WalkBuilder::new(&target)
         .hidden(false)
         .parents(false)
         .ignore(false)

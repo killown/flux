@@ -9,6 +9,7 @@ use relm4::prelude::*;
 use relm4::AsyncComponentSender;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -37,6 +38,7 @@ pub fn start_content_search(
         cancellable.cancel();
     }
     app.is_content_searching = true;
+    app.is_loading = true;
     app.files.clear();
     app.filter.clear();
 
@@ -59,6 +61,9 @@ pub fn start_content_search(
 
     let current_dir = app.current_path.clone();
     let term_lc = Arc::new(clean_term.to_lowercase());
+    let visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>> =
+        Arc::new(parking_lot::Mutex::new(std::collections::HashSet::new()));
+
     // Build the case-insensitive matcher once, each visitor thread clones the Arc.
     let matcher: Option<Arc<AhoCorasick>> = if !term_lc.is_empty() {
         AhoCorasick::builder()
@@ -100,6 +105,8 @@ pub fn start_content_search(
                 !bytes.windows(6).any(|w| w == b"/proc/")
                     && !bytes.windows(5).any(|w| w == b"/sys/")
                     && !bytes.windows(5).any(|w| w == b"/dev/")
+                    && !bytes.windows(5).any(|w| w == b"/run/")
+                    && !bytes.windows(9).any(|w| w == b"/var/run/")
                     && !bytes.windows(12).any(|w| w == b"/dosdevices/")
                     && !bytes.windows(10).any(|w| w == b"/Prefixes/")
                     && !bytes.windows(12).any(|w| w == b"/compatdata/")
@@ -119,6 +126,7 @@ pub fn start_content_search(
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
             matcher: Option<Arc<AhoCorasick>>,
+            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
         }
 
         impl ParallelVisitor for ContentVisitor {
@@ -138,6 +146,15 @@ pub fn start_content_search(
                 // Only inspect regular files
                 if !entry.file_type().is_some_and(|ft| ft.is_file()) {
                     return WalkState::Continue;
+                }
+
+                if entry.path_is_symlink() {
+                    let path = entry.path();
+                    let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+                    let mut visited = self.visited_paths.lock();
+                    if !visited.insert(canonical_path) {
+                        return WalkState::Continue;
+                    }
                 }
 
                 let path = entry.into_path();
@@ -242,6 +259,7 @@ pub fn start_content_search(
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
             matcher: Option<Arc<AhoCorasick>>,
+            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for ContentVisitorBuilder {
@@ -256,6 +274,7 @@ pub fn start_content_search(
                     allowed_exts: self.allowed_exts.clone(),
                     term_lc: self.term_lc.clone(),
                     matcher: self.matcher.clone(),
+                    visited_paths: self.visited_paths.clone(),
                 })
             }
         }
@@ -270,6 +289,7 @@ pub fn start_content_search(
             allowed_exts,
             term_lc,
             matcher,
+            visited_paths,
         };
 
         walker.visit(&mut visitor_builder);

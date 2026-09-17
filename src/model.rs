@@ -687,6 +687,9 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.
+    #[allow(dead_code)]
+    pub last_search_was_advanced: bool,
     /// Whether the bottom status bar is currently visible.
     pub statusbar_visible: bool,
     /// Tracks whether the file grid scrollable container has reached the bottom boundary.

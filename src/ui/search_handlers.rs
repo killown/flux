@@ -328,6 +328,7 @@ impl FluxApp {
         }
         self.is_loading = false;
         self.is_content_searching = false;
+
         self.content_search_cancellable = None;
 
         let view = self.files.view.clone();
