@@ -522,16 +522,20 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 .label_scroller
                 .set_hscrollbar_policy(gtk::PolicyType::Automatic);
             widgets.label_scroller.set_propagate_natural_width(false);
+            widgets.label_scroller.set_propagate_natural_height(true);
+            widgets.label_scroller.set_valign(gtk::Align::Center);
             widgets.label_scroller.set_hexpand(true);
 
             // Stack and its label-box fill the scroller's viewport.
             widgets.stack.set_halign(gtk::Align::Fill);
+            widgets.stack.set_valign(gtk::Align::Center);
             widgets.stack.set_hexpand(true);
 
             // Get the label container (the Box inside the Stack) and make it start-aligned.
             if let Some(label_box) = widgets.stack.child_by_name(constants::VIEW_LABEL) {
                 if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
                     box_widget.set_halign(gtk::Align::Start);
+                    box_widget.set_valign(gtk::Align::Center);
                     box_widget.set_hexpand(true);
                     box_widget.set_size_request(-1, -1);
                 }
@@ -638,14 +642,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 .label_scroller
                 .set_hscrollbar_policy(gtk::PolicyType::Never);
             widgets.label_scroller.set_propagate_natural_width(true);
+            widgets.label_scroller.set_valign(gtk::Align::Start);
             widgets.label_scroller.set_hexpand(false);
 
-            // Reset Stack alignment for grid mode (centered).
+            // Reset Stack alignment for grid mode (centered horizontally, anchored to start vertically).
             widgets.stack.set_halign(gtk::Align::Center);
+            widgets.stack.set_valign(gtk::Align::Start);
             widgets.stack.set_hexpand(false);
             if let Some(label_box) = widgets.stack.child_by_name(constants::VIEW_LABEL) {
                 if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
                     box_widget.set_halign(gtk::Align::Center);
+                    box_widget.set_valign(gtk::Align::Start);
                     box_widget.set_hexpand(false);
                     box_widget.set_size_request(-1, -1);
                 }
