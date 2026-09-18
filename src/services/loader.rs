@@ -463,10 +463,10 @@ impl FluxApp {
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
             // Fast directory reading without individual stat() calls per file
-            let raw_entries: Vec<(String, bool)> = if is_trash {
+            let raw_entries: Vec<(String, bool, bool)> = if is_trash {
                 let root_bg = gio::File::for_uri(&path_clone.to_string_lossy());
                 if let Ok(enumerator) = root_bg.enumerate_children(
-                    "standard::name,standard::type,standard::size",
+                    "standard::name,standard::type,standard::size,standard::is-symlink",
                     gio::FileQueryInfoFlags::NONE,
                     gio::Cancellable::NONE,
                 ) {
@@ -476,6 +476,7 @@ impl FluxApp {
                             (
                                 info.name().to_string_lossy().to_string(),
                                 info.file_type() == gio::FileType::Directory,
+                                info.is_symlink(),
                             )
                         })
                         .collect()
@@ -493,10 +494,10 @@ impl FluxApp {
                     .follow_links(false);
 
                 let walker = builder.build_parallel();
-                let (tx, rx) = mpsc::channel::<(String, bool)>();
+                let (tx, rx) = mpsc::channel::<(String, bool, bool)>();
 
                 struct EntryVisitor {
-                    tx: mpsc::Sender<(String, bool)>,
+                    tx: mpsc::Sender<(String, bool, bool)>,
                 }
 
                 impl ParallelVisitor for EntryVisitor {
@@ -514,15 +515,16 @@ impl FluxApp {
                         }
 
                         let name = entry.file_name().to_string_lossy().to_string();
-                        let is_dir = entry.path().is_dir();
+                        let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
+                        let is_symlink = entry.path_is_symlink();
 
-                        let _ = self.tx.send((name, is_dir));
+                        let _ = self.tx.send((name, is_dir, is_symlink));
                         WalkState::Continue
                     }
                 }
 
                 struct EntryVisitorBuilder {
-                    tx: mpsc::Sender<(String, bool)>,
+                    tx: mpsc::Sender<(String, bool, bool)>,
                 }
 
                 impl<'s> ParallelVisitorBuilder<'s> for EntryVisitorBuilder {
@@ -539,7 +541,6 @@ impl FluxApp {
 
                 rx.into_iter().collect()
             };
-
             let is_inside_thumb_cache = dirs::cache_dir()
                 .map(|c| path_clone.starts_with(c.join("thumbnails")))
                 .unwrap_or(false);
@@ -547,7 +548,7 @@ impl FluxApp {
             let mut items: Vec<FileLoadContext> = loader_pool().install(|| {
                 raw_entries
                     .into_par_iter()
-                    .filter_map(|(name, is_dir)| {
+                    .filter_map(|(name, is_dir, is_symlink)| {
                         if !show_hidden && name.starts_with('.') {
                             return None;
                         }
@@ -612,11 +613,10 @@ impl FluxApp {
                             })
                         };
 
-                        let real_path = crate::utils::expand_path(&target_path.to_string_lossy());
-                        let (is_symlink, is_broken_symlink) = if real_path.is_symlink() {
-                            (true, std::fs::metadata(&real_path).is_err())
+                        let is_broken_symlink = if is_symlink {
+                            std::fs::metadata(&target_path).is_err()
                         } else {
-                            (false, false)
+                            false
                         };
 
                         Some(FileLoadContext::new(
