@@ -1221,14 +1221,6 @@ adwtoast button label {
   color: #c97000;
 }
 
-.flux-card--empty {
-  border-left: 2px solid alpha(@theme_fg_color, 0.3);
-}
-
-.flux-empty-badge {
-  color: alpha(@theme_fg_color, 0.3);
-}
-
 /* ── Window Controls ── */
 windowcontrols button {
   background-color: transparent;
@@ -1270,4 +1262,32 @@ windowcontrols button.maximize:hover {
 /* Position toasts cleanly above the floating dock capsule */
 toastoverlay.quick-dock-active toast {
   margin-bottom: 60px;
+}
+
+/* ── Empty Folder & Symlink Dynamic Theme Styling (OS Light) ── */
+
+.flux-card.flux-card--empty {
+  border-left: 2.5px solid alpha(@theme_fg_color, 0.4);
+}
+
+.flux-card.flux-card--empty .flux-label {
+  color: alpha(@theme_fg_color, 0.6);
+}
+
+.flux-card.flux-card--symlink {
+  border-right: 2.5px solid alpha(@accent_color, 0.85);
+}
+
+.flux-card.flux-card--symlink .flux-label {
+  color: @theme_fg_color;
+  font-weight: 500;
+}
+
+.flux-card.flux-card--broken-symlink {
+  border-right: 2.5px solid #d70015;
+}
+
+.flux-card.flux-card--broken-symlink .flux-label {
+  color: #d70015;
+  text-decoration-line: line-through;
 }
