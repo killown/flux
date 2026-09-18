@@ -515,8 +515,14 @@ impl FluxApp {
                         }
 
                         let name = entry.file_name().to_string_lossy().to_string();
-                        let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
                         let is_symlink = entry.path_is_symlink();
+
+                        // WARNING: changing this could cause bugs:
+                        // entry.file_type() reports the type of the symlink file itself,
+                        // not the directory it points to. Without checking `is_symlink && entry.path().is_dir()`,
+                        // symlink folders will be treated as regular files, breaking directory navigation.
+                        let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                            || (is_symlink && entry.path().is_dir());
 
                         let _ = self.tx.send((name, is_dir, is_symlink));
                         WalkState::Continue
