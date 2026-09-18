@@ -124,21 +124,23 @@ impl FluxApp {
             // ==========================================
             // Directory Loading & Cache
             // ==========================================
+            AppMsg::ShowLoadingSpinner(session) => {
+                if self.load_id.load(Ordering::SeqCst) == session {
+                    self.is_loading = true;
+                }
+            }
             AppMsg::FolderLoadedChunk {
                 load_id,
                 chunk,
                 is_cached,
             } => {
-                if self.load_id.load(std::sync::atomic::Ordering::SeqCst) == load_id {
+                if self.load_id.load(Ordering::SeqCst) == load_id {
                     self.append_context_batch(chunk, load_id, is_cached, &sender);
                 }
             }
             AppMsg::FolderLoadedFinish { load_id } => {
                 if self.load_id.load(Ordering::SeqCst) == load_id {
                     self.is_loading = false;
-                    unsafe {
-                        libc::malloc_trim(0);
-                    }
                 }
             }
             AppMsg::FolderLoaded {

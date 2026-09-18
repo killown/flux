@@ -864,6 +864,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Activates the spinner after the debounce timeout if the session is still current.
+    ShowLoadingSpinner(u64),
     /// Toggle whether symbolic link indicators and badges are displayed.
     SetShowSymlinkEmblem(bool),
     /// Toggles the visibility state of the bottom status bar.

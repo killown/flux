@@ -268,7 +268,6 @@ impl FluxApp {
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        self.is_loading = true;
         let path_str = path.to_string_lossy().to_string();
 
         // ── Virtual / special paths - delegate and return immediately ────────────
@@ -390,6 +389,7 @@ impl FluxApp {
             && extension_globset.is_none()
         {
             if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
+                self.is_loading = false;
                 cached
                     .items
                     .retain(|item| item.target_path.symlink_metadata().is_ok());
@@ -452,6 +452,13 @@ impl FluxApp {
                 return;
             }
         }
+
+        // Schedule delayed spinner activation only when performing a cold background read
+        let sender_debounce = sender.clone();
+        let session = current_session;
+        glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
+            sender_debounce.input(AppMsg::ShowLoadingSpinner(session));
+        });
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
@@ -1264,6 +1271,14 @@ impl FluxApp {
             return;
         }
 
+        // WARNING: changing this could cause some bugs:
+        // Cancels the in-flight ShowLoadingSpinner timer (its session check will now fail)
+        // and rebinds load_id so all downstream chunk/finish guards still match self.load_id.
+        // The +1 is mandatory: fetch_add returns the old value.
+        let load_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+
+        self.is_loading = false;
+
         let is_cached = self.folder_cache.contains_key(&path);
 
         if !path.to_string_lossy().starts_with("trash://")
@@ -1318,7 +1333,6 @@ impl FluxApp {
 
         if items.len() <= batch_size {
             self.append_context_batch(items, load_id, is_cached, sender);
-            self.is_loading = false;
         } else {
             let mut remaining = items;
             let first_batch: Vec<FileLoadContext> = remaining.drain(..batch_size).collect();
