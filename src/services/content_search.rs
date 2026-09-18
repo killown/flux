@@ -148,6 +148,19 @@ pub fn start_content_search(
                     return WalkState::Continue;
                 }
 
+                // ---- Extension filter ----
+                if let Some(ref exts) = self.allowed_exts {
+                    let file_ext = entry
+                        .path()
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|s| s.to_lowercase())
+                        .unwrap_or_default();
+                    if !exts.is_empty() && !exts.contains(&file_ext) {
+                        return WalkState::Continue;
+                    }
+                }
+
                 if entry.path_is_symlink() {
                     let path = entry.path();
                     let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
@@ -172,18 +185,6 @@ pub fn start_content_search(
                         SizeOp::Range(l, r) => size >= *l && size <= *r,
                     };
                     if !size_match {
-                        return WalkState::Continue;
-                    }
-                }
-
-                // ---- Extension filter ----
-                if let Some(ref exts) = self.allowed_exts {
-                    let file_ext = path
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .map(|s| s.to_lowercase())
-                        .unwrap_or_default();
-                    if !exts.is_empty() && !exts.contains(&file_ext) {
                         return WalkState::Continue;
                     }
                 }
