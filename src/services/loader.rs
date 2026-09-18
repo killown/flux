@@ -605,8 +605,9 @@ impl FluxApp {
                             })
                         };
 
-                        let (is_symlink, is_broken_symlink) = if target_path.is_symlink() {
-                            (true, std::fs::metadata(&target_path).is_err())
+                        let real_path = crate::utils::expand_path(&target_path.to_string_lossy());
+                        let (is_symlink, is_broken_symlink) = if real_path.is_symlink() {
+                            (true, std::fs::metadata(&real_path).is_err())
                         } else {
                             (false, false)
                         };
@@ -1058,8 +1059,9 @@ impl FluxApp {
                 false
             };
 
-            let (is_symlink, is_broken_symlink) = if path.is_symlink() {
-                (true, std::fs::metadata(&path).is_err())
+            let real_path = crate::utils::expand_path(&path.to_string_lossy());
+            let (is_symlink, is_broken_symlink) = if real_path.is_symlink() {
+                (true, std::fs::metadata(&real_path).is_err())
             } else {
                 (false, false)
             };

@@ -601,39 +601,30 @@ scrollbar.vertical slider:hover {
   background-color: alpha(@accent_color, 0.5);
 }
 
-.flux-card--empty {
-  border-left: 2px solid alpha(@window_fg_color, 0.3);
+/* ── Empty Folder & Symlink Dynamic Theme Styling ── */
+
+.flux-card.flux-card--empty {
+  border-left: 2.5px solid alpha(@theme_fg_color, 0.45);
 }
 
-.flux-empty-badge {
-  color: alpha(@window_fg_color, 0.3);
+.flux-card.flux-card--empty .flux-label {
+  color: alpha(@theme_fg_color, 0.65);
 }
 
-/* ── Symlink Card & Badge Styling ── */
-.symlink-badge {
-  opacity: 0.55;
-  margin-left: 2px;
+.flux-card.flux-card--symlink {
+  border-right: 2.5px solid alpha(@accent_color, 0.75);
 }
 
-.symlink-badge.warning {
-  opacity: 0.9;
-  color: #ff9500;
+.flux-card.flux-card--symlink .flux-label {
+  color: @theme_fg_color;
+  font-weight: 500;
 }
 
-.flux-card--symlink {
-  border-left: 2px solid alpha(@accent_color, 0.45);
+.flux-card.flux-card--broken-symlink {
+  border-right: 2.5px solid #ff453a;
 }
 
-.flux-card--symlink .flux-label {
-  font-style: italic;
-  color: lighter(@theme_fg_color);
-}
-
-.flux-card--broken-symlink {
-  border-left: 2px solid #ff453a;
-}
-
-.flux-card--broken-symlink .flux-label {
+.flux-card.flux-card--broken-symlink .flux-label {
   color: #ff453a;
-  text-decoration: line-through;
+  text-decoration-line: line-through;
 }
