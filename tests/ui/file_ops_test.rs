@@ -130,7 +130,7 @@ fn test_build_execution_command_single_file_escaping() {
     let targets = vec![PathBuf::from("/tmp/my folder/test 'file'.txt")];
     let cwd = PathBuf::from("/tmp/my folder");
 
-    let (cmd, label) = build_execution_command(template, &targets, &cwd);
+    let (cmd, label) = build_execution_command(template, &targets, &cwd, 0);
 
     assert_eq!(label, "test 'file'.txt");
     assert!(cmd.contains("'/tmp/my folder/test '\\''file'\\''.txt'"));
@@ -145,7 +145,7 @@ fn test_build_execution_command_multi_file() {
     ];
     let cwd = PathBuf::from("/tmp");
 
-    let (cmd, label) = build_execution_command(template, &targets, &cwd);
+    let (cmd, label) = build_execution_command(template, &targets, &cwd, 0);
 
     assert_eq!(label, "2 items");
     assert_eq!(cmd, "zip archive.zip '/tmp/file1.txt' '/tmp/file2.txt'");

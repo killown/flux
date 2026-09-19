@@ -8,7 +8,7 @@ fn test_build_execution_command_single_target_substitutions() {
     let targets = vec![PathBuf::from("/home/user/docs/file.txt")];
     let cwd = Path::new("/home/user/docs");
 
-    let (cmd, label) = build_execution_command(template, &targets, cwd);
+    let (cmd, label) = build_execution_command(template, &targets, cwd, 0);
     assert_eq!(label, "file.txt");
     assert_eq!(
         cmd,
@@ -22,7 +22,7 @@ fn test_build_execution_command_handles_single_quotes() {
     let targets = vec![PathBuf::from("/tmp/O'Reilly's Book.pdf")];
     let cwd = Path::new("/tmp");
 
-    let (cmd, label) = build_execution_command(template, &targets, cwd);
+    let (cmd, label) = build_execution_command(template, &targets, cwd, 0);
     assert_eq!(label, "O'Reilly's Book.pdf");
     assert_eq!(cmd, "cat 'O'\\''Reilly'\\''s Book.pdf'");
 }
@@ -33,7 +33,7 @@ fn test_build_execution_command_blocks_newlines_and_null_bytes() {
     let targets_newline = vec![PathBuf::from("/tmp/bad\nname.txt")];
     let cwd = Path::new("/tmp");
 
-    let (cmd, label) = build_execution_command(template, &targets_newline, cwd);
+    let (cmd, label) = build_execution_command(template, &targets_newline, cwd, 0);
     assert!(
         cmd.is_empty(),
         "Command with newline in target must be rejected"
@@ -41,7 +41,7 @@ fn test_build_execution_command_blocks_newlines_and_null_bytes() {
     assert!(label.is_empty());
 
     let targets_cr = vec![PathBuf::from("/tmp/bad\rname.txt")];
-    let (cmd_cr, _) = build_execution_command(template, &targets_cr, cwd);
+    let (cmd_cr, _) = build_execution_command(template, &targets_cr, cwd, 0);
     assert!(cmd_cr.is_empty());
 }
 
@@ -51,7 +51,7 @@ fn test_build_execution_command_cwd_placeholder() {
     let targets = vec![PathBuf::from("/workspace/src/lib.rs")];
     let cwd = Path::new("/workspace/src");
 
-    let (cmd, _) = build_execution_command(template, &targets, cwd);
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
     assert_eq!(cmd, "tar -czf '/workspace/src'/archive.tar.gz 'lib.rs'");
 }
 
@@ -65,7 +65,7 @@ fn test_build_execution_command_multi_target_placeholder() {
     ];
     let cwd = Path::new("/tmp");
 
-    let (cmd, label) = build_execution_command(template, &targets, cwd);
+    let (cmd, label) = build_execution_command(template, &targets, cwd, 0);
     assert_eq!(label, "3 items");
     assert_eq!(
         cmd,
