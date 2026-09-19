@@ -98,17 +98,17 @@ impl FluxApp {
                     let path = item.path.clone();
                     let s = sender.clone();
 
-                    // Compute symlink target synchronously before moving `path`
-                    let symlink_info = if let Ok(meta) = std::fs::symlink_metadata(&path) {
+                    // Resolve symlink target if applicable, showing full path instead of filename name repetition
+                    let display_name = if let Ok(meta) = std::fs::symlink_metadata(&path) {
                         if meta.is_symlink() {
                             path.canonicalize()
-                                .map(|real| format!(" → {}", real.display()))
-                                .unwrap_or_default()
+                                .map(|real| real.display().to_string())
+                                .unwrap_or_else(|_| item.name.clone())
                         } else {
-                            String::new()
+                            item.name.clone()
                         }
                     } else {
-                        String::new()
+                        item.name.clone()
                     };
 
                     // Spawn async tasks for MIME, dimensions, media duration
@@ -133,7 +133,7 @@ impl FluxApp {
                         s.input(AppMsg::FileMetaReady { mime, dimensions });
                     });
 
-                    // Build the base status string (name, size, date)
+                    // Build the base status string (name/path, size, date)
                     let date_str = if item.mtime > 0 {
                         use chrono::TimeZone;
                         match chrono::Local.timestamp_opt(item.mtime, 0) {
@@ -146,17 +146,11 @@ impl FluxApp {
                         None
                     };
 
-                    let mut status = if let Some(dt_formatted) = date_str {
-                        format!("{} ({}) · {}", item.name, size_str, dt_formatted)
+                    if let Some(dt_formatted) = date_str {
+                        format!("{} ({}) · {}", display_name, size_str, dt_formatted)
                     } else {
-                        format!("{} ({})", item.name, size_str)
-                    };
-
-                    if !symlink_info.is_empty() {
-                        status.push_str(&symlink_info);
+                        format!("{} ({})", display_name, size_str)
                     }
-
-                    status
                 } else {
                     format!("{} ({})", single_name, size_str)
                 }
