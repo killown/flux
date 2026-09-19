@@ -1800,8 +1800,8 @@ msgstr "Tipos MIME"
 
 #: src/ui/menu_editor.rs:500
 #, c-format
-msgid "Command  (%p = path · %d = dir · %f = filename)"
-msgstr "Comando  (%p = caminho · %d = diretório · %f = nome do arquivo)"
+msgid "Command  (%p = path · %d = dir · %f = filename · %l = line)"
+msgstr "Comando  (%p = caminho · %d = diretório · %f = nome do arquivo · %l = linha)"
 
 #: src/ui/menu_editor.rs:508
 msgid "Notification  (optional)"
@@ -1841,8 +1841,8 @@ msgstr "Submenu (vazio = nível superior)"
 
 #: src/ui/menu_editor.rs:683
 #, c-format
-msgid "Command (%p = path · %d = dir · %f = filename)"
-msgstr "Comando (%p = caminho · %d = diretório · %f = nome do arquivo)"
+msgid "Command (%p = path · %d = dir · %f = filename · %l = line)"
+msgstr "Comando (%p = caminho · %d = diretório · %f = nome do arquivo · %l = linha)"
 
 #: src/ui/menu_editor.rs:692
 msgid "Notification (optional)"
@@ -2585,4 +2585,5 @@ msgstr "Nenhum Resultado Encontrado"
 msgid "No matching files found in this location."
 msgstr "Nenhum arquivo correspondente encontrado neste local."
 
-
+msgid "Open Line in Nvim"
+msgstr "Abrir Linha no Nvim"

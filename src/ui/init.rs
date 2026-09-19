@@ -335,6 +335,7 @@ impl FluxApp {
             folder_cache: std::collections::HashMap::with_capacity(32),
             scrolled_to_bottom: false,
             last_search_was_advanced: false,
+            active_item_line: 0,
         };
 
         // 7.5 Apply initial list/grid mode to the view

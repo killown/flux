@@ -974,7 +974,7 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .css_classes(["property"])
         .build();
     let (cmd_row, cmd_entry) = make_stacked_entry_row(
-        tr("Command (%p = path · %d = dir · %f = filename)").as_str(),
+        tr("Command (%p = path · %d = dir · %f = filename · %l = line)").as_str(),
         &entry.command,
     );
     let cmd_hint = adw::ActionRow::builder()

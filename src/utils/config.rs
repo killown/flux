@@ -33,10 +33,11 @@ pub fn ensure_config_file() -> PathBuf {
     let config_path = config_dir.join("menu.rs");
     if !config_path.exists() {
         // Syntax: "Label" => "mime_types", "command", "Optional Toast Message"
-        // - Use %p for file path, %d for directory, %f for filename.
+        // - Use %p for file path, %d for directory, %f for filename, %l for line number (content search).
         // - The third argument (Toast) is optional and shows a notification after execution.
 
         let default_config = r#"
+"      Open Line in Nvim" => "text/all", "alacritty -e nvim +%l %p", "no_command_dialog"
 # --- Core Operations ---
 "󰋼      Add to Quick List" => "directory", "builtin::add_to_quick_list"
 "󰪶      Send to Quick List" => "all", "builtin::quick_list_transfer"
@@ -784,6 +785,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "New File" => tr("New File"),
                     "Extract Here!" => tr("Extract Here!"),
                     "Convert to PDF" => tr("Convert to PDF"),
+                    "Open Line in Nvim" => tr("Open Line in Nvim"),
                     other => other.to_string(),
                 }
             };

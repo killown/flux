@@ -710,6 +710,8 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Line number of the item targeted by the last context menu. 0 when not a content-search hit.
+    pub active_item_line: usize,
     /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.
     #[allow(dead_code)]
     pub last_search_was_advanced: bool,

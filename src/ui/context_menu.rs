@@ -18,6 +18,21 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         self.active_item_path = path.clone();
+        self.active_item_line = path
+            .as_ref()
+            .and_then(|p| {
+                (0..self.files.len()).find_map(|i| {
+                    self.files.get(i).and_then(|w| {
+                        let item = w.borrow();
+                        if item.path == *p {
+                            Some(item.line_number)
+                        } else {
+                            None
+                        }
+                    })
+                })
+            })
+            .unwrap_or(0);
         let is_in_trash = self
             .current_path
             .to_string_lossy()
@@ -104,6 +119,9 @@ impl FluxApp {
 
             // --- MENU ASSEMBLY & BUILTIN MAPPING ---
             if matches {
+                if action.command.contains("%l") && self.active_item_line == 0 {
+                    continue;
+                }
                 // Capture toast before the match so builtin connect_activate closures can
                 // emit ShowToast directly.
                 let action_toast = action.toast.clone();

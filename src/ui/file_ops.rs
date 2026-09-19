@@ -23,6 +23,7 @@ pub fn build_execution_command(
     cmd_template: &str,
     targets: &[PathBuf],
     current_path: &Path,
+    line_number: usize,
 ) -> (String, String) {
     if targets.len() == 1 {
         let path = &targets[0];
@@ -52,7 +53,8 @@ pub fn build_execution_command(
             .replace("%d", &d_arg)
             .replace("\"%f\"", &f_arg)
             .replace("'%f'", &f_arg)
-            .replace("%f", &f_arg);
+            .replace("%f", &f_arg)
+            .replace("%l", &line_number.to_string());
 
         if cmd.contains(constants::TEMPLATE_CWD) {
             let cwd_arg = match shell_safe(&current_path.to_string_lossy()) {
@@ -95,6 +97,9 @@ pub fn build_execution_command(
                 .replace(&format!("'{}'", constants::TEMPLATE_CWD), &cwd_arg)
                 .replace(constants::TEMPLATE_CWD, &cwd_arg);
         }
+
+        cmd = cmd.replace("%l", "0");
+
         let label = format!("{} items", targets.len());
         (cmd, label)
     }
@@ -385,8 +390,12 @@ impl FluxApp {
             .starts_with(constants::TRASH_URI);
         let needs_refresh = is_in_trash || is_restore;
 
-        let (final_cmd, label) =
-            build_execution_command(&cmd_template, &final_targets, &current_path);
+        let (final_cmd, label) = build_execution_command(
+            &cmd_template,
+            &final_targets,
+            &current_path,
+            self.active_item_line,
+        );
 
         if final_cmd.is_empty() {
             sender.input(AppMsg::ShowToast(
