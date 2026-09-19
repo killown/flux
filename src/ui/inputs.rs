@@ -176,11 +176,7 @@ pub fn setup_controllers(
                 if terminal_area_cap.has_focus() {
                     return glib::Propagation::Proceed;
                 }
-                if is_shift {
-                    sender_cap.input(AppMsg::OpenTagNavigator);
-                } else {
-                    sender_cap.input(AppMsg::OpenTagPicker);
-                }
+                sender_cap.input(AppMsg::ToggleTagPanel);
                 glib::Propagation::Stop
             }
             gdk::Key::Tab => {
@@ -429,16 +425,7 @@ pub fn setup_controllers(
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
         Some(gtk::ShortcutTrigger::parse_string("<Primary>t").unwrap()),
         Some(gtk::CallbackAction::new(move |_, _| {
-            s_tag.input(AppMsg::OpenTagPicker);
-            glib::Propagation::Stop
-        })),
-    ));
-
-    let s_tag_nav = sender.clone();
-    global_shortcuts.add_shortcut(gtk::Shortcut::new(
-        Some(gtk::ShortcutTrigger::parse_string("<Primary><Shift>t").unwrap()),
-        Some(gtk::CallbackAction::new(move |_, _| {
-            s_tag_nav.input(AppMsg::OpenTagNavigator);
+            s_tag.input(AppMsg::ToggleTagPanel);
             glib::Propagation::Stop
         })),
     ));

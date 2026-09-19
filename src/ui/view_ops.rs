@@ -484,12 +484,20 @@ impl FluxApp {
             return;
         }
 
+        // Avoid duplicate appending if the MIME type is already part of the status string
+        if self.selection_status.contains(&mime) {
+            return;
+        }
+
         let dim_str = dimensions.map(|(w, h)| {
             let ratio = crate::utils::media::aspect_ratio_label(w, h);
             format!(" - {}×{} ({})", w, h, ratio)
         });
         if let Some(d) = dim_str {
-            self.selection_status.push_str(&d);
+            // Avoid duplicate dimensions string if already present
+            if !self.selection_status.contains(&d) {
+                self.selection_status.push_str(&d);
+            }
         }
 
         self.selection_status.push_str(&format!(" - {}", mime));

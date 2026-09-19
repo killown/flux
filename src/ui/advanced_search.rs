@@ -44,7 +44,6 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         .spacing(0)
         .build();
 
-    panel.set_width_request(300);
     panel.add_css_class("sidebar");
 
     // ── Header: [search icon] "Search" ... [Search Button] [X close button] ──

@@ -710,6 +710,12 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Revealer widget wrapping the right tag navigator sidebar panel.
+    pub tag_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the lazy-initialized right tag navigator sidebar panel is currently visible.
+    pub tag_panel_visible: bool,
+    /// Whether the right tag navigator sidebar panel widgets have been instantiated.
+    pub tag_panel_initialized: bool,
     /// Revealer widget wrapping the right search sidebar panel.
     pub search_panel_revealer: Option<gtk::Revealer>,
     /// Whether the lazy-initialized right search sidebar panel is currently visible.
@@ -872,6 +878,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the visibility of the lazy-initialized right tag navigator sidebar panel.
+    ToggleTagPanel,
     /// Toggles the visibility of the lazy-initialized right search sidebar panel.
     ToggleSearchPanel,
     /// Activates the spinner after the debounce timeout if the session is still current.
@@ -995,8 +1003,6 @@ pub enum AppMsg {
     PasteTextFromClipboard,
     /// Paste rich text HTML content from the clipboard into a new `.html` file.
     PasteHtmlFromClipboard,
-    /// Open the global tag navigation command palette dialog
-    OpenTagNavigator,
     /// Delete a tag from the database entirely across all files.
     DeleteTagGlobally(String),
     /// Open the tag picker popover for the current selection (Ctrl+T).

@@ -502,14 +502,6 @@ impl FluxApp {
                     sender_refresh.input(AppMsg::Refresh);
                 });
             }
-            AppMsg::OpenTagNavigator => {
-                let tags = self.state_db.list_all_tags().unwrap_or_default();
-                crate::ui::tag_navigator::show_tag_navigator(
-                    &self.files.view,
-                    tags,
-                    sender.clone(),
-                );
-            }
             AppMsg::NavigateTag(tag) => {
                 let filter_str = format!(":tag:{}", tag);
                 self.search_just_opened = false;
@@ -1015,6 +1007,44 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::ToggleTagPanel => {
+                if let Some(ref revealer) = self.tag_panel_revealer {
+                    if !self.tag_panel_initialized {
+                        // Fetch real tags from state database
+                        let tags = self.state_db.list_all_tags().unwrap_or_default();
+
+                        let panel = crate::ui::tag_navigator::build_tag_panel(tags, sender.clone());
+                        revealer.set_child(Some(&panel));
+                        self.tag_panel_initialized = true;
+                    }
+
+                    self.tag_panel_visible = !self.tag_panel_visible;
+                    revealer.set_visible(self.tag_panel_visible);
+                    revealer.set_reveal_child(self.tag_panel_visible);
+
+                    if self.tag_panel_visible {
+                        if let Some(panel_box) = revealer.child() {
+                            let mut next = panel_box.first_child();
+                            while let Some(w) = next {
+                                if let Some(entry) = w.downcast_ref::<gtk::SearchEntry>() {
+                                    entry.grab_focus();
+                                    break;
+                                }
+                                if let Some(inner) = w.first_child() {
+                                    if let Some(entry) = inner.downcast_ref::<gtk::SearchEntry>() {
+                                        entry.grab_focus();
+                                        break;
+                                    }
+                                }
+                                next = w.next_sibling();
+                            }
+                        }
+                    } else {
+                        sender.input(AppMsg::CancelContentSearch);
+                        sender.input(AppMsg::Refresh);
+                    }
+                }
+            }
             AppMsg::ToggleSearchPanel => {
                 if let Some(ref revealer) = self.search_panel_revealer {
                     if !self.search_panel_initialized {

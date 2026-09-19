@@ -834,6 +834,16 @@ impl SimpleAsyncComponent for FluxApp {
                     set_transition_duration: 200,
                     set_reveal_child: false,
                     set_visible: false,
+                    set_size_request: (150, -1),
+                },
+
+                /// Right tag panel revealer (lazy initialized).
+                #[name = "tag_panel_revealer"]
+                gtk::Revealer {
+                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
+                    set_transition_duration: 200,
+                    set_reveal_child: false,
+                    set_visible: false,
                 },
             }
         }
@@ -1022,6 +1032,7 @@ impl SimpleAsyncComponent for FluxApp {
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
         model.terminal_paned = Some(widgets.main_paned.clone());
         model.search_panel_revealer = Some(widgets.search_panel_revealer.clone());
+        model.tag_panel_revealer = Some(widgets.tag_panel_revealer.clone());
 
         if let Some(paned) = &model.terminal_paned {
             let sender_clone = sender.clone();
