@@ -97,6 +97,7 @@ pub fn build_tag_panel(
     let populate = {
         let all_tags = all_tags.clone();
         let list_box = list_box.clone();
+        let sender = sender.clone();
 
         Rc::new(move |query: &str| {
             while let Some(child) = list_box.first_child() {
@@ -111,17 +112,43 @@ pub fn build_tag_panel(
                 }
 
                 let row = gtk::ListBoxRow::new();
-                let label = gtk::Label::builder()
-                    .label(format!("#{}", tag))
-                    .halign(gtk::Align::Start)
+
+                let row_box = gtk::Box::builder()
+                    .orientation(gtk::Orientation::Horizontal)
+                    .spacing(8)
                     .margin_start(14)
-                    .margin_end(14)
-                    .margin_top(10)
-                    .margin_bottom(10)
+                    .margin_end(8)
+                    .margin_top(6)
+                    .margin_bottom(6)
                     .hexpand(true)
                     .build();
 
-                row.set_child(Some(&label));
+                let label = gtk::Label::builder()
+                    .label(format!("#{}", tag))
+                    .halign(gtk::Align::Start)
+                    .valign(gtk::Align::Center)
+                    .hexpand(true)
+                    .build();
+
+                let bookmark_btn = gtk::Button::builder()
+                    .icon_name("bookmark-new-symbolic")
+                    .css_classes(["flat", "circular"])
+                    .valign(gtk::Align::Center)
+                    .tooltip_text(tr("Pin to Sidebar"))
+                    .build();
+
+                {
+                    let s = sender.clone();
+                    let tag_name = tag.clone();
+                    bookmark_btn.connect_clicked(move |_| {
+                        s.input(AppMsg::AddTagToSidebar(tag_name.clone()));
+                    });
+                }
+
+                row_box.append(&label);
+                row_box.append(&bookmark_btn);
+
+                row.set_child(Some(&row_box));
                 list_box.append(&row);
             }
 
@@ -152,8 +179,10 @@ pub fn build_tag_panel(
     {
         let update_filter = update_filter.clone();
         list_box.connect_row_activated(move |_, row| {
-            if let Some(lbl) = row.child().and_downcast::<gtk::Label>() {
-                update_filter(lbl.text().to_string());
+            if let Some(row_box) = row.child().and_downcast::<gtk::Box>() {
+                if let Some(lbl) = row_box.first_child().and_downcast::<gtk::Label>() {
+                    update_filter(lbl.text().to_string());
+                }
             }
         });
     }
