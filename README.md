@@ -288,16 +288,6 @@ python fuzz.py --target fuzz_glob --level medium     # 50k
 
 ---
 
-## Extra Themes
-
-```bash
-git clone https://github.com/killown/flux-themes.git
-mkdir -p ~/.local/share/flux/themes
-cp flux-themes/themes/* ~/.local/share/flux/themes/
-```
-
----
-
 ## Installation
 
 ### Prerequisites

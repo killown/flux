@@ -22,10 +22,13 @@ PO_FILES   = $(wildcard $(PO_DIR)/*.po)
 # Derive language tags from filenames: po/pt_BR.po → pt_BR
 LANGS      = $(basename $(notdir $(PO_FILES)))
 
+# Theme Repository
+THEME_REPO = https://github.com/killown/flux-themes.git
 
-.PHONY: install translations set-archive-defaults
 
-install: translations
+.PHONY: install translations set-archive-defaults update-themes
+
+install: translations update-themes
 	# 1. Create directories
 	@mkdir -p \
 		$(DESTDIR)$(BINDIR) \
@@ -84,6 +87,22 @@ install: translations
 	else \
 		echo "Files staged to $(DESTDIR) for packaging."; \
 	fi
+
+# Clone or pull community themes repository cleanly without nesting
+update-themes:
+	@mkdir -p $(DESTDIR)$(CONFDIR)/themes
+	@TMP_THEME_DIR=$$(mktemp -d); \
+	if git clone --quiet $(THEME_REPO) "$$TMP_THEME_DIR"; then \
+		if [ -d "$$TMP_THEME_DIR/themes" ]; then \
+			cp -r "$$TMP_THEME_DIR/themes/." "$(DESTDIR)$(CONFDIR)/themes/"; \
+		else \
+			cp -r "$$TMP_THEME_DIR/." "$(DESTDIR)$(CONFDIR)/themes/"; \
+		fi; \
+		echo "Successfully synced flux-themes."; \
+	else \
+		echo "Warning: Failed to fetch flux-themes repo (offline?)"; \
+	fi; \
+	rm -rf "$$TMP_THEME_DIR"
 
 # Compile every po/LANG.po → $(LOCALEDIR)/LANG/LC_MESSAGES/flux.mo
 translations:
