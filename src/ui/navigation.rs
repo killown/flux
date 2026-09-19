@@ -125,8 +125,13 @@ impl FluxApp {
         // proceeding with normal navigation.
 
         // 0. Intercept Tag searches typed into location bar or clicked in sidebar
-        if path_str == "tags://" {
-            sender.input(AppMsg::OpenTagNavigator);
+        if path_str == "tags://" || path_str.starts_with("tags://") {
+            if let Some(prev) = self.history.last().cloned() {
+                self.current_path = prev;
+            } else if self.current_path.to_string_lossy().starts_with("tags://") {
+                self.current_path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+            }
+            sender.input(AppMsg::ToggleTagPanel);
             return;
         }
 
