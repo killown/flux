@@ -264,6 +264,9 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            search_panel_revealer: None,
+            search_panel_visible: false,
+            search_panel_initialized: false,
             active_video_preview: None,
             video_preview_source: None,
             files,

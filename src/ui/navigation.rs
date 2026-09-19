@@ -130,11 +130,17 @@ impl FluxApp {
             return;
         }
 
-        // Intercept Advanced Search virtual URI
+        // Intercept Search panel shortcut URI
         if path_str == "search://" {
-            sender.input(AppMsg::OpenAdvancedSearch);
+            if let Some(prev) = self.history.last().cloned() {
+                self.current_path = prev;
+            } else if self.current_path.to_string_lossy() == "search://" {
+                self.current_path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
+            }
+            sender.input(AppMsg::ToggleSearchPanel);
             return;
         }
+
         //--------------------------------------------------------------------------------------//
 
         if path_str.starts_with('#')

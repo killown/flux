@@ -838,7 +838,7 @@ impl FluxApp {
         controller.add_shortcut(gtk::Shortcut::new(
             Some(gtk::ShortcutTrigger::parse_string("<Control>f").unwrap()),
             Some(gtk::CallbackAction::new(move |_, _| {
-                f_sender.input(AppMsg::SwitchHeader("search".to_string()));
+                f_sender.input(AppMsg::ToggleSearchPanel);
                 glib::Propagation::Stop
             })),
         ));

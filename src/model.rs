@@ -710,6 +710,12 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Revealer widget wrapping the right search sidebar panel.
+    pub search_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the lazy-initialized right search sidebar panel is currently visible.
+    pub search_panel_visible: bool,
+    /// Whether the right search sidebar panel widgets have been instantiated.
+    pub search_panel_initialized: bool,
     /// Line number of the item targeted by the last context menu. 0 when not a content-search hit.
     pub active_item_line: usize,
     /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.
@@ -866,6 +872,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the visibility of the lazy-initialized right search sidebar panel.
+    ToggleSearchPanel,
     /// Activates the spinner after the debounce timeout if the session is still current.
     ShowLoadingSpinner(u64),
     /// Toggle whether symbolic link indicators and badges are displayed.
@@ -969,8 +977,6 @@ pub enum AppMsg {
         icons: std::collections::HashMap<String, String>,
         session: u64,
     },
-    /// Open the Advanced Search dialog.
-    OpenAdvancedSearch,
     /// Sets the maximum number of content search results.
     /// Value is persisted in the config file.
     SetMaxContentSearchResults(usize),
