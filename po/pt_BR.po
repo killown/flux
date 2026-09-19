@@ -2305,6 +2305,10 @@ msgstr "Falha ao salvar o HTML"
 # ============================================================
 
 #: src/ui/advanced_search.rs:???
+msgid "Filter by date and file size"
+msgstr "Filtrar por data e tamanho de arquivo"
+
+#: src/ui/advanced_search.rs:???
 msgid "invoice, draft*, photo"
 msgstr "fatura, rascunho*, foto"
 

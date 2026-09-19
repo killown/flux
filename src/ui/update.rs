@@ -394,9 +394,6 @@ impl FluxApp {
             AppMsg::ClearExtensionFilter => {
                 self.handle_clear_extension_filter(&sender);
             }
-            AppMsg::OpenAdvancedSearch => {
-                crate::ui::advanced_search::show_advanced_search(self, sender.clone());
-            }
             AppMsg::StartAdvancedSearch(params) => {
                 self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
                 self.last_search_was_advanced = true;
@@ -1018,6 +1015,50 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::ToggleSearchPanel => {
+                if let Some(ref revealer) = self.search_panel_revealer {
+                    if !self.search_panel_initialized {
+                        let panel = crate::ui::advanced_search::build_search_panel(sender.clone());
+                        revealer.set_child(Some(&panel));
+                        self.search_panel_initialized = true;
+                    }
+
+                    self.search_panel_visible = !self.search_panel_visible;
+                    revealer.set_visible(self.search_panel_visible);
+                    revealer.set_reveal_child(self.search_panel_visible);
+
+                    if self.search_panel_visible {
+                        if let Some(panel_box) = revealer.child() {
+                            // Find the first editable Entry inside the panel and grab focus
+                            let mut next = panel_box.first_child();
+                            let mut focused = false;
+                            while let Some(w) = next {
+                                if let Some(entry) = w.downcast_ref::<gtk::Entry>() {
+                                    entry.grab_focus();
+                                    focused = true;
+                                    break;
+                                }
+                                // Check one level deep inside boxes/scrolled windows
+                                if let Some(inner) = w.first_child() {
+                                    if let Some(entry) = inner.downcast_ref::<gtk::Entry>() {
+                                        entry.grab_focus();
+                                        focused = true;
+                                        break;
+                                    }
+                                }
+                                next = w.next_sibling();
+                            }
+                            if !focused {
+                                panel_box.grab_focus();
+                            }
+                        }
+                    } else {
+                        sender.input(AppMsg::CancelContentSearch);
+                        sender.input(AppMsg::ClearExtensionFilter);
+                        sender.input(AppMsg::Refresh);
+                    }
+                }
+            }
             AppMsg::SetShowSymlinkEmblem(val) => {
                 self.handle_set_show_symlink_emblem(val, &sender);
             }
