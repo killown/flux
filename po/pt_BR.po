@@ -707,12 +707,12 @@ msgstr "Mostrar/ocultar barra de cabeçalho"
 # ============================================================
 
 #: src/ui/settings.rs:???
-msgid "Show Symlink Emblem"
-msgstr "Mostrar emblema de link simbólico"
+msgid "Highlight Symbolic Links"
+msgstr "Destacar links simbólicos"
 
 #: src/ui/settings.rs:???
-msgid "Display a badge for symbolic links"
-msgstr "Exibir um emblema para links simbólicos"
+msgid "Color the border of symbolic links"
+msgstr "Colorir a borda de links simbólicos"
 
 #: src/ui/settings.rs:27
 msgid "Appearance"
@@ -1327,12 +1327,12 @@ msgid "Max Content Search Results"
 msgstr "Máx. Resultados de Conteúdo"
 
 #: src/ui/settings.rs:???
-msgid "Show Empty Folder Emblem"
-msgstr "Mostrar emblema de pasta vazia"
+msgid "Highlight Empty Folders"
+msgstr "Destacar pastas vazias"
 
 #: src/ui/settings.rs:???
-msgid "Display a small badge on folders that contain no items"
-msgstr "Exibir um pequeno emblema em pastas que não contêm itens"
+msgid "Color the border of folders that contain no items"
+msgstr "Colorir a borda de pastas que não contêm itens"
 
 #: src/ui/settings.rs:???
 msgid "Window Controls on Left"

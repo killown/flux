@@ -773,8 +773,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Show Empty Folder Emblem"),
-                        set_subtitle: &tr("Display a small badge on folders that contain no items"),
+                        set_title: &tr("Highlight Empty Folders"),
+                        set_subtitle: &tr("Color the border of folders that contain no items"),
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.show_empty_dir_emblem,
                             set_valign: gtk::Align::Center,
@@ -786,8 +786,8 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Show Symlink Emblem"),
-                        set_subtitle: &tr("Display a badge for symbolic links"),
+                        set_title: &tr("Highlight Symbolic Links"),
+                        set_subtitle: &tr("Color the border of symbolic links"),
                         add_suffix = &gtk::Switch {
                             set_active: model.config.ui.show_symlink_emblem,
                             set_valign: gtk::Align::Center,
