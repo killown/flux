@@ -1038,6 +1038,7 @@ impl FluxApp {
                 is_symlink,
                 is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
+                line_number: 0,
             });
         }
     }

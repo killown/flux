@@ -347,7 +347,22 @@ impl FluxApp {
         }
 
         if path.is_some() {
-            self.active_item_path = path;
+            self.active_item_path = path.clone();
+            self.active_item_line = path
+                .as_ref()
+                .and_then(|p| {
+                    (0..self.files.len()).find_map(|i| {
+                        self.files.get(i).and_then(|w| {
+                            let item = w.borrow();
+                            if item.path == *p {
+                                Some(item.line_number)
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                })
+                .unwrap_or(0);
         }
 
         let root_menu = gio::Menu::new();
@@ -384,6 +399,10 @@ impl FluxApp {
             }
 
             if !matches {
+                continue;
+            }
+
+            if action.command.contains("%l") && self.active_item_line == 0 {
                 continue;
             }
 

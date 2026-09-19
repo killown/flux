@@ -58,6 +58,8 @@ pub struct FileItem {
     pub is_broken_symlink: bool,
     /// User setting controlling whether the visual symbolic link badge is shown.
     pub show_symlink_emblem: bool,
+    /// Line number from a content-search hit. 0 for all other items.
+    pub line_number: usize,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.

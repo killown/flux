@@ -952,6 +952,7 @@ impl FluxApp {
                         is_symlink: false,
                         is_broken_symlink: false,
                         show_symlink_emblem: self.config.ui.show_symlink_emblem,
+                        line_number: 0,
                     });
                 }
 
@@ -1105,6 +1106,7 @@ impl FluxApp {
                 is_symlink,
                 is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
+                line_number: 0,
             });
         }
 
@@ -1248,6 +1250,7 @@ impl FluxApp {
                 is_symlink: item.is_symlink,
                 is_broken_symlink: item.is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
+                line_number: 0,
             };
 
             self.files.append(file_item);
