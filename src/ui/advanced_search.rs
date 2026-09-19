@@ -53,7 +53,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         .margin_start(12)
         .margin_end(12)
         .margin_top(8)
-        .margin_bottom(8)
+        .margin_bottom(4)
         .build();
 
     let search_icon = gtk::Image::from_icon_name("system-search-symbolic");
@@ -115,6 +115,16 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         .margin_bottom(12)
         .build();
 
+    // Error label starts hidden and unallocated so it doesn't take up any vertical space by default
+    let error_label = gtk::Label::builder()
+        .label("")
+        .css_classes(["error", "dim-label"])
+        .halign(gtk::Align::Start)
+        .wrap(true)
+        .visible(false)
+        .build();
+    content_box.append(&error_label);
+
     let what_group = adw::PreferencesGroup::builder()
         .title(tr("What to find"))
         .build();
@@ -165,6 +175,12 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         &what_group,
         &tr("Exact match"),
         &tr("Match exact filename without wildcards"),
+        false,
+    );
+    let regex_sw = make_switch_row(
+        &what_group,
+        &tr("Regular expression"),
+        &tr("Use regular expressions for file name matching"),
         false,
     );
     let content_entry = make_entry_row(
@@ -275,6 +291,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         let s = sender.clone();
         let name_e = name_entry.clone();
         let exact_sw = exact_match_sw.clone();
+        let regex_sw_clone = regex_sw.clone();
         let content_e = content_entry.clone();
         let fname_e = fname_entry.clone();
         let ext_e = ext_entry.clone();
@@ -285,6 +302,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         let size_op_r = size_op_row.clone();
         let size_e = size_entry.clone();
         let size_unit_c = size_unit_combo.clone();
+        let error_label_c = error_label.clone();
 
         move || {
             let name_text = name_e.text().trim().to_string();
@@ -295,6 +313,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
             let mut recursive = rec_sw.is_active();
             let include_hidden = hid_sw.is_active();
             let exact_match = exact_sw.is_active();
+            let use_regex = regex_sw_clone.is_active();
 
             let date_sel = date_r.selected();
             let size_op_sel = size_op_r.selected();
@@ -328,12 +347,14 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
                 } else {
                     Some(ext_text)
                 };
+                error_label_c.set_visible(false);
                 apply_flat_filters(&s, date_seconds, size_bytes, tag_text);
                 s.input(AppMsg::StartContentSearch(content_text, ext_filter));
                 return;
             }
 
             let mut patterns: Vec<String> = Vec::new();
+            let mut regex_error = None;
 
             if !name_text.is_empty() {
                 for item in name_text
@@ -342,14 +363,34 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
                     .filter(|slice| !slice.is_empty())
                 {
                     let mut term = item.to_string();
-                    if term.contains('*') {
+                    if use_regex {
                         recursive = true;
+                        match regex::Regex::new(&term) {
+                            Ok(_) => {
+                                patterns.push(format!("regex:{}", term));
+                            }
+                            Err(e) => {
+                                regex_error = Some(format!("Invalid regex: {}", e));
+                            }
+                        }
+                    } else {
+                        if term.contains('*') {
+                            recursive = true;
+                        }
+                        if !exact_match && !term.starts_with('*') && !term.ends_with('*') {
+                            term = format!("*{}*", term);
+                        }
+                        patterns.push(term.to_lowercase());
                     }
-                    if !exact_match && !term.starts_with('*') && !term.ends_with('*') {
-                        term = format!("*{}*", term);
-                    }
-                    patterns.push(term.to_lowercase());
                 }
+            }
+
+            if let Some(err_msg) = regex_error {
+                error_label_c.set_label(&err_msg);
+                error_label_c.set_visible(true);
+                return;
+            } else {
+                error_label_c.set_visible(false);
             }
 
             if !fname_text.is_empty() {
