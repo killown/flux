@@ -2,6 +2,7 @@ use crate::model::{AppMsg, FluxApp};
 use crate::ui::paste_ops::NEXT_TASK_ID;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
+use regex;
 use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -27,7 +28,7 @@ pub struct ExtensionMatch {
 /// `start_extension_search` path.
 #[derive(Debug, Clone, Default)]
 pub struct AdvancedSearchParams {
-    /// Glob patterns (already expanded from MIME shorthands).
+    /// Glob patterns (already expanded from MIME shorthands) or regex rules.
     pub patterns: Vec<String>,
     /// Exclude files whose mtime is older than `now - date_seconds`.
     pub date_seconds: Option<u64>,
@@ -100,17 +101,37 @@ fn start_walk(
         return;
     }
 
-    // Expand MIME shorthands and compile into a GlobSet.
-    let expanded: Vec<String> = params
+    // Separate regex patterns from standard glob/extension patterns.
+    let (regex_patterns, glob_patterns): (Vec<String>, Vec<String>) = params
         .patterns
+        .into_iter()
+        .partition(|p| p.starts_with("regex:"));
+
+    let compiled_regexes: Vec<regex::Regex> = regex_patterns
+        .iter()
+        .filter_map(|p| {
+            let expr = p.strip_prefix("regex:").unwrap_or(p);
+            regex::Regex::new(expr).ok()
+        })
+        .collect();
+
+    let regexes_arc = Arc::new(compiled_regexes);
+
+    // Expand MIME shorthands and compile into a GlobSet.
+    let expanded: Vec<String> = glob_patterns
         .iter()
         .flat_map(|p| crate::utils::glob::expand_mime_category(p))
         .collect();
 
-    let globset = match crate::utils::glob::compile_patterns(&expanded) {
-        Some(gs) => Arc::new(gs),
-        None => return,
+    let globset = if expanded.is_empty() {
+        None
+    } else {
+        crate::utils::glob::compile_patterns(&expanded).map(Arc::new)
     };
+
+    if globset.is_none() && regexes_arc.is_empty() {
+        return;
+    }
 
     // Cancel any previous search.
     if let Some(cancellable) = app.content_search_cancellable.take() {
@@ -224,7 +245,8 @@ fn start_walk(
         struct SearchVisitor {
             tx: mpsc::Sender<ExtensionMatch>,
             current_dir: std::path::PathBuf,
-            globset: Arc<globset::GlobSet>,
+            globset: Option<Arc<globset::GlobSet>>,
+            regexes: Arc<Vec<regex::Regex>>,
             mtime_boundary: Option<std::time::SystemTime>,
             size_bytes: Option<(bool, u64)>,
             cancellable: gtk::gio::Cancellable,
@@ -255,30 +277,46 @@ fn start_walk(
                 }
 
                 let file_name = entry.file_name();
-                let name_bytes = crate::utils::osstr_to_bytes(file_name);
+                let name_str = file_name.to_string_lossy();
+                let name_lower = name_str.to_lowercase();
+                let mut matches = false;
 
-                let matches_glob = if name_bytes.is_ascii() {
-                    let mut lower = [0u8; 256];
-                    if name_bytes.len() <= lower.len() {
-                        let buf = &mut lower[..name_bytes.len()];
-                        buf.copy_from_slice(name_bytes);
-                        buf.make_ascii_lowercase();
-                        if let Ok(s) = std::str::from_utf8(buf) {
-                            self.globset.is_match(s)
+                // Check GlobSet matches if present
+                if let Some(ref gs) = self.globset {
+                    let name_bytes = crate::utils::osstr_to_bytes(file_name);
+                    let matches_glob = if name_bytes.is_ascii() {
+                        let mut lower = [0u8; 256];
+                        if name_bytes.len() <= lower.len() {
+                            let buf = &mut lower[..name_bytes.len()];
+                            buf.copy_from_slice(name_bytes);
+                            buf.make_ascii_lowercase();
+                            if let Ok(s) = std::str::from_utf8(buf) {
+                                gs.is_match(s)
+                            } else {
+                                gs.is_match(&name_lower)
+                            }
                         } else {
-                            let name = file_name.to_string_lossy();
-                            self.globset.is_match(name.to_lowercase())
+                            gs.is_match(&name_lower)
                         }
                     } else {
-                        let name = file_name.to_string_lossy();
-                        self.globset.is_match(name.to_lowercase())
+                        gs.is_match(&name_lower)
+                    };
+                    if matches_glob {
+                        matches = true;
                     }
-                } else {
-                    let name = file_name.to_string_lossy();
-                    self.globset.is_match(name.to_lowercase())
-                };
+                }
 
-                if !matches_glob {
+                // Check Regex matches if present
+                if !matches && !self.regexes.is_empty() {
+                    for re in self.regexes.iter() {
+                        if re.is_match(&name_str) {
+                            matches = true;
+                            break;
+                        }
+                    }
+                }
+
+                if !matches {
                     return WalkState::Continue;
                 }
 
@@ -335,7 +373,8 @@ fn start_walk(
         struct SearchVisitorBuilder {
             tx: mpsc::Sender<ExtensionMatch>,
             current_dir: std::path::PathBuf,
-            globset: Arc<globset::GlobSet>,
+            globset: Option<Arc<globset::GlobSet>>,
+            regexes: Arc<Vec<regex::Regex>>,
             mtime_boundary: Option<std::time::SystemTime>,
             size_bytes: Option<(bool, u64)>,
             cancellable: gtk::gio::Cancellable,
@@ -352,6 +391,7 @@ fn start_walk(
                     tx: self.tx.clone(),
                     current_dir: self.current_dir.clone(),
                     globset: self.globset.clone(),
+                    regexes: self.regexes.clone(),
                     mtime_boundary: self.mtime_boundary,
                     size_bytes: self.size_bytes,
                     cancellable: self.cancellable.clone(),
@@ -368,6 +408,7 @@ fn start_walk(
             tx,
             current_dir,
             globset,
+            regexes: regexes_arc,
             mtime_boundary,
             size_bytes,
             cancellable: cancellable.clone(),

@@ -125,7 +125,7 @@ impl FluxApp {
         // proceeding with normal navigation.
 
         // 0. Intercept Tag searches typed into location bar or clicked in sidebar
-        if path_str == "tags://" || path_str.starts_with("tags://") {
+        if path_str == "tags://" || path_str == "tags:///" {
             if let Some(prev) = self.history.last().cloned() {
                 self.current_path = prev;
             } else if self.current_path.to_string_lossy().starts_with("tags://") {
@@ -159,7 +159,12 @@ impl FluxApp {
                 .trim_start_matches(":t:")
                 .trim_start_matches('#');
 
-            sender.input(AppMsg::NavigateTag(clean_tag.to_string()));
+            if clean_tag.is_empty() {
+                sender.input(AppMsg::ToggleTagPanel);
+            } else {
+                sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
+                sender.input(AppMsg::UpdateFilter(format!("#{}", clean_tag)));
+            }
             return;
         }
 

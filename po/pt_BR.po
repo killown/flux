@@ -2305,6 +2305,26 @@ msgstr "Falha ao salvar o HTML"
 # ============================================================
 
 #: src/ui/advanced_search.rs:???
+msgid "Limits"
+msgstr "Limites"
+
+#: src/ui/advanced_search.rs:???
+msgid "Limit maximum matched files"
+msgstr "Limitar o número máximo de arquivos correspondentes"
+
+#: src/ui/advanced_search.rs:???
+msgid "Regular expression"
+msgstr "Expressão regular"
+
+#: src/ui/advanced_search.rs:???
+msgid "Use regular expressions for file name matching"
+msgstr "Utilizar expressões regulares para a correspondência de nomes de ficheiro"
+
+#: src/ui/advanced_search.rs:???
+msgid "Invalid regex: {}"
+msgstr "Expressão regular inválida: {}"
+
+#: src/ui/advanced_search.rs:???
 msgid "Filter by date and file size"
 msgstr "Filtrar por data e tamanho de arquivo"
 
@@ -2591,3 +2611,5 @@ msgstr "Nenhum arquivo correspondente encontrado neste local."
 
 msgid "Open Line in Nvim"
 msgstr "Abrir Linha no Nvim"
+
+

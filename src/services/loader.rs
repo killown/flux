@@ -293,7 +293,15 @@ impl FluxApp {
         if path_str.starts_with("tags://") {
             self.is_loading = false;
             let clean_tag = path_str.trim_start_matches("tags://");
-            sender.input(AppMsg::NavigateTag(clean_tag.to_string()));
+            if clean_tag.is_empty() {
+                sender.input(AppMsg::ToggleTagPanel);
+            } else {
+                let tag_query = format!("#{}", clean_tag);
+                sender.input(AppMsg::SwitchHeader(
+                    crate::ui::constants::VIEW_SEARCH.to_string(),
+                ));
+                sender.input(AppMsg::UpdateFilter(tag_query));
+            }
             return;
         }
 
