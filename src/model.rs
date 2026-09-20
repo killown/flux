@@ -878,6 +878,9 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Persists the provided list of tags to both the database index and extended attributes
+    /// (`user.xdg.tags`) for all items currently selected in the file view.
+    ApplyTagsToSelection(Vec<String>),
     /// Toggles the visibility of the lazy-initialized right tag navigator sidebar panel.
     ToggleTagPanel,
     /// Toggles the visibility of the lazy-initialized right search sidebar panel.

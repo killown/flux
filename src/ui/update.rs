@@ -434,6 +434,16 @@ impl FluxApp {
             // ==========================================
             // Tags
             // ==========================================
+            AppMsg::ApplyTagsToSelection(tags) => {
+                let selection = self.get_selection();
+                for path in selection {
+                    let _ = self
+                        .state_db
+                        .set_tags(&path, &tags, chrono::Utc::now().timestamp());
+                    let _ = crate::utils::xattr::write_tags(&path, &tags);
+                }
+                sender.input(AppMsg::ShowToast(crate::i18n::tr("Tags updated")));
+            }
             AppMsg::AddTagToSidebar(tag) => {
                 self.handle_add_tag_to_sidebar(tag);
             }
