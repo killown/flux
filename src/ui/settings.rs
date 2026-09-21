@@ -59,6 +59,20 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Scale Font with Icons"),
+                        set_subtitle: &tr("Dynamically adjust label font size when zooming or resizing grid icons"),
+                        add_suffix = &gtk::Switch {
+                            set_valign: gtk::Align::Center,
+                            set_active: model.config.ui.scale_font_with_icons,
+                            connect_state_set => move |_, state| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetScaleFontWithIcons(state));
+                                }
+                                glib::Propagation::Proceed
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Grid Spacing"),
                         set_subtitle: &tr("Pixel spacing between items in the grid view"),
                         add_suffix = &gtk::SpinButton {

@@ -74,6 +74,7 @@ pub struct FileWidgets {
     pub drop_target: gtk::DropTarget,
     pub info_label: gtk::Label,
     pub label_scroller: gtk::ScrolledWindow,
+    pub scale_css_provider: Option<gtk::CssProvider>,
 }
 
 /// Formats a byte count into a human-readable string (B / KB / MB / GB).
@@ -474,6 +475,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 drop_target,
                 info_label,
                 label_scroller,
+                scale_css_provider: None,
             },
         )
     }
@@ -523,6 +525,35 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label.set_wrap(false);
             widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::None);
 
+            if let Some(ref old_provider) = widgets.scale_css_provider {
+                widgets.label.style_context().remove_provider(old_provider);
+                widgets
+                    .info_label
+                    .style_context()
+                    .remove_provider(old_provider);
+                widgets.scale_css_provider = None;
+            }
+
+            if config.ui.scale_font_with_icons && self.icon_size > 0 {
+                const DEFAULT_LIST_ICON_BASELINE: f64 = 64.0;
+
+                let ratio = self.icon_size as f64 / DEFAULT_LIST_ICON_BASELINE;
+
+                // Allow a broader clamp so size differences between 16px and 48px+ are visible
+                let scale_factor = ratio.clamp(0.8, 2.0);
+
+                let label_attrs = gtk::pango::AttrList::new();
+                label_attrs.insert(gtk::pango::AttrFloat::new_scale(scale_factor));
+                widgets.label.set_attributes(Some(&label_attrs));
+
+                let info_attrs = gtk::pango::AttrList::new();
+                info_attrs.insert(gtk::pango::AttrFloat::new_scale(scale_factor));
+                widgets.info_label.set_attributes(Some(&info_attrs));
+            } else {
+                widgets.label.set_attributes(None);
+                widgets.info_label.set_attributes(None);
+            }
+
             // In list mode the scroller provides horizontal scrolling so the row
             // never grows wider than its allocated column width.
             widgets
@@ -547,6 +578,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     box_widget.set_size_request(-1, -1);
                 }
             }
+
+            // Invalidate cached measurements across the scroller boundary to force size renegotiation
+            widgets.label.queue_resize();
+            widgets.info_label.queue_resize();
+            widgets.label_scroller.queue_resize();
+            root.queue_resize();
 
             // Populate the right-aligned info label with item count (for folders) or size (for files), plus modification date.
             // Content search results carry size == 0 and mtime == 0, hide the column for those.
@@ -634,6 +671,20 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label.set_justify(gtk::Justification::Center);
             widgets.label.set_max_width_chars(self.max_width_chars);
             widgets.label.set_width_chars(self.grid_spacing);
+
+            if config.ui.scale_font_with_icons && self.icon_size > 0 {
+                let base_size = if config.ui.default_icon_size > 0 {
+                    config.ui.default_icon_size as f64
+                } else {
+                    96.0f64
+                };
+                let scale_factor = (self.icon_size as f64 / base_size).clamp(0.8, 1.3);
+                let attrs = gtk::pango::AttrList::new();
+                attrs.insert(gtk::pango::AttrFloat::new_scale(scale_factor));
+                widgets.label.set_attributes(Some(&attrs));
+            } else {
+                widgets.label.set_attributes(None);
+            }
 
             if self.expand_labels {
                 widgets.label.set_wrap(true);
@@ -829,9 +880,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.drop_target.set_actions(gdk::DragAction::empty());
         } else {
             let file = gtk::gio::File::for_path(&self.path);
-            // Advertise both FileList (sidebar drop target) and File (grid-to-grid drop).
-            // A single gio::File value is not reliably coerced to FileList by GTK's
-            // content negotiation, causing sidebar pins to fail most attempts.
             let uri = format!("{}\r\n", file.uri());
             let file_list_provider = gdk::ContentProvider::for_bytes(
                 "text/uri-list",
@@ -864,6 +912,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         if let Some(stream) = widgets.video_widget.media_stream() {
             stream.pause();
         }
+
+        if let Some(ref provider) = widgets.scale_css_provider {
+            widgets.label.style_context().remove_provider(provider);
+            widgets.info_label.style_context().remove_provider(provider);
+            widgets.scale_css_provider = None;
+        }
+
         widgets
             .video_widget
             .set_media_stream(None::<&gtk::MediaStream>);
@@ -875,6 +930,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             .set_content(None::<&gdk::ContentProvider>);
         widgets.drag_source.set_icon(None::<&gdk::Paintable>, 0, 0);
         widgets.label.set_text("");
+        widgets.label.set_attributes(None);
         widgets.info_label.set_text("");
 
         root.remove_css_class("flux-card--symlink");
