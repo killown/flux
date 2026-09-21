@@ -14,6 +14,18 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_set_search_panel_width(&mut self, val: i32) {
+        let clamped = val.clamp(200, 700);
+        self.config.ui.search_panel_width = clamped;
+        utils::save_config(&self.config);
+    }
+
+    pub fn handle_set_tag_panel_width(&mut self, val: i32) {
+        let clamped = val.clamp(250, 800);
+        self.config.ui.tag_panel_width = clamped;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_set_single_click(&mut self, val: bool) {
         self.config.ui.single_click = val;
         self.files.view.set_single_click_activate(val);

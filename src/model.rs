@@ -62,6 +62,14 @@ fn default_mime_font_size() -> f64 {
     13.0
 }
 
+fn default_search_panel_width() -> i32 {
+    350
+}
+
+fn default_tag_panel_width() -> i32 {
+    350
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -444,6 +452,12 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Default width of the right tag navigator panel in pixels.
+    #[serde(default = "default_tag_panel_width")]
+    pub tag_panel_width: i32,
+    /// Default width of the right search panel in pixels.
+    #[serde(default = "default_search_panel_width")]
+    pub search_panel_width: i32,
     /// Show a symbolic link badge and target hints in file views.
     #[serde(default = "default_true")]
     pub show_symlink_emblem: bool,
@@ -656,6 +670,8 @@ impl Default for UIConfig {
             auto_mime_body_color: "#e4e4e4".to_string(),
             auto_mime_font_color: "#ffffff".to_string(),
             header_visible: true,
+            search_panel_width: default_search_panel_width(),
+            tag_panel_width: default_tag_panel_width(),
         }
     }
 }
@@ -878,6 +894,10 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Persists and updates the tag panel width in pixels.
+    SetTagPanelWidth(i32),
+    /// Persists and updates the search panel width in pixels.
+    SetSearchPanelWidth(i32),
     /// Persists the provided list of tags to both the database index and extended attributes
     /// (`user.xdg.tags`) for all items currently selected in the file view.
     ApplyTagsToSelection(Vec<String>),

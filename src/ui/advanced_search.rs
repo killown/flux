@@ -8,7 +8,6 @@ fn apply_flat_filters(
     sender: &AsyncComponentSender<FluxApp>,
     date_seconds: Option<u64>,
     size_bytes: Option<(bool, u64)>,
-    tag_text: String,
 ) {
     let mut parts: Vec<String> = Vec::new();
 
@@ -26,25 +25,114 @@ fn apply_flat_filters(
         parts.push(format!("size:{}{}", op, bytes));
     }
 
-    if !tag_text.is_empty() {
-        for tag in tag_text.split(',').map(str::trim).filter(|t| !t.is_empty()) {
-            parts.push(format!(":tag:{}", tag.trim_start_matches('#')));
-        }
-    }
-
     if !parts.is_empty() {
         sender.input(AppMsg::UpdateFilter(parts.join(" ")));
     }
 }
 
 /// Builds and returns the lazy-initialized right search sidebar panel widget tree.
-pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
+pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
+    let effective_width = if initial_width <= 0 {
+        350
+    } else {
+        initial_width.clamp(250, 800)
+    };
+
     let panel = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(0)
+        .width_request(effective_width)
+        .hexpand(false)
         .build();
 
     panel.add_css_class("sidebar");
+
+    // ── Drag Handle (Left Edge) using a decoupled EventControllerMotion ─────────
+    // Using root coordinates instead of local widget delta avoids coordinate shifts
+    let resize_handle = gtk::Separator::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .css_classes(["sidebar-resize-handle"])
+        .cursor(&gtk::gdk::Cursor::from_name("col-resize", None).unwrap())
+        .build();
+
+    let drag_gesture = gtk::GestureDrag::new();
+    let start_width = std::rc::Rc::new(std::cell::Cell::new(effective_width));
+    let start_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
+
+    {
+        let panel_weak = panel.downgrade();
+        let start_width_c = start_width.clone();
+        let start_root_x_c = start_root_x.clone();
+
+        drag_gesture.connect_drag_begin(move |gesture, x, _| {
+            if let Some(p) = panel_weak.upgrade() {
+                start_width_c.set(p.width());
+                // Translate the initial click point to root/window coordinate space
+                // Root coordinates remain completely static while children resize!
+                if let Some(root) = p.root() {
+                    if let Some(handle) = gesture.widget() {
+                        let (rx, _) = handle
+                            .translate_coordinates(&root, x, 0.0)
+                            .unwrap_or((x, 0.0));
+                        start_root_x_c.set(rx);
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let panel_weak = panel.downgrade();
+        let start_width_c = start_width.clone();
+        let start_root_x_c = start_root_x.clone();
+
+        drag_gesture.connect_drag_update(move |gesture, _, _| {
+            if let Some(p) = panel_weak.upgrade() {
+                if let Some(root) = p.root() {
+                    if let Some(handle) = gesture.widget() {
+                        // Query the current point and translate directly to root coordinates
+                        if let Some((curr_x, _)) = gesture.point(None) {
+                            if let Some((curr_root_x, _)) =
+                                handle.translate_coordinates(&root, curr_x, 0.0)
+                            {
+                                // Real delta = how much the pointer moved in global window space
+                                let delta_x = curr_root_x - start_root_x_c.get();
+                                let new_w = (start_width_c.get() - delta_x as i32).clamp(250, 800);
+
+                                if p.width_request() != new_w {
+                                    p.set_width_request(new_w);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let panel_weak = panel.downgrade();
+        let s = sender.clone();
+        drag_gesture.connect_drag_end(move |_, _, _| {
+            if let Some(p) = panel_weak.upgrade() {
+                let final_width = p.width().clamp(250, 800);
+                p.set_width_request(final_width);
+                s.input(AppMsg::SetSearchPanelWidth(final_width));
+            }
+        });
+    }
+
+    resize_handle.add_controller(drag_gesture);
+
+    let root_container = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(0)
+        .hexpand(false)
+        .halign(gtk::Align::End)
+        .build();
+
+    root_container.append(&resize_handle);
+    root_container.append(&panel);
 
     // ── Header: [search icon] "Search" ... [Search Button] [X close button] ──
     let header_box = gtk::Box::builder()
@@ -63,6 +151,13 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         .css_classes(["heading"])
         .hexpand(true)
         .xalign(0.0)
+        .build();
+
+    let reset_btn = gtk::Button::builder()
+        .icon_name("edit-clear-symbolic")
+        .css_classes(["flat", "circular"])
+        .valign(gtk::Align::Center)
+        .tooltip_text(tr("Clear filter"))
         .build();
 
     let search_btn = gtk::Button::builder()
@@ -87,6 +182,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
 
     header_box.append(&search_icon);
     header_box.append(&title_label);
+    header_box.append(&reset_btn);
     header_box.append(&search_btn);
     header_box.append(&close_btn);
     panel.append(&header_box);
@@ -103,7 +199,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
             gtk::glib::Propagation::Proceed
         });
     }
-    panel.add_controller(esc_controller);
+    root_container.add_controller(esc_controller);
 
     // ── Panel Body ───────────────────────────────────────────────────────────
     let content_box = gtk::Box::builder()
@@ -116,31 +212,58 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         .build();
 
     // Error label starts hidden and unallocated so it doesn't take up any vertical space by default
-    let error_label = gtk::Label::builder()
-        .label("")
-        .css_classes(["error", "dim-label"])
-        .halign(gtk::Align::Start)
-        .wrap(true)
+    let error_box = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .css_classes(["error"])
+        .margin_start(2)
+        .margin_end(2)
         .visible(false)
         .build();
-    content_box.append(&error_label);
+
+    let error_icon = gtk::Image::from_icon_name("dialog-warning-symbolic");
+    let error_label = gtk::Label::builder()
+        .label("")
+        .css_classes(["dim-label"])
+        .halign(gtk::Align::Start)
+        .wrap(true)
+        .hexpand(true)
+        .build();
+
+    error_box.append(&error_icon);
+    error_box.append(&error_label);
+    content_box.append(&error_box);
 
     let what_group = adw::PreferencesGroup::builder()
         .title(tr("What to find"))
         .build();
 
-    let make_entry_row =
+    let make_stacked_entry =
         |group: &adw::PreferencesGroup, title: &str, placeholder: &str| -> gtk::Entry {
+            let container = gtk::Box::builder()
+                .orientation(gtk::Orientation::Vertical)
+                .spacing(4)
+                .margin_start(10)
+                .margin_end(10)
+                .margin_top(8)
+                .margin_bottom(8)
+                .build();
+
+            let label = gtk::Label::builder()
+                .label(title)
+                .halign(gtk::Align::Start)
+                .css_classes(["caption", "dim-label"])
+                .build();
+
             let entry = gtk::Entry::builder()
                 .placeholder_text(placeholder)
-                .valign(gtk::Align::Center)
+                .hexpand(true)
                 .build();
-            let row = adw::ActionRow::builder()
-                .title(title)
-                .activatable(true)
-                .build();
-            row.add_suffix(&entry);
-            row.set_activatable_widget(Some(&entry));
+
+            container.append(&label);
+            container.append(&entry);
+
+            let row = adw::PreferencesRow::builder().child(&container).build();
             group.add(&row);
             entry
         };
@@ -170,7 +293,7 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
             .build()
     };
 
-    let name_entry = make_entry_row(&what_group, &tr("File name"), "invoice, draft*, photo");
+    let name_entry = make_stacked_entry(&what_group, &tr("File name"), "invoice, draft*, photo");
     let exact_match_sw = make_switch_row(
         &what_group,
         &tr("Exact match"),
@@ -183,14 +306,13 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         &tr("Use regular expressions for file name matching"),
         false,
     );
-    let content_entry = make_entry_row(
+    let content_entry = make_stacked_entry(
         &what_group,
         &tr("Inside files"),
         &tr("Requires 3+ characters"),
     );
-    let fname_entry = make_entry_row(&what_group, &tr("Glob pattern"), "*.rs, image/*, *.pdf");
-    let ext_entry = make_entry_row(&what_group, &tr("Extension"), "rs, py, txt");
-    let tag_entry = make_entry_row(&what_group, &tr("Tag"), "#work, #project");
+    let fname_entry = make_stacked_entry(&what_group, &tr("Glob pattern"), "*.rs, image/*, *.pdf");
+    let ext_entry = make_stacked_entry(&what_group, &tr("Extension"), "rs, py, txt");
 
     content_box.append(&what_group);
 
@@ -233,18 +355,32 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         0,
     );
 
+    let size_container = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(4)
+        .margin_start(10)
+        .margin_end(10)
+        .margin_top(8)
+        .margin_bottom(8)
+        .build();
+
+    let size_label = gtk::Label::builder()
+        .label(tr("Amount"))
+        .halign(gtk::Align::Start)
+        .css_classes(["caption", "dim-label"])
+        .sensitive(false)
+        .build();
+
     let size_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .spacing(6)
         .hexpand(true)
-        .valign(gtk::Align::Center)
         .build();
 
     let size_entry = gtk::Entry::builder()
         .placeholder_text("0")
         .input_purpose(gtk::InputPurpose::Digits)
-        .width_chars(6)
-        .max_width_chars(8)
+        .hexpand(true)
         .sensitive(false)
         .build();
 
@@ -258,21 +394,23 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
 
     size_box.append(&size_entry);
     size_box.append(&size_unit_combo);
+    size_container.append(&size_label);
+    size_container.append(&size_box);
 
-    let size_amount_row = adw::ActionRow::builder()
-        .title(tr("Amount"))
+    let size_amount_row = adw::PreferencesRow::builder()
+        .child(&size_container)
         .sensitive(false)
         .build();
-    size_amount_row.add_suffix(&size_box);
-    size_amount_row.set_activatable_widget(Some(&size_entry));
 
     {
         let size_entry_c = size_entry.clone();
         let amount_row_c = size_amount_row.clone();
+        let size_label_c = size_label.clone();
         let unit_combo_c = size_unit_combo.clone();
         size_op_row.connect_selected_notify(move |row| {
             let active = row.selected() != 0;
             size_entry_c.set_sensitive(active);
+            size_label_c.set_sensitive(active);
             amount_row_c.set_sensitive(active);
             unit_combo_c.set_sensitive(active);
         });
@@ -295,7 +433,6 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         let content_e = content_entry.clone();
         let fname_e = fname_entry.clone();
         let ext_e = ext_entry.clone();
-        let tag_e = tag_entry.clone();
         let rec_sw = recursive_sw.clone();
         let hid_sw = hidden_sw.clone();
         let date_r = date_row.clone();
@@ -303,13 +440,13 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         let size_e = size_entry.clone();
         let size_unit_c = size_unit_combo.clone();
         let error_label_c = error_label.clone();
+        let error_box_c = error_box.clone();
 
         move || {
             let name_text = name_e.text().trim().to_string();
             let fname_text = fname_e.text().trim().to_string();
             let content_text = content_e.text().trim().to_string();
             let ext_text = ext_e.text().trim().to_string();
-            let tag_text = tag_e.text().trim().to_string();
             let mut recursive = rec_sw.is_active();
             let include_hidden = hid_sw.is_active();
             let exact_match = exact_sw.is_active();
@@ -347,8 +484,8 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
                 } else {
                     Some(ext_text)
                 };
-                error_label_c.set_visible(false);
-                apply_flat_filters(&s, date_seconds, size_bytes, tag_text);
+                error_box_c.set_visible(false);
+                apply_flat_filters(&s, date_seconds, size_bytes);
                 s.input(AppMsg::StartContentSearch(content_text, ext_filter));
                 return;
             }
@@ -387,10 +524,10 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
 
             if let Some(err_msg) = regex_error {
                 error_label_c.set_label(&err_msg);
-                error_label_c.set_visible(true);
+                error_box_c.set_visible(true);
                 return;
             } else {
-                error_label_c.set_visible(false);
+                error_box_c.set_visible(false);
             }
 
             if !fname_text.is_empty() {
@@ -431,9 +568,46 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
                 s.input(AppMsg::ClearExtensionFilter);
             }
 
-            apply_flat_filters(&s, date_seconds, size_bytes, tag_text);
+            apply_flat_filters(&s, date_seconds, size_bytes);
         }
     };
+
+    // ── Reset Button Action ──────────────────────────────────────────────────
+    {
+        let s = sender.clone();
+        let name_e = name_entry.clone();
+        let content_e = content_entry.clone();
+        let fname_e = fname_entry.clone();
+        let ext_e = ext_entry.clone();
+        let exact_sw = exact_match_sw.clone();
+        let regex_sw_c = regex_sw.clone();
+        let rec_sw = recursive_sw.clone();
+        let hid_sw = hidden_sw.clone();
+        let date_r = date_row.clone();
+        let size_op_r = size_op_row.clone();
+        let size_e = size_entry.clone();
+        let error_box_c = error_box.clone();
+
+        reset_btn.connect_clicked(move |_| {
+            name_e.set_text("");
+            content_e.set_text("");
+            fname_e.set_text("");
+            ext_e.set_text("");
+            size_e.set_text("");
+            exact_sw.set_active(false);
+            regex_sw_c.set_active(false);
+            rec_sw.set_active(true);
+            hid_sw.set_active(false);
+            date_r.set_selected(0);
+            size_op_r.set_selected(0);
+            error_box_c.set_visible(false);
+
+            s.input(AppMsg::ClearExtensionFilter);
+            s.input(AppMsg::UpdateFilter(String::new()));
+            s.input(AppMsg::Refresh);
+            name_e.grab_focus();
+        });
+    }
 
     // ── Wire Search Button & Enter Key Handlers ──────────────────────────────
     {
@@ -448,7 +622,6 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         &content_entry,
         &fname_entry,
         &ext_entry,
-        &tag_entry,
         &size_entry,
     ] {
         let run = execute_search.clone();
@@ -460,7 +633,8 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
     let scrolled = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vscrollbar_policy(gtk::PolicyType::Automatic)
-        .hexpand(true)
+        .propagate_natural_width(false)
+        .hexpand(false)
         .vexpand(true)
         .child(&content_box)
         .build();
@@ -472,5 +646,5 @@ pub fn build_search_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         first_focus.grab_focus();
     });
 
-    panel
+    root_container
 }
