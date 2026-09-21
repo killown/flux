@@ -845,6 +845,31 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Hide File Extensions"),
+                        set_subtitle: &tr("Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, *)"),
+                        add_suffix = &gtk::Entry {
+                            set_valign: gtk::Align::Center,
+                            set_width_chars: 20,
+                            set_placeholder_text: Some("desktop, AppImage"),
+                            set_text: &model.config.ui.hidden_extensions
+                                .iter()
+                                .map(|e| e.trim_start_matches('.'))
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                            connect_activate => move |entry| {
+                                let exts = entry
+                                    .text()
+                                    .split(',')
+                                    .map(|s| s.trim().trim_start_matches('.').to_lowercase())
+                                    .filter(|s| !s.is_empty())
+                                    .collect::<Vec<String>>();
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetHiddenExtensions(exts));
+                                }
+                            }
+                      }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Folders First"),
                         set_subtitle: &tr("Display folders before files"),
                         add_suffix = &gtk::Switch {

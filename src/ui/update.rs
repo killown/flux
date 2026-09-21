@@ -1072,6 +1072,9 @@ impl FluxApp {
                 let help_win = crate::ui::HelpWindow::builder().launch(()).detach();
                 help_win.widget().present();
             }
+            AppMsg::SetHiddenExtensions(exts) => {
+                self.handle_set_hidden_extensions(exts, &sender);
+            }
             AppMsg::OpenDebugWindow => {
                 crate::ui::debug::show_debug_window(self);
             }
