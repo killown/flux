@@ -339,11 +339,23 @@ pub fn build_tag_panel(
                 row.set_child(Some(&row_box));
                 list_box.append(&row);
             }
+
+            list_box.select_row(None::<&gtk::ListBoxRow>);
         })
     };
 
     refresh_picker_chips();
     populate_list("");
+
+    {
+        let list_box_clean = list_box.clone();
+        panel.connect_map(move |_| {
+            let lb = list_box_clean.clone();
+            gtk::glib::idle_add_local_once(move || {
+                lb.select_row(None::<&gtk::ListBoxRow>);
+            });
+        });
+    }
 
     // ── Apply Button for Top Picker ──────────────────────────────────────────
     {
@@ -421,6 +433,8 @@ pub fn build_tag_panel(
                     if let Some(next_row) = list_box.row_at_index(next_idx) {
                         list_box.select_row(Some(&next_row));
                     }
+                } else if let Some(first_row) = list_box.row_at_index(0) {
+                    list_box.select_row(Some(&first_row));
                 }
                 gtk::glib::Propagation::Stop
             }

@@ -1401,5 +1401,15 @@ impl FluxApp {
                 }
             });
         }
+
+        if let Some(selection_model) = self
+            .files
+            .view
+            .model()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+        {
+            selection_model.unselect_all();
+        }
+        self.selection_status.clear();
     }
 }

@@ -197,9 +197,6 @@ impl FluxApp {
                     .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                 {
                     model.unselect_all();
-                    if model.n_items() > 0 {
-                        model.select_item(0, true);
-                    }
                 }
             });
             return;
@@ -236,9 +233,6 @@ impl FluxApp {
                     .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                 {
                     model.unselect_all();
-                    if model.n_items() > 0 {
-                        model.select_item(0, true);
-                    }
                 }
             });
             return;
@@ -258,9 +252,6 @@ impl FluxApp {
                 .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
             {
                 model.unselect_all();
-                if model.n_items() > 0 {
-                    model.select_item(0, true);
-                }
             }
         });
     }
