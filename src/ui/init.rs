@@ -139,6 +139,91 @@ impl FluxApp {
         );
 
         let sidebar_container = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let initial_sidebar_width = config.ui.sidebar_width.clamp(160, 500);
+        sidebar_container.set_width_request(initial_sidebar_width);
+
+        // ── Drag Handle (Right Edge) ─────────────────────────────────────────
+        let sidebar_resize_handle = gtk::Separator::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .css_classes(["sidebar-resize-handle"])
+            .cursor(&gtk::gdk::Cursor::from_name("col-resize", None).unwrap())
+            .build();
+
+        let sidebar_drag_gesture = gtk::GestureDrag::new();
+        let start_sidebar_width = std::rc::Rc::new(std::cell::Cell::new(initial_sidebar_width));
+        let start_sidebar_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
+
+        {
+            let sidebar_weak = sidebar_container.downgrade();
+            let start_w = start_sidebar_width.clone();
+            let start_rx = start_sidebar_root_x.clone();
+
+            sidebar_drag_gesture.connect_drag_begin(move |gesture, x, _| {
+                if let Some(s) = sidebar_weak.upgrade() {
+                    start_w.set(s.width());
+                    if let Some(root) = s.root() {
+                        if let Some(handle) = gesture.widget() {
+                            let (rx, _) = handle
+                                .translate_coordinates(&root, x, 0.0)
+                                .unwrap_or((x, 0.0));
+                            start_rx.set(rx);
+                        }
+                    }
+                }
+            });
+        }
+
+        {
+            let sidebar_weak = sidebar_container.downgrade();
+            let start_w = start_sidebar_width.clone();
+            let start_rx = start_sidebar_root_x.clone();
+
+            sidebar_drag_gesture.connect_drag_update(move |gesture, _, _| {
+                if let Some(s) = sidebar_weak.upgrade() {
+                    if let Some(root) = s.root() {
+                        if let Some(handle) = gesture.widget() {
+                            if let Some((curr_x, _)) = gesture.point(None) {
+                                if let Some((curr_root_x, _)) =
+                                    handle.translate_coordinates(&root, curr_x, 0.0)
+                                {
+                                    // Moving to the right expands the left sidebar
+                                    let delta_x = curr_root_x - start_rx.get();
+                                    let new_w = (start_w.get() + delta_x as i32).clamp(160, 500);
+
+                                    if s.width_request() != new_w {
+                                        s.set_width_request(new_w);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        {
+            let sidebar_weak = sidebar_container.downgrade();
+            let sender_c = sender.clone();
+            sidebar_drag_gesture.connect_drag_end(move |_, _, _| {
+                if let Some(s) = sidebar_weak.upgrade() {
+                    let final_width = s.width().clamp(160, 500);
+                    s.set_width_request(final_width);
+                    sender_c.input(AppMsg::SetSidebarWidth(final_width));
+                }
+            });
+        }
+
+        sidebar_resize_handle.add_controller(sidebar_drag_gesture);
+
+        let sidebar_root = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(0)
+            .hexpand(false)
+            .halign(gtk::Align::Start)
+            .build();
+
+        sidebar_root.append(&sidebar_container);
+        sidebar_root.append(&sidebar_resize_handle);
 
         // 6. Breadcrumb Setup (Returned for local_ref)
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -315,7 +400,7 @@ impl FluxApp {
             terminal_cleared: false,
             terminal_paned: None,
             sidebar_visible: effective_sidebar_visible,
-            sidebar_widget: Some(sidebar_container.upcast()),
+            sidebar_widget: Some(sidebar_root.upcast()),
             header_visible: effective_header_visible,
             header_widget: None,
             statusbar_visible: !no_statusbar,

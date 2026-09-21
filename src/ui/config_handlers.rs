@@ -26,6 +26,21 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_set_sidebar_width(&mut self, val: i32) {
+        let clamped = val.clamp(160, 500);
+        self.config.ui.sidebar_width = clamped;
+        utils::save_config(&self.config);
+        if let Some(ref widget) = self.sidebar_widget {
+            if let Some(box_container) = widget.downcast_ref::<gtk::Box>() {
+                if let Some(first_child) = box_container.first_child() {
+                    first_child.set_width_request(clamped);
+                }
+            } else {
+                widget.set_width_request(clamped);
+            }
+        }
+    }
+
     pub fn handle_set_single_click(&mut self, val: bool) {
         self.config.ui.single_click = val;
         self.files.view.set_single_click_activate(val);
@@ -111,14 +126,6 @@ impl FluxApp {
         self.current_list_icon_size = val;
         utils::save_config(&self.config);
         sender.input(AppMsg::Refresh);
-    }
-
-    pub fn handle_set_sidebar_width(&mut self, val: i32) {
-        self.config.ui.sidebar_width = val;
-        utils::save_config(&self.config);
-        if let Some(ref widget) = self.sidebar_widget {
-            widget.set_width_request(val);
-        }
     }
 
     pub fn handle_set_show_csd(&mut self, val: bool) {

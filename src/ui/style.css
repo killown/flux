@@ -628,3 +628,14 @@ scrollbar.vertical slider:hover {
   color: #ff453a;
   text-decoration-line: line-through;
 }
+
+.sidebar-resize-handle {
+  min-width: 20px;
+  background: transparent;
+  margin-left: -7px;
+  margin-right: -7px;
+  padding: 0;
+  border: none;
+  opacity: 1;
+  transition: background-color 150ms ease;
+}

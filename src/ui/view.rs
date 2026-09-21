@@ -36,36 +36,45 @@ impl SimpleAsyncComponent for FluxApp {
                 set_hexpand: true,
                 set_vexpand: true,
 
-            /// Left sidebar for system places and user bookmarks.
-            #[name = "sidebar_box"]
-            gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
-                set_width_request: model.config.ui.sidebar_width,
-                add_css_class: constants::SIDEBAR_CSS_CLASS,
-                #[watch]
-                set_visible: model.sidebar_visible,
-
-                // Floating margins around the entire sidebar card
-                set_margin_top: 8,
-                set_margin_bottom: 8,
-                set_margin_start: 8,
-                set_margin_end: 4,
-
-                gtk::WindowControls {
+                /// Left sidebar for system places and user bookmarks.
+                #[name = "sidebar_box"]
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_width_request: model.config.ui.sidebar_width,
+                    add_css_class: constants::SIDEBAR_CSS_CLASS,
                     #[watch]
-                    set_visible: model.config.ui.show_csd && model.config.ui.window_controls_left,
-                    set_side: gtk::PackType::Start,
-                    set_decoration_layout: Some("close,minimize,maximize"),
+                    set_visible: model.sidebar_visible,
+
+                    // Floating margins around the entire sidebar card
                     set_margin_top: 8,
-                    set_margin_start: 8,
                     set_margin_bottom: 8,
+                    set_margin_start: 8,
+                    set_margin_end: 4,
+
+                    gtk::WindowControls {
+                        #[watch]
+                        set_visible: model.config.ui.show_csd && model.config.ui.window_controls_left,
+                        set_side: gtk::PackType::Start,
+                        set_decoration_layout: Some("close,minimize,maximize"),
+                        set_margin_top: 8,
+                        set_margin_start: 8,
+                        set_margin_bottom: 8,
+                    },
+
+                    #[name = "sidebar_container"]
+                    gtk::ScrolledWindow {
+                        set_vexpand: true,
+                    },
                 },
 
-                #[name = "sidebar_container"]
-                gtk::ScrolledWindow {
-                    set_vexpand: true,
+                /// Drag handle on the right edge of the sidebar
+                #[name = "sidebar_resize_handle"]
+                gtk::Separator {
+                    set_orientation: gtk::Orientation::Vertical,
+                    add_css_class: "sidebar-resize-handle",
+                    #[watch]
+                    set_visible: model.sidebar_visible,
                 },
-            },
 
                 /// Main content container for the header and file browser.
                 gtk::Box {
@@ -908,6 +917,143 @@ impl SimpleAsyncComponent for FluxApp {
         }
         sidebar_wrapper.append(&model.network_section);
         widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
+
+        {
+            let sidebar_box_weak = widgets.sidebar_box.downgrade();
+            let start_width = std::rc::Rc::new(std::cell::Cell::new(
+                model.config.ui.sidebar_width.clamp(160, 500),
+            ));
+            let start_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
+            let drag_gesture = gtk::GestureDrag::new();
+            let hover_timer = std::rc::Rc::new(std::cell::Cell::new(None::<glib::SourceId>));
+            let is_ready = std::rc::Rc::new(std::cell::Cell::new(false));
+
+            let motion_ctrl = gtk::EventControllerMotion::new();
+
+            {
+                let timer_c = hover_timer.clone();
+                let ready_c = is_ready.clone();
+                motion_ctrl.connect_enter(move |ctrl, _, _| {
+                    if let Some(id) = timer_c.take() {
+                        id.remove();
+                    }
+                    ready_c.set(false);
+
+                    let ctrl_weak = ctrl.downgrade();
+                    let timer_inner = timer_c.clone();
+                    let ready_inner = ready_c.clone();
+
+                    let id = glib::timeout_add_local_once(
+                        std::time::Duration::from_millis(150),
+                        move || {
+                            timer_inner.set(None);
+                            ready_inner.set(true);
+                            if let Some(c) = ctrl_weak.upgrade() {
+                                if let Some(widget) = c.widget() {
+                                    widget.set_cursor_from_name(Some("col-resize"));
+                                }
+                            }
+                        },
+                    );
+                    timer_c.set(Some(id));
+                });
+            }
+
+            {
+                let timer_c = hover_timer;
+                let ready_c = is_ready.clone();
+                motion_ctrl.connect_leave(move |ctrl| {
+                    if let Some(id) = timer_c.take() {
+                        id.remove();
+                    }
+                    ready_c.set(false);
+                    if let Some(widget) = ctrl.widget() {
+                        widget.set_cursor(None);
+                    }
+                });
+            }
+
+            widgets.sidebar_resize_handle.add_controller(motion_ctrl);
+
+            {
+                let s_box_w = sidebar_box_weak.clone();
+                let start_w = start_width.clone();
+                let start_rx = start_root_x.clone();
+                let ready_c = is_ready.clone();
+
+                drag_gesture.connect_drag_begin(move |gesture, x, _| {
+                    if !ready_c.get() {
+                        gesture.set_state(gtk::EventSequenceState::Denied);
+                        return;
+                    }
+                    if let Some(s) = s_box_w.upgrade() {
+                        start_w.set(s.width());
+                        if let Some(root_win) = s.root() {
+                            if let Some(handle) = gesture.widget() {
+                                let (rx, _) = handle
+                                    .translate_coordinates(&root_win, x, 0.0)
+                                    .unwrap_or((x, 0.0));
+                                start_rx.set(rx);
+                            }
+                        }
+                    }
+                });
+            }
+
+            {
+                let s_box_w = sidebar_box_weak.clone();
+                let start_w = start_width.clone();
+                let start_rx = start_root_x.clone();
+                let ready_c = is_ready.clone();
+
+                drag_gesture.connect_drag_update(move |gesture, _, _| {
+                    if !ready_c.get() {
+                        return;
+                    }
+                    if let Some(s) = s_box_w.upgrade() {
+                        if let Some(root_win) = s.root() {
+                            if let Some(handle) = gesture.widget() {
+                                if let Some((curr_x, _)) = gesture.point(None) {
+                                    if let Some((curr_root_x, _)) =
+                                        handle.translate_coordinates(&root_win, curr_x, 0.0)
+                                    {
+                                        let delta_x = curr_root_x - start_rx.get();
+                                        let new_w =
+                                            (start_w.get() + delta_x as i32).clamp(160, 500);
+
+                                        if s.width_request() != new_w {
+                                            s.set_width_request(new_w);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            {
+                let s_box_w = sidebar_box_weak;
+                let s_sender = sender.clone();
+                let ready_c = is_ready;
+
+                drag_gesture.connect_drag_end(move |gesture, _, _| {
+                    if !ready_c.get() {
+                        return;
+                    }
+                    if let Some(s) = s_box_w.upgrade() {
+                        let final_width = s.width().clamp(160, 500);
+                        s.set_width_request(final_width);
+                        s_sender.input(AppMsg::SetSidebarWidth(final_width));
+                    }
+                    if let Some(widget) = gesture.widget() {
+                        widget.set_cursor(None);
+                    }
+                });
+            }
+
+            widgets.sidebar_resize_handle.add_controller(drag_gesture);
+        }
 
         let pin_zone = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)

@@ -100,20 +100,6 @@ impl SimpleComponent for SettingsWindow {
                             }
                         }
                     },
-                    add = &adw::ActionRow {
-                        set_title: &tr("Sidebar Width"),
-                        set_subtitle: &tr("Width of the navigation pane"),
-                        add_suffix = &gtk::SpinButton {
-                            set_adjustment: &gtk::Adjustment::new(model.config.ui.sidebar_width as f64, 100.0, 800.0, 10.0, 0.0, 0.0),
-                            set_numeric: true,
-                            set_valign: gtk::Align::Center,
-                            connect_value_changed => move |spin| {
-                                if let Some(s) = crate::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetSidebarWidth(spin.value() as i32));
-                                }
-                            }
-                        }
-                    },
                 },
 
                 add = &adw::PreferencesGroup {
