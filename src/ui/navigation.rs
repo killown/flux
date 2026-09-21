@@ -103,6 +103,12 @@ impl FluxApp {
             return;
         }
 
+        // Intercept Search panel shortcut URI
+        if path_str == "search://" || path_str == "search:///" {
+            sender.input(AppMsg::ToggleSearchPanel);
+            return;
+        }
+
         // Guard against re-navigating to the current folder (by string or canonical target)
         // WARNING: Do not remove or modify this check without careful consideration.
         // Removing this check causes redundant navigation to the currently active path,
@@ -129,23 +135,6 @@ impl FluxApp {
         //--------------------------------------------------------------------------------------//
         //NOTE: this block of code is where in can intercept and handle special URIs or commands before
         // proceeding with normal navigation.
-
-        // 0. Intercept Tag searches typed into location bar or clicked in sidebar
-        if path_str == "tags://" || path_str == "tags:///" {
-            sender.input(AppMsg::ToggleTagPanel);
-            return;
-        }
-
-        // Intercept Search panel shortcut URI
-        if path_str == "search://" {
-            if let Some(prev) = self.history.last().cloned() {
-                self.current_path = prev;
-            } else if self.current_path.to_string_lossy() == "search://" {
-                self.current_path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
-            }
-            sender.input(AppMsg::ToggleSearchPanel);
-            return;
-        }
 
         //--------------------------------------------------------------------------------------//
 

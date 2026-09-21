@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::model::{AppMsg, FluxApp, RightPanelType};
 use crate::ui::FileProperties;
 use crate::utils;
 use adw::gio::prelude::*;
@@ -1020,93 +1020,10 @@ impl FluxApp {
             // Window, Shell & General Preferences
             // ==========================================
             AppMsg::ToggleTagPanel => {
-                if let Some(ref revealer) = self.tag_panel_revealer {
-                    if !self.tag_panel_initialized {
-                        // Fetch real tags from state database
-                        let tags = self.state_db.list_all_tags().unwrap_or_default();
-
-                        let panel = crate::ui::tag_navigator::build_tag_panel(
-                            tags,
-                            self.config.ui.tag_panel_width,
-                            sender.clone(),
-                        );
-                        revealer.set_child(Some(&panel));
-                        self.tag_panel_initialized = true;
-                    }
-
-                    self.tag_panel_visible = !self.tag_panel_visible;
-                    revealer.set_visible(self.tag_panel_visible);
-                    revealer.set_reveal_child(self.tag_panel_visible);
-
-                    if self.tag_panel_visible {
-                        if let Some(panel_box) = revealer.child() {
-                            let mut next = panel_box.first_child();
-                            while let Some(w) = next {
-                                if let Some(entry) = w.downcast_ref::<gtk::SearchEntry>() {
-                                    entry.grab_focus();
-                                    break;
-                                }
-                                if let Some(inner) = w.first_child() {
-                                    if let Some(entry) = inner.downcast_ref::<gtk::SearchEntry>() {
-                                        entry.grab_focus();
-                                        break;
-                                    }
-                                }
-                                next = w.next_sibling();
-                            }
-                        }
-                    } else {
-                        sender.input(AppMsg::CancelContentSearch);
-                        sender.input(AppMsg::Refresh);
-                    }
-                }
+                self.toggle_sidebar_right_panel(RightPanelType::Tag, &sender);
             }
             AppMsg::ToggleSearchPanel => {
-                if let Some(ref revealer) = self.search_panel_revealer {
-                    if !self.search_panel_initialized {
-                        let panel = crate::ui::advanced_search::build_search_panel(
-                            self.config.ui.search_panel_width,
-                            sender.clone(),
-                        );
-                        revealer.set_child(Some(&panel));
-                        self.search_panel_initialized = true;
-                    }
-
-                    self.search_panel_visible = !self.search_panel_visible;
-                    revealer.set_visible(self.search_panel_visible);
-                    revealer.set_reveal_child(self.search_panel_visible);
-
-                    if self.search_panel_visible {
-                        if let Some(panel_box) = revealer.child() {
-                            // Find the first editable Entry inside the panel and grab focus
-                            let mut next = panel_box.first_child();
-                            let mut focused = false;
-                            while let Some(w) = next {
-                                if let Some(entry) = w.downcast_ref::<gtk::Entry>() {
-                                    entry.grab_focus();
-                                    focused = true;
-                                    break;
-                                }
-                                // Check one level deep inside boxes/scrolled windows
-                                if let Some(inner) = w.first_child() {
-                                    if let Some(entry) = inner.downcast_ref::<gtk::Entry>() {
-                                        entry.grab_focus();
-                                        focused = true;
-                                        break;
-                                    }
-                                }
-                                next = w.next_sibling();
-                            }
-                            if !focused {
-                                panel_box.grab_focus();
-                            }
-                        }
-                    } else {
-                        sender.input(AppMsg::CancelContentSearch);
-                        sender.input(AppMsg::ClearExtensionFilter);
-                        sender.input(AppMsg::Refresh);
-                    }
-                }
+                self.toggle_sidebar_right_panel(RightPanelType::Search, &sender);
             }
             AppMsg::SetShowSymlinkEmblem(val) => {
                 self.handle_set_show_symlink_emblem(val, &sender);

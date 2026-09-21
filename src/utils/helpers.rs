@@ -1,5 +1,5 @@
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp, PathSegment, SortBy};
+use crate::model::{AppMsg, FluxApp, PathSegment, RightPanelType, SortBy};
 use crate::ui::{constants, SidebarPlace};
 use crate::utils;
 use adw::prelude::*;
@@ -642,6 +642,99 @@ impl FluxApp {
             }
         }
         result
+    }
+
+    pub fn toggle_sidebar_right_panel(
+        &mut self,
+        panel_type: RightPanelType,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let (revealer, initialized, visible, is_search) = match panel_type {
+            RightPanelType::Tag => (
+                self.tag_panel_revealer.clone(),
+                &mut self.tag_panel_initialized,
+                &mut self.tag_panel_visible,
+                false,
+            ),
+            RightPanelType::Search => (
+                self.search_panel_revealer.clone(),
+                &mut self.search_panel_initialized,
+                &mut self.search_panel_visible,
+                true,
+            ),
+        };
+
+        let Some(revealer) = revealer else {
+            return;
+        };
+
+        if !*initialized {
+            let panel = match panel_type {
+                RightPanelType::Tag => {
+                    let tags = self.state_db.list_all_tags().unwrap_or_default();
+                    crate::ui::tag_navigator::build_tag_panel(
+                        tags,
+                        self.config.ui.tag_panel_width,
+                        sender.clone(),
+                    )
+                }
+                RightPanelType::Search => crate::ui::advanced_search::build_search_panel(
+                    self.config.ui.search_panel_width,
+                    sender.clone(),
+                ),
+            };
+            revealer.set_child(Some(&panel));
+            *initialized = true;
+        }
+
+        *visible = !*visible;
+        revealer.set_visible(*visible);
+        revealer.set_reveal_child(*visible);
+
+        if *visible {
+            if let Some(panel_box) = revealer.child() {
+                let mut next = panel_box.first_child();
+                let mut focused = false;
+                while let Some(w) = next {
+                    if let Some(entry) = w.downcast_ref::<gtk::Entry>() {
+                        entry.grab_focus();
+                        focused = true;
+                        break;
+                    }
+                    if let Some(entry) = w.downcast_ref::<gtk::SearchEntry>() {
+                        entry.grab_focus();
+                        focused = true;
+                        break;
+                    }
+                    if let Some(inner) = w.first_child() {
+                        if let Some(entry) = inner.downcast_ref::<gtk::Entry>() {
+                            entry.grab_focus();
+                            focused = true;
+                            break;
+                        }
+                        if let Some(entry) = inner.downcast_ref::<gtk::SearchEntry>() {
+                            entry.grab_focus();
+                            focused = true;
+                            break;
+                        }
+                    }
+                    next = w.next_sibling();
+                }
+                if !focused {
+                    panel_box.grab_focus();
+                }
+            }
+        } else if is_search {
+            if self.is_content_searching || self.last_search_was_advanced {
+                self.last_search_was_advanced = false;
+                sender.input(AppMsg::CancelContentSearch);
+                sender.input(AppMsg::ClearExtensionFilter);
+                sender.input(AppMsg::Refresh);
+            }
+        } else {
+            sender.input(AppMsg::CancelContentSearch);
+            sender.input(AppMsg::Refresh);
+        }
     }
 
     /// Returns the filesystem path of the first currently selected item.

@@ -307,12 +307,6 @@ impl FluxApp {
 
         if path_str.starts_with("search://") {
             self.is_loading = false;
-            if let Some(prev) = self.history.last().cloned() {
-                self.current_path = prev;
-            } else if self.current_path.to_string_lossy().starts_with("search://") {
-                // Fallback to home if no history exists yet
-                self.current_path = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
-            }
             sender.input(AppMsg::ToggleSearchPanel);
             return;
         }

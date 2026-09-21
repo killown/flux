@@ -73,6 +73,12 @@ fn default_tag_panel_width() -> i32 {
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RightPanelType {
+    Tag,
+    Search,
+}
+
 /// Startup parameters passed from the argument parser to the Relm4 component initializer.
 pub struct AppInit {
     /// The dir the file manager should open on startup.
