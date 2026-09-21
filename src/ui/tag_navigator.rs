@@ -10,14 +10,110 @@ use crate::model::{AppMsg, FluxApp};
 /// Builds and returns a fused tag panel: collapsible editor at top, navigator below.
 pub fn build_tag_panel(
     available_tags: Vec<String>,
+    initial_width: i32,
     sender: AsyncComponentSender<FluxApp>,
 ) -> gtk::Box {
+    let effective_width = if initial_width <= 0 {
+        350
+    } else {
+        initial_width.clamp(250, 800)
+    };
+
     let panel = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(0)
+        .width_request(effective_width)
+        .hexpand(false)
         .build();
 
     panel.add_css_class("sidebar");
+
+    // ── Drag Handle (Left Edge) using a decoupled EventControllerMotion ─────────
+    // Using root coordinates instead of local widget delta avoids coordinate shifts
+    let resize_handle = gtk::Separator::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .css_classes(["sidebar-resize-handle"])
+        .cursor(&gtk::gdk::Cursor::from_name("col-resize", None).unwrap())
+        .build();
+
+    let drag_gesture = gtk::GestureDrag::new();
+    let start_width = std::rc::Rc::new(std::cell::Cell::new(effective_width));
+    let start_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
+
+    {
+        let panel_weak = panel.downgrade();
+        let start_width_c = start_width.clone();
+        let start_root_x_c = start_root_x.clone();
+
+        drag_gesture.connect_drag_begin(move |gesture, x, _| {
+            if let Some(p) = panel_weak.upgrade() {
+                start_width_c.set(p.width());
+                // Translate the initial click point to root/window coordinate space
+                // Root coordinates remain completely static while children resize!
+                if let Some(root) = p.root() {
+                    if let Some(handle) = gesture.widget() {
+                        let (rx, _) = handle
+                            .translate_coordinates(&root, x, 0.0)
+                            .unwrap_or((x, 0.0));
+                        start_root_x_c.set(rx);
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let panel_weak = panel.downgrade();
+        let start_width_c = start_width.clone();
+        let start_root_x_c = start_root_x.clone();
+
+        drag_gesture.connect_drag_update(move |gesture, _, _| {
+            if let Some(p) = panel_weak.upgrade() {
+                if let Some(root) = p.root() {
+                    if let Some(handle) = gesture.widget() {
+                        // Query the current point and translate directly to root coordinates
+                        if let Some((curr_x, _)) = gesture.point(None) {
+                            if let Some((curr_root_x, _)) =
+                                handle.translate_coordinates(&root, curr_x, 0.0)
+                            {
+                                // Real delta = how much the pointer moved in global window space
+                                let delta_x = curr_root_x - start_root_x_c.get();
+                                let new_w = (start_width_c.get() - delta_x as i32).clamp(250, 800);
+
+                                if p.width_request() != new_w {
+                                    p.set_width_request(new_w);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let panel_weak = panel.downgrade();
+        let s = sender.clone();
+        drag_gesture.connect_drag_end(move |_, _, _| {
+            if let Some(p) = panel_weak.upgrade() {
+                let final_width = p.width().clamp(250, 800);
+                p.set_width_request(final_width);
+                s.input(AppMsg::SetTagPanelWidth(final_width));
+            }
+        });
+    }
+
+    resize_handle.add_controller(drag_gesture);
+
+    let root_container = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(0)
+        .hexpand(false)
+        .halign(gtk::Align::End)
+        .build();
+
+    root_container.append(&resize_handle);
+    root_container.append(&panel);
 
     let all_known_tags = Rc::new(RefCell::new(
         available_tags
@@ -173,6 +269,8 @@ pub fn build_tag_panel(
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vscrollbar_policy(gtk::PolicyType::Automatic)
         .overlay_scrolling(false)
+        .propagate_natural_width(false)
+        .hexpand(false)
         .vexpand(true)
         .child(&list_box)
         .build();
@@ -454,5 +552,5 @@ pub fn build_tag_panel(
     }
     search_entry.add_controller(key_ctrl);
 
-    panel
+    root_container
 }

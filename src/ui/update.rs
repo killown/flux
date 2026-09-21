@@ -382,6 +382,8 @@ impl FluxApp {
             // ==========================================
             // Search & Filtering
             // ==========================================
+            AppMsg::SetTagPanelWidth(val) => self.handle_set_tag_panel_width(val),
+            AppMsg::SetSearchPanelWidth(val) => self.handle_set_search_panel_width(val),
             AppMsg::UpdateFilter(query) => self.handle_update_filter(query, &sender),
             AppMsg::SearchInput(c) => self.handle_search_input(c),
             AppMsg::SearchBackspace => self.handle_search_backspace(&sender),
@@ -1023,7 +1025,11 @@ impl FluxApp {
                         // Fetch real tags from state database
                         let tags = self.state_db.list_all_tags().unwrap_or_default();
 
-                        let panel = crate::ui::tag_navigator::build_tag_panel(tags, sender.clone());
+                        let panel = crate::ui::tag_navigator::build_tag_panel(
+                            tags,
+                            self.config.ui.tag_panel_width,
+                            sender.clone(),
+                        );
                         revealer.set_child(Some(&panel));
                         self.tag_panel_initialized = true;
                     }
@@ -1058,7 +1064,10 @@ impl FluxApp {
             AppMsg::ToggleSearchPanel => {
                 if let Some(ref revealer) = self.search_panel_revealer {
                     if !self.search_panel_initialized {
-                        let panel = crate::ui::advanced_search::build_search_panel(sender.clone());
+                        let panel = crate::ui::advanced_search::build_search_panel(
+                            self.config.ui.search_panel_width,
+                            sender.clone(),
+                        );
                         revealer.set_child(Some(&panel));
                         self.search_panel_initialized = true;
                     }
