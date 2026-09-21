@@ -1284,3 +1284,46 @@ pub fn open_new_instance(path: &std::path::Path) -> bool {
 pub fn is_recursive_paste(src: &Path, dest_dir: &Path) -> bool {
     dest_dir.starts_with(src)
 }
+
+/// Returns the label to display for a file in the grid or list.
+///
+/// If `name`'s extension is in `hidden_extensions` (case-insensitive, optional leading dot),
+/// or if `hidden_extensions` contains `*`, returns the stem only. Otherwise returns `name`.
+pub fn format_display_label(name: &str, is_dir: bool, hidden_extensions: &[String]) -> String {
+    if is_dir || hidden_extensions.is_empty() {
+        return name.to_string();
+    }
+
+    let hide_all = hidden_extensions.iter().any(|h| {
+        let trimmed = h.trim();
+        trimmed == "*" || trimmed == ".*"
+    });
+
+    if hide_all {
+        return std::path::Path::new(name)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(name)
+            .to_string();
+    }
+
+    if let Some(ext) = std::path::Path::new(name)
+        .extension()
+        .and_then(|e| e.to_str())
+    {
+        let ext_lc = ext.to_ascii_lowercase();
+        let should_hide = hidden_extensions
+            .iter()
+            .any(|h| h.trim().trim_start_matches('.').to_ascii_lowercase() == ext_lc);
+
+        if should_hide {
+            return std::path::Path::new(name)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(name)
+                .to_string();
+        }
+    }
+
+    name.to_string()
+}

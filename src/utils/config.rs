@@ -445,6 +445,7 @@ path = "search://"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    hidden_extensions: Vec::new(),
                     tag_panel_width: 350,
                     search_panel_width: 350,
                     show_symlink_emblem: true,

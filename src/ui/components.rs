@@ -483,7 +483,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         let config = utils::load_config();
-        widgets.label.set_label(&self.name);
+        let display_label = utils::helpers::format_display_label(
+            &self.name,
+            self.is_dir,
+            &config.ui.hidden_extensions,
+        );
+        widgets.label.set_label(&display_label);
 
         if self.is_list_mode {
             // Compact horizontal row: small icon on the left, filename fills the rest.

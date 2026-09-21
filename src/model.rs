@@ -458,6 +458,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// File extensions to hide from grid labels (e.g. `["desktop", "AppImage"]`).
+    #[serde(default)]
+    pub hidden_extensions: Vec<String>,
     /// Default width of the right tag navigator panel in pixels.
     #[serde(default = "default_tag_panel_width")]
     pub tag_panel_width: i32,
@@ -625,6 +628,7 @@ pub struct UIConfig {
 impl Default for UIConfig {
     fn default() -> Self {
         Self {
+            hidden_extensions: Vec::new(),
             show_empty_dir_emblem: false,
             show_symlink_emblem: true,
             file_icons: HashMap::new(),
@@ -900,6 +904,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Updates the list of file extensions hidden from grid labels and refreshes the view.
+    SetHiddenExtensions(Vec<String>),
     /// Persists and updates the tag panel width in pixels.
     SetTagPanelWidth(i32),
     /// Persists and updates the search panel width in pixels.
