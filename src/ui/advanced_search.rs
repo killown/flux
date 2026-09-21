@@ -52,19 +52,72 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
     let resize_handle = gtk::Separator::builder()
         .orientation(gtk::Orientation::Vertical)
         .css_classes(["sidebar-resize-handle"])
-        .cursor(&gtk::gdk::Cursor::from_name("col-resize", None).unwrap())
         .build();
 
     let drag_gesture = gtk::GestureDrag::new();
     let start_width = std::rc::Rc::new(std::cell::Cell::new(effective_width));
     let start_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
+    let hover_timer = std::rc::Rc::new(std::cell::Cell::new(None::<gtk::glib::SourceId>));
+    let is_ready = std::rc::Rc::new(std::cell::Cell::new(false));
+
+    let motion_ctrl = gtk::EventControllerMotion::new();
+
+    {
+        let timer_c = hover_timer.clone();
+        let ready_c = is_ready.clone();
+        motion_ctrl.connect_enter(move |ctrl, _, _| {
+            if let Some(id) = timer_c.take() {
+                id.remove();
+            }
+            ready_c.set(false);
+
+            let ctrl_weak = ctrl.downgrade();
+            let timer_inner = timer_c.clone();
+            let ready_inner = ready_c.clone();
+
+            let id = gtk::glib::timeout_add_local_once(
+                std::time::Duration::from_millis(100),
+                move || {
+                    timer_inner.set(None);
+                    ready_inner.set(true);
+                    if let Some(c) = ctrl_weak.upgrade() {
+                        if let Some(widget) = c.widget() {
+                            widget.set_cursor_from_name(Some("col-resize"));
+                        }
+                    }
+                },
+            );
+            timer_c.set(Some(id));
+        });
+    }
+
+    {
+        let timer_c = hover_timer;
+        let ready_c = is_ready.clone();
+        motion_ctrl.connect_leave(move |ctrl| {
+            if let Some(id) = timer_c.take() {
+                id.remove();
+            }
+            ready_c.set(false);
+            if let Some(widget) = ctrl.widget() {
+                widget.set_cursor(None);
+            }
+        });
+    }
+
+    resize_handle.add_controller(motion_ctrl);
 
     {
         let panel_weak = panel.downgrade();
         let start_width_c = start_width.clone();
         let start_root_x_c = start_root_x.clone();
+        let ready_c = is_ready.clone();
 
         drag_gesture.connect_drag_begin(move |gesture, x, _| {
+            if !ready_c.get() {
+                gesture.set_state(gtk::EventSequenceState::Denied);
+                return;
+            }
             if let Some(p) = panel_weak.upgrade() {
                 start_width_c.set(p.width());
                 // Translate the initial click point to root/window coordinate space
@@ -85,8 +138,12 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         let panel_weak = panel.downgrade();
         let start_width_c = start_width.clone();
         let start_root_x_c = start_root_x.clone();
+        let ready_c = is_ready.clone();
 
         drag_gesture.connect_drag_update(move |gesture, _, _| {
+            if !ready_c.get() {
+                return;
+            }
             if let Some(p) = panel_weak.upgrade() {
                 if let Some(root) = p.root() {
                     if let Some(handle) = gesture.widget() {
@@ -113,11 +170,19 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
     {
         let panel_weak = panel.downgrade();
         let s = sender.clone();
-        drag_gesture.connect_drag_end(move |_, _, _| {
+        let ready_c = is_ready;
+
+        drag_gesture.connect_drag_end(move |gesture, _, _| {
+            if !ready_c.get() {
+                return;
+            }
             if let Some(p) = panel_weak.upgrade() {
                 let final_width = p.width().clamp(250, 800);
                 p.set_width_request(final_width);
                 s.input(AppMsg::SetSearchPanelWidth(final_width));
+            }
+            if let Some(widget) = gesture.widget() {
+                widget.set_cursor(None);
             }
         });
     }

@@ -758,14 +758,6 @@ msgstr "Expandir nomes de arquivo"
 msgid "Wrap filenames across multiple lines"
 msgstr "Quebrar nomes de arquivo em múltiplas linhas"
 
-#: src/ui/settings.rs:94
-msgid "Sidebar Width"
-msgstr "Largura da barra lateral"
-
-#: src/ui/settings.rs:95
-msgid "Width of the navigation pane"
-msgstr "Largura do painel de navegação"
-
 #: src/ui/settings.rs:109
 msgid "Startup Width"
 msgstr "Largura inicial"
