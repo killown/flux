@@ -976,6 +976,25 @@ pub fn get_icon_for_path_with_override(
         .and_then(|e| e.to_str())
         .unwrap_or("");
 
+    if ext.eq_ignore_ascii_case("desktop") {
+        let keyfile = glib::KeyFile::new();
+        if keyfile
+            .load_from_file(path, glib::KeyFileFlags::NONE)
+            .is_ok()
+        {
+            if let Ok(icon_val) = keyfile.string(
+                glib::KEY_FILE_DESKTOP_GROUP,
+                glib::KEY_FILE_DESKTOP_KEY_ICON,
+            ) {
+                if !icon_val.is_empty() {
+                    if let Ok(icon) = gio::Icon::for_string(icon_val.as_str()) {
+                        return icon;
+                    }
+                }
+            }
+        }
+    }
+
     if !ext.is_empty() {
         if let Some(icon_path) = crate::services::loader::get_custom_extension_icon_path(ext) {
             if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
