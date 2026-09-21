@@ -707,6 +707,14 @@ msgstr "Mostrar/ocultar barra de cabeçalho"
 # ============================================================
 
 #: src/ui/settings.rs:???
+msgid "Scale Font with Icons"
+msgstr "Dimensionar Fonte com Ícones"
+
+#: src/ui/settings.rs:???
+msgid "Dynamically adjust label font size when zooming or resizing grid icons"
+msgstr "Ajustar dinamicamente o tamanho da fonte do rótulo ao redimensionar os ícones da grade"
+
+#: src/ui/settings.rs:???
 msgid "Hide File Extensions"
 msgstr "Ocultar Extensões de Arquivo"
 

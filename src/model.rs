@@ -458,6 +458,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Whether file label font size scales dynamically when resizing/zooming grid icons.
+    #[serde(default)]
+    pub scale_font_with_icons: bool,
     /// File extensions to hide from grid labels (e.g. `["desktop", "AppImage"]`).
     #[serde(default)]
     pub hidden_extensions: Vec<String>,
@@ -628,6 +631,7 @@ pub struct UIConfig {
 impl Default for UIConfig {
     fn default() -> Self {
         Self {
+            scale_font_with_icons: false,
             hidden_extensions: Vec::new(),
             show_empty_dir_emblem: false,
             show_symlink_emblem: true,
@@ -904,6 +908,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles dynamic scaling of file label fonts with grid icon size.
+    SetScaleFontWithIcons(bool),
     /// Updates the list of file extensions hidden from grid labels and refreshes the view.
     SetHiddenExtensions(Vec<String>),
     /// Persists and updates the tag panel width in pixels.

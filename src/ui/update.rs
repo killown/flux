@@ -1019,6 +1019,9 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::SetScaleFontWithIcons(val) => {
+                self.handle_set_scale_font_with_icons(val, &sender);
+            }
             AppMsg::ToggleTagPanel => {
                 self.toggle_sidebar_right_panel(RightPanelType::Tag, &sender);
             }

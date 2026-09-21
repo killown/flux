@@ -128,6 +128,16 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    pub fn handle_set_scale_font_with_icons(
+        &mut self,
+        val: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.scale_font_with_icons = val;
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
+
     pub fn handle_set_hidden_extensions(
         &mut self,
         exts: Vec<String>,
