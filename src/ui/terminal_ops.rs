@@ -6,7 +6,6 @@ use std::env;
 use std::path::PathBuf;
 
 impl FluxApp {
-    /// Handles directory sync events from the terminal's OSC 7 escape sequence.
     pub fn handle_terminal_cwd_changed(
         &mut self,
         path: PathBuf,
@@ -14,21 +13,24 @@ impl FluxApp {
     ) {
         let path_str = self.current_path.to_string_lossy();
 
-        // Do not let terminal directory changes pull the GUI out of virtual locations
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+        let is_virtual = path_str.starts_with(crate::services::archive::ARCHIVE_URI)
             || path_str.starts_with("trash://")
             || path_str.starts_with("recent://")
-            || crate::services::network::is_network_uri(&self.current_path)
-        {
-            return;
-        }
+            || crate::services::network::is_network_uri(&self.current_path);
 
-        if self.current_path != path {
-            sender.input(AppMsg::Navigate(path));
+        if !is_virtual {
+            let curr_canon = self
+                .current_path
+                .canonicalize()
+                .unwrap_or_else(|_| self.current_path.clone());
+            let new_canon = path.canonicalize().unwrap_or_else(|_| path.clone());
+
+            if curr_canon != new_canon {
+                sender.input(AppMsg::Navigate(path));
+            }
         }
     }
 
-    /// Handles toggling the embedded terminal panel's visibility, PTY spawning, and geometry sync.
     pub fn handle_toggle_terminal(&mut self) {
         self.terminal_visible = !self.terminal_visible;
 
@@ -53,6 +55,31 @@ impl FluxApp {
                 self.terminal_cleared = true;
             }
 
+            if let Some(paned) = &self.terminal_paned {
+                let paned_clone = paned.clone();
+                let target_h = self.config.ui.terminal.height;
+
+                glib::idle_add_local_once(move || {
+                    let total_h = paned_clone.height();
+                    if total_h > target_h && target_h > 0 {
+                        paned_clone.set_position(total_h - target_h);
+                    }
+                });
+
+                paned.connect_position_notify(|p| {
+                    let total_h = p.height();
+                    let pos = p.position();
+                    if total_h > 50 && pos > 0 && pos < total_h {
+                        let pixel_h = total_h - pos;
+                        let mut cfg = crate::utils::load_config();
+                        if cfg.ui.terminal.height != pixel_h {
+                            cfg.ui.terminal.height = pixel_h;
+                            crate::utils::save_config(&cfg);
+                        }
+                    }
+                });
+            }
+
             if !self.terminal_spawned {
                 self.terminal_spawned = true;
 
@@ -75,28 +102,23 @@ impl FluxApp {
                     },
                 );
             } else {
-                self.terminal.respawn(&effective_path);
-            }
+                let is_idle = self
+                    .terminal
+                    .state
+                    .lock()
+                    .map(|s| s.is_idle())
+                    .unwrap_or(false);
 
-            // Set the paned position using char_height from the terminal state so fish starts with the correct row count
-            if let Some(paned) = &self.terminal_paned {
-                let height = paned.height();
-                if height > 0 {
-                    paned.set_position(height - self.config.ui.terminal.height);
+                if is_idle {
+                    self.terminal.respawn(&effective_path);
                 }
             }
 
             let term = self.terminal.clone();
             glib::idle_add_local_once(move || {
                 term.grab_focus();
-                // Send SIGWINCH after pane layout settles so shell re-reads $LINES/$COLUMNS
                 term.send_sigwinch();
             });
-        } else {
-            // Hide terminal: terminate the active shell process and reset flags
-            self.terminal.kill_shell();
-            self.terminal_spawned = false;
-            self.terminal_cleared = false;
         }
     }
 }
