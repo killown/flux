@@ -1772,22 +1772,67 @@ impl Terminal {
         // fallback 80x24 size. connect_size_allocate fires once the pane is
         // actually shown and GTK has assigned real pixel dimensions.
         let term_clone = term.clone();
-        let config_height_lines = config.height;
 
         term.drawing_area.connect_map(move |area| {
             let area_clone = area.clone();
             let state_clone = term_clone.state.clone();
 
-            // Defer paned position adjustment until GTK completes layout allocation for the panel
             glib::idle_add_local_once(move || {
                 if let Some(paned) = area_clone
                     .ancestor(gtk::Paned::static_type())
                     .and_then(|w| w.downcast::<gtk::Paned>().ok())
                 {
+                    let is_restoring = std::rc::Rc::new(std::cell::Cell::new(true));
+                    let save_timer = std::rc::Rc::new(std::cell::Cell::new(None::<glib::SourceId>));
+
+                    let state_for_notify = state_clone.clone();
+                    let is_restoring_notify = is_restoring.clone();
+                    let save_timer_notify = save_timer.clone();
+
+                    paned.connect_position_notify(move |p| {
+                        if is_restoring_notify.get() {
+                            return;
+                        }
+
+                        let total_h = p.height();
+                        let pos = p.position();
+                        if total_h > 0 && pos > 0 && pos < total_h {
+                            let term_h = total_h - pos;
+                            let ch = {
+                                let s = state_for_notify.lock().unwrap();
+                                if s.char_height > 0.0 {
+                                    s.char_height as i32
+                                } else {
+                                    char_height
+                                }
+                            };
+                            let lines = (term_h / ch).max(1);
+
+                            if let Some(id) = save_timer_notify.take() {
+                                id.remove();
+                            }
+
+                            let timer_cell = save_timer_notify.clone();
+                            let new_timer = glib::timeout_add_local_once(
+                                std::time::Duration::from_millis(250),
+                                move || {
+                                    timer_cell.set(None);
+                                    if let Some(sender) = crate::model::SENDER.get() {
+                                        let _ = sender
+                                            .send(crate::model::AppMsg::SetTerminalHeight(lines));
+                                    }
+                                },
+                            );
+                            save_timer_notify.set(Some(new_timer));
+                        }
+                    });
+
                     let state_for_check = state_clone.clone();
+                    let is_restoring_init = is_restoring.clone();
                     let set_position_if_allocated = move |p: &gtk::Paned| -> bool {
                         let total_h = p.height();
                         if total_h > 0 {
+                            let current_cfg = crate::utils::load_config();
                             let ch = {
                                 let s = state_for_check.lock().unwrap();
                                 if s.char_height > 0.0 {
@@ -1796,8 +1841,13 @@ impl Terminal {
                                     char_height
                                 }
                             };
-                            let desired_pixel_height = config_height_lines * ch;
+                            let desired_pixel_height = current_cfg.ui.terminal.height * ch;
                             p.set_position(total_h - desired_pixel_height);
+
+                            let restoring_flag = is_restoring_init.clone();
+                            glib::idle_add_local_once(move || {
+                                restoring_flag.set(false);
+                            });
                             true
                         } else {
                             false
@@ -1805,11 +1855,13 @@ impl Terminal {
                     };
 
                     if !set_position_if_allocated(&paned) {
-                        let state_retry = state_clone.clone();
                         let paned_retry = paned.clone();
+                        let state_retry = state_clone.clone();
+                        let is_restoring_retry = is_restoring.clone();
                         glib::idle_add_local_once(move || {
                             let total_h = paned_retry.height();
                             if total_h > 0 {
+                                let current_cfg = crate::utils::load_config();
                                 let ch = {
                                     let s = state_retry.lock().unwrap();
                                     if s.char_height > 0.0 {
@@ -1818,8 +1870,12 @@ impl Terminal {
                                         char_height
                                     }
                                 };
-                                paned_retry.set_position(total_h - config_height_lines * ch);
+                                paned_retry
+                                    .set_position(total_h - current_cfg.ui.terminal.height * ch);
                             }
+                            glib::idle_add_local_once(move || {
+                                is_restoring_retry.set(false);
+                            });
                         });
                     }
                 }
