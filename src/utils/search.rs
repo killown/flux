@@ -1,9 +1,12 @@
-use nucleo_matcher::pattern::{CaseMatching, Normalization, Pattern};
-use nucleo_matcher::{Config, Matcher, Utf32Str};
+use nucleo::pattern::{CaseMatching, Normalization, Pattern};
+use nucleo::{Config, Matcher, Utf32Str};
 use std::cell::RefCell;
 
 thread_local! {
-    static MATCHER: RefCell<Matcher> = RefCell::new(Matcher::new(Config::DEFAULT));
+    static MATCHER_STATE: RefCell<(Matcher, Vec<char>)> = RefCell::new((
+        Matcher::new(Config::DEFAULT),
+        Vec::with_capacity(256),
+    ));
 }
 
 mod size_filters {
@@ -86,6 +89,17 @@ mod size_filters {
     }
 }
 
+/// Matches target string against a pre-parsed pattern using thread-local matcher and scratch buffer.
+#[inline]
+pub fn fuzzy_match_compiled(target: &str, pattern: &Pattern) -> bool {
+    MATCHER_STATE.with(|state| {
+        let (ref mut matcher, ref mut buf) = *state.borrow_mut();
+        buf.clear();
+        let utf32_target = Utf32Str::new(target, buf);
+        pattern.score(utf32_target, matcher).is_some()
+    })
+}
+
 /// High-performance fuzzy path matcher using Nucleo.
 #[inline]
 pub fn fuzzy_match(target: &str, pattern: &str) -> bool {
@@ -97,12 +111,7 @@ pub fn fuzzy_match(target: &str, pattern: &str) -> bool {
     let parsed_pattern =
         Pattern::parse(pattern_trimmed, CaseMatching::Ignore, Normalization::Smart);
 
-    MATCHER.with(|m| {
-        let mut matcher = m.borrow_mut();
-        let mut target_buf = Vec::new();
-        let utf32_target = Utf32Str::new(target, &mut target_buf);
-        parsed_pattern.score(utf32_target, &mut matcher).is_some()
-    })
+    fuzzy_match_compiled(target, &parsed_pattern)
 }
 
 pub use size_filters::{parse_size_filter, SizeOp};

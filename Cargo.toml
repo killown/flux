@@ -65,7 +65,7 @@ pathdiff = "0.2.3"
 lofty = "0.25.1"
 mimalloc = { version = "0.1.52", default-features = false }
 regex = "1.13.1"
-nucleo-matcher = "0.3.1"
+nucleo = "0.5.0"
 
 [dev-dependencies]
 tempfile = "3"

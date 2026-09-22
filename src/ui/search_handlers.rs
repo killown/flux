@@ -4,6 +4,8 @@ use crate::utils;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use gtk::glib;
 use gtk::prelude::*;
+use nucleo::pattern::{CaseMatching, Normalization, Pattern};
+use nucleo::Utf32Str;
 use relm4::prelude::*;
 use std::sync::atomic::Ordering;
 
@@ -241,7 +243,6 @@ impl FluxApp {
         // Normal filename filtering
         self.filter = query.clone();
         self.files.clear_filters();
-        let filter_text = query_lc.clone();
         let view = self.files.view.clone();
 
         glib::idle_add_local_once(move || {
@@ -253,8 +254,23 @@ impl FluxApp {
             }
         });
 
-        self.files
-            .add_filter(move |item| crate::utils::search::fuzzy_match(&item.name, &filter_text));
+        let trimmed = query.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+
+        let parsed_pattern = Pattern::parse(trimmed, CaseMatching::Ignore, Normalization::Smart);
+
+        self.files.add_filter(move |item| {
+            let mut target_buf = Vec::new();
+            let utf32_target = Utf32Str::new(&item.name, &mut target_buf);
+            parsed_pattern
+                .score(
+                    utf32_target,
+                    &mut nucleo::Matcher::new(nucleo::Config::DEFAULT),
+                )
+                .is_some()
+        });
     }
 
     /// Appends a new content search match result to the grid.

@@ -400,15 +400,6 @@ fn start_walk(
                         .map(|d| d.as_secs() as i64)
                         .unwrap_or(0);
                     (sz, mt)
-                } else if let Ok(meta) = std::fs::metadata(&path) {
-                    let sz = meta.len();
-                    let mt = meta
-                        .modified()
-                        .ok()
-                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map(|d| d.as_secs() as i64)
-                        .unwrap_or(0);
-                    (sz, mt)
                 } else {
                     (0, 0)
                 };
