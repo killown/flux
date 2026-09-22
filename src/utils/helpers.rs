@@ -552,7 +552,7 @@ impl FluxApp {
 
                 for i in 0..self.files.len() {
                     if let Some(wrapper) = self.files.get(i) {
-                        if wrapper.borrow().name.to_lowercase().contains(&query_lc) {
+                        if crate::utils::search::fuzzy_match(&wrapper.borrow().name, &query_lc) {
                             if visual_indices.contains(&(match_count as u32)) {
                                 selected_paths.push(wrapper.borrow().path.clone());
                             }
@@ -631,7 +631,7 @@ impl FluxApp {
                 for i in 0..self.files.len() {
                     if let Some(wrapper) = self.files.get(i) {
                         let item = wrapper.borrow();
-                        if item.name.to_lowercase().contains(&query_lc) {
+                        if crate::utils::search::fuzzy_match(&item.name, &query_lc) {
                             if visual_indices.contains(&match_count) {
                                 result.push((item.path.clone(), item.is_dir));
                             }
@@ -1097,14 +1097,8 @@ impl FluxApp {
 
         for item in results {
             let icon = utils::get_icon_for_path(&item.path, false);
-            let meta = std::fs::metadata(&item.path).ok();
-            let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
-            let mtime = meta
-                .as_ref()
-                .and_then(|m| m.modified().ok())
-                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                .map(|d| d.as_secs() as i64)
-                .unwrap_or(0);
+            let size = item.size;
+            let mtime = item.mtime;
 
             let is_symlink = item.path.is_symlink();
             let is_broken_symlink = is_symlink && std::fs::metadata(&item.path).is_err();

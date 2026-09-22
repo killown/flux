@@ -358,7 +358,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             .build()
     };
 
-    let name_entry = make_stacked_entry(&what_group, &tr("File name"), "invoice, draft*, photo");
+    let name_entry = make_stacked_entry(&what_group, &tr("File name"), "invoice, draft, photo");
     let exact_match_sw = make_switch_row(
         &what_group,
         &tr("Exact match"),
@@ -376,7 +376,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         &tr("Inside files"),
         &tr("Requires 3+ characters"),
     );
-    let fname_entry = make_stacked_entry(&what_group, &tr("Glob pattern"), "*.rs, image/*, *.pdf");
+    let fname_entry = make_stacked_entry(&what_group, &tr("Glob pattern"), "rs, image/*, pdf");
     let ext_entry = make_stacked_entry(&what_group, &tr("Extension"), "rs, py, txt");
 
     content_box.append(&what_group);
@@ -558,31 +558,59 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             let mut patterns: Vec<String> = Vec::new();
             let mut regex_error = None;
 
+            let mut filter_globs: Vec<String> = Vec::new();
+            if !fname_text.is_empty() {
+                for p in fname_text
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|p| !p.is_empty())
+                {
+                    let mut pat = p.to_lowercase();
+                    if !pat.contains('*') && !pat.contains('?') {
+                        pat = format!("*.{}", pat.trim_start_matches('.'));
+                    }
+                    filter_globs.push(pat);
+                }
+            } else if !ext_text.is_empty() {
+                for e in ext_text.split(',').map(str::trim).filter(|e| !e.is_empty()) {
+                    let ext = e.trim_start_matches('.');
+                    filter_globs.push(format!("*.{}", ext.to_lowercase()));
+                }
+            }
+
+            let mut name_patterns: Vec<String> = Vec::new();
             if !name_text.is_empty() {
                 for item in name_text
                     .split(',')
                     .map(str::trim)
                     .filter(|slice| !slice.is_empty())
                 {
-                    let mut term = item.to_string();
+                    let term = item.to_string();
                     if use_regex {
                         recursive = true;
                         match regex::Regex::new(&term) {
                             Ok(_) => {
-                                patterns.push(format!("regex:{}", term));
+                                name_patterns.push(format!("regex:{}", term));
                             }
                             Err(e) => {
                                 regex_error = Some(format!("Invalid regex: {}", e));
                             }
                         }
+                    } else if exact_match {
+                        name_patterns.push(term.to_lowercase());
                     } else {
                         if term.contains('*') {
                             recursive = true;
                         }
-                        if !exact_match && !term.starts_with('*') && !term.ends_with('*') {
-                            term = format!("*{}*", term);
-                        }
-                        patterns.push(term.to_lowercase());
+                        let words: Vec<&str> = term.split_whitespace().collect();
+                        let formatted_term = if words.len() > 1 {
+                            format!("*{}*", words.join("*"))
+                        } else if !term.starts_with('*') && !term.ends_with('*') {
+                            format!("*{}*", term)
+                        } else {
+                            term
+                        };
+                        name_patterns.push(formatted_term.to_lowercase());
                     }
                 }
             }
@@ -595,22 +623,30 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 error_box_c.set_visible(false);
             }
 
-            if !fname_text.is_empty() {
-                for p in fname_text
-                    .split(',')
-                    .map(|p| p.trim().to_lowercase())
-                    .filter(|p| !p.is_empty())
-                {
-                    patterns.push(p);
+            if !name_patterns.is_empty() && !filter_globs.is_empty() {
+                for np in &name_patterns {
+                    if np.starts_with("regex:") {
+                        patterns.push(np.clone());
+                    } else {
+                        for fg in &filter_globs {
+                            let base_np = if np.ends_with('*') {
+                                np.clone()
+                            } else {
+                                format!("{}*", np)
+                            };
+                            let base_fg = if fg.starts_with('*') {
+                                fg.trim_start_matches('*').to_string()
+                            } else {
+                                fg.clone()
+                            };
+                            patterns.push(format!("{}*{}", base_np.trim_end_matches('*'), base_fg));
+                        }
+                    }
                 }
-            } else if !ext_text.is_empty() {
-                for e in ext_text
-                    .split(',')
-                    .map(|e| e.trim().trim_start_matches('.'))
-                    .filter(|e| !e.is_empty())
-                {
-                    patterns.push(format!("*.{}", e));
-                }
+            } else if !name_patterns.is_empty() {
+                patterns = name_patterns;
+            } else if !filter_globs.is_empty() {
+                patterns = filter_globs;
             }
 
             if recursive {

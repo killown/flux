@@ -1077,10 +1077,10 @@ impl SimpleComponent for SettingsWindow {
                         add_suffix = &gtk::SpinButton {
                             set_adjustment: &gtk::Adjustment::new(
                                 model.config.ui.max_search_results as f64,
-                                500.0,
+                                50.0,
                                 50000.0,
+                                50.0,
                                 500.0,
-                                2500.0,
                                 0.0,
                             ),
                             set_numeric: true,

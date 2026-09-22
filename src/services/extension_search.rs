@@ -11,7 +11,8 @@ use std::sync::{mpsc, Arc};
 /// Results are flushed to the UI in batches of this size to avoid flooding
 /// the GTK main loop with individual messages (critical for patterns like
 /// `*.png` that can match tens of thousands of files).
-const BATCH_SIZE: usize = 50;
+const BATCH_SIZE: usize = 200;
+const FLUSH_INTERVAL_MS: u64 = 80;
 
 /// A single matched file, carried inside [`AppMsg::ExtensionSearchBatch`].
 #[derive(Debug, Clone)]
@@ -19,6 +20,8 @@ pub struct ExtensionMatch {
     pub path: std::path::PathBuf,
     /// Display string shown in the result row (relative path from search root).
     pub display: String,
+    pub size: u64,
+    pub mtime: i64,
 }
 
 /// Optional constraints from the Advanced Search dialog.
@@ -211,22 +214,51 @@ fn start_walk(
         let cancellable_for_collector = cancellable.clone();
         let collector_handle = std::thread::spawn(move || {
             let mut batch: Vec<ExtensionMatch> = Vec::with_capacity(BATCH_SIZE);
+            let mut last_flush = std::time::Instant::now();
+            let timeout = std::time::Duration::from_millis(FLUSH_INTERVAL_MS);
 
-            while let Ok(item) = rx.recv() {
-                if cancellable_for_collector.is_cancelled()
-                    || load_id_for_collector.load(Ordering::Acquire) != session_id
-                {
-                    break;
-                }
+            loop {
+                match rx.recv_timeout(timeout) {
+                    Ok(item) => {
+                        if cancellable_for_collector.is_cancelled()
+                            || load_id_for_collector.load(Ordering::Acquire) != session_id
+                        {
+                            break;
+                        }
 
-                batch.push(item);
+                        batch.push(item);
 
-                if batch.len() >= BATCH_SIZE {
-                    let chunk = std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
-                    sender_for_collector.input(AppMsg::ExtensionSearchBatch {
-                        results: chunk,
-                        session: session_id,
-                    });
+                        let elapsed = last_flush.elapsed().as_millis() as u64;
+                        if batch.len() >= BATCH_SIZE
+                            || (elapsed >= FLUSH_INTERVAL_MS && !batch.is_empty())
+                        {
+                            let chunk =
+                                std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
+                            sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                                results: chunk,
+                                session: session_id,
+                            });
+                            last_flush = std::time::Instant::now();
+                        }
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {
+                        if cancellable_for_collector.is_cancelled()
+                            || load_id_for_collector.load(Ordering::Acquire) != session_id
+                        {
+                            break;
+                        }
+
+                        if !batch.is_empty() {
+                            let chunk =
+                                std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
+                            sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                                results: chunk,
+                                session: session_id,
+                            });
+                            last_flush = std::time::Instant::now();
+                        }
+                    }
+                    Err(mpsc::RecvTimeoutError::Disconnected) => break,
                 }
             }
 
@@ -333,6 +365,7 @@ fn start_walk(
 
                 // ── Advanced predicates ──────────────────────────────────────
                 // Only call std::fs::metadata when at least one predicate is active.
+                let mut precomputed_meta = None;
                 if self.mtime_boundary.is_some() || self.size_bytes.is_some() {
                     match std::fs::metadata(&path) {
                         Ok(meta) => {
@@ -352,10 +385,33 @@ fn start_walk(
                                     return WalkState::Continue;
                                 }
                             }
+                            precomputed_meta = Some(meta);
                         }
                         Err(_) => return WalkState::Continue,
                     }
                 }
+
+                let (size, mtime) = if let Some(meta) = precomputed_meta {
+                    let sz = meta.len();
+                    let mt = meta
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(0);
+                    (sz, mt)
+                } else if let Ok(meta) = std::fs::metadata(&path) {
+                    let sz = meta.len();
+                    let mt = meta
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(0);
+                    (sz, mt)
+                } else {
+                    (0, 0)
+                };
 
                 let rel = path
                     .strip_prefix(&self.current_dir)
@@ -364,7 +420,12 @@ fn start_walk(
                 let display = rel.to_string_lossy().into_owned();
 
                 self.total_count.fetch_add(1, Ordering::Relaxed);
-                let _ = self.tx.send(ExtensionMatch { path, display });
+                let _ = self.tx.send(ExtensionMatch {
+                    path,
+                    display,
+                    size,
+                    mtime,
+                });
 
                 WalkState::Continue
             }

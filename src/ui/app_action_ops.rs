@@ -145,7 +145,7 @@ impl FluxApp {
                 for i in 0..self.files.len() {
                     if let Some(wrapper) = self.files.get(i) {
                         let item = wrapper.borrow();
-                        if item.name.to_lowercase().contains(&query_lc) {
+                        if crate::utils::search::fuzzy_match(&item.name, &query_lc) {
                             if match_count == pos {
                                 found = Some((item.path.clone(), item.is_dir));
                                 break;
