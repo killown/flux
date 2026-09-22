@@ -358,7 +358,8 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             .build()
     };
 
-    let name_entry = make_stacked_entry(&what_group, &tr("File name"), "invoice, draft, photo");
+    let name_entry =
+        make_stacked_entry(&what_group, &tr("File name"), &tr("invoice, draft*, photo"));
     let exact_match_sw = make_switch_row(
         &what_group,
         &tr("Exact match"),
@@ -376,8 +377,11 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         &tr("Inside files"),
         &tr("Requires 3+ characters"),
     );
-    let fname_entry = make_stacked_entry(&what_group, &tr("Glob pattern"), "rs, image/*, pdf");
-    let ext_entry = make_stacked_entry(&what_group, &tr("Extension"), "rs, py, txt");
+    let pattern_entry = make_stacked_entry(
+        &what_group,
+        &tr("Pattern / Extension"),
+        "rs, *.png, image/*",
+    );
 
     content_box.append(&what_group);
 
@@ -496,8 +500,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         let exact_sw = exact_match_sw.clone();
         let regex_sw_clone = regex_sw.clone();
         let content_e = content_entry.clone();
-        let fname_e = fname_entry.clone();
-        let ext_e = ext_entry.clone();
+        let pat_e = pattern_entry.clone();
         let rec_sw = recursive_sw.clone();
         let hid_sw = hidden_sw.clone();
         let date_r = date_row.clone();
@@ -509,9 +512,8 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
 
         move || {
             let name_text = name_e.text().trim().to_string();
-            let fname_text = fname_e.text().trim().to_string();
+            let pat_text = pat_e.text().trim().to_string();
             let content_text = content_e.text().trim().to_string();
-            let ext_text = ext_e.text().trim().to_string();
             let mut recursive = rec_sw.is_active();
             let include_hidden = hid_sw.is_active();
             let exact_match = exact_sw.is_active();
@@ -544,10 +546,10 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
 
             // Content search takes priority when the field has ≥3 chars
             if content_text.len() >= 3 {
-                let ext_filter = if ext_text.is_empty() {
+                let ext_filter = if pat_text.is_empty() {
                     None
                 } else {
-                    Some(ext_text)
+                    Some(pat_text)
                 };
                 error_box_c.set_visible(false);
                 apply_flat_filters(&s, date_seconds, size_bytes);
@@ -559,22 +561,13 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             let mut regex_error = None;
 
             let mut filter_globs: Vec<String> = Vec::new();
-            if !fname_text.is_empty() {
-                for p in fname_text
-                    .split(',')
-                    .map(str::trim)
-                    .filter(|p| !p.is_empty())
-                {
+            if !pat_text.is_empty() {
+                for p in pat_text.split(',').map(str::trim).filter(|p| !p.is_empty()) {
                     let mut pat = p.to_lowercase();
-                    if !pat.contains('*') && !pat.contains('?') {
+                    if !pat.contains('*') && !pat.contains('?') && !pat.contains('/') {
                         pat = format!("*.{}", pat.trim_start_matches('.'));
                     }
                     filter_globs.push(pat);
-                }
-            } else if !ext_text.is_empty() {
-                for e in ext_text.split(',').map(str::trim).filter(|e| !e.is_empty()) {
-                    let ext = e.trim_start_matches('.');
-                    filter_globs.push(format!("*.{}", ext.to_lowercase()));
                 }
             }
 
@@ -678,8 +671,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         let s = sender.clone();
         let name_e = name_entry.clone();
         let content_e = content_entry.clone();
-        let fname_e = fname_entry.clone();
-        let ext_e = ext_entry.clone();
+        let pat_e = pattern_entry.clone();
         let exact_sw = exact_match_sw.clone();
         let regex_sw_c = regex_sw.clone();
         let rec_sw = recursive_sw.clone();
@@ -692,8 +684,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         reset_btn.connect_clicked(move |_| {
             name_e.set_text("");
             content_e.set_text("");
-            fname_e.set_text("");
-            ext_e.set_text("");
+            pat_e.set_text("");
             size_e.set_text("");
             exact_sw.set_active(false);
             regex_sw_c.set_active(false);
@@ -718,13 +709,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         });
     }
 
-    for entry in [
-        &name_entry,
-        &content_entry,
-        &fname_entry,
-        &ext_entry,
-        &size_entry,
-    ] {
+    for entry in [&name_entry, &content_entry, &pattern_entry, &size_entry] {
         let run = execute_search.clone();
         entry.connect_activate(move |_| {
             run();
