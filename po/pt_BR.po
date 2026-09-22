@@ -2313,12 +2313,20 @@ msgstr "Falha ao salvar o HTML"
 # ============================================================
 
 #: src/ui/advanced_search.rs:???
-msgid "Limits"
-msgstr "Limites"
+msgid "What to find"
+msgstr "O que encontrar"
 
 #: src/ui/advanced_search.rs:???
-msgid "Limit maximum matched files"
-msgstr "Limitar o número máximo de arquivos correspondentes"
+msgid "File name"
+msgstr "Nome do arquivo"
+
+#: src/ui/advanced_search.rs:???
+msgid "Exact match"
+msgstr "Correspondência exata"
+
+#: src/ui/advanced_search.rs:???
+msgid "Match exact filename without wildcards"
+msgstr "Corresponder nome exato do arquivo sem curingas"
 
 #: src/ui/advanced_search.rs:???
 msgid "Regular expression"
@@ -2333,34 +2341,6 @@ msgid "Invalid regex: {}"
 msgstr "Expressão regular inválida: {}"
 
 #: src/ui/advanced_search.rs:???
-msgid "Filter by date and file size"
-msgstr "Filtrar por data e tamanho de arquivo"
-
-#: src/ui/advanced_search.rs:???
-msgid "invoice, draft*, photo"
-msgstr "fatura, rascunho*, foto"
-
-#: src/ui/advanced_search.rs:???
-msgid "#work, #project"
-msgstr "#trabalho, #projeto"
-
-#: src/ui/advanced_search.rs:???
-msgid "Exact match"
-msgstr "Correspondência exata"
-
-#: src/ui/advanced_search.rs:???
-msgid "Match exact filename without wildcards"
-msgstr "Corresponder nome exato do arquivo sem curingas"
-
-#: src/ui/advanced_search.rs:???
-msgid "What to find"
-msgstr "O que encontrar"
-
-#: src/ui/advanced_search.rs:???
-msgid "File name"
-msgstr "Nome do arquivo"
-
-#: src/ui/advanced_search.rs:???
 msgid "Inside files"
 msgstr "Dentro dos arquivos"
 
@@ -2369,12 +2349,8 @@ msgid "Requires 3+ characters"
 msgstr "Requer 3+ caracteres"
 
 #: src/ui/advanced_search.rs:???
-msgid "Glob pattern"
-msgstr "Padrão glob"
-
-#: src/ui/advanced_search.rs:???
-msgid "Tag"
-msgstr "Etiqueta"
+msgid "Pattern / Extension"
+msgstr "Padrão / Extensão"
 
 #: src/ui/advanced_search.rs:???
 msgid "Where to look"
@@ -2393,12 +2369,16 @@ msgid "Files beginning with a dot"
 msgstr "Arquivos que começam com ponto"
 
 #: src/ui/advanced_search.rs:???
-msgid "Filters"
-msgstr "Filtros"
-
-#: src/ui/advanced_search.rs:???
 msgid "Narrow results"
 msgstr "Restringir resultados"
+
+#: src/ui/advanced_search.rs:???
+msgid "invoice, draft*, photo"
+msgstr "fatura, rascunho*, foto"
+
+#: src/ui/advanced_search.rs:???
+msgid "Filter by date and file size"
+msgstr "Filtrar por data e tamanho de arquivo"
 
 #: src/ui/advanced_search.rs:???
 msgid "Any time"

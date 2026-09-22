@@ -180,7 +180,12 @@ fn start_walk(
 
     relm4::spawn_blocking(move || {
         let mut builder = WalkBuilder::new(&current_dir);
+        let threads = std::thread::available_parallelism()
+            .map(|n| n.get().saturating_sub(1).max(1))
+            .unwrap_or(2);
+
         builder
+            .threads(threads)
             .hidden(!include_hidden)
             .parents(true)
             .ignore(true)
