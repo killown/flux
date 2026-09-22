@@ -62,7 +62,7 @@ Startup Time: 107.44 ms    # warm: 71.08 ms
 
 ### Search & Filtering
 
-**Instant filename filter** - type to filter the current directory live.
+**Instant fuzzy filter** - powered by `nucleo` SIMD matching. Type anywhere to filter the current directory live with typo-tolerant subsequence scoring and zero UI stutter.
 
 **Size filter** - mathematical operators directly in the search bar:
 
@@ -83,13 +83,11 @@ Supported units: `B`, `KB`, `MB`, `GB`, `TB`.
 
 **Session glob / MIME filter** - filter the current directory by pattern or type:
 
-- `*.png`, `*.rs` - extension globs
+- `*.png`, `*.rs` - recursive extension globs
 - `image/*`, `video/*`, `audio/*` - built-in category shorthands
 - `application/zip`, `image/png` - any system MIME type (resolved via `/usr/share/mime/globs`)
 
-**Advanced Search Dialog (`F12`)** - modal combining name, content, extension, date range, size constraints, and recursion depth toggles.
-
-**Tag search** - FreeDesktop `user.xdg.tags` xattr system with SQLite indexing. Use `#tagname` or `:tag:name` to filter globally, with a dedicated tag navigator.
+**Advanced Search Sidebar (`Ctrl + F`)** - dedicated right panel featuring multi-threaded directory traversal via `ignore::WalkBuilder` with non-blocking batched results, combining name, content, extension, date range, size constraints, and recursion depth toggles.
 
 ### Built-in Actions
 
@@ -242,7 +240,7 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `Ctrl + Insert`               | Pin selection or current folder to sidebar permanently |
 | `Tab`                         | Cycle to the next folder in the list                   |
 | `Ctrl + End`                  | Clear the entire list                                  |
-| `F12`                         | Open advanced search dialog                            |
+| `Ctrl + F`                    | Toggle advanced search sidebar                         |
 | `:term` / `:.ext:term`        | Start content search                                   |
 | `Esc`                         | Cancel content search                                  |
 | `F2`                          | Rename selected item                                   |
@@ -252,7 +250,6 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `F6`                          | Toggle header bar                                      |
 | `F7`                          | Toggle status bar                                      |
 | `F8`                          | Toggle sidebar                                         |
-| `Ctrl + F`                    | Search files                                           |
 | `Ctrl + Scroll`               | Resize grid items                                      |
 | `Ctrl + Middle Click`         | Open folder in new window                              |
 | `Ctrl + H`                    | Toggle hidden files                                    |
@@ -268,8 +265,6 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `F10`                         | Open preferences                                       |
 | `Ctrl + S`                    | Cycle through sorting modes                            |
 | `Ctrl + Shift + S`            | Toggle ascending/descending sort order                 |
-
----
 
 ## Testing
 
@@ -348,7 +343,9 @@ make install
 
 - **Rust 1.75+** - memory safe, zero-cost abstractions
 - **Relm4 + GTK4** - native GNOME experience
-- **Tokio** - non-blocking async I/O
+- **Tokio & Rayon** - non-blocking async I/O and task scheduling
+- **Nucleo** - SIMD-accelerated parallel fuzzy matching engine
+- **Ignore (ripgrep)** - high-throughput parallel directory walker
 - **SQLite (rusqlite)** - tag indexing and persistent state
 
 ---
