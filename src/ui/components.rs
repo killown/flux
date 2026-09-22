@@ -923,8 +923,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             .video_widget
             .set_media_stream(None::<&gtk::MediaStream>);
         widgets.preview_stack.set_visible_child_name("icon");
-        widgets.icon_widget.set_paintable(None::<&gdk::Texture>);
+
+        // Release the texture on both the widget and the item model
+        widgets.icon_widget.set_paintable(None::<&gdk::Paintable>);
         widgets.icon_widget.clear();
+        self.thumbnail = None;
+
         widgets
             .drag_source
             .set_content(None::<&gdk::ContentProvider>);
