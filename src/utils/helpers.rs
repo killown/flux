@@ -1176,18 +1176,32 @@ pub fn load_custom_css() {
                 .join("flux/themes")
                 .join(&theme_filename);
 
-            let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
             let user_conf_theme = config_dir.join("themes").join(&theme_filename);
+            let flatpak_theme = PathBuf::from("/app/share/flux/themes").join(&theme_filename);
+            let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
 
             css_data = fs::read_to_string(&local_theme)
                 .or_else(|_| fs::read_to_string(&user_conf_theme))
+                .or_else(|_| fs::read_to_string(&flatpak_theme))
                 .or_else(|_| fs::read_to_string(&system_theme))
                 .ok();
+
+            if css_data.is_none() {
+                for dir in glib::system_data_dirs() {
+                    let candidate = dir.join("flux/themes").join(&theme_filename);
+                    if let Ok(content) = fs::read_to_string(&candidate) {
+                        css_data = Some(content);
+                        break;
+                    }
+                }
+            }
         }
     }
 
     if css_data.is_none() {
-        css_data = fs::read_to_string(config_dir.join("style.css")).ok();
+        css_data = fs::read_to_string(config_dir.join("style.css"))
+            .or_else(|_| fs::read_to_string("/app/share/flux/style.css"))
+            .ok();
     }
 
     if let Some(display) = adw::gdk::Display::default() {
