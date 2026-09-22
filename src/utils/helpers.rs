@@ -1335,3 +1335,37 @@ pub fn format_display_label(name: &str, is_dir: bool, hidden_extensions: &[Strin
 
     name.to_string()
 }
+
+pub fn list_available_themes() -> std::collections::BTreeSet<String> {
+    let mut theme_names = std::collections::BTreeSet::new();
+
+    let mut search_dirs = vec![
+        dirs::config_dir().unwrap_or_default().join("flux/themes"),
+        dirs::data_local_dir()
+            .unwrap_or_default()
+            .join("flux/themes"),
+        std::path::PathBuf::from("/app/share/flux/themes"),
+        std::path::PathBuf::from("/usr/share/flux/themes"),
+    ];
+
+    for dir in glib::system_data_dirs() {
+        search_dirs.push(dir.join("flux/themes"));
+    }
+
+    for dir in search_dirs {
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for e in entries.flatten() {
+                let path = e.path();
+                if path.extension().is_some_and(|ext| ext == "css") {
+                    if let Some(n) = path.file_stem().and_then(|n| n.to_str()) {
+                        if n != "default" && n != "style" {
+                            theme_names.insert(n.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    theme_names
+}
