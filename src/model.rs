@@ -35,7 +35,7 @@ fn default_thumbnail_threads() -> usize {
 }
 
 fn default_max_search_results() -> usize {
-    5000
+    100
 }
 
 fn default_max_history() -> usize {

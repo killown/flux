@@ -242,10 +242,8 @@ impl FluxApp {
         self.filter = query.clone();
         self.files.clear_filters();
         let filter_text = query_lc.clone();
-        self.files
-            .add_filter(move |item| item.name.to_lowercase().contains(&filter_text));
-
         let view = self.files.view.clone();
+
         glib::idle_add_local_once(move || {
             if let Some(model) = view
                 .model()
@@ -254,6 +252,9 @@ impl FluxApp {
                 model.unselect_all();
             }
         });
+
+        self.files
+            .add_filter(move |item| crate::utils::search::fuzzy_match(&item.name, &filter_text));
     }
 
     /// Appends a new content search match result to the grid.
@@ -368,9 +369,13 @@ impl FluxApp {
 
     /// Handles header view stack switches (e.g. search <-> entry <-> path).
     pub fn handle_switch_header(&mut self, view_name: String) {
-        if self.header_view == constants::VIEW_SEARCH && self.is_content_searching {
+        if self.header_view == constants::VIEW_SEARCH
+            && view_name != constants::VIEW_SEARCH
+            && self.is_content_searching
+        {
             self.reset_from_content_search();
         } else if self.header_view == constants::VIEW_SEARCH
+            && view_name != constants::VIEW_SEARCH
             && !self.is_content_searching
             && self.is_list_mode != self.saved_list_mode
         {

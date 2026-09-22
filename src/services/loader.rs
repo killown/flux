@@ -656,7 +656,7 @@ impl FluxApp {
             });
             if !filter.is_empty() {
                 let query = filter.to_lowercase();
-                items.retain(|item| item.sort_name.contains(&query));
+                items.retain(|item| crate::utils::search::fuzzy_match(&item.sort_name, &query));
             }
 
             // Sort - run inside the capped pool so no new threads are spawned

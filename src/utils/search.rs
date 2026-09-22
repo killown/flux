@@ -1,3 +1,11 @@
+use nucleo_matcher::pattern::{CaseMatching, Normalization, Pattern};
+use nucleo_matcher::{Config, Matcher, Utf32Str};
+use std::cell::RefCell;
+
+thread_local! {
+    static MATCHER: RefCell<Matcher> = RefCell::new(Matcher::new(Config::DEFAULT));
+}
+
 mod size_filters {
     #[derive(Debug, Clone, PartialEq)]
     pub enum SizeOp {
@@ -76,6 +84,25 @@ mod size_filters {
         };
         Some(bytes)
     }
+}
+
+/// High-performance fuzzy path matcher using Nucleo.
+#[inline]
+pub fn fuzzy_match(target: &str, pattern: &str) -> bool {
+    let pattern_trimmed = pattern.trim();
+    if pattern_trimmed.is_empty() {
+        return true;
+    }
+
+    let parsed_pattern =
+        Pattern::parse(pattern_trimmed, CaseMatching::Ignore, Normalization::Smart);
+
+    MATCHER.with(|m| {
+        let mut matcher = m.borrow_mut();
+        let mut target_buf = Vec::new();
+        let utf32_target = Utf32Str::new(target, &mut target_buf);
+        parsed_pattern.score(utf32_target, &mut matcher).is_some()
+    })
 }
 
 pub use size_filters::{parse_size_filter, SizeOp};
