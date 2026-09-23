@@ -719,8 +719,8 @@ msgid "Hide File Extensions"
 msgstr "Ocultar Extensões de Arquivo"
 
 #: src/ui/settings.rs:???
-msgid "Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, *)"
-msgstr "Extensões separadas por vírgula para ocultar dos rótulos, ou * para todas (ex.: desktop, AppImage, *)"
+msgid "Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"
+msgstr "Extensões separadas por vírgula para ocultar dos rótulos, ou * para todas (ex.: desktop, AppImage, tar.*)"
 
 #: src/ui/settings.rs:???
 msgid "Highlight Symbolic Links"
