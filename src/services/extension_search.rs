@@ -1,18 +1,41 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::paste_ops::NEXT_TASK_ID;
+use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use regex::bytes::{RegexSet, RegexSetBuilder};
 use relm4::prelude::*;
-use std::path::PathBuf;
+use std::collections::HashSet;
+use std::os::unix::fs::MetadataExt;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::{mpsc, Arc, OnceLock};
 
 /// Results are flushed to the UI in batches of this size to avoid flooding
 /// the GTK main loop with individual messages (critical for patterns like
 /// `*.png` that can match tens of thousands of files).
-const BATCH_SIZE: usize = 200;
-const FLUSH_INTERVAL_MS: u64 = 80;
+const BATCH_SIZE: usize = 500;
+const FLUSH_INTERVAL_MS: u64 = 16;
+
+/// Static AhoCorasick matcher for forbidden system and virtual paths.
+static FORBIDDEN_PATHS: OnceLock<AhoCorasick> = OnceLock::new();
+
+fn forbidden_matcher() -> &'static AhoCorasick {
+    FORBIDDEN_PATHS.get_or_init(|| {
+        AhoCorasick::builder()
+            .build([
+                b"/proc/".as_slice(),
+                b"/sys/".as_slice(),
+                b"/dev/".as_slice(),
+                b"/run/".as_slice(),
+                b"/var/run/".as_slice(),
+                b"/dosdevices/".as_slice(),
+                b"/Prefixes/".as_slice(),
+                b"/compatdata/".as_slice(),
+                b"/drive_c/".as_slice(),
+            ])
+            .expect("valid forbidden path patterns")
+    })
+}
 
 /// A single matched file, carried inside [`AppMsg::ExtensionSearchBatch`].
 #[derive(Debug, Clone)]
@@ -170,8 +193,6 @@ fn start_walk(
 
     let current_dir = app.current_path.clone();
     let load_id = app.load_id.clone();
-    let visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>> =
-        Arc::new(parking_lot::Mutex::new(std::collections::HashSet::new()));
 
     // Snapshot the params that the walk thread needs.
     let include_hidden = params.include_hidden;
@@ -200,19 +221,11 @@ fn start_walk(
             .follow_links(true)
             .same_file_system(false);
 
-        // Filter out pseudo-filesystems, virtual Wine/Proton drives, and prefix loops.
+        let matcher = forbidden_matcher();
         let walker = builder
-            .filter_entry(|entry| {
+            .filter_entry(move |entry| {
                 let bytes = crate::utils::osstr_to_bytes(entry.path().as_os_str());
-                !bytes.windows(6).any(|w| w == b"/proc/")
-                    && !bytes.windows(5).any(|w| w == b"/sys/")
-                    && !bytes.windows(5).any(|w| w == b"/dev/")
-                    && !bytes.windows(5).any(|w| w == b"/run/")
-                    && !bytes.windows(9).any(|w| w == b"/var/run/")
-                    && !bytes.windows(12).any(|w| w == b"/dosdevices/")
-                    && !bytes.windows(10).any(|w| w == b"/Prefixes/")
-                    && !bytes.windows(12).any(|w| w == b"/compatdata/")
-                    && !bytes.windows(9).any(|w| w == b"/drive_c/")
+                !matcher.is_match(bytes)
             })
             .build_parallel();
 
@@ -296,7 +309,7 @@ fn start_walk(
             session_id: u64,
             total_count: Arc<AtomicUsize>,
             max_results: usize,
-            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
+            visited_inodes: HashSet<(u64, u64)>,
         }
 
         impl ParallelVisitor for SearchVisitor {
@@ -358,11 +371,11 @@ fn start_walk(
                 }
 
                 if entry.path_is_symlink() {
-                    let path = entry.path();
-                    let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-                    let mut visited = self.visited_paths.lock();
-                    if !visited.insert(canonical_path) {
-                        return WalkState::Continue;
+                    if let Ok(meta) = entry.metadata() {
+                        let key = (meta.dev(), meta.ino());
+                        if !self.visited_inodes.insert(key) {
+                            return WalkState::Continue;
+                        }
                     }
                 }
 
@@ -439,7 +452,6 @@ fn start_walk(
             session_id: u64,
             total_count: Arc<AtomicUsize>,
             max_results: usize,
-            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for SearchVisitorBuilder {
@@ -456,7 +468,7 @@ fn start_walk(
                     session_id: self.session_id,
                     total_count: self.total_count.clone(),
                     max_results: self.max_results,
-                    visited_paths: self.visited_paths.clone(),
+                    visited_inodes: HashSet::new(),
                 })
             }
         }
@@ -473,7 +485,6 @@ fn start_walk(
             session_id,
             total_count,
             max_results,
-            visited_paths,
         };
 
         walker.visit(&mut visitor_builder);

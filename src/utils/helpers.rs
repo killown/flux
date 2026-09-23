@@ -1095,13 +1095,19 @@ impl FluxApp {
             return;
         }
 
-        for item in results {
+        let start_idx = self.files.len();
+        let list_icon_size = self.current_list_icon_size;
+        let max_width_chars = self.config.ui.max_width_chars;
+        let grid_spacing = self.config.ui.grid_spacing;
+        let show_symlink_emblem = self.config.ui.show_symlink_emblem;
+
+        for (offset, item) in results.into_iter().enumerate() {
             let icon = utils::get_icon_for_path(&item.path, false);
             let size = item.size;
             let mtime = item.mtime;
 
             let is_symlink = item.path.is_symlink();
-            let is_broken_symlink = is_symlink && std::fs::metadata(&item.path).is_err();
+            let is_broken_symlink = is_symlink && !item.path.exists();
 
             self.files.append(crate::ui::FileItem {
                 name: item.display,
@@ -1109,7 +1115,7 @@ impl FluxApp {
                 thumbnail: None,
                 is_dir: false,
                 path: item.path,
-                icon_size: self.current_list_icon_size,
+                icon_size: list_icon_size,
                 size,
                 mtime,
                 is_editing: false,
@@ -1119,12 +1125,12 @@ impl FluxApp {
                 is_list_mode: true,
                 is_custom_icon: false,
                 active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
-                grid_idx: self.files.len(),
-                max_width_chars: self.config.ui.max_width_chars,
-                grid_spacing: self.config.ui.grid_spacing,
+                grid_idx: start_idx + offset as u32,
+                max_width_chars,
+                grid_spacing,
                 is_symlink,
                 is_broken_symlink,
-                show_symlink_emblem: self.config.ui.show_symlink_emblem,
+                show_symlink_emblem,
                 line_number: 0,
             });
         }
