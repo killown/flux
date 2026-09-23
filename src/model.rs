@@ -70,6 +70,10 @@ fn default_tag_panel_width() -> i32 {
     350
 }
 
+fn default_bg_alpha() -> f64 {
+    0.65
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -77,6 +81,13 @@ pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bo
 pub enum RightPanelType {
     Tag,
     Search,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BackgroundSlot {
+    Window,
+    SidebarLeft,
+    SidebarRight,
 }
 
 /// Startup parameters passed from the argument parser to the Relm4 component initializer.
@@ -458,6 +469,15 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Tint overlay opacity for the main window background image (0.0 to 1.0).
+    #[serde(default = "default_bg_alpha")]
+    pub bg_alpha_window: f64,
+    /// Tint overlay opacity for the left sidebar background image (0.0 to 1.0).
+    #[serde(default = "default_bg_alpha")]
+    pub bg_alpha_sidebar_left: f64,
+    /// Tint overlay opacity for the right panel background image (0.0 to 1.0).
+    #[serde(default = "default_bg_alpha")]
+    pub bg_alpha_sidebar_right: f64,
     /// Whether file label font size scales dynamically when resizing/zooming grid icons.
     #[serde(default)]
     pub scale_font_with_icons: bool,
@@ -631,6 +651,9 @@ pub struct UIConfig {
 impl Default for UIConfig {
     fn default() -> Self {
         Self {
+            bg_alpha_window: 0.65,
+            bg_alpha_sidebar_left: 0.65,
+            bg_alpha_sidebar_right: 0.65,
             scale_font_with_icons: false,
             hidden_extensions: Vec::new(),
             show_empty_dir_emblem: false,
@@ -908,6 +931,18 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Updates the tint overlay opacity for a background slot and re-renders the CSS.
+    SetBackgroundAlpha { slot: BackgroundSlot, alpha: f64 },
+    /// Deletes all custom background image files from the local data directory
+    /// and resets all background styling across the window and sidebars.
+    ClearFluxBackgrounds,
+    /// Copies an image file to the designated application background slot
+    /// (`~/.local/share/flux/data/resources/images/`) and dynamically injects
+    /// the updated CSS provider styles to refresh the view immediately.
+    SetFluxBackground {
+        target: PathBuf,
+        slot: BackgroundSlot,
+    },
     /// Toggles dynamic scaling of file label fonts with grid icon size.
     SetScaleFontWithIcons(bool),
     /// Updates the list of file extensions hidden from grid labels and refreshes the view.

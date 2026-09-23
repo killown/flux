@@ -254,6 +254,79 @@ impl FluxApp {
                             continue;
                         }
                     }
+                    "builtin::set_bg_window" => {
+                        if let Some(ref target) = path {
+                            let action = gio::SimpleAction::new("set-bg-window", None);
+                            let target_clone = target.clone();
+                            let s = sender.clone();
+                            let toast = action_toast.clone();
+                            action.connect_activate(move |_, _| {
+                                s.input(AppMsg::SetFluxBackground {
+                                    target: target_clone.clone(),
+                                    slot: crate::model::BackgroundSlot::Window,
+                                });
+                                if let Some(ref msg) = toast {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
+                            });
+                            self.action_group.add_action(&action);
+                        }
+                        ("win.set-bg-window".to_string(), "set-bg-window")
+                    }
+                    "builtin::set_bg_sidebar_left" => {
+                        if let Some(ref target) = path {
+                            let action = gio::SimpleAction::new("set-bg-sidebar-left", None);
+                            let target_clone = target.clone();
+                            let s = sender.clone();
+                            let toast = action_toast.clone();
+                            action.connect_activate(move |_, _| {
+                                s.input(AppMsg::SetFluxBackground {
+                                    target: target_clone.clone(),
+                                    slot: crate::model::BackgroundSlot::SidebarLeft,
+                                });
+                                if let Some(ref msg) = toast {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
+                            });
+                            self.action_group.add_action(&action);
+                        }
+                        ("win.set-bg-sidebar-left".to_string(), "set-bg-sidebar-left")
+                    }
+                    "builtin::set_bg_sidebar_right" => {
+                        if let Some(ref target) = path {
+                            let action = gio::SimpleAction::new("set-bg-sidebar-right", None);
+                            let target_clone = target.clone();
+                            let s = sender.clone();
+                            let toast = action_toast.clone();
+                            action.connect_activate(move |_, _| {
+                                s.input(AppMsg::SetFluxBackground {
+                                    target: target_clone.clone(),
+                                    slot: crate::model::BackgroundSlot::SidebarRight,
+                                });
+                                if let Some(ref msg) = toast {
+                                    s.input(AppMsg::ShowToast(msg.clone()));
+                                }
+                            });
+                            self.action_group.add_action(&action);
+                        }
+                        (
+                            "win.set-bg-sidebar-right".to_string(),
+                            "set-bg-sidebar-right",
+                        )
+                    }
+                    "builtin::clear_backgrounds" => {
+                        let action = gio::SimpleAction::new("clear-backgrounds", None);
+                        let s = sender.clone();
+                        let toast = action_toast.clone();
+                        action.connect_activate(move |_, _| {
+                            s.input(AppMsg::ClearFluxBackgrounds);
+                            if let Some(ref msg) = toast {
+                                s.input(AppMsg::ShowToast(msg.clone()));
+                            }
+                        });
+                        self.action_group.add_action(&action);
+                        ("win.clear-backgrounds".to_string(), "clear-backgrounds")
+                    }
                     "builtin::select_folder_icon" => {
                         let target = path.clone().unwrap_or_else(|| self.current_path.clone());
                         let action = gio::SimpleAction::new("select-folder-icon", None);

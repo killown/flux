@@ -79,6 +79,25 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    pub fn handle_set_background_alpha(&mut self, slot: crate::model::BackgroundSlot, val: f64) {
+        let clamped = val.clamp(0.0, 1.0);
+        match slot {
+            crate::model::BackgroundSlot::Window => self.config.ui.bg_alpha_window = clamped,
+            crate::model::BackgroundSlot::SidebarLeft => {
+                self.config.ui.bg_alpha_sidebar_left = clamped
+            }
+            crate::model::BackgroundSlot::SidebarRight => {
+                self.config.ui.bg_alpha_sidebar_right = clamped
+            }
+        }
+        crate::utils::save_config(&self.config);
+        crate::utils::helpers::load_custom_background_images();
+        if let Some(ref w) = self.sidebar_widget {
+            w.queue_draw();
+        }
+        self.files.view.queue_draw();
+    }
+
     pub fn handle_set_show_hidden(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.show_hidden = val;
         self.config.ui.show_hidden_by_default = val;

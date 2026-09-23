@@ -58,6 +58,33 @@ msgstr "Slot da lista rápida atualizado"
 # src/utils/config.rs (menu de contexto)
 # ============================================================
 
+msgid "Flux Background"
+msgstr "Fundo do Flux"
+
+msgid "Window Background"
+msgstr "Fundo da Janela"
+
+msgid "Left Sidebar Background"
+msgstr "Fundo da Barra Lateral Esquerda"
+
+msgid "Right Sidebar Background"
+msgstr "Fundo da Barra Lateral Direita"
+
+msgid "Reset All Backgrounds"
+msgstr "Restaurar Todos os Fundos"
+
+msgid "Window background updated!"
+msgstr "Fundo da janela atualizado!"
+
+msgid "Sidebar background updated!"
+msgstr "Fundo da barra lateral atualizado!"
+
+msgid "Right panel background updated!"
+msgstr "Fundo do painel direito atualizado!"
+
+msgid "Backgrounds reset to default"
+msgstr "Fundos restaurados para o padrão"
+
 #: src/ui/context_menu.rs:???
 msgid "Send to Quick List"
 msgstr "Enviar para a Lista Rápida"
@@ -705,6 +732,30 @@ msgstr "Mostrar/ocultar barra de cabeçalho"
 # ============================================================
 # src/ui/settings.rs
 # ============================================================
+
+msgid "Background Tint Opacity"
+msgstr "Opacidade da Camada de Fundo"
+
+msgid "Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)"
+msgstr "Ajustar a opacidade da sobreposição de gradiente escuro para imagens de fundo (0.0 = transparente, 1.0 = sólido)"
+
+msgid "Window Background Opacity"
+msgstr "Opacidade do Fundo da Janela"
+
+msgid "Tint overlay for the main background"
+msgstr "Sobreposição de cor para o fundo principal"
+
+msgid "Left Sidebar Opacity"
+msgstr "Opacidade da Barra Lateral Esquerda"
+
+msgid "Tint overlay for the left sidebar"
+msgstr "Sobreposição de cor para a barra lateral esquerda"
+
+msgid "Right Sidebar Opacity"
+msgstr "Opacidade da Barra Lateral Direita"
+
+msgid "Tint overlay for the search / tag panel"
+msgstr "Sobreposição de cor para o painel de pesquisa / etiquetas"
 
 #: src/ui/settings.rs:???
 msgid "Scale Font with Icons"
@@ -1705,6 +1756,93 @@ msgstr "Limpar histórico"
 # ============================================================
 # src/ui/menu_editor.rs
 # ============================================================
+
+msgid "Scope"
+msgstr "Escopo"
+
+msgid "Copies the selected files or folders to the clipboard."
+msgstr "Copia os arquivos ou pastas selecionados para a área de transferência."
+
+msgid "Cuts the selected files or folders to the clipboard."
+msgstr "Recorta os arquivos ou pastas selecionados para a área de transferência."
+
+msgid "Pastes items from the clipboard into the current directory."
+msgstr "Cola os itens da área de transferência no diretório atual."
+
+msgid "Triggers inline filename renaming on the selected item."
+msgstr "Inicia a renomeação em linha do item selecionado."
+
+msgid "Moves the selected files or folders to the system trash."
+msgstr "Move os arquivos ou pastas selecionados para a lixeira do sistema."
+
+msgid "Opens the new folder creation prompt."
+msgstr "Abre o diálogo de criação de nova pasta."
+
+msgid "Opens the new file creation prompt."
+msgstr "Abre o diálogo de criação de novo arquivo."
+
+msgid "Pins or unpins the target folder in the sidebar."
+msgstr "Fixa ou desafixa a pasta de destino na barra lateral."
+
+msgid "Adds the selected folder or current directory to the Quick List."
+msgstr "Adiciona a pasta selecionada ou o diretório atual à Lista Rápida."
+
+msgid "Opens a submenu to move or copy items directly to Quick List slots."
+msgstr "Abre um submenu para mover ou copiar itens diretamente para os slots da Lista Rápida."
+
+msgid "Opens the file tag editor popover."
+msgstr "Abre o editor de etiquetas do arquivo."
+
+msgid "Opens the Directory Inspector with disk usage and largest files."
+msgstr "Abre o Inspetor de Diretório com uso de disco e maiores arquivos."
+
+msgid "Populates a dynamic submenu of registered applications for the MIME type."
+msgstr "Preenche um submenu dinâmico com aplicativos registrados para o tipo MIME."
+
+msgid "Opens the full system application chooser dialog."
+msgstr "Abre o diálogo de seleção de aplicativos do sistema."
+
+msgid "Opens the folder icon picker to assign a theme icon."
+msgstr "Abre o seletor de ícones de pasta para atribuir um ícone do tema."
+
+msgid "Opens a file chooser to assign a custom image as file/folder icon."
+msgstr "Abre o seletor de arquivos para atribuir uma imagem personalizada como ícone."
+
+msgid "Restores the default icon for the selected file or folder."
+msgstr "Restaura o ícone padrão para o arquivo ou pasta selecionado."
+
+msgid "Sets a custom image icon for the target file's extension globally."
+msgstr "Define uma imagem como ícone global para a extensão do arquivo."
+
+msgid "Resets the custom icon for the target extension back to theme default."
+msgstr "Restaura o ícone da extensão para o padrão do tema."
+
+msgid "Sets the selected image as the main window background."
+msgstr "Define a imagem selecionada como fundo da janela principal."
+
+msgid "Sets the selected image as the left sidebar background."
+msgstr "Define a imagem selecionada como fundo da barra lateral esquerda."
+
+msgid "Sets the selected image as the right panel background."
+msgstr "Define a imagem selecionada como fundo do painel direito."
+
+msgid "Clears all custom background images and resets styling to default."
+msgstr "Limpa todas as imagens de fundo e restaura o estilo padrão."
+
+msgid "Pick Built-in"
+msgstr "Escolher Built-in"
+
+msgid "Select Built-in Action"
+msgstr "Selecionar Ação Integrada"
+
+msgid "Search built-ins…"
+msgstr "Pesquisar ações integradas…"
+
+msgid "Use"
+msgstr "Usar"
+
+msgid "Copy to clipboard"
+msgstr "Copiar para a área de transferência"
 
 #: src/ui/menu_editor.rs:112
 msgid "Flux Menu Editor"

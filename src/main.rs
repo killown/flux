@@ -55,6 +55,7 @@ fn setup_config_watcher() {
                         glib::timeout_add_local_once(std::time::Duration::from_millis(50), || {
                             crate::services::loader::invalidate_extension_icon_cache();
                             crate::utils::helpers::load_custom_css();
+                            crate::utils::helpers::load_custom_background_images();
                             if let Some(app) = gio::Application::default() {
                                 app.activate_action("reload-sidebar", None);
                             }
@@ -183,6 +184,7 @@ fn launch_main_app(
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
         crate::utils::helpers::load_custom_css();
+        crate::utils::helpers::load_custom_background_images();
         setup_config_watcher();
         std::thread::spawn(crate::utils::deps::check_optional_deps);
         glib::ControlFlow::Break
