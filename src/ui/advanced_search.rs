@@ -581,7 +581,10 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                     let term = item.to_string();
                     if use_regex {
                         recursive = true;
-                        match regex::Regex::new(&term) {
+                        match regex::bytes::RegexBuilder::new(&term)
+                            .case_insensitive(true)
+                            .build()
+                        {
                             Ok(_) => {
                                 name_patterns.push(format!("regex:{}", term));
                             }
