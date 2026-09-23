@@ -2,7 +2,7 @@ use crate::model::{AppMsg, FluxApp};
 use crate::ui::paste_ops::NEXT_TASK_ID;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
-use regex;
+use regex::bytes::{RegexSet, RegexSetBuilder};
 use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -110,15 +110,20 @@ fn start_walk(
         .into_iter()
         .partition(|p| p.starts_with("regex:"));
 
-    let compiled_regexes: Vec<regex::Regex> = regex_patterns
+    let regex_sources: Vec<String> = regex_patterns
         .iter()
-        .filter_map(|p| {
-            let expr = p.strip_prefix("regex:").unwrap_or(p);
-            regex::Regex::new(expr).ok()
-        })
+        .map(|p| p.strip_prefix("regex:").unwrap_or(p).to_string())
         .collect();
 
-    let regexes_arc = Arc::new(compiled_regexes);
+    let regex_set: Option<Arc<RegexSet>> = if !regex_sources.is_empty() {
+        RegexSetBuilder::new(regex_sources)
+            .case_insensitive(true)
+            .build()
+            .ok()
+            .map(Arc::new)
+    } else {
+        None
+    };
 
     // Expand MIME shorthands and compile into a GlobSet.
     let expanded: Vec<String> = glob_patterns
@@ -132,7 +137,7 @@ fn start_walk(
         crate::utils::glob::compile_patterns(&expanded).map(Arc::new)
     };
 
-    if globset.is_none() && regexes_arc.is_empty() {
+    if globset.is_none() && regex_set.is_none() {
         return;
     }
 
@@ -283,7 +288,7 @@ fn start_walk(
             tx: mpsc::Sender<ExtensionMatch>,
             current_dir: std::path::PathBuf,
             globset: Option<Arc<globset::GlobSet>>,
-            regexes: Arc<Vec<regex::Regex>>,
+            regex_set: Option<Arc<RegexSet>>,
             mtime_boundary: Option<std::time::SystemTime>,
             size_bytes: Option<(bool, u64)>,
             cancellable: gtk::gio::Cancellable,
@@ -314,28 +319,24 @@ fn start_walk(
                 }
 
                 let file_name = entry.file_name();
-                let name_str = file_name.to_string_lossy();
-                let name_lower = name_str.to_lowercase();
+                let name_bytes = crate::utils::osstr_to_bytes(file_name);
                 let mut matches = false;
 
-                // Check GlobSet matches if present
+                // Check GlobSet matches if present (fast path: stack buffer lowercasing for ASCII)
                 if let Some(ref gs) = self.globset {
-                    let name_bytes = crate::utils::osstr_to_bytes(file_name);
-                    let matches_glob = if name_bytes.is_ascii() {
-                        let mut lower = [0u8; 256];
-                        if name_bytes.len() <= lower.len() {
-                            let buf = &mut lower[..name_bytes.len()];
-                            buf.copy_from_slice(name_bytes);
-                            buf.make_ascii_lowercase();
-                            if let Ok(s) = std::str::from_utf8(buf) {
-                                gs.is_match(s)
-                            } else {
-                                gs.is_match(&name_lower)
-                            }
+                    let mut lower_buf = [0u8; 256];
+                    let matches_glob = if name_bytes.len() <= lower_buf.len() {
+                        let buf = &mut lower_buf[..name_bytes.len()];
+                        buf.copy_from_slice(name_bytes);
+                        buf.make_ascii_lowercase();
+                        if let Ok(s) = std::str::from_utf8(buf) {
+                            gs.is_match(s)
                         } else {
+                            let name_lower = file_name.to_string_lossy().to_lowercase();
                             gs.is_match(&name_lower)
                         }
                     } else {
+                        let name_lower = file_name.to_string_lossy().to_lowercase();
                         gs.is_match(&name_lower)
                     };
                     if matches_glob {
@@ -343,12 +344,11 @@ fn start_walk(
                     }
                 }
 
-                // Check Regex matches if present
-                if !matches && !self.regexes.is_empty() {
-                    for re in self.regexes.iter() {
-                        if re.is_match(&name_str) {
+                // Check consolidated RegexSet match on raw bytes without string allocations
+                if !matches {
+                    if let Some(ref rs) = self.regex_set {
+                        if rs.is_match(name_bytes) {
                             matches = true;
-                            break;
                         }
                     }
                 }
@@ -431,7 +431,7 @@ fn start_walk(
             tx: mpsc::Sender<ExtensionMatch>,
             current_dir: std::path::PathBuf,
             globset: Option<Arc<globset::GlobSet>>,
-            regexes: Arc<Vec<regex::Regex>>,
+            regex_set: Option<Arc<RegexSet>>,
             mtime_boundary: Option<std::time::SystemTime>,
             size_bytes: Option<(bool, u64)>,
             cancellable: gtk::gio::Cancellable,
@@ -448,7 +448,7 @@ fn start_walk(
                     tx: self.tx.clone(),
                     current_dir: self.current_dir.clone(),
                     globset: self.globset.clone(),
-                    regexes: self.regexes.clone(),
+                    regex_set: self.regex_set.clone(),
                     mtime_boundary: self.mtime_boundary,
                     size_bytes: self.size_bytes,
                     cancellable: self.cancellable.clone(),
@@ -465,7 +465,7 @@ fn start_walk(
             tx,
             current_dir,
             globset,
-            regexes: regexes_arc,
+            regex_set,
             mtime_boundary,
             size_bytes,
             cancellable: cancellable.clone(),
