@@ -54,6 +54,7 @@ impl FluxApp {
                 mtime,
                 is_editing: false,
                 is_foreign_owner,
+                search_snippet: None,
                 is_empty,
                 expand_labels: item.expand_labels,
                 is_list_mode: self.is_list_mode,

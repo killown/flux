@@ -173,6 +173,7 @@ impl FluxApp {
                     mtime,
                     is_editing: false,
                     is_foreign_owner: false,
+                    search_snippet: None,
                     is_empty,
                     expand_labels: self.config.ui.expand_labels,
                     is_list_mode: self.is_list_mode,
@@ -287,26 +288,24 @@ impl FluxApp {
 
         let icon = utils::get_icon_for_path(&path, false);
 
-        // Show relative path tree location if under current_path, else full path
         let rel_path = path
             .strip_prefix(&self.current_path)
             .map(crate::utils::strip_current_dir)
             .unwrap_or(&path);
-        let relative_path = rel_path.to_string_lossy();
+        let relative_path = rel_path.to_string_lossy().to_string();
 
         let trimmed_line = line.trim();
-        let snippet = if trimmed_line.chars().count() > 180 {
-            let mut s: String = trimmed_line.chars().take(180).collect();
+        let snippet = if trimmed_line.chars().count() > 80 {
+            let limit_idx = trimmed_line
+                .char_indices()
+                .nth(80)
+                .map(|(idx, _)| idx)
+                .unwrap_or(trimmed_line.len());
+            let mut s = trimmed_line[..limit_idx].to_string();
             s.push('…');
             s
         } else {
             trimmed_line.to_string()
-        };
-
-        let display_name = if line_number > 0 {
-            format!("L:{}  {}  {}", line_number, relative_path, snippet)
-        } else {
-            format!("{}  {}", relative_path, snippet)
         };
 
         let meta = std::fs::metadata(&path).ok();
@@ -318,7 +317,7 @@ impl FluxApp {
             .unwrap_or(0);
 
         self.files.append(crate::ui::FileItem {
-            name: display_name,
+            name: relative_path.to_string(),
             icon,
             thumbnail: None,
             is_dir: false,
@@ -328,6 +327,7 @@ impl FluxApp {
             mtime,
             is_editing: false,
             is_foreign_owner: false,
+            search_snippet: Some(snippet),
             is_empty: false,
             expand_labels: false,
             is_list_mode: true,
