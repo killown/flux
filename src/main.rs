@@ -235,7 +235,12 @@ fn main() {
 
     match resolve_startup_action(&args, home_dir.clone()) {
         StartupAction::PrintVersion => {
-            println!("flux {}", env!("CARGO_PKG_VERSION"));
+            let commit = env!("FLUX_GIT_HASH");
+            if commit.is_empty() {
+                println!("flux {}", env!("CARGO_PKG_VERSION"));
+            } else {
+                println!("flux {} ({})", env!("CARGO_PKG_VERSION"), commit);
+            }
         }
 
         StartupAction::PrintHelp => {

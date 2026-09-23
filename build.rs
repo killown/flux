@@ -7,6 +7,18 @@ fn main() {
         return;
     }
 
+    // Retrieve git commit hash
+    let commit_hash = Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_default();
+
+    println!("cargo:rustc-env=FLUX_GIT_HASH={}", commit_hash);
+
     let out_dir = env::var("OUT_DIR").unwrap_or_default();
     let is_local_profile =
         out_dir.contains("/target/local/") || out_dir.contains(r"\target\local\");
@@ -35,4 +47,6 @@ fn main() {
     println!("cargo:rerun-if-changed=Makefile");
     println!("cargo:rerun-if-changed=scripts/properties.py");
     println!("cargo:rerun-if-changed=flux.desktop");
+    println!("cargo:rerun-if-changed=.git/HEAD");
+    println!("cargo:rerun-if-changed=.git/index");
 }
