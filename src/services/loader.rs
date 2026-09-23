@@ -1305,6 +1305,13 @@ impl FluxApp {
 
         self.is_loading = false;
 
+        let cache_cap = self.config.ui.folder_cache_capacity;
+
+        // If caching is disabled, drop any previously cached folders immediately.
+        if cache_cap == 0 {
+            self.folder_cache.clear();
+        }
+
         let is_cached = self.folder_cache.contains_key(&path);
 
         if !path.to_string_lossy().starts_with("trash://")
@@ -1315,27 +1322,28 @@ impl FluxApp {
             && self.extension_globset.is_none()
             && !is_cached
         {
-            let cache_cap = self.config.ui.folder_cache_capacity;
-            if cache_cap > 0 && !is_cached && self.folder_cache.len() >= cache_cap {
-                if let Some(oldest) = self
-                    .folder_cache
-                    .iter()
-                    .min_by_key(|(_, v)| v.last_visited)
-                    .map(|(k, _)| k.clone())
-                {
-                    self.folder_cache.remove(&oldest);
+            if cache_cap > 0 {
+                if self.folder_cache.len() >= cache_cap {
+                    if let Some(oldest) = self
+                        .folder_cache
+                        .iter()
+                        .min_by_key(|(_, v)| v.last_visited)
+                        .map(|(k, _)| k.clone())
+                    {
+                        self.folder_cache.remove(&oldest);
+                    }
                 }
-            }
 
-            self.folder_cache.insert(
-                path.clone(),
-                crate::model::CachedFolder {
-                    items: items.clone(),
-                    media_tasks,
-                    thumbnails: std::collections::HashMap::new(),
-                    last_visited: std::time::Instant::now(),
-                },
-            );
+                self.folder_cache.insert(
+                    path.clone(),
+                    crate::model::CachedFolder {
+                        items: items.clone(),
+                        media_tasks,
+                        thumbnails: std::collections::HashMap::new(),
+                        last_visited: std::time::Instant::now(),
+                    },
+                );
+            }
         }
 
         // CLEAR the grid completely so Relm4 drops all old FileItems
