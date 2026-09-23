@@ -7,6 +7,36 @@ use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+extern "C" {
+    fn mi_collect(force: bool);
+    fn mi_stats_print_out(
+        out: Option<unsafe extern "C" fn(*const libc::c_char, *mut libc::c_void)>,
+        arg: *mut libc::c_void,
+    );
+}
+
+unsafe extern "C" fn mimalloc_output_cb(msg: *const libc::c_char, arg: *mut libc::c_void) {
+    if msg.is_null() || arg.is_null() {
+        return;
+    }
+    let target = &mut *(arg as *mut String);
+    let cstr = std::ffi::CStr::from_ptr(msg);
+    if let Ok(s) = cstr.to_str() {
+        target.push_str(s);
+    }
+}
+
+fn read_mimalloc_stats() -> String {
+    let mut out = String::with_capacity(4096);
+    unsafe {
+        mi_stats_print_out(
+            Some(mimalloc_output_cb),
+            &mut out as *mut String as *mut libc::c_void,
+        );
+    }
+    out
+}
+
 fn page_size() -> u64 {
     unsafe { libc::sysconf(libc::_SC_PAGESIZE) as u64 }
 }
@@ -92,15 +122,25 @@ fn classify_path(path: &str) -> String {
         return "thread stack".to_string();
     }
     if raw.is_empty() || raw == "[anon]" {
-        return "anon mmap (glibc arena / raw buf)".to_string();
+        return "anon mmap (mimalloc / glibc arena / raw buf)".to_string();
     }
     if raw.starts_with("/dev/shm") || raw.contains("memfd") {
         return "shared mem (wayland/shm)".to_string();
     }
     let lower = raw.to_lowercase();
+    if lower.contains(".cache/thumbnails") {
+        return "xdg thumbnail cache".to_string();
+    }
+    if lower.contains("state.db") {
+        return "sqlite state.db (mmap/wal)".to_string();
+    }
+    if lower.contains("icon-theme.cache") || lower.contains("/icons/") {
+        return "icon theme / assets".to_string();
+    }
     if lower.ends_with(".ttf")
         || lower.ends_with(".otf")
         || lower.ends_with(".woff")
+        || lower.ends_with(".woff2")
         || lower.contains("font")
         || lower.contains("pango")
     {
@@ -111,6 +151,7 @@ fn classify_path(path: &str) -> String {
         || lower.contains("mesa")
         || lower.contains("nvidia")
         || lower.contains("radeon")
+        || lower.contains("/dri/")
     {
         return "gpu driver / gl / vulkan".to_string();
     }
@@ -337,6 +378,7 @@ struct AppStateSnap {
     config_show_thumbnails: bool,
     config_folders_first: bool,
     config_expand_labels: bool,
+    folder_cache_capacity: usize,
     folder_icons_count: usize,
     file_icons_count: usize,
 }
@@ -362,7 +404,9 @@ struct DebugSnapshot {
     caches: Vec<CacheSnap>,
     categories: Vec<CategorySummary>,
     largest_anon_regions: Vec<SmapsRegion>,
+    largest_file_regions: Vec<SmapsRegion>,
     mallinfo: MallinfoSnap,
+    mimalloc_stats: String,
     font_maps: Vec<FontMap>,
     font_total_bytes: u64,
     pending_thumb_paths: Vec<u32>,
@@ -454,6 +498,7 @@ impl DebugSnapshot {
             config_show_thumbnails: app.config.ui.show_thumbnails,
             config_folders_first: app.config.ui.folders_first,
             config_expand_labels: app.config.ui.expand_labels,
+            folder_cache_capacity: app.config.ui.folder_cache_capacity,
             folder_icons_count: app.config.ui.folder_icons.len(),
             file_icons_count: app.config.ui.file_icons.len(),
         };
@@ -544,17 +589,28 @@ impl DebugSnapshot {
         categories.sort_by_key(|a| std::cmp::Reverse(a.rss_kb));
 
         let mut anon_regions: Vec<SmapsRegion> = regions
-            .into_iter()
+            .iter()
             .filter(|r| {
                 r.category.contains("anon")
                     || r.category.contains("heap")
                     || r.category.contains("shared")
             })
+            .cloned()
             .collect();
         anon_regions.sort_by_key(|a| std::cmp::Reverse(a.rss_kb));
-        anon_regions.truncate(12);
+        anon_regions.truncate(10);
+
+        let mut file_regions: Vec<SmapsRegion> = regions
+            .into_iter()
+            .filter(|r| {
+                !r.path.is_empty() && !r.path.starts_with('[') && !r.category.contains("shared")
+            })
+            .collect();
+        file_regions.sort_by_key(|a| std::cmp::Reverse(a.rss_kb));
+        file_regions.truncate(10);
 
         let mallinfo = read_mallinfo();
+        let mimalloc_stats = read_mimalloc_stats();
 
         let maps = read_detailed_smaps();
         let mut font_dedup: std::collections::HashMap<String, (u64, usize)> =
@@ -609,7 +665,9 @@ impl DebugSnapshot {
             caches,
             categories,
             largest_anon_regions: anon_regions,
+            largest_file_regions: file_regions,
             mallinfo,
+            mimalloc_stats,
             font_maps,
             font_total_bytes,
             pending_thumb_paths,
@@ -617,7 +675,7 @@ impl DebugSnapshot {
     }
 
     fn render(&self) -> String {
-        let mut buffer = String::with_capacity(32_768);
+        let mut buffer = String::with_capacity(65_536);
 
         let _ = writeln!(
             buffer,
@@ -631,24 +689,42 @@ impl DebugSnapshot {
 
         let _ = writeln!(
             buffer,
-            "── Process Memory & glibc mallinfo2 ────────────────────────────"
+            "── Kernel Process Memory (/proc/self/status & statm) ──────────"
         );
         let _ = writeln!(
             buffer,
-            "  RSS (resident):   {:<10}  VmPeak:         {}",
+            "  RSS (Physical):   {:<10}  VmPeak (Virtual): {}",
             fmt_kb(self.rss_kb),
             fmt_kb(self.vm_peak_kb)
         );
         let _ = writeln!(
             buffer,
-            "  VmData (heap):    {:<10}  VmSwap:         {}",
+            "  VmData (Heap):    {:<10}  VmSwap:           {}",
             fmt_kb(self.vm_data_kb),
             fmt_kb(self.vm_swap_kb)
         );
         let _ = writeln!(
             buffer,
-            "  Threads:          {:<10}  Open FDs:       {}",
+            "  Threads:          {:<10}  Open FDs:         {}",
             self.thread_count, self.fd_count
+        );
+        let _ = writeln!(buffer);
+
+        let _ = writeln!(
+            buffer,
+            "── Allocators (mimalloc & glibc mallinfo2) ─────────────────────"
+        );
+        let _ = writeln!(
+            buffer,
+            "  [Note: Flux compiles with mimalloc as #[global_allocator]. Rust heap"
+        );
+        let _ = writeln!(
+            buffer,
+            "   allocations route via mimalloc; glibc mallinfo2 below reflects only C"
+        );
+        let _ = writeln!(
+            buffer,
+            "   libraries such as GObject, GTK4 internals, and SQLite.]\n"
         );
         let _ = writeln!(
             buffer,
@@ -657,12 +733,12 @@ impl DebugSnapshot {
         );
         let _ = writeln!(
             buffer,
-            "  glibc In-Use:     {:<10} (live user allocations)",
+            "  glibc In-Use:     {:<10} (live C user allocations)",
             fmt_bytes(self.mallinfo.uordblks_bytes as u64)
         );
         let _ = writeln!(
             buffer,
-            "  glibc Free:       {:<10} (cached by glibc, not released to kernel)",
+            "  glibc Free:       {:<10} (cached by glibc allocator pool)",
             fmt_bytes(self.mallinfo.fordblks_bytes as u64)
         );
         let _ = writeln!(
@@ -672,24 +748,35 @@ impl DebugSnapshot {
         );
         let _ = writeln!(buffer);
 
+        if !self.mimalloc_stats.trim().is_empty() {
+            let _ = writeln!(
+                buffer,
+                "── mimalloc Internal Runtime Stats ─────────────────────────────"
+            );
+            for line in self.mimalloc_stats.lines() {
+                let _ = writeln!(buffer, "  {}", line);
+            }
+            let _ = writeln!(buffer);
+        }
+
         let _ = writeln!(
             buffer,
             "── Memory Map Summary (/proc/self/smaps) ───────────────────────"
         );
         let _ = writeln!(
             buffer,
-            "  {:<34} {:>5}  {:>10}  {:>10}  {:>10}",
+            "  {:<42} {:>5}  {:>10}  {:>10}  {:>10}",
             "Category", "Count", "Virt Size", "Rss", "Dirty"
         );
         let _ = writeln!(
             buffer,
-            "  {:-<34} {:-<5}  {:-<10}  {:-<10}  {:-<10}",
+            "  {:-<42} {:-<5}  {:-<10}  {:-<10}  {:-<10}",
             "", "", "", "", ""
         );
         for entry in &self.categories {
             let _ = writeln!(
                 buffer,
-                "  {:<34} {:>5}  {:>10}  {:>10}  {:>10}",
+                "  {:<42} {:>5}  {:>10}  {:>10}  {:>10}",
                 entry.category,
                 entry.count,
                 fmt_kb(entry.size_kb),
@@ -732,6 +819,34 @@ impl DebugSnapshot {
         }
         let _ = writeln!(buffer);
 
+        let _ = writeln!(
+            buffer,
+            "── Top Mapped Files (Physical RSS) ─────────────────────────────"
+        );
+        let _ = writeln!(
+            buffer,
+            "  {:<24} {:<5} {:>10} {:>10} {:>10}  File Path",
+            "Address Range", "Perms", "Size", "Rss", "Dirty"
+        );
+        let _ = writeln!(
+            buffer,
+            "  {:-<24} {:-<5} {:-<10} {:-<10} {:-<10}  {:-<20}",
+            "", "", "", "", "", ""
+        );
+        for reg in &self.largest_file_regions {
+            let _ = writeln!(
+                buffer,
+                "  {:<24} {:<5} {:>10} {:>10} {:>10}  {}",
+                reg.addr,
+                reg.perms,
+                fmt_kb(reg.size_kb),
+                fmt_kb(reg.rss_kb),
+                fmt_kb(reg.private_dirty_kb),
+                reg.path
+            );
+        }
+        let _ = writeln!(buffer);
+
         let app_state = &self.app;
         let _ = writeln!(
             buffer,
@@ -739,17 +854,26 @@ impl DebugSnapshot {
         );
         let _ = writeln!(
             buffer,
-            "  current_path:     {}",
+            "  current_path:           {}",
             app_state.current_path.display()
         );
-        let _ = writeln!(buffer, "  load_id:          {}", app_state.load_id);
-        let _ = writeln!(buffer, "  is_loading:       {}", app_state.is_loading);
+        let _ = writeln!(buffer, "  load_id:                {}", app_state.load_id);
+        let _ = writeln!(buffer, "  is_loading:             {}", app_state.is_loading);
         let _ = writeln!(
             buffer,
-            "  icon_size:        {}px (list: {}px)",
+            "  icon_size:              {}px (list: {}px)",
             app_state.current_icon_size, app_state.current_list_icon_size
         );
-        let _ = writeln!(buffer, "  task_queue len:   {}", app_state.task_queue_len);
+        let _ = writeln!(
+            buffer,
+            "  task_queue len:         {}",
+            app_state.task_queue_len
+        );
+        let _ = writeln!(
+            buffer,
+            "  folder_cache_capacity:  {}",
+            app_state.folder_cache_capacity
+        );
         let _ = writeln!(
             buffer,
             "  config: max_width_chars={} grid_spacing={} lazy_thumbs={} show_thumbs={}",
@@ -765,17 +889,30 @@ impl DebugSnapshot {
             "── Grid Overview ({} items) ─────────────────────────────────────",
             self.grid_len
         );
-        let _ = writeln!(buffer, "  textures loaded:  {}", self.items_with_texture);
         let _ = writeln!(
             buffer,
-            "  pending thumbs:   {}",
+            "  textures loaded:        {}",
+            self.items_with_texture
+        );
+        let _ = writeln!(
+            buffer,
+            "  pending thumbs:         {}",
             self.pending_thumb_paths.len()
+        );
+        let _ = writeln!(
+            buffer,
+            "  custom icons active:    {}",
+            self.items_custom_icon
         );
 
         if self.leaked_rcs.is_empty() {
-            let _ = writeln!(buffer, "  Rc anomalies:     none ✓");
+            let _ = writeln!(buffer, "  Rc anomalies:           none ✓");
         } else {
-            let _ = writeln!(buffer, "  ⚠ Rc strong > 1: {} items", self.leaked_rcs.len());
+            let _ = writeln!(
+                buffer,
+                "  ⚠ Rc strong > 1:        {} items",
+                self.leaked_rcs.len()
+            );
         }
         let _ = writeln!(buffer);
 
@@ -784,12 +921,23 @@ impl DebugSnapshot {
             "── Folder Cache ({} entries) ────────────────────────────────────",
             self.caches.len()
         );
-        for item in &self.caches {
+        if self.caches.is_empty() {
             let _ = writeln!(
                 buffer,
-                "  {:?} -> items={} thumbs={} age={}s",
-                item.path, item.item_count, item.thumb_count, item.age_secs
+                "  (empty - folder_cache_capacity = 0 or no cached folders)"
             );
+        } else {
+            for item in &self.caches {
+                let _ = writeln!(
+                    buffer,
+                    "  {:?} -> items={} thumbs={} age={}s approx_heap={}",
+                    item.path,
+                    item.item_count,
+                    item.thumb_count,
+                    item.age_secs,
+                    fmt_bytes(item.heap_approx as u64)
+                );
+            }
         }
         let _ = writeln!(buffer);
 
@@ -820,31 +968,40 @@ pub fn show_debug_window(app: &FluxApp) {
 
     let window = adw::Window::builder()
         .title("Flux Memory & Allocator Profiler")
-        .default_width(1050)
-        .default_height(800)
+        .default_width(1080)
+        .default_height(820)
         .build();
+
+    let toast_overlay = adw::ToastOverlay::new();
 
     let header_bar = adw::HeaderBar::new();
 
     let refresh_button = gtk::Button::builder()
         .icon_name("view-refresh-symbolic")
-        .tooltip_text("Refresh (re-samples /proc/self/smaps)")
+        .tooltip_text("Refresh (re-samples memory maps & allocators)")
         .build();
+
+    let trim_button = gtk::Button::builder()
+        .icon_name("edit-clear-all-symbolic")
+        .tooltip_text("Purge Memory (forces mimalloc & glibc to return free pages to OS)")
+        .build();
+
     let export_button = gtk::Button::builder()
         .icon_name("document-save-symbolic")
-        .tooltip_text("Save to /tmp/flux_debug.txt")
+        .tooltip_text("Save memory profile report to disk…")
         .build();
 
     header_bar.pack_start(&refresh_button);
+    header_bar.pack_start(&trim_button);
     header_bar.pack_end(&export_button);
 
     let view = gtk::TextView::builder()
         .editable(false)
         .monospace(true)
-        .left_margin(12)
-        .right_margin(12)
-        .top_margin(8)
-        .bottom_margin(8)
+        .left_margin(16)
+        .right_margin(16)
+        .top_margin(12)
+        .bottom_margin(12)
         .build();
 
     let doc_buffer = view.buffer();
@@ -860,17 +1017,19 @@ pub fn show_debug_window(app: &FluxApp) {
 
     let status_bar = gtk::Label::builder()
         .label(format!(
-            "RSS {}  │  Heap {}  │  {} threads  │  {} FDs",
+            "RSS {}  │  Heap {}  │  glibc In-Use {} (Free: {})  │  {} threads  │  {} FDs",
             fmt_kb(snapshot.rss_kb),
+            fmt_kb(snapshot.vm_data_kb),
             fmt_bytes(snapshot.mallinfo.uordblks_bytes as u64),
+            fmt_bytes(snapshot.mallinfo.fordblks_bytes as u64),
             snapshot.thread_count,
             snapshot.fd_count,
         ))
         .halign(gtk::Align::Start)
         .margin_start(12)
         .margin_end(12)
-        .margin_top(4)
-        .margin_bottom(4)
+        .margin_top(6)
+        .margin_bottom(6)
         .build();
     status_bar.add_css_class("caption");
     status_bar.add_css_class("dim-label");
@@ -880,18 +1039,71 @@ pub fn show_debug_window(app: &FluxApp) {
     layout_root.append(&scroll_container);
     layout_root.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
     layout_root.append(&status_bar);
-    window.set_content(Some(&layout_root));
 
+    toast_overlay.set_child(Some(&layout_root));
+    window.set_content(Some(&toast_overlay));
+
+    // Export button with FileChooserNative and visual Toast feedback
     {
         let report_payload = output.clone();
+        let toast_overlay_clone = toast_overlay.clone();
+        let parent_win = window.clone();
+
         export_button.connect_clicked(move |_| {
-            let target_file = "/tmp/flux_debug.txt";
-            if std::fs::write(target_file, report_payload.as_bytes()).is_ok() {
-                eprintln!("[debug] saved to {}", target_file);
+            let chooser = gtk::FileChooserNative::builder()
+                .title("Save Memory Profile Report")
+                .action(gtk::FileChooserAction::Save)
+                .accept_label("Save")
+                .cancel_label("Cancel")
+                .modal(true)
+                .transient_for(&parent_win)
+                .build();
+
+            chooser.set_current_name("flux_memory_profile.txt");
+
+            let payload = report_payload.clone();
+            let overlay = toast_overlay_clone.clone();
+
+            chooser.connect_response(move |dialog, response| {
+                if response == gtk::ResponseType::Accept {
+                    if let Some(file) = dialog.file() {
+                        if let Some(path) = file.path() {
+                            match fs::write(&path, payload.as_bytes()) {
+                                Ok(()) => {
+                                    let msg = format!("Report saved to {}", path.display());
+                                    overlay.add_toast(adw::Toast::new(&msg));
+                                }
+                                Err(err) => {
+                                    let msg = format!("Failed to save file: {}", err);
+                                    overlay.add_toast(adw::Toast::new(&msg));
+                                }
+                            }
+                        }
+                    }
+                }
+                dialog.destroy();
+            });
+
+            chooser.show();
+        });
+    }
+
+    // Force purge memory (mimalloc + glibc) then trigger reload
+    {
+        let overlay_trim = toast_overlay.clone();
+        trim_button.connect_clicked(move |_| {
+            unsafe {
+                mi_collect(true);
+                libc::malloc_trim(0);
+            }
+            overlay_trim.add_toast(adw::Toast::new("Memory purged and released to OS"));
+            if let Some(chan) = crate::model::SENDER.get() {
+                let _ = chan.send(crate::model::AppMsg::OpenDebugWindow);
             }
         });
     }
 
+    // Refresh action
     refresh_button.connect_clicked(move |_| {
         if let Some(chan) = crate::model::SENDER.get() {
             let _ = chan.send(crate::model::AppMsg::OpenDebugWindow);
