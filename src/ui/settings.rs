@@ -822,7 +822,7 @@ impl SimpleComponent for SettingsWindow {
                     },
                     add = &adw::ActionRow {
                         set_title: &tr("Hide File Extensions"),
-                        set_subtitle: &tr("Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, *)"),
+                        set_subtitle: &tr("Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"),
                         add_suffix = &gtk::Entry {
                             set_valign: gtk::Align::Center,
                             set_width_chars: 20,

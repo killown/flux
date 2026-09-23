@@ -1313,30 +1313,71 @@ pub fn format_display_label(name: &str, is_dir: bool, hidden_extensions: &[Strin
         trimmed == "*" || trimmed == ".*"
     });
 
+    let mut patterns: Vec<String> = hidden_extensions
+        .iter()
+        .map(|s| s.trim().to_ascii_lowercase())
+        .filter(|s| !s.is_empty() && s != "*" && s != ".*")
+        .collect();
+
+    patterns.sort_by_key(|a| std::cmp::Reverse(a.len()));
+
+    let name_lc = name.to_ascii_lowercase();
+
+    for clean in patterns {
+        if clean.contains('*') || clean.contains('?') || clean.contains('[') {
+            let pat = if clean.starts_with('*') {
+                clean
+            } else if clean.starts_with('.') {
+                format!("*{}", clean)
+            } else {
+                format!("*.{}", clean)
+            };
+
+            if let Ok(glob) = globset::GlobBuilder::new(&pat)
+                .case_insensitive(true)
+                .literal_separator(false)
+                .build()
+            {
+                let matcher = glob.compile_matcher();
+                if matcher.is_match(&name_lc) {
+                    for (byte_idx, _) in name.match_indices('.') {
+                        if byte_idx > 0 && byte_idx < name.len() {
+                            let ext_slice = &name_lc[byte_idx..];
+                            let test_str = format!("x{}", ext_slice);
+                            if matcher.is_match(&test_str) {
+                                return name[..byte_idx].to_string();
+                            }
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+
+        let suffix = if clean.starts_with('.') {
+            clean
+        } else {
+            format!(".{}", clean)
+        };
+
+        if suffix.is_empty() || suffix == "." {
+            continue;
+        }
+
+        if name_lc.ends_with(&suffix) {
+            let remaining_len = name.len().saturating_sub(suffix.len());
+            if remaining_len > 0 && name.is_char_boundary(remaining_len) {
+                return name[..remaining_len].to_string();
+            }
+        }
+    }
+
     if hide_all {
         return std::path::Path::new(name)
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or(name)
             .to_string();
-    }
-
-    if let Some(ext) = std::path::Path::new(name)
-        .extension()
-        .and_then(|e| e.to_str())
-    {
-        let ext_lc = ext.to_ascii_lowercase();
-        let should_hide = hidden_extensions
-            .iter()
-            .any(|h| h.trim().trim_start_matches('.').to_ascii_lowercase() == ext_lc);
-
-        if should_hide {
-            return std::path::Path::new(name)
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or(name)
-                .to_string();
-        }
     }
 
     name.to_string()
