@@ -106,6 +106,7 @@ impl FluxApp {
                             .unwrap_or(0),
                         is_editing: false,
                         is_foreign_owner: false,
+                        search_snippet: None,
                         is_empty,
                         expand_labels: self.config.ui.expand_labels,
                         is_list_mode: self.is_list_mode,

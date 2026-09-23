@@ -28,6 +28,7 @@ pub struct FileItem {
     pub is_editing: bool,
     pub is_empty: bool,
     pub is_foreign_owner: bool,
+    pub search_snippet: Option<String>,
     /// Whether the label should wrap to multiple lines instead of ellipsizing.
     pub expand_labels: bool,
     /// Whether this icon was set by the user via F3 (custom folder icon).
@@ -585,63 +586,76 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label_scroller.queue_resize();
             root.queue_resize();
 
-            // Populate the right-aligned info label with item count (for folders) or size (for files), plus modification date.
-            // Content search results carry size == 0 and mtime == 0, hide the column for those.
+            // Populate the info label with item count, size, or left-aligned content search snippet.
             {
                 let mut info_parts: Vec<String> = Vec::new();
 
-                if self.is_dir {
-                    let count_str = if self.size == 1 {
-                        "1 item".to_string()
+                if let Some(ref snippet) = self.search_snippet {
+                    widgets.info_label.set_halign(gtk::Align::End);
+                    widgets.info_label.set_xalign(1.0);
+                    widgets.info_label.set_hexpand(false);
+                    if self.line_number > 0 {
+                        info_parts.push(format!("L:{}  {}", self.line_number, snippet));
                     } else {
-                        format!("{} {}", self.size, tr("items"))
-                    };
-                    info_parts.push(count_str);
-                } else if self.size > 0 {
-                    info_parts.push(format_size(self.size));
-                }
-
-                if self.mtime > 0 {
-                    if let (Ok(file_dt), Ok(now_dt)) = (
-                        glib::DateTime::from_unix_local(self.mtime),
-                        glib::DateTime::now_local(),
-                    ) {
-                        let (f_y, f_m, f_d) =
-                            (file_dt.year(), file_dt.month(), file_dt.day_of_month());
-                        let (n_y, n_m, n_d) =
-                            (now_dt.year(), now_dt.month(), now_dt.day_of_month());
-
-                        let time_str = file_dt
-                            .format("%H:%M")
-                            .map(|g| g.to_string())
-                            .unwrap_or_default();
-
-                        // Exact localized timestamp for the tooltip
-                        if let Ok(exact) = file_dt.format("%x %X") {
-                            widgets.info_label.set_tooltip_text(Some(exact.as_str()));
-                        }
-
-                        if f_y == n_y && f_m == n_m && f_d == n_d {
-                            info_parts.push(format!("{}, {}", tr("Today"), time_str));
-                        } else {
-                            let is_yesterday = now_dt
-                                .add_days(-1)
-                                .map(|y_dt| {
-                                    y_dt.year() == f_y
-                                        && y_dt.month() == f_m
-                                        && y_dt.day_of_month() == f_d
-                                })
-                                .unwrap_or(false);
-
-                            if is_yesterday {
-                                info_parts.push(format!("{}, {}", tr("Yesterday"), time_str));
-                            } else if let Ok(formatted) = file_dt.format("%x %H:%M") {
-                                info_parts.push(formatted.to_string());
-                            }
-                        }
+                        info_parts.push(snippet.clone());
                     }
                 } else {
-                    widgets.info_label.set_tooltip_text(None::<&str>);
+                    widgets.info_label.set_halign(gtk::Align::End);
+                    widgets.info_label.set_xalign(1.0);
+                    widgets.info_label.set_hexpand(false);
+
+                    if self.is_dir {
+                        let count_str = if self.size == 1 {
+                            "1 item".to_string()
+                        } else {
+                            format!("{} {}", self.size, tr("items"))
+                        };
+                        info_parts.push(count_str);
+                    } else if self.size > 0 {
+                        info_parts.push(format_size(self.size));
+                    }
+
+                    if self.mtime > 0 {
+                        if let (Ok(file_dt), Ok(now_dt)) = (
+                            glib::DateTime::from_unix_local(self.mtime),
+                            glib::DateTime::now_local(),
+                        ) {
+                            let (f_y, f_m, f_d) =
+                                (file_dt.year(), file_dt.month(), file_dt.day_of_month());
+                            let (n_y, n_m, n_d) =
+                                (now_dt.year(), now_dt.month(), now_dt.day_of_month());
+
+                            let time_str = file_dt
+                                .format("%H:%M")
+                                .map(|g| g.to_string())
+                                .unwrap_or_default();
+
+                            if let Ok(exact) = file_dt.format("%x %X") {
+                                widgets.info_label.set_tooltip_text(Some(exact.as_str()));
+                            }
+
+                            if f_y == n_y && f_m == n_m && f_d == n_d {
+                                info_parts.push(format!("{}, {}", tr("Today"), time_str));
+                            } else {
+                                let is_yesterday = now_dt
+                                    .add_days(-1)
+                                    .map(|y_dt| {
+                                        y_dt.year() == f_y
+                                            && y_dt.month() == f_m
+                                            && y_dt.day_of_month() == f_d
+                                    })
+                                    .unwrap_or(false);
+
+                                if is_yesterday {
+                                    info_parts.push(format!("{}, {}", tr("Yesterday"), time_str));
+                                } else if let Ok(formatted) = file_dt.format("%x %H:%M") {
+                                    info_parts.push(formatted.to_string());
+                                }
+                            }
+                        }
+                    } else {
+                        widgets.info_label.set_tooltip_text(None::<&str>);
+                    }
                 }
 
                 if !info_parts.is_empty() {
@@ -905,7 +919,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root.set_data("grid_item_index", self.grid_idx);
         }
     }
-
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {

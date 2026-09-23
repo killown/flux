@@ -1120,6 +1120,7 @@ impl FluxApp {
                 mtime,
                 is_editing: false,
                 is_foreign_owner: false,
+                search_snippet: None,
                 is_empty: false,
                 expand_labels: false,
                 is_list_mode: true,

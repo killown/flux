@@ -252,7 +252,8 @@ pub fn start_content_search(
                             .iter()
                             .position(|&b| b == b'\n')
                             .map(|idx| m.end() + idx)
-                            .unwrap_or(bytes.len());
+                            .unwrap_or(bytes.len())
+                            .min(line_start + 1024);
 
                         let line_number =
                             bytes[..line_start].iter().filter(|&&b| b == b'\n').count() + 1;
