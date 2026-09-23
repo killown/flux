@@ -5,13 +5,36 @@ use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
+use memmap2::Mmap;
 use relm4::prelude::*;
 use relm4::AsyncComponentSender;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::os::unix::fs::MetadataExt;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+
+/// Static AhoCorasick matcher for forbidden system and virtual paths.
+static FORBIDDEN_PATHS: OnceLock<AhoCorasick> = OnceLock::new();
+
+fn forbidden_matcher() -> &'static AhoCorasick {
+    FORBIDDEN_PATHS.get_or_init(|| {
+        AhoCorasick::builder()
+            .build([
+                b"/proc/".as_slice(),
+                b"/sys/".as_slice(),
+                b"/dev/".as_slice(),
+                b"/run/".as_slice(),
+                b"/var/run/".as_slice(),
+                b"/dosdevices/".as_slice(),
+                b"/Prefixes/".as_slice(),
+                b"/compatdata/".as_slice(),
+                b"/drive_c/".as_slice(),
+            ])
+            .expect("valid forbidden path patterns")
+    })
+}
 
 pub fn start_content_search(
     app: &mut FluxApp,
@@ -61,8 +84,6 @@ pub fn start_content_search(
 
     let current_dir = app.current_path.clone();
     let term_lc = Arc::new(clean_term.to_lowercase());
-    let visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>> =
-        Arc::new(parking_lot::Mutex::new(std::collections::HashSet::new()));
 
     // Build the case-insensitive matcher once, each visitor thread clones the Arc.
     let matcher: Option<Arc<AhoCorasick>> = if !term_lc.is_empty() {
@@ -99,18 +120,11 @@ pub fn start_content_search(
             .follow_links(true)
             .same_file_system(false);
 
+        let forbidden = forbidden_matcher();
         let walker = builder
-            .filter_entry(|entry| {
+            .filter_entry(move |entry| {
                 let bytes = crate::utils::osstr_to_bytes(entry.path().as_os_str());
-                !bytes.windows(6).any(|w| w == b"/proc/")
-                    && !bytes.windows(5).any(|w| w == b"/sys/")
-                    && !bytes.windows(5).any(|w| w == b"/dev/")
-                    && !bytes.windows(5).any(|w| w == b"/run/")
-                    && !bytes.windows(9).any(|w| w == b"/var/run/")
-                    && !bytes.windows(12).any(|w| w == b"/dosdevices/")
-                    && !bytes.windows(10).any(|w| w == b"/Prefixes/")
-                    && !bytes.windows(12).any(|w| w == b"/compatdata/")
-                    && !bytes.windows(9).any(|w| w == b"/drive_c/")
+                !forbidden.is_match(bytes)
             })
             .build_parallel();
 
@@ -126,7 +140,7 @@ pub fn start_content_search(
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
             matcher: Option<Arc<AhoCorasick>>,
-            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
+            visited_inodes: HashSet<(u64, u64)>,
         }
 
         impl ParallelVisitor for ContentVisitor {
@@ -162,11 +176,11 @@ pub fn start_content_search(
                 }
 
                 if entry.path_is_symlink() {
-                    let path = entry.path();
-                    let canonical_path = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-                    let mut visited = self.visited_paths.lock();
-                    if !visited.insert(canonical_path) {
-                        return WalkState::Continue;
+                    if let Ok(meta) = entry.metadata() {
+                        let key = (meta.dev(), meta.ino());
+                        if !self.visited_inodes.insert(key) {
+                            return WalkState::Continue;
+                        }
                     }
                 }
 
@@ -206,8 +220,61 @@ pub fn start_content_search(
                     Ok(f) => f,
                     Err(_) => return WalkState::Continue,
                 };
+
+                let matcher = match self.matcher.as_ref() {
+                    Some(m) => m,
+                    None => return WalkState::Continue,
+                };
+
+                // Fast path: memory-mapped buffer search
+                if let Ok(mmap) = unsafe { Mmap::map(&file) } {
+                    let bytes = &mmap[..];
+                    if bytes.is_empty() {
+                        return WalkState::Continue;
+                    }
+
+                    // Early binary bail-out
+                    let inspect_len = bytes.len().min(1024);
+                    if bytes[..inspect_len].contains(&0) {
+                        return WalkState::Continue;
+                    }
+
+                    if let Some(m) = matcher.find(bytes) {
+                        let match_start = m.start();
+                        // Find line boundaries around the match
+                        let line_start = bytes[..match_start]
+                            .iter()
+                            .rposition(|&b| b == b'\n')
+                            .map(|idx| idx + 1)
+                            .unwrap_or(0);
+
+                        let line_end = bytes[m.end()..]
+                            .iter()
+                            .position(|&b| b == b'\n')
+                            .map(|idx| m.end() + idx)
+                            .unwrap_or(bytes.len());
+
+                        let line_number =
+                            bytes[..line_start].iter().filter(|&&b| b == b'\n').count() + 1;
+
+                        let line_slice = &bytes[line_start..line_end];
+                        let line = String::from_utf8_lossy(line_slice).trim().to_string();
+
+                        let curr = self.count.fetch_add(1, Ordering::Relaxed);
+                        if curr < MAX_CONTENT_SEARCH_RESULTS {
+                            self.sender.input(AppMsg::ContentSearchResult {
+                                path,
+                                line,
+                                line_number,
+                                session: self.session_id,
+                            });
+                        }
+                    }
+                    return WalkState::Continue;
+                }
+
+                // Fallback for zero-byte or unmappable files
                 let mut reader = BufReader::new(file);
-                // Reuse a single buffer across all lines, zero allocation per line.
                 let mut buf = String::new();
                 let mut line_number: usize = 0;
 
@@ -225,14 +292,7 @@ pub fn start_content_search(
                     }
                     line_number += 1;
 
-                    // aho-corasick ascii_case_insensitive search, no lowercase alloc.
-                    let matched = self
-                        .matcher
-                        .as_ref()
-                        .map(|m| m.is_match(buf.as_bytes()))
-                        .unwrap_or(false);
-
-                    if matched {
+                    if matcher.is_match(buf.as_bytes()) {
                         let curr = self.count.fetch_add(1, Ordering::Relaxed);
                         if curr < MAX_CONTENT_SEARCH_RESULTS {
                             self.sender.input(AppMsg::ContentSearchResult {
@@ -260,7 +320,6 @@ pub fn start_content_search(
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
             matcher: Option<Arc<AhoCorasick>>,
-            visited_paths: Arc<parking_lot::Mutex<std::collections::HashSet<PathBuf>>>,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for ContentVisitorBuilder {
@@ -275,7 +334,7 @@ pub fn start_content_search(
                     allowed_exts: self.allowed_exts.clone(),
                     term_lc: self.term_lc.clone(),
                     matcher: self.matcher.clone(),
-                    visited_paths: self.visited_paths.clone(),
+                    visited_inodes: HashSet::new(),
                 })
             }
         }
@@ -290,7 +349,6 @@ pub fn start_content_search(
             allowed_exts,
             term_lc,
             matcher,
-            visited_paths,
         };
 
         walker.visit(&mut visitor_builder);
