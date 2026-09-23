@@ -117,6 +117,86 @@ impl SimpleComponent for SettingsWindow {
                 },
 
                 add = &adw::PreferencesGroup {
+                    set_title: &tr("Background Tint Opacity"),
+                    set_description: Some(&tr("Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("Window Background Opacity"),
+                        set_subtitle: &tr("Tint overlay for the main background"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.bg_alpha_window,
+                                0.0,
+                                1.0,
+                                0.05,
+                                0.1,
+                                0.0,
+                            ),
+                            set_digits: 2,
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetBackgroundAlpha {
+                                        slot: crate::model::BackgroundSlot::Window,
+                                        alpha: spin.value(),
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Left Sidebar Opacity"),
+                        set_subtitle: &tr("Tint overlay for the left sidebar"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.bg_alpha_sidebar_left,
+                                0.0,
+                                1.0,
+                                0.05,
+                                0.1,
+                                0.0,
+                            ),
+                            set_digits: 2,
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetBackgroundAlpha {
+                                        slot: crate::model::BackgroundSlot::SidebarLeft,
+                                        alpha: spin.value(),
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Right Sidebar Opacity"),
+                        set_subtitle: &tr("Tint overlay for the search / tag panel"),
+                        add_suffix = &gtk::SpinButton {
+                            set_adjustment: &gtk::Adjustment::new(
+                                model.config.ui.bg_alpha_sidebar_right,
+                                0.0,
+                                1.0,
+                                0.05,
+                                0.1,
+                                0.0,
+                            ),
+                            set_digits: 2,
+                            set_numeric: true,
+                            set_valign: gtk::Align::Center,
+                            connect_value_changed => move |spin| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetBackgroundAlpha {
+                                        slot: crate::model::BackgroundSlot::SidebarRight,
+                                        alpha: spin.value(),
+                                    });
+                                }
+                            }
+                        }
+                    },
+                },
+
+                add = &adw::PreferencesGroup {
                     set_title: &tr("Window"),
                     set_description: Some(&tr("Window behavior and startup settings")),
                     add = &adw::ActionRow {

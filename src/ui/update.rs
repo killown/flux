@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp, RightPanelType};
+use crate::model::{AppMsg, BackgroundSlot, FluxApp, RightPanelType};
 use crate::ui::FileProperties;
 use crate::utils;
 use adw::gio::prelude::*;
@@ -1019,6 +1019,52 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
+            AppMsg::SetBackgroundAlpha { slot, alpha } => {
+                self.handle_set_background_alpha(slot, alpha);
+            }
+            AppMsg::SetFluxBackground { target, slot } => {
+                if let Some(data_dir) = dirs::data_dir() {
+                    let img_dir = data_dir.join("flux/data/resources/images");
+                    let _ = std::fs::create_dir_all(&img_dir);
+
+                    let prefix = match slot {
+                        BackgroundSlot::Window => "window",
+                        BackgroundSlot::SidebarLeft => "sidebar-left",
+                        BackgroundSlot::SidebarRight => "sidebar-right",
+                    };
+
+                    // Remove any previous images for this slot
+                    if let Ok(entries) = std::fs::read_dir(&img_dir) {
+                        for entry in entries.flatten() {
+                            let p = entry.path();
+                            if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+                                if stem == prefix || stem.starts_with(&format!("{}_", prefix)) {
+                                    let _ = std::fs::remove_file(p);
+                                }
+                            }
+                        }
+                    }
+
+                    // Save with a unique timestamp to invalidate GTK's CSS URL cache
+                    let ts = std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_millis())
+                        .unwrap_or(0);
+                    let dest = img_dir.join(format!("{}_{}.png", prefix, ts));
+
+                    if std::fs::copy(&target, &dest).is_ok() {
+                        crate::utils::helpers::load_custom_background_images();
+                        if let Some(ref w) = self.sidebar_widget {
+                            w.queue_draw();
+                        }
+                        self.files.view.queue_draw();
+                    }
+                }
+            }
+            AppMsg::ClearFluxBackgrounds => {
+                crate::utils::helpers::clear_custom_background_images();
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::SetScaleFontWithIcons(val) => {
                 self.handle_set_scale_font_with_icons(val, &sender);
             }

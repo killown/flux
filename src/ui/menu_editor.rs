@@ -1,9 +1,135 @@
 use crate::i18n::tr;
 use crate::model::MenuEntry;
+use adw::gdk;
 use adw::prelude::*;
 use gtk::glib::{self};
 use relm4::prelude::*;
 use std::{cell::RefCell, fs, io::Write, path::PathBuf, rc::Rc};
+
+// ─── Built-in Definitions ───────────────────────────────────────────────────
+struct BuiltinDef {
+    name: &'static str,
+    scope: &'static str,
+    desc: &'static str,
+}
+
+const BUILTINS: &[BuiltinDef] = &[
+    BuiltinDef {
+        name: "builtin::copy",
+        scope: "all",
+        desc: "Copies the selected files or folders to the clipboard.",
+    },
+    BuiltinDef {
+        name: "builtin::cut",
+        scope: "all",
+        desc: "Cuts the selected files or folders to the clipboard.",
+    },
+    BuiltinDef {
+        name: "builtin::paste",
+        scope: "directory",
+        desc: "Pastes items from the clipboard into the current directory.",
+    },
+    BuiltinDef {
+        name: "builtin::rename",
+        scope: "all",
+        desc: "Triggers inline filename renaming on the selected item.",
+    },
+    BuiltinDef {
+        name: "builtin::delete",
+        scope: "all",
+        desc: "Moves the selected files or folders to the system trash.",
+    },
+    BuiltinDef {
+        name: "builtin::new_folder",
+        scope: "directory",
+        desc: "Opens the new folder creation prompt.",
+    },
+    BuiltinDef {
+        name: "builtin::new_file",
+        scope: "directory",
+        desc: "Opens the new file creation prompt.",
+    },
+    BuiltinDef {
+        name: "builtin::toggle_pin",
+        scope: "directory",
+        desc: "Pins or unpins the target folder in the sidebar.",
+    },
+    BuiltinDef {
+        name: "builtin::add_to_quick_list",
+        scope: "all",
+        desc: "Adds the selected folder or current directory to the Quick List.",
+    },
+    BuiltinDef {
+        name: "builtin::quick_list_transfer",
+        scope: "all",
+        desc: "Opens a submenu to move or copy items directly to Quick List slots.",
+    },
+    BuiltinDef {
+        name: "builtin::tagfile",
+        scope: "file",
+        desc: "Opens the file tag editor popover.",
+    },
+    BuiltinDef {
+        name: "builtin::inspect_dir",
+        scope: "directory",
+        desc: "Opens the Directory Inspector with disk usage and largest files.",
+    },
+    BuiltinDef {
+        name: "builtin::open_with",
+        scope: "file",
+        desc: "Populates a dynamic submenu of registered applications for the MIME type.",
+    },
+    BuiltinDef {
+        name: "builtin::open_with_dialog",
+        scope: "file",
+        desc: "Opens the full system application chooser dialog.",
+    },
+    BuiltinDef {
+        name: "builtin::select_folder_icon",
+        scope: "directory",
+        desc: "Opens the folder icon picker to assign a theme icon.",
+    },
+    BuiltinDef {
+        name: "builtin::set_custom_icon",
+        scope: "all",
+        desc: "Opens a file chooser to assign a custom image as file/folder icon.",
+    },
+    BuiltinDef {
+        name: "builtin::reset_custom_icon",
+        scope: "all",
+        desc: "Restores the default icon for the selected file or folder.",
+    },
+    BuiltinDef {
+        name: "builtin::set_extension_icon",
+        scope: "file",
+        desc: "Sets a custom image icon for the target file's extension globally.",
+    },
+    BuiltinDef {
+        name: "builtin::reset_extension_icon",
+        scope: "file",
+        desc: "Resets the custom icon for the target extension back to theme default.",
+    },
+    BuiltinDef {
+        name: "builtin::set_bg_window",
+        scope: "image/all",
+        desc: "Sets the selected image as the main window background.",
+    },
+    BuiltinDef {
+        name: "builtin::set_bg_sidebar_left",
+        scope: "image/all",
+        desc: "Sets the selected image as the left sidebar background.",
+    },
+    BuiltinDef {
+        name: "builtin::set_bg_sidebar_right",
+        scope: "image/all",
+        desc: "Sets the selected image as the right panel background.",
+    },
+    BuiltinDef {
+        name: "builtin::clear_backgrounds",
+        scope: "all",
+        desc: "Clears all custom background images and resets styling to default.",
+    },
+];
 
 // ─── Parser helper (mirrors utils::split_mime_cmd) ───────────────────────────
 fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)> {
@@ -645,6 +771,144 @@ fn build_row(
     row
 }
 
+// ─── Built-in Chooser Dialog ──────────────────────────────────────────────────
+fn show_builtin_dialog(parent: Option<&gtk::Window>, on_select: impl Fn(&str, &str) + 'static) {
+    let dialog = adw::Window::builder()
+        .title(tr("Select Built-in Action").as_str())
+        .modal(true)
+        .default_width(620)
+        .default_height(540)
+        .resizable(false)
+        .build();
+
+    if let Some(win) = parent {
+        dialog.set_transient_for(Some(win));
+    }
+
+    let root = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .spacing(0)
+        .build();
+
+    let header = adw::HeaderBar::builder()
+        .show_start_title_buttons(false)
+        .show_end_title_buttons(true)
+        .build();
+    root.append(&header);
+
+    let search_entry = gtk::SearchEntry::builder()
+        .placeholder_text(tr("Search built-ins…").as_str())
+        .margin_start(16)
+        .margin_end(16)
+        .margin_top(8)
+        .margin_bottom(8)
+        .build();
+    root.append(&search_entry);
+
+    let list_box = gtk::ListBox::builder()
+        .selection_mode(gtk::SelectionMode::None)
+        .css_classes(["boxed-list"])
+        .margin_start(16)
+        .margin_end(16)
+        .margin_bottom(16)
+        .build();
+
+    let on_select = Rc::new(on_select);
+
+    for b in BUILTINS {
+        let desc_translated = tr(b.desc);
+        let scope_label = tr("Scope");
+        let row = adw::ActionRow::builder()
+            .title(b.name)
+            .subtitle(format!("{}: {} │ {}", scope_label, b.scope, desc_translated).as_str())
+            .build();
+
+        let copy_btn = gtk::Button::builder()
+            .icon_name("edit-copy-symbolic")
+            .tooltip_text(tr("Copy to clipboard").as_str())
+            .css_classes(["flat", "circular"])
+            .valign(gtk::Align::Center)
+            .build();
+
+        let name_to_copy = b.name;
+        copy_btn.connect_clicked(move |_| {
+            if let Some(display) = gdk::Display::default() {
+                display.clipboard().set_text(name_to_copy);
+            }
+        });
+
+        let use_btn = gtk::Button::builder()
+            .label(tr("Use").as_str())
+            .css_classes(["suggested-action", "pill"])
+            .valign(gtk::Align::Center)
+            .build();
+
+        let d_clone = dialog.clone();
+        let cb = on_select.clone();
+        let cmd_name = b.name;
+        let scope_name = b.scope;
+        use_btn.connect_clicked(move |_| {
+            cb(cmd_name, scope_name);
+            d_clone.close();
+        });
+
+        let btn_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .spacing(4)
+            .valign(gtk::Align::Center)
+            .build();
+        btn_box.append(&copy_btn);
+        btn_box.append(&use_btn);
+
+        row.add_suffix(&btn_box);
+
+        let search_meta = format!("{} {} {}", b.name, b.scope, b.desc).to_lowercase();
+        unsafe {
+            row.set_data("search-meta", search_meta);
+        }
+
+        list_box.append(&row);
+    }
+
+    let list_filter = list_box.clone();
+    search_entry.connect_search_changed(move |entry| {
+        let query = entry.text().trim().to_lowercase();
+        let mut child = list_filter.first_child();
+        while let Some(w) = child {
+            if let Some(row) = w.downcast_ref::<gtk::ListBoxRow>() {
+                unsafe {
+                    if let Some(meta) = row.data::<String>("search-meta").map(|p| p.as_ref()) {
+                        row.set_visible(query.is_empty() || meta.contains(&query));
+                    }
+                }
+            }
+            child = w.next_sibling();
+        }
+    });
+
+    let scroller = gtk::ScrolledWindow::builder()
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .vscrollbar_policy(gtk::PolicyType::Automatic)
+        .vexpand(true)
+        .child(&list_box)
+        .build();
+    root.append(&scroller);
+
+    let d_esc = dialog.clone();
+    let esc = gtk::ShortcutController::new();
+    esc.add_shortcut(gtk::Shortcut::new(
+        gtk::ShortcutTrigger::parse_string("Escape"),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            d_esc.close();
+            glib::Propagation::Stop
+        })),
+    ));
+    dialog.add_controller(esc);
+
+    dialog.set_content(Some(&root));
+    dialog.present();
+}
+
 // ─── New Menu dialog ─────────────────────────────────────────────────────────
 fn show_new_menu_dialog(shared: &Shared) {
     let dialog = adw::Window::new();
@@ -973,14 +1237,68 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
         .title("all │ file │ directory │ trash │ image/all │ video/all │ audio/ │ text/all, application/all")
         .css_classes(["property"])
         .build();
-    let (cmd_row, cmd_entry) = make_stacked_entry_row(
-        tr("Command (%p = path · %d = dir · %f = filename · %l = line)").as_str(),
-        &entry.command,
-    );
-    let cmd_hint = adw::ActionRow::builder()
-        .title("builtin::copy │ builtin::cut │ builtin::paste │ builtin::rename │ builtin::delete │ builtin::new_folder │ builtin::new_file │ builtin::add_to_quick_list │ builtin::quick_list_transfer │ builtin::toggle_pin │ builtin::select_folder_icon │ builtin::set_custom_icon │ builtin::reset_custom_icon │ builtin::tagfile │ builtin::open_with │ builtin::open_with_dialog │ builtin::set_extension_icon │ builtin::reset_extension_icon │ builtin::inspect_dir")
-        .css_classes(["property"])
+
+    // ── Command Row with Pick Built-in Button ─────────────────────────────────
+    let cmd_entry = gtk::Entry::builder()
+        .text(&entry.command)
+        .hexpand(true)
         .build();
+
+    let builtin_btn = gtk::Button::builder()
+        .label(tr("Pick Built-in").as_str())
+        .valign(gtk::Align::Center)
+        .build();
+
+    let cmd_entry_clone = cmd_entry.clone();
+    let mime_entry_clone = mime_entry.clone();
+    let cmd_window_weak = dialog.downgrade();
+
+    builtin_btn.connect_clicked(move |_| {
+        let cmd_target = cmd_entry_clone.clone();
+        let mime_target = mime_entry_clone.clone();
+        let parent_win = cmd_window_weak.upgrade();
+
+        show_builtin_dialog(
+            parent_win.as_ref().map(|w| w.upcast_ref()),
+            move |name, scope| {
+                cmd_target.set_text(name);
+                if mime_target.text().trim().is_empty() {
+                    mime_target.set_text(scope);
+                }
+            },
+        );
+    });
+
+    let cmd_input_box = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .margin_top(4)
+        .margin_bottom(8)
+        .margin_start(12)
+        .margin_end(12)
+        .build();
+    cmd_input_box.append(&cmd_entry);
+    cmd_input_box.append(&builtin_btn);
+
+    let cmd_vbox = gtk::Box::builder()
+        .orientation(gtk::Orientation::Vertical)
+        .margin_top(8)
+        .margin_bottom(4)
+        .build();
+
+    let cmd_header = gtk::Label::builder()
+        .label(tr("Command (%p = path · %d = dir · %f = filename · %l = line)").as_str())
+        .halign(gtk::Align::Start)
+        .margin_start(12)
+        .css_classes(["heading"])
+        .build();
+
+    cmd_vbox.append(&cmd_header);
+    cmd_vbox.append(&cmd_input_box);
+
+    let cmd_row = adw::PreferencesRow::builder().build();
+    cmd_row.set_child(Some(&cmd_vbox));
+
     let (toast_row, toast_entry) = make_stacked_entry_row(
         tr("Notification (optional)").as_str(),
         entry.toast.as_deref().unwrap_or(""),
@@ -1006,7 +1324,6 @@ fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
     g_act.add(&mime_row);
     g_act.add(&mime_hint);
     g_act.add(&cmd_row);
-    g_act.add(&cmd_hint);
     g_act.add(&toast_row);
     g_act.add(&no_transfer_row);
     page.add(&g_id);

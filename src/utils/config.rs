@@ -99,6 +99,12 @@ pub fn ensure_config_file() -> PathBuf {
 "󰸉      Image Convert > To JPG" => "image/all", "magick %p -quality 75 -strip %p-output.jpg"
 "󰏦      Convert to PDF" => "image/all, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document", "python3 $HOME/.local/share/flux/scripts/pdf_converter.py %p"
 
+# --- Flux Backgrounds ---
+"󰸉      Flux Background > Window Background"       => "image/all", "builtin::set_bg_window", "Window background updated!"
+"󰸉      Flux Background > Left Sidebar Background" => "image/all", "builtin::set_bg_sidebar_left", "Sidebar background updated!"
+"󰸉      Flux Background > Right Sidebar Background"=> "image/all", "builtin::set_bg_sidebar_right", "Right panel background updated!"
+"󰸉      Flux Background > Reset All Backgrounds" => "all", "builtin::clear_backgrounds", "Backgrounds reset to default"
+
 # --- Tools ---
 "󰯦      Tools > Git Gui" => "directory", "git gui", "no_command_dialog"
 "󰯦      Tools > Download Video (1080p)" => "directory", "cd %p && yt-dlp -f 'bv[height<=1080]+ba/b[height<=1080]' $(wl-paste)"
@@ -445,6 +451,9 @@ path = "search://"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    bg_alpha_window: 0.65,
+                    bg_alpha_sidebar_left: 0.65,
+                    bg_alpha_sidebar_right: 0.65,
                     scale_font_with_icons: false,
                     hidden_extensions: Vec::new(),
                     tag_panel_width: 350,
@@ -719,6 +728,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "Media Optimize" => tr("Media Optimize"),
                     "Image Wallpaper" => tr("Image Wallpaper"),
                     "Image Convert" => tr("Image Convert"),
+                    "Flux Background" => tr("Flux Background"),
                     "Tools" => tr("Tools"),
                     other => other.to_string(),
                 };
@@ -755,6 +765,10 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "To PNG" => tr("To PNG"),
                     "To AVIF" => tr("To AVIF"),
                     "To JPG" => tr("To JPG"),
+                    "Window Background" => tr("Window Background"),
+                    "Left Sidebar Background" => tr("Left Sidebar Background"),
+                    "Right Sidebar Background" => tr("Right Sidebar Background"),
+                    "Reset All Backgrounds" => tr("Reset All Backgrounds"),
                     "Git Gui" => tr("Git Gui"),
                     "Download Video (1080p)" => tr("Download Video (1080p)"),
                     "Copy Path" => tr("Copy Path"),
