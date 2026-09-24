@@ -63,9 +63,7 @@ fn test_sidebar_place_section_label() {
 fn test_file_item_preserves_foreign_owner_flag() {
     use flux::model::FileLoadContext;
     use flux::ui::FileItem;
-    use std::cell::RefCell;
     use std::path::PathBuf;
-    use std::rc::Rc;
 
     let dummy_icon = gtk::gio::Icon::for_string("folder").unwrap();
 
@@ -104,32 +102,16 @@ fn test_file_item_preserves_foreign_owner_flag() {
             let mtime = ctx.mtime();
             let is_foreign_owner = ctx.is_foreign_owner(0);
             let is_empty = ctx.is_empty();
-            FileItem {
-                name: ctx.display_name,
-                icon: dummy_icon.clone(),
-                thumbnail: None,
-                is_dir: ctx.is_dir,
-                path: ctx.target_path,
-                icon_size: 48,
-                size,
-                mtime,
-                is_editing: false,
-                is_foreign_owner,
-                search_snippet: None,
-                is_empty,
-                expand_labels: ctx.expand_labels,
-                is_list_mode: false,
-                is_custom_icon: false,
-                active_path: Rc::new(RefCell::new(None)),
-                grid_idx: idx as u32,
-                max_width_chars: 20,
-                grid_spacing: 10,
-                is_symlink: false,
-                is_broken_symlink: false,
-                show_symlink_emblem: true,
-                line_number: 0,
-                is_cut: false,
-            }
+            FileItem::builder(ctx.display_name, ctx.target_path, dummy_icon.clone())
+                .is_dir(ctx.is_dir)
+                .icon_size(48)
+                .size(size)
+                .mtime(mtime)
+                .is_foreign_owner(is_foreign_owner)
+                .is_empty(is_empty)
+                .expand_labels(ctx.expand_labels)
+                .grid_idx(idx as u32)
+                .build()
         })
         .collect();
 
@@ -151,39 +133,20 @@ fn test_lock_icon_and_restricted_class_binding() {
     use flux::ui::FileItem;
     use gtk::prelude::*;
     use relm4::typed_view::grid::RelmGridItem;
-    use std::cell::RefCell;
     use std::path::PathBuf;
-    use std::rc::Rc;
 
     let dummy_item: gtk::ListItem = glib::object::Object::new();
     let (mut root_box, mut widgets) = FileItem::setup(&dummy_item);
 
-    let mut item = FileItem {
-        name: "restricted_dir".to_string(),
-        icon: gtk::gio::Icon::for_string("folder").unwrap(),
-        thumbnail: None,
-        is_dir: true,
-        path: PathBuf::from("/root"),
-        icon_size: 48,
-        size: 0,
-        mtime: 0,
-        is_editing: false,
-        is_foreign_owner: true,
-        search_snippet: None,
-        is_empty: false,
-        expand_labels: false,
-        is_list_mode: false,
-        is_custom_icon: false,
-        active_path: Rc::new(RefCell::new(None)),
-        grid_idx: 0,
-        max_width_chars: 20,
-        grid_spacing: 10,
-        is_symlink: false,
-        is_broken_symlink: false,
-        show_symlink_emblem: true,
-        line_number: 0,
-        is_cut: false,
-    };
+    let mut item = FileItem::builder(
+        "restricted_dir".to_string(),
+        PathBuf::from("/root"),
+        gtk::gio::Icon::for_string("folder").unwrap(),
+    )
+    .is_dir(true)
+    .icon_size(48)
+    .is_foreign_owner(true)
+    .build();
 
     item.bind(&mut widgets, &mut root_box);
     assert!(

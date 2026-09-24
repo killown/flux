@@ -63,6 +63,8 @@ pub struct FileItem {
     pub line_number: usize,
     /// Whether the item is currently cut (moved via clipboard).
     pub is_cut: bool,
+    /// Indicates whether this item is currently marked in the clipboard for a copy operation to apply visual styling.
+    pub is_copy: bool,
 }
 
 impl FileItem {
@@ -82,6 +84,7 @@ impl FileItem {
             grid_idx: 0,
             line_number: 0,
             is_cut: false,
+            is_copy: false,
             is_empty: false,
             is_symlink: false,
             is_broken_symlink: false,
@@ -110,6 +113,7 @@ pub struct FileItemBuilder {
     grid_idx: u32,
     line_number: usize,
     is_cut: bool,
+    is_copy: bool,
     is_empty: bool,
     is_symlink: bool,
     is_broken_symlink: bool,
@@ -174,6 +178,11 @@ impl FileItemBuilder {
 
     pub fn is_cut(mut self, v: bool) -> Self {
         self.is_cut = v;
+        self
+    }
+
+    pub fn is_copy(mut self, v: bool) -> Self {
+        self.is_copy = v;
         self
     }
 
@@ -243,6 +252,7 @@ impl FileItemBuilder {
             show_symlink_emblem: self.show_symlink_emblem,
             line_number: self.line_number,
             is_cut: self.is_cut,
+            is_copy: self.is_copy,
         }
     }
 }
@@ -681,6 +691,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root.add_css_class("flux-card--cut");
         } else {
             root.remove_css_class("flux-card--cut");
+        }
+
+        if self.is_copy {
+            root.add_css_class("flux-card--copy");
+        } else {
+            root.remove_css_class("flux-card--copy");
         }
 
         if self.is_list_mode {
@@ -1123,6 +1139,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         root.remove_css_class("flux-card--cut");
+        root.remove_css_class("flux-card--copy");
 
         widgets
             .video_widget

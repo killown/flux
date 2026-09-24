@@ -121,10 +121,13 @@ impl FluxApp {
         for i in (0..self.files.len()).rev() {
             if let Some(wrapper) = self.files.get(i) {
                 let mut item = wrapper.borrow().clone();
-                let should_be_cut = is_cut && selection.contains(&item.path);
+                let is_selected = selection.contains(&item.path);
+                let should_be_cut = is_cut && is_selected;
+                let should_be_copy = !is_cut && is_selected;
 
-                if item.is_cut != should_be_cut {
+                if item.is_cut != should_be_cut || item.is_copy != should_be_copy {
                     item.is_cut = should_be_cut;
+                    item.is_copy = should_be_copy;
                     self.files.remove(i);
                     self.files.insert(i, item);
                 }
@@ -145,6 +148,7 @@ impl FluxApp {
             sender.input(AppMsg::ShowToast(toast));
         }
     }
+
     pub fn handle_extract_archive(&self, sender: &AsyncComponentSender<Self>) {
         let uri = self.current_path.to_string_lossy().to_string();
         let Some((archive_path, _)) = crate::services::archive::parse_archive_uri(&uri) else {
