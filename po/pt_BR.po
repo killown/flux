@@ -2715,6 +2715,34 @@ msgid "Tags updated"
 msgstr "Etiquetas atualizadas"
 
 
+#: src/ui/tag_navigator.rs:???
+msgid "Tag options"
+msgstr "Opções da etiqueta"
+
+#: src/ui/tag_navigator.rs:???
+msgid "Apply to selection"
+msgstr "Aplicar à seleção"
+
+#: src/ui/tag_navigator.rs:???
+msgid "Remove from selection"
+msgstr "Remover da seleção"
+
+#: src/ui/tag_navigator.rs:???
+msgid "Delete tag globally"
+msgstr "Excluir etiqueta globalmente"
+
+#: src/ui/tag_navigator.rs:???
+msgid "Apply tag to selection"
+msgstr "Aplicar etiqueta à seleção"
+
+#: src/ui/tag_navigator.rs:???
+msgid "Remove tag from selection"
+msgstr "Remover etiqueta da seleção"
+
+#: src/services/app/update.rs:???
+msgid "Tag removed"
+msgstr "Etiqueta removida"
+
 # ============================================================
 # sem referência mapeada
 # ============================================================

@@ -446,6 +446,24 @@ impl FluxApp {
                 }
                 sender.input(AppMsg::ShowToast(crate::i18n::tr("Tags updated")));
             }
+            AppMsg::RemoveTagFromSelection(tag) => {
+                let target_tag = tag.trim_start_matches('#').to_lowercase();
+                let selection = self.get_selection();
+                for path in selection {
+                    let mut tags = crate::utils::xattr::read_tags(&path);
+                    tags.retain(|t| t.trim_start_matches('#').to_lowercase() != target_tag);
+                    let _ = crate::utils::xattr::write_tags(&path, &tags);
+                    let mtime = std::fs::metadata(&path)
+                        .and_then(|m| m.modified())
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(0);
+                    let _ = self.state_db.set_tags(&path, &tags, mtime);
+                }
+                sender.input(AppMsg::ShowToast(crate::i18n::tr("Tag removed")));
+                sender.input(AppMsg::Refresh);
+            }
             AppMsg::AddTagToSidebar(tag) => {
                 self.handle_add_tag_to_sidebar(tag);
             }
