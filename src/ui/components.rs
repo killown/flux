@@ -120,7 +120,7 @@ pub struct FileItemBuilder {
     search_snippet: Option<String>,
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, clippy::wrong_self_convention)]
 impl FileItemBuilder {
     pub fn is_dir(mut self, v: bool) -> Self {
         self.is_dir = v;
