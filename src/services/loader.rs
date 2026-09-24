@@ -940,36 +940,25 @@ impl FluxApp {
                         }
                     }
 
-                    self.files.append(FileItem {
-                        name: item.display_name.clone(),
-                        icon,
-                        thumbnail: None,
-                        is_dir: item.is_dir,
-                        path: item.target_path,
-                        icon_size: if self.is_list_mode {
-                            self.current_list_icon_size
-                        } else {
-                            self.current_icon_size
-                        },
-                        size,
-                        mtime,
-                        is_editing: false,
-                        is_foreign_owner: false,
-                        search_snippet: None,
-                        is_empty,
-                        expand_labels: item.expand_labels,
-                        is_list_mode: self.is_list_mode,
-                        is_custom_icon: false,
-                        active_path: Rc::new(RefCell::new(None)),
-                        grid_idx,
-                        max_width_chars: self.config.ui.max_width_chars,
-                        grid_spacing: self.config.ui.grid_spacing,
-                        is_symlink: false,
-                        is_broken_symlink: false,
-                        show_symlink_emblem: self.config.ui.show_symlink_emblem,
-                        line_number: 0,
-                        is_cut: false,
-                    });
+                    self.files.append(
+                        FileItem::builder(item.display_name.clone(), item.target_path, icon)
+                            .is_dir(item.is_dir)
+                            .size(size)
+                            .mtime(mtime)
+                            .is_empty(is_empty)
+                            .expand_labels(item.expand_labels)
+                            .icon_size(if self.is_list_mode {
+                                self.current_list_icon_size
+                            } else {
+                                self.current_icon_size
+                            })
+                            .is_list_mode(self.is_list_mode)
+                            .grid_idx(grid_idx)
+                            .max_width_chars(self.config.ui.max_width_chars)
+                            .grid_spacing(self.config.ui.grid_spacing)
+                            .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                            .build(),
+                    );
                 }
 
                 self.update_breadcrumbs();
@@ -1096,36 +1085,25 @@ impl FluxApp {
                 (false, false)
             };
 
-            self.files.append(crate::ui::FileItem {
-                name: display_name,
-                icon,
-                thumbnail: None,
-                is_dir,
-                path,
-                icon_size: if self.is_list_mode {
-                    self.current_list_icon_size
-                } else {
-                    self.current_icon_size
-                },
-                size: 0,
-                mtime: 0,
-                is_editing: false,
-                is_foreign_owner: false,
-                search_snippet: None,
-                is_empty,
-                expand_labels: self.config.ui.expand_labels,
-                is_list_mode: self.is_list_mode,
-                is_custom_icon: false,
-                active_path: Rc::new(RefCell::new(None)),
-                grid_idx: grid_idx as u32,
-                max_width_chars: self.config.ui.max_width_chars,
-                grid_spacing: self.config.ui.grid_spacing,
-                is_symlink,
-                is_broken_symlink,
-                show_symlink_emblem: self.config.ui.show_symlink_emblem,
-                line_number: 0,
-                is_cut: false,
-            });
+            self.files.append(
+                FileItem::builder(display_name, path, icon)
+                    .is_dir(is_dir)
+                    .is_empty(is_empty)
+                    .expand_labels(self.config.ui.expand_labels)
+                    .icon_size(if self.is_list_mode {
+                        self.current_list_icon_size
+                    } else {
+                        self.current_icon_size
+                    })
+                    .is_list_mode(self.is_list_mode)
+                    .grid_idx(grid_idx as u32)
+                    .max_width_chars(self.config.ui.max_width_chars)
+                    .grid_spacing(self.config.ui.grid_spacing)
+                    .is_symlink(is_symlink)
+                    .is_broken_symlink(is_broken_symlink)
+                    .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                    .build(),
+            );
         }
 
         self.update_breadcrumbs();

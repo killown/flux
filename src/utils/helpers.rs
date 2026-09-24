@@ -1109,32 +1109,20 @@ impl FluxApp {
             let is_symlink = item.path.is_symlink();
             let is_broken_symlink = is_symlink && !item.path.exists();
 
-            self.files.append(crate::ui::FileItem {
-                name: item.display,
-                icon,
-                thumbnail: None,
-                is_dir: false,
-                path: item.path,
-                icon_size: list_icon_size,
-                size,
-                mtime,
-                is_editing: false,
-                is_foreign_owner: false,
-                search_snippet: None,
-                is_empty: false,
-                expand_labels: false,
-                is_list_mode: true,
-                is_custom_icon: false,
-                active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
-                grid_idx: start_idx + offset as u32,
-                max_width_chars,
-                grid_spacing,
-                is_symlink,
-                is_broken_symlink,
-                show_symlink_emblem,
-                line_number: 0,
-                is_cut: false,
-            });
+            self.files.append(
+                crate::ui::FileItem::builder(item.display, item.path, icon)
+                    .icon_size(list_icon_size)
+                    .size(size)
+                    .mtime(mtime)
+                    .is_list_mode(true)
+                    .grid_idx(start_idx + offset as u32)
+                    .max_width_chars(max_width_chars)
+                    .grid_spacing(grid_spacing)
+                    .is_symlink(is_symlink)
+                    .is_broken_symlink(is_broken_symlink)
+                    .show_symlink_emblem(show_symlink_emblem)
+                    .build(),
+            );
         }
     }
 

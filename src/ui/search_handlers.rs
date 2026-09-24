@@ -158,36 +158,25 @@ impl FluxApp {
                     false
                 };
 
-                self.files.append(crate::ui::FileItem {
-                    name,
-                    icon,
-                    thumbnail: None,
-                    is_dir,
-                    path: path.clone(),
-                    icon_size: if self.is_list_mode {
-                        self.current_list_icon_size
-                    } else {
-                        self.current_icon_size
-                    },
-                    size,
-                    mtime,
-                    is_editing: false,
-                    is_foreign_owner: false,
-                    search_snippet: None,
-                    is_empty,
-                    expand_labels: self.config.ui.expand_labels,
-                    is_list_mode: self.is_list_mode,
-                    is_custom_icon: false,
-                    active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
-                    grid_idx: self.files.len(),
-                    max_width_chars: self.config.ui.max_width_chars,
-                    grid_spacing: self.config.ui.grid_spacing,
-                    is_symlink: false,
-                    is_broken_symlink: false,
-                    show_symlink_emblem: self.config.ui.show_symlink_emblem,
-                    line_number: 0,
-                    is_cut: false,
-                });
+                self.files.append(
+                    crate::ui::FileItem::builder(name, path.clone(), icon)
+                        .is_dir(is_dir)
+                        .icon_size(if self.is_list_mode {
+                            self.current_list_icon_size
+                        } else {
+                            self.current_icon_size
+                        })
+                        .size(size)
+                        .mtime(mtime)
+                        .is_empty(is_empty)
+                        .expand_labels(self.config.ui.expand_labels)
+                        .is_list_mode(self.is_list_mode)
+                        .grid_idx(self.files.len())
+                        .max_width_chars(self.config.ui.max_width_chars)
+                        .grid_spacing(self.config.ui.grid_spacing)
+                        .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                        .build(),
+                );
                 grid_idx += 1;
             }
 
@@ -317,32 +306,20 @@ impl FluxApp {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
-        self.files.append(crate::ui::FileItem {
-            name: relative_path.to_string(),
-            icon,
-            thumbnail: None,
-            is_dir: false,
-            path: path.clone(),
-            icon_size: self.current_list_icon_size,
-            size,
-            mtime,
-            is_editing: false,
-            is_foreign_owner: false,
-            search_snippet: Some(snippet),
-            is_empty: false,
-            expand_labels: false,
-            is_list_mode: true,
-            is_custom_icon: false,
-            active_path: std::rc::Rc::new(std::cell::RefCell::new(None)),
-            grid_idx: self.files.len(),
-            max_width_chars: self.config.ui.max_width_chars,
-            grid_spacing: self.config.ui.grid_spacing,
-            is_symlink: false,
-            is_broken_symlink: false,
-            show_symlink_emblem: self.config.ui.show_symlink_emblem,
-            line_number,
-            is_cut: false,
-        });
+        self.files.append(
+            crate::ui::FileItem::builder(relative_path.to_string(), path.clone(), icon)
+                .icon_size(self.current_list_icon_size)
+                .size(size)
+                .mtime(mtime)
+                .search_snippet(Some(snippet))
+                .is_list_mode(true)
+                .grid_idx(self.files.len())
+                .max_width_chars(self.config.ui.max_width_chars)
+                .grid_spacing(self.config.ui.grid_spacing)
+                .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                .line_number(line_number)
+                .build(),
+        );
     }
 
     /// Concludes the content search walk and selects the top item.

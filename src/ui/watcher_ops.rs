@@ -4,9 +4,7 @@ use crate::utils;
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
-use std::cell::RefCell;
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
@@ -88,40 +86,25 @@ impl FluxApp {
                     let is_symlink = path.is_symlink();
                     let is_broken_symlink = is_symlink && std::fs::metadata(&path).is_err();
 
-                    let item = FileItem {
-                        name: display_name.clone(),
-                        icon,
-                        thumbnail: None,
-                        is_dir,
-                        path: path.clone(),
-                        icon_size: if self.is_list_mode {
-                            self.current_list_icon_size
-                        } else {
-                            self.current_icon_size
-                        },
-                        size: info.size() as u64,
-                        mtime: info
-                            .modification_date_time()
-                            .map(|dt| dt.to_unix())
-                            .unwrap_or(0),
-                        is_editing: false,
-                        is_foreign_owner: false,
-                        search_snippet: None,
-                        is_empty,
-                        expand_labels: self.config.ui.expand_labels,
-                        is_list_mode: self.is_list_mode,
-                        is_custom_icon: false,
-                        active_path: Rc::new(RefCell::new(None)),
-                        grid_idx: self.files.len(),
-                        max_width_chars: self.config.ui.max_width_chars,
-                        grid_spacing: self.config.ui.grid_spacing,
-                        is_symlink,
-                        is_broken_symlink,
-                        show_symlink_emblem: self.config.ui.show_symlink_emblem,
-                        line_number: 0,
-                        is_cut: false,
-                    };
-                    self.files.append(item);
+                    self.files.append(
+                        FileItem::builder(display_name, path.clone(), icon)
+                            .is_dir(is_dir)
+                            .is_empty(is_empty)
+                            .expand_labels(self.config.ui.expand_labels)
+                            .icon_size(if self.is_list_mode {
+                                self.current_list_icon_size
+                            } else {
+                                self.current_icon_size
+                            })
+                            .is_list_mode(self.is_list_mode)
+                            .grid_idx(self.files.len() as u32)
+                            .max_width_chars(self.config.ui.max_width_chars)
+                            .grid_spacing(self.config.ui.grid_spacing)
+                            .is_symlink(is_symlink)
+                            .is_broken_symlink(is_broken_symlink)
+                            .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                            .build(),
+                    );
 
                     let current_session = self.load_id.load(Ordering::SeqCst);
                     self.spawn_thumbnail_loader(
