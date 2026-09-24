@@ -255,10 +255,14 @@ pub fn start_content_search(
                             .unwrap_or(bytes.len())
                             .min(line_start + 1024);
 
+                        let line_slice = &bytes[line_start..line_end];
+                        if line_slice.contains(&0) {
+                            return WalkState::Continue;
+                        }
+
                         let line_number =
                             bytes[..line_start].iter().filter(|&&b| b == b'\n').count() + 1;
 
-                        let line_slice = &bytes[line_start..line_end];
                         let line = String::from_utf8_lossy(line_slice).trim().to_string();
 
                         let curr = self.count.fetch_add(1, Ordering::Relaxed);
@@ -276,7 +280,7 @@ pub fn start_content_search(
 
                 // Fallback for zero-byte or unmappable files
                 let mut reader = BufReader::new(file);
-                let mut buf = String::new();
+                let mut buf = Vec::new();
                 let mut line_number: usize = 0;
 
                 loop {
@@ -287,18 +291,23 @@ pub fn start_content_search(
                         break;
                     }
                     buf.clear();
-                    match reader.read_line(&mut buf) {
+                    match reader.read_until(b'\n', &mut buf) {
                         Ok(0) | Err(_) => break, // EOF or read error
                         Ok(_) => {}
                     }
                     line_number += 1;
 
-                    if matcher.is_match(buf.as_bytes()) {
+                    if buf.contains(&0) {
+                        break; // Binary file bail-out
+                    }
+
+                    if matcher.is_match(&buf) {
                         let curr = self.count.fetch_add(1, Ordering::Relaxed);
                         if curr < MAX_CONTENT_SEARCH_RESULTS {
+                            let line_str = String::from_utf8_lossy(&buf).trim().to_string();
                             self.sender.input(AppMsg::ContentSearchResult {
                                 path: path.clone(),
-                                line: buf.trim().to_string(),
+                                line: line_str,
                                 line_number,
                                 session: self.session_id,
                             });

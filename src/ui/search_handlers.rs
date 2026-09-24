@@ -282,9 +282,10 @@ impl FluxApp {
             .strip_prefix(&self.current_path)
             .map(crate::utils::strip_current_dir)
             .unwrap_or(&path);
-        let relative_path = rel_path.to_string_lossy().to_string();
+        let relative_path = rel_path.to_string_lossy().replace('\0', " ");
 
-        let trimmed_line = line.trim();
+        let sanitized_line = line.replace('\0', " ");
+        let trimmed_line = sanitized_line.trim();
         let snippet = if trimmed_line.chars().count() > 80 {
             let limit_idx = trimmed_line
                 .char_indices()
