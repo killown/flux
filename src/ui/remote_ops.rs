@@ -3,8 +3,6 @@ use crate::ui::FileItem;
 use adw::gio;
 use adw::prelude::*;
 use relm4::prelude::*;
-use std::cell::RefCell;
-use std::rc::Rc;
 
 impl FluxApp {
     pub fn handle_network_loaded(
@@ -39,36 +37,29 @@ impl FluxApp {
             };
             let grid_idx = self.files.len();
 
-            self.files.append(FileItem {
-                name: item.display_name,
-                icon,
-                thumbnail: None,
-                is_dir: item.is_dir,
-                path: item.target_path,
-                icon_size: if self.is_list_mode {
-                    self.current_list_icon_size
-                } else {
-                    self.current_icon_size
-                },
-                size,
-                mtime,
-                is_editing: false,
-                is_foreign_owner,
-                search_snippet: None,
-                is_empty,
-                expand_labels: item.expand_labels,
-                is_list_mode: self.is_list_mode,
-                is_custom_icon: item.custom_icon.is_some(),
-                active_path: Rc::new(RefCell::new(None)),
-                grid_idx,
-                max_width_chars: self.config.ui.max_width_chars,
-                grid_spacing: self.config.ui.grid_spacing,
-                is_symlink: item.is_symlink,
-                is_broken_symlink: item.is_broken_symlink,
-                show_symlink_emblem: self.config.ui.show_symlink_emblem,
-                line_number: 0,
-                is_cut: false,
-            });
+            self.files.append(
+                FileItem::builder(item.display_name, item.target_path, icon)
+                    .is_dir(item.is_dir)
+                    .icon_size(if self.is_list_mode {
+                        self.current_list_icon_size
+                    } else {
+                        self.current_icon_size
+                    })
+                    .size(size)
+                    .mtime(mtime)
+                    .is_foreign_owner(is_foreign_owner)
+                    .is_empty(is_empty)
+                    .expand_labels(item.expand_labels)
+                    .is_list_mode(self.is_list_mode)
+                    .is_custom_icon(item.custom_icon.is_some())
+                    .grid_idx(grid_idx)
+                    .max_width_chars(self.config.ui.max_width_chars)
+                    .grid_spacing(self.config.ui.grid_spacing)
+                    .is_symlink(item.is_symlink)
+                    .is_broken_symlink(item.is_broken_symlink)
+                    .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                    .build(),
+            );
         }
         self.update_breadcrumbs();
     }
