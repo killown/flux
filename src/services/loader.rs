@@ -272,6 +272,7 @@ impl FluxApp {
 
         // ── Virtual / special paths - delegate and return immediately ────────────
         if crate::services::network::is_network_uri(&path) {
+            self.archive_locked = false;
             self.current_path = path.clone();
             self.load_network(&path_str, None, sender.clone());
             return;
@@ -285,6 +286,10 @@ impl FluxApp {
             }
             return;
         }
+
+        // Exiting or not inside an archive: clear the lock state
+        self.archive_locked = false;
+
         if path_str.starts_with("recent:///") {
             self.load_recents(sender);
             return;
@@ -1285,6 +1290,7 @@ impl FluxApp {
         let load_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         self.is_loading = false;
+        self.archive_locked = false;
 
         let cache_cap = self.config.ui.folder_cache_capacity;
 
