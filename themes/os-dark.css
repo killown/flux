@@ -1216,9 +1216,9 @@ toastoverlay.quick-dock-active toast {
 }
 
 .flux-card.flux-card--cut {
-  background-color: alpha(@accent_color, 0.12);
-  box-shadow: inset 0 0 0 1.5px alpha(@accent_color, 0.5);
-  opacity: 0.65;
+  background-color: alpha(#ff9500, 0.1);
+  box-shadow: inset 0 0 0 1.5px alpha(#ff9500, 0.45);
+  opacity: 0.6;
 }
 
 .flux-card.flux-card--cut .flux-label {
