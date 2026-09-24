@@ -9,10 +9,8 @@ use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use parking_lot::RwLock;
 use rayon::prelude::*;
 use relm4::prelude::*;
-use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
-use std::rc::Rc;
 use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::sync::OnceLock;
@@ -1225,36 +1223,28 @@ impl FluxApp {
                 }
             }
 
-            let file_item = FileItem {
-                name: item.display_name,
-                icon,
-                thumbnail,
-                is_dir: item.is_dir,
-                path: item.target_path,
-                icon_size: if is_list_mode {
+            let file_item = FileItem::builder(item.display_name, item.target_path, icon)
+                .is_dir(item.is_dir)
+                .thumbnail(thumbnail)
+                .icon_size(if is_list_mode {
                     list_icon_size
                 } else {
                     grid_icon_size
-                },
-                size,
-                mtime,
-                is_editing: false,
-                is_foreign_owner,
-                search_snippet: None,
-                is_empty,
-                expand_labels: item.expand_labels,
-                is_list_mode,
-                is_custom_icon: custom_icon.is_some(),
-                active_path: Rc::new(RefCell::new(None)),
-                grid_idx,
-                max_width_chars,
-                grid_spacing,
-                is_symlink: item.is_symlink,
-                is_broken_symlink: item.is_broken_symlink,
-                show_symlink_emblem: self.config.ui.show_symlink_emblem,
-                line_number: 0,
-                is_cut: false,
-            };
+                })
+                .size(size)
+                .mtime(mtime)
+                .is_foreign_owner(is_foreign_owner)
+                .is_empty(is_empty)
+                .expand_labels(item.expand_labels)
+                .is_list_mode(is_list_mode)
+                .is_custom_icon(custom_icon.is_some())
+                .grid_idx(grid_idx)
+                .max_width_chars(max_width_chars)
+                .grid_spacing(grid_spacing)
+                .is_symlink(item.is_symlink)
+                .is_broken_symlink(item.is_broken_symlink)
+                .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                .build();
 
             self.files.append(file_item);
         }
