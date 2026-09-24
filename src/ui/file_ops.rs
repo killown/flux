@@ -114,8 +114,23 @@ pub fn should_track_in_transfer_dialog(cmd_template: &str) -> bool {
 
 impl FluxApp {
     /// Handles clipboard Copy and Cut actions by populating standard GTK Clipboard providers.
-    pub fn handle_copy_or_cut(&self, is_cut: bool, sender: &AsyncComponentSender<Self>) {
+    pub fn handle_copy_or_cut(&mut self, is_cut: bool, sender: &AsyncComponentSender<Self>) {
         self.handle_clipboard_action(is_cut);
+
+        let selection = self.get_selection();
+        for i in (0..self.files.len()).rev() {
+            if let Some(wrapper) = self.files.get(i) {
+                let mut item = wrapper.borrow().clone();
+                let should_be_cut = is_cut && selection.contains(&item.path);
+
+                if item.is_cut != should_be_cut {
+                    item.is_cut = should_be_cut;
+                    self.files.remove(i);
+                    self.files.insert(i, item);
+                }
+            }
+        }
+
         let cmd = if is_cut {
             "builtin::cut"
         } else {
@@ -130,7 +145,6 @@ impl FluxApp {
             sender.input(AppMsg::ShowToast(toast));
         }
     }
-
     pub fn handle_extract_archive(&self, sender: &AsyncComponentSender<Self>) {
         let uri = self.current_path.to_string_lossy().to_string();
         let Some((archive_path, _)) = crate::services::archive::parse_archive_uri(&uri) else {

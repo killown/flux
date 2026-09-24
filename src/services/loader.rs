@@ -968,6 +968,7 @@ impl FluxApp {
                         is_broken_symlink: false,
                         show_symlink_emblem: self.config.ui.show_symlink_emblem,
                         line_number: 0,
+                        is_cut: false,
                     });
                 }
 
@@ -1123,6 +1124,7 @@ impl FluxApp {
                 is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
                 line_number: 0,
+                is_cut: false,
             });
         }
 
@@ -1268,6 +1270,7 @@ impl FluxApp {
                 is_broken_symlink: item.is_broken_symlink,
                 show_symlink_emblem: self.config.ui.show_symlink_emblem,
                 line_number: 0,
+                is_cut: false,
             };
 
             self.files.append(file_item);
@@ -1321,29 +1324,28 @@ impl FluxApp {
             && self.filter.is_empty()
             && self.extension_globset.is_none()
             && !is_cached
+            && cache_cap > 0
         {
-            if cache_cap > 0 {
-                if self.folder_cache.len() >= cache_cap {
-                    if let Some(oldest) = self
-                        .folder_cache
-                        .iter()
-                        .min_by_key(|(_, v)| v.last_visited)
-                        .map(|(k, _)| k.clone())
-                    {
-                        self.folder_cache.remove(&oldest);
-                    }
+            if self.folder_cache.len() >= cache_cap {
+                if let Some(oldest) = self
+                    .folder_cache
+                    .iter()
+                    .min_by_key(|(_, v)| v.last_visited)
+                    .map(|(k, _)| k.clone())
+                {
+                    self.folder_cache.remove(&oldest);
                 }
-
-                self.folder_cache.insert(
-                    path.clone(),
-                    crate::model::CachedFolder {
-                        items: items.clone(),
-                        media_tasks,
-                        thumbnails: std::collections::HashMap::new(),
-                        last_visited: std::time::Instant::now(),
-                    },
-                );
             }
+
+            self.folder_cache.insert(
+                path.clone(),
+                crate::model::CachedFolder {
+                    items: items.clone(),
+                    media_tasks,
+                    thumbnails: std::collections::HashMap::new(),
+                    last_visited: std::time::Instant::now(),
+                },
+            );
         }
 
         // CLEAR the grid completely so Relm4 drops all old FileItems

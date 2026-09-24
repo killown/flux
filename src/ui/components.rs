@@ -61,6 +61,8 @@ pub struct FileItem {
     pub show_symlink_emblem: bool,
     /// Line number from a content-search hit. 0 for all other items.
     pub line_number: usize,
+    /// Whether the item is currently cut (moved via clipboard).
+    pub is_cut: bool,
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
@@ -492,6 +494,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             &config.ui.hidden_extensions,
         );
         widgets.label.set_label(&display_label);
+
+        if self.is_cut {
+            root.add_css_class("flux-card--cut");
+        } else {
+            root.remove_css_class("flux-card--cut");
+        }
 
         if self.is_list_mode {
             // Compact horizontal row: small icon on the left, filename fills the rest.
@@ -931,6 +939,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.info_label.style_context().remove_provider(provider);
             widgets.scale_css_provider = None;
         }
+
+        root.remove_css_class("flux-card--cut");
 
         widgets
             .video_widget
