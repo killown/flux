@@ -186,6 +186,7 @@ impl FluxApp {
                     is_broken_symlink: false,
                     show_symlink_emblem: self.config.ui.show_symlink_emblem,
                     line_number: 0,
+                    is_cut: false,
                 });
                 grid_idx += 1;
             }
@@ -340,6 +341,7 @@ impl FluxApp {
             is_broken_symlink: false,
             show_symlink_emblem: self.config.ui.show_symlink_emblem,
             line_number,
+            is_cut: false,
         });
     }
 

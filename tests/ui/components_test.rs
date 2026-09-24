@@ -128,6 +128,7 @@ fn test_file_item_preserves_foreign_owner_flag() {
                 is_broken_symlink: false,
                 show_symlink_emblem: true,
                 line_number: 0,
+                is_cut: false,
             }
         })
         .collect();
@@ -181,6 +182,7 @@ fn test_lock_icon_and_restricted_class_binding() {
         is_broken_symlink: false,
         show_symlink_emblem: true,
         line_number: 0,
+        is_cut: false,
     };
 
     item.bind(&mut widgets, &mut root_box);

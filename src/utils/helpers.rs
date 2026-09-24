@@ -1133,6 +1133,7 @@ impl FluxApp {
                 is_broken_symlink,
                 show_symlink_emblem,
                 line_number: 0,
+                is_cut: false,
             });
         }
     }
