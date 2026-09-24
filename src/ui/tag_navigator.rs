@@ -7,7 +7,7 @@ use std::rc::Rc;
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 
-/// Builds and returns a fused tag panel: collapsible editor at top, navigator below.
+/// Builds and returns the unified tag panel navigator.
 pub fn build_tag_panel(
     available_tags: Vec<String>,
     initial_width: i32,
@@ -188,9 +188,7 @@ pub fn build_tag_panel(
             .collect::<BTreeSet<String>>(),
     ));
 
-    let active_selected_tags = Rc::new(RefCell::new(BTreeSet::<String>::new()));
-
-    // ── Header: Title, Toggle Edit Picker, Close ─────────────────────────────
+    // ── Header: Title, Close ─────────────────────────────────────────────────
     let header_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .spacing(6)
@@ -205,13 +203,6 @@ pub fn build_tag_panel(
         .css_classes(["heading"])
         .hexpand(true)
         .xalign(0.0)
-        .build();
-
-    let edit_toggle_btn = gtk::ToggleButton::builder()
-        .icon_name("tag-symbolic")
-        .css_classes(["flat", "circular"])
-        .valign(gtk::Align::Center)
-        .tooltip_text(tr("Edit tags for selection"))
         .build();
 
     let close_btn = gtk::Button::builder()
@@ -229,7 +220,6 @@ pub fn build_tag_panel(
     }
 
     header_box.append(&title_label);
-    header_box.append(&edit_toggle_btn);
     header_box.append(&close_btn);
     panel.append(&header_box);
 
@@ -242,79 +232,6 @@ pub fn build_tag_panel(
         .margin_bottom(12)
         .vexpand(true)
         .build();
-
-    // ── Collapsible Top Picker (Revealer) ────────────────────────────────────
-    let picker_revealer = gtk::Revealer::builder()
-        .transition_type(gtk::RevealerTransitionType::SlideDown)
-        .reveal_child(false)
-        .build();
-
-    let picker_container = gtk::Box::builder()
-        .orientation(gtk::Orientation::Vertical)
-        .spacing(8)
-        .margin_bottom(6)
-        .css_classes(["card"])
-        .margin_start(2)
-        .margin_end(2)
-        .build();
-
-    let picker_header = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(8)
-        .margin_start(8)
-        .margin_end(8)
-        .margin_top(8)
-        .build();
-
-    let picker_title = gtk::Label::builder()
-        .label(tr("Edit Tags"))
-        .css_classes(["caption", "heading"])
-        .hexpand(true)
-        .xalign(0.0)
-        .build();
-
-    let picker_apply_btn = gtk::Button::builder()
-        .label(tr("Apply"))
-        .css_classes(["suggested-action", "pill"])
-        .valign(gtk::Align::Center)
-        .build();
-
-    picker_header.append(&picker_title);
-    picker_header.append(&picker_apply_btn);
-    picker_container.append(&picker_header);
-
-    let picker_flow = gtk::FlowBox::builder()
-        .selection_mode(gtk::SelectionMode::None)
-        .max_children_per_line(3)
-        .min_children_per_line(1)
-        .row_spacing(6)
-        .column_spacing(6)
-        .homogeneous(false)
-        .valign(gtk::Align::Start)
-        .margin_start(8)
-        .margin_end(8)
-        .margin_bottom(8)
-        .build();
-
-    let picker_scroll = gtk::ScrolledWindow::builder()
-        .hscrollbar_policy(gtk::PolicyType::Never)
-        .vscrollbar_policy(gtk::PolicyType::Automatic)
-        .overlay_scrolling(false)
-        .max_content_height(160)
-        .propagate_natural_height(true)
-        .child(&picker_flow)
-        .build();
-
-    picker_container.append(&picker_scroll);
-    picker_revealer.set_child(Some(&picker_container));
-    content_box.append(&picker_revealer);
-
-    {
-        let rev = picker_revealer.clone();
-        edit_toggle_btn.connect_toggled(move |btn| {
-            rev.set_reveal_child(btn.is_active());
-        });
-    }
 
     // ── Search & Filter Entry ────────────────────────────────────────────────
     let search_entry = gtk::SearchEntry::builder()
@@ -343,50 +260,11 @@ pub fn build_tag_panel(
     content_box.append(&scroll);
     panel.append(&content_box);
 
-    // ── Refresh & Population Closures ────────────────────────────────────────
-    let refresh_picker_chips = {
-        let all_known_tags = all_known_tags.clone();
-        let active_selected_tags = active_selected_tags.clone();
-        let picker_flow = picker_flow.clone();
-
-        Rc::new(move || {
-            while let Some(child) = picker_flow.first_child() {
-                picker_flow.remove(&child);
-            }
-
-            let known = all_known_tags.borrow();
-            for tag_name in known.iter() {
-                let is_active = active_selected_tags.borrow().contains(tag_name);
-
-                let chip = gtk::ToggleButton::builder()
-                    .label(format!("#{}", tag_name))
-                    .active(is_active)
-                    .css_classes(["pill"])
-                    .build();
-
-                {
-                    let tag = tag_name.clone();
-                    let active_selected_tags = active_selected_tags.clone();
-                    chip.connect_toggled(move |btn| {
-                        if btn.is_active() {
-                            active_selected_tags.borrow_mut().insert(tag.clone());
-                        } else {
-                            active_selected_tags.borrow_mut().remove(&tag);
-                        }
-                    });
-                }
-
-                picker_flow.append(&chip);
-            }
-        })
-    };
-
+    // ── Population Closure ───────────────────────────────────────────────────
     let populate_list = {
         let all_known_tags = all_known_tags.clone();
-        let active_selected_tags = active_selected_tags.clone();
         let list_box = list_box.clone();
         let sender = sender.clone();
-        let refresh_picker_chips = refresh_picker_chips.clone();
 
         Rc::new(move |query: &str| {
             while let Some(child) = list_box.first_child() {
@@ -419,38 +297,99 @@ pub fn build_tag_panel(
                     .hexpand(true)
                     .build();
 
-                let bookmark_btn = gtk::Button::builder()
-                    .icon_name("bookmark-new-symbolic")
+                // ── Popover Context Menu ─────────────────────────────────────
+                let menu_button = gtk::MenuButton::builder()
+                    .icon_name("view-more-symbolic")
                     .css_classes(["flat", "circular"])
                     .valign(gtk::Align::Center)
-                    .tooltip_text(tr("Pin to Sidebar"))
+                    .tooltip_text(tr("Tag options"))
                     .build();
+
+                let popover = gtk::Popover::new();
+                let menu_box = gtk::Box::builder()
+                    .orientation(gtk::Orientation::Vertical)
+                    .spacing(4)
+                    .margin_top(6)
+                    .margin_bottom(6)
+                    .margin_start(6)
+                    .margin_end(6)
+                    .build();
+
+                // Apply Tag
+                let apply_item = gtk::Button::builder().css_classes(["flat"]).build();
+                let apply_content = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+                apply_content.append(&gtk::Image::from_icon_name("list-add-symbolic"));
+                apply_content.append(&gtk::Label::new(Some(&tr("Apply to selection"))));
+                apply_item.set_child(Some(&apply_content));
 
                 {
                     let s = sender.clone();
                     let tag_name = tag.clone();
-                    bookmark_btn.connect_clicked(move |_| {
+                    let pop = popover.clone();
+                    apply_item.connect_clicked(move |_| {
+                        pop.popdown();
+                        s.input(AppMsg::ApplyTagsToSelection(vec![tag_name.clone()]));
+                    });
+                }
+                menu_box.append(&apply_item);
+
+                // Remove Tag
+                let remove_item = gtk::Button::builder().css_classes(["flat"]).build();
+                let remove_content = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+                remove_content.append(&gtk::Image::from_icon_name("list-remove-symbolic"));
+                remove_content.append(&gtk::Label::new(Some(&tr("Remove from selection"))));
+                remove_item.set_child(Some(&remove_content));
+
+                {
+                    let s = sender.clone();
+                    let tag_name = tag.clone();
+                    let pop = popover.clone();
+                    remove_item.connect_clicked(move |_| {
+                        pop.popdown();
+                        s.input(AppMsg::RemoveTagFromSelection(tag_name.clone()));
+                    });
+                }
+                menu_box.append(&remove_item);
+
+                // Pin to Sidebar
+                let pin_item = gtk::Button::builder().css_classes(["flat"]).build();
+                let pin_content = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+                pin_content.append(&gtk::Image::from_icon_name("bookmark-new-symbolic"));
+                pin_content.append(&gtk::Label::new(Some(&tr("Pin to Sidebar"))));
+                pin_item.set_child(Some(&pin_content));
+
+                {
+                    let s = sender.clone();
+                    let tag_name = tag.clone();
+                    let pop = popover.clone();
+                    pin_item.connect_clicked(move |_| {
+                        pop.popdown();
                         s.input(AppMsg::AddTagToSidebar(tag_name.clone()));
                     });
                 }
+                menu_box.append(&pin_item);
 
-                let delete_btn = gtk::Button::builder()
-                    .icon_name("window-close-symbolic")
-                    .css_classes(["flat", "circular"])
-                    .valign(gtk::Align::Center)
-                    .tooltip_text(tr("Delete tag everywhere"))
+                menu_box.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
+
+                // Delete Tag Globally
+                let delete_item = gtk::Button::builder()
+                    .css_classes(["flat", "destructive-action"])
                     .build();
+                let delete_content = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+                delete_content.append(&gtk::Image::from_icon_name("user-trash-symbolic"));
+                delete_content.append(&gtk::Label::new(Some(&tr("Delete tag globally"))));
+                delete_item.set_child(Some(&delete_content));
 
                 {
                     let s = sender.clone();
                     let tag_name = tag.clone();
                     let all_known_tags = all_known_tags.clone();
-                    let active_selected_tags = active_selected_tags.clone();
                     let list_box = list_box.clone();
                     let row = row.clone();
-                    let refresh_picker = refresh_picker_chips.clone();
+                    let pop = popover.clone();
 
-                    delete_btn.connect_clicked(move |btn| {
+                    delete_item.connect_clicked(move |btn| {
+                        pop.popdown();
                         let toplevel = btn.root().and_downcast::<gtk::Window>();
                         let heading = tr("Delete Tag");
                         let dialog = gtk::MessageDialog::new(
@@ -475,17 +414,13 @@ pub fn build_tag_panel(
                         let s = s.clone();
                         let tag_name = tag_name.clone();
                         let all_known_tags = all_known_tags.clone();
-                        let active_selected_tags = active_selected_tags.clone();
                         let list_box = list_box.clone();
                         let row = row.clone();
-                        let refresh_picker = refresh_picker.clone();
 
                         dialog.connect_response(move |dlg, response| {
                             if response == gtk::ResponseType::Ok {
                                 all_known_tags.borrow_mut().remove(&tag_name);
-                                active_selected_tags.borrow_mut().remove(&tag_name);
                                 list_box.remove(&row);
-                                refresh_picker();
                                 s.input(AppMsg::DeleteTagGlobally(tag_name.clone()));
                             }
                             dlg.close();
@@ -494,10 +429,13 @@ pub fn build_tag_panel(
                         dialog.present();
                     });
                 }
+                menu_box.append(&delete_item);
+
+                popover.set_child(Some(&menu_box));
+                menu_button.set_popover(Some(&popover));
 
                 row_box.append(&label);
-                row_box.append(&bookmark_btn);
-                row_box.append(&delete_btn);
+                row_box.append(&menu_button);
 
                 row.set_child(Some(&row_box));
                 list_box.append(&row);
@@ -507,7 +445,6 @@ pub fn build_tag_panel(
         })
     };
 
-    refresh_picker_chips();
     populate_list("");
 
     {
@@ -517,21 +454,6 @@ pub fn build_tag_panel(
             gtk::glib::idle_add_local_once(move || {
                 lb.select_row(None::<&gtk::ListBoxRow>);
             });
-        });
-    }
-
-    // ── Apply Button for Top Picker ──────────────────────────────────────────
-    {
-        let active_selected_tags = active_selected_tags.clone();
-        let s = sender.clone();
-        let rev = picker_revealer.clone();
-        let toggle = edit_toggle_btn.clone();
-
-        picker_apply_btn.connect_clicked(move |_| {
-            let tags: Vec<String> = active_selected_tags.borrow().iter().cloned().collect();
-            s.input(AppMsg::ApplyTagsToSelection(tags));
-            rev.set_reveal_child(false);
-            toggle.set_active(false);
         });
     }
 
@@ -545,10 +467,8 @@ pub fn build_tag_panel(
 
     {
         let all_known_tags = all_known_tags.clone();
-        let active_selected_tags = active_selected_tags.clone();
         let search_entry_clone = search_entry.clone();
         let populate_list = populate_list.clone();
-        let refresh_picker = refresh_picker_chips.clone();
 
         search_entry.connect_activate(move |_| {
             let clean = search_entry_clone
@@ -559,9 +479,7 @@ pub fn build_tag_panel(
 
             if !clean.is_empty() {
                 all_known_tags.borrow_mut().insert(clean.clone());
-                active_selected_tags.borrow_mut().insert(clean);
                 search_entry_clone.set_text("");
-                refresh_picker();
                 populate_list("");
             }
         });
