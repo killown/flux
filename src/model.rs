@@ -763,6 +763,8 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Manages bounded concurrency and viewport-based cancellation tokens for lazy thumbnail generation tasks.
+    pub thumbnail_manager: Arc<crate::services::thumbnails::ThumbnailTaskManager>,
     /// Revealer widget wrapping the right tag navigator sidebar panel.
     pub tag_panel_revealer: Option<gtk::Revealer>,
     /// Whether the lazy-initialized right tag navigator sidebar panel is currently visible.
@@ -931,6 +933,11 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Notifies that the vertical viewport changed with normalized scroll progress values.
+    UpdateVisibleThumbnailsViewport {
+        progress_top: f64,
+        progress_bottom: f64,
+    },
     /// Updates the tint overlay opacity for a background slot and re-renders the CSS.
     SetBackgroundAlpha { slot: BackgroundSlot, alpha: f64 },
     /// Deletes all custom background image files from the local data directory

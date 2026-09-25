@@ -384,6 +384,7 @@ impl FluxApp {
 
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
+        self.thumbnail_manager.clear_and_cancel_all();
 
         let show_hidden = self.show_hidden;
         let sort_strategy = self.sort_by;
@@ -795,6 +796,7 @@ impl FluxApp {
         // spawned closure can stamp the message it will later dispatch.
         let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
+        self.thumbnail_manager.clear_and_cancel_all();
 
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
@@ -990,8 +992,11 @@ impl FluxApp {
             old_mon.cancel();
         }
         self.files.clear();
+
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
+        self.thumbnail_manager.clear_and_cancel_all();
+
         self.current_path = std::path::PathBuf::from(crate::ui::constants::RECENT_URI);
 
         let xbel_path = dirs::data_local_dir()

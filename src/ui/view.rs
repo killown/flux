@@ -903,13 +903,42 @@ impl SimpleAsyncComponent for FluxApp {
         widgets.grid_scroller.set_child(Some(&model.files.view));
 
         let vadj = widgets.grid_scroller.vadjustment();
-        let s_vadj = sender.clone();
-        vadj.connect_value_changed(move |vadj| {
-            s_vadj.input(AppMsg::CheckVisibleThumbnails);
+        let s_scroll = sender.clone();
+        let scroll_debounce: std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>> =
+            std::rc::Rc::new(std::cell::Cell::new(None));
 
-            // Check if scrollbar has reached the end (with a small 5px tolerance)
-            let at_bottom = vadj.value() >= vadj.upper() - vadj.page_size() - 5.0;
-            s_vadj.input(AppMsg::SetScrolledToBottom(at_bottom));
+        vadj.connect_value_changed(move |adj| {
+            let at_bottom = adj.value() >= adj.upper() - adj.page_size() - 5.0;
+            s_scroll.input(AppMsg::SetScrolledToBottom(at_bottom));
+
+            if let Some(source_id) = scroll_debounce.take() {
+                source_id.remove();
+            }
+
+            let adj_clone = adj.clone();
+            let sender_clone = s_scroll.clone();
+            let timer_cell = scroll_debounce.clone();
+
+            let timeout_id =
+                glib::timeout_add_local_once(std::time::Duration::from_millis(20), move || {
+                    timer_cell.set(None);
+
+                    let val = adj_clone.value();
+                    let page_size = adj_clone.page_size();
+                    let lower = adj_clone.lower();
+                    let upper = adj_clone.upper();
+
+                    let max_scroll = (upper - page_size - lower).max(1.0);
+                    let progress_top = ((val - lower) / max_scroll).clamp(0.0, 1.0);
+                    let progress_bottom = ((val + page_size - lower) / max_scroll).clamp(0.0, 1.0);
+
+                    sender_clone.input(AppMsg::UpdateVisibleThumbnailsViewport {
+                        progress_top,
+                        progress_bottom,
+                    });
+                });
+
+            scroll_debounce.set(Some(timeout_id));
         });
 
         let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
