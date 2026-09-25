@@ -431,6 +431,16 @@ impl FluxApp {
         let min_pos = current_idx.min(last_idx).saturating_sub(window_size / 2);
         let max_pos = (current_idx.max(last_idx) + window_size).min(total_items);
 
+        let cancelled = self
+            .thumbnail_manager
+            .cancel_out_of_viewport(min_pos as u32, max_pos as u32);
+        for idx in cancelled {
+            self.pending_thumbnails.remove(&idx);
+        }
+
+        let max_threads = self.config.ui.thumbnail_threads.max(1);
+        let sem = self.thumbnail_manager.get_semaphore(max_threads);
+
         for i in min_pos..max_pos {
             if let Some(wrapper) = self.files.get(i as u32) {
                 let item = wrapper.borrow();
@@ -441,13 +451,39 @@ impl FluxApp {
                 }
 
                 if !item.is_dir && item.thumbnail.is_none() {
-                    let (is_img, is_vid) = utils::is_visual_media(&item.path);
-                    if is_img || is_vid {
+                    let ext = item
+                        .path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|e| e.to_ascii_lowercase())
+                        .unwrap_or_default();
+
+                    let is_pdf = ext == "pdf";
+                    let is_font = matches!(ext.as_str(), "ttf" | "otf" | "woff" | "woff2" | "ttc");
+                    let is_exe = ext == "exe";
+                    let is_audio = utils::is_audio_file(&item.path);
+                    let (is_img, is_vid) = if !is_pdf && !is_font && !is_exe && !is_audio {
+                        utils::is_visual_media(&item.path)
+                    } else {
+                        (false, false)
+                    };
+
+                    let can_thumbnail = (is_pdf && self.config.ui.thumbnail_types.pdfs)
+                        || (is_font && self.config.ui.thumbnail_types.fonts)
+                        || (is_exe && self.config.ui.thumbnail_types.executables)
+                        || (is_audio && self.config.ui.thumbnail_types.audio)
+                        || (is_img && self.config.ui.thumbnail_types.images)
+                        || (is_vid && self.config.ui.thumbnail_types.videos);
+
+                    if can_thumbnail {
                         self.pending_thumbnails.insert(grid_idx);
+                        let token = self.thumbnail_manager.register_token(grid_idx);
                         self.spawn_single_thumbnail(
                             grid_idx,
                             item.path.clone(),
                             current_session,
+                            token,
+                            sem.clone(),
                             sender.clone(),
                         );
                     }
@@ -522,7 +558,11 @@ impl FluxApp {
             return;
         }
 
-        self.spawn_single_thumbnail(grid_idx, path, current_session, sender.clone());
+        let max_threads = self.config.ui.thumbnail_threads.max(1);
+        let sem = self.thumbnail_manager.get_semaphore(max_threads);
+        let token = self.thumbnail_manager.register_token(grid_idx);
+
+        self.spawn_single_thumbnail(grid_idx, path, current_session, token, sem, sender.clone());
     }
 
     /// Locates the rendered child widget in the grid view matching the given file path.

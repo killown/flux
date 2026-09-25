@@ -337,6 +337,60 @@ impl FluxApp {
             // ==========================================
             // Thumbnails & FFmpeg
             // ==========================================
+            AppMsg::UpdateVisibleThumbnailsViewport {
+                progress_top,
+                progress_bottom,
+            } => {
+                if !self.config.ui.lazy_thumbnails || self.files.is_empty() {
+                    return;
+                }
+
+                let total_items = self.files.len() as usize;
+                let max_item_idx = total_items.saturating_sub(1);
+
+                let first_visible = (progress_top * max_item_idx as f64).floor() as usize;
+                let last_visible = (progress_bottom * max_item_idx as f64).ceil() as usize;
+
+                let overscan = 30usize;
+                let visible_start = first_visible.saturating_sub(overscan) as u32;
+                let visible_end = (last_visible + overscan).min(max_item_idx) as u32;
+
+                let cancelled = self
+                    .thumbnail_manager
+                    .cancel_out_of_viewport(visible_start, visible_end);
+                for idx in cancelled {
+                    self.pending_thumbnails.remove(&idx);
+                }
+
+                let max_threads = self.config.ui.thumbnail_threads.max(1);
+                let sem = self.thumbnail_manager.get_semaphore(max_threads);
+                let session = self.load_id.load(Ordering::SeqCst);
+
+                for idx in visible_start..=visible_end {
+                    if let Some(wrapper) = self.files.get(idx) {
+                        let item = wrapper.borrow();
+                        if !item.is_dir
+                            && item.thumbnail.is_none()
+                            && self.pending_thumbnails.insert(idx)
+                        {
+                            let (is_img, is_vid) = crate::utils::is_visual_media(&item.path);
+                            if is_img || is_vid {
+                                let token = self.thumbnail_manager.register_token(idx);
+                                self.spawn_single_thumbnail(
+                                    idx,
+                                    item.path.clone(),
+                                    session,
+                                    token,
+                                    sem.clone(),
+                                    sender.clone(),
+                                );
+                            } else {
+                                self.pending_thumbnails.remove(&idx);
+                            }
+                        }
+                    }
+                }
+            }
             AppMsg::TriggerVideoPreview(path) => {
                 self.handle_trigger_video_preview(path);
             }

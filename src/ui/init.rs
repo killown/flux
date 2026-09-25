@@ -427,6 +427,9 @@ impl FluxApp {
             scrolled_to_bottom: false,
             last_search_was_advanced: false,
             active_item_line: 0,
+            thumbnail_manager: Arc::new(
+                crate::services::thumbnails::ThumbnailTaskManager::default(),
+            ),
         };
 
         // 7.5 Apply initial list/grid mode to the view
