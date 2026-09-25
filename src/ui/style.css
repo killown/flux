@@ -1,9 +1,15 @@
+/* ── ToolbarView Integration ── */
+toolbarview {
+  background-color: transparent;
+}
+
 /* ── HeaderBar & Navigation ── */
 headerbar {
   background-color: transparent;
   border: none;
   box-shadow: none;
-  padding: 8px;
+  padding: 4px 12px;
+  min-height: 38px;
 }
 
 headerbar togglebutton:checked,
@@ -80,11 +86,10 @@ headerbar togglebutton:active {
 .sidebar {
   background-color: color-mix(in srgb, @window_bg_color 20%, #000000 20%);
   border-radius: 14px;
-  border: none; /* Removes the harsh literal border entirely */
+  border: none;
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.15),
-    /* Soft universal dark outline that adapts anywhere */ 0 4px 20px
-      rgba(0, 0, 0, 0.3);
+    0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-inner {
@@ -275,7 +280,7 @@ button.eject-button:active {
 gridview,
 listview {
   background-color: transparent;
-  padding: 16px 24px;
+  padding: 0px 24px 16px 24px; /* Reduced top padding to 0px */
 }
 
 .flux-card {
@@ -532,21 +537,15 @@ toastoverlay.quick-dock-active toast {
     @window_fg_color 12%
   );
   border-radius: 12px;
-
-  /* Forcefully strip any native theme-injected borders */
   border: none;
   border-style: none;
   border-image: none;
-
   padding: 6px 16px;
   min-height: 28px;
   margin: 0px 8px 8px 8px;
-
-  /* Use a clean shadow outline instead of a real border to prevent white line artifacts */
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.12),
     0 4px 16px rgba(0, 0, 0, 0.2);
-
   transition: all 201ms ease;
 }
 
@@ -602,7 +601,6 @@ scrollbar.vertical slider:hover {
 }
 
 /* ── Empty Folder & Symlink Dynamic Theme Styling ── */
-
 .flux-card.flux-card--empty {
   border-left: 2.5px solid alpha(@theme_fg_color, 0.45);
 }

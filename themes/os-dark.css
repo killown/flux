@@ -8,6 +8,11 @@
   letter-spacing: 0px;
 }
 
+/* ── ToolbarView Integration ── */
+toolbarview {
+  background-color: transparent;
+}
+
 /* ── HeaderBar & Navigation ── */
 headerbar {
   background-color: transparent;
@@ -204,7 +209,7 @@ button.eject-button:active {
 gridview,
 listview {
   background-color: @window_bg_color;
-  padding: 16px 24px;
+  padding: 0px 24px 16px 24px; /* Reduced top padding to 0px */
 }
 
 gridview child {
@@ -1207,11 +1212,11 @@ toastoverlay.quick-dock-active toast {
 }
 
 .flux-card.flux-card--broken-symlink {
-  border-right: 2.5px solid #ff453a;
+  border-right: 2.5px solid #ff9500;
 }
 
 .flux-card.flux-card--broken-symlink .flux-label {
-  color: #ff453a;
+  color: #ff9500;
   text-decoration-line: line-through;
 }
 
