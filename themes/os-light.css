@@ -49,6 +49,11 @@ dialog .secondary-text {
   color: rgba(0, 0, 0, 0.75);
 }
 
+/* ── ToolbarView Integration ── */
+toolbarview {
+  background-color: transparent;
+}
+
 /* ── HeaderBar & Navigation ── */
 headerbar {
   background-color: transparent;
@@ -250,7 +255,7 @@ row:selected button.eject-button:active {
 gridview,
 listview {
   background-color: #f5f5f7;
-  padding: 16px 24px;
+  padding: 0px 24px 16px 24px; /* Reduced top padding to 0px */
 }
 
 gridview child {

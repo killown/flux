@@ -76,21 +76,20 @@ impl SimpleAsyncComponent for FluxApp {
                     set_visible: model.sidebar_visible,
                 },
 
-                /// Main content container for the header and file browser.
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Vertical,
+                /// Main content container for the header and file browser using AdwToolbarView.
+                adw::ToolbarView {
                     set_hexpand: true,
+                    set_vexpand: true,
 
                     /// Top-level navigation and state toolbar.
                     #[name = "header_bar"]
-                    adw::HeaderBar {
+                    add_top_bar = &adw::HeaderBar {
                         #[watch]
                         set_visible: model.header_visible,
                         #[watch]
                         set_show_start_title_buttons: false,
                         #[watch]
                         set_show_end_title_buttons: false,
-
 
                         pack_start = &gtk::Button {
                             set_icon_name: constants::ICON_BACK,
@@ -110,13 +109,13 @@ impl SimpleAsyncComponent for FluxApp {
                         // VIEW_SEARCH or VIEW_ENTRY. This binding is critical.
                         /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
                         #[wrap(Some)]
-                            set_title_widget: header_stack = &gtk::Stack {
-                                set_halign: gtk::Align::Center,
-                                set_hexpand: false,
-                                set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
-                                set_transition_type: gtk::StackTransitionType::Crossfade,
-                                #[watch]
-                                set_visible_child_name: &model.header_view,
+                        set_title_widget: header_stack = &gtk::Stack {
+                            set_halign: gtk::Align::Center,
+                            set_hexpand: false,
+                            set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
+                            set_transition_type: gtk::StackTransitionType::Crossfade,
+                            #[watch]
+                            set_visible_child_name: &model.header_view,
 
                             /// Interactive breadcrumb container for directory parent navigation.
                             #[name = "path_entry"]
@@ -517,7 +516,7 @@ impl SimpleAsyncComponent for FluxApp {
                     },
 
                     // Filter chip bar, slides in below the header when patterns are active.
-                    gtk::Revealer {
+                    add_top_bar = &gtk::Revealer {
                         set_transition_type: gtk::RevealerTransitionType::SlideDown,
                         set_transition_duration: 150,
                         #[watch]
@@ -547,9 +546,11 @@ impl SimpleAsyncComponent for FluxApp {
 
                     /// Main scrollable viewport for the file grid.
                     #[name = "main_paned"]
-                    gtk::Paned {
+                    #[wrap(Some)]
+                    set_content = &gtk::Paned {
                         set_orientation: gtk::Orientation::Vertical,
                         set_vexpand: true,
+                        set_hexpand: true,
                         set_wide_handle: true,
                         set_shrink_end_child: true,
                         set_shrink_start_child: true,
@@ -758,7 +759,7 @@ impl SimpleAsyncComponent for FluxApp {
                     },
 
                     /// Selection status bar at the bottom of the main content view.
-                    gtk::Box {
+                    add_bottom_bar = &gtk::Box {
                         #[watch]
                         set_visible: model.statusbar_visible,
                         set_margin_start: 8,
@@ -833,7 +834,7 @@ impl SimpleAsyncComponent for FluxApp {
                             add_css_class: "dim-label",
                             set_halign: gtk::Align::End,
                         }
-                    }
+                    },
                 },
 
                 /// Right search panel revealer (lazy initialized).
