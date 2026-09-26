@@ -162,6 +162,21 @@ impl FluxApp {
             return;
         }
 
+        let was_in_archive = self
+            .current_path
+            .to_string_lossy()
+            .starts_with(crate::services::archive::ARCHIVE_URI);
+        let will_be_in_archive = path_str.starts_with(crate::services::archive::ARCHIVE_URI);
+
+        if was_in_archive && !will_be_in_archive {
+            // Defer so xdg-open / GtkVideo have time to open the file.
+            // Linux unlink keeps the file alive while any fd holds it, but the
+            // external app may not have called open() yet.
+            glib::timeout_add_local_once(std::time::Duration::from_secs(3), || {
+                crate::services::archive::clear_archive_session_temp();
+            });
+        }
+
         // Guard against re-navigating to the current folder (by string or canonical target)
         // WARNING: Do not remove or modify this check without careful consideration.
         // Removing this check causes redundant navigation to the currently active path,

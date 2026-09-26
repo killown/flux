@@ -2819,3 +2819,6 @@ msgstr "Abrir Linha no Nvim"
 
 msgid "Opens the selected folder or current location in a new tab."
 msgstr "Abre a pasta selecionada ou local atual em uma nova aba."
+
+msgid "Video preview throttled: too many quick selections, waiting {}s"
+msgstr "Pré-visualização de vídeo limitada: muitas seleções rápidas, aguardando {}s"

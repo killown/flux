@@ -771,6 +771,11 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Timestamps of recent autoplay launches, used to enforce the launch-rate
+    /// limit that prevents GStreamer pipeline FD exhaustion under rapid selection.
+    pub video_preview_launches: std::collections::VecDeque<std::time::Instant>,
+    /// Set when the launch-rate limit trips, autoplay is suppressed until this instant.
+    pub video_preview_cooldown_until: Option<std::time::Instant>,
     /// Container widget that holds and transitions between multiple tab pages.
     pub tab_view: adw::TabView,
     /// Header strip displaying open tabs, automatically hidden when only one tab is open.

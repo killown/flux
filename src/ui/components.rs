@@ -1146,6 +1146,20 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
         if let Some(stream) = widgets.video_widget.media_stream() {
             stream.pause();
+
+            let video_weak = widgets.video_widget.downgrade();
+            let stream_to_clear = stream.clone();
+            glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
+                if let Some(video) = video_weak.upgrade() {
+                    if video
+                        .media_stream()
+                        .map(|s| s == stream_to_clear)
+                        .unwrap_or(false)
+                    {
+                        video.set_media_stream(None::<&gtk::MediaStream>);
+                    }
+                }
+            });
         }
 
         if let Some(ref provider) = widgets.scale_css_provider {
@@ -1157,9 +1171,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         root.remove_css_class("flux-card--cut");
         root.remove_css_class("flux-card--copy");
 
-        widgets
-            .video_widget
-            .set_media_stream(None::<&gtk::MediaStream>);
         widgets.preview_stack.set_visible_child_name("icon");
 
         // Release the texture on both the widget and the item model
