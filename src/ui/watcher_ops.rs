@@ -180,4 +180,49 @@ impl FluxApp {
             sender.input(AppMsg::StartRename(path));
         }
     }
+
+    pub fn handle_file_deleted_dispatch(&mut self, path: PathBuf) {
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(&self.cache_key(parent));
+        }
+        self.handle_file_deleted(path);
+    }
+
+    pub fn handle_file_changed_dispatch(
+        &mut self,
+        path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(&self.cache_key(parent));
+        }
+        self.handle_file_changed(path, sender);
+    }
+
+    pub fn handle_item_moved(
+        &mut self,
+        old_path: PathBuf,
+        new_path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if let Some(p) = old_path.parent() {
+            self.folder_cache.remove(&self.cache_key(p));
+        }
+        if let Some(p) = new_path.parent() {
+            self.folder_cache.remove(&self.cache_key(p));
+        }
+        self.folder_cache
+            .remove(&self.cache_key(&self.current_path));
+
+        let old_key = old_path.to_string_lossy().to_string();
+        let new_key = new_path.to_string_lossy().to_string();
+        if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
+            self.config.ui.file_icons.insert(new_key.clone(), v);
+        }
+        if let Some(v) = self.config.ui.folder_icons.remove(&old_key) {
+            self.config.ui.folder_icons.insert(new_key, v);
+        }
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Refresh);
+    }
 }

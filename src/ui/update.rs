@@ -1,27 +1,9 @@
-use crate::model::{AppMsg, BackgroundSlot, FluxApp, RightPanelType};
+use crate::model::{AppMsg, FluxApp, RightPanelType};
 use crate::ui::FileProperties;
-use crate::utils;
-use adw::gio::prelude::*;
 use adw::prelude::*;
 use relm4::prelude::*;
-use std::sync::atomic::Ordering;
 
 impl FluxApp {
-    pub fn reset_from_content_search(&mut self) {
-        if let Some(cancellable) = self.content_search_cancellable.take() {
-            cancellable.cancel();
-        }
-        self.is_content_searching = false;
-        self.load_id.fetch_add(1, Ordering::SeqCst);
-        self.pending_thumbnails.clear();
-        self.filter.clear();
-        self.search_just_opened = false;
-        self.is_list_mode = self.saved_list_mode;
-        self.files.view.set_max_columns(self.saved_max_columns);
-        self.files.clear();
-        self.sync_list_mode();
-    }
-
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
         match message {
             // ==========================================
@@ -32,17 +14,7 @@ impl FluxApp {
             AppMsg::AddToSidebarPermanent => self.handle_add_to_sidebar_permanent(),
             AppMsg::ReorderSidebar { from, to } => self.handle_reorder_sidebar(from, to),
             AppMsg::PromptSidebarRename { path, current_name } => {
-                let path_str = path.to_string_lossy();
-                if let Some(section_name) = path_str.strip_prefix("__section__:") {
-                    // Rename a section label rather than a pinned path.
-                    self.show_prompt_sidebar_rename_section(
-                        section_name.to_string(),
-                        current_name,
-                        &sender,
-                    );
-                } else {
-                    self.show_prompt_sidebar_rename(path, current_name, &sender);
-                }
+                self.handle_prompt_sidebar_rename(path, current_name, &sender)
             }
             AppMsg::RenameSidebarPlace { path, new_name } => {
                 self.handle_rename_sidebar_place(path, new_name, &sender);
@@ -54,17 +26,7 @@ impl FluxApp {
                 self.show_prompt_sidebar_rename_section(old_name, current_name, &sender);
             }
             AppMsg::RenameSidebarSection { old_name, new_name } => {
-                let mut modified = false;
-                for place in &mut self.config.sidebar {
-                    if place.kind.as_deref() == Some("label") && place.name == old_name {
-                        place.name = new_name.clone();
-                        modified = true;
-                    }
-                }
-                if modified {
-                    crate::utils::save_config(&self.config);
-                    self.refresh_sidebar();
-                }
+                self.handle_rename_sidebar_section(old_name, new_name)
             }
             AppMsg::RemoveSidebarSection(name) => self.handle_remove_sidebar_section(name),
             AppMsg::PromptNewSidebarSection => {
@@ -124,41 +86,21 @@ impl FluxApp {
             // ==========================================
             // Directory Loading & Cache
             // ==========================================
-            AppMsg::ShowLoadingSpinner(session) => {
-                if self.load_id.load(Ordering::SeqCst) == session {
-                    self.is_loading = true;
-                }
-            }
+            AppMsg::ShowLoadingSpinner(session) => self.handle_show_loading_spinner(session),
             AppMsg::FolderLoadedChunk {
                 load_id,
                 chunk,
                 is_cached,
-            } => {
-                if self.load_id.load(Ordering::SeqCst) == load_id {
-                    self.append_context_batch(chunk, load_id, is_cached, &sender);
-                }
-            }
-            AppMsg::FolderLoadedFinish { load_id } => {
-                if self.load_id.load(Ordering::SeqCst) == load_id {
-                    self.is_loading = false;
-                }
-            }
+            } => self.handle_folder_loaded_chunk(load_id, chunk, is_cached, &sender),
+            AppMsg::FolderLoadedFinish { load_id } => self.handle_folder_loaded_finish(load_id),
             AppMsg::FolderLoaded {
                 path,
                 load_id,
                 items,
                 media_tasks,
-            } => {
-                self.active_video_preview = None;
-                self.handle_folder_loaded(path, load_id, items, media_tasks, &sender);
-            }
+            } => self.handle_folder_loaded_begin(path, load_id, items, media_tasks, &sender),
             AppMsg::InvalidateCacheAndNavigate(path) => {
-                if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(&self.cache_key(parent));
-                }
-                self.folder_cache
-                    .remove(&self.cache_key(&self.current_path));
-                sender.input(AppMsg::Navigate(path));
+                self.handle_invalidate_cache_and_navigate(path, &sender)
             }
             AppMsg::SetFolderCacheCapacity(val) => {
                 self.handle_set_folder_cache_capacity(val);
@@ -228,59 +170,22 @@ impl FluxApp {
             // Icons & Metadata
             // ==========================================
             AppMsg::SetAutoMimeBodyColor(color) => {
-                self.config.ui.auto_mime_body_color = color;
-                crate::utils::save_config(&self.config);
-                crate::services::loader::invalidate_extension_icon_cache();
-                crate::utils::invalidate_themed_icon_cache();
-                self.load_path(self.current_path.clone(), &sender);
+                self.handle_set_auto_mime_body_color(color, &sender)
             }
             AppMsg::SetAutoMimeFontColor(color) => {
-                self.config.ui.auto_mime_font_color = color;
-                crate::utils::save_config(&self.config);
-                crate::services::loader::invalidate_extension_icon_cache();
-                crate::utils::invalidate_themed_icon_cache();
-                self.load_path(self.current_path.clone(), &sender);
+                self.handle_set_auto_mime_font_color(color, &sender)
             }
             AppMsg::SetAutoGenerateMimeIcons(enabled) => {
-                self.config.ui.auto_generate_mime_icons = enabled;
-                crate::utils::save_config(&self.config);
-                crate::services::loader::invalidate_extension_icon_cache();
-                sender.input(AppMsg::Refresh);
+                self.handle_set_auto_generate_mime_icons(enabled, &sender)
             }
             AppMsg::SetAutoMimeAccentColor(color) => {
-                self.config.ui.auto_mime_accent_color = color;
-                crate::utils::save_config(&self.config);
-                crate::services::loader::invalidate_extension_icon_cache();
-                sender.input(AppMsg::Refresh);
+                self.handle_set_auto_mime_accent_color(color, &sender)
             }
-            AppMsg::SetAutoMimeFontSize(size) => {
-                self.config.ui.auto_mime_font_size = size;
-                crate::utils::save_config(&self.config);
-                crate::services::loader::invalidate_extension_icon_cache();
-                sender.input(AppMsg::Refresh);
-            }
-            AppMsg::ResetExtensionIcon(ext) => {
-                let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
-                if let Some(custom_dir) =
-                    dirs::data_local_dir().map(|d| d.join("flux/icons/extensions/custom"))
-                {
-                    for fmt in &["png", "svg", "webp", "jpg", "jpeg"] {
-                        let p = custom_dir.join(format!("{}.{}", clean_ext, fmt));
-                        let _ = std::fs::remove_file(p);
-                    }
-                }
-
-                crate::services::loader::invalidate_extension_icon_cache();
-                crate::utils::invalidate_themed_icon_cache();
-                self.files.clear();
-                self.load_path(self.current_path.clone(), &sender);
-            }
+            AppMsg::SetAutoMimeFontSize(size) => self.handle_set_auto_mime_font_size(size, &sender),
+            AppMsg::ResetExtensionIcon(ext) => self.handle_reset_extension_icon(ext, &sender),
             AppMsg::SetIconSize(val) => self.handle_set_icon_size(val, &sender),
             AppMsg::SetListIconSize(val) => self.handle_set_list_icon_size(val, &sender),
-            AppMsg::SetShowEmptyDirEmblem(val) => {
-                self.config.ui.show_empty_dir_emblem = val;
-                utils::save_config(&self.config);
-            }
+            AppMsg::SetShowEmptyDirEmblem(val) => self.handle_set_show_empty_dir_emblem(val),
             AppMsg::SetFileIcon { path, image_path } => {
                 self.handle_set_file_icon(path, image_path, &sender)
             }
@@ -289,43 +194,11 @@ impl FluxApp {
                 self.handle_set_folder_icon(path, icon_name, &sender)
             }
             AppMsg::ResetFolderIcon(path) => self.handle_reset_folder_icon(path, &sender),
-            AppMsg::TriggerResetIcon => {
-                let target = self
-                    .get_selected_path()
-                    .unwrap_or_else(|| self.current_path.clone());
-                if target.is_dir() {
-                    sender.input(AppMsg::ResetFolderIcon(target.clone()));
-                    sender.input(AppMsg::ResetFileIcon(target));
-                } else {
-                    sender.input(AppMsg::ResetFileIcon(target));
-                }
-            }
+            AppMsg::TriggerResetIcon => self.handle_trigger_reset_icon(&sender),
             AppMsg::ShowIconPicker(target_path) => self.show_icon_picker(target_path, &sender),
-            AppMsg::TriggerIconPicker => {
-                let target = self
-                    .get_selected_path()
-                    .unwrap_or_else(|| self.current_path.clone());
-                if target.is_dir() {
-                    self.show_icon_picker(target, &sender);
-                }
-            }
+            AppMsg::TriggerIconPicker => self.handle_trigger_icon_picker(&sender),
             AppMsg::FolderIconsReady { icons, session } => {
-                if session == self.load_id.load(Ordering::SeqCst) {
-                    for i in 0..self.files.len() {
-                        if let Some(wrapper) = self.files.get(i) {
-                            let path_key = wrapper.borrow().path.to_string_lossy().to_string();
-                            if let Some(icon_name) = icons.get(&path_key) {
-                                if let Ok(icon) = gtk::gio::Icon::for_string(icon_name) {
-                                    let mut item = wrapper.borrow().clone();
-                                    item.icon = icon;
-                                    item.is_custom_icon = true;
-                                    self.files.remove(i);
-                                    self.files.insert(i, item);
-                                }
-                            }
-                        }
-                    }
-                }
+                self.handle_folder_icons_ready(icons, session)
             }
             AppMsg::MediaDurationReady(maybe_duration) => {
                 self.handle_media_duration_ready(maybe_duration)
@@ -340,58 +213,11 @@ impl FluxApp {
             AppMsg::UpdateVisibleThumbnailsViewport {
                 progress_top,
                 progress_bottom,
-            } => {
-                if !self.config.ui.lazy_thumbnails || self.files.is_empty() {
-                    return;
-                }
-
-                let total_items = self.files.len() as usize;
-                let max_item_idx = total_items.saturating_sub(1);
-
-                let first_visible = (progress_top * max_item_idx as f64).floor() as usize;
-                let last_visible = (progress_bottom * max_item_idx as f64).ceil() as usize;
-
-                let overscan = 30usize;
-                let visible_start = first_visible.saturating_sub(overscan) as u32;
-                let visible_end = (last_visible + overscan).min(max_item_idx) as u32;
-
-                let cancelled = self
-                    .thumbnail_manager
-                    .cancel_out_of_viewport(visible_start, visible_end);
-                for idx in cancelled {
-                    self.pending_thumbnails.remove(&idx);
-                }
-
-                let max_threads = self.config.ui.thumbnail_threads.max(1);
-                let sem = self.thumbnail_manager.get_semaphore(max_threads);
-                let session = self.load_id.load(Ordering::SeqCst);
-
-                for idx in visible_start..=visible_end {
-                    if let Some(wrapper) = self.files.get(idx) {
-                        let item = wrapper.borrow();
-                        if !item.is_dir
-                            && item.thumbnail.is_none()
-                            && self.pending_thumbnails.insert(idx)
-                        {
-                            let (is_img, is_vid) = crate::utils::is_visual_media(&item.path);
-                            if is_img || is_vid {
-                                let token = self.thumbnail_manager.register_token(idx);
-                                self.spawn_single_thumbnail(
-                                    idx,
-                                    item.path.clone(),
-                                    session,
-                                    self.active_tab_index,
-                                    token,
-                                    sem.clone(),
-                                    sender.clone(),
-                                );
-                            } else {
-                                self.pending_thumbnails.remove(&idx);
-                            }
-                        }
-                    }
-                }
-            }
+            } => self.handle_update_visible_thumbnails_viewport(
+                progress_top,
+                progress_bottom,
+                &sender,
+            ),
             AppMsg::TriggerVideoPreview(path) => {
                 self.handle_trigger_video_preview(path);
             }
@@ -493,108 +319,23 @@ impl FluxApp {
             // Tags
             // ==========================================
             AppMsg::ApplyTagsToSelection(tags) => {
-                let selection = self.get_selection();
-                for path in selection {
-                    let _ = self
-                        .state_db
-                        .set_tags(&path, &tags, chrono::Utc::now().timestamp());
-                    let _ = crate::utils::xattr::write_tags(&path, &tags);
-                }
-                sender.input(AppMsg::ShowToast(crate::i18n::tr("Tags updated")));
+                self.handle_apply_tags_to_selection(tags, &sender)
             }
             AppMsg::RemoveTagFromSelection(tag) => {
-                let target_tag = tag.trim_start_matches('#').to_lowercase();
-                let selection = self.get_selection();
-                for path in selection {
-                    let mut tags = crate::utils::xattr::read_tags(&path);
-                    tags.retain(|t| t.trim_start_matches('#').to_lowercase() != target_tag);
-                    let _ = crate::utils::xattr::write_tags(&path, &tags);
-                    let mtime = std::fs::metadata(&path)
-                        .and_then(|m| m.modified())
-                        .ok()
-                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map(|d| d.as_secs() as i64)
-                        .unwrap_or(0);
-                    let _ = self.state_db.set_tags(&path, &tags, mtime);
-                }
-                sender.input(AppMsg::ShowToast(crate::i18n::tr("Tag removed")));
-                sender.input(AppMsg::Refresh);
+                self.handle_remove_tag_from_selection(tag, &sender)
             }
             AppMsg::AddTagToSidebar(tag) => {
                 self.handle_add_tag_to_sidebar(tag);
             }
-            AppMsg::OpenTagPicker => {
-                let selection = self.get_selection();
-                let paths = if selection.is_empty() {
-                    vec![self.current_path.clone()]
-                } else {
-                    selection
-                };
-
-                let state_db = self.state_db.clone();
-                let sender_tag = sender.clone();
-                let paths_clone = paths.clone();
-
-                std::thread::spawn(move || {
-                    let first_path = &paths_clone[0];
-                    let initial_tags = crate::utils::xattr::read_tags(first_path);
-                    let available_tags = state_db.list_all_tags().unwrap_or_default();
-
-                    sender_tag.input(AppMsg::TagsReady {
-                        paths: paths_clone,
-                        tags: initial_tags,
-                        available_tags,
-                    });
-                });
-            }
+            AppMsg::OpenTagPicker => self.handle_open_tag_picker(&sender),
             AppMsg::TagsReady {
                 paths,
                 tags,
                 available_tags,
-            } => {
-                let parent_widget = self.files.view.clone();
-                crate::ui::tag_picker::show_tag_picker(
-                    &parent_widget,
-                    paths,
-                    tags,
-                    available_tags,
-                    sender.clone(),
-                );
-            }
-            AppMsg::SetFileTags { path, tags } => {
-                let state_db = self.state_db.clone();
-                let path_clone = path.clone();
-                let tags_clone = tags.clone();
-                let sender_refresh = sender.clone();
-
-                std::thread::spawn(move || {
-                    let _ = crate::utils::xattr::write_tags(&path_clone, &tags_clone);
-                    let mtime = std::fs::metadata(&path_clone)
-                        .and_then(|m| m.modified())
-                        .ok()
-                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-                        .map(|d| d.as_secs() as i64)
-                        .unwrap_or(0);
-
-                    let _ = state_db.set_tags(&path_clone, &tags_clone, mtime);
-                    sender_refresh.input(AppMsg::Refresh);
-                });
-            }
-            AppMsg::DeleteTagGlobally(tag) => {
-                let state_db = self.state_db.clone();
-                let sender_refresh = sender.clone();
-                std::thread::spawn(move || {
-                    let _ = state_db.delete_tag_globally(&tag);
-                    sender_refresh.input(AppMsg::Refresh);
-                });
-            }
-            AppMsg::NavigateTag(tag) => {
-                let filter_str = format!(":tag:{}", tag);
-                self.search_just_opened = false;
-                self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
-                sender.input(AppMsg::UpdateFilter(filter_str));
-            }
-
+            } => self.handle_tags_ready(paths, tags, available_tags, &sender),
+            AppMsg::SetFileTags { path, tags } => self.handle_set_file_tags(path, tags, &sender),
+            AppMsg::DeleteTagGlobally(tag) => self.handle_delete_tag_globally(tag, &sender),
+            AppMsg::NavigateTag(tag) => self.handle_navigate_tag(tag, &sender),
             // ==========================================
             // File Operations & Clipboard
             // ==========================================
@@ -802,90 +543,19 @@ impl FluxApp {
             // ==========================================
             // File Watcher Notifications
             // ==========================================
-            AppMsg::FileDeleted(path) => {
-                if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(&self.cache_key(parent));
-                }
-                self.handle_file_deleted(path);
-            }
-            AppMsg::FileChanged(path) => {
-                if let Some(parent) = path.parent() {
-                    self.folder_cache.remove(&self.cache_key(parent));
-                }
-                self.handle_file_changed(path, &sender);
-            }
+            AppMsg::FileDeleted(path) => self.handle_file_deleted_dispatch(path),
+            AppMsg::FileChanged(path) => self.handle_file_changed_dispatch(path, &sender),
             AppMsg::StartRename(path) => self.handle_start_rename(path),
             AppMsg::TriggerRenameSelection => self.handle_trigger_rename_selection(&sender),
             AppMsg::ItemMoved { old_path, new_path } => {
-                if let Some(p) = old_path.parent() {
-                    self.folder_cache.remove(&self.cache_key(p));
-                }
-                if let Some(p) = new_path.parent() {
-                    self.folder_cache.remove(&self.cache_key(p));
-                }
-                self.folder_cache
-                    .remove(&self.cache_key(&self.current_path));
-                let old_key = old_path.to_string_lossy().to_string();
-                let new_key = new_path.to_string_lossy().to_string();
-                if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
-                    self.config.ui.file_icons.insert(new_key.clone(), v);
-                }
-                if let Some(v) = self.config.ui.folder_icons.remove(&old_key) {
-                    self.config.ui.folder_icons.insert(new_key, v);
-                }
-                utils::save_config(&self.config);
-                sender.input(AppMsg::Refresh);
+                self.handle_item_moved(old_path, new_path, &sender)
             }
 
             // ==========================================
             // Task Queue & Background Transfers
             // ==========================================
             AppMsg::PerformQuickTransfer { dest, is_cut } => {
-                let sources = self.resolve_command_targets();
-                if sources.is_empty() || !dest.is_dir() {
-                    return;
-                }
-
-                if is_cut {
-                    self.handle_drop_items(sources, dest, &sender);
-                } else {
-                    let sender_clone = sender.clone();
-                    relm4::spawn_blocking(move || {
-                        let mut count = 0;
-                        for src_path in sources {
-                            if let Some(name) = src_path.file_name() {
-                                let dst_path = dest.join(name);
-                                if src_path == dst_path {
-                                    continue;
-                                }
-                                let src_file = gtk::gio::File::for_path(&src_path);
-                                let dst_file = gtk::gio::File::for_path(&dst_path);
-
-                                if src_file
-                                    .copy(
-                                        &dst_file,
-                                        gtk::gio::FileCopyFlags::OVERWRITE
-                                            | gtk::gio::FileCopyFlags::ALL_METADATA,
-                                        gtk::gio::Cancellable::NONE,
-                                        None,
-                                    )
-                                    .is_ok()
-                                {
-                                    count += 1;
-                                }
-                            }
-                        }
-
-                        if count > 0 {
-                            sender_clone.input(AppMsg::ShowToast(format!(
-                                "Copied {} item(s) to {}",
-                                count,
-                                dest.file_name().unwrap_or_default().to_string_lossy()
-                            )));
-                            sender_clone.input(AppMsg::Refresh);
-                        }
-                    });
-                }
+                self.handle_perform_quick_transfer(dest, is_cut, &sender)
             }
             AppMsg::TaskProgress {
                 id,
@@ -908,92 +578,31 @@ impl FluxApp {
             // ==========================================
             // Commands & External Apps
             // ==========================================
-            AppMsg::Open(position) => {
-                self.stop_video_preview();
-                self.handle_open(position, &sender)
-            }
-            AppMsg::Activate => {
-                self.stop_video_preview();
-                self.handle_activate(&sender)
-            }
+            AppMsg::Open(position) => self.handle_open(position, &sender),
+            AppMsg::Activate => self.handle_activate(&sender),
             AppMsg::LaunchWithApp(app_id) => self.handle_launch_with_app(app_id),
             AppMsg::ExecuteCommand(cmd_template) => {
                 self.handle_execute_command(cmd_template, &sender)
             }
             AppMsg::ToggleNoCommandDialog(action_name) => {
-                if let Some(action) = self
-                    .menu_actions
-                    .iter_mut()
-                    .find(|a| a.action_name == action_name)
-                {
-                    action.no_command_dialog = !action.no_command_dialog;
-                    utils::save_config(&self.config);
-                    if let Err(e) = utils::save_menu_config(&self.menu_actions) {
-                        eprintln!("Failed to save menu.rs: {}", e);
-                    }
-                }
+                self.handle_toggle_no_command_dialog(action_name)
             }
             AppMsg::RefreshCommandDialog(action_name) => {
-                if let Some(dialog) = &self.command_dialog {
-                    if let Some(action) = self
-                        .menu_actions
-                        .iter()
-                        .find(|a| a.action_name == action_name)
-                    {
-                        dialog.update_switch_state(action.no_command_dialog);
-                    }
-                }
+                self.handle_refresh_command_dialog(action_name)
             }
-            AppMsg::ShowCommandDialog(id) => {
-                self.handle_show_command_dialog(id);
-            }
-            AppMsg::ShowCommandDialogIfActive(id) => {
-                self.handle_show_command_dialog_if_active(id);
-            }
+            AppMsg::ShowCommandDialog(id) => self.handle_show_command_dialog(id),
+            AppMsg::ShowCommandDialogIfActive(id) => self.handle_show_command_dialog_if_active(id),
             AppMsg::CommandOutput {
                 id,
                 line,
                 is_stderr,
-            } => {
-                self.task_queue.append_output(id, line.clone());
-                let prefix = if is_stderr { "stderr" } else { "stdout" };
-                eprintln!("[task {}] {}: {}", id, prefix, line);
-
-                if let Some(dialog) = &self.command_dialog {
-                    if dialog.task_id == id {
-                        dialog.append_output(&line);
-                    }
-                }
-            }
-            AppMsg::CommandDialogClosed => {
-                self.handle_command_dialog_closed();
-            }
+            } => self.handle_command_output(id, line, is_stderr),
+            AppMsg::CommandDialogClosed => self.handle_command_dialog_closed(),
             AppMsg::CommandFinished {
                 id,
                 success,
                 exit_code,
-            } => {
-                if success {
-                    self.folder_cache
-                        .remove(&self.cache_key(&self.current_path));
-                }
-                if !success {
-                    let msg = if let Some(code) = exit_code {
-                        format!("Command failed with exit code {}", code)
-                    } else {
-                        "Command was terminated".to_string()
-                    };
-                    sender.input(AppMsg::ShowToast(msg));
-                }
-
-                if let Some(dialog) = &self.command_dialog {
-                    if dialog.task_id == id {
-                        self.handle_command_dialog_closed();
-                    }
-                }
-
-                sender.input(AppMsg::TaskCompleted(id));
-            }
+            } => self.handle_command_finished(id, success, exit_code, &sender),
 
             // ==========================================
             // Network & Remote Operations
@@ -1093,325 +702,21 @@ impl FluxApp {
             // ==========================================
             // Window, Shell & General Preferences
             // ==========================================
-            AppMsg::NewTab(target_path) => {
-                let path = target_path.unwrap_or_else(|| self.current_path.clone());
-                self.next_tab_id += 1;
-                let tab_id = self.next_tab_id;
+            AppMsg::NewTab(target_path) => self.handle_new_tab(target_path, &sender),
+            AppMsg::OpenTabs(targets) => self.handle_open_tabs(targets, &sender),
+            AppMsg::SwitchTab(index) => self.handle_switch_tab(index, &sender),
+            AppMsg::CloseTab(index_opt) => self.handle_close_tab(index_opt, &sender),
+            AppMsg::NextTab => self.handle_next_tab(),
+            AppMsg::PrevTab => self.handle_prev_tab(),
 
-                let mut new_tab = crate::ui::TabState::new(
-                    tab_id,
-                    path.clone(),
-                    self.is_list_mode,
-                    self.config.ui.default_sort,
-                );
-
-                // Do not mark initialized yet, let load_path or SwitchTab do it
-                new_tab.is_initialized = true;
-
-                new_tab
-                    .files
-                    .view
-                    .set_single_click_activate(self.config.ui.single_click);
-                let s_open = sender.clone();
-                new_tab.files.view.connect_activate(move |_, pos| {
-                    s_open.input(AppMsg::Open(Some(pos)));
-                });
-                let s_sel = sender.clone();
-                if let Some(selection_model) = new_tab
-                    .files
-                    .view
-                    .model()
-                    .and_downcast::<gtk::MultiSelection>()
-                {
-                    selection_model.connect_selection_changed(move |_, _, _| {
-                        s_sel.input(AppMsg::SelectionChanged);
-                    });
-                }
-
-                Self::connect_tab_scroller(&new_tab.scroller, &sender);
-
-                let title = new_tab.title.clone();
-                let page = self.tab_view.append(&new_tab.scroller);
-                page.set_title(&title);
-
-                self.tabs.push(new_tab);
-                let new_idx = self.tabs.len() - 1;
-                self.active_tab_index = new_idx;
-
-                if self.tab_view.selected_page().as_ref() != Some(&page) {
-                    self.tab_view.set_selected_page(&page);
-                }
-
-                self.load_path(path, &sender);
-            }
-
-            AppMsg::OpenTabs(targets) => {
-                if targets.is_empty() {
-                    return;
-                }
-
-                let total = targets.len();
-                for (i, path) in targets.into_iter().enumerate() {
-                    let is_last = i == total - 1;
-                    self.next_tab_id += 1;
-                    let tab_id = self.next_tab_id;
-
-                    let mut new_tab = crate::ui::TabState::new(
-                        tab_id,
-                        path.clone(),
-                        self.is_list_mode,
-                        self.config.ui.default_sort,
-                    );
-
-                    // Background tabs stay uninitialized until selected
-                    new_tab.is_initialized = is_last;
-
-                    new_tab
-                        .files
-                        .view
-                        .set_single_click_activate(self.config.ui.single_click);
-                    let s_open = sender.clone();
-                    new_tab.files.view.connect_activate(move |_, pos| {
-                        s_open.input(AppMsg::Open(Some(pos)));
-                    });
-                    let s_sel = sender.clone();
-                    if let Some(selection_model) = new_tab
-                        .files
-                        .view
-                        .model()
-                        .and_downcast::<gtk::MultiSelection>()
-                    {
-                        selection_model.connect_selection_changed(move |_, _, _| {
-                            s_sel.input(AppMsg::SelectionChanged);
-                        });
-                    }
-
-                    Self::connect_tab_scroller(&new_tab.scroller, &sender);
-
-                    let title = new_tab.title.clone();
-                    let page = self.tab_view.append(&new_tab.scroller);
-                    page.set_title(&title);
-
-                    self.tabs.push(new_tab);
-
-                    // Only activate and load the last tab
-                    if is_last {
-                        let new_idx = self.tabs.len() - 1;
-                        self.active_tab_index = new_idx;
-                        self.tab_view.set_selected_page(&page);
-                        self.load_path(path, &sender);
-                    }
-                }
-            }
-
-            AppMsg::SwitchTab(index) => {
-                if index >= self.tabs.len() || index == self.active_tab_index {
-                    return;
-                }
-
-                let prev_idx = self.active_tab_index;
-                if let Some(prev_tab) = self.tabs.get_mut(prev_idx) {
-                    prev_tab.current_path = self.current_path.clone();
-                    prev_tab.history = self.history.clone();
-                    prev_tab.forward_stack = self.forward_stack.clone();
-                    prev_tab.recent_stack = self.recent_stack.clone();
-                    prev_tab.filter = self.filter.clone();
-                    prev_tab.sort_by = self.sort_by;
-                    prev_tab.sort_ascending = self.sort_ascending;
-                    prev_tab.is_list_mode = self.is_list_mode;
-                    prev_tab.selection_status = self.selection_status.clone();
-                    prev_tab.scroll_offset = prev_tab.scroller.vadjustment().value();
-                }
-
-                self.active_tab_index = index;
-
-                let (target_path, needs_initial_load, thumbs_ready) = {
-                    let tab = &mut self.tabs[index];
-                    let needs_load = !tab.is_initialized;
-                    tab.is_initialized = true;
-
-                    self.current_path = tab.current_path.clone();
-                    self.history = tab.history.clone();
-                    self.forward_stack = tab.forward_stack.clone();
-                    self.recent_stack = tab.recent_stack.clone();
-                    self.filter = tab.filter.clone();
-                    self.sort_by = tab.sort_by;
-                    self.sort_ascending = tab.sort_ascending;
-                    self.is_list_mode = tab.is_list_mode;
-                    self.selection_status = tab.selection_status.clone();
-
-                    (tab.current_path.clone(), needs_load, tab.thumbs_ready)
-                };
-
-                // Only update the selected page if it's not already active to avoid recursive notification cycles
-                if (index as i32) < self.tab_view.n_pages() {
-                    let page = self.tab_view.nth_page(index as i32);
-                    if self.tab_view.selected_page().as_ref() != Some(&page) {
-                        self.tab_view.set_selected_page(&page);
-                    }
-                }
-
-                self.update_breadcrumbs();
-                self.sync_sidebar_selection();
-
-                // If the tab was interrupted or hasn't finished its thumbnails, kick it back into gear!
-                if !thumbs_ready {
-                    let sender_clone = sender.clone();
-                    glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
-                        sender_clone.input(AppMsg::CheckVisibleThumbnails);
-                    });
-                }
-
-                if let Some(entry) = self.header_path_entry.upgrade() {
-                    entry.set_text(&self.current_path.to_string_lossy());
-                    entry.set_position(entry.text_length() as i32);
-                }
-
-                if needs_initial_load {
-                    self.load_path(target_path, &sender);
-                } else {
-                    // Immediately evaluate visible items and trigger pending thumbnail tasks for the active tab
-                    self.check_visible_thumbnails(&sender);
-                }
-            }
-
-            AppMsg::CloseTab(index_opt) => match index_opt {
-                None => {
-                    if self.tabs.len() <= 1 {
-                        let app = gtk::Application::default();
-                        if let Some(win) = app.active_window() {
-                            win.close();
-                        }
-                        return;
-                    }
-
-                    if (self.active_tab_index as i32) < self.tab_view.n_pages() {
-                        let page = self.tab_view.nth_page(self.active_tab_index as i32);
-                        self.tab_view.close_page(&page);
-                    }
-                }
-
-                Some(idx) => {
-                    if idx < self.tabs.len() {
-                        self.tabs.remove(idx);
-                    }
-
-                    let total_tabs = self.tabs.len();
-                    if total_tabs == 0 {
-                        return;
-                    }
-
-                    // AdwTabView already adjusted its selected page.
-                    // Sync active_tab_index to AdwTabView's actual selected position.
-                    let current_page_pos = self
-                        .tab_view
-                        .selected_page()
-                        .map(|p| self.tab_view.page_position(&p) as usize)
-                        .unwrap_or(0);
-
-                    self.active_tab_index = current_page_pos.min(total_tabs.saturating_sub(1));
-
-                    let (target_path, needs_initial_load) = {
-                        let tab = &mut self.tabs[self.active_tab_index];
-                        let needs_load = !tab.is_initialized;
-                        tab.is_initialized = true;
-
-                        self.current_path = tab.current_path.clone();
-                        self.history = tab.history.clone();
-                        self.forward_stack = tab.forward_stack.clone();
-                        self.recent_stack = tab.recent_stack.clone();
-                        self.filter = tab.filter.clone();
-                        self.sort_by = tab.sort_by;
-                        self.sort_ascending = tab.sort_ascending;
-                        self.is_list_mode = tab.is_list_mode;
-                        self.selection_status = tab.selection_status.clone();
-
-                        (tab.current_path.clone(), needs_load)
-                    };
-
-                    self.update_breadcrumbs();
-                    self.sync_sidebar_selection();
-
-                    if let Some(entry) = self.header_path_entry.upgrade() {
-                        entry.set_text(&self.current_path.to_string_lossy());
-                        entry.set_position(entry.text_length() as i32);
-                    }
-
-                    if needs_initial_load {
-                        self.load_path(target_path, &sender);
-                    }
-                }
-            },
-            AppMsg::NextTab => {
-                if self.tabs.len() > 1 {
-                    let next = (self.active_tab_index + 1) % self.tabs.len();
-                    if (next as i32) < self.tab_view.n_pages() {
-                        let page = self.tab_view.nth_page(next as i32);
-                        self.tab_view.set_selected_page(&page);
-                    }
-                }
-            }
-
-            AppMsg::PrevTab => {
-                if self.tabs.len() > 1 {
-                    let prev = if self.active_tab_index == 0 {
-                        self.tabs.len() - 1
-                    } else {
-                        self.active_tab_index - 1
-                    };
-                    if (prev as i32) < self.tab_view.n_pages() {
-                        let page = self.tab_view.nth_page(prev as i32);
-                        self.tab_view.set_selected_page(&page);
-                    }
-                }
-            }
-
+            // ==========================================
             AppMsg::SetBackgroundAlpha { slot, alpha } => {
                 self.handle_set_background_alpha(slot, alpha);
             }
             AppMsg::SetFluxBackground { target, slot } => {
-                if let Some(data_dir) = dirs::data_dir() {
-                    let img_dir = data_dir.join("flux/data/resources/images");
-                    let _ = std::fs::create_dir_all(&img_dir);
-
-                    let prefix = match slot {
-                        BackgroundSlot::Window => "window",
-                        BackgroundSlot::SidebarLeft => "sidebar-left",
-                        BackgroundSlot::SidebarRight => "sidebar-right",
-                    };
-
-                    // Remove any previous images for this slot
-                    if let Ok(entries) = std::fs::read_dir(&img_dir) {
-                        for entry in entries.flatten() {
-                            let p = entry.path();
-                            if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
-                                if stem == prefix || stem.starts_with(&format!("{}_", prefix)) {
-                                    let _ = std::fs::remove_file(p);
-                                }
-                            }
-                        }
-                    }
-
-                    // Save with a unique timestamp to invalidate GTK's CSS URL cache
-                    let ts = std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_millis())
-                        .unwrap_or(0);
-                    let dest = img_dir.join(format!("{}_{}.png", prefix, ts));
-
-                    if std::fs::copy(&target, &dest).is_ok() {
-                        crate::utils::helpers::load_custom_background_images();
-                        if let Some(ref w) = self.sidebar_widget {
-                            w.queue_draw();
-                        }
-                        self.files.view.queue_draw();
-                    }
-                }
+                self.handle_set_flux_background(target, slot)
             }
-            AppMsg::ClearFluxBackgrounds => {
-                crate::utils::helpers::clear_custom_background_images();
-                sender.input(AppMsg::Refresh);
-            }
+            AppMsg::ClearFluxBackgrounds => self.handle_clear_flux_backgrounds(&sender),
             AppMsg::SetScaleFontWithIcons(val) => {
                 self.handle_set_scale_font_with_icons(val, &sender);
             }

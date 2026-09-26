@@ -44,7 +44,9 @@ impl FluxApp {
     }
 
     /// Dispatches opening for a specific grid position or current multi-selection.
-    pub fn handle_open(&self, position: Option<u32>, sender: &AsyncComponentSender<Self>) {
+    pub fn handle_open(&mut self, position: Option<u32>, sender: &AsyncComponentSender<Self>) {
+        self.stop_video_preview();
+
         let modifiers = gdk::Display::default()
             .and_then(|d| d.default_seat())
             .and_then(|s| s.keyboard())
@@ -172,7 +174,9 @@ impl FluxApp {
     }
 
     /// Handles explicit primary item activation (e.g. Return / Double-click).
-    pub fn handle_activate(&self, sender: &AsyncComponentSender<Self>) {
+    pub fn handle_activate(&mut self, sender: &AsyncComponentSender<Self>) {
+        self.stop_video_preview();
+
         let modifiers = gdk::Display::default()
             .and_then(|d| d.default_seat())
             .and_then(|s| s.keyboard())

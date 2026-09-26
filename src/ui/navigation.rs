@@ -89,6 +89,59 @@ impl FluxApp {
         }
     }
 
+    pub fn handle_perform_quick_transfer(
+        &mut self,
+        dest: PathBuf,
+        is_cut: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let sources = self.resolve_command_targets();
+        if sources.is_empty() || !dest.is_dir() {
+            return;
+        }
+
+        if is_cut {
+            self.handle_drop_items(sources, dest, sender);
+        } else {
+            let sender_clone = sender.clone();
+            relm4::spawn_blocking(move || {
+                let mut count = 0;
+                for src_path in sources {
+                    if let Some(name) = src_path.file_name() {
+                        let dst_path = dest.join(name);
+                        if src_path == dst_path {
+                            continue;
+                        }
+                        let src_file = gtk::gio::File::for_path(&src_path);
+                        let dst_file = gtk::gio::File::for_path(&dst_path);
+
+                        if src_file
+                            .copy(
+                                &dst_file,
+                                gtk::gio::FileCopyFlags::OVERWRITE
+                                    | gtk::gio::FileCopyFlags::ALL_METADATA,
+                                gtk::gio::Cancellable::NONE,
+                                None,
+                            )
+                            .is_ok()
+                        {
+                            count += 1;
+                        }
+                    }
+                }
+
+                if count > 0 {
+                    sender_clone.input(AppMsg::ShowToast(format!(
+                        "Copied {} item(s) to {}",
+                        count,
+                        dest.file_name().unwrap_or_default().to_string_lossy()
+                    )));
+                    sender_clone.input(AppMsg::Refresh);
+                }
+            });
+        }
+    }
+
     //WARN: Change this logic with caution.
     // If the process working directory
     // (CWD) is not synchronized, operations like drag-and-drop or shell commands

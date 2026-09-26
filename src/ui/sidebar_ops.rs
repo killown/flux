@@ -373,4 +373,33 @@ impl FluxApp {
             );
         }
     }
+
+    pub fn handle_prompt_sidebar_rename(
+        &self,
+        path: PathBuf,
+        current_name: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let path_str = path.to_string_lossy();
+        if let Some(section_name) = path_str.strip_prefix("__section__:") {
+            // Rename a section label rather than a pinned path.
+            self.show_prompt_sidebar_rename_section(section_name.to_string(), current_name, sender);
+        } else {
+            self.show_prompt_sidebar_rename(path, current_name, sender);
+        }
+    }
+
+    pub fn handle_rename_sidebar_section(&mut self, old_name: String, new_name: String) {
+        let mut modified = false;
+        for place in &mut self.config.sidebar {
+            if place.kind.as_deref() == Some("label") && place.name == old_name {
+                place.name = new_name.clone();
+                modified = true;
+            }
+        }
+        if modified {
+            crate::utils::save_config(&self.config);
+            self.refresh_sidebar();
+        }
+    }
 }

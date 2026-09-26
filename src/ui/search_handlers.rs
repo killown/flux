@@ -311,6 +311,24 @@ impl FluxApp {
         });
     }
 
+    pub fn reset_from_content_search(&mut self) {
+        if let Some(cancellable) = self.content_search_cancellable.take() {
+            cancellable.cancel();
+        }
+        self.is_content_searching = false;
+        self.load_id.fetch_add(1, Ordering::SeqCst);
+        self.pending_thumbnails.clear();
+        self.filter.clear();
+        self.search_just_opened = false;
+        self.is_list_mode = self.saved_list_mode;
+        self.tabs[self.active_tab_index]
+            .files
+            .view
+            .set_max_columns(self.saved_max_columns);
+        self.tabs[self.active_tab_index].files.clear();
+        self.sync_list_mode();
+    }
+
     /// Appends a new content search match result to the grid.
     pub fn handle_content_search_result(
         &mut self,

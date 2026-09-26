@@ -1155,6 +1155,55 @@ impl FluxApp {
         Some(rest[..end].to_owned())
     }
 
+    pub fn handle_show_loading_spinner(&mut self, session: u64) {
+        if self.load_id.load(Ordering::SeqCst) == session {
+            self.is_loading = true;
+        }
+    }
+
+    pub fn handle_folder_loaded_chunk(
+        &mut self,
+        load_id: u64,
+        chunk: Vec<FileLoadContext>,
+        is_cached: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if self.load_id.load(Ordering::SeqCst) == load_id {
+            self.append_context_batch(chunk, load_id, is_cached, sender);
+        }
+    }
+
+    pub fn handle_folder_loaded_finish(&mut self, load_id: u64) {
+        if self.load_id.load(Ordering::SeqCst) == load_id {
+            self.is_loading = false;
+        }
+    }
+
+    pub fn handle_folder_loaded_begin(
+        &mut self,
+        path: PathBuf,
+        load_id: u64,
+        items: Vec<FileLoadContext>,
+        media_tasks: Vec<(u32, PathBuf)>,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.active_video_preview = None;
+        self.handle_folder_loaded(path, load_id, items, media_tasks, sender);
+    }
+
+    pub fn handle_invalidate_cache_and_navigate(
+        &mut self,
+        path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(&self.cache_key(parent));
+        }
+        self.folder_cache
+            .remove(&self.cache_key(&self.current_path));
+        sender.input(AppMsg::Navigate(path));
+    }
+
     /// construct and append a slice of FileLoadContext items directly to self.files.
     pub fn append_context_batch(
         &mut self,
