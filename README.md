@@ -19,8 +19,8 @@
 #Methodology: High-precision time.perf_counter() differential, IPC event stream.
 
 # --- GUI File Managers ---
-~ ❯❯❯ python measure_app_speed.py flux-fm
-Startup Time: 112.55 ms    # cold: 114.57 ms | warm: 112.48 ms (±1.94 ms, 29 runs)
+~ ❯❯❯ python measure_app_speed.py flux-fm --mean
+Startup Time: 105.01 ms    # mean across 10 runs (warm mean: 104.88 ms)
 
 ~ ❯❯❯ python measure_app_speed.py pcmanfm
 Startup Time: 134.43 ms    # warm: 132.32 ms

@@ -154,6 +154,15 @@ impl FluxApp {
             } else {
                 sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
                 sender.input(AppMsg::UpdateFilter(format!("#{}", clean_tag)));
+
+                if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                    let title = format!("#{}", clean_tag);
+                    tab.title = title.clone();
+                    if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                        let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                        page.set_title(&title);
+                    }
+                }
             }
             return;
         }
@@ -169,7 +178,9 @@ impl FluxApp {
             self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
 
             self.filter.clear();
-            self.files.clear_filters();
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.files.clear_filters();
+            }
             sender.input(AppMsg::CloseSearchSync);
 
             if self.header_view == constants::VIEW_SEARCH {
@@ -188,6 +199,24 @@ impl FluxApp {
                 entry.set_text(&self.current_path.to_string_lossy());
                 entry.set_position(entry.text_length() as i32);
             }
+
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.current_path = self.current_path.clone();
+                tab.history = self.history.clone();
+                tab.forward_stack = self.forward_stack.clone();
+                tab.scroll_offset = 0.0;
+                let title = self
+                    .current_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| self.current_path.to_string_lossy().to_string());
+                tab.title = title.clone();
+                if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                    let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                    page.set_title(&title);
+                }
+            }
+
             return;
         }
 
@@ -205,7 +234,9 @@ impl FluxApp {
                 self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
 
                 self.filter.clear();
-                self.files.clear_filters();
+                if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                    tab.files.clear_filters();
+                }
                 sender.input(AppMsg::CloseSearchSync);
 
                 if self.header_view == constants::VIEW_SEARCH {
@@ -222,7 +253,24 @@ impl FluxApp {
                     entry.set_position(entry.text_length() as i32);
                 }
 
-                let view = self.files.view.clone();
+                if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                    tab.current_path = self.current_path.clone();
+                    tab.history = self.history.clone();
+                    tab.forward_stack = self.forward_stack.clone();
+                    tab.scroll_offset = 0.0;
+                    let title = self
+                        .current_path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_else(|| self.current_path.to_string_lossy().to_string());
+                    tab.title = title.clone();
+                    if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                        let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                        page.set_title(&title);
+                    }
+                }
+
+                let view = self.tabs[self.active_tab_index].files.view.clone();
                 glib::idle_add_local_once(move || {
                     view.grab_focus();
                 });
@@ -269,7 +317,9 @@ impl FluxApp {
             self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
 
             self.filter.clear();
-            self.files.clear_filters();
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.files.clear_filters();
+            }
 
             sender.input(AppMsg::CloseSearchSync);
 
@@ -287,7 +337,24 @@ impl FluxApp {
                 entry.set_position(entry.text_length() as i32);
             }
 
-            let view = self.files.view.clone();
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.current_path = self.current_path.clone();
+                tab.history = self.history.clone();
+                tab.forward_stack = self.forward_stack.clone();
+                tab.scroll_offset = 0.0;
+                let title = self
+                    .current_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| self.current_path.to_string_lossy().to_string());
+                tab.title = title.clone();
+                if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                    let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                    page.set_title(&title);
+                }
+            }
+
+            let view = self.tabs[self.active_tab_index].files.view.clone();
             let terminal = self.terminal.clone();
             let terminal_visible = self.terminal_visible;
             glib::idle_add_local_once(move || {
@@ -320,7 +387,9 @@ impl FluxApp {
         self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
 
         self.filter.clear();
-        self.files.clear_filters();
+        if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+            tab.files.clear_filters();
+        }
         sender.input(AppMsg::CloseSearchSync);
 
         if self.header_view == constants::VIEW_SEARCH {
@@ -330,6 +399,24 @@ impl FluxApp {
         self.history.push(old_path);
         self.forward_stack.clear();
 
+        // Synchronize active tab navigation and header page title
+        if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+            tab.current_path = self.current_path.clone();
+            tab.history = self.history.clone();
+            tab.forward_stack = self.forward_stack.clone();
+            tab.recent_stack = self.recent_stack.clone();
+            tab.scroll_offset = 0.0;
+            let title = archive_path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| self.current_path.to_string_lossy().to_string());
+            tab.title = title.clone();
+            if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                page.set_title(&title);
+            }
+        }
+
         self.load_archive(archive_path, String::new(), None, sender);
         self.update_breadcrumbs();
         if let Some(entry) = self.header_path_entry.upgrade() {
@@ -337,7 +424,7 @@ impl FluxApp {
             entry.set_position(entry.text_length() as i32);
         }
 
-        let view = self.files.view.clone();
+        let view = self.tabs[self.active_tab_index].files.view.clone();
         glib::idle_add_local_once(move || {
             view.grab_focus();
         });

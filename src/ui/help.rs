@@ -105,6 +105,38 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                 },
+
+                add = &adw::PreferencesGroup {
+                    set_title: &tr("Tabs"),
+                    add = &adw::ActionRow {
+                        set_title: &tr("New tab"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + T",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Close tab"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + W",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Next tab"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Tab / Shift + L",
+                            add_css_class: "keycap",
+                        },
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Previous tab"),
+                        add_suffix = &gtk::Label {
+                            set_label: "Ctrl + Shift + Tab / Shift + H",
+                            add_css_class: "keycap",
+                        },
+                    },
+                },
             },
 
             // --- Quick List Page ---
@@ -151,11 +183,11 @@ impl SimpleComponent for HelpWindow {
                 set_icon_name: Some("search-symbolic"),
 
                 add = &adw::PreferencesGroup {
-                    set_title: &tr("Advanced Search"),
+                    set_title: &tr("Search Shortcuts"),
                     add = &adw::ActionRow {
-                        set_title: &tr("Open advanced search dialog"),
+                        set_title: &tr("Search files"),
                         add_suffix = &gtk::Label {
-                            set_label: "F12",
+                            set_label: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
                             add_css_class: "keycap",
                         },
                     },
@@ -241,16 +273,16 @@ impl SimpleComponent for HelpWindow {
                         },
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Search files"),
+                        set_title: &tr("Resize grid items"),
                         add_suffix = &gtk::Label {
-                            set_label: &model.format_shortcut(model.config.shortcuts.search.clone(), "Ctrl + F"),
+                            set_label: "Ctrl + Scroll",
                             add_css_class: "keycap",
                         },
                     },
                     add = &adw::ActionRow {
-                        set_title: &tr("Resize grid items"),
+                        set_title: &tr("Open folder in new tab"),
                         add_suffix = &gtk::Label {
-                            set_label: "Ctrl + Scroll",
+                            set_label: "Middle Click",
                             add_css_class: "keycap",
                         },
                     },
@@ -286,13 +318,6 @@ impl SimpleComponent for HelpWindow {
                         set_title: &tr("Redo file operation"),
                         add_suffix = &gtk::Label {
                             set_label: "Ctrl + Shift + Z / Ctrl + Y",
-                            add_css_class: "keycap",
-                        },
-                    },
-                    add = &adw::ActionRow {
-                        set_title: &tr("Edit tags for selection"),
-                        add_suffix = &gtk::Label {
-                            set_label: "Ctrl + T",
                             add_css_class: "keycap",
                         },
                     },

@@ -78,6 +78,7 @@ pub fn setup_controllers(
     let middle_click = gtk::GestureClick::new();
     middle_click.set_button(0);
 
+    let s_middle = sender.clone();
     middle_click.connect_pressed(move |gesture, _, x, y| {
         let button = gesture.current_button();
         if button == constants::MOUSE_MIDDLE {
@@ -95,7 +96,14 @@ pub fn setup_controllers(
                             || name.starts_with("archive://")
                         {
                             let path = std::path::PathBuf::from(&name);
-                            if crate::utils::helpers::open_new_instance(&path) {
+                            let modifiers = gesture.current_event_state();
+
+                            if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+                                if crate::utils::helpers::open_new_instance(&path) {
+                                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                                }
+                            } else {
+                                s_middle.input(AppMsg::NewTab(Some(path)));
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
                             }
                             break;
@@ -117,6 +125,33 @@ pub fn setup_controllers(
     capture.connect_key_pressed(move |_ctrl, keyval, _keycode, state| {
         let is_ctrl = state.contains(gdk::ModifierType::CONTROL_MASK);
         let is_shift = state.contains(gdk::ModifierType::SHIFT_MASK);
+        let is_alt = state.contains(gdk::ModifierType::ALT_MASK);
+
+        // Check if an editable text input is currently focused
+        let is_editable = _ctrl
+            .widget()
+            .and_then(|w| w.root())
+            .and_then(|r| r.focus())
+            .map(|f| f.type_().is_a(gtk::Editable::static_type()))
+            .unwrap_or(false);
+
+        // Non-modifier / navigation shortcuts (ignored when typing or when the terminal has focus)
+        if !is_editable && !terminal_area_cap.has_focus() {
+            // Tab navigation: Shift + H (previous tab) and Shift + L (next tab)
+            if is_shift && !is_ctrl && !is_alt {
+                match keyval {
+                    gdk::Key::L => {
+                        sender_cap.input(AppMsg::NextTab);
+                        return glib::Propagation::Stop;
+                    }
+                    gdk::Key::H => {
+                        sender_cap.input(AppMsg::PrevTab);
+                        return glib::Propagation::Stop;
+                    }
+                    _ => {}
+                }
+            }
+        }
 
         match keyval {
             gdk::Key::Insert if is_ctrl => {
@@ -143,12 +178,6 @@ pub fn setup_controllers(
                 if terminal_area_cap.has_focus() {
                     return glib::Propagation::Proceed;
                 }
-                let is_editable = _ctrl
-                    .widget()
-                    .and_then(|w| w.root())
-                    .and_then(|r| r.focus())
-                    .map(|f| f.type_().is_a(gtk::Editable::static_type()))
-                    .unwrap_or(false);
                 if is_editable {
                     return glib::Propagation::Proceed;
                 }
@@ -172,11 +201,23 @@ pub fn setup_controllers(
                 sender_cap.input(AppMsg::ToggleSidebar);
                 glib::Propagation::Stop
             }
-            gdk::Key::t | gdk::Key::T if is_ctrl => {
+            // Tags: Ctrl + Shift + T
+            gdk::Key::t | gdk::Key::T if is_ctrl && is_shift && !is_alt => {
                 if terminal_area_cap.has_focus() {
                     return glib::Propagation::Proceed;
                 }
                 sender_cap.input(AppMsg::ToggleTagPanel);
+                glib::Propagation::Stop
+            }
+            gdk::Key::Tab if is_ctrl => {
+                if terminal_area_cap.has_focus() {
+                    return glib::Propagation::Proceed;
+                }
+                if is_shift {
+                    sender_cap.input(AppMsg::PrevTab);
+                } else {
+                    sender_cap.input(AppMsg::NextTab);
+                }
                 glib::Propagation::Stop
             }
             gdk::Key::Tab => {
@@ -421,9 +462,10 @@ pub fn setup_controllers(
         })),
     ));
 
+    // Tags panel global shortcut fallback: Ctrl + Shift + T
     let s_tag = sender.clone();
     global_shortcuts.add_shortcut(gtk::Shortcut::new(
-        Some(gtk::ShortcutTrigger::parse_string("<Primary>t").unwrap()),
+        Some(gtk::ShortcutTrigger::parse_string("<Primary><Shift>t").unwrap()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_tag.input(AppMsg::ToggleTagPanel);
             glib::Propagation::Stop
@@ -445,6 +487,43 @@ pub fn setup_controllers(
         Some(keymap.reset_icon.clone()),
         Some(gtk::CallbackAction::new(move |_, _| {
             s_icon_reset.input(AppMsg::TriggerResetIcon);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    // 6.2 Tab Management Shortcuts (Registered via KeyMap / config)
+    let s_new_tab = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.new_tab.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_new_tab.input(AppMsg::NewTab(None));
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_close_tab = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.close_tab.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_close_tab.input(AppMsg::CloseTab(None));
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_next_tab = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.next_tab.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_next_tab.input(AppMsg::NextTab);
+            glib::Propagation::Stop
+        })),
+    ));
+
+    let s_prev_tab = sender.clone();
+    global_shortcuts.add_shortcut(gtk::Shortcut::new(
+        Some(keymap.prev_tab.clone()),
+        Some(gtk::CallbackAction::new(move |_, _| {
+            s_prev_tab.input(AppMsg::PrevTab);
             glib::Propagation::Stop
         })),
     ));

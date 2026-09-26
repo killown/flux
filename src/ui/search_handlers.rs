@@ -22,7 +22,9 @@ impl FluxApp {
                 self.reset_from_content_search();
                 sender.input(AppMsg::Refresh);
             } else {
-                self.files.clear_filters();
+                if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                    tab.files.clear_filters();
+                }
                 sender.input(AppMsg::Refresh);
             }
             return;
@@ -49,12 +51,13 @@ impl FluxApp {
         if has_wildcard {
             if !self.search_saved_layout {
                 self.saved_list_mode = self.is_list_mode;
-                self.saved_max_columns = self.files.view.max_columns();
+                self.saved_max_columns = self.tabs[self.active_tab_index].files.view.max_columns();
                 self.search_saved_layout = true;
             }
             self.is_list_mode = true;
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(1);
+            let active_view = &self.tabs[self.active_tab_index].files.view;
+            active_view.set_min_columns(1);
+            active_view.set_max_columns(1);
             self.sync_list_mode();
         }
 
@@ -73,22 +76,59 @@ impl FluxApp {
         } else if has_wildcard {
             // Just filter current view or wait while they finish typing the extension (e.g., user typed "*.p")
             self.filter = query.clone();
-            self.files.clear_filters();
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.files.clear_filters();
+            }
             return;
         }
         // Check for tag filter (:tag:name, :t:name, #name) -> Global Search
         if let Some((tags, rest_query)) = crate::utils::search::parse_tag_filter(&query_lc) {
             self.filter = query.clone();
-            self.files.clear_filters();
-            self.files.clear();
 
-            if self.is_list_mode {
-                self.files.view.set_min_columns(1);
-                self.files.view.set_max_columns(1);
-            } else {
-                self.files.view.set_min_columns(1);
-                self.files.view.set_max_columns(20);
+            let tag_title = format!("#{}", tags.join(", "));
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.title = tag_title.clone();
+                if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                    let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                    page.set_title(&tag_title);
+                }
             }
+
+            let (
+                view_clone,
+                list_mode,
+                list_icon_size,
+                current_icon_size,
+                max_w,
+                spacing,
+                show_symlink,
+                expand_labels,
+                show_empty,
+            ) = {
+                let tab = &mut self.tabs[self.active_tab_index];
+                tab.files.clear_filters();
+                tab.files.clear();
+
+                if self.is_list_mode {
+                    tab.files.view.set_min_columns(1);
+                    tab.files.view.set_max_columns(1);
+                } else {
+                    tab.files.view.set_min_columns(1);
+                    tab.files.view.set_max_columns(20);
+                }
+
+                (
+                    tab.files.view.clone(),
+                    self.is_list_mode,
+                    self.current_list_icon_size,
+                    self.current_icon_size,
+                    self.config.ui.max_width_chars,
+                    self.config.ui.grid_spacing,
+                    self.config.ui.show_symlink_emblem,
+                    self.config.ui.expand_labels,
+                    self.config.ui.show_empty_dir_emblem,
+                )
+            };
 
             let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
             let filter_text = rest_query.trim().to_lowercase();
@@ -115,7 +155,8 @@ impl FluxApp {
             }
 
             let mut media_tasks: Vec<(u32, std::path::PathBuf)> = Vec::new();
-            let mut grid_idx: u32 = self.files.len();
+            let active_files = &mut self.tabs[self.active_tab_index].files;
+            let mut grid_idx: u32 = active_files.len();
 
             for path in matching_paths {
                 if !filter_text.is_empty() {
@@ -152,40 +193,44 @@ impl FluxApp {
                     }
                 }
 
-                let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
+                let is_empty = if is_dir && show_empty {
                     FluxApp::is_dir_empty(&path)
                 } else {
                     false
                 };
 
-                self.files.append(
+                active_files.append(
                     crate::ui::FileItem::builder(name, path.clone(), icon)
                         .is_dir(is_dir)
-                        .icon_size(if self.is_list_mode {
-                            self.current_list_icon_size
+                        .icon_size(if list_mode {
+                            list_icon_size
                         } else {
-                            self.current_icon_size
+                            current_icon_size
                         })
                         .size(size)
                         .mtime(mtime)
                         .is_empty(is_empty)
-                        .expand_labels(self.config.ui.expand_labels)
-                        .is_list_mode(self.is_list_mode)
-                        .grid_idx(self.files.len())
-                        .max_width_chars(self.config.ui.max_width_chars)
-                        .grid_spacing(self.config.ui.grid_spacing)
-                        .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                        .expand_labels(expand_labels)
+                        .is_list_mode(list_mode)
+                        .grid_idx(active_files.len())
+                        .max_width_chars(max_w)
+                        .grid_spacing(spacing)
+                        .show_symlink_emblem(show_symlink)
                         .build(),
                 );
                 grid_idx += 1;
             }
 
             let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
-            self.spawn_thumbnail_loader(media_tasks, session_id, sender.clone());
+            self.spawn_thumbnail_loader(
+                media_tasks,
+                session_id,
+                self.active_tab_index,
+                sender.clone(),
+            );
 
-            let view = self.files.view.clone();
             glib::idle_add_local_once(move || {
-                if let Some(model) = view
+                if let Some(model) = view_clone
                     .model()
                     .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                 {
@@ -198,12 +243,13 @@ impl FluxApp {
         // Check for size filter
         if let Some((size_op, rest_query)) = parse_size_filter(&query_lc) {
             self.filter = query.clone();
-            self.files.clear_filters();
+            let tab = &mut self.tabs[self.active_tab_index];
+            tab.files.clear_filters();
 
             let filter_text = rest_query.to_lowercase();
             let size_op_clone = size_op.clone();
 
-            self.files.add_filter(move |item| {
+            tab.files.add_filter(move |item| {
                 let name_match =
                     filter_text.is_empty() || item.name.to_lowercase().contains(&filter_text);
 
@@ -219,7 +265,7 @@ impl FluxApp {
                 name_match && size_match
             });
 
-            let view = self.files.view.clone();
+            let view = self.tabs[self.active_tab_index].files.view.clone();
             glib::idle_add_local_once(move || {
                 if let Some(model) = view
                     .model()
@@ -233,8 +279,9 @@ impl FluxApp {
 
         // Normal filename filtering
         self.filter = query.clone();
-        self.files.clear_filters();
-        let view = self.files.view.clone();
+        let tab = &mut self.tabs[self.active_tab_index];
+        tab.files.clear_filters();
+        let view = tab.files.view.clone();
 
         glib::idle_add_local_once(move || {
             if let Some(model) = view
@@ -252,7 +299,7 @@ impl FluxApp {
 
         let parsed_pattern = Pattern::parse(trimmed, CaseMatching::Ignore, Normalization::Smart);
 
-        self.files.add_filter(move |item| {
+        tab.files.add_filter(move |item| {
             let mut target_buf = Vec::new();
             let utf32_target = Utf32Str::new(&item.name, &mut target_buf);
             parsed_pattern
@@ -307,14 +354,15 @@ impl FluxApp {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
-        self.files.append(
+        let active_files = &mut self.tabs[self.active_tab_index].files;
+        active_files.append(
             crate::ui::FileItem::builder(relative_path.to_string(), path.clone(), icon)
                 .icon_size(self.current_list_icon_size)
                 .size(size)
                 .mtime(mtime)
                 .search_snippet(Some(snippet))
                 .is_list_mode(true)
-                .grid_idx(self.files.len())
+                .grid_idx(active_files.len())
                 .max_width_chars(self.config.ui.max_width_chars)
                 .grid_spacing(self.config.ui.grid_spacing)
                 .show_symlink_emblem(self.config.ui.show_symlink_emblem)
@@ -333,7 +381,7 @@ impl FluxApp {
 
         self.content_search_cancellable = None;
 
-        let view = self.files.view.clone();
+        let view = self.tabs[self.active_tab_index].files.view.clone();
         glib::idle_add_local_once(move || {
             if let Some(model) = view
                 .model()
@@ -376,7 +424,10 @@ impl FluxApp {
             && self.is_list_mode != self.saved_list_mode
         {
             self.is_list_mode = self.saved_list_mode;
-            self.files.view.set_max_columns(self.saved_max_columns);
+            self.tabs[self.active_tab_index]
+                .files
+                .view
+                .set_max_columns(self.saved_max_columns);
             self.sync_list_mode();
             self.search_saved_layout = false;
         }
@@ -384,7 +435,9 @@ impl FluxApp {
         if self.header_view != constants::VIEW_SEARCH {
             self.filter.clear();
             self.search_just_opened = true;
-            self.files.clear_filters();
+            if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+                tab.files.clear_filters();
+            }
         }
     }
 

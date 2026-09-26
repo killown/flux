@@ -110,6 +110,7 @@ impl FluxApp {
                     self.spawn_thumbnail_loader(
                         vec![(self.files.len() - 1, path)],
                         current_session,
+                        self.active_tab_index,
                         sender.clone(),
                     );
                     sender.input(AppMsg::Refresh);

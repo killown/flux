@@ -33,6 +33,7 @@ pub mod search_handlers;
 pub mod secondary_context_menu;
 pub mod sidebar_network;
 pub mod sidebar_ops;
+pub mod tabs;
 pub mod tag_navigator;
 pub mod tag_picker;
 pub mod task_ops;
@@ -41,6 +42,7 @@ pub mod transfer_dialog;
 pub mod undo_ops;
 pub mod undo_redo;
 pub mod view_ops;
+pub use tabs::TabState;
 pub mod watcher_ops;
 
 // --- 2. Existing Submodules ---

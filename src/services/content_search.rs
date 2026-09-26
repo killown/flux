@@ -62,18 +62,20 @@ pub fn start_content_search(
     }
     app.is_content_searching = true;
     app.is_loading = true;
-    app.files.clear();
+    let active_tab = &mut app.tabs[app.active_tab_index];
+    active_tab.files.clear();
     app.filter.clear();
 
     // Force and save list mode layout for content search results snippet display
     if !app.search_saved_layout {
         app.saved_list_mode = app.is_list_mode;
-        app.saved_max_columns = app.files.view.max_columns();
+        app.saved_max_columns = app.tabs[app.active_tab_index].files.view.max_columns();
         app.search_saved_layout = true;
     }
     app.is_list_mode = true;
-    app.files.view.set_min_columns(1);
-    app.files.view.set_max_columns(1);
+    let active_view = &app.tabs[app.active_tab_index].files.view;
+    active_view.set_min_columns(1);
+    active_view.set_max_columns(1);
     app.sync_list_mode();
 
     let cancellable = gtk::gio::Cancellable::new();

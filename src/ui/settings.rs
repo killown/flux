@@ -1327,6 +1327,75 @@ impl SimpleComponent for SettingsWindow {
                 },
 
                 add = &adw::PreferencesGroup {
+                    set_title: &tr("Tabs"),
+                    set_description: Some(&tr("Shortcuts for managing browser tabs")),
+                    add = &adw::ActionRow {
+                        set_title: &tr("New Tab"),
+                        set_subtitle: &tr("Open a new tab"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.new_tab.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>t"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("new_tab".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Close Tab"),
+                        set_subtitle: &tr("Close current tab"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.close_tab.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>w"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("close_tab".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Next Tab"),
+                        set_subtitle: &tr("Switch to next tab"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.next_tab.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary>Tab"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("next_tab".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
+                        set_title: &tr("Previous Tab"),
+                        set_subtitle: &tr("Switch to previous tab"),
+                        add_suffix = &gtk::Entry {
+                            set_text: model.config.shortcuts.prev_tab.as_deref().unwrap_or(""),
+                            set_valign: gtk::Align::Center,
+                            set_placeholder_text: Some("<Primary><Shift>Tab"),
+                            connect_changed => move |entry: &gtk::Entry| {
+                                let val = entry.text().to_string();
+                                let shortcut = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetShortcut("prev_tab".to_string(), shortcut));
+                                }
+                            }
+                        }
+                    },
+                },
+
+                add = &adw::PreferencesGroup {
                     set_title: &tr("File Operations"),
                     set_description: Some(&tr("Shortcuts for managing files")),
                     add = &adw::ActionRow {

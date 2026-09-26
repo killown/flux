@@ -94,12 +94,87 @@ impl FluxApp {
             .view
             .connect_activate(move |_, position| sender_clone.input(AppMsg::Open(Some(position))));
 
+        // 4.5. Tab Container Initialization
+        let tab_view = adw::TabView::new();
+        let tab_bar = adw::TabBar::builder()
+            .view(&tab_view)
+            .autohide(true)
+            .expand_tabs(false)
+            .css_classes(["inline"])
+            .build();
+
+        let mut initial_tab = crate::ui::TabState::new(
+            1,
+            start_path.clone(),
+            config.default_list_mode,
+            config.ui.default_sort,
+        );
+        initial_tab.is_initialized = true;
+
+        initial_tab
+            .files
+            .view
+            .set_single_click_activate(config.ui.single_click);
+        let s_open = sender.clone();
+        initial_tab.files.view.connect_activate(move |_, pos| {
+            s_open.input(AppMsg::Open(Some(pos)));
+        });
+        let s_sel = sender.clone();
+        if let Some(selection_model) = initial_tab
+            .files
+            .view
+            .model()
+            .and_downcast::<gtk::MultiSelection>()
+        {
+            selection_model.connect_selection_changed(move |_, _, _| {
+                s_sel.input(AppMsg::SelectionChanged);
+            });
+        }
+
+        Self::connect_tab_scroller(&initial_tab.scroller, &sender);
+
+        let initial_page = tab_view.append(&initial_tab.scroller);
+        initial_page.set_title(&initial_tab.title);
+
+        let s_tab_select = sender.clone();
+        tab_view.connect_selected_page_notify(move |tv| {
+            if let Some(selected_page) = tv.selected_page() {
+                let position = tv.page_position(&selected_page) as usize;
+                // Only request SwitchTab if the user clicked a different tab header
+                s_tab_select.input(AppMsg::SwitchTab(position));
+            }
+        });
+
+        tab_view.connect_close_page(move |tv, page| {
+            if tv.n_pages() <= 1 {
+                let app = gtk::Application::default();
+                if let Some(win) = app.active_window() {
+                    win.close();
+                }
+                return glib::Propagation::Stop;
+            }
+            // Let AdwTabView close and detach the page normally
+            tv.close_page_finish(page, true);
+            glib::Propagation::Stop
+        });
+
+        let s_tab_detached = sender.clone();
+        tab_view.connect_page_detached(move |_tv, _page, position| {
+            // Only notify our model AFTER the widget is fully detached
+            s_tab_detached.input(AppMsg::CloseTab(Some(position as usize)));
+        });
+
         // 5. Sidebar and Volume Monitoring
         let listbox = gtk::ListBox::default();
         let sidebar = FactoryVecDeque::builder().launch(listbox.clone()).forward(
             sender.input_sender(),
             |msg| match msg {
                 crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
+                crate::ui::SidebarMsg::OpenInNewTab(path) => AppMsg::NewTab(Some(path)),
+                crate::ui::SidebarMsg::OpenInNewWindow(path) => {
+                    crate::utils::helpers::open_new_instance(&path);
+                    AppMsg::ClearExclusive
+                }
                 crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
                 crate::ui::SidebarMsg::ChangeIcon(path) => AppMsg::ShowSidebarIconPicker(path),
                 crate::ui::SidebarMsg::Rename { path, current_name } => {
@@ -349,6 +424,11 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            tab_view,
+            tab_bar,
+            tabs: vec![initial_tab],
+            active_tab_index: 0,
+            next_tab_id: 1,
             tag_panel_revealer: None,
             tag_panel_visible: false,
             tag_panel_initialized: false,
@@ -422,7 +502,6 @@ impl FluxApp {
             conflict_dialog_active: false,
             file_op_history: crate::ui::undo_redo::FileOpHistory::new(),
             pending_thumbnails: std::collections::HashSet::new(),
-            last_thumb_scroll_idx: 0,
             folder_cache: std::collections::HashMap::with_capacity(32),
             scrolled_to_bottom: false,
             last_search_was_advanced: false,
@@ -557,7 +636,6 @@ impl FluxApp {
         let scrub_db = state_db.clone();
         let tag_to_apply = initial_tag_search;
         glib::timeout_add_local_once(std::time::Duration::from_millis(75), move || {
-            // Spawn DB maintenance thread after window is on screen
             std::thread::spawn(move || {
                 if let Err(e) = scrub_db.scrub_orphans() {
                     eprintln!("[DB] Scrub failed: {}", e);

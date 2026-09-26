@@ -916,16 +916,20 @@ impl FluxApp {
                     });
                 });
 
+                // Clear the active tab's grid before populating virtual archive items
+                self.tabs[self.active_tab_index].files.clear();
+
+                let active_tab = &mut self.tabs[self.active_tab_index];
                 if self.is_list_mode {
-                    self.files.view.set_min_columns(1);
-                    self.files.view.set_max_columns(1);
+                    active_tab.files.view.set_min_columns(1);
+                    active_tab.files.view.set_max_columns(1);
                 } else {
-                    self.files.view.set_min_columns(1);
-                    self.files.view.set_max_columns(20);
+                    active_tab.files.view.set_min_columns(1);
+                    active_tab.files.view.set_max_columns(20);
                 }
 
                 let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
-                for (grid_idx, item) in (self.files.len()..).zip(items) {
+                for (grid_idx, item) in (0u32..).zip(items) {
                     let size = item.size();
                     let mtime = item.mtime();
                     let is_empty = if item.is_dir && self.config.ui.show_empty_dir_emblem {
@@ -945,7 +949,7 @@ impl FluxApp {
                         }
                     }
 
-                    self.files.append(
+                    self.tabs[self.active_tab_index].files.append(
                         FileItem::builder(item.display_name.clone(), item.target_path, icon)
                             .is_dir(item.is_dir)
                             .size(size)
@@ -969,7 +973,12 @@ impl FluxApp {
                 self.update_breadcrumbs();
 
                 if !self.config.ui.lazy_thumbnails {
-                    self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+                    self.spawn_thumbnail_loader(
+                        media_tasks,
+                        current_session,
+                        self.active_tab_index,
+                        sender.clone(),
+                    );
                 } else {
                     sender.input(AppMsg::CheckVisibleThumbnails);
                 }
@@ -1117,7 +1126,12 @@ impl FluxApp {
         self.update_breadcrumbs();
 
         if !self.config.ui.lazy_thumbnails {
-            self.spawn_thumbnail_loader(media_tasks, current_session, sender.clone());
+            self.spawn_thumbnail_loader(
+                media_tasks,
+                current_session,
+                self.active_tab_index,
+                sender.clone(),
+            );
         } else {
             sender.input(AppMsg::CheckVisibleThumbnails);
         }
@@ -1156,12 +1170,15 @@ impl FluxApp {
         let grid_icon_size = self.current_icon_size;
         let config_file_icons = &self.config.ui.file_icons;
         let config_folder_icons = &self.config.ui.folder_icons;
-        let cached_thumbs = self
-            .folder_cache
-            .get(&self.current_path)
-            .map(|c| &c.thumbnails);
 
-        let start_idx = self.files.len();
+        let cache_key = self
+            .current_path
+            .canonicalize()
+            .unwrap_or_else(|_| self.current_path.clone());
+        let cached_thumbs = self.folder_cache.get(&cache_key).map(|c| &c.thumbnails);
+
+        let active_tab = &mut self.tabs[self.active_tab_index];
+        let start_idx = active_tab.files.len();
         let mut chunk_media_tasks: Vec<(u32, PathBuf)> = Vec::new();
 
         for (offset, item) in items.into_iter().enumerate() {
@@ -1208,7 +1225,6 @@ impl FluxApp {
                 .map(|c| item.target_path.starts_with(c.join("thumbnails")))
                 .unwrap_or(false);
 
-            // Collect visual media files that don't have a thumbnail yet
             if !item.is_dir && thumbnail.is_none() && !is_inside_thumb_cache {
                 let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
                 let is_exe = item
@@ -1251,13 +1267,17 @@ impl FluxApp {
                 .show_symlink_emblem(self.config.ui.show_symlink_emblem)
                 .build();
 
-            self.files.append(file_item);
+            self.tabs[self.active_tab_index].files.append(file_item);
         }
 
-        // Fire thumbnail generation for any items still missing thumbnails
         if !chunk_media_tasks.is_empty() {
             if !self.config.ui.lazy_thumbnails {
-                self.spawn_thumbnail_loader(chunk_media_tasks, load_id, sender.clone());
+                self.spawn_thumbnail_loader(
+                    chunk_media_tasks,
+                    load_id,
+                    self.active_tab_index,
+                    sender.clone(),
+                );
             } else {
                 sender.input(AppMsg::CheckVisibleThumbnails);
             }
@@ -1294,7 +1314,8 @@ impl FluxApp {
             self.folder_cache.clear();
         }
 
-        let is_cached = self.folder_cache.contains_key(&path);
+        let cache_key = path.canonicalize().unwrap_or_else(|_| path.clone());
+        let is_cached = self.folder_cache.contains_key(&cache_key);
 
         if !path.to_string_lossy().starts_with("trash://")
             && !path
@@ -1317,7 +1338,7 @@ impl FluxApp {
             }
 
             self.folder_cache.insert(
-                path.clone(),
+                cache_key,
                 crate::model::CachedFolder {
                     items: items.clone(),
                     media_tasks,
@@ -1331,18 +1352,34 @@ impl FluxApp {
         // and cleans up widget associations, qdata, and MultiSelection state.
         // WARNING: this is necessary for folder cache, if no clear here, it will start mixing files
         // from different folders and cause all sorts of problems.
-        self.files.clear();
+        self.tabs[self.active_tab_index].files.clear();
 
+        let tab = &mut self.tabs[self.active_tab_index];
         if self.is_list_mode {
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(1);
+            tab.files.view.set_min_columns(1);
+            tab.files.view.set_max_columns(1);
         } else {
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(20);
+            tab.files.view.set_min_columns(1);
+            tab.files.view.set_max_columns(20);
         }
 
         self.current_path = path;
         self.update_breadcrumbs();
+
+        // Sync active tab so SwitchTab restores the correct path
+        if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
+            tab.current_path = self.current_path.clone();
+            let title = self
+                .current_path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| self.current_path.to_string_lossy().to_string());
+            tab.title = title.clone();
+            if (self.active_tab_index as i32) < self.tab_view.n_pages() {
+                let page = self.tab_view.nth_page(self.active_tab_index as i32);
+                page.set_title(&title);
+            }
+        }
 
         let batch_size = self.config.ui.loader_batch_size.max(10);
 
@@ -1388,7 +1425,7 @@ impl FluxApp {
             });
         }
 
-        if let Some(selection_model) = self
+        if let Some(selection_model) = self.tabs[self.active_tab_index]
             .files
             .view
             .model()

@@ -20,6 +20,10 @@ pub mod constants {
     pub const TOGGLE_TERMINAL: &str = "F4";
     pub const TOGGLE_HEADER: &str = "F6";
     pub const TOGGLE_FOLDERS_FIRST: &str = "F7";
+    pub const NEW_TAB: &str = "<ctrl>t";
+    pub const CLOSE_TAB: &str = "<ctrl>w";
+    pub const NEXT_TAB: &str = "<ctrl>Tab";
+    pub const PREV_TAB: &str = "<ctrl><shift>Tab";
 }
 
 /// A collection of resolved GTK ShortcutTriggers.
@@ -47,6 +51,10 @@ pub struct KeyMap {
     pub toggle_folders_first: gtk::ShortcutTrigger,
     pub toggle_header: gtk::ShortcutTrigger,
     pub home: gtk::ShortcutTrigger,
+    pub new_tab: gtk::ShortcutTrigger,
+    pub close_tab: gtk::ShortcutTrigger,
+    pub next_tab: gtk::ShortcutTrigger,
+    pub prev_tab: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -76,6 +84,10 @@ impl KeyMap {
             ),
             toggle_header: parse_trigger(&config.toggle_header, constants::TOGGLE_HEADER),
             home: parse_trigger(&config.home, constants::HOME),
+            new_tab: parse_trigger(&config.new_tab, constants::NEW_TAB),
+            close_tab: parse_trigger(&config.close_tab, constants::CLOSE_TAB),
+            next_tab: parse_trigger(&config.next_tab, constants::NEXT_TAB),
+            prev_tab: parse_trigger(&config.prev_tab, constants::PREV_TAB),
         }
     }
 }

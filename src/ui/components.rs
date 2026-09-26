@@ -440,9 +440,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             #[root]
             root = gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
-                set_halign: gtk::Align::Center,
+                set_halign: gtk::Align::Fill,
+                set_valign: gtk::Align::Fill,
                 set_spacing: 0,
-                set_valign: gtk::Align::Center,
                 add_css_class: constants::CARD_CSS_CLASS,
 
                 // only if single_click is enabled
@@ -533,7 +533,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                     }
                 },
 
-                add_controller = gtk::GestureLongPress {
+                    add_controller = gtk::GestureLongPress {
                     // Only claim or handle long press on touch input, preventing mouse drag conflicts
                     connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
                         if let Some(event) = gesture.current_event() {
@@ -559,14 +559,20 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
                         if let Some(s) = sender.get() {
                             let widget = gesture.widget().unwrap();
-                            let idx_opt: Option<u32> = unsafe {
-                                widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
+                            let name = widget.widget_name();
+                            let path_opt = {
+                                let s_str = name.as_str();
+                                if s_str.is_empty() || s_str == "gtk-widget" {
+                                    None
+                                } else {
+                                    Some(PathBuf::from(s_str))
+                                }
                             };
 
                             if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                 let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
-                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
+                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                             }
                         }
                     }
@@ -583,14 +589,19 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                         if gesture.current_button() == MOUSE_RIGHT_CLICK {
                             if let Some(s) = sender.get() {
                                 let widget = gesture.widget().unwrap();
-
-                                let idx_opt: Option<u32> = unsafe {
-                                    widget.data::<u32>("grid_item_index").map(|ptr| *ptr.as_ref())
+                                let name = widget.widget_name();
+                                let path_opt = {
+                                    let s_str = name.as_str();
+                                    if s_str.is_empty() || s_str == "gtk-widget" {
+                                        None
+                                    } else {
+                                        Some(PathBuf::from(s_str))
+                                    }
                                 };
 
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                     let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, idx_opt)).ok();
+                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                 }
                             }
                         }
@@ -703,7 +714,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             // Compact horizontal row: small icon on the left, filename fills the rest.
             root.set_orientation(gtk::Orientation::Horizontal);
             root.set_halign(gtk::Align::Fill);
+            root.set_valign(gtk::Align::Center);
             root.set_hexpand(true);
+            root.set_vexpand(false);
             root.set_spacing(10);
 
             widgets.icon_widget.set_pixel_size(self.icon_size);
@@ -873,7 +886,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             }
         } else {
             root.set_orientation(gtk::Orientation::Vertical);
-            root.set_halign(gtk::Align::Center);
+            root.set_halign(gtk::Align::Fill);
+            root.set_valign(gtk::Align::Fill);
+            root.set_hexpand(false);
+            root.set_vexpand(false);
             root.set_spacing(0);
             widgets.icon_widget.set_pixel_size(self.icon_size);
             widgets.icon_widget.set_size_request(-1, -1);
@@ -1181,6 +1197,8 @@ pub enum SidebarMsg {
     Navigate(PathBuf),
     Remove(PathBuf),
     ChangeIcon(PathBuf),
+    OpenInNewTab(PathBuf),
+    OpenInNewWindow(PathBuf),
     Rename {
         path: PathBuf,
         current_name: String,
@@ -1300,13 +1318,18 @@ impl FactoryComponent for SidebarPlace {
                 }
             },
 
-            add_controller = gtk::GestureClick {
+           add_controller = gtk::GestureClick {
                 set_button: 2,
-                connect_pressed[path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
+                connect_pressed[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
                     if is_label { return; }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                    if let Ok(exe) = std::env::current_exe() {
-                        let _ = std::process::Command::new(exe).arg(&path).spawn();
+
+                    let target = path.clone();
+                    let modifiers = gesture.current_event_state();
+                    if modifiers.contains(adw::gdk::ModifierType::CONTROL_MASK) {
+                        let _ = sender.output(SidebarMsg::OpenInNewWindow(target));
+                    } else {
+                        let _ = sender.output(SidebarMsg::OpenInNewTab(target));
                     }
                 }
             },
@@ -1343,9 +1366,18 @@ impl FactoryComponent for SidebarPlace {
                         });
                         action_group.add_action(&remove_action);
                     } else {
+                        menu_model.append(Some(&tr("Open in New Tab")), Some("sidebar.open_new_tab"));
                         menu_model.append(Some(&tr("Rename")), Some("sidebar.rename"));
                         menu_model.append(Some(&tr("Change icon")), Some("sidebar.change_icon"));
                         menu_model.append(Some(&tr("Remove from sidebar")), Some("sidebar.remove"));
+
+                        let open_tab_action = gio::SimpleAction::new("open_new_tab", None);
+                        let sender_ot = sender.clone();
+                        let path_ot = path.clone();
+                        open_tab_action.connect_activate(move |_, _| {
+                            let _ = sender_ot.output(SidebarMsg::OpenInNewTab(path_ot.clone()));
+                        });
+                        action_group.add_action(&open_tab_action);
 
                         let rename_action = gio::SimpleAction::new("rename", None);
                         let sender_rn = sender.clone();
