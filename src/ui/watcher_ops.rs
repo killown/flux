@@ -18,9 +18,13 @@ impl FluxApp {
             // A file can have multiple result rows (one per matching line),
             // remove all of them
             let mut i = 0;
-            while i < self.files.len() {
-                if self.files.get(i).is_some_and(|r| r.borrow().path == path) {
-                    self.files.remove(i);
+            while i < self.tabs[self.active_tab_index].files.len() {
+                if self.tabs[self.active_tab_index]
+                    .files
+                    .get(i)
+                    .is_some_and(|r| r.borrow().path == path)
+                {
+                    self.tabs[self.active_tab_index].files.remove(i);
                     // don't increment i, next item shifts into this slot
                 } else {
                     i += 1;
@@ -32,19 +36,28 @@ impl FluxApp {
         // Try exact path match first, then fall back to filename match.
         // The monitor path may be canonicalized (symlinks resolved) while
         // grid items store current_path.join(name), so they can differ.
-        let target_idx = (0..self.files.len())
-            .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().path == path))
+        let target_idx = (0..self.tabs[self.active_tab_index].files.len())
+            .find(|&i| {
+                self.tabs[self.active_tab_index]
+                    .files
+                    .get(i)
+                    .is_some_and(|r| r.borrow().path == path)
+            })
             .or_else(|| {
                 path.file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .and_then(|name| {
-                        (0..self.files.len())
-                            .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name))
+                        (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
+                            self.tabs[self.active_tab_index]
+                                .files
+                                .get(i)
+                                .is_some_and(|r| r.borrow().name == name)
+                        })
                     })
             });
 
         if let Some(idx) = target_idx {
-            self.files.remove(idx);
+            self.tabs[self.active_tab_index].files.remove(idx);
         }
     }
 
@@ -67,14 +80,21 @@ impl FluxApp {
                 let display_name = info.display_name().to_string();
                 let icon = utils::get_icon_for_path(&path, is_dir);
 
-                let target_idx = (0..self.files.len())
-                    .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
+                let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
+                    self.tabs[self.active_tab_index]
+                        .files
+                        .get(i)
+                        .is_some_and(|r| r.borrow().name == name)
+                });
                 if let Some(idx) = target_idx {
-                    if let Some(item_wrapper) = self.files.get(idx) {
-                        let mut item = item_wrapper.borrow().clone();
+                    let item_opt = self.tabs[self.active_tab_index]
+                        .files
+                        .get(idx)
+                        .map(|w| w.borrow().clone());
+                    if let Some(mut item) = item_opt {
                         item.icon = icon;
-                        self.files.remove(idx);
-                        self.files.insert(idx, item);
+                        self.tabs[self.active_tab_index].files.remove(idx);
+                        self.tabs[self.active_tab_index].files.insert(idx, item);
                     }
                 } else {
                     let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
@@ -86,7 +106,9 @@ impl FluxApp {
                     let is_symlink = path.is_symlink();
                     let is_broken_symlink = is_symlink && std::fs::metadata(&path).is_err();
 
-                    self.files.append(
+                    let grid_idx = self.tabs[self.active_tab_index].files.len();
+
+                    self.tabs[self.active_tab_index].files.append(
                         FileItem::builder(display_name, path.clone(), icon)
                             .is_dir(is_dir)
                             .is_empty(is_empty)
@@ -97,7 +119,7 @@ impl FluxApp {
                                 self.current_icon_size
                             })
                             .is_list_mode(self.is_list_mode)
-                            .grid_idx(self.files.len())
+                            .grid_idx(grid_idx)
                             .max_width_chars(self.config.ui.max_width_chars)
                             .grid_spacing(self.config.ui.grid_spacing)
                             .is_symlink(is_symlink)
@@ -108,7 +130,7 @@ impl FluxApp {
 
                     let current_session = self.load_id.load(Ordering::SeqCst);
                     self.spawn_thumbnail_loader(
-                        vec![(self.files.len() - 1, path)],
+                        vec![(grid_idx, path.clone())],
                         current_session,
                         self.active_tab_index,
                         sender.clone(),
@@ -117,10 +139,14 @@ impl FluxApp {
                 }
             } else {
                 // File no longer exists, treat as deleted, remove from grid directly
-                let target_idx = (0..self.files.len())
-                    .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().name == name));
+                let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
+                    self.tabs[self.active_tab_index]
+                        .files
+                        .get(i)
+                        .is_some_and(|r| r.borrow().name == name)
+                });
                 if let Some(idx) = target_idx {
-                    self.files.remove(idx);
+                    self.tabs[self.active_tab_index].files.remove(idx);
                 }
             }
         }
@@ -129,15 +155,22 @@ impl FluxApp {
     pub fn handle_start_rename(&mut self, path: PathBuf) {
         self.active_item_path = Some(path.clone());
 
-        let target_idx = (0..self.files.len())
-            .find(|&i| self.files.get(i).is_some_and(|r| r.borrow().path == path));
+        let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
+            self.tabs[self.active_tab_index]
+                .files
+                .get(i)
+                .is_some_and(|r| r.borrow().path == path)
+        });
 
         if let Some(idx) = target_idx {
-            if let Some(item_wrapper) = self.files.get(idx) {
-                let mut item = item_wrapper.borrow().clone();
+            let item_opt = self.tabs[self.active_tab_index].files.get(idx).map(|w| {
+                let mut item = w.borrow().clone();
                 item.is_editing = true;
-                self.files.remove(idx);
-                self.files.insert(idx, item);
+                item
+            });
+            if let Some(item) = item_opt {
+                self.tabs[self.active_tab_index].files.remove(idx);
+                self.tabs[self.active_tab_index].files.insert(idx, item);
             }
         }
     }
