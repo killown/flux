@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp, SortBy};
+use crate::model::{AppMsg, BackgroundSlot, FluxApp, SortBy};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -328,6 +328,187 @@ impl FluxApp {
         });
         crate::utils::save_config(&self.config);
         self.refresh_sidebar();
+    }
+
+    pub fn handle_set_flux_background(&mut self, target: PathBuf, slot: BackgroundSlot) {
+        if let Some(data_dir) = dirs::data_dir() {
+            let img_dir = data_dir.join("flux/data/resources/images");
+            let _ = std::fs::create_dir_all(&img_dir);
+
+            let prefix = match slot {
+                BackgroundSlot::Window => "window",
+                BackgroundSlot::SidebarLeft => "sidebar-left",
+                BackgroundSlot::SidebarRight => "sidebar-right",
+            };
+
+            // Remove any previous images for this slot
+            if let Ok(entries) = std::fs::read_dir(&img_dir) {
+                for entry in entries.flatten() {
+                    let p = entry.path();
+                    if let Some(stem) = p.file_stem().and_then(|s| s.to_str()) {
+                        if stem == prefix || stem.starts_with(&format!("{}_", prefix)) {
+                            let _ = std::fs::remove_file(p);
+                        }
+                    }
+                }
+            }
+
+            // Save with a unique timestamp to invalidate GTK's CSS URL cache
+            let ts = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0);
+            let dest = img_dir.join(format!("{}_{}.png", prefix, ts));
+
+            if std::fs::copy(&target, &dest).is_ok() {
+                crate::utils::helpers::load_custom_background_images();
+                if let Some(ref w) = self.sidebar_widget {
+                    w.queue_draw();
+                }
+                self.tabs[self.active_tab_index].files.view.queue_draw();
+            }
+        }
+    }
+
+    pub fn handle_clear_flux_backgrounds(&self, sender: &AsyncComponentSender<Self>) {
+        crate::utils::helpers::clear_custom_background_images();
+        sender.input(AppMsg::Refresh);
+    }
+
+    pub fn handle_set_auto_mime_body_color(
+        &mut self,
+        color: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.auto_mime_body_color = color;
+        utils::save_config(&self.config);
+        crate::services::loader::invalidate_extension_icon_cache();
+        crate::utils::invalidate_themed_icon_cache();
+        self.load_path(self.current_path.clone(), sender);
+    }
+
+    pub fn handle_set_auto_mime_font_color(
+        &mut self,
+        color: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.auto_mime_font_color = color;
+        utils::save_config(&self.config);
+        crate::services::loader::invalidate_extension_icon_cache();
+        crate::utils::invalidate_themed_icon_cache();
+        self.load_path(self.current_path.clone(), sender);
+    }
+
+    pub fn handle_set_auto_generate_mime_icons(
+        &mut self,
+        enabled: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.auto_generate_mime_icons = enabled;
+        utils::save_config(&self.config);
+        crate::services::loader::invalidate_extension_icon_cache();
+        sender.input(AppMsg::Refresh);
+    }
+
+    pub fn handle_set_auto_mime_accent_color(
+        &mut self,
+        color: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.auto_mime_accent_color = color;
+        utils::save_config(&self.config);
+        crate::services::loader::invalidate_extension_icon_cache();
+        sender.input(AppMsg::Refresh);
+    }
+
+    pub fn handle_set_auto_mime_font_size(
+        &mut self,
+        size: f64,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.auto_mime_font_size = size;
+        utils::save_config(&self.config);
+        crate::services::loader::invalidate_extension_icon_cache();
+        sender.input(AppMsg::Refresh);
+    }
+
+    pub fn handle_reset_extension_icon(
+        &mut self,
+        ext: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
+        if let Some(custom_dir) =
+            dirs::data_local_dir().map(|d| d.join("flux/icons/extensions/custom"))
+        {
+            for fmt in &["png", "svg", "webp", "jpg", "jpeg"] {
+                let p = custom_dir.join(format!("{}.{}", clean_ext, fmt));
+                let _ = std::fs::remove_file(p);
+            }
+        }
+
+        crate::services::loader::invalidate_extension_icon_cache();
+        crate::utils::invalidate_themed_icon_cache();
+        self.tabs[self.active_tab_index].files.clear();
+        self.load_path(self.current_path.clone(), sender);
+    }
+
+    pub fn handle_set_show_empty_dir_emblem(&mut self, val: bool) {
+        self.config.ui.show_empty_dir_emblem = val;
+        utils::save_config(&self.config);
+    }
+
+    pub fn handle_trigger_reset_icon(&self, sender: &AsyncComponentSender<Self>) {
+        let target = self
+            .get_selected_path()
+            .unwrap_or_else(|| self.current_path.clone());
+        if target.is_dir() {
+            sender.input(AppMsg::ResetFolderIcon(target.clone()));
+            sender.input(AppMsg::ResetFileIcon(target));
+        } else {
+            sender.input(AppMsg::ResetFileIcon(target));
+        }
+    }
+
+    pub fn handle_trigger_icon_picker(&self, sender: &AsyncComponentSender<Self>) {
+        let target = self
+            .get_selected_path()
+            .unwrap_or_else(|| self.current_path.clone());
+        if target.is_dir() {
+            self.show_icon_picker(target, sender);
+        }
+    }
+
+    pub fn handle_folder_icons_ready(
+        &mut self,
+        icons: std::collections::HashMap<String, String>,
+        session: u64,
+    ) {
+        if session != self.load_id.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+        for i in 0..self.tabs[self.active_tab_index].files.len() {
+            let path_key_opt = self.tabs[self.active_tab_index]
+                .files
+                .get(i)
+                .map(|w| w.borrow().path.to_string_lossy().to_string());
+            if let Some(path_key) = path_key_opt {
+                if let Some(icon_name) = icons.get(&path_key) {
+                    if let Ok(icon) = gtk::gio::Icon::for_string(icon_name) {
+                        let item_opt = self.tabs[self.active_tab_index].files.get(i).map(|w| {
+                            let mut item = w.borrow().clone();
+                            item.icon = icon.clone();
+                            item.is_custom_icon = true;
+                            item
+                        });
+                        if let Some(item) = item_opt {
+                            self.tabs[self.active_tab_index].files.remove(i);
+                            self.tabs[self.active_tab_index].files.insert(i, item);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub fn handle_set_window_size(&mut self, width: Option<i32>, height: Option<i32>) {

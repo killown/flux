@@ -43,6 +43,7 @@ pub mod undo_ops;
 pub mod undo_redo;
 pub mod view_ops;
 pub use tabs::TabState;
+pub mod tag_ops;
 pub mod watcher_ops;
 
 // --- 2. Existing Submodules ---
