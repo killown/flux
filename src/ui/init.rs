@@ -509,6 +509,8 @@ impl FluxApp {
             thumbnail_manager: Arc::new(
                 crate::services::thumbnails::ThumbnailTaskManager::default(),
             ),
+            video_preview_launches: std::collections::VecDeque::new(),
+            video_preview_cooldown_until: None,
         };
 
         // 7.5 Apply initial list/grid mode to the view
@@ -641,6 +643,8 @@ impl FluxApp {
                     eprintln!("[DB] Scrub failed: {}", e);
                 }
             });
+
+            crate::services::archive::purge_stale_scratch_dirs();
 
             s_init.input(AppMsg::RefreshSidebar);
 

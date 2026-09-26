@@ -23,15 +23,15 @@
 //! | `.lz4` (standalone)                        | `lz4_flex`       | ✗        |
 //! | `.deb` (Debian package)                    | `ar` + `tar`     | ✗        |
 
+use crate::model::FileLoadContext;
+use sevenz_rust2::{ArchiveReader, Password};
 use std::collections::HashMap;
 use std::io::{BufReader, Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::OnceLock;
 
-use crate::model::FileLoadContext;
-use sevenz_rust2::{ArchiveReader, Password};
-
+static ARCHIVE_TEMP_FILES: Mutex<Vec<PathBuf>> = Mutex::new(Vec::new());
 static FLUX_TEMP_DIR: OnceLock<tempfile::TempDir> = OnceLock::new();
 static ACTIVE_TEMP_DIRS: Mutex<Vec<tempfile::TempDir>> = Mutex::new(Vec::new());
 
@@ -40,6 +40,47 @@ static ACTIVE_TEMP_DIRS: Mutex<Vec<tempfile::TempDir>> = Mutex::new(Vec::new());
 pub fn register_temp_dir(dir: tempfile::TempDir) {
     if let Ok(mut lock) = ACTIVE_TEMP_DIRS.lock() {
         lock.push(dir);
+    }
+}
+
+pub fn register_temp_file(path: PathBuf) {
+    if let Ok(mut lock) = ARCHIVE_TEMP_FILES.lock() {
+        lock.push(path);
+    }
+}
+
+pub fn clear_archive_session_temp() {
+    if let Ok(mut dirs) = ACTIVE_TEMP_DIRS.lock() {
+        dirs.clear();
+    }
+    if let Ok(mut files) = ARCHIVE_TEMP_FILES.lock() {
+        for path in files.drain(..) {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
+}
+
+pub fn purge_stale_scratch_dirs() {
+    let current_pid = std::process::id();
+    let Ok(entries) = std::fs::read_dir("/tmp") else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        let Some(rest) = name.strip_prefix("flux-") else {
+            continue;
+        };
+        let Some(pid_part) = rest.split('-').next() else {
+            continue;
+        };
+        let Ok(pid) = pid_part.parse::<u32>() else {
+            continue;
+        };
+        if pid == current_pid {
+            continue;
+        }
+        let _ = std::fs::remove_dir_all(entry.path());
     }
 }
 

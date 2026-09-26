@@ -1438,3 +1438,37 @@ tabbar tab.selected button.flat:hover {
   background-color: rgba(255, 255, 255, 0.25);
   color: #ffffff;
 }
+
+toast {
+  background-color: alpha(#ffffff, 0.98);
+  border: 1px solid alpha(black, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px alpha(black, 0.12);
+}
+
+toast label {
+  color: #1d1d1f;
+}
+
+toast label.flux-toast-label {
+  font-weight: 500;
+}
+
+toast button {
+  color: rgba(29, 29, 31, 0.7);
+  background-color: transparent;
+}
+
+toast button:hover {
+  background-color: alpha(black, 0.06);
+  color: #1d1d1f;
+}
+
+toast button:active {
+  background-color: alpha(black, 0.12);
+  color: #1d1d1f;
+}
+
+toast button image {
+  color: inherit;
+}

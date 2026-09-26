@@ -8,6 +8,11 @@ use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
 use std::sync::atomic::Ordering;
+use std::time::{Duration, Instant};
+
+const VIDEO_PREVIEW_LAUNCH_LIMIT: usize = 5;
+const VIDEO_PREVIEW_LAUNCH_WINDOW: Duration = Duration::from_secs(1);
+const VIDEO_PREVIEW_COOLDOWN: Duration = Duration::from_secs(5);
 
 impl FluxApp {
     /// Updates grid selection metadata and formats the status bar label.
@@ -730,7 +735,6 @@ impl FluxApp {
                     if let Some(stream) = video.media_stream() {
                         stream.pause();
                     }
-                    video.set_media_stream(None::<&gtk::MediaStream>);
                 }
                 if let Some(stack_ptr) = widget.data::<gtk::Stack>("preview_stack") {
                     stack_ptr.as_ref().set_visible_child_name("icon");
@@ -744,6 +748,17 @@ impl FluxApp {
             self.stop_video_preview();
             return;
         }
+
+        let now = Instant::now();
+
+        if self
+            .video_preview_cooldown_until
+            .is_some_and(|until| now < until)
+        {
+            self.stop_video_preview();
+            return;
+        }
+        self.video_preview_cooldown_until = None;
 
         let selection = self.get_selection();
         if selection.len() != 1 {
@@ -759,7 +774,18 @@ impl FluxApp {
         }
 
         if self.active_video_preview.as_ref() == Some(&selected_path) {
-            return;
+            let still_playing = self
+                .find_widget_by_path(&selected_path)
+                .map(|w| unsafe {
+                    w.data::<gtk::Video>("video_widget")
+                        .map(|ptr| ptr.as_ref().media_stream().is_some())
+                        .unwrap_or(false)
+                })
+                .unwrap_or(false);
+
+            if still_playing {
+                return;
+            }
         }
 
         self.stop_video_preview();
@@ -780,6 +806,39 @@ impl FluxApp {
 
     pub fn handle_trigger_video_preview(&mut self, path: std::path::PathBuf) {
         self.video_preview_source = None;
+
+        let now = Instant::now();
+
+        if self
+            .video_preview_cooldown_until
+            .is_some_and(|until| now < until)
+        {
+            return;
+        }
+
+        while self
+            .video_preview_launches
+            .front()
+            .is_some_and(|t| now.duration_since(*t) > VIDEO_PREVIEW_LAUNCH_WINDOW)
+        {
+            self.video_preview_launches.pop_front();
+        }
+
+        if self.video_preview_launches.len() >= VIDEO_PREVIEW_LAUNCH_LIMIT {
+            self.video_preview_cooldown_until = Some(now + VIDEO_PREVIEW_COOLDOWN);
+            self.video_preview_launches.clear();
+            self.stop_video_preview();
+
+            if let Some(s) = crate::model::SENDER.get() {
+                let msg = tr("Video preview throttled: too many quick selections, waiting {}s")
+                    .replace("{}", &VIDEO_PREVIEW_COOLDOWN.as_secs().to_string());
+                let _ = s.send(AppMsg::ShowToast(msg));
+            }
+
+            return;
+        }
+
+        self.video_preview_launches.push_back(now);
 
         let selection = self.get_selection();
         if selection.len() != 1 || selection[0] != path {
@@ -805,6 +864,7 @@ impl FluxApp {
                     // Keep the temp file alive until preview stops or app exits
                     if let Ok(file) = tmp.keep() {
                         let (_, path_buf) = file;
+                        crate::services::archive::register_temp_file(path_buf.clone());
                         Some(gtk::gio::File::for_path(path_buf))
                     } else {
                         Some(gtk::gio::File::for_path(tmp_path))
@@ -824,7 +884,6 @@ impl FluxApp {
             let media_file = gtk::MediaFile::for_file(&gfile);
             media_file.set_muted(true);
             media_file.set_loop(true);
-            media_file.play();
 
             unsafe {
                 if let Some(video_ptr) = child.data::<gtk::Video>("video_widget") {
@@ -840,6 +899,8 @@ impl FluxApp {
                     stack_ptr.as_ref().set_visible_child_name("video");
                 }
             }
+
+            media_file.play();
         }
     }
 }

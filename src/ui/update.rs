@@ -779,14 +779,7 @@ impl FluxApp {
             AppMsg::OpenDebugWindow => {
                 crate::ui::debug::show_debug_window(self);
             }
-            AppMsg::ShowToast(msg) => {
-                if let Some(prev) = self.last_toast.take() {
-                    prev.dismiss();
-                }
-                let toast = adw::Toast::new(&msg);
-                self.toast_overlay.add_toast(toast.clone());
-                self.last_toast = Some(toast);
-            }
+            AppMsg::ShowToast(msg) => self.handle_show_toast(msg),
         }
     }
 }
