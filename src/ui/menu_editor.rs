@@ -30,6 +30,11 @@ const BUILTINS: &[BuiltinDef] = &[
         desc: "Pastes items from the clipboard into the current directory.",
     },
     BuiltinDef {
+        name: "builtin::open_new_tab",
+        scope: "directory",
+        desc: "Opens the selected folder or current location in a new tab.",
+    },
+    BuiltinDef {
         name: "builtin::rename",
         scope: "all",
         desc: "Triggers inline filename renaming on the selected item.",

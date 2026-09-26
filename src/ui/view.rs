@@ -8,6 +8,53 @@ use gtk::glib::{self};
 use relm4::prelude::*;
 use std::path::PathBuf;
 
+impl FluxApp {
+    /// Connects the vertical scroll adjustment of a tab's ScrolledWindow to the viewport loader.
+    pub fn connect_tab_scroller(
+        scroller: &gtk::ScrolledWindow,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        let vadj = scroller.vadjustment();
+        let s_scroll = sender.clone();
+        let scroll_debounce: std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>> =
+            std::rc::Rc::new(std::cell::Cell::new(None));
+
+        vadj.connect_value_changed(move |adj| {
+            let at_bottom = adj.value() >= adj.upper() - adj.page_size() - 5.0;
+            s_scroll.input(AppMsg::SetScrolledToBottom(at_bottom));
+
+            if let Some(source_id) = scroll_debounce.take() {
+                source_id.remove();
+            }
+
+            let adj_clone = adj.clone();
+            let sender_clone = s_scroll.clone();
+            let timer_cell = scroll_debounce.clone();
+
+            let timeout_id =
+                glib::timeout_add_local_once(std::time::Duration::from_millis(20), move || {
+                    timer_cell.set(None);
+
+                    let val = adj_clone.value();
+                    let page_size = adj_clone.page_size();
+                    let lower = adj_clone.lower();
+                    let upper = adj_clone.upper();
+
+                    let max_scroll = (upper - page_size - lower).max(1.0);
+                    let progress_top = ((val - lower) / max_scroll).clamp(0.0, 1.0);
+                    let progress_bottom = ((val + page_size - lower) / max_scroll).clamp(0.0, 1.0);
+
+                    sender_clone.input(AppMsg::UpdateVisibleThumbnailsViewport {
+                        progress_top,
+                        progress_bottom,
+                    });
+                });
+
+            scroll_debounce.set(Some(timeout_id));
+        });
+    }
+}
+
 #[relm4::component(pub, async)]
 impl SimpleAsyncComponent for FluxApp {
     type Init = crate::model::AppInit;
@@ -77,6 +124,7 @@ impl SimpleAsyncComponent for FluxApp {
                 },
 
                 /// Main content container for the header and file browser using AdwToolbarView.
+                #[name = "toolbar_view"]
                 adw::ToolbarView {
                     set_hexpand: true,
                     set_vexpand: true,
@@ -512,7 +560,6 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_label: &model.sort_status(),
                             }
                         },
-
                     },
 
                     // Filter chip bar, slides in below the header when patterns are active.
@@ -553,7 +600,7 @@ impl SimpleAsyncComponent for FluxApp {
                         set_hexpand: true,
                         set_wide_handle: true,
                         set_shrink_end_child: true,
-                        set_shrink_start_child: true,
+                        set_shrink_start_child: false,
 
                         #[wrap(Some)]
                         set_start_child = &gtk::Box {
@@ -568,14 +615,11 @@ impl SimpleAsyncComponent for FluxApp {
                                 gtk::Overlay {
                                     set_vexpand: true,
 
-                                    #[name = "grid_scroller"]
-                                    gtk::ScrolledWindow {
+                                    #[wrap(Some)]
+                                    set_child: tab_view_container = &gtk::Box {
+                                        set_orientation: gtk::Orientation::Vertical,
                                         set_vexpand: true,
                                         set_hexpand: true,
-                                        set_halign: gtk::Align::Fill,
-                                        set_hscrollbar_policy: gtk::PolicyType::Automatic,
-                                        set_vscrollbar_policy: gtk::PolicyType::Automatic,
-                                        set_propagate_natural_width: false,
 
                                         // Dynamically expand bottom clearance when the quick list panel is active
                                         #[watch]
@@ -604,7 +648,7 @@ impl SimpleAsyncComponent for FluxApp {
                                                         let mut current: Option<gtk::Widget> = Some(picked);
                                                         while let Some(w) = current {
                                                             let name = w.widget_name().to_string();
-                                                            if name.starts_with("/") || name.starts_with("trash://") {
+                                                            if name.starts_with('/') || name.starts_with("trash://") {
                                                                 break;
                                                             }
                                                             current = w.parent();
@@ -676,7 +720,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         },
                                     },
 
-                                   // No Results Found status page shown when search/filter returns nothing.
+                                    // No Results Found status page shown when search/filter returns nothing.
                                     add_overlay = &adw::StatusPage {
                                         set_icon_name: Some("system-search-symbolic"),
                                         set_title: &crate::i18n::tr("No Results Found"),
@@ -687,7 +731,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_valign: gtk::Align::Fill,
                                         set_can_target: false,
                                         #[watch]
-                                        set_visible: model.files.is_empty()
+                                        set_visible: model.tabs.get(model.active_tab_index).map(|t| t.files.is_empty()).unwrap_or(true)
                                             && !model.is_loading
                                             && !model.is_content_searching
                                             && !model.archive_locked
@@ -708,7 +752,8 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_spinning: true,
                                         #[watch]
                                         set_visible: model.is_loading,
-                                    },                                }
+                                    },
+                                }
                             },
                         },
 
@@ -894,52 +939,17 @@ impl SimpleAsyncComponent for FluxApp {
         let quick_panel_box = model.quick_panel_box.clone();
         let widgets = view_output!();
 
+        widgets.toolbar_view.add_top_bar(&model.tab_bar);
+        widgets.tab_view_container.append(&model.tab_view);
+        if let Some(first_tab) = model.tabs.first() {
+            Self::connect_tab_scroller(&first_tab.scroller, &sender);
+        }
+
         model.header_widget = Some(widgets.header_bar.clone().upcast());
 
         let main_menu = Self::build_main_menu();
         widgets.main_menu_popover.set_menu_model(Some(&main_menu));
         model.header_path_entry = widgets.header_path_entry.downgrade();
-
-        widgets.grid_scroller.set_child(Some(&model.files.view));
-
-        let vadj = widgets.grid_scroller.vadjustment();
-        let s_scroll = sender.clone();
-        let scroll_debounce: std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>> =
-            std::rc::Rc::new(std::cell::Cell::new(None));
-
-        vadj.connect_value_changed(move |adj| {
-            let at_bottom = adj.value() >= adj.upper() - adj.page_size() - 5.0;
-            s_scroll.input(AppMsg::SetScrolledToBottom(at_bottom));
-
-            if let Some(source_id) = scroll_debounce.take() {
-                source_id.remove();
-            }
-
-            let adj_clone = adj.clone();
-            let sender_clone = s_scroll.clone();
-            let timer_cell = scroll_debounce.clone();
-
-            let timeout_id =
-                glib::timeout_add_local_once(std::time::Duration::from_millis(20), move || {
-                    timer_cell.set(None);
-
-                    let val = adj_clone.value();
-                    let page_size = adj_clone.page_size();
-                    let lower = adj_clone.lower();
-                    let upper = adj_clone.upper();
-
-                    let max_scroll = (upper - page_size - lower).max(1.0);
-                    let progress_top = ((val - lower) / max_scroll).clamp(0.0, 1.0);
-                    let progress_bottom = ((val + page_size - lower) / max_scroll).clamp(0.0, 1.0);
-
-                    sender_clone.input(AppMsg::UpdateVisibleThumbnailsViewport {
-                        progress_top,
-                        progress_bottom,
-                    });
-                });
-
-            scroll_debounce.set(Some(timeout_id));
-        });
 
         let sidebar_wrapper = gtk::Box::new(gtk::Orientation::Vertical, 0);
         if model.sidebar.widget().parent().is_none() {

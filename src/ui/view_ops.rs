@@ -23,8 +23,12 @@ impl FluxApp {
         let mut only_dirs = true;
         let mut single_name = String::new();
 
-        if let Some(selection_model) = self
-            .files
+        let active_files = match self.tabs.get(self.active_tab_index) {
+            Some(t) => &t.files,
+            None => return,
+        };
+
+        if let Some(selection_model) = active_files
             .view
             .model()
             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
@@ -34,7 +38,7 @@ impl FluxApp {
 
             for i in 0..n_selected {
                 let pos = selection.nth(i as u32);
-                if let Some(item_wrapper) = self.files.get(pos) {
+                if let Some(item_wrapper) = active_files.get(pos) {
                     let item = item_wrapper.borrow();
                     if item.is_dir {
                         only_files = false;
@@ -84,14 +88,13 @@ impl FluxApp {
             // Single file
             (1, true, _) => {
                 let size_str = glib::format_size(total_size);
-                let selected_item = self
-                    .files
+                let selected_item = active_files
                     .view
                     .model()
                     .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                     .and_then(|m| {
                         let pos = m.selection().nth(0);
-                        self.files.get(pos).map(|w| w.borrow().clone())
+                        active_files.get(pos).map(|w| w.borrow().clone())
                     });
 
                 if let Some(ref item) = selected_item {
@@ -158,14 +161,13 @@ impl FluxApp {
 
             // Single folder
             (1, _, true) => {
-                let item = self
-                    .files
+                let item = active_files
                     .view
                     .model()
                     .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
                     .and_then(|m| {
                         let pos = m.selection().nth(0);
-                        self.files.get(pos)
+                        active_files.get(pos)
                     });
                 if let Some(wrapper) = item {
                     let borrowed = wrapper.borrow();
@@ -229,13 +231,37 @@ impl FluxApp {
         self.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
         utils::save_config(&self.config);
-        if self.is_list_mode {
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(1);
+
+        let is_list = self.is_list_mode;
+        let new_icon_size = if is_list {
+            self.current_list_icon_size
         } else {
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(20);
+            self.current_icon_size
+        };
+
+        let active_tab = match self.tabs.get_mut(self.active_tab_index) {
+            Some(t) => t,
+            None => return,
+        };
+
+        if is_list {
+            active_tab.files.view.set_min_columns(1);
+            active_tab.files.view.set_max_columns(1);
+        } else {
+            active_tab.files.view.set_min_columns(1);
+            active_tab.files.view.set_max_columns(20);
         }
+
+        for i in 0..active_tab.files.len() {
+            if let Some(item_wrapper) = active_tab.files.get(i) {
+                let mut item = item_wrapper.borrow().clone();
+                item.is_list_mode = is_list;
+                item.icon_size = new_icon_size;
+                active_tab.files.remove(i);
+                active_tab.files.insert(i, item);
+            }
+        }
+
         self.sync_list_mode();
     }
 
@@ -325,13 +351,14 @@ impl FluxApp {
             self.config.ui.list_icon_size = new_size;
             utils::save_config(&self.config);
 
-            for i in 0..self.files.len() {
-                if let Some(item_wrapper) = self.files.get(i) {
+            let active_files = &mut self.tabs[self.active_tab_index].files;
+            for i in 0..active_files.len() {
+                if let Some(item_wrapper) = active_files.get(i) {
                     if item_wrapper.borrow().is_list_mode {
                         let mut item = item_wrapper.borrow().clone();
                         item.icon_size = new_size;
-                        self.files.remove(i);
-                        self.files.insert(i, item);
+                        active_files.remove(i);
+                        active_files.insert(i, item);
                     }
                 }
             }
@@ -362,13 +389,14 @@ impl FluxApp {
                 self.config.ui.folders_first,
             );
 
-            for i in 0..self.files.len() {
-                if let Some(item_wrapper) = self.files.get(i) {
+            let active_files = &mut self.tabs[self.active_tab_index].files;
+            for i in 0..active_files.len() {
+                if let Some(item_wrapper) = active_files.get(i) {
                     if !item_wrapper.borrow().is_list_mode {
                         let mut item = item_wrapper.borrow().clone();
                         item.icon_size = new_size;
-                        self.files.remove(i);
-                        self.files.insert(i, item);
+                        active_files.remove(i);
+                        active_files.insert(i, item);
                     }
                 }
             }
@@ -376,26 +404,41 @@ impl FluxApp {
     }
 
     /// Receives generated thumbnail textures and updates grid items.
-    pub fn handle_thumbnail_ready(&mut self, grid_idx: u32, texture: gdk::Texture, load_id: u64) {
+    pub fn handle_thumbnail_ready(
+        &mut self,
+        grid_idx: u32,
+        texture: gdk::Texture,
+        load_id: u64,
+        tab_index: usize,
+    ) {
         if load_id != self.load_id.load(Ordering::SeqCst) {
             return;
         }
+        let tab = match self.tabs.get_mut(tab_index) {
+            Some(t) => t,
+            None => return,
+        };
 
-        if let Some(pos) = (0..self.files.len()).find(|&i| {
-            self.files
+        if let Some(pos) = (0..tab.files.len()).find(|&i| {
+            tab.files
                 .get(i)
                 .map(|w| w.borrow().grid_idx == grid_idx)
                 .unwrap_or(false)
         }) {
-            if let Some(wrapper) = self.files.get(pos) {
+            if let Some(wrapper) = tab.files.get(pos) {
                 let mut item = wrapper.borrow().clone();
                 item.thumbnail = Some(texture.clone());
                 let path = item.path.clone();
 
-                self.files.remove(pos);
-                self.files.insert(pos, item);
+                tab.files.remove(pos);
+                tab.files.insert(pos, item);
 
-                if let Some(cached) = self.folder_cache.get_mut(&self.current_path) {
+                let cache_key = self
+                    .current_path
+                    .canonicalize()
+                    .unwrap_or_else(|_| self.current_path.clone());
+
+                if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
                     cached.thumbnails.insert(path, texture);
                 }
             }
@@ -403,14 +446,18 @@ impl FluxApp {
     }
 
     pub fn check_visible_thumbnails(&mut self, sender: &AsyncComponentSender<Self>) {
-        if !self.config.ui.lazy_thumbnails || self.files.is_empty() {
+        if !self.config.ui.lazy_thumbnails {
             return;
         }
 
-        let total_items = self.files.len() as usize;
+        let total_items = match self.tabs.get(self.active_tab_index) {
+            Some(t) if !t.files.is_empty() => t.files.len() as usize,
+            _ => return,
+        };
+
         let current_session = self.load_id.load(std::sync::atomic::Ordering::SeqCst);
 
-        let vadj = self.files.view.vadjustment();
+        let vadj = self.tabs[self.active_tab_index].files.view.vadjustment();
         let (val, page_size, upper, lower) = match vadj {
             Some(ref adj) => (adj.value(), adj.page_size(), adj.upper(), adj.lower()),
             None => (0.0, 1.0, 1.0, 0.0),
@@ -424,8 +471,8 @@ impl FluxApp {
             0
         };
 
-        let last_idx = self.last_thumb_scroll_idx;
-        self.last_thumb_scroll_idx = current_idx;
+        let last_idx = self.tabs[self.active_tab_index].last_thumb_scroll_idx;
+        self.tabs[self.active_tab_index].last_thumb_scroll_idx = current_idx;
 
         let window_size = 60usize.min(total_items);
         let min_pos = current_idx.min(last_idx).saturating_sub(window_size / 2);
@@ -435,58 +482,73 @@ impl FluxApp {
             .thumbnail_manager
             .cancel_out_of_viewport(min_pos as u32, max_pos as u32);
         for idx in cancelled {
-            self.pending_thumbnails.remove(&idx);
+            self.tabs[self.active_tab_index]
+                .pending_thumbnails
+                .remove(&idx);
         }
 
         let max_threads = self.config.ui.thumbnail_threads.max(1);
         let sem = self.thumbnail_manager.get_semaphore(max_threads);
 
         for i in min_pos..max_pos {
-            if let Some(wrapper) = self.files.get(i as u32) {
-                let item = wrapper.borrow();
-                let grid_idx = item.grid_idx;
-
-                if self.pending_thumbnails.contains(&grid_idx) {
-                    continue;
-                }
-
-                if !item.is_dir && item.thumbnail.is_none() {
-                    let ext = item
-                        .path
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .map(|e| e.to_ascii_lowercase())
-                        .unwrap_or_default();
-
-                    let is_pdf = ext == "pdf";
-                    let is_font = matches!(ext.as_str(), "ttf" | "otf" | "woff" | "woff2" | "ttc");
-                    let is_exe = ext == "exe";
-                    let is_audio = utils::is_audio_file(&item.path);
-                    let (is_img, is_vid) = if !is_pdf && !is_font && !is_exe && !is_audio {
-                        utils::is_visual_media(&item.path)
+            // Scope the immutable borrow of active_files tightly per iteration
+            let item_data = {
+                let active_files = &self.tabs[self.active_tab_index].files;
+                if let Some(wrapper) = active_files.get(i as u32) {
+                    let item = wrapper.borrow();
+                    if self.tabs[self.active_tab_index]
+                        .pending_thumbnails
+                        .contains(&item.grid_idx)
+                    {
+                        None
+                    } else if !item.is_dir && item.thumbnail.is_none() {
+                        Some((item.grid_idx, item.path.clone()))
                     } else {
-                        (false, false)
-                    };
-
-                    let can_thumbnail = (is_pdf && self.config.ui.thumbnail_types.pdfs)
-                        || (is_font && self.config.ui.thumbnail_types.fonts)
-                        || (is_exe && self.config.ui.thumbnail_types.executables)
-                        || (is_audio && self.config.ui.thumbnail_types.audio)
-                        || (is_img && self.config.ui.thumbnail_types.images)
-                        || (is_vid && self.config.ui.thumbnail_types.videos);
-
-                    if can_thumbnail {
-                        self.pending_thumbnails.insert(grid_idx);
-                        let token = self.thumbnail_manager.register_token(grid_idx);
-                        self.spawn_single_thumbnail(
-                            grid_idx,
-                            item.path.clone(),
-                            current_session,
-                            token,
-                            sem.clone(),
-                            sender.clone(),
-                        );
+                        None
                     }
+                } else {
+                    None
+                }
+            };
+
+            if let Some((grid_idx, path)) = item_data {
+                let ext = path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_ascii_lowercase())
+                    .unwrap_or_default();
+
+                let is_pdf = ext == "pdf";
+                let is_font = matches!(ext.as_str(), "ttf" | "otf" | "woff" | "woff2" | "ttc");
+                let is_exe = ext == "exe";
+                let is_audio = utils::is_audio_file(&path);
+                let (is_img, is_vid) = if !is_pdf && !is_font && !is_exe && !is_audio {
+                    utils::is_visual_media(&path)
+                } else {
+                    (false, false)
+                };
+
+                let can_thumbnail = (is_pdf && self.config.ui.thumbnail_types.pdfs)
+                    || (is_font && self.config.ui.thumbnail_types.fonts)
+                    || (is_exe && self.config.ui.thumbnail_types.executables)
+                    || (is_audio && self.config.ui.thumbnail_types.audio)
+                    || (is_img && self.config.ui.thumbnail_types.images)
+                    || (is_vid && self.config.ui.thumbnail_types.videos);
+
+                if can_thumbnail {
+                    self.tabs[self.active_tab_index]
+                        .pending_thumbnails
+                        .insert(grid_idx);
+                    let token = self.thumbnail_manager.register_token(grid_idx);
+                    self.spawn_single_thumbnail(
+                        grid_idx,
+                        path,
+                        current_session,
+                        self.active_tab_index,
+                        token,
+                        sem.clone(),
+                        sender.clone(),
+                    );
                 }
             }
         }
@@ -562,7 +624,15 @@ impl FluxApp {
         let sem = self.thumbnail_manager.get_semaphore(max_threads);
         let token = self.thumbnail_manager.register_token(grid_idx);
 
-        self.spawn_single_thumbnail(grid_idx, path, current_session, token, sem, sender.clone());
+        self.spawn_single_thumbnail(
+            grid_idx,
+            path,
+            current_session,
+            self.active_tab_index,
+            token,
+            sem,
+            sender.clone(),
+        );
     }
 
     /// Locates the rendered child widget in the grid view matching the given file path.
@@ -583,27 +653,30 @@ impl FluxApp {
             None
         }
 
-        search(self.files.view.as_ref(), name.as_ref())
+        let active_view = self.tabs.get(self.active_tab_index).map(|t| &t.files.view);
+        active_view.and_then(|v| search(v.as_ref(), name.as_ref()))
     }
 
     pub fn stop_video_preview(&mut self) {
-        // Just take the source ID out. Dropping a SourceId or letting GLib handle expired ones
-        // prevents "Source ID was not found" panic crashes.
-        self.video_preview_source = None;
+        if let Some(source_id) = self.video_preview_source.take() {
+            source_id.remove();
+        }
 
-        if let Some(ref old_path) = self.active_video_preview.take() {
-            if let Some(child) = self.find_widget_by_path(old_path) {
-                unsafe {
-                    if let Some(stack_ptr) = child.data::<gtk::Stack>("preview_stack") {
-                        stack_ptr.as_ref().set_visible_child_name("icon");
+        let Some(active_path) = self.active_video_preview.take() else {
+            return;
+        };
+
+        if let Some(widget) = self.find_widget_by_path(&active_path) {
+            unsafe {
+                if let Some(video_ptr) = widget.data::<gtk::Video>("video_widget") {
+                    let video = video_ptr.as_ref();
+                    if let Some(stream) = video.media_stream() {
+                        stream.pause();
                     }
-                    if let Some(video_ptr) = child.data::<gtk::Video>("video_widget") {
-                        let video = video_ptr.as_ref();
-                        if let Some(stream) = video.media_stream() {
-                            stream.pause();
-                        }
-                        video.set_media_stream(None::<&gtk::MediaStream>);
-                    }
+                    video.set_media_stream(None::<&gtk::MediaStream>);
+                }
+                if let Some(stack_ptr) = widget.data::<gtk::Stack>("preview_stack") {
+                    stack_ptr.as_ref().set_visible_child_name("icon");
                 }
             }
         }
@@ -611,50 +684,46 @@ impl FluxApp {
 
     pub fn sync_video_preview(&mut self) {
         if !self.config.ui.autoplay_video_previews {
+            self.stop_video_preview();
             return;
         }
 
-        self.video_preview_source = None;
-
         let selection = self.get_selection();
-        let target_video = if selection.len() == 1 {
-            let path = &selection[0];
-            let ext = path
-                .extension()
-                .and_then(|e| e.to_str())
-                .unwrap_or("")
-                .to_lowercase();
-            match ext.as_str() {
-                "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" => {
-                    Some(path.clone())
-                }
-                _ => None,
-            }
-        } else {
-            None
-        };
+        if selection.len() != 1 {
+            self.stop_video_preview();
+            return;
+        }
 
-        if self.active_video_preview == target_video {
+        let selected_path = selection[0].clone();
+        let (_, is_vid) = crate::utils::is_visual_media(&selected_path);
+        if !is_vid {
+            self.stop_video_preview();
+            return;
+        }
+
+        if self.active_video_preview.as_ref() == Some(&selected_path) {
             return;
         }
 
         self.stop_video_preview();
 
-        if let Some(ref new_path) = target_video {
-            let path_clone = new_path.clone();
-            // 250ms threshold: rapid key presses skip starting the decoder entirely
-            let source =
-                glib::timeout_add_local(std::time::Duration::from_millis(250), move || {
+        if self.find_widget_by_path(&selected_path).is_some() {
+            self.handle_trigger_video_preview(selected_path);
+        } else {
+            let target_path = selected_path;
+            let source_id =
+                glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
                     if let Some(s) = crate::model::SENDER.get() {
-                        let _ = s.send(AppMsg::TriggerVideoPreview(path_clone.clone()));
+                        let _ = s.send(AppMsg::TriggerVideoPreview(target_path));
                     }
-                    glib::ControlFlow::Break
                 });
-            self.video_preview_source = Some(source);
+            self.video_preview_source = Some(source_id);
         }
     }
 
     pub fn handle_trigger_video_preview(&mut self, path: std::path::PathBuf) {
+        self.video_preview_source = None;
+
         let selection = self.get_selection();
         if selection.len() != 1 || selection[0] != path {
             return;

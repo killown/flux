@@ -40,6 +40,7 @@ pub fn ensure_config_file() -> PathBuf {
 "      Open Line in Nvim" => "text/all", "alacritty -e nvim +%l %p", "no_command_dialog"
 # --- Core Operations ---
 "󰋼      Add to Quick List" => "directory", "builtin::add_to_quick_list"
+"󰓩      Open in New Tab" => "directory", "builtin::open_new_tab"
 "󰪶      Send to Quick List" => "all", "builtin::quick_list_transfer"
 "󰱝      Other Application..." => "file", "builtin::open_with_dialog"
 "󰉋      Inspect Directory" => "directory", "builtin::inspect_dir"
@@ -784,6 +785,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
             } else {
                 match text_content.trim() {
                     "Add to Quick List" => tr("Add to Quick List"),
+                    "Open in New Tab" | "Abrir em Nova Aba" => tr("Open in New Tab"),
                     "Other Application..." => tr("Other Application..."),
                     "Inspect Directory" => tr("Inspect Directory"),
                     "Copy" => tr("Copy"),

@@ -282,6 +282,7 @@ impl FluxApp {
             "home" => self.config.shortcuts.home = val,
             "toggle_header" => self.config.shortcuts.toggle_header = val,
             "root" => self.config.shortcuts.root = val,
+            "rename" => self.config.shortcuts.rename = val,
             "open_properties" => self.config.shortcuts.open_properties = val,
             "change_icon" => self.config.shortcuts.change_icon = val,
             "reset_icon" => self.config.shortcuts.reset_icon = val,
@@ -294,6 +295,10 @@ impl FluxApp {
             "settings" => self.config.shortcuts.settings = val,
             "menu_editor" => self.config.shortcuts.menu_editor = val,
             "quit" => self.config.shortcuts.quit = val,
+            "new_tab" => self.config.shortcuts.new_tab = val,
+            "close_tab" => self.config.shortcuts.close_tab = val,
+            "next_tab" => self.config.shortcuts.next_tab = val,
+            "prev_tab" => self.config.shortcuts.prev_tab = val,
             _ => {}
         }
         utils::save_config(&self.config);

@@ -61,11 +61,16 @@ impl FluxApp {
             return;
         }
 
+        let active_files = match self.tabs.get(self.active_tab_index) {
+            Some(tab) => &tab.files,
+            None => return,
+        };
+
         let items: Vec<(PathBuf, bool)> = if let Some(pos) = position {
             let query_lc = self.filter.to_lowercase();
 
             if self.filter.is_empty() || self.is_content_searching {
-                self.files
+                active_files
                     .get(pos)
                     .map(|w| {
                         let item = w.borrow();
@@ -73,8 +78,7 @@ impl FluxApp {
                     })
                     .unwrap_or_default()
             } else if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query_lc) {
-                // If tag search rebuilt the files list directly, map by position first
-                if let Some(wrapper) = self.files.get(pos) {
+                if let Some(wrapper) = active_files.get(pos) {
                     let item = wrapper.borrow();
                     vec![(item.path.clone(), item.is_dir)]
                 } else {
@@ -84,8 +88,8 @@ impl FluxApp {
                     let mut match_count = 0u32;
                     let mut found = None;
 
-                    for i in 0..self.files.len() {
-                        if let Some(wrapper) = self.files.get(i) {
+                    for i in 0..active_files.len() {
+                        if let Some(wrapper) = active_files.get(i) {
                             let item = wrapper.borrow();
                             let name_ok = rest_clean.is_empty()
                                 || item.name.to_lowercase().contains(&rest_clean);
@@ -112,8 +116,8 @@ impl FluxApp {
                 let mut match_count = 0u32;
                 let mut found = None;
 
-                for i in 0..self.files.len() {
-                    if let Some(wrapper) = self.files.get(i) {
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
                         let item = wrapper.borrow();
                         let name_ok =
                             rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
@@ -142,8 +146,8 @@ impl FluxApp {
             } else {
                 let mut match_count = 0u32;
                 let mut found = None;
-                for i in 0..self.files.len() {
-                    if let Some(wrapper) = self.files.get(i) {
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
                         let item = wrapper.borrow();
                         if crate::utils::search::fuzzy_match(&item.name, &query_lc) {
                             if match_count == pos {
@@ -232,33 +236,24 @@ impl FluxApp {
         &self,
         x: f64,
         y: f64,
-        item_idx: Option<u32>,
+        path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
-        let path = if let Some(idx) = item_idx {
-            if let Some(selection_model) = self
-                .files
-                .view
-                .model()
-                .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-            {
-                if !selection_model.selection().contains(idx) {
-                    selection_model.select_item(idx, true);
-                }
-            }
-            self.files.get(idx).map(|w| w.borrow().path.clone())
-        } else {
-            None
-        };
+        let resolved_path = path.or_else(|| self.get_selected_path());
 
         let sender_ctx = sender.clone();
         relm4::spawn_blocking(move || {
-            let mime = path
+            let mime = resolved_path
                 .as_ref()
                 .map(|p| utils::get_mime_type(p))
                 .unwrap_or_else(|| constants::MIME_DIR.to_string());
 
-            sender_ctx.input(AppMsg::ShowContextMenu { x, y, path, mime });
+            sender_ctx.input(AppMsg::ShowContextMenu {
+                x,
+                y,
+                path: resolved_path,
+                mime,
+            });
         });
     }
 }

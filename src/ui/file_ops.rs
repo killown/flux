@@ -333,8 +333,12 @@ impl FluxApp {
     /// Extracts target paths from selection or active item context.
     pub fn resolve_command_targets(&self) -> Vec<PathBuf> {
         let mut targets = Vec::new();
-        if let Some(model) = self
-            .files
+        let active_files = match self.tabs.get(self.active_tab_index) {
+            Some(tab) => &tab.files,
+            None => return targets,
+        };
+
+        if let Some(model) = active_files
             .view
             .model()
             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
@@ -342,7 +346,7 @@ impl FluxApp {
             let bitset = model.selection();
             for i in 0..bitset.size() {
                 let pos = bitset.nth(i as u32);
-                if let Some(wrapper) = self.files.get(pos) {
+                if let Some(wrapper) = active_files.get(pos) {
                     targets.push(wrapper.borrow().path.clone());
                 }
             }

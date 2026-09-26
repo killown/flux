@@ -501,6 +501,10 @@ msgstr "Abrir diálogo de progresso de transferência"
 # src/ui/components.rs
 # ============================================================
 
+#: src/ui/components.rs:???
+msgid "Open in New Tab"
+msgstr "Abrir em Nova Aba"
+
 #: src/ui/components.rs:453
 msgid "Remove from sidebar"
 msgstr "Remover da barra lateral"
@@ -732,6 +736,36 @@ msgstr "Mostrar/ocultar barra de cabeçalho"
 # ============================================================
 # src/ui/settings.rs
 # ============================================================
+
+msgid "Tabs"
+msgstr "Abas"
+
+msgid "Shortcuts for managing browser tabs"
+msgstr "Atalhos para gerenciar abas do navegador"
+
+msgid "New Tab"
+msgstr "Nova Aba"
+
+msgid "Open a new tab"
+msgstr "Abrir uma nova aba"
+
+msgid "Close Tab"
+msgstr "Fechar Aba"
+
+msgid "Close current tab"
+msgstr "Fechar aba atual"
+
+msgid "Next Tab"
+msgstr "Próxima Aba"
+
+msgid "Switch to next tab"
+msgstr "Alternar para a próxima aba"
+
+msgid "Previous Tab"
+msgstr "Aba Anterior"
+
+msgid "Switch to previous tab"
+msgstr "Alternar para a aba anterior"
 
 msgid "Background Tint Opacity"
 msgstr "Opacidade da Camada de Fundo"
@@ -2783,4 +2817,5 @@ msgstr "Nenhum arquivo correspondente encontrado neste local."
 msgid "Open Line in Nvim"
 msgstr "Abrir Linha no Nvim"
 
-
+msgid "Opens the selected folder or current location in a new tab."
+msgstr "Abre a pasta selecionada ou local atual em uma nova aba."

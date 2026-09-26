@@ -112,6 +112,28 @@ impl FluxApp {
             return glib::Propagation::Stop;
         }
 
+        if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
+            match keyval {
+                gdk::Key::t | gdk::Key::T => {
+                    sender.input(AppMsg::NewTab(None));
+                    return glib::Propagation::Stop;
+                }
+                gdk::Key::w | gdk::Key::W => {
+                    sender.input(AppMsg::CloseTab(None));
+                    return glib::Propagation::Stop;
+                }
+                gdk::Key::Tab => {
+                    if modifiers.contains(gdk::ModifierType::SHIFT_MASK) {
+                        sender.input(AppMsg::PrevTab);
+                    } else {
+                        sender.input(AppMsg::NextTab);
+                    }
+                    return glib::Propagation::Stop;
+                }
+                _ => {}
+            }
+        }
+
         if modifiers == gdk::ModifierType::CONTROL_MASK && keyval == gdk::Key::Delete {
             sender.input(AppMsg::ClearExclusive);
             return glib::Propagation::Stop;
@@ -492,8 +514,12 @@ impl FluxApp {
     /// If a filter is active, it maps the visual selection indices back to the
     /// matching files. If no filter is active, it maps them directly.
     pub(crate) fn get_selection(&self) -> Vec<PathBuf> {
-        let selection_model = match self
-            .files
+        let active_files = match self.tabs.get(self.active_tab_index) {
+            Some(tab) => &tab.files,
+            None => return Vec::new(),
+        };
+
+        let selection_model = match active_files
             .view
             .model()
             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
@@ -516,9 +542,8 @@ impl FluxApp {
             let query_lc = self.filter.to_lowercase();
 
             if self.filter.is_empty() || self.is_content_searching {
-                // Scenario A: No filter. Map indices directly to the file list.
                 for idx in visual_indices {
-                    if let Some(wrapper) = self.files.get(idx) {
+                    if let Some(wrapper) = active_files.get(idx) {
                         selected_paths.push(wrapper.borrow().path.clone());
                     }
                 }
@@ -527,8 +552,8 @@ impl FluxApp {
                 let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
                 let mut match_count = 0u32;
 
-                for i in 0..self.files.len() {
-                    if let Some(wrapper) = self.files.get(i) {
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
                         let item = wrapper.borrow();
                         let name_ok =
                             rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
@@ -546,12 +571,10 @@ impl FluxApp {
                     }
                 }
             } else {
-                // Scenario B: Filter is active. We must find which actual items
-                // correspond to the visual indices (e.g., visual index 0 is the 1st match).
                 let mut match_count = 0;
 
-                for i in 0..self.files.len() {
-                    if let Some(wrapper) = self.files.get(i) {
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
                         if crate::utils::search::fuzzy_match(&wrapper.borrow().name, &query_lc) {
                             if visual_indices.contains(&(match_count as u32)) {
                                 selected_paths.push(wrapper.borrow().path.clone());
@@ -572,8 +595,12 @@ impl FluxApp {
     /// archive directories (whose paths are `archive://` URIs, never real
     /// filesystem paths) from regular files without issuing a syscall.
     pub(crate) fn get_selection_with_meta(&self) -> Vec<(PathBuf, bool)> {
-        let selection_model = match self
-            .files
+        let active_files = match self.tabs.get(self.active_tab_index) {
+            Some(tab) => &tab.files,
+            None => return Vec::new(),
+        };
+
+        let selection_model = match active_files
             .view
             .model()
             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
@@ -597,7 +624,7 @@ impl FluxApp {
 
             if self.filter.is_empty() || self.is_content_searching {
                 for idx in visual_indices {
-                    if let Some(wrapper) = self.files.get(idx) {
+                    if let Some(wrapper) = active_files.get(idx) {
                         let item = wrapper.borrow();
                         result.push((item.path.clone(), item.is_dir));
                     }
@@ -607,8 +634,8 @@ impl FluxApp {
                 let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
                 let mut match_count = 0u32;
 
-                for i in 0..self.files.len() {
-                    if let Some(wrapper) = self.files.get(i) {
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
                         let item = wrapper.borrow();
                         let name_ok =
                             rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
@@ -628,8 +655,8 @@ impl FluxApp {
             } else {
                 let mut match_count = 0u32;
 
-                for i in 0..self.files.len() {
-                    if let Some(wrapper) = self.files.get(i) {
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
                         let item = wrapper.borrow();
                         if crate::utils::search::fuzzy_match(&item.name, &query_lc) {
                             if visual_indices.contains(&match_count) {
@@ -1095,7 +1122,8 @@ impl FluxApp {
             return;
         }
 
-        let start_idx = self.files.len();
+        let active_files = &mut self.tabs[self.active_tab_index].files;
+        let start_idx = active_files.len();
         let list_icon_size = self.current_list_icon_size;
         let max_width_chars = self.config.ui.max_width_chars;
         let grid_spacing = self.config.ui.grid_spacing;
@@ -1109,7 +1137,7 @@ impl FluxApp {
             let is_symlink = item.path.is_symlink();
             let is_broken_symlink = is_symlink && !item.path.exists();
 
-            self.files.append(
+            self.tabs[self.active_tab_index].files.append(
                 crate::ui::FileItem::builder(item.display, item.path, icon)
                     .icon_size(list_icon_size)
                     .size(size)
@@ -1438,9 +1466,12 @@ pub fn load_custom_background_images() {
     let window_bg = find_slot_image(&base_img_dir, "window");
 
     let config = crate::utils::load_config();
-    let alpha_left = config.ui.bg_alpha_sidebar_left.clamp(0.0, 1.0);
-    let alpha_window = config.ui.bg_alpha_window.clamp(0.0, 1.0);
-    let alpha_right = config.ui.bg_alpha_sidebar_right.clamp(0.0, 1.0);
+    let alpha_left =
+        format!("{:.2}", config.ui.bg_alpha_sidebar_left.clamp(0.0, 1.0)).replace(',', ".");
+    let alpha_window =
+        format!("{:.2}", config.ui.bg_alpha_window.clamp(0.0, 1.0)).replace(',', ".");
+    let alpha_right =
+        format!("{:.2}", config.ui.bg_alpha_sidebar_right.clamp(0.0, 1.0)).replace(',', ".");
 
     let mut css = String::new();
 
@@ -1448,7 +1479,7 @@ pub fn load_custom_background_images() {
         css.push_str(&format!(
             r#".sidebar {{
   background-image:
-    linear-gradient(rgba(30, 30, 30, {alpha:.2}), rgba(30, 30, 30, {alpha:.2})),
+    linear-gradient(rgba(30, 30, 30, {alpha}), rgba(30, 30, 30, {alpha})),
     url("file://{path}");
   background-repeat: no-repeat;
   background-position: center;
@@ -1466,7 +1497,7 @@ pub fn load_custom_background_images() {
             r#"window,
 window.background {{
   background-image:
-    linear-gradient(rgba(30, 30, 30, {alpha:.2}), rgba(30, 30, 30, {alpha:.2})),
+    linear-gradient(rgba(30, 30, 30, {alpha}), rgba(30, 30, 30, {alpha})),
     url("file://{path}");
   background-repeat: no-repeat;
   background-position: center;
@@ -1490,7 +1521,7 @@ window.csd {{
         css.push_str(&format!(
             r#"revealer > box > .sidebar {{
   background-image:
-    linear-gradient(rgba(30, 30, 30, {alpha:.2}), rgba(30, 30, 30, {alpha:.2})),
+    linear-gradient(rgba(30, 30, 30, {alpha}), rgba(30, 30, 30, {alpha})),
     url("file://{path}");
   background-repeat: no-repeat;
   background-position: center;

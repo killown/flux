@@ -307,6 +307,14 @@ pub struct CustomAction {
 /// User-defined keyboard shortcuts for core application operations.
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, Default, PartialEq, Eq)]
 pub struct ShortcutsConfig {
+    /// Shortcut to open a new tab
+    pub new_tab: Option<String>,
+    /// Shortcut to close the current tab
+    pub close_tab: Option<String>,
+    /// Shortcut to switch to the next tab
+    pub next_tab: Option<String>,
+    /// Shortcut to switch to the previous tab
+    pub prev_tab: Option<String>,
     /// Key combination to navigate to the user's home directory.
     pub home: Option<String>,
     /// Key combination to toggle the visibility of the header bar.
@@ -763,6 +771,16 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Container widget that holds and transitions between multiple tab pages.
+    pub tab_view: adw::TabView,
+    /// Header strip displaying open tabs, automatically hidden when only one tab is open.
+    pub tab_bar: adw::TabBar,
+    /// Collection of isolated navigation states for all active tabs.
+    pub tabs: Vec<crate::ui::TabState>,
+    /// Zero-based index of the currently active tab within `tabs`.
+    pub active_tab_index: usize,
+    /// Monotonically increasing identifier generator for assigning unique IDs to new tabs.
+    pub next_tab_id: u64,
     /// Manages bounded concurrency and viewport-based cancellation tokens for lazy thumbnail generation tasks.
     pub thumbnail_manager: Arc<crate::services::thumbnails::ThumbnailTaskManager>,
     /// Revealer widget wrapping the right tag navigator sidebar panel.
@@ -796,8 +814,6 @@ pub struct FluxApp {
     pub video_preview_source: Option<glib::SourceId>,
     /// In-memory folder session cache mapped by directory path.
     pub folder_cache: std::collections::HashMap<PathBuf, CachedFolder>,
-    /// The last thumbnail index that was scrolled into view
-    pub last_thumb_scroll_idx: usize,
     /// In-session undo/redo history for file operations.
     pub file_op_history: crate::ui::undo_redo::FileOpHistory,
     /// Handle to the active command output dialog, if open.
@@ -933,6 +949,18 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Opens multiple directory paths into tabs in a single batch.
+    OpenTabs(Vec<PathBuf>),
+    /// Opens a new window tab with an optional initial directory path.
+    NewTab(Option<PathBuf>),
+    /// Closes a tab by index, or closes the currently active tab if `None`.
+    CloseTab(Option<usize>),
+    /// Switches keyboard focus and display to the tab at the given index.
+    SwitchTab(usize),
+    /// Cycles to the next tab in sequential order.
+    NextTab,
+    /// Cycles to the previous tab in reverse sequential order.
+    PrevTab,
     /// Notifies that the vertical viewport changed with normalized scroll progress values.
     UpdateVisibleThumbnailsViewport {
         progress_top: f64,
@@ -1412,7 +1440,7 @@ pub enum AppMsg {
     /// using `gio::DesktopAppInfo::new()`.
     LaunchWithApp(String),
     /// Calculate coordinates and determine target for a context menu.
-    PrepareContextMenu(f64, f64, Option<u32>),
+    PrepareContextMenu(f64, f64, Option<PathBuf>),
     /// Display the context menu popover with relevant actions for the given mime type.
     ShowContextMenu {
         x: f64,
@@ -1527,6 +1555,7 @@ pub enum AppMsg {
         grid_idx: u32,
         texture: gdk::Texture,
         load_id: u64,
+        tab_index: usize,
     },
     /// Requests on-demand thumbnail generation for a single visible item.
     RequestThumbnail {

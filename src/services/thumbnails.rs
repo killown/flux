@@ -73,6 +73,7 @@ impl FluxApp {
         &self,
         media_tasks: Vec<(u32, PathBuf)>,
         current_session: u64,
+        tab_index: usize,
         sender: AsyncComponentSender<Self>,
     ) {
         let session_arc = self.load_id.clone();
@@ -107,6 +108,7 @@ impl FluxApp {
                                 grid_idx,
                                 texture,
                                 load_id: session_id,
+                                tab_index,
                             });
                         }
                     }
@@ -130,11 +132,13 @@ impl FluxApp {
     /// * Concurrency is naturally bounded: tasks acquire a permit from a shared
     ///   `tokio::sync::Semaphore` before performing any I/O or spawning external tools.
     /// * Rapid scrolling cancels out-of-viewport tasks before acquiring the permit or rendering.
+    #[allow(clippy::too_many_arguments)]
     pub fn spawn_single_thumbnail(
         &self,
         grid_idx: u32,
         media_path: PathBuf,
         current_session: u64,
+        tab_index: usize,
         cancel_flag: Arc<AtomicBool>,
         semaphore: Arc<Semaphore>,
         sender: AsyncComponentSender<Self>,
@@ -181,6 +185,7 @@ impl FluxApp {
                     grid_idx,
                     texture,
                     load_id: current_session,
+                    tab_index,
                 });
             }
         });
