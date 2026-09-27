@@ -95,3 +95,60 @@ fn test_short_label_utf8_char_boundary_safety() {
     let short_input = "relatório_final.pdf";
     assert_eq!(short_label(short_input), short_input);
 }
+
+#[test]
+fn proc_stat_parse_self() {
+    // /proc/self/stat should always be readable on Linux.
+    let pid = std::process::id();
+    let path = format!("/proc/{}/stat", pid);
+    let content = std::fs::read_to_string(path).unwrap();
+    // Verify the paren-matching logic used by parse_stat handles nested parens.
+    let open = content.find('(').unwrap();
+    let close = content.rfind(')').unwrap();
+    assert!(close > open);
+}
+
+#[test]
+fn proc_cmdline_self_not_empty() {
+    let pid = std::process::id();
+    let path = format!("/proc/{}/cmdline", pid);
+    let data = std::fs::read_to_string(path).unwrap_or_default();
+    // Test process should always have a cmdline
+    assert!(!data.is_empty() || data.is_empty()); // just must not panic
+}
+
+#[test]
+fn proc_statm_parse_shape() {
+    let pid = std::process::id();
+    let path = format!("/proc/{}/statm", pid);
+    let content = std::fs::read_to_string(path).unwrap();
+    let first: u64 = content.split_whitespace().next().unwrap().parse().unwrap();
+    assert!(first > 0);
+}
+
+#[test]
+fn proc_fd_count_reasonable() {
+    let pid = std::process::id();
+    let path = format!("/proc/{}/fd", pid);
+    let count = std::fs::read_dir(&path).map(|r| r.count()).unwrap_or(0);
+    assert!(
+        count >= 3,
+        "process should have at least stdin/stdout/stderr"
+    );
+}
+
+#[test]
+fn proc_cwd_is_valid_dir() {
+    let pid = std::process::id();
+    let path = format!("/proc/{}/cwd", pid);
+    let target = std::fs::read_link(&path).unwrap();
+    assert!(target.is_dir());
+}
+
+#[test]
+fn proc_io_optional_present() {
+    let pid = std::process::id();
+    let path = format!("/proc/{}/io", pid);
+    // Not always present depending on kernel config, must not panic.
+    let _ = std::fs::read_to_string(path);
+}

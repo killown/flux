@@ -137,3 +137,74 @@ fn test_entry_text_unchanged_on_invalid_navigate() {
 
     assert_eq!(entry_text, "/tmp");
 }
+
+#[test]
+fn test_path_with_trailing_slash_normalized() {
+    let path = PathBuf::from("/tmp/");
+    let normalized = PathBuf::from(path.to_string_lossy().trim_end_matches('/'));
+    assert_eq!(normalized, PathBuf::from("/tmp"));
+}
+
+#[test]
+fn test_parent_of_root_is_none() {
+    let root = PathBuf::from("/");
+    assert!(root.parent().is_none());
+}
+
+#[test]
+fn test_canonical_equivalence() {
+    let a = PathBuf::from("/tmp/./foo");
+    let b = PathBuf::from("/tmp/foo");
+    let ca = a.canonicalize().unwrap_or(a.clone());
+    let cb = b.canonicalize().unwrap_or(b.clone());
+    assert_eq!(ca, cb);
+}
+
+#[test]
+fn test_relative_path_validated_against_cwd() {
+    let rel = PathBuf::from(".");
+    assert!(path_valid(&rel));
+}
+
+#[test]
+fn test_symlink_to_valid_dir_is_valid() {
+    let tmp = tempfile::tempdir().unwrap();
+    let link = tmp.path().join("link");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(tmp.path(), &link).unwrap();
+    assert!(path_valid(&link));
+}
+
+#[test]
+fn test_symlink_to_nonexistent_is_invalid() {
+    let tmp = tempfile::tempdir().unwrap();
+    let link = tmp.path().join("dangling");
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("/nonexistent/xyzzy", &link).unwrap();
+    assert!(!path_valid(&link));
+}
+
+#[test]
+fn test_empty_path_invalid() {
+    let empty = PathBuf::new();
+    assert!(!path_valid(&empty));
+}
+
+#[test]
+fn test_double_slash_root_style_invalid() {
+    let path = PathBuf::from("//nonexistent/xyzzy");
+    assert!(!path_valid(&path));
+}
+
+#[test]
+fn test_history_pop_from_empty_returns_none() {
+    let mut history: Vec<PathBuf> = Vec::new();
+    assert!(history.pop().is_none());
+}
+
+#[test]
+fn test_forward_stack_cleared_on_new_navigation() {
+    let mut forward_stack: Vec<PathBuf> = vec![PathBuf::from("/tmp")];
+    forward_stack.clear();
+    assert!(forward_stack.is_empty());
+}

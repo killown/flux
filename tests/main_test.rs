@@ -341,3 +341,76 @@ fn quick_list_stdin_action() {
         quick_list_action(vec![PathBuf::from("/tmp/dir1"), PathBuf::from("/tmp/dir2")])
     );
 }
+
+#[test]
+fn no_sidebar_flag_combined_with_path() {
+    let action = resolve_startup_action(&args(&["flux-fm", "--no-sidebar", "/tmp"]), home());
+    if let StartupAction::Launch {
+        path, no_sidebar, ..
+    } = action
+    {
+        assert_eq!(path, PathBuf::from("/tmp"));
+        assert!(no_sidebar);
+    } else {
+        panic!("expected Launch");
+    }
+}
+
+#[test]
+fn no_header_no_statusbar_combined() {
+    let action = resolve_startup_action(
+        &args(&["flux-fm", "--no-header", "--no-statusbar", "/tmp"]),
+        home(),
+    );
+    if let StartupAction::Launch {
+        no_header,
+        no_statusbar,
+        ..
+    } = action
+    {
+        assert!(no_header);
+        assert!(no_statusbar);
+    } else {
+        panic!("expected Launch");
+    }
+}
+
+#[test]
+fn unknown_flag_with_attached_value_preserved() {
+    let action = resolve_startup_action(&args(&["flux-fm", "--unknown=value"]), home());
+    assert_eq!(
+        action,
+        StartupAction::UnknownFlag("--unknown=value".to_string())
+    );
+}
+
+#[test]
+fn version_takes_priority_over_path() {
+    let action = resolve_startup_action(&args(&["flux-fm", "--version", "/tmp"]), home());
+    assert_eq!(action, StartupAction::PrintVersion);
+}
+
+#[test]
+fn quick_list_filters_flag_like_args() {
+    let action = resolve_startup_action(
+        &args(&["flux-fm", "--quick-list", "/tmp/a", "-x", "/tmp/b"]),
+        home(),
+    );
+    if let StartupAction::QuickList { paths, .. } = action {
+        assert_eq!(paths.len(), 2);
+    } else {
+        panic!("expected QuickList");
+    }
+}
+
+#[test]
+fn tag_search_variants_all_normalize() {
+    for prefix in &["#rust", ":tag:rust", ":t:rust", "tags://rust"] {
+        let action = resolve_startup_action(&args(&["flux-fm", prefix]), home());
+        if let StartupAction::TagSearch { tag, .. } = action {
+            assert_eq!(tag, "#rust");
+        } else {
+            panic!("expected TagSearch for {}", prefix);
+        }
+    }
+}

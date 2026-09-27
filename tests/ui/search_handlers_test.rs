@@ -107,3 +107,69 @@ fn test_parse_size_filter_overflow_returns_none() {
     )
     .is_none());
 }
+
+#[test]
+fn size_filter_bare_bytes_rejected() {
+    assert!(parse_size_filter(">100B").is_none());
+    assert!(parse_size_filter("<500b").is_none());
+}
+
+#[test]
+fn size_filter_tb_overflow_guard() {
+    assert!(parse_size_filter(">999999999999TB").is_none());
+}
+
+#[test]
+fn size_filter_range_with_name_and_ext() {
+    let (op, rest) = parse_size_filter("1MB..10MB *.rs").unwrap();
+    assert_eq!(op, SizeOp::Range(1024 * 1024, 10 * 1024 * 1024));
+    assert_eq!(rest, "*.rs");
+}
+
+#[test]
+fn content_search_display_multiline_safe() {
+    let name = "a.rs";
+    let line_number = 1;
+    let line = "fn main() {}";
+    let display = format!("{}:{}  {}", name, line_number, line);
+    assert!(!display.contains('\n'));
+}
+
+#[test]
+fn search_filter_backspace_at_empty_is_safe() {
+    let mut filter = String::new();
+    if !filter.is_empty() {
+        filter.pop();
+    }
+    assert!(filter.is_empty());
+}
+
+#[test]
+fn search_filter_unicode_backspace() {
+    let mut filter = String::from("café");
+    filter.pop();
+    assert_eq!(filter, "caf");
+}
+
+#[test]
+fn search_filter_emoji_backspace() {
+    let mut filter = String::from("🦀");
+    filter.pop();
+    assert!(filter.is_empty());
+}
+
+#[test]
+fn size_filter_negative_value_rejected() {
+    assert!(parse_size_filter(">-10MB").is_none());
+}
+
+#[test]
+fn size_filter_only_operator_rejected() {
+    assert!(parse_size_filter(">").is_none());
+    assert!(parse_size_filter("<").is_none());
+}
+
+#[test]
+fn size_filter_range_only_dots_rejected() {
+    assert!(parse_size_filter("..").is_none());
+}

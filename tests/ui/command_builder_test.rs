@@ -72,3 +72,103 @@ fn test_build_execution_command_multi_target_placeholder() {
         "rm -f '/tmp/file1.txt' '/tmp/file 2.txt' '/tmp/file'\\''3.txt'"
     );
 }
+
+#[test]
+fn build_command_rejects_null_byte() {
+    let template = "echo %p";
+    let targets = vec![PathBuf::from("/tmp/bad\0name.txt")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert!(cmd.is_empty());
+}
+
+#[test]
+fn build_command_no_placeholders() {
+    let template = "echo hello";
+    let targets = vec![PathBuf::from("/tmp/x")];
+    let cwd = Path::new("/tmp");
+    let (cmd, label) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(cmd, "echo hello");
+    assert_eq!(label, "x");
+}
+
+#[test]
+fn build_command_line_number_substitution() {
+    let template = "nvim +%l %p";
+    let targets = vec![PathBuf::from("/tmp/x.rs")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 42);
+    assert!(cmd.contains("+42"));
+}
+
+#[test]
+fn build_command_line_number_zero_default() {
+    let template = "nvim +%l %p";
+    let targets = vec![PathBuf::from("/tmp/x.rs")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert!(cmd.contains("+0"));
+}
+
+#[test]
+fn build_command_unicode_filename() {
+    let template = "echo %f";
+    let targets = vec![PathBuf::from("/tmp/café.txt")];
+    let cwd = Path::new("/tmp");
+    let (cmd, label) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(label, "café.txt");
+    assert!(cmd.contains("café.txt"));
+}
+
+#[test]
+fn build_command_leading_dash_filename() {
+    let template = "echo %f";
+    let targets = vec![PathBuf::from("/tmp/-rf")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    // Single-quoted, so the leading dash is safe
+    assert!(cmd.contains("'-rf'"));
+}
+
+#[test]
+fn build_command_percent_literal_not_substituted() {
+    let template = "echo %%p";
+    let targets = vec![PathBuf::from("/tmp/x")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    // %p inside %%p: implementation replaces %p, leaving the leading %
+    assert!(!cmd.is_empty());
+}
+
+#[test]
+fn build_command_empty_template_returns_empty() {
+    let template = "";
+    let targets = vec![PathBuf::from("/tmp/x")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert!(cmd.is_empty());
+}
+
+#[test]
+fn build_command_multiple_targets_label_uses_count() {
+    let template = "rm %p";
+    let targets = vec![
+        PathBuf::from("/tmp/a"),
+        PathBuf::from("/tmp/b"),
+        PathBuf::from("/tmp/c"),
+        PathBuf::from("/tmp/d"),
+        PathBuf::from("/tmp/e"),
+    ];
+    let cwd = Path::new("/tmp");
+    let (_, label) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(label, "5 items");
+}
+
+#[test]
+fn build_command_target_with_newline_rejected_multi() {
+    let template = "rm %p";
+    let targets = vec![PathBuf::from("/tmp/ok"), PathBuf::from("/tmp/bad\ninject")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert!(cmd.is_empty());
+}

@@ -169,3 +169,56 @@ fn gcd(mut a: u32, mut b: u32) -> u32 {
     }
     a
 }
+
+#[test]
+fn format_duration_one_second() {
+    assert_eq!(format_duration(Duration::from_secs(1)), "0:01");
+}
+
+#[test]
+fn format_duration_hour_plus_minute() {
+    assert_eq!(format_duration(Duration::from_secs(3660)), "1:01:00");
+}
+
+#[test]
+fn format_duration_max_u64_does_not_panic() {
+    let _ = format_duration(Duration::from_secs(u64::MAX / 2));
+}
+
+#[test]
+fn aspect_ratio_common_video_4_3() {
+    assert_eq!(aspect_ratio_label(720, 576), "5:4");
+}
+
+#[test]
+fn aspect_ratio_ultrawide() {
+    assert_eq!(aspect_ratio_label(3440, 1440), "43:18");
+}
+
+#[test]
+fn aspect_ratio_power_of_two() {
+    assert_eq!(aspect_ratio_label(1024, 512), "2:1");
+}
+
+#[test]
+fn aspect_ratio_extremely_tall() {
+    assert_eq!(aspect_ratio_label(1, 1000), "1:1000");
+}
+
+#[test]
+fn aspect_ratio_extremely_wide() {
+    assert_eq!(aspect_ratio_label(1000, 1), "1000:1");
+}
+
+#[test]
+fn aspect_ratio_consecutive_fibonacci_coprime() {
+    assert_eq!(aspect_ratio_label(13, 21), "13:21");
+}
+
+#[test]
+fn aspect_ratio_same_reduced_output_across_scales() {
+    assert_eq!(
+        aspect_ratio_label(1920, 1080),
+        aspect_ratio_label(3840, 2160)
+    );
+}

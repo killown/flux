@@ -77,3 +77,133 @@ fn test_read_tags_parses_comma_and_newline_separators() {
         assert_eq!(parsed, vec!["tag1", "tag2", "tag3", "tag4"]);
     }
 }
+
+#[test]
+fn read_tags_strips_whitespace_in_entries() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("w.txt");
+    File::create(&f).unwrap();
+    let raw = b"  tag1  ,  tag2  ";
+    if xattr::set(&f, XDG_TAGS_ATTR, raw).is_ok() {
+        let parsed = read_tags(&f);
+        assert_eq!(parsed, vec!["tag1", "tag2"]);
+    }
+}
+
+#[test]
+fn read_tags_ignores_consecutive_commas() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("comma.txt");
+    File::create(&f).unwrap();
+    let raw = b"tag1,,,tag2";
+    if xattr::set(&f, XDG_TAGS_ATTR, raw).is_ok() {
+        let parsed = read_tags(&f);
+        assert_eq!(parsed, vec!["tag1", "tag2"]);
+    }
+}
+
+#[test]
+fn write_tags_unicode() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("u.txt");
+    File::create(&f).unwrap();
+    let tags = vec!["café".to_string(), "日本語".to_string()];
+    if write_tags(&f, &tags).is_ok() {
+        let parsed = read_tags(&f);
+        assert_eq!(parsed, tags);
+    }
+}
+
+#[test]
+fn write_tags_preserves_order() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("order.txt");
+    File::create(&f).unwrap();
+    let tags = vec!["zeta".to_string(), "alpha".to_string(), "mu".to_string()];
+    if write_tags(&f, &tags).is_ok() {
+        let parsed = read_tags(&f);
+        assert_eq!(parsed, tags);
+    }
+}
+
+#[test]
+fn read_tags_on_directory_returns_empty_or_some() {
+    let dir = tempdir().unwrap();
+    // Should not panic
+    let _ = read_tags(dir.path());
+}
+
+#[test]
+fn write_tags_then_clear_then_write() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("cycle.txt");
+    File::create(&f).unwrap();
+    if write_tags(&f, &["a".to_string()]).is_ok() {
+        write_tags(&f, &[]).unwrap();
+        write_tags(&f, &["b".to_string()]).unwrap();
+        assert_eq!(read_tags(&f), vec!["b"]);
+    }
+}
+
+#[test]
+fn read_tags_strips_hash_from_entries() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("h.txt");
+    File::create(&f).unwrap();
+    let raw = b"#tag1,#tag2";
+    if xattr::set(&f, XDG_TAGS_ATTR, raw).is_ok() {
+        assert_eq!(read_tags(&f), vec!["tag1", "tag2"]);
+    }
+}
+
+#[test]
+fn read_tags_only_commas_returns_empty() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("only.txt");
+    File::create(&f).unwrap();
+    if xattr::set(&f, XDG_TAGS_ATTR, b",,,").is_ok() {
+        assert!(read_tags(&f).is_empty());
+    }
+}
+
+#[test]
+fn read_tags_only_whitespace_returns_empty() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("ws.txt");
+    File::create(&f).unwrap();
+    if xattr::set(&f, XDG_TAGS_ATTR, b"   \n  ").is_ok() {
+        assert!(read_tags(&f).is_empty());
+    }
+}
+
+#[test]
+fn write_tags_all_empty_removes_attribute() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("all_empty.txt");
+    File::create(&f).unwrap();
+    if write_tags(&f, &["a".to_string()]).is_ok() {
+        write_tags(&f, &["".to_string(), "  ".to_string(), "#".to_string()]).unwrap();
+        assert!(read_tags(&f).is_empty());
+    }
+}
+
+#[test]
+fn write_tags_removes_hash_prefix() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("clean.txt");
+    File::create(&f).unwrap();
+    if write_tags(&f, &["#x".to_string(), "#y".to_string()]).is_ok() {
+        assert_eq!(read_tags(&f), vec!["x", "y"]);
+    }
+}
+
+#[test]
+fn write_tags_very_long_tag() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("long.txt");
+    File::create(&f).unwrap();
+    let long = "a".repeat(2000);
+    if write_tags(&f, &[long.clone()]).is_ok() {
+        assert_eq!(read_tags(&f), vec![long]);
+    }
+}

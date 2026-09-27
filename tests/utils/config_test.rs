@@ -375,3 +375,167 @@ fn test_split_mime_cmd_no_command_dialog_flag() {
     assert!(no_dialog3);
     assert!(toast3.is_none());
 }
+
+#[test]
+fn test_split_mime_cmd_unicode_command() {
+    use flux::utils::config::split_mime_cmd;
+    let (_, cmd, _, _) = split_mime_cmd(r#""all", "echo café""#).unwrap();
+    assert_eq!(cmd, "echo café");
+}
+
+#[test]
+fn test_split_mime_cmd_empty_command() {
+    use flux::utils::config::split_mime_cmd;
+    let (_, cmd, _, _) = split_mime_cmd(r#""all", """#).unwrap();
+    assert!(cmd.is_empty());
+}
+
+#[test]
+fn test_split_mime_cmd_escaped_quote_in_command() {
+    use flux::utils::config::split_mime_cmd;
+    // Command with backslash-escaped inner quote
+    let result = split_mime_cmd(r#""all", "echo \"x\"""#);
+    assert!(result.is_some());
+}
+
+#[test]
+fn test_split_mime_cmd_no_leading_quote_rejected() {
+    use flux::utils::config::split_mime_cmd;
+    assert!(split_mime_cmd("all, cmd").is_none());
+}
+
+#[test]
+fn test_split_mime_cmd_trailing_content_after_quote() {
+    use flux::utils::config::split_mime_cmd;
+    assert!(split_mime_cmd(r#""all", "cmd" trailing garbage"#).is_some());
+}
+
+#[test]
+fn test_split_mime_cmd_mime_with_slash() {
+    use flux::utils::config::split_mime_cmd;
+    let (mime, _, _, _) = split_mime_cmd(r#""image/png", "cmd""#).unwrap();
+    assert_eq!(mime, "image/png");
+}
+
+#[test]
+fn test_split_mime_cmd_mime_with_wildcard() {
+    use flux::utils::config::split_mime_cmd;
+    let (mime, _, _, _) = split_mime_cmd(r#""video/*", "cmd""#).unwrap();
+    assert_eq!(mime, "video/*");
+}
+
+#[test]
+fn test_split_mime_cmd_flag_only_no_toast() {
+    use flux::utils::config::split_mime_cmd;
+    let (_, _, toast, flag) = split_mime_cmd(r#""all", "cmd", "no_command_dialog""#).unwrap();
+    assert!(flag);
+    assert!(toast.is_none());
+}
+
+#[test]
+fn get_mime_type_directory_returns_inode() {
+    use flux::utils::config::get_mime_type;
+    use std::path::Path;
+    assert_eq!(get_mime_type(Path::new("/tmp")), "inode/directory");
+}
+
+#[test]
+fn get_mime_type_known_image_extensions() {
+    use flux::utils::config::get_mime_type;
+    for ext in &["png", "jpg", "jpeg", "gif", "webp"] {
+        let p = PathBuf::from(format!("/tmp/x.{}", ext));
+        let mime = get_mime_type(&p);
+        assert!(
+            mime.starts_with("image/"),
+            "expected image/* for .{}, got {}",
+            ext,
+            mime
+        );
+    }
+}
+
+#[test]
+fn get_mime_type_unknown_ext_falls_back_to_octet_stream() {
+    use flux::utils::config::get_mime_type;
+    use std::path::Path;
+    assert_eq!(
+        get_mime_type(Path::new("/tmp/x.zzzunknown")),
+        "application/octet-stream"
+    );
+}
+
+#[test]
+fn expand_path_absolute_passthrough() {
+    use flux::utils::config::expand_path;
+    assert_eq!(
+        expand_path("/absolute/path"),
+        PathBuf::from("/absolute/path")
+    );
+}
+
+#[test]
+fn expand_path_relative_passthrough() {
+    use flux::utils::config::expand_path;
+    assert_eq!(expand_path("relative/path"), PathBuf::from("relative/path"));
+}
+
+#[test]
+fn default_xdg_folder_icon_home_returns_user_home() {
+    use flux::utils::config::get_default_xdg_folder_icon;
+    if let Some(h) = dirs::home_dir() {
+        assert_eq!(get_default_xdg_folder_icon(&h), Some("user-home"));
+    }
+}
+
+#[test]
+fn default_xdg_folder_icon_unknown_dir_returns_none() {
+    use flux::utils::config::get_default_xdg_folder_icon;
+    use std::path::Path;
+    assert!(get_default_xdg_folder_icon(Path::new("/no/such/xyzzy")).is_none());
+}
+
+#[test]
+fn rename_path_empty_name_rejected() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("file.txt");
+    fs::write(&f, b"x").unwrap();
+    assert!(rename_path(&f, "").is_err());
+}
+
+#[test]
+fn rename_path_dotdot_rejected() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("file.txt");
+    fs::write(&f, b"x").unwrap();
+    assert!(rename_path(&f, "..").is_err());
+}
+
+#[test]
+fn rename_path_unicode_name_accepted() {
+    let dir = tempdir().unwrap();
+    let f = dir.path().join("old.txt");
+    fs::write(&f, b"x").unwrap();
+    let p = rename_path(&f, "novo-文档.txt").unwrap();
+    assert_eq!(p.file_name().unwrap().to_str().unwrap(), "novo-文档.txt");
+}
+
+#[test]
+fn ensure_config_file_returns_stable_path() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let tmp = TempDir::new().unwrap();
+    std::env::set_var("XDG_CONFIG_HOME", tmp.path());
+    let p1 = ensure_config_file();
+    let p2 = ensure_config_file();
+    assert_eq!(p1, p2);
+    std::env::remove_var("XDG_CONFIG_HOME");
+}
+
+#[test]
+fn resolve_folder_icon_empty_name_returns_some() {
+    if gtk::init().is_err() {
+        return;
+    }
+    let theme = gtk::IconTheme::for_display(&gtk::gdk::Display::default().unwrap());
+    let result = flux::utils::config::resolve_folder_icon_with_fallbacks(&theme, "");
+    assert!(result.is_some());
+}
