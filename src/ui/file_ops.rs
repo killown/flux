@@ -118,18 +118,20 @@ impl FluxApp {
         self.handle_clipboard_action(is_cut);
 
         let selection = self.get_selection();
-        for i in (0..self.files.len()).rev() {
-            if let Some(wrapper) = self.files.get(i) {
-                let mut item = wrapper.borrow().clone();
-                let is_selected = selection.contains(&item.path);
-                let should_be_cut = is_cut && is_selected;
-                let should_be_copy = !is_cut && is_selected;
+        for tab in &mut self.tabs {
+            for i in (0..tab.files.len()).rev() {
+                if let Some(wrapper) = tab.files.get(i) {
+                    let mut item = wrapper.borrow().clone();
+                    let is_selected = selection.contains(&item.path);
+                    let should_be_cut = is_cut && is_selected;
+                    let should_be_copy = !is_cut && is_selected;
 
-                if item.is_cut != should_be_cut || item.is_copy != should_be_copy {
-                    item.is_cut = should_be_cut;
-                    item.is_copy = should_be_copy;
-                    self.files.remove(i);
-                    self.files.insert(i, item);
+                    if item.is_cut != should_be_cut || item.is_copy != should_be_copy {
+                        item.is_cut = should_be_cut;
+                        item.is_copy = should_be_copy;
+                        tab.files.remove(i);
+                        tab.files.insert(i, item);
+                    }
                 }
             }
         }
