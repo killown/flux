@@ -12,8 +12,8 @@ libfuzzer-sys = "0.4"
 serde_json = "1.0.151"
 tempfile = "3"
 toml = "1.0"
-url = "2.5.8"
 vte = "0.15"
+dirs = "7.0"
 
 [dependencies.flux]
 path = ".."
@@ -37,12 +37,6 @@ test = false
 doc = false
 
 [[bin]]
-name = "fuzz_conflict_name"
-path = "fuzz_targets/fuzz_conflict_name.rs"
-test = false
-doc = false
-
-[[bin]]
 name = "fuzz_expand_path"
 path = "fuzz_targets/fuzz_expand_path.rs"
 test = false
@@ -51,12 +45,6 @@ doc = false
 [[bin]]
 name = "fuzz_glob"
 path = "fuzz_targets/fuzz_glob.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_icon_filter"
-path = "fuzz_targets/fuzz_icon_filter.rs"
 test = false
 doc = false
 
@@ -81,12 +69,6 @@ doc = false
 [[bin]]
 name = "fuzz_menu_parser"
 path = "fuzz_targets/fuzz_menu_parser.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_network_uri_breadcrumb"
-path = "fuzz_targets/fuzz_network_uri_breadcrumb.rs"
 test = false
 doc = false
 
@@ -123,12 +105,6 @@ doc = false
 [[bin]]
 name = "fuzz_terminal_vte"
 path = "fuzz_targets/fuzz_terminal_vte.rs"
-test = false
-doc = false
-
-[[bin]]
-name = "fuzz_url_parser"
-path = "fuzz_targets/fuzz_url_parser.rs"
 test = false
 doc = false
 
@@ -195,5 +171,35 @@ doc = false
 [[bin]]
 name = "fuzz_mouse_button"
 path = "fuzz_targets/fuzz_mouse_button.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_archive_inner_traversal"
+path = "fuzz_targets/fuzz_archive_inner_traversal.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_format_display_label"
+path = "fuzz_targets/fuzz_format_display_label.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_load_menu_config"
+path = "fuzz_targets/fuzz_load_menu_config.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_connect_to_server_uri"
+path = "fuzz_targets/fuzz_connect_to_server_uri.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_conflict_name"
+path = "fuzz_targets/fuzz_conflict_name.rs"
 test = false
 doc = false
