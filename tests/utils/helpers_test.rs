@@ -1,6 +1,6 @@
 use flux::utils::path::PathExt;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn test_expand_tilde_config_path() {
@@ -92,4 +92,141 @@ fn test_run_custom_command_placeholder_escaping() {
         .replace("%f", &f_arg);
 
     assert!(final_cmd.contains("'/tmp/folder with spaces/file'\\''name.txt'"));
+}
+
+#[test]
+fn expand_tilde_repeated_slash_safe() {
+    let original = env::var_os("HOME");
+    env::set_var("HOME", "/home/developer");
+    let p = PathBuf::from("~/");
+    assert_eq!(p.expand_tilde(), PathBuf::from("/home/developer/"));
+    if let Some(h) = original {
+        env::set_var("HOME", h);
+    }
+}
+
+#[test]
+fn expand_tilde_only_tilde_alone_without_trailing() {
+    let original = env::var_os("HOME");
+    env::set_var("HOME", "/home/developer");
+    let p = PathBuf::from("~");
+    assert_eq!(p.expand_tilde(), PathBuf::from("/home/developer"));
+    if let Some(h) = original {
+        env::set_var("HOME", h);
+    }
+}
+
+#[test]
+fn expand_tilde_deep_nested_path() {
+    let original = env::var_os("HOME");
+    env::set_var("HOME", "/home/developer");
+    let p = PathBuf::from("~/a/b/c/d/e/f");
+    assert_eq!(
+        p.expand_tilde(),
+        PathBuf::from("/home/developer/a/b/c/d/e/f")
+    );
+    if let Some(h) = original {
+        env::set_var("HOME", h);
+    }
+}
+
+#[test]
+fn expand_tilde_with_hidden_dirs() {
+    let original = env::var_os("HOME");
+    env::set_var("HOME", "/home/u");
+    let p = PathBuf::from("~/.local/share");
+    assert_eq!(p.expand_tilde(), PathBuf::from("/home/u/.local/share"));
+    if let Some(h) = original {
+        env::set_var("HOME", h);
+    }
+}
+
+#[test]
+fn expand_tilde_unicode_remainder_preserved() {
+    let original = env::var_os("HOME");
+    env::set_var("HOME", "/home/u");
+    let p = PathBuf::from("~/文档");
+    assert_eq!(p.expand_tilde(), PathBuf::from("/home/u/文档"));
+    if let Some(h) = original {
+        env::set_var("HOME", h);
+    }
+}
+
+#[test]
+fn run_command_handles_no_parent() {
+    let file_path = PathBuf::from("/file.txt");
+    let parent = file_path.parent().unwrap_or(&file_path);
+    assert_eq!(parent, Path::new("/"));
+}
+
+#[test]
+fn run_command_filename_extraction() {
+    let p = PathBuf::from("/a/b/c.txt");
+    assert_eq!(p.file_name().unwrap(), "c.txt");
+}
+
+#[test]
+fn escape_single_quote_doubles_correctly() {
+    let input = "a'b'c";
+    let escaped = format!("'{}'", input.replace('\'', "'\\''"));
+    assert_eq!(escaped, "'a'\\''b'\\''c'");
+}
+
+#[test]
+fn strip_current_dir_no_leading_dot() {
+    use flux::utils::path::strip_current_dir;
+    use std::path::Path;
+    assert_eq!(
+        strip_current_dir(Path::new("foo/bar")),
+        Path::new("foo/bar")
+    );
+}
+
+#[test]
+fn strip_current_dir_leading_dot_slash() {
+    use flux::utils::path::strip_current_dir;
+    use std::path::Path;
+    assert_eq!(strip_current_dir(Path::new("./foo")), Path::new("foo"));
+}
+
+#[test]
+fn strip_current_dir_double_dot_preserved() {
+    use flux::utils::path::strip_current_dir;
+    use std::path::Path;
+    assert_eq!(strip_current_dir(Path::new("../foo")), Path::new("../foo"));
+}
+
+#[test]
+fn osstr_to_bytes_ascii() {
+    use flux::utils::path::osstr_to_bytes;
+    use std::ffi::OsStr;
+    assert_eq!(osstr_to_bytes(OsStr::new("abc")), b"abc");
+}
+
+#[test]
+fn osstr_to_bytes_empty() {
+    use flux::utils::path::osstr_to_bytes;
+    use std::ffi::OsStr;
+    assert!(osstr_to_bytes(OsStr::new("")).is_empty());
+}
+
+#[test]
+fn osstr_to_bytes_utf8() {
+    use flux::utils::path::osstr_to_bytes;
+    use std::ffi::OsStr;
+    assert_eq!(osstr_to_bytes(OsStr::new("café")), "café".as_bytes());
+}
+
+#[test]
+fn expand_tilde_double_tilde_not_expanded() {
+    use flux::utils::path::PathExt;
+    let p = PathBuf::from("~~/x");
+    assert_eq!(p.expand_tilde(), PathBuf::from("~~/x"));
+}
+
+#[test]
+fn expand_tilde_tilde_in_middle_not_expanded() {
+    use flux::utils::path::PathExt;
+    let p = PathBuf::from("foo/~/bar");
+    assert_eq!(p.expand_tilde(), PathBuf::from("foo/~/bar"));
 }

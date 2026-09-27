@@ -92,3 +92,124 @@ fn test_rename_operation_symmetry() {
         assert_eq!(new_name, "old_name.txt");
     }
 }
+
+#[test]
+fn history_limit_evicts_oldest() {
+    let mut h = FileOpHistory::new();
+    for i in 0..100 {
+        h.push_undo(FileOp::Trash {
+            paths: vec![PathBuf::from(format!("/tmp/f{}", i))],
+        });
+    }
+    // Undo stack is capped, popping all should not return 100 entries.
+    let mut count = 0;
+    while h.pop_undo().is_some() {
+        count += 1;
+    }
+    assert!(count <= 64, "history must be capped, got {}", count);
+}
+
+#[test]
+fn can_undo_false_after_pop_all() {
+    let mut h = FileOpHistory::new();
+    h.push_undo(FileOp::Trash {
+        paths: vec![PathBuf::from("/tmp/a")],
+    });
+    h.pop_undo();
+    assert!(!h.can_undo());
+}
+
+#[test]
+fn can_redo_false_after_pop_all() {
+    let mut h = FileOpHistory::new();
+    let op = FileOp::Trash {
+        paths: vec![PathBuf::from("/tmp/a")],
+    };
+    h.push_redo(op);
+    h.pop_redo();
+    assert!(!h.can_redo());
+}
+
+#[test]
+fn clear_empties_both_stacks() {
+    let mut h = FileOpHistory::new();
+    h.push_undo(FileOp::Trash { paths: vec![] });
+    h.push_redo(FileOp::Trash { paths: vec![] });
+    h.clear();
+    assert!(!h.can_undo());
+    assert!(!h.can_redo());
+}
+
+#[test]
+fn move_op_label_plural() {
+    let op = FileOp::Move {
+        items: vec![
+            (PathBuf::from("/a"), PathBuf::from("/b")),
+            (PathBuf::from("/c"), PathBuf::from("/d")),
+        ],
+        dest_dir: PathBuf::from("/dest"),
+    };
+    assert!(op.label().contains("2"));
+}
+
+#[test]
+fn copy_op_label_singular() {
+    let op = FileOp::Copy {
+        copies: vec![PathBuf::from("/a")],
+        dest_dir: PathBuf::from("/dest"),
+    };
+    assert!(op.label().contains("Copy"));
+}
+
+#[test]
+fn trash_op_label_plural() {
+    let op = FileOp::Trash {
+        paths: vec![
+            PathBuf::from("/a"),
+            PathBuf::from("/b"),
+            PathBuf::from("/c"),
+        ],
+    };
+    assert!(op.label().contains("3"));
+}
+
+#[test]
+fn rename_op_label_includes_both_names() {
+    let op = FileOp::Rename {
+        old_path: PathBuf::from("/a"),
+        new_path: PathBuf::from("/b"),
+        old_name: "old.txt".into(),
+        new_name: "new.txt".into(),
+    };
+    let label = op.label();
+    assert!(label.contains("old.txt"));
+    assert!(label.contains("new.txt"));
+}
+
+#[test]
+fn push_redo_preserves_order() {
+    let mut h = FileOpHistory::new();
+    h.push_redo(FileOp::Trash {
+        paths: vec![PathBuf::from("/a")],
+    });
+    h.push_redo(FileOp::Trash {
+        paths: vec![PathBuf::from("/b")],
+    });
+    let first = h.pop_redo().unwrap();
+    if let FileOp::Trash { paths } = first {
+        assert_eq!(paths[0], PathBuf::from("/b"));
+    }
+}
+
+#[test]
+fn undo_label_reflects_top_of_stack() {
+    let mut h = FileOpHistory::new();
+    h.push_undo(FileOp::Trash {
+        paths: vec![PathBuf::from("/old")],
+    });
+    h.push_undo(FileOp::Trash {
+        paths: vec![PathBuf::from("/newest")],
+    });
+    let label = h.undo_label().unwrap();
+    assert!(label.contains("newest"));
+}

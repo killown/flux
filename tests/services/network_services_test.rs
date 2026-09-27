@@ -174,3 +174,147 @@ fn test_uri_display_name_stripping() {
     assert_eq!(uri_display_name("sftp://example.com/"), "example.com");
     assert_eq!(uri_display_name("smb://"), "");
 }
+
+#[test]
+fn network_protocol_default_scheme_roundtrip() {
+    for proto in [
+        NetworkProtocol::Smb,
+        NetworkProtocol::Sftp,
+        NetworkProtocol::WebDav,
+        NetworkProtocol::WebDavTls,
+        NetworkProtocol::Nfs,
+        NetworkProtocol::Ftp,
+        NetworkProtocol::FtpTls,
+        NetworkProtocol::Mtp,
+        NetworkProtocol::Ptp,
+        NetworkProtocol::GoogleDrive,
+        NetworkProtocol::Afp,
+        NetworkProtocol::DnsSd,
+        NetworkProtocol::Admin,
+        NetworkProtocol::NetworkNeighbour,
+    ] {
+        let scheme = proto.default_scheme();
+        assert_eq!(protocol_for_uri(scheme), Some(proto));
+    }
+}
+
+#[test]
+fn network_protocol_display_matches_display_name() {
+    assert_eq!(
+        NetworkProtocol::Smb.to_string(),
+        NetworkProtocol::Smb.display_name()
+    );
+    assert_eq!(
+        NetworkProtocol::Sftp.to_string(),
+        NetworkProtocol::Sftp.display_name()
+    );
+}
+
+#[test]
+fn network_protocol_each_has_unique_icon() {
+    use std::collections::HashSet;
+    let protos = [
+        NetworkProtocol::Smb,
+        NetworkProtocol::Sftp,
+        NetworkProtocol::WebDav,
+        NetworkProtocol::Nfs,
+        NetworkProtocol::Ftp,
+        NetworkProtocol::Mtp,
+        NetworkProtocol::Ptp,
+        NetworkProtocol::GoogleDrive,
+        NetworkProtocol::Afp,
+        NetworkProtocol::DnsSd,
+        NetworkProtocol::Admin,
+        NetworkProtocol::NetworkNeighbour,
+    ];
+    let icons: HashSet<&str> = protos.iter().map(|p| p.icon_name()).collect();
+    assert!(icons.len() >= 10, "protocols should have distinct icons");
+}
+
+#[test]
+fn connect_params_rejects_empty_protocol() {
+    let params = ConnectToServerParams {
+        protocol: String::new(),
+        host: "server".into(),
+        ..Default::default()
+    };
+    assert!(params.build_uri().is_none());
+}
+
+#[test]
+fn connect_params_port_zero_formatting() {
+    let params = ConnectToServerParams {
+        protocol: "sftp".into(),
+        host: "host".into(),
+        port: Some(0),
+        ..Default::default()
+    };
+    assert_eq!(params.build_uri(), Some("sftp://host:0/".to_string()));
+}
+
+#[test]
+fn connect_params_path_with_leading_slash_normalized() {
+    let params = ConnectToServerParams {
+        protocol: "smb".into(),
+        host: "h".into(),
+        path: Some("/share".into()),
+        ..Default::default()
+    };
+    let uri = params.build_uri().unwrap();
+    assert!(!uri.contains("//share"));
+}
+
+#[test]
+fn connect_params_username_with_at_sign_not_doubled() {
+    let params = ConnectToServerParams {
+        protocol: "sftp".into(),
+        host: "h".into(),
+        username: Some("user".into()),
+        ..Default::default()
+    };
+    assert_eq!(params.build_uri().unwrap(), "sftp://user@h/");
+}
+
+#[test]
+fn network_bookmark_default_icon_for_unknown_scheme() {
+    let b = NetworkBookmark::new("X", "weird://host");
+    assert_eq!(b.icon, "folder-remote-symbolic");
+}
+
+#[test]
+fn network_bookmark_preserves_name_exactly() {
+    let b = NetworkBookmark::new("My NAS ❤️", "smb://nas");
+    assert_eq!(b.name, "My NAS ❤️");
+}
+
+#[test]
+fn credentials_anonymous_has_no_domain() {
+    let c = NetworkCredentials::anonymous();
+    assert!(c.domain.is_none());
+}
+
+#[test]
+fn credentials_with_password_not_anonymous() {
+    let c = NetworkCredentials::with_password("u", "p");
+    assert!(!c.anonymous);
+}
+
+#[test]
+fn protocol_for_uri_rejects_empty_string() {
+    assert_eq!(protocol_for_uri(""), None);
+}
+
+#[test]
+fn protocol_for_uri_rejects_no_scheme() {
+    assert_eq!(protocol_for_uri("/home/user"), None);
+}
+
+#[test]
+fn protocol_for_uri_case_sensitive_scheme() {
+    assert_eq!(protocol_for_uri("SMB://host"), None);
+}
+
+#[test]
+fn is_network_uri_rejects_archive_prefix() {
+    assert!(!is_network_uri(&PathBuf::from("/archive:///tmp/x.zip")));
+}

@@ -89,3 +89,56 @@ fn test_gcd_coprime_inputs_produce_unreduced_ratio() {
 fn test_gcd_large_common_factor() {
     assert_eq!(aspect_ratio_label(1000, 1000), "1:1");
 }
+
+#[test]
+fn aspect_ratio_21_9() {
+    assert_eq!(aspect_ratio_label(2560, 1080), "64:27");
+}
+
+#[test]
+fn aspect_ratio_16_10() {
+    assert_eq!(aspect_ratio_label(1920, 1200), "8:5");
+}
+
+#[test]
+fn aspect_ratio_3_2() {
+    assert_eq!(aspect_ratio_label(3000, 2000), "3:2");
+}
+
+#[test]
+fn aspect_ratio_5_4() {
+    assert_eq!(aspect_ratio_label(1280, 1024), "5:4");
+}
+
+#[test]
+fn aspect_ratio_prime_dimensions() {
+    assert_eq!(aspect_ratio_label(13, 17), "13:17");
+}
+
+#[test]
+fn format_duration_59_seconds() {
+    assert_eq!(format_duration(Duration::from_secs(59)), "0:59");
+}
+
+#[test]
+fn format_duration_60_seconds() {
+    assert_eq!(format_duration(Duration::from_secs(60)), "1:00");
+}
+
+#[test]
+fn format_duration_one_day() {
+    assert_eq!(format_duration(Duration::from_secs(86400)), "24:00:00");
+}
+
+#[test]
+fn format_duration_large_hours() {
+    assert_eq!(
+        format_duration(Duration::from_secs(100 * 3600)),
+        "100:00:00"
+    );
+}
+
+#[test]
+fn aspect_ratio_1024_1000_reduces() {
+    assert_eq!(aspect_ratio_label(1024, 1000), "128:125");
+}

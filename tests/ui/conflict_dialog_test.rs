@@ -91,3 +91,95 @@ fn test_conflict_context_batch_subtitles() {
     assert_eq!(ctx.batch_total, 5);
     assert_eq!(ctx.batch_index, 2);
 }
+
+#[test]
+fn auto_rename_single_digit_boundary() {
+    let tmp = tempdir().unwrap();
+    let base = tmp.path().join("f.txt");
+    File::create(&base).unwrap();
+    for i in 1..10 {
+        File::create(tmp.path().join(format!("f ({}).txt", i))).unwrap();
+    }
+    let next = auto_rename_dest(&base);
+    assert_eq!(next.file_name().unwrap(), "f (10).txt");
+}
+
+#[test]
+fn auto_rename_double_digit_boundary() {
+    let tmp = tempdir().unwrap();
+    let base = tmp.path().join("f.txt");
+    File::create(&base).unwrap();
+    for i in 1..100 {
+        File::create(tmp.path().join(format!("f ({}).txt", i))).unwrap();
+    }
+    let next = auto_rename_dest(&base);
+    assert_eq!(next.file_name().unwrap(), "f (100).txt");
+}
+
+#[test]
+fn auto_rename_with_leading_dot_name() {
+    let tmp = tempdir().unwrap();
+    let f = tmp.path().join(".hidden");
+    File::create(&f).unwrap();
+    let renamed = auto_rename_dest(&f);
+    assert!(renamed
+        .file_name()
+        .unwrap()
+        .to_string_lossy()
+        .starts_with(".hidden"));
+}
+
+#[test]
+fn auto_rename_preserves_parent_dir() {
+    let tmp = tempdir().unwrap();
+    let sub = tmp.path().join("sub");
+    std::fs::create_dir(&sub).unwrap();
+    let f = sub.join("x.txt");
+    File::create(&f).unwrap();
+    let renamed = auto_rename_dest(&f);
+    assert_eq!(renamed.parent().unwrap(), sub);
+}
+
+#[test]
+fn auto_rename_multiple_extensions() {
+    let tmp = tempdir().unwrap();
+    let f = tmp.path().join("archive.tar.gz");
+    File::create(&f).unwrap();
+    let renamed = auto_rename_dest(&f);
+    assert_eq!(renamed.file_name().unwrap(), "archive.tar (1).gz");
+}
+
+#[test]
+fn conflict_choice_equality() {
+    assert_eq!(ConflictChoice::Replace, ConflictChoice::Replace);
+    assert_ne!(ConflictChoice::Replace, ConflictChoice::Skip);
+}
+
+#[test]
+fn conflict_policy_all_variants_distinct() {
+    use std::mem::discriminant;
+    let variants = [
+        ConflictPolicy::Ask,
+        ConflictPolicy::ReplaceAll,
+        ConflictPolicy::SkipAll,
+        ConflictPolicy::AutoRenameAll,
+    ];
+    let discriminants: std::collections::HashSet<_> = variants.iter().map(discriminant).collect();
+    assert_eq!(discriminants.len(), 4);
+}
+
+#[test]
+fn conflict_context_fields_preserved() {
+    let ctx = ConflictContext {
+        src: PathBuf::from("/a"),
+        dest: PathBuf::from("/b"),
+        is_cut: false,
+        batch_total: 100,
+        batch_index: 99,
+    };
+    assert_eq!(ctx.src, PathBuf::from("/a"));
+    assert_eq!(ctx.dest, PathBuf::from("/b"));
+    assert!(!ctx.is_cut);
+    assert_eq!(ctx.batch_total, 100);
+    assert_eq!(ctx.batch_index, 99);
+}

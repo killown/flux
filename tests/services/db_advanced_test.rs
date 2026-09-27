@@ -88,3 +88,64 @@ fn test_db_location_history_capped() {
     // Most recent must be on top
     assert_eq!(history[0], "smb://server/share_14");
 }
+
+#[test]
+fn db_empty_tags_list_clears_all() {
+    let (db, _dir) = test_db();
+    let p = Path::new("/x");
+    db.set_tags(p, &["a".into(), "b".into()], 1).unwrap();
+    db.set_tags(p, &[], 2).unwrap();
+    assert!(db.get_tags(p).unwrap().is_empty());
+}
+
+#[test]
+fn db_tag_with_hash_stripped_in_storage() {
+    let (db, _dir) = test_db();
+    let p = Path::new("/x");
+    db.set_tags(p, &["#rust".into()], 1).unwrap();
+    assert_eq!(db.get_tags(p).unwrap(), vec!["rust"]);
+}
+
+#[test]
+fn db_paths_for_tag_empty_when_none_match() {
+    let (db, _dir) = test_db();
+    assert!(db.get_paths_for_tag("nonexistent").unwrap().is_empty());
+}
+
+#[test]
+fn db_list_all_tags_empty_on_fresh() {
+    let (db, _dir) = test_db();
+    assert!(db.list_all_tags().unwrap().is_empty());
+}
+
+#[test]
+fn db_folder_icon_overwrite() {
+    let (db, _dir) = test_db();
+    db.set_folder_icon("/p", "icon-a").unwrap();
+    db.set_folder_icon("/p", "icon-b").unwrap();
+    let icons = db.load_folder_icons();
+    assert_eq!(icons.get("/p"), Some(&"icon-b".to_string()));
+}
+
+#[test]
+fn db_remove_folder_icon_missing_is_ok() {
+    let (db, _dir) = test_db();
+    assert!(db.remove_folder_icon("/never-existed").is_ok());
+}
+
+#[test]
+fn db_location_history_dedup_moves_to_top() {
+    let (db, _dir) = test_db();
+    db.add_location("a").unwrap();
+    db.add_location("b").unwrap();
+    db.add_location("a").unwrap();
+    let h = db.get_location_history().unwrap();
+    assert_eq!(h.len(), 2);
+    assert_eq!(h[0], "a");
+}
+
+#[test]
+fn db_clear_location_history_on_empty_is_ok() {
+    let (db, _dir) = test_db();
+    assert!(db.clear_location_history().is_ok());
+}
