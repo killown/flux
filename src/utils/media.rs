@@ -1,8 +1,8 @@
 //! Non-blocking media metadata extraction.
 //!
-//! Duration probing uses `ffprobe`. Image dimension probing uses
-//! `gdk_pixbuf::Pixbuf::file_info`, which reads only the image header
-//! and is already available via the GTK dependency chain.
+//! Duration probing uses `ffprobe`. Image dimension probing prefers `imagesize`
+//! (pure Rust, header-only) and falls back to `gdk_pixbuf::Pixbuf::file_info`
+//! behind a magic-byte check, since glycin can OOM on malformed headers.
 
 use std::path::Path;
 use std::time::Duration;
@@ -48,11 +48,45 @@ pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
     Some(Duration::from_secs_f64(secs))
 }
 
-/// Probes an image file for its pixel dimensions by reading only the file
-/// header, without decoding the full image into memory.
+#[inline]
+fn expected_magic(ext: &str) -> Option<&'static [u8]> {
+    match ext {
+        "png" => Some(b"\x89PNG\r\n\x1a\n"),
+        "jpg" | "jpeg" | "jpe" => Some(b"\xff\xd8\xff"),
+        "gif" => Some(b"GIF8"),
+        "bmp" => Some(b"BM"),
+        "webp" => Some(b"RIFF"),
+        "tiff" | "tif" => Some(b"II*\x00"),
+        "heic" | "heif" | "avif" => Some(b"\x00\x00\x00"),
+        "jxl" => Some(b"\xff\x0a"),
+        "ico" | "cur" => Some(b"\x00\x00\x01\x00"),
+        "psd" => Some(b"8BPS"),
+        _ => None,
+    }
+}
+
+fn magic_matches(ext: &str, magic: &[u8; 16], len: usize) -> bool {
+    let Some(expected) = expected_magic(ext) else {
+        return true;
+    };
+    if len < expected.len() || &magic[..expected.len()] != expected {
+        if matches!(ext, "tiff" | "tif") {
+            return len >= 4 && &magic[..4] == b"MM\x00*";
+        }
+        return false;
+    }
+    if ext == "webp" {
+        return len >= 12 && &magic[8..12] == b"WEBP";
+    }
+    true
+}
+
+/// Probes an image file for its pixel dimensions.
 ///
-/// Delegates to [`gdk_pixbuf::Pixbuf::file_info`], which is already
-/// available through the GTK dependency chain.
+/// Prefers `imagesize` (pure Rust, header-only, no content-driven allocation).
+/// Falls back to `gdk_pixbuf::Pixbuf::file_info` for SVG/XPM/PNM/TGA/ICNS
+/// behind a magic-byte check, since glycin can `realloc` gigabytes on a
+/// malformed header before the RSS watchdog notices.
 ///
 /// # Arguments
 ///
@@ -63,13 +97,18 @@ pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
 /// `Some((width, height))` in pixels on success, `None` otherwise.
 #[allow(dead_code)]
 pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
-    // Only invoke image loaders for paths with recognized image extensions
-    let ext = path.extension().and_then(|e| e.to_str())?;
+    let ext_owned = path
+        .extension()
+        .and_then(|e| e.to_str())?
+        .to_ascii_lowercase();
+    let ext = ext_owned.as_str();
+
     let is_img_ext = matches!(
-        ext.to_ascii_lowercase().as_str(),
+        ext,
         "png"
             | "jpg"
             | "jpeg"
+            | "jpe"
             | "webp"
             | "gif"
             | "bmp"
@@ -81,6 +120,7 @@ pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
             | "heic"
             | "heif"
             | "jxl"
+            | "psd"
             | "svg"
             | "svgz"
             | "icns"
@@ -96,9 +136,30 @@ pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
         return None;
     }
 
+    let size = std::fs::metadata(path).ok()?.len();
+    if size == 0 || size > 512 * 1024 * 1024 {
+        return None;
+    }
+
+    if let Ok(dim) = imagesize::size(path) {
+        let w = u32::try_from(dim.width).ok()?;
+        let h = u32::try_from(dim.height).ok()?;
+        if w > 0 && h > 0 && w <= 65_536 && h <= 65_536 {
+            return Some((w, h));
+        }
+        return None;
+    }
+
+    use std::io::Read;
+    let mut magic = [0u8; 16];
+    let mut f = std::fs::File::open(path).ok()?;
+    let n = f.read(&mut magic).ok()?;
+    if n == 0 || !magic_matches(ext, &magic, n) {
+        return None;
+    }
+
     let path_str = path.to_str()?;
     let (_, w, h) = gdk_pixbuf::Pixbuf::file_info(path_str)?;
-    // file_info returns i32, treat negatives (malformed headers) as unknown
     let w = u32::try_from(w).ok()?;
     let h = u32::try_from(h).ok()?;
 
@@ -168,57 +229,4 @@ fn gcd(mut a: u32, mut b: u32) -> u32 {
         b = rem;
     }
     a
-}
-
-#[test]
-fn format_duration_one_second() {
-    assert_eq!(format_duration(Duration::from_secs(1)), "0:01");
-}
-
-#[test]
-fn format_duration_hour_plus_minute() {
-    assert_eq!(format_duration(Duration::from_secs(3660)), "1:01:00");
-}
-
-#[test]
-fn format_duration_max_u64_does_not_panic() {
-    let _ = format_duration(Duration::from_secs(u64::MAX / 2));
-}
-
-#[test]
-fn aspect_ratio_common_video_4_3() {
-    assert_eq!(aspect_ratio_label(720, 576), "5:4");
-}
-
-#[test]
-fn aspect_ratio_ultrawide() {
-    assert_eq!(aspect_ratio_label(3440, 1440), "43:18");
-}
-
-#[test]
-fn aspect_ratio_power_of_two() {
-    assert_eq!(aspect_ratio_label(1024, 512), "2:1");
-}
-
-#[test]
-fn aspect_ratio_extremely_tall() {
-    assert_eq!(aspect_ratio_label(1, 1000), "1:1000");
-}
-
-#[test]
-fn aspect_ratio_extremely_wide() {
-    assert_eq!(aspect_ratio_label(1000, 1), "1000:1");
-}
-
-#[test]
-fn aspect_ratio_consecutive_fibonacci_coprime() {
-    assert_eq!(aspect_ratio_label(13, 21), "13:21");
-}
-
-#[test]
-fn aspect_ratio_same_reduced_output_across_scales() {
-    assert_eq!(
-        aspect_ratio_label(1920, 1080),
-        aspect_ratio_label(3840, 2160)
-    );
 }

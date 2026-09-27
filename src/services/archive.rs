@@ -122,25 +122,34 @@ pub fn encode_archive_host(archive_path: &Path) -> String {
 }
 
 /// Decodes the host component of an archive URI back to an absolute filesystem path.
+///
+/// Performs a single-pass percent decode. Every `%XX` sequence (uppercase or
+/// lowercase hex) is decoded exactly once - there is no ordering hazard because
+/// the decode buffer is never re-scanned. This makes `decode(encode(x)) == x`
+/// hold for any `Path`, including paths containing literal `%2F`, `%25`, or
+/// trailing `%` characters.
 #[inline]
 pub fn decode_archive_host(host: &str) -> PathBuf {
-    // Decode percent encodings reliably, handling both uppercase and lowercase hex,
-    // and ensuring %2f / %2F becomes '/'
-    let mut decoded = host.to_string();
-    // Handle double-encoded or normalized cases
-    // MUST decode %25 → % FIRST, then %2F → /
-    // Doing it the other way corrupts paths containing literal %25
-    decoded = decoded.replace("%25", "%");
-    decoded = decoded.replace("%2F", "/").replace("%2f", "/");
+    let bytes = host.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
 
-    // In case GIO normalized leading '%2' without the 'F'
-    if decoded.starts_with("%2/") {
-        decoded = decoded.replacen("%2/", "/", 1);
-    } else if decoded.starts_with("%2") && !decoded.starts_with("%25") {
-        decoded = decoded.replacen("%2", "/", 1);
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hi = (bytes[i + 1] as char).to_digit(16);
+            let lo = (bytes[i + 2] as char).to_digit(16);
+            if let (Some(h), Some(l)) = (hi, lo) {
+                out.push(((h << 4) | l) as u8);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
     }
 
-    PathBuf::from(decoded)
+    // Lossy conversion mirrors the encoder, which uses `to_string_lossy()`.
+    PathBuf::from(String::from_utf8_lossy(&out).into_owned())
 }
 
 /// Splits an `archive://` URI into `(archive_path_on_disk, inner_prefix)`.
@@ -165,6 +174,22 @@ pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
 
     if host.is_empty() {
         return None;
+    }
+
+    // WARNING: reject any inner path that could escape the archive root.
+    // Downstream callers join `inner` onto filesystem paths or use it as an
+    // archive entry name, and a `..` sequence would either write outside the
+    // intended directory or produce an entry that normalises to something
+    // unexpected in the resulting archive.
+    for comp in Path::new(inner).components() {
+        if matches!(
+            comp,
+            std::path::Component::ParentDir
+                | std::path::Component::RootDir
+                | std::path::Component::Prefix(_)
+        ) {
+            return None;
+        }
     }
 
     Some((decode_archive_host(host), inner.to_owned()))
