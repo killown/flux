@@ -27,6 +27,7 @@ impl FluxApp {
         let mut only_files = true;
         let mut only_dirs = true;
         let mut single_name = String::new();
+        let mut single_item: Option<crate::ui::FileItem> = None;
 
         let active_files = match self.tabs.get(self.active_tab_index) {
             Some(t) => &t.files,
@@ -38,26 +39,86 @@ impl FluxApp {
             .model()
             .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
         {
-            let selection = selection_model.selection();
-            let n_selected = selection.size();
+            let bitset = selection_model.selection();
 
-            for i in 0..n_selected {
-                let pos = selection.nth(i as u32);
-                if let Some(item_wrapper) = active_files.get(pos) {
-                    let item = item_wrapper.borrow();
-                    if item.is_dir {
-                        only_files = false;
-                        dir_count += 1;
-                        if count + dir_count == 1 {
-                            single_name = item.name.clone();
+            // Collect the visual (filtered-view) indices from the bitset.
+            let mut visual_indices: Vec<u32> = Vec::new();
+            if let Some((mut iter, first_idx)) = gtk::BitsetIter::init_first(&bitset) {
+                let mut current = Some(first_idx);
+                while let Some(idx) = current {
+                    visual_indices.push(idx);
+                    current = iter.next();
+                }
+            }
+
+            // WARNING: active_files.get(i) always indexes the raw unfiltered store, so passing
+            // a filtered-view position directly would return the wrong item.
+            let query_lc = self.filter.to_lowercase();
+
+            let resolved: Vec<_> = if self.filter.is_empty() || self.is_content_searching {
+                // No filter: visual pos == store pos.
+                visual_indices
+                    .iter()
+                    .filter_map(|&idx| active_files.get(idx))
+                    .map(|w| w.borrow().clone())
+                    .collect()
+            } else if let Some((tags, rest)) = crate::utils::search::parse_tag_filter(&query_lc) {
+                let rest_clean = rest.trim().to_lowercase();
+                let target_tags: Vec<String> = tags.into_iter().map(|t| t.to_lowercase()).collect();
+                let mut match_count = 0u32;
+                let mut out = Vec::new();
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
+                        let item = wrapper.borrow();
+                        let name_ok =
+                            rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
+                        if name_ok {
+                            let file_tags = crate::utils::xattr::read_tags(&item.path);
+                            let file_tags_lc: Vec<String> =
+                                file_tags.into_iter().map(|t| t.to_lowercase()).collect();
+                            if target_tags.iter().all(|req| file_tags_lc.contains(req)) {
+                                if visual_indices.contains(&match_count) {
+                                    out.push(item.clone());
+                                }
+                                match_count += 1;
+                            }
                         }
-                    } else {
-                        only_dirs = false;
-                        total_size += item.size;
-                        count += 1;
-                        if count + dir_count == 1 {
-                            single_name = item.name.clone();
+                    }
+                }
+                out
+            } else {
+                // Normal fuzzy / size / extension filter.
+                let mut match_count = 0u32;
+                let mut out = Vec::new();
+                for i in 0..active_files.len() {
+                    if let Some(wrapper) = active_files.get(i) {
+                        let item = wrapper.borrow();
+                        if crate::utils::search::fuzzy_match(&item.name, &query_lc) {
+                            if visual_indices.contains(&match_count) {
+                                out.push(item.clone());
+                            }
+                            match_count += 1;
                         }
+                    }
+                }
+                out
+            };
+
+            for item in &resolved {
+                if item.is_dir {
+                    only_files = false;
+                    dir_count += 1;
+                    if count + dir_count == 1 {
+                        single_name = item.name.clone();
+                        single_item = Some(item.clone());
+                    }
+                } else {
+                    only_dirs = false;
+                    total_size += item.size;
+                    count += 1;
+                    if count + dir_count == 1 {
+                        single_name = item.name.clone();
+                        single_item = Some(item.clone());
                     }
                 }
             }
@@ -93,16 +154,7 @@ impl FluxApp {
             // Single file
             (1, true, _) => {
                 let size_str = glib::format_size(total_size);
-                let selected_item = active_files
-                    .view
-                    .model()
-                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                    .and_then(|m| {
-                        let pos = m.selection().nth(0);
-                        active_files.get(pos).map(|w| w.borrow().clone())
-                    });
-
-                if let Some(ref item) = selected_item {
+                if let Some(ref item) = single_item {
                     let path = item.path.clone();
                     let s = sender.clone();
 
@@ -166,16 +218,7 @@ impl FluxApp {
 
             // Single folder
             (1, _, true) => {
-                let item = active_files
-                    .view
-                    .model()
-                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
-                    .and_then(|m| {
-                        let pos = m.selection().nth(0);
-                        active_files.get(pos)
-                    });
-                if let Some(wrapper) = item {
-                    let borrowed = wrapper.borrow();
+                if let Some(borrowed) = single_item.as_ref() {
                     let path = borrowed.path.clone();
                     let real_path = path.canonicalize().unwrap_or_else(|_| path.clone());
                     let child_count = std::fs::read_dir(&real_path)
