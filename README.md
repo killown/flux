@@ -268,7 +268,7 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 
 ## Testing
 
-- **350+ tests** covering core services, UI logic, utilities, and security invariants
+- **600+ tests** covering core services, UI logic, utilities, and security invariants
 - **Fuzzing** via `libFuzzer` on all parsers (archive URIs, glob patterns, search queries, media probes)
 
 ```bash
