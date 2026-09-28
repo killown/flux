@@ -25,12 +25,11 @@ thread_local! {
     static THEMED_ICON_CACHE: RefCell<HashMap<String, adw::gio::Icon>> = RefCell::new(HashMap::new());
 }
 
-static THUMB_CONFIG: OnceLock<RwLock<(bool, i32, ThumbnailTypes, usize, bool, f64)>> =
-    OnceLock::new();
+type ThumbConfigSnapshot = (bool, i32, ThumbnailTypes, usize, bool, f64);
 
-fn extract_thumb_config(
-    config: &crate::model::Config,
-) -> (bool, i32, ThumbnailTypes, usize, bool, f64) {
+static THUMB_CONFIG: OnceLock<RwLock<ThumbConfigSnapshot>> = OnceLock::new();
+
+fn extract_thumb_config(config: &crate::model::Config) -> ThumbConfigSnapshot {
     (
         config.ui.show_thumbnails,
         config.ui.thumbnail_size.clamp(16, 768),
@@ -41,7 +40,7 @@ fn extract_thumb_config(
     )
 }
 
-fn get_thumb_config() -> (bool, i32, ThumbnailTypes, usize, bool, f64) {
+fn get_thumb_config() -> ThumbConfigSnapshot {
     THUMB_CONFIG
         .get_or_init(|| {
             let config = load_config();
