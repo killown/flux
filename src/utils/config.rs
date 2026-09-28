@@ -1,6 +1,7 @@
 use crate::i18n::tr;
 use crate::model::CustomAction;
 use crate::model::MenuEntry;
+use crate::model::ThumbnailTypes;
 use crate::utils::PathExt;
 use adw::gdk;
 use adw::prelude::*;
@@ -8,6 +9,7 @@ use gtk::gdk_pixbuf;
 use gtk::gio;
 use gtk::glib;
 use oxipng::{Options, StripChunks};
+use parking_lot::RwLock;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -15,11 +17,38 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 
 use crate::model::TerminalConfig;
 
 thread_local! {
     static THEMED_ICON_CACHE: RefCell<HashMap<String, adw::gio::Icon>> = RefCell::new(HashMap::new());
+}
+
+static THUMB_CONFIG: OnceLock<RwLock<(bool, i32, ThumbnailTypes, usize, bool, f64)>> =
+    OnceLock::new();
+
+fn extract_thumb_config(
+    config: &crate::model::Config,
+) -> (bool, i32, ThumbnailTypes, usize, bool, f64) {
+    (
+        config.ui.show_thumbnails,
+        config.ui.thumbnail_size.clamp(16, 768),
+        config.ui.thumbnail_types.clone(),
+        config.ui.ffmpeg_threads.max(1),
+        config.ui.ffmpeg_auto_rotate,
+        config.ui.ffmpeg_seek_seconds.max(0.0),
+    )
+}
+
+fn get_thumb_config() -> (bool, i32, ThumbnailTypes, usize, bool, f64) {
+    THUMB_CONFIG
+        .get_or_init(|| {
+            let config = load_config();
+            RwLock::new(extract_thumb_config(&config))
+        })
+        .read()
+        .clone()
 }
 
 pub fn ensure_config_file() -> PathBuf {
@@ -122,6 +151,10 @@ pub fn ensure_config_file() -> PathBuf {
 }
 
 pub fn save_config(config: &crate::model::Config) {
+    if let Some(lock) = THUMB_CONFIG.get() {
+        *lock.write() = extract_thumb_config(config);
+    }
+
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
@@ -135,6 +168,7 @@ pub fn save_config(config: &crate::model::Config) {
         }
     }
 }
+
 /// Clears the cached GIO icons so they can be re-resolved under a new GTK theme.
 pub fn invalidate_themed_icon_cache() {
     THEMED_ICON_CACHE.with(|cache| {
@@ -1204,13 +1238,26 @@ fn guess_mime_from_extension(filename: &str) -> Option<String> {
 }
 
 pub fn is_visual_media(path: &Path) -> (bool, bool) {
-    let filename = path.file_name().unwrap_or_default().to_string_lossy();
-
-    let (content_type, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
-    (
-        content_type.starts_with("image/"),
-        content_type.starts_with("video/"),
-    )
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase());
+    match ext.as_deref() {
+        Some(
+            "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
+            | "tif" | "jxl" | "svg",
+        ) => (true, false),
+        Some(
+            "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ts"
+            | "ogv",
+        ) => (false, true),
+        // only hit GIO for unknown extensions
+        _ => {
+            let filename = path.file_name().unwrap_or_default().to_string_lossy();
+            let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+            (ct.starts_with("image/"), ct.starts_with("video/"))
+        }
+    }
 }
 
 pub fn expand_path(path: &str) -> PathBuf {
@@ -1271,7 +1318,7 @@ fn optimize_png_bytes(bytes: &[u8]) -> Vec<u8> {
 /// `(cache_dir, cache_path)` where `cache_dir` is the resolved size-tier directory
 /// and `cache_path` is the full `.png` destination. Returns `None` if
 /// `dirs::cache_dir()` is unavailable or `path` contains non-UTF-8 bytes.
-fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathBuf)> {
+fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathBuf, String)> {
     let thumb_folder = match target_size {
         s if s > 512 => "xx-large",
         s if s > 256 => "x-large",
@@ -1281,15 +1328,14 @@ fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathB
 
     let cache_dir = dirs::cache_dir()?.join("thumbnails").join(thumb_folder);
 
-    // gio::File::uri() produces a correctly percent-encoded RFC 2396 URI,
-    // which is what the FreeDesktop thumbnail spec mandates for the MD5 input.
     let uri = gio::File::for_path(path).uri();
     let hash = format!("{:x}", md5::compute(uri.as_bytes()));
-    let cache_path = cache_dir.join(format!("{}.png", hash));
+    let cache_path = cache_dir.join(format!("{hash}.png"));
 
-    Some((cache_dir, cache_path))
+    Some((cache_dir, cache_path, hash))
 }
 
+#[allow(dead_code)]
 fn is_pdf(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
@@ -1367,6 +1413,7 @@ fn pdf_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk
 }
 
 /// Returns `true` if `path` is a font file by extension (case-insensitive).
+#[allow(dead_code)]
 fn is_font(path: &Path) -> bool {
     path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
         matches!(
@@ -1710,8 +1757,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
     // WARNING: Never generate thumbnails for files inside the thumbnail cache itself.
     // Prevents an infinite recursive generation loop when browsing ~/.cache/thumbnails/
     if let Some(cache_root) = dirs::cache_dir() {
-        let thumb_root = cache_root.join("thumbnails");
-        if path.starts_with(&thumb_root) {
+        if path.starts_with(cache_root.join("thumbnails")) {
             return None;
         }
     }
@@ -1725,82 +1771,94 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
             .await
             .ok()?
             .ok()?;
-
-            let texture = Box::pin(get_or_create_thumbnail(tmp_file.path())).await;
-            return texture;
+            return Box::pin(get_or_create_thumbnail(tmp_file.path())).await;
         }
         return None;
     }
 
-    let config = load_config();
-    if !config.ui.show_thumbnails {
+    let (show_thumbnails, target_size, thumb_types, ffmpeg_threads, auto_rotate, seek_secs) =
+        get_thumb_config();
+
+    if !show_thumbnails {
         return None;
     }
 
-    let target_size = config.ui.thumbnail_size.clamp(16, 768);
-    let is_pdf_file = is_pdf(path);
-    let is_font_file = !is_pdf_file && is_font(path);
-    let is_exe_file = !is_pdf_file
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+
+    let is_pdf_file = ext == "pdf";
+    let is_font_file =
+        !is_pdf_file && matches!(ext.as_str(), "ttf" | "otf" | "woff" | "woff2" | "ttc");
+    let is_exe_file = !is_pdf_file && !is_font_file && ext == "exe";
+    let is_audio = !is_pdf_file
         && !is_font_file
-        && path
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
-    let (is_img, is_vid) = if !is_pdf_file && !is_font_file && !is_exe_file {
-        is_visual_media(path)
+        && !is_exe_file
+        && matches!(ext.as_str(), "mp3" | "flac" | "m4a" | "ogg" | "wav");
+
+    let (is_img, is_vid) = if !is_pdf_file && !is_font_file && !is_exe_file && !is_audio {
+        match ext.as_str() {
+            "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
+            | "tif" | "jxl" | "svg" | "ico" => (true, false),
+            "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg"
+            | "ts" | "ogv" => (false, true),
+            _ => {
+                let filename = path.file_name().unwrap_or_default().to_string_lossy();
+                let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+                (ct.starts_with("image/"), ct.starts_with("video/"))
+            }
+        }
     } else {
         (false, false)
     };
 
-    let is_audio = !is_pdf_file && !is_font_file && !is_exe_file && is_audio_file(path);
-    let is_supported = (is_pdf_file && config.ui.thumbnail_types.pdfs)
-        || (is_font_file && config.ui.thumbnail_types.fonts)
-        || (is_img && config.ui.thumbnail_types.images)
-        || (is_vid && config.ui.thumbnail_types.videos)
-        || (is_exe_file && config.ui.thumbnail_types.executables)
-        || (is_audio && config.ui.thumbnail_types.audio);
+    let is_supported = (is_pdf_file && thumb_types.pdfs)
+        || (is_font_file && thumb_types.fonts)
+        || (is_img && thumb_types.images)
+        || (is_vid && thumb_types.videos)
+        || (is_exe_file && thumb_types.executables)
+        || (is_audio && thumb_types.audio);
 
     if !is_supported {
         return None;
     }
 
-    let (cache_dir, cache_path) = thumbnail_cache_path(path, target_size)?;
+    let (cache_dir, cache_path, hash) = thumbnail_cache_path(path, target_size)?;
 
     // ── 1. Cache Check across standard XDG tiers ────────────────────────────
     let source_meta = tokio::fs::metadata(path).await.ok();
-    let uri = gio::File::for_path(path).uri();
-    let hash = format!("{:x}", md5::compute(uri.as_bytes()));
 
-    let existing_thumbnail = if cache_path.exists() {
+    let existing_thumbnail: Option<PathBuf> = if cache_path.exists() {
         Some(cache_path.clone())
     } else if let Some(base_cache) = dirs::cache_dir().map(|c| c.join("thumbnails")) {
         ["xx-large", "x-large", "large", "normal"]
             .iter()
-            .map(|tier| base_cache.join(tier).join(format!("{}.png", hash)))
+            .map(|tier| base_cache.join(tier).join(format!("{hash}.png")))
             .find(|p| p.exists())
     } else {
         None
     };
 
-    if let Some(ref existing) = existing_thumbnail {
-        if let Ok(meta) = tokio::fs::metadata(existing).await {
+    if let Some(existing) = existing_thumbnail {
+        if let Ok(meta) = tokio::fs::metadata(&existing).await {
             if meta.len() > 1024 * 1024 {
-                let _ = tokio::fs::remove_file(existing).await;
+                let _ = tokio::fs::remove_file(&existing).await;
             } else {
                 let is_valid = source_meta
                     .as_ref()
-                    .map(|m| thumbnail_is_valid(existing, m))
+                    .map(|m| thumbnail_is_valid(&existing, m))
                     .unwrap_or(true);
 
                 if is_valid {
-                    if let Ok(bytes) = tokio::fs::read(existing).await {
-                        let glib_bytes = glib::Bytes::from(&bytes);
-                        if let Ok(texture) = gdk::Texture::from_bytes(&glib_bytes) {
+                    if let Ok(bytes) = tokio::fs::read(&existing).await {
+                        if let Ok(texture) = gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)) {
                             return Some(texture);
                         }
                     }
                 }
-                let _ = tokio::fs::remove_file(existing).await;
+                let _ = tokio::fs::remove_file(&existing).await;
             }
         }
     }
@@ -1809,103 +1867,104 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
 
     // ── 2. Generation via Atomic Temp File ────────────────────────────────────
     if is_audio {
-        let cache_p = cache_path.clone();
-        let path_p = path.to_path_buf();
+        let (cache_p, path_p) = (cache_path.clone(), path.to_path_buf());
         return tokio::task::spawn_blocking(move || {
             audio_thumbnail(&path_p, &cache_p, target_size)
         })
         .await
         .ok()?;
     }
+
     if is_exe_file {
-        let cache_p = cache_path.clone();
-        let path_p = path.to_path_buf();
+        let (cache_p, path_p) = (cache_path.clone(), path.to_path_buf());
         return tokio::task::spawn_blocking(move || {
             extract_exe_icon(&path_p, &cache_p, target_size)
         })
         .await
         .ok()?;
     }
+
     if is_pdf_file {
-        let cache_p = cache_path.clone();
-        let path_p = path.to_path_buf();
+        let (cache_p, path_p) = (cache_path.clone(), path.to_path_buf());
         return tokio::task::spawn_blocking(move || pdf_thumbnail(&path_p, &cache_p, target_size))
             .await
             .ok()?;
     }
 
     if is_font_file {
-        let cache_p = cache_path.clone();
-        let path_p = path.to_path_buf();
+        let (cache_p, path_p) = (cache_path.clone(), path.to_path_buf());
         return tokio::task::spawn_blocking(move || font_thumbnail(&path_p, &cache_p, target_size))
             .await
             .ok()?;
     }
 
     if is_img {
-        let path_buf = path.to_path_buf();
-        let cache_p = cache_path.clone();
-        let cache_d = cache_dir.clone();
+        let (path_buf, cache_p, cache_d) =
+            (path.to_path_buf(), cache_path.clone(), cache_dir.clone());
 
         return tokio::task::spawn_blocking(move || {
             let max_dim = target_size;
             let pixbuf =
                 gdk_pixbuf::Pixbuf::from_file_at_scale(&path_buf, max_dim, max_dim, true).ok()?;
 
-            let width = pixbuf.width();
-            let height = pixbuf.height();
-            let pixbuf = if width > max_dim || height > max_dim {
-                pixbuf.scale_simple(max_dim, max_dim, gdk_pixbuf::InterpType::Bilinear)?
-            } else {
-                pixbuf
-            };
-
-            let pid = std::process::id();
-            let nanos = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_nanos())
-                .unwrap_or(0);
-            let tmp_path = cache_d.join(format!(".tmp.{pid}.{nanos}.png"));
-
-            let written = if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")])
-            {
-                let optimized = optimize_png_bytes(&buffer);
-                if std::fs::write(&tmp_path, optimized).is_ok() {
-                    std::fs::rename(&tmp_path, &cache_p).is_ok()
+            let pixbuf = {
+                let (w, h) = (pixbuf.width(), pixbuf.height());
+                if w > max_dim || h > max_dim {
+                    pixbuf.scale_simple(max_dim, max_dim, gdk_pixbuf::InterpType::Bilinear)?
                 } else {
-                    let _ = std::fs::remove_file(&tmp_path);
-                    false
+                    pixbuf
                 }
-            } else {
-                false
             };
+
+            let tmp_path = cache_d.join(format!(
+                ".tmp.{}.{}.png",
+                std::process::id(),
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_nanos())
+                    .unwrap_or(0)
+            ));
+
+            let written = pixbuf
+                .save_to_bufferv("png", &[("compression", "1")])
+                .ok()
+                .map(|buf| {
+                    let optimized = optimize_png_bytes(&buf);
+                    if std::fs::write(&tmp_path, optimized).is_ok() {
+                        std::fs::rename(&tmp_path, &cache_p).is_ok()
+                    } else {
+                        let _ = std::fs::remove_file(&tmp_path);
+                        false
+                    }
+                })
+                .unwrap_or(false);
 
             drop(pixbuf);
 
             if written {
-                if let Ok(bytes) = std::fs::read(&cache_p) {
-                    let glib_bytes = glib::Bytes::from(&bytes);
-                    return gdk::Texture::from_bytes(&glib_bytes).ok();
-                }
+                std::fs::read(&cache_p)
+                    .ok()
+                    .and_then(|b| gdk::Texture::from_bytes(&glib::Bytes::from(&b)).ok())
+            } else {
+                None
             }
-
-            None
         })
         .await
         .ok()?;
     }
 
     if is_vid {
-        let pid = std::process::id();
-        let nanos = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0);
-        let tmp_path = cache_dir.join(format!(".tmp.{pid}.{nanos}.png"));
+        let tmp_path = cache_dir.join(format!(
+            ".tmp.{}.{}.png",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
 
-        let ffmpeg_threads = config.ui.ffmpeg_threads.max(1).to_string();
-        let auto_rotate = config.ui.ffmpeg_auto_rotate;
-        let seek_str = format!("{:.3}", config.ui.ffmpeg_seek_seconds.max(0.0));
+        let threads_str = ffmpeg_threads.to_string();
+        let seek_str = format!("{seek_secs:.3}");
 
         async fn try_ffmpeg(
             path: &Path,
@@ -1917,11 +1976,9 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
         ) -> bool {
             let mut cmd = tokio::process::Command::new("ffmpeg");
             cmd.arg("-y").arg("-loglevel").arg("panic");
-
             if !auto_rotate {
                 cmd.arg("-noautorotate");
             }
-
             cmd.arg("-ss")
                 .arg(seek)
                 .arg("-i")
@@ -1933,8 +1990,7 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .arg("1")
                 .arg("-vf")
                 .arg(format!(
-                    "scale={}:-1:force_original_aspect_ratio=decrease",
-                    target_size
+                    "scale={target_size}:-1:force_original_aspect_ratio=decrease"
                 ))
                 .arg(out_path)
                 .status()
@@ -1943,21 +1999,28 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 .unwrap_or(false)
         }
 
-        let mut success = try_ffmpeg(
-            path,
-            &tmp_path,
-            &seek_str,
-            &ffmpeg_threads,
-            auto_rotate,
-            target_size,
-        )
-        .await;
+        let seek_is_nonzero = seek_secs > 0.001;
+
+        let mut success = if seek_is_nonzero {
+            try_ffmpeg(
+                path,
+                &tmp_path,
+                &seek_str,
+                &threads_str,
+                auto_rotate,
+                target_size,
+            )
+            .await
+        } else {
+            false
+        };
+
         if !success || !tmp_path.exists() {
             success = try_ffmpeg(
                 path,
                 &tmp_path,
                 "0.000",
-                &ffmpeg_threads,
+                &threads_str,
                 auto_rotate,
                 target_size,
             )
@@ -1969,11 +2032,9 @@ pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
                 let optimized = optimize_png_bytes(&raw_png);
                 let _ = tokio::fs::write(&tmp_path, optimized).await;
             }
-
             let _ = tokio::fs::rename(&tmp_path, &cache_path).await;
             if let Ok(bytes) = tokio::fs::read(&cache_path).await {
-                let glib_bytes = glib::Bytes::from(&bytes);
-                return gdk::Texture::from_bytes(&glib_bytes).ok();
+                return gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok();
             }
         } else {
             let _ = tokio::fs::remove_file(&tmp_path).await;
