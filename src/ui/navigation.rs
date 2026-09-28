@@ -181,11 +181,14 @@ impl FluxApp {
         // WARNING: Do not remove or modify this check without careful consideration.
         // Removing this check causes redundant navigation to the currently active path,
         // clearing the file grid and causing all items to disappear on repeated navigation.
-        if path == self.current_path {
+        let has_filter = !self.filter.is_empty();
+
+        if !has_filter && path == self.current_path {
             return;
         }
 
-        if !crate::services::network::is_network_uri(&path)
+        if !has_filter
+            && !crate::services::network::is_network_uri(&path)
             && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
             && !path_str.starts_with(constants::TRASH_URI)
             && !path_str.starts_with(constants::RECENT_URI)
