@@ -1176,7 +1176,6 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         // Release the texture on both the widget and the item model
         widgets.icon_widget.set_paintable(None::<&gdk::Paintable>);
         widgets.icon_widget.clear();
-        self.thumbnail = None;
 
         widgets
             .drag_source

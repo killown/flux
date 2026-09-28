@@ -524,12 +524,24 @@ impl FluxApp {
             None => return,
         };
 
-        if let Some(pos) = (0..tab.files.len()).find(|&i| {
-            tab.files
-                .get(i)
-                .map(|w| w.borrow().grid_idx == grid_idx)
-                .unwrap_or(false)
-        }) {
+        let pos = Some(grid_idx)
+            .filter(|&idx| idx < tab.files.len())
+            .and_then(|idx| {
+                tab.files
+                    .get(idx)
+                    .filter(|w| w.borrow().grid_idx == grid_idx)
+                    .map(|_| idx)
+            })
+            .or_else(|| {
+                (0..tab.files.len()).find(|&i| {
+                    tab.files
+                        .get(i)
+                        .map(|w| w.borrow().grid_idx == grid_idx)
+                        .unwrap_or(false)
+                })
+            });
+
+        if let Some(pos) = pos {
             if let Some(wrapper) = tab.files.get(pos) {
                 let mut item = wrapper.borrow().clone();
                 item.thumbnail = Some(texture.clone());
