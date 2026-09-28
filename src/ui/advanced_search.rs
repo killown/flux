@@ -390,6 +390,12 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         .build();
 
     let recursive_sw = make_switch_row(&scope_group, &tr("Search inside subfolders"), "", true);
+    let folders_only_sw = make_switch_row(
+        &scope_group,
+        &tr("Only search folders"),
+        &tr("Match directory names only"),
+        false,
+    );
     let hidden_sw = make_switch_row(
         &scope_group,
         &tr("Include hidden files"),
@@ -502,6 +508,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         let content_e = content_entry.clone();
         let pat_e = pattern_entry.clone();
         let rec_sw = recursive_sw.clone();
+        let folders_sw = folders_only_sw.clone();
         let hid_sw = hidden_sw.clone();
         let date_r = date_row.clone();
         let size_op_r = size_op_row.clone();
@@ -515,6 +522,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             let pat_text = pat_e.text().trim().to_string();
             let content_text = content_e.text().trim().to_string();
             let mut recursive = rec_sw.is_active();
+            let only_folders = folders_sw.is_active();
             let include_hidden = hid_sw.is_active();
             let exact_match = exact_sw.is_active();
             let use_regex = regex_sw_clone.is_active();
@@ -645,6 +653,10 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 patterns = filter_globs;
             }
 
+            if only_folders {
+                recursive = true;
+            }
+
             if recursive {
                 if patterns.is_empty() {
                     patterns.push("*".to_string());
@@ -654,6 +666,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                     date_seconds,
                     size_bytes,
                     include_hidden,
+                    only_folders,
                     max_results: 0,
                 }));
                 return;
@@ -678,6 +691,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         let exact_sw = exact_match_sw.clone();
         let regex_sw_c = regex_sw.clone();
         let rec_sw = recursive_sw.clone();
+        let folders_sw_c = folders_only_sw.clone();
         let hid_sw = hidden_sw.clone();
         let date_r = date_row.clone();
         let size_op_r = size_op_row.clone();
@@ -692,6 +706,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             exact_sw.set_active(false);
             regex_sw_c.set_active(false);
             rec_sw.set_active(true);
+            folders_sw_c.set_active(false);
             hid_sw.set_active(false);
             date_r.set_selected(0);
             size_op_r.set_selected(0);

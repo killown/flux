@@ -1130,7 +1130,8 @@ impl FluxApp {
         let show_symlink_emblem = self.config.ui.show_symlink_emblem;
 
         for (offset, item) in results.into_iter().enumerate() {
-            let icon = utils::get_icon_for_path(&item.path, false);
+            let is_dir = item.path.is_dir();
+            let icon = utils::get_icon_for_path(&item.path, is_dir);
             let size = item.size;
             let mtime = item.mtime;
 
@@ -1142,6 +1143,7 @@ impl FluxApp {
                     .icon_size(list_icon_size)
                     .size(size)
                     .mtime(mtime)
+                    .is_dir(is_dir)
                     .is_list_mode(true)
                     .grid_idx(start_idx + offset as u32)
                     .max_width_chars(max_width_chars)

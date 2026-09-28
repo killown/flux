@@ -64,6 +64,8 @@ pub struct AdvancedSearchParams {
     pub size_bytes: Option<(bool, u64)>,
     /// When `true`, dotfiles are included even if the global toggle is off.
     pub include_hidden: bool,
+    /// When `true`, only directory entries match the search.
+    pub only_folders: bool,
     /// Maximum matches allowed during the search walk before stopping.
     pub max_results: usize,
 }
@@ -86,6 +88,7 @@ pub fn start_extension_search(
     let params = AdvancedSearchParams {
         patterns,
         include_hidden: app.show_hidden,
+        only_folders: false,
         max_results: app.config.ui.max_search_results,
         ..Default::default()
     };
@@ -198,6 +201,7 @@ fn start_walk(
 
     // Snapshot the params that the walk thread needs.
     let include_hidden = params.include_hidden;
+    let only_folders = params.only_folders;
     let date_seconds = params.date_seconds;
     let size_bytes = params.size_bytes;
     let max_results = params.max_results;
@@ -312,6 +316,7 @@ fn start_walk(
             total_count: Arc<AtomicUsize>,
             max_results: usize,
             visited_inodes: HashSet<(u64, u64)>,
+            only_folders: bool,
         }
 
         impl ParallelVisitor for SearchVisitor {
@@ -328,8 +333,16 @@ fn start_walk(
                     Err(_) => return WalkState::Continue,
                 };
 
-                // Only inspect regular files.
-                if !entry.file_type().is_some_and(|ft| ft.is_file()) {
+                // Check directory vs file requirements
+                let is_symlink = entry.path_is_symlink();
+                let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                    || (is_symlink && entry.path().is_dir());
+
+                if self.only_folders {
+                    if !is_dir || entry.depth() == 0 {
+                        return WalkState::Continue;
+                    }
+                } else if !entry.file_type().is_some_and(|ft| ft.is_file()) {
                     return WalkState::Continue;
                 }
 
@@ -454,6 +467,7 @@ fn start_walk(
             session_id: u64,
             total_count: Arc<AtomicUsize>,
             max_results: usize,
+            only_folders: bool,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for SearchVisitorBuilder {
@@ -471,6 +485,7 @@ fn start_walk(
                     total_count: self.total_count.clone(),
                     max_results: self.max_results,
                     visited_inodes: HashSet::new(),
+                    only_folders: self.only_folders,
                 })
             }
         }
@@ -487,6 +502,7 @@ fn start_walk(
             session_id,
             total_count,
             max_results,
+            only_folders,
         };
 
         walker.visit(&mut visitor_builder);

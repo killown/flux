@@ -2485,6 +2485,14 @@ msgstr "Falha ao salvar o HTML"
 # ============================================================
 
 #: src/ui/advanced_search.rs:???
+msgid "Only search folders"
+msgstr "Pesquisar apenas pastas"
+
+#: src/ui/advanced_search.rs:???
+msgid "Match directory names only"
+msgstr "Corresponder apenas a nomes de pastas"
+
+#: src/ui/advanced_search.rs:???
 msgid "What to find"
 msgstr "O que encontrar"
 
