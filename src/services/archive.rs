@@ -1182,7 +1182,10 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)?.flatten() {
         let d = dst.join(entry.file_name());
-        if entry.path().is_dir() {
+        let file_type = entry.file_type()?;
+        if file_type.is_symlink() {
+            std::os::unix::fs::symlink(std::fs::read_link(entry.path())?, d)?;
+        } else if file_type.is_dir() {
             copy_dir_recursive(&entry.path(), &d)?;
         } else {
             std::fs::copy(entry.path(), d)?;

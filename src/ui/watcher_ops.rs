@@ -9,6 +9,8 @@ use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_file_deleted(&mut self, path: PathBuf) {
+        crate::services::indexer::notify_deleted(&path);
+
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(parent);
         }
@@ -97,6 +99,8 @@ impl FluxApp {
                         self.tabs[self.active_tab_index].files.insert(idx, item);
                     }
                 } else {
+                    crate::services::indexer::notify_created(&path);
+
                     let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
                         FluxApp::is_dir_empty(&path)
                     } else {
@@ -138,6 +142,8 @@ impl FluxApp {
                     sender.input(AppMsg::Refresh);
                 }
             } else {
+                crate::services::indexer::notify_deleted(&path);
+
                 // File no longer exists, treat as deleted, remove from grid directly
                 let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
                     self.tabs[self.active_tab_index]
@@ -205,6 +211,8 @@ impl FluxApp {
         new_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::services::indexer::notify_moved(&old_path, &new_path);
+
         if let Some(p) = old_path.parent() {
             self.folder_cache.remove(&self.cache_key(p));
         }
@@ -214,15 +222,23 @@ impl FluxApp {
         self.folder_cache
             .remove(&self.cache_key(&self.current_path));
 
+        let _ = self.state_db.rename_path(&old_path, &new_path);
+
         let old_key = old_path.to_string_lossy().to_string();
         let new_key = new_path.to_string_lossy().to_string();
-        if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
-            self.config.ui.file_icons.insert(new_key.clone(), v);
+        let files_changed = crate::services::db::rekey_path_prefix(
+            &mut self.config.ui.file_icons,
+            &old_key,
+            &new_key,
+        );
+        let folders_changed = crate::services::db::rekey_path_prefix(
+            &mut self.config.ui.folder_icons,
+            &old_key,
+            &new_key,
+        );
+        if files_changed || folders_changed {
+            utils::save_config(&self.config);
         }
-        if let Some(v) = self.config.ui.folder_icons.remove(&old_key) {
-            self.config.ui.folder_icons.insert(new_key, v);
-        }
-        utils::save_config(&self.config);
         sender.input(AppMsg::Refresh);
     }
 }

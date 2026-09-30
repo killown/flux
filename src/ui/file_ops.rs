@@ -294,14 +294,16 @@ impl FluxApp {
                 let old_key = old_path.to_string_lossy().to_string();
                 let new_key = new_path.to_string_lossy().to_string();
 
-                // Re-key custom image overrides so the association survives renames.
-                if let Some(v) = self.config.ui.file_icons.remove(&old_key) {
-                    self.config.ui.file_icons.insert(new_key.clone(), v);
-                }
-                // Re-key GTK icon name overrides for directories.
-                if let Some(v) = self.config.ui.folder_icons.remove(&old_key) {
-                    self.config.ui.folder_icons.insert(new_key, v);
-                }
+                crate::services::db::rekey_path_prefix(
+                    &mut self.config.ui.file_icons,
+                    &old_key,
+                    &new_key,
+                );
+                crate::services::db::rekey_path_prefix(
+                    &mut self.config.ui.folder_icons,
+                    &old_key,
+                    &new_key,
+                );
 
                 utils::save_config(&self.config);
                 let canon_old = old_path.canonicalize().unwrap_or_else(|_| old_path.clone());

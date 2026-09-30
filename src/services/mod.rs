@@ -6,12 +6,15 @@
 
 // 1. Declare the background service modules
 pub mod archive;
+pub mod content_scan;
 pub mod content_search;
 pub mod db;
 pub mod extension_search;
+pub mod indexer;
 pub mod inspector;
 pub mod loader;
 pub mod luks;
+pub mod mounts;
 pub mod network;
 pub mod tasks;
 pub mod terminal;

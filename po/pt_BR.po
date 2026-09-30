@@ -1356,6 +1356,14 @@ msgid "Memory & Limits"
 msgstr "Memória e limites"
 
 #: src/ui/settings.rs:???
+msgid "Fast File Indexing"
+msgstr "Indexação Rápida de Arquivos"
+
+#: src/ui/settings.rs:???
+msgid "Build an SQLite FTS5 database to enable sub-millisecond filename searches"
+msgstr "Construir um banco SQLite FTS5 para habilitar pesquisas de nomes de arquivos em menos de um milissegundo"
+
+#: src/ui/settings.rs:???
 msgid "Tune caching thresholds and search result cutoffs"
 msgstr "Ajustar limites de cache e cortes de resultados de pesquisa"
 

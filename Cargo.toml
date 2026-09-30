@@ -27,7 +27,7 @@ sha2 = "0.11.0"
 xattr = "1.6.1"
 imagesize = "0.14.0"
 md5 = "0.8.0"
-rusqlite = { version = "0.39", features = ["bundled"] }
+rusqlite = { version = "0.40.2", features = ["bundled", "bundled-full"] }
 gio-unix = { version = "0.22.0", package = "gio-unix" }
 gdk-pixbuf = "0.22.0"
 libc = "0.2.186"
@@ -66,6 +66,7 @@ lofty = "0.25.1"
 mimalloc = { version = "0.1.52", default-features = false }
 regex = "1.13.1"
 nucleo = "0.5.0"
+sysinfo = "0.39.6"
 
 [dev-dependencies]
 tempfile = "3"

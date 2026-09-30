@@ -544,6 +544,8 @@ path = "search://"
                     ffmpeg_auto_rotate: false,
                     window_controls_left: false,
                     autoplay_video_previews: true,
+                    enable_file_indexing: false,
+                    content_search_max_file_mb: 128,
                 },
                 sidebar: vec![],
                 shortcuts: crate::model::ShortcutsConfig::default(),
