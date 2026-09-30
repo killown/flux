@@ -74,6 +74,10 @@ fn default_bg_alpha() -> f64 {
     0.65
 }
 
+fn default_content_search_max_file_mb() -> u64 {
+    128
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -477,6 +481,12 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Skip content-search files larger than this (in MiB). 0 = no cap.
+    #[serde(default = "default_content_search_max_file_mb")]
+    pub content_search_max_file_mb: u64,
+    /// Enable the FTS5 filename indexer.
+    #[serde(default)]
+    pub enable_file_indexing: bool,
     /// Tint overlay opacity for the main window background image (0.0 to 1.0).
     #[serde(default = "default_bg_alpha")]
     pub bg_alpha_window: f64,
@@ -717,6 +727,8 @@ impl Default for UIConfig {
             header_visible: true,
             search_panel_width: default_search_panel_width(),
             tag_panel_width: default_tag_panel_width(),
+            enable_file_indexing: false,
+            content_search_max_file_mb: default_content_search_max_file_mb(),
         }
     }
 }
@@ -954,6 +966,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the background SQLite FTS5 file indexer.
+    SetEnableFileIndexing(bool),
     /// Opens multiple directory paths into tabs in a single batch.
     OpenTabs(Vec<PathBuf>),
     /// Opens a new window tab with an optional initial directory path.

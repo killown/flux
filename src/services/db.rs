@@ -165,20 +165,28 @@ impl StateManager {
 
     /// Updates the path key when a directory is renamed.
     pub fn rename_path(&self, old_path: &Path, new_path: &Path) -> Result<()> {
-        let old_str = old_path.to_string_lossy();
-        let new_str = new_path.to_string_lossy();
-        let conn = self.conn.lock().unwrap();
+        let old_lossy = old_path.to_string_lossy();
+        let new_lossy = new_path.to_string_lossy();
+        let old_str = old_lossy.trim_end_matches('/');
+        let new_str = new_lossy.trim_end_matches('/');
+        if old_str.is_empty() || new_str.is_empty() || old_str == new_str {
+            return Ok(());
+        }
 
-        conn.execute(
-            "UPDATE folder_settings SET path = ?1 WHERE path = ?2",
-            params![new_str, old_str],
-        )?;
-
-        conn.execute(
-            "UPDATE file_tags SET path = ?1 WHERE path = ?2",
-            params![new_str, old_str],
-        )?;
-        Ok(())
+        let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        let tx = conn.transaction()?;
+        for table in ["folder_settings", "file_tags", "folder_icons"] {
+            tx.execute(
+                &format!(
+                    "UPDATE OR REPLACE {table}
+                     SET path = ?2 || substr(path, length(?1) + 1)
+                     WHERE path = ?1
+                        OR substr(path, 1, length(?1) + 1) = ?1 || '/'"
+                ),
+                params![old_str, new_str],
+            )?;
+        }
+        tx.commit()
     }
 
     /// Updates cached tags for a given path.
@@ -320,33 +328,22 @@ impl StateManager {
             (p1, p2, p3)
         };
 
-        let orphans: Vec<String> = paths
-            .into_par_iter()
-            .filter(|path_str| {
-                if path_str.starts_with("trash://")
-                    || path_str.starts_with("/archive://")
-                    || path_str.starts_with("recent://")
-                    || path_str.contains("://")
-                {
-                    return false;
-                }
-                !std::path::Path::new(path_str).exists()
-            })
-            .collect();
+        let mounts = crate::services::mounts::MountTable::load();
+        let is_orphan = |path_str: &String| -> bool {
+            if path_str.contains("://") {
+                // trash://, recent://, smb://, /archive:// ... are not local paths
+                return false;
+            }
+            crate::services::mounts::is_confirmed_missing(std::path::Path::new(path_str), &mounts)
+        };
 
-        let tag_orphans: Vec<String> = tag_paths
-            .into_par_iter()
-            .filter(|path_str| !std::path::Path::new(path_str).exists())
-            .collect();
+        let orphans: Vec<String> = paths.into_par_iter().filter(|p| is_orphan(p)).collect();
+
+        let tag_orphans: Vec<String> = tag_paths.into_par_iter().filter(|p| is_orphan(p)).collect();
 
         let icon_orphans: Vec<String> = icon_paths
             .into_par_iter()
-            .filter(|path_str| {
-                if path_str.contains("://") {
-                    return false;
-                }
-                !std::path::Path::new(path_str).exists()
-            })
+            .filter(|p| is_orphan(p))
             .collect();
 
         if !orphans.is_empty() || !tag_orphans.is_empty() || !icon_orphans.is_empty() {
@@ -432,6 +429,40 @@ impl StateManager {
         conn.execute("DELETE FROM location_history", [])?;
         Ok(())
     }
+}
+
+pub fn rekey_path_prefix<V>(
+    map: &mut std::collections::HashMap<String, V>,
+    old: &str,
+    new: &str,
+) -> bool {
+    let old = old.trim_end_matches('/');
+    let new = new.trim_end_matches('/');
+    if old.is_empty() || new.is_empty() || old == new {
+        return false;
+    }
+
+    let affected: Vec<String> = map
+        .keys()
+        .filter(|k| k.as_str() == old || (k.starts_with(old) && k[old.len()..].starts_with('/')))
+        .cloned()
+        .collect();
+    if affected.is_empty() {
+        return false;
+    }
+
+    // Two phases so freshly inserted keys can never be matched a second time.
+    let moved: Vec<(String, V)> = affected
+        .into_iter()
+        .filter_map(|k| {
+            let v = map.remove(&k)?;
+            Some((format!("{}{}", new, &k[old.len()..]), v))
+        })
+        .collect();
+    for (k, v) in moved {
+        map.insert(k, v);
+    }
+    true
 }
 
 impl std::fmt::Debug for StateManager {

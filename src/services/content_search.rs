@@ -1,16 +1,16 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::services::constants::MAX_CONTENT_SEARCH_RESULTS;
+use crate::services::content_scan::scan_file;
 use crate::ui::paste_ops::NEXT_TASK_ID;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
-use memmap2::Mmap;
+use parking_lot::Mutex;
 use relm4::prelude::*;
 use relm4::AsyncComponentSender;
 use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
 use std::os::unix::fs::MetadataExt;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, OnceLock};
@@ -99,6 +99,13 @@ pub fn start_content_search(
     };
     let load_id = app.load_id.clone();
     let show_hidden = app.show_hidden;
+    // 0 disables the cap.
+    let max_file_bytes: u64 = match app.config.ui.content_search_max_file_mb {
+        0 => u64::MAX,
+        mb => mb.saturating_mul(1024 * 1024),
+    };
+
+    let visited_inodes: Arc<Mutex<HashSet<(u64, u64)>>> = Arc::new(Mutex::new(HashSet::new()));
 
     // Parse extension filter once, outside the walk.
     let allowed_exts: Option<Arc<Vec<String>>> = ext_filter.as_ref().map(|s| {
@@ -142,7 +149,8 @@ pub fn start_content_search(
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
             matcher: Option<Arc<AhoCorasick>>,
-            visited_inodes: HashSet<(u64, u64)>,
+            max_file_bytes: u64,
+            visited_inodes: Arc<Mutex<HashSet<(u64, u64)>>>,
         }
 
         impl ParallelVisitor for ContentVisitor {
@@ -177,15 +185,6 @@ pub fn start_content_search(
                     }
                 }
 
-                if entry.path_is_symlink() {
-                    if let Ok(meta) = entry.metadata() {
-                        let key = (meta.dev(), meta.ino());
-                        if !self.visited_inodes.insert(key) {
-                            return WalkState::Continue;
-                        }
-                    }
-                }
-
                 let path = entry.into_path();
 
                 // ---- Size Filter ----
@@ -201,6 +200,14 @@ pub fn start_content_search(
                         SizeOp::Range(l, r) => size >= *l && size <= *r,
                     };
                     if !size_match {
+                        return WalkState::Continue;
+                    }
+                    if self.term_lc.is_empty()
+                        && !self
+                            .visited_inodes
+                            .lock()
+                            .insert((metadata.dev(), metadata.ino()))
+                    {
                         return WalkState::Continue;
                     }
                 }
@@ -228,93 +235,38 @@ pub fn start_content_search(
                     None => return WalkState::Continue,
                 };
 
-                // Fast path: memory-mapped buffer search
-                if let Ok(mmap) = unsafe { Mmap::map(&file) } {
-                    let bytes = &mmap[..];
-                    if bytes.is_empty() {
-                        return WalkState::Continue;
-                    }
-
-                    // Early binary bail-out
-                    let inspect_len = bytes.len().min(1024);
-                    if bytes[..inspect_len].contains(&0) {
-                        return WalkState::Continue;
-                    }
-
-                    if let Some(m) = matcher.find(bytes) {
-                        let match_start = m.start();
-                        // Find line boundaries around the match
-                        let line_start = bytes[..match_start]
-                            .iter()
-                            .rposition(|&b| b == b'\n')
-                            .map(|idx| idx + 1)
-                            .unwrap_or(0);
-
-                        let line_end = bytes[m.end()..]
-                            .iter()
-                            .position(|&b| b == b'\n')
-                            .map(|idx| m.end() + idx)
-                            .unwrap_or(bytes.len())
-                            .min(line_start + 1024);
-
-                        let line_slice = &bytes[line_start..line_end];
-                        if line_slice.contains(&0) {
-                            return WalkState::Continue;
-                        }
-
-                        let line_number =
-                            bytes[..line_start].iter().filter(|&&b| b == b'\n').count() + 1;
-
-                        let line = String::from_utf8_lossy(line_slice).trim().to_string();
-
-                        let curr = self.count.fetch_add(1, Ordering::Relaxed);
-                        if curr < MAX_CONTENT_SEARCH_RESULTS {
-                            self.sender.input(AppMsg::ContentSearchResult {
-                                path,
-                                line,
-                                line_number,
-                                session: self.session_id,
-                            });
-                        }
-                    }
+                // fstat on the open handle: no extra path lookup, no TOCTOU.
+                let meta = match file.metadata() {
+                    Ok(m) if m.is_file() => m,
+                    _ => return WalkState::Continue,
+                };
+                if meta.len() > self.max_file_bytes {
+                    return WalkState::Continue;
+                }
+                if !self.visited_inodes.lock().insert((meta.dev(), meta.ino())) {
                     return WalkState::Continue;
                 }
 
-                // Fallback for zero-byte or unmappable files
-                let mut reader = BufReader::new(file);
-                let mut buf = Vec::new();
-                let mut line_number: usize = 0;
+                let load_id = &self.load_id;
+                let session_id = self.session_id;
+                let cancellable = &self.cancellable;
+                let count = &self.count;
+                let should_stop = || {
+                    load_id.load(Ordering::Acquire) != session_id
+                        || cancellable.is_cancelled()
+                        || count.load(Ordering::Relaxed) >= MAX_CONTENT_SEARCH_RESULTS
+                };
 
-                loop {
-                    if self.load_id.load(Ordering::Acquire) != self.session_id
-                        || self.cancellable.is_cancelled()
-                        || self.count.load(Ordering::Relaxed) >= MAX_CONTENT_SEARCH_RESULTS
-                    {
-                        break;
-                    }
-                    buf.clear();
-                    match reader.read_until(b'\n', &mut buf) {
-                        Ok(0) | Err(_) => break, // EOF or read error
-                        Ok(_) => {}
-                    }
-                    line_number += 1;
-
-                    if buf.contains(&0) {
-                        break; // Binary file bail-out
-                    }
-
-                    if matcher.is_match(&buf) {
-                        let curr = self.count.fetch_add(1, Ordering::Relaxed);
-                        if curr < MAX_CONTENT_SEARCH_RESULTS {
-                            let line_str = String::from_utf8_lossy(&buf).trim().to_string();
-                            self.sender.input(AppMsg::ContentSearchResult {
-                                path: path.clone(),
-                                line: line_str,
-                                line_number,
-                                session: self.session_id,
-                            });
-                        }
-                        break; // First line hit per file only
+                if let Ok(Some(hit)) = scan_file(&file, matcher, self.max_file_bytes, &should_stop)
+                {
+                    let curr = self.count.fetch_add(1, Ordering::Relaxed);
+                    if curr < MAX_CONTENT_SEARCH_RESULTS {
+                        self.sender.input(AppMsg::ContentSearchResult {
+                            path,
+                            line: hit.line,
+                            line_number: hit.line_number,
+                            session: self.session_id,
+                        });
                     }
                 }
 
@@ -332,6 +284,8 @@ pub fn start_content_search(
             allowed_exts: Option<Arc<Vec<String>>>,
             term_lc: Arc<String>,
             matcher: Option<Arc<AhoCorasick>>,
+            max_file_bytes: u64,
+            visited_inodes: Arc<Mutex<HashSet<(u64, u64)>>>,
         }
 
         impl<'s> ParallelVisitorBuilder<'s> for ContentVisitorBuilder {
@@ -346,7 +300,8 @@ pub fn start_content_search(
                     allowed_exts: self.allowed_exts.clone(),
                     term_lc: self.term_lc.clone(),
                     matcher: self.matcher.clone(),
-                    visited_inodes: HashSet::new(),
+                    max_file_bytes: self.max_file_bytes,
+                    visited_inodes: self.visited_inodes.clone(),
                 })
             }
         }
@@ -361,6 +316,8 @@ pub fn start_content_search(
             allowed_exts,
             term_lc,
             matcher,
+            max_file_bytes,
+            visited_inodes,
         };
 
         walker.visit(&mut visitor_builder);

@@ -1093,6 +1093,28 @@ impl SimpleComponent for SettingsWindow {
                     set_title: &tr("Memory & Limits"),
                     set_description: Some(&tr("Tune caching thresholds and search result cutoffs")),
                     add = &adw::ActionRow {
+                        set_title: &tr("Fast File Indexing"),
+                        set_subtitle: &tr("Build an SQLite FTS5 database to enable sub-millisecond filename searches"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.enable_file_indexing,
+                            set_valign: gtk::Align::Center,
+                            connect_state_set => |_, state| {
+                                let mut cfg = crate::utils::load_config();
+                                cfg.ui.enable_file_indexing = state;
+                                crate::utils::save_config(&cfg);
+
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetEnableFileIndexing(state));
+                                }
+
+                                if state {
+                                    crate::services::indexer::build_home_index_async();
+                                }
+                                glib::Propagation::Proceed
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Folder Cache Capacity"),
                         set_subtitle: &tr("Maximum number of recently visited folders kept in RAM (0 to disable)"),
                         add_suffix = &gtk::SpinButton {

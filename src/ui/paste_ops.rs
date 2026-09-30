@@ -568,30 +568,43 @@ pub fn perform_file_op_with_progress(
     cancellable: &gio::Cancellable,
     mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
 ) -> Result<(), String> {
-    if src == dest && is_cut {
+    if !src.exists() {
+        return Err(format!("Source '{}' does not exist", src.display()));
+    }
+    if src == dest {
         return Ok(());
+    }
+
+    if src.is_dir() && is_strictly_inside(src, dest) {
+        return Err("Cannot copy or move a folder into itself".to_string());
     }
 
     let src_file = gio::File::for_path(src);
     let dst_file = gio::File::for_path(dest);
 
     if is_cut {
-        let move_res = src_file
-            .move_(
-                &dst_file,
-                gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
-                Some(cancellable),
-                match progress_cb.as_mut() {
-                    Some(f) => Some(&mut **f),
-                    None => None,
-                },
-            )
-            .map_err(|e| e.to_string());
+        match src_file.move_(
+            &dst_file,
+            gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
+            Some(cancellable),
+            match progress_cb.as_mut() {
+                Some(f) => Some(&mut **f),
+                None => None,
+            },
+        ) {
+            Ok(()) => return Ok(()),
 
-        if move_res.is_ok() {
-            return Ok(());
+            Err(e) if cancellable.is_cancelled() || e.matches(gio::IOErrorEnum::Cancelled) => {
+                if !src.is_dir() {
+                    let _ = std::fs::remove_file(dest);
+                }
+                return Err(e.to_string());
+            }
+            Err(_) => {}
         }
     }
+
+    let mut created: Vec<PathBuf> = Vec::new();
 
     let copy_res = if src.is_dir() {
         copy_dir_recursive(
@@ -602,9 +615,13 @@ pub fn perform_file_op_with_progress(
                 Some(f) => Some(&mut **f),
                 None => None,
             },
+            &mut created,
         )
         .map_err(|e| e.to_string())
     } else {
+        if dest.symlink_metadata().is_err() {
+            created.push(dest.to_path_buf());
+        }
         src_file
             .copy(
                 &dst_file,
@@ -619,23 +636,60 @@ pub fn perform_file_op_with_progress(
     };
 
     if copy_res.is_err() {
-        if dest.is_file() {
+        if !src.is_dir() {
             let _ = std::fs::remove_file(dest);
-        } else if dest.is_dir() {
-            let _ = std::fs::remove_dir_all(dest);
+        } else {
+            rollback_created(&created);
         }
         return copy_res;
     }
 
     if is_cut {
-        if src.is_dir() {
-            let _ = std::fs::remove_dir_all(src);
+        let _ = if src.is_dir() {
+            std::fs::remove_dir_all(src)
         } else {
-            let _ = std::fs::remove_file(src);
-        }
+            std::fs::remove_file(src)
+        };
     }
 
     Ok(())
+}
+
+/// Canonicalises `p`, falling back to parent + filename when it does not exist.
+fn resolve_for_compare(p: &Path) -> PathBuf {
+    if let Ok(c) = p.canonicalize() {
+        return c;
+    }
+    match (p.parent(), p.file_name()) {
+        (Some(parent), Some(name)) => parent
+            .canonicalize()
+            .map(|c| c.join(name))
+            .unwrap_or_else(|_| p.to_path_buf()),
+        _ => p.to_path_buf(),
+    }
+}
+
+/// True when `dest` is beneath `src`. `dest == src` returns false.
+fn is_strictly_inside(src: &Path, dest: &Path) -> bool {
+    let s = resolve_for_compare(src);
+    let d = resolve_for_compare(dest);
+    d != s && d.starts_with(&s)
+}
+
+/// Removes `created` in reverse. Dirs use `remove_dir`, so a non-empty dir
+/// added by someone else is left alone.
+fn rollback_created(created: &[PathBuf]) {
+    for p in created.iter().rev() {
+        match p.symlink_metadata() {
+            Ok(m) if m.is_dir() => {
+                let _ = std::fs::remove_dir(p);
+            }
+            Ok(_) => {
+                let _ = std::fs::remove_file(p);
+            }
+            Err(_) => {}
+        }
+    }
 }
 
 fn copy_dir_recursive(
@@ -643,12 +697,19 @@ fn copy_dir_recursive(
     dest: &Path,
     cancellable: &gio::Cancellable,
     mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
+    created: &mut Vec<PathBuf>,
 ) -> std::io::Result<()> {
     if src == dest {
         return Ok(());
     }
-    if !dest.exists() {
+    if dest.symlink_metadata().is_err() {
         std::fs::create_dir_all(dest)?;
+        created.push(dest.to_path_buf());
+    } else if !dest.is_dir() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::AlreadyExists,
+            format!("{} exists and is not a folder", dest.display()),
+        ));
     }
 
     for entry in std::fs::read_dir(src)? {
@@ -674,8 +735,12 @@ fn copy_dir_recursive(
                     Some(f) => Some(&mut **f),
                     None => None,
                 },
+                created,
             )?;
         } else {
+            if child_dest.symlink_metadata().is_err() {
+                created.push(child_dest.clone());
+            }
             gio::File::for_path(&child_src)
                 .copy(
                     &gio::File::for_path(&child_dest),
@@ -694,23 +759,29 @@ fn copy_dir_recursive(
 }
 
 fn scan_total_bytes(path: &Path) -> u64 {
-    if let Ok(m) = std::fs::metadata(path).or_else(|_| std::fs::symlink_metadata(path)) {
-        if m.is_file() || m.is_symlink() {
-            return m.len();
-        }
-        if m.is_dir() {
-            let mut total = 0u64;
-            if let Ok(entries) = std::fs::read_dir(path) {
-                for entry in entries.flatten() {
-                    total += scan_total_bytes(&entry.path());
+    fn walk_dir(dir: &Path) -> u64 {
+        let mut total = 0u64;
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let Ok(meta) = entry.path().symlink_metadata() else {
+                    continue;
+                };
+                if meta.file_type().is_dir() {
+                    total += walk_dir(&entry.path());
+                } else {
+                    total += meta.len();
                 }
             }
-            return total;
         }
+        total
     }
-    0
-}
 
+    match std::fs::metadata(path).or_else(|_| std::fs::symlink_metadata(path)) {
+        Ok(m) if m.is_dir() => walk_dir(path),
+        Ok(m) => m.len(),
+        Err(_) => 0,
+    }
+}
 fn clean_tmp_basename(name: &str) -> String {
     if name.starts_with(".tmp") {
         name.split_once('.')
