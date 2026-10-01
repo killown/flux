@@ -733,6 +733,25 @@ impl FluxApp {
             AppMsg::ToggleSearchPanel => {
                 self.toggle_sidebar_right_panel(RightPanelType::Search, &sender);
             }
+            AppMsg::ToggleDiffPanel => {
+                self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, &sender);
+            }
+            AppMsg::SetDiffPanelWidth(val) => {
+                self.handle_set_diff_panel_width(val);
+            }
+            AppMsg::SetAutoShowDiff(val) => {
+                self.handle_set_auto_show_diff(val);
+            }
+            AppMsg::ShowFileDiff(path) => {
+                self.handle_show_file_diff(path, &sender);
+            }
+            AppMsg::DiffLoaded { path, diff } => {
+                if self.active_diff_target.as_ref() == Some(&path) {
+                    if let Some(ref buffer) = self.diff_text_buffer {
+                        crate::ui::diff_panel::apply_diff_markup(buffer, &diff);
+                    }
+                }
+            }
             AppMsg::SetShowSymlinkEmblem(val) => {
                 self.handle_set_show_symlink_emblem(val, &sender);
             }

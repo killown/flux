@@ -426,6 +426,11 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            diff_panel_revealer: None,
+            diff_panel_visible: false,
+            diff_panel_initialized: false,
+            diff_text_buffer: None,
+            active_diff_target: None,
             git_status_dir: PathBuf::new(),
             git_status_map: std::collections::HashMap::new(),
             is_in_git_repo: false,

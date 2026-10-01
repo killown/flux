@@ -270,6 +270,36 @@ impl FluxApp {
             }
         };
 
+        if self.config.ui.auto_show_diff && self.is_in_git_repo {
+            let mut diff_triggered = false;
+
+            if let Some(item) = single_item.as_ref() {
+                if !item.is_dir {
+                    let target_path = &item.path;
+                    let has_diff = self
+                        .git_status_map
+                        .get(target_path)
+                        .or_else(|| {
+                            let canon = target_path.canonicalize().ok()?;
+                            self.git_status_map.get(&canon)
+                        })
+                        .is_some_and(|&s| {
+                            s != crate::services::git::GitFileStatus::None
+                                && s != crate::services::git::GitFileStatus::Ignored
+                        });
+
+                    if has_diff {
+                        diff_triggered = true;
+                        sender.input(AppMsg::ShowFileDiff(target_path.clone()));
+                    }
+                }
+            }
+
+            if !diff_triggered && self.diff_panel_visible {
+                self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+            }
+        }
+
         self.sync_video_preview();
     }
 

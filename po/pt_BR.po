@@ -1624,6 +1624,30 @@ msgid "Adjust interface scaling for high-resolution displays"
 msgstr "Ajustar o dimensionamento da interface para telas de alta resolução"
 
 # ============================================================
+# Git Diff Panel (src/ui/diff_panel.rs & src/ui/settings.rs)
+# ============================================================
+
+#: src/ui/diff_panel.rs:???
+msgid "Git Diff"
+msgstr "Git Diff"
+
+#: src/ui/diff_panel.rs:???
+msgid "Copy Diff to Clipboard"
+msgstr "Copiar Diff para a Área de Transferência"
+
+#: src/ui/diff_panel.rs:???
+msgid "Diff copied to clipboard"
+msgstr "Diff copiado para a área de transferência"
+
+#: src/ui/settings.rs:???
+msgid "Auto-Show Git Diff"
+msgstr "Exibição Automática do Git Diff"
+
+#: src/ui/settings.rs:???
+msgid "Automatically open the diff panel when selecting a modified file"
+msgstr "Abrir automaticamente o painel de diff ao selecionar um arquivo modificado"
+
+# ============================================================
 # src/ui/dialogs.rs
 # ============================================================
 

@@ -74,6 +74,44 @@ pub fn is_nerd_font_available() -> bool {
     })
 }
 
+/// Queries the working-tree and staged diff for a single file asynchronously.
+pub async fn query_file_diff(repo_root: &Path, target_file: &Path) -> Result<String, String> {
+    let rel_target = target_file.strip_prefix(repo_root).unwrap_or(target_file);
+
+    let output = Command::new("git")
+        .current_dir(repo_root)
+        .args(["--no-optional-locks", "diff", "HEAD", "--"])
+        .arg(rel_target)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        return Err("git diff command failed".to_string());
+    }
+
+    let diff_text = String::from_utf8_lossy(&output.stdout).into_owned();
+    if diff_text.is_empty() {
+        // If file is untracked, show initial status
+        let untracked = Command::new("git")
+            .current_dir(repo_root)
+            .args(["status", "--porcelain=v1", "--"])
+            .arg(rel_target)
+            .output()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let status_str = String::from_utf8_lossy(&untracked.stdout);
+        if status_str.starts_with("??") {
+            return Ok(format!("--- Untracked File ---\n{}", target_file.display()));
+        }
+    }
+
+    Ok(diff_text)
+}
+
 /// Git working tree and index status.
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]

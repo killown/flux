@@ -82,6 +82,14 @@ fn default_ui_scale() -> f64 {
     1.0
 }
 
+fn default_diff_panel_width() -> i32 {
+    420
+}
+
+fn default_auto_show_diff() -> bool {
+    true
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -89,6 +97,7 @@ pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bo
 pub enum RightPanelType {
     Tag,
     Search,
+    Diff,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -485,6 +494,12 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Width in pixels allocated for the right-side git diff review sidebar.
+    #[serde(default = "default_diff_panel_width")]
+    pub diff_panel_width: i32,
+    /// Automatically slides open the diff panel whenever a modified git file is selected.
+    #[serde(default = "default_auto_show_diff")]
+    pub auto_show_diff: bool,
     /// Global UI scale multiplier applied via font DPI and CSS variables.
     #[serde(default = "default_ui_scale")]
     pub ui_scale: f64,
@@ -734,6 +749,8 @@ impl Default for UIConfig {
             header_visible: true,
             search_panel_width: default_search_panel_width(),
             tag_panel_width: default_tag_panel_width(),
+            diff_panel_width: default_diff_panel_width(),
+            auto_show_diff: default_auto_show_diff(),
             enable_file_indexing: false,
             content_search_max_file_mb: default_content_search_max_file_mb(),
             ui_scale: 1.0,
@@ -791,6 +808,16 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Sliding revealer widget that wraps the right-side git diff review panel.
+    pub diff_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the git diff review panel is currently expanded and visible.
+    pub diff_panel_visible: bool,
+    /// Indicates if the diff panel widget tree has been constructed and bound.
+    pub diff_panel_initialized: bool,
+    /// Text buffer containing the formatted and syntax-highlighted git patch.
+    pub diff_text_buffer: Option<gtk::TextBuffer>,
+    /// File path currently displayed inside the git diff review panel.
+    pub active_diff_target: Option<PathBuf>,
     /// Scanned directory for `git_status_map`.
     pub git_status_dir: PathBuf,
     /// Git file status lookup table for entries in `git_status_dir`.
@@ -980,6 +1007,16 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the visibility of the right-side git diff review sidebar.
+    ToggleDiffPanel,
+    /// Requests the git diff for a specific file and reveals the diff panel.
+    ShowFileDiff(PathBuf),
+    /// Delivers the loaded git diff output for a target file to update the view.
+    DiffLoaded { path: PathBuf, diff: String },
+    /// Updates and persists the width of the git diff review panel.
+    SetDiffPanelWidth(i32),
+    /// Toggles whether selecting a modified file automatically opens the diff sidebar.
+    SetAutoShowDiff(bool),
     /// Updates the global UI scale factor across the application.
     SetUiScale(f64),
     /// Filters grid view to files with uncommitted git changes.

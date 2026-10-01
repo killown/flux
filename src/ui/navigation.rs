@@ -11,6 +11,9 @@ impl FluxApp {
     pub fn handle_go_back(&mut self, sender: &AsyncComponentSender<Self>) {
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
+        if self.diff_panel_visible {
+            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+        }
         if let Some(prev) = self.history.pop() {
             self.forward_stack.push(self.current_path.clone());
             if crate::services::network::is_network_uri(&prev) {
@@ -51,7 +54,9 @@ impl FluxApp {
     pub fn handle_go_forward(&mut self, sender: &AsyncComponentSender<Self>) {
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
-
+        if self.diff_panel_visible {
+            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+        }
         while let Some(next) = self.forward_stack.pop() {
             let s = next.to_string_lossy();
             let is_valid = s == "/"
@@ -160,6 +165,10 @@ impl FluxApp {
         if path_str == "search://" || path_str == "search:///" {
             sender.input(AppMsg::ToggleSearchPanel);
             return;
+        }
+
+        if self.diff_panel_visible {
+            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
         }
 
         let was_in_archive = self
