@@ -21,6 +21,12 @@ impl FluxApp {
         self.git_status_dir = path;
         self.git_status_map = updates;
 
+        let has_changes = self
+            .git_status_map
+            .values()
+            .any(|&status| status != GitFileStatus::None && status != GitFileStatus::Ignored);
+        self.is_in_git_repo = has_changes;
+
         let Some(tab) = self.tabs.get_mut(self.active_tab_index) else {
             return;
         };
