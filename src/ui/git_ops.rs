@@ -7,6 +7,34 @@ use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
 impl FluxApp {
+    /// Opens the right-side diff panel and loads changes for the target file in the background.
+    pub fn handle_show_file_diff(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        if self.active_diff_target.as_ref() == Some(&path) && self.diff_panel_visible {
+            return;
+        }
+        self.active_diff_target = Some(path.clone());
+        if !self.diff_panel_visible {
+            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+        }
+
+        let s_clone = sender.clone();
+        let target_file = path;
+        let current_dir = self.current_path.clone();
+
+        relm4::spawn(async move {
+            if let Some(repo_root) = crate::services::git::find_git_repo_root(&current_dir) {
+                if let Ok(diff) =
+                    crate::services::git::query_file_diff(&repo_root, &target_file).await
+                {
+                    s_clone.input(AppMsg::DiffLoaded {
+                        path: target_file,
+                        diff,
+                    });
+                }
+            }
+        });
+    }
+
     /// Stores the scanned status for the current directory and rebinds items whose status changed.
     pub fn handle_git_status_ready(
         &mut self,

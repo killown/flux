@@ -870,6 +870,19 @@ impl SimpleComponent for SettingsWindow {
                         }
                     },
                     add = &adw::ActionRow {
+                        set_title: &tr("Auto-Show Git Diff"),
+                        set_subtitle: &tr("Automatically open the diff panel when selecting a modified file"),
+                        add_suffix = &gtk::Switch {
+                            set_active: model.config.ui.auto_show_diff,
+                            set_valign: gtk::Align::Center,
+                            connect_active_notify => move |switch| {
+                                if let Some(s) = crate::model::SENDER.get() {
+                                    let _ = s.send(AppMsg::SetAutoShowDiff(switch.is_active()));
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Default Layout"),
                         set_subtitle: &tr("Start with grid view (off) or list view (on)"),
                         add_suffix = &gtk::Switch {

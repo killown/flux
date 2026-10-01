@@ -676,6 +676,54 @@ impl FluxApp {
         panel_type: RightPanelType,
         sender: &AsyncComponentSender<Self>,
     ) {
+        // Ensure mutually exclusive right-side panels
+        match panel_type {
+            RightPanelType::Tag => {
+                if self.search_panel_visible {
+                    if let Some(ref r) = self.search_panel_revealer {
+                        r.set_reveal_child(false);
+                    }
+                    self.search_panel_visible = false;
+                }
+                if self.diff_panel_visible {
+                    if let Some(ref r) = self.diff_panel_revealer {
+                        r.set_reveal_child(false);
+                    }
+                    self.diff_panel_visible = false;
+                    self.active_diff_target = None;
+                }
+            }
+            RightPanelType::Search => {
+                if self.tag_panel_visible {
+                    if let Some(ref r) = self.tag_panel_revealer {
+                        r.set_reveal_child(false);
+                    }
+                    self.tag_panel_visible = false;
+                }
+                if self.diff_panel_visible {
+                    if let Some(ref r) = self.diff_panel_revealer {
+                        r.set_reveal_child(false);
+                    }
+                    self.diff_panel_visible = false;
+                    self.active_diff_target = None;
+                }
+            }
+            RightPanelType::Diff => {
+                if self.tag_panel_visible {
+                    if let Some(ref r) = self.tag_panel_revealer {
+                        r.set_reveal_child(false);
+                    }
+                    self.tag_panel_visible = false;
+                }
+                if self.search_panel_visible {
+                    if let Some(ref r) = self.search_panel_revealer {
+                        r.set_reveal_child(false);
+                    }
+                    self.search_panel_visible = false;
+                }
+            }
+        }
+
         let (revealer, initialized, visible, is_search) = match panel_type {
             RightPanelType::Tag => (
                 self.tag_panel_revealer.clone(),
@@ -688,6 +736,12 @@ impl FluxApp {
                 &mut self.search_panel_initialized,
                 &mut self.search_panel_visible,
                 true,
+            ),
+            RightPanelType::Diff => (
+                self.diff_panel_revealer.clone(),
+                &mut self.diff_panel_initialized,
+                &mut self.diff_panel_visible,
+                false,
             ),
         };
 
@@ -709,6 +763,15 @@ impl FluxApp {
                     self.config.ui.search_panel_width,
                     sender.clone(),
                 ),
+                RightPanelType::Diff => {
+                    let buf = gtk::TextBuffer::new(None);
+                    self.diff_text_buffer = Some(buf.clone());
+                    crate::ui::diff_panel::build_diff_panel(
+                        self.config.ui.diff_panel_width,
+                        buf,
+                        sender.clone(),
+                    )
+                }
             };
             revealer.set_child(Some(&panel));
             *initialized = true;
@@ -758,6 +821,8 @@ impl FluxApp {
                 sender.input(AppMsg::ClearExtensionFilter);
                 sender.input(AppMsg::Refresh);
             }
+        } else if panel_type == RightPanelType::Diff {
+            self.active_diff_target = None;
         } else {
             sender.input(AppMsg::CancelContentSearch);
             sender.input(AppMsg::Refresh);

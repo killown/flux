@@ -61,6 +61,17 @@ impl FluxApp {
         crate::utils::save_config(&self.config);
     }
 
+    pub fn handle_set_diff_panel_width(&mut self, val: i32) {
+        let clamped = val.clamp(280, 900);
+        self.config.ui.diff_panel_width = clamped;
+        utils::save_config(&self.config);
+    }
+
+    pub fn handle_set_auto_show_diff(&mut self, val: bool) {
+        self.config.ui.auto_show_diff = val;
+        utils::save_config(&self.config);
+    }
+
     // WARNING: lazy load mode will not work properly with custom icons
     pub fn handle_set_lazy_thumbnails(&mut self, val: bool) {
         self.config.ui.lazy_thumbnails = val;

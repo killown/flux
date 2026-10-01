@@ -761,3 +761,8 @@ toast button image {
   font-weight: bold;
   letter-spacing: 0px;
 }
+
+.diff-view {
+  font-size: 8pt;
+  font-family: monospace;
+}

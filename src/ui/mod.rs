@@ -24,6 +24,7 @@ pub mod conflict_dialog;
 pub mod conflict_policy;
 pub mod context_menu;
 pub mod dialogs;
+pub mod diff_panel;
 pub mod file_ops;
 pub mod git_ops;
 pub mod navigation;

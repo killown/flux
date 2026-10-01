@@ -493,6 +493,8 @@ path = "search://"
                     hidden_extensions: Vec::new(),
                     tag_panel_width: 350,
                     search_panel_width: 350,
+                    auto_show_diff: true,
+                    diff_panel_width: 420,
                     show_symlink_emblem: true,
                     header_visible: true,
                     auto_mime_body_color: "#e4e4e4".to_string(),
