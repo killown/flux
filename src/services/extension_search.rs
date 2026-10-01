@@ -574,10 +574,9 @@ fn start_walk(
                         if !is_dir || entry.depth() == 0 {
                             return WalkState::Continue;
                         }
-                    } else if is_dir {
-                        return WalkState::Continue;
-                    } else if !entry.file_type().is_some_and(|ft| ft.is_file())
-                        && !entry.path().is_file()
+                    } else if is_dir
+                        || (!entry.file_type().is_some_and(|ft| ft.is_file())
+                            && !entry.path().is_file())
                     {
                         return WalkState::Continue;
                     }
