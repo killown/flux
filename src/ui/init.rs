@@ -58,6 +58,8 @@ impl FluxApp {
         let state_db = Arc::new(state_db_res);
         let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
 
+        crate::utils::helpers::apply_ui_scale(config.ui.ui_scale);
+
         // 3. Action and Input Controllers
         let shortcut_controller = gtk::ShortcutController::new();
         Self::setup_shortcuts(&shortcut_controller, &sender);

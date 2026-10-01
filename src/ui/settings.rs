@@ -31,6 +31,35 @@ impl SimpleComponent for SettingsWindow {
                     set_title: &tr("Layout"),
                     set_description: Some(&tr("Adjust the visual layout of the file grid and sidebar")),
                     add = &adw::ActionRow {
+                        set_title: &tr("UI Scale"),
+                        set_subtitle: &tr("Adjust interface scaling for high-resolution displays"),
+                        add_suffix = &gtk::DropDown {
+                            set_valign: gtk::Align::Center,
+                            set_model: Some(&{
+                                let sl = gtk::StringList::new(&[]);
+                                for label in ["100%", "110%", "125%", "150%", "175%", "200%"] {
+                                    sl.append(label);
+                                }
+                                sl
+                            }),
+                            set_selected: {
+                                const SCALES: &[f64] = &[1.0, 1.10, 1.25, 1.50, 1.75, 2.0];
+                                SCALES.iter()
+                                    .position(|&v| (v - model.config.ui.ui_scale).abs() < 0.01)
+                                    .unwrap_or(0) as u32
+                            },
+                            connect_selected_notify => move |drop| {
+                                const SCALES: &[f64] = &[1.0, 1.10, 1.25, 1.50, 1.75, 2.0];
+                                let idx = drop.selected() as usize;
+                                if let Some(&scale) = SCALES.get(idx) {
+                                    if let Some(s) = crate::model::SENDER.get() {
+                                        let _ = s.send(AppMsg::SetUiScale(scale));
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    add = &adw::ActionRow {
                         set_title: &tr("Default Icon Size"),
                         set_subtitle: &tr("Base size of icons in the grid view"),
                         add_suffix = &gtk::SpinButton {
