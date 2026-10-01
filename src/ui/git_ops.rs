@@ -1,0 +1,144 @@
+use crate::model::{AppMsg, FileLoadContext, FluxApp};
+use crate::services::git::{find_git_repo_root, query_git_status, GitFileStatus};
+use gtk::prelude::*;
+use relm4::AsyncComponentSender;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::atomic::Ordering;
+
+impl FluxApp {
+    /// Stores the scanned status for the current directory and rebinds items whose status changed.
+    pub fn handle_git_status_ready(
+        &mut self,
+        path: PathBuf,
+        _load_id: u64,
+        updates: HashMap<PathBuf, GitFileStatus>,
+    ) {
+        if self.current_path != path {
+            return;
+        }
+
+        self.git_status_dir = path;
+        self.git_status_map = updates;
+
+        let Some(tab) = self.tabs.get_mut(self.active_tab_index) else {
+            return;
+        };
+
+        let mut any_changed = false;
+        let total_items = tab.files.len();
+
+        for idx in 0..total_items {
+            let Some(wrapper) = tab.files.get(idx) else {
+                continue;
+            };
+            let mut item = wrapper.borrow_mut();
+            let new_status = self
+                .git_status_map
+                .get(&item.path)
+                .copied()
+                .unwrap_or_default();
+
+            if item.git_status != new_status {
+                item.git_status = new_status;
+                any_changed = true;
+            }
+        }
+
+        if any_changed {
+            if let Some(model) = tab.files.view.model() {
+                model.upcast_ref::<gtk::gio::ListModel>().items_changed(
+                    0,
+                    total_items,
+                    total_items,
+                );
+            }
+            tab.files.view.queue_draw();
+        }
+    }
+
+    /// Loads only the changed, untracked, and staged git files into the view in deterministic order.
+    pub fn handle_show_git_status_view(&mut self, sender: AsyncComponentSender<Self>) {
+        let target_dir = self.current_path.clone();
+        let Some(repo_root) = find_git_repo_root(&target_dir) else {
+            return;
+        };
+
+        let current_load_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
+        self.is_loading = true;
+        let s_clone = sender.clone();
+
+        relm4::spawn(async move {
+            let Ok(status_map) = query_git_status(&repo_root, &target_dir).await else {
+                s_clone.input(AppMsg::ShowToast("Failed to query git status".into()));
+                return;
+            };
+
+            let mut filtered_entries: Vec<(PathBuf, GitFileStatus)> = status_map
+                .into_iter()
+                .filter(|(_, status)| {
+                    *status != GitFileStatus::None && *status != GitFileStatus::Ignored
+                })
+                .collect();
+
+            filtered_entries.sort_by(|(path_a, _), (path_b, _)| {
+                let is_dir_a = path_a.is_dir();
+                let is_dir_b = path_b.is_dir();
+
+                match (is_dir_a, is_dir_b) {
+                    (true, false) => std::cmp::Ordering::Less,
+                    (false, true) => std::cmp::Ordering::Greater,
+                    _ => path_a
+                        .to_string_lossy()
+                        .to_lowercase()
+                        .cmp(&path_b.to_string_lossy().to_lowercase()),
+                }
+            });
+
+            let mut contexts = Vec::with_capacity(filtered_entries.len());
+            let mut status_updates = HashMap::with_capacity(filtered_entries.len());
+
+            for (path, status) in filtered_entries {
+                let name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_else(|| path.to_string_lossy().to_string());
+
+                let is_dir = path.is_dir();
+                let sort_name = name.to_lowercase();
+                let sort_ext = path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_ascii_lowercase())
+                    .unwrap_or_default();
+
+                let metadata = path.metadata().ok();
+                let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                let mtime = metadata
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_secs() as i64)
+                    .unwrap_or(0);
+
+                status_updates.insert(path.clone(), status);
+
+                contexts.push(FileLoadContext::with_stats(
+                    name, path, is_dir, sort_name, sort_ext, size, mtime, None, false, None,
+                ));
+            }
+
+            s_clone.input(AppMsg::FolderLoaded {
+                path: target_dir.clone(),
+                load_id: current_load_id,
+                items: contexts,
+                media_tasks: Vec::new(),
+            });
+
+            s_clone.input(AppMsg::GitStatusReady {
+                path: target_dir,
+                load_id: current_load_id,
+                updates: status_updates,
+            });
+        });
+    }
+}

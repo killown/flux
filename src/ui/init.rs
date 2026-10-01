@@ -424,6 +424,9 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            git_status_dir: PathBuf::new(),
+            git_status_map: std::collections::HashMap::new(),
+            is_in_git_repo: false,
             tab_view,
             tab_bar,
             tabs: vec![initial_tab],

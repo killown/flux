@@ -1234,6 +1234,7 @@ impl FluxApp {
         let start_idx = active_tab.files.len();
         let mut chunk_media_tasks: Vec<(u32, PathBuf)> = Vec::new();
 
+        let git_map = (self.git_status_dir == self.current_path).then_some(&self.git_status_map);
         for (offset, item) in items.into_iter().enumerate() {
             let grid_idx = start_idx + offset as u32;
             let current_uid = unsafe { libc::geteuid() };
@@ -1297,6 +1298,11 @@ impl FluxApp {
                 }
             }
 
+            let git_status = git_map
+                .and_then(|m| m.get(&item.target_path))
+                .copied()
+                .unwrap_or_default();
+
             let file_item = FileItem::builder(item.display_name, item.target_path, icon)
                 .is_dir(item.is_dir)
                 .thumbnail(thumbnail)
@@ -1318,6 +1324,7 @@ impl FluxApp {
                 .is_symlink(item.is_symlink)
                 .is_broken_symlink(item.is_broken_symlink)
                 .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                .git_status(git_status)
                 .build();
 
             self.tabs[self.active_tab_index].files.append(file_item);
@@ -1418,6 +1425,39 @@ impl FluxApp {
 
         self.current_path = path;
         self.update_breadcrumbs();
+
+        let path_str = self.current_path.to_string_lossy();
+        let can_scan_git = !path_str.starts_with("trash://")
+            && !path_str.starts_with("recent:///")
+            && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+            && !crate::services::network::is_network_uri(&self.current_path);
+
+        if can_scan_git {
+            let target_dir = self.current_path.clone();
+            let current_load_id = self.load_id.load(Ordering::SeqCst);
+            let s_clone = sender.clone();
+
+            relm4::spawn(async move {
+                if let Some(repo_root) = crate::services::git::find_git_repo_root(&target_dir) {
+                    s_clone.input(AppMsg::SetGitRepoActive(true));
+
+                    if let Ok(raw_status) =
+                        crate::services::git::query_git_status_for_view(&repo_root, &target_dir)
+                            .await
+                    {
+                        s_clone.input(AppMsg::GitStatusReady {
+                            path: target_dir,
+                            load_id: current_load_id,
+                            updates: raw_status,
+                        });
+                    }
+                } else {
+                    s_clone.input(AppMsg::SetGitRepoActive(false));
+                }
+            });
+        } else {
+            self.is_in_git_repo = false;
+        }
 
         // Sync active tab so SwitchTab restores the correct path
         if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
