@@ -322,6 +322,7 @@ pub fn load_config() -> crate::model::Config {
 
         let mut default_toml = String::from(
             r#"[ui]
+diff_editor = "nvim"
 max_content_search_results = 100
 default_icon_size = 96
 startup_window_width = 1280
@@ -485,6 +486,7 @@ path = "search://"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    diff_editor: "nvim".to_string(),
                     ui_scale: 1.0,
                     bg_alpha_window: 0.65,
                     bg_alpha_sidebar_left: 0.65,

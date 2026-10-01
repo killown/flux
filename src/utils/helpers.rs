@@ -1680,3 +1680,65 @@ pub fn clear_custom_background_images() {
         }
     }
 }
+
+/// Spawns the user-configured editor detached without task queue overhead or progress dialogs.
+pub fn launch_editor_at_line(
+    editor_cfg: &str,
+    file_path: &Path,
+    line: usize,
+    query: Option<&str>,
+) -> std::io::Result<()> {
+    let editor = if editor_cfg.trim().is_empty() {
+        "nvim"
+    } else {
+        editor_cfg.trim()
+    };
+
+    let target = file_path.to_string_lossy().to_string();
+
+    if editor.contains("%p") || editor.contains("%l") {
+        let cmd_str = editor
+            .replace("%p", &format!("\"{}\"", target))
+            .replace("%l", &line.to_string());
+        return std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&cmd_str)
+            .spawn()
+            .map(|_| ());
+    }
+
+    if matches!(editor, "nvim" | "vim" | "vi") {
+        for term in &["alacritty", "kitty", "foot", "wezterm", "xterm"] {
+            let mut cmd = std::process::Command::new(term);
+            cmd.arg("-e").arg(editor);
+
+            cmd.arg(format!("+{}", line));
+
+            if let Some(q) = query {
+                let trimmed = q.trim();
+                if !trimmed.is_empty() {
+                    cmd.arg(format!("+/\\V{}", trimmed));
+                }
+            }
+
+            cmd.arg(&target);
+
+            if cmd.spawn().is_ok() {
+                return Ok(());
+            }
+        }
+    }
+
+    match editor {
+        "code" | "cursor" => std::process::Command::new(editor)
+            .arg("--goto")
+            .arg(format!("{}:{}", target, line))
+            .spawn()
+            .map(|_| ()),
+        _ => std::process::Command::new(editor)
+            .arg(format!("+{}", line))
+            .arg(&target)
+            .spawn()
+            .map(|_| ()),
+    }
+}

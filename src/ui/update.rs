@@ -746,10 +746,25 @@ impl FluxApp {
                 self.handle_show_file_diff(path, &sender);
             }
             AppMsg::DiffLoaded { path, diff } => {
-                if self.active_diff_target.as_ref() == Some(&path) {
-                    if let Some(ref buffer) = self.diff_text_buffer {
-                        crate::ui::diff_panel::apply_diff_markup(buffer, &diff);
+                if let Some(ref buffer) = self.diff_text_buffer {
+                    crate::ui::diff_panel::apply_diff_markup(buffer, &diff);
+                }
+                self.active_diff_target = Some(path);
+            }
+            AppMsg::OpenActiveDiffLine { line, query } => {
+                if let Some(ref path) = self.active_diff_target {
+                    if let Err(e) = crate::utils::helpers::launch_editor_at_line(
+                        &self.config.ui.diff_editor,
+                        path,
+                        line,
+                        query.as_deref(),
+                    ) {
+                        sender.input(AppMsg::ShowToast(format!("Failed to open editor: {}", e)));
                     }
+                } else {
+                    sender.input(AppMsg::ShowToast(
+                        "No active diff target selected".to_string(),
+                    ));
                 }
             }
             AppMsg::SetShowSymlinkEmblem(val) => {

@@ -90,6 +90,10 @@ fn default_auto_show_diff() -> bool {
     true
 }
 
+fn default_diff_editor() -> String {
+    "nvim".to_string()
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -494,6 +498,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Editor binary or command used when opening diff hunk locations.
+    #[serde(default = "default_diff_editor")]
+    pub diff_editor: String,
     /// Width in pixels allocated for the right-side git diff review sidebar.
     #[serde(default = "default_diff_panel_width")]
     pub diff_panel_width: i32,
@@ -754,6 +761,7 @@ impl Default for UIConfig {
             enable_file_indexing: false,
             content_search_max_file_mb: default_content_search_max_file_mb(),
             ui_scale: 1.0,
+            diff_editor: default_diff_editor(),
         }
     }
 }
@@ -1007,6 +1015,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Opens the currently active diff target at the specified line number with an optional forward search pattern.
+    OpenActiveDiffLine { line: usize, query: Option<String> },
     /// Toggles the visibility of the right-side git diff review sidebar.
     ToggleDiffPanel,
     /// Requests the git diff for a specific file and reveals the diff panel.
