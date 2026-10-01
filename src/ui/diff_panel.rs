@@ -22,10 +22,17 @@ pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
             .foreground("#76e3ea")
             .weight(700)
             .build();
+        let tag_hunk = gtk::TextTag::builder()
+            .name("diff_hunk_link")
+            .foreground("#76e3ea")
+            .underline(gtk::pango::Underline::Single)
+            .weight(700)
+            .build();
 
         tag_table.add(&tag_add);
         tag_table.add(&tag_del);
         tag_table.add(&tag_hdr);
+        tag_table.add(&tag_hunk);
     }
 
     for line in raw_diff.lines() {
@@ -34,7 +41,9 @@ pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
             Some("diff_add")
         } else if line.starts_with('-') && !line.starts_with("---") {
             Some("diff_del")
-        } else if line.starts_with("@@") || line.starts_with("diff --git") {
+        } else if line.starts_with("@@") {
+            Some("diff_hunk_link")
+        } else if line.starts_with("diff --git") {
             Some("diff_hdr")
         } else {
             None
@@ -46,6 +55,97 @@ pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
             buffer.insert(&mut end, &format!("{}\n", line));
         }
     }
+}
+
+/// Parses the start line number from a hunk header `@@ -a,b +c,d @@`.
+fn parse_hunk_target_line(line: &str) -> Option<usize> {
+    let minus_idx = line.find('-')?;
+    let rest = &line[minus_idx + 1..];
+    let num_str: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+    num_str.parse().ok()
+}
+
+/// Cleans a diff added line into a safe, distinctive search token for Vim.
+fn sanitize_diff_query(raw_text: &str) -> Option<String> {
+    let without_diff_marker = raw_text.strip_prefix('+').unwrap_or(raw_text).trim();
+
+    let stripped = without_diff_marker
+        .trim_start_matches("///")
+        .trim_start_matches("//!")
+        .trim_start_matches("//")
+        .trim_start_matches("/*")
+        .trim_start_matches("*/")
+        .trim_start_matches('*')
+        .trim_start_matches('#')
+        .trim();
+
+    if stripped.is_empty() {
+        return None;
+    }
+
+    let mut escaped = String::with_capacity(stripped.len() + 8);
+    for ch in stripped.chars() {
+        match ch {
+            '/' | '\\' | '[' | ']' | '^' | '$' | '.' | '*' | '~' => {
+                escaped.push('\\');
+                escaped.push(ch);
+            }
+            _ => escaped.push(ch),
+        }
+    }
+
+    if escaped.trim().is_empty() {
+        None
+    } else {
+        Some(escaped)
+    }
+}
+
+/// Finds the hunk header line and extracts its start line and the sanitized search token.
+fn find_hunk_info_from_iter(iter: &gtk::TextIter) -> Option<(usize, Option<String>)> {
+    let mut current = *iter;
+
+    loop {
+        let mut line_start = current;
+        line_start.set_line_offset(0);
+        let mut line_end = line_start;
+        line_end.forward_to_line_end();
+
+        let line_text = current.buffer().text(&line_start, &line_end, false);
+        if line_text.starts_with("@@") {
+            let start_line = parse_hunk_target_line(&line_text)?;
+
+            let mut scan = line_start;
+            let mut query = None;
+
+            while scan.forward_line() {
+                let mut s_start = scan;
+                s_start.set_line_offset(0);
+                let mut s_end = s_start;
+                s_end.forward_to_line_end();
+
+                let text = scan.buffer().text(&s_start, &s_end, false);
+
+                if text.starts_with("@@") || text.starts_with("diff --git") {
+                    break;
+                }
+
+                if text.starts_with('+') && !text.starts_with("+++") {
+                    if let Some(cleaned) = sanitize_diff_query(&text) {
+                        query = Some(cleaned);
+                        break;
+                    }
+                }
+            }
+
+            return Some((start_line, query));
+        }
+
+        if line_start.line() == 0 || !current.backward_line() {
+            break;
+        }
+    }
+    None
 }
 
 /// Constructs the sliding git diff sidebar panel with a resizable handle.
@@ -275,6 +375,60 @@ pub fn build_diff_panel(
         .vexpand(true)
         .css_classes(["diff-view"])
         .build();
+
+    let click_gesture = gtk::GestureClick::new();
+    {
+        let s = sender.clone();
+        let tv_weak = text_view.downgrade();
+        click_gesture.connect_released(move |gesture, _, x, y| {
+            if gesture.current_button() != 1 {
+                return;
+            }
+            let Some(tv) = tv_weak.upgrade() else { return };
+
+            let (bx, by) =
+                tv.window_to_buffer_coords(gtk::TextWindowType::Text, x as i32, y as i32);
+
+            let Some(iter) = tv.iter_at_location(bx, by) else {
+                return;
+            };
+
+            if let Some((start_line, query)) = find_hunk_info_from_iter(&iter) {
+                s.input(AppMsg::OpenActiveDiffLine {
+                    line: start_line,
+                    query,
+                });
+            }
+        });
+    }
+    text_view.add_controller(click_gesture);
+
+    let motion_controller = gtk::EventControllerMotion::new();
+    {
+        let tv_weak = text_view.downgrade();
+        motion_controller.connect_motion(move |_, x, y| {
+            let Some(tv) = tv_weak.upgrade() else { return };
+            let (bx, by) =
+                tv.window_to_buffer_coords(gtk::TextWindowType::Text, x as i32, y as i32);
+            let is_hunk = tv
+                .iter_at_location(bx, by)
+                .map(|iter| {
+                    let mut ls = iter;
+                    ls.set_line_offset(0);
+                    let mut le = ls;
+                    le.forward_to_line_end();
+                    tv.buffer().text(&ls, &le, false).starts_with("@@")
+                })
+                .unwrap_or(false);
+
+            if is_hunk {
+                tv.set_cursor_from_name(Some("pointer"));
+            } else {
+                tv.set_cursor_from_name(Some("text"));
+            }
+        });
+    }
+    text_view.add_controller(motion_controller);
 
     let scrolled = gtk::ScrolledWindow::builder()
         .hscrollbar_policy(gtk::PolicyType::Never)
