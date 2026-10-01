@@ -10,6 +10,7 @@ pub mod content_scan;
 pub mod content_search;
 pub mod db;
 pub mod extension_search;
+pub mod git;
 pub mod indexer;
 pub mod inspector;
 pub mod loader;

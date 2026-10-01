@@ -1,6 +1,7 @@
 use crate::i18n::tr;
 use crate::model::FluxApp;
 use crate::model::PathSegment;
+use crate::services::git::GitFileStatus;
 use crate::ui::constants;
 use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
@@ -65,6 +66,8 @@ pub struct FileItem {
     pub is_cut: bool,
     /// Indicates whether this item is currently marked in the clipboard for a copy operation to apply visual styling.
     pub is_copy: bool,
+    /// Working tree status for git emblems and filters.
+    pub git_status: GitFileStatus,
 }
 
 impl FileItem {
@@ -93,6 +96,7 @@ impl FileItem {
             is_custom_icon: false,
             thumbnail: None,
             search_snippet: None,
+            git_status: GitFileStatus::None,
         }
     }
 }
@@ -122,6 +126,7 @@ pub struct FileItemBuilder {
     is_custom_icon: bool,
     thumbnail: Option<gdk::Texture>,
     search_snippet: Option<String>,
+    git_status: GitFileStatus,
 }
 
 #[allow(dead_code, clippy::wrong_self_convention)]
@@ -226,6 +231,11 @@ impl FileItemBuilder {
         self
     }
 
+    pub fn git_status(mut self, v: GitFileStatus) -> Self {
+        self.git_status = v;
+        self
+    }
+
     pub fn build(self) -> FileItem {
         FileItem {
             name: self.name,
@@ -253,12 +263,14 @@ impl FileItemBuilder {
             line_number: self.line_number,
             is_cut: self.is_cut,
             is_copy: self.is_copy,
+            git_status: self.git_status,
         }
     }
 }
 
 /// Collection of GTK widgets utilized by a [FileItem] within the grid view.
 pub struct FileWidgets {
+    pub card_box: gtk::Box,
     pub icon_widget: gtk::Image,
     pub video_widget: gtk::Video,
     pub preview_stack: gtk::Stack,
@@ -270,6 +282,7 @@ pub struct FileWidgets {
     pub info_label: gtk::Label,
     pub label_scroller: gtk::ScrolledWindow,
     pub scale_css_provider: Option<gtk::CssProvider>,
+    pub git_badge: gtk::Label,
 }
 
 /// Formats a byte count into a human-readable string (B / KB / MB / GB).
@@ -286,7 +299,7 @@ fn format_size(bytes: u64) -> String {
 }
 
 impl relm4::typed_view::grid::RelmGridItem for FileItem {
-    type Root = gtk::Box;
+    type Root = gtk::Overlay;
     type Widgets = FileWidgets;
 
     /// Initializes the widget hierarchy and event controllers for a grid item.
@@ -434,159 +447,138 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         preview_stack.add_named(&video_widget, Some("video"));
         preview_stack.set_visible_child_name("icon");
 
+        let git_badge = gtk::Label::builder()
+            .halign(gtk::Align::End)
+            .valign(gtk::Align::Start)
+            .visible(false)
+            .build();
+        git_badge.add_css_class("flux-git-badge");
+
         let grab_timer = std::rc::Rc::new(std::cell::Cell::new(None::<glib::SourceId>));
 
         relm4::view! {
             #[root]
-            root = gtk::Box {
-                set_orientation: gtk::Orientation::Vertical,
-                set_halign: gtk::Align::Fill,
-                set_valign: gtk::Align::Fill,
-                set_spacing: 0,
-                add_css_class: constants::CARD_CSS_CLASS,
+            root = gtk::Overlay {
+                #[name = "card_box"]
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_halign: gtk::Align::Fill,
+                    set_valign: gtk::Align::Fill,
+                    set_spacing: 0,
+                    add_css_class: constants::CARD_CSS_CLASS,
 
-                // only if single_click is enabled
-                connect_realize => move |w| {
-                    FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
-                },
+                    // only if single_click is enabled
+                    connect_realize => move |w| {
+                        FluxApp::set_cursor_pointer(w.as_ref(), config.ui.single_click);
+                    },
 
-                // Sets hand/grabbing cursor on sustained mouse press, restores on release or cancel
-                add_controller = gtk::GestureClick {
-                    set_button: 1,
-                    set_propagation_phase: gtk::PropagationPhase::Capture,
-                    connect_pressed[timer = grab_timer.clone()] => move |gesture, _, _, _| {
-                        if let Some(event) = gesture.current_event() {
-                            if let Some(device) = event.device() {
-                                if device.source() == gdk::InputSource::Touchscreen {
-                                    return;
-                                }
-                            }
-                        }
-
-                        if let Some(id) = timer.take() {
-                            id.remove();
-                        }
-
-                        if let Some(widget) = gesture.widget() {
-                            let widget_weak = widget.downgrade();
-                            let timer_clone = timer.clone();
-                            let gesture_weak = gesture.downgrade();
-
-                            let id = glib::timeout_add_local_once(
-                                std::time::Duration::from_millis(300),
-                                move || {
-                                    timer_clone.set(None);
-                                    // Ensure the gesture is still active and the pointer button is still pressed
-                                    let is_still_holding = gesture_weak
-                                        .upgrade()
-                                        .map(|g| g.is_recognized())
-                                        .unwrap_or(false);
-
-                                    if is_still_holding {
-                                        if let Some(w) = widget_weak.upgrade() {
-                                            if let Some(native) = w.native() {
-                                                if let Some(surface) = native.surface() {
-                                                    surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
-                                                }
-                                            }
-                                            w.set_cursor_from_name(Some("grabbing"));
-                                        }
+                    // Sets hand/grabbing cursor on sustained mouse press, restores on release or cancel
+                    add_controller = gtk::GestureClick {
+                        set_button: 1,
+                        set_propagation_phase: gtk::PropagationPhase::Capture,
+                        connect_pressed[timer = grab_timer.clone()] => move |gesture, _, _, _| {
+                            if let Some(event) = gesture.current_event() {
+                                if let Some(device) = event.device() {
+                                    if device.source() == gdk::InputSource::Touchscreen {
+                                        return;
                                     }
-                                },
-                            );
-                            timer.set(Some(id));
-                        }
-                    },
-                    connect_released[single_click, timer = grab_timer.clone()] => move |gesture, _, _, _| {
-                        if let Some(id) = timer.take() {
-                            id.remove();
-                        }
-                        if let Some(widget) = gesture.widget() {
-                            if let Some(native) = widget.native() {
-                                if let Some(surface) = native.surface() {
-                                    surface.set_cursor(None);
                                 }
                             }
-                            if single_click {
-                                widget.set_cursor_from_name(Some("pointer"));
-                            } else {
-                                widget.set_cursor(None);
+
+                            if let Some(id) = timer.take() {
+                                id.remove();
+                            }
+
+                            if let Some(widget) = gesture.widget() {
+                                let widget_weak = widget.downgrade();
+                                let timer_clone = timer.clone();
+                                let gesture_weak = gesture.downgrade();
+
+                                let id = glib::timeout_add_local_once(
+                                    std::time::Duration::from_millis(300),
+                                    move || {
+                                        timer_clone.set(None);
+                                        // Ensure the gesture is still active and the pointer button is still pressed
+                                        let is_still_holding = gesture_weak
+                                            .upgrade()
+                                            .map(|g| g.is_recognized())
+                                            .unwrap_or(false);
+
+                                        if is_still_holding {
+                                            if let Some(w) = widget_weak.upgrade() {
+                                                if let Some(native) = w.native() {
+                                                    if let Some(surface) = native.surface() {
+                                                        surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
+                                                    }
+                                                }
+                                                w.set_cursor_from_name(Some("grabbing"));
+                                            }
+                                        }
+                                    },
+                                );
+                                timer.set(Some(id));
+                            }
+                        },
+                        connect_released[single_click, timer = grab_timer.clone()] => move |gesture, _, _, _| {
+                            if let Some(id) = timer.take() {
+                                id.remove();
+                            }
+                            if let Some(widget) = gesture.widget() {
+                                if let Some(native) = widget.native() {
+                                    if let Some(surface) = native.surface() {
+                                        surface.set_cursor(None);
+                                    }
+                                }
+                                if single_click {
+                                    widget.set_cursor_from_name(Some("pointer"));
+                                } else {
+                                    widget.set_cursor(None);
+                                }
+                            }
+                        },
+                        connect_cancel[single_click, timer = grab_timer] => move |gesture, _| {
+                            if let Some(id) = timer.take() {
+                                id.remove();
+                            }
+                            if let Some(widget) = gesture.widget() {
+                                if let Some(native) = widget.native() {
+                                    if let Some(surface) = native.surface() {
+                                        surface.set_cursor(None);
+                                    }
+                                }
+                                if single_click {
+                                    widget.set_cursor_from_name(Some("pointer"));
+                                } else {
+                                    widget.set_cursor(None);
+                                }
                             }
                         }
                     },
-                    connect_cancel[single_click, timer = grab_timer] => move |gesture, _| {
-                        if let Some(id) = timer.take() {
-                            id.remove();
-                        }
-                        if let Some(widget) = gesture.widget() {
-                            if let Some(native) = widget.native() {
-                                if let Some(surface) = native.surface() {
-                                    surface.set_cursor(None);
-                                }
-                            }
-                            if single_click {
-                                widget.set_cursor_from_name(Some("pointer"));
-                            } else {
-                                widget.set_cursor(None);
-                            }
-                        }
-                    }
-                },
 
                     add_controller = gtk::GestureLongPress {
-                    // Only claim or handle long press on touch input, preventing mouse drag conflicts
-                    connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
-                        if let Some(event) = gesture.current_event() {
-                            // Reject any event originating from a mouse button press
-                            if let Some(btn_event) = event.downcast_ref::<gdk::ButtonEvent>() {
-                                if btn_event.button() != 0 {
-                                    gesture.set_state(gtk::EventSequenceState::Denied);
-                                    return;
+                        // Only claim or handle long press on touch input, preventing mouse drag conflicts
+                        connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
+                            if let Some(event) = gesture.current_event() {
+                                // Reject any event originating from a mouse button press
+                                if let Some(btn_event) = event.downcast_ref::<gdk::ButtonEvent>() {
+                                    if btn_event.button() != 0 {
+                                        gesture.set_state(gtk::EventSequenceState::Denied);
+                                        return;
+                                    }
                                 }
+
+                                // Strictly require touchscreen input source
+                                if let Some(device) = event.device() {
+                                    if device.source() != gdk::InputSource::Touchscreen {
+                                        gesture.set_state(gtk::EventSequenceState::Denied);
+                                        return;
+                                    }
+                                }
+                            } else {
+                                gesture.set_state(gtk::EventSequenceState::Denied);
+                                return;
                             }
 
-                            // Strictly require touchscreen input source
-                            if let Some(device) = event.device() {
-                                if device.source() != gdk::InputSource::Touchscreen {
-                                    gesture.set_state(gtk::EventSequenceState::Denied);
-                                    return;
-                                }
-                            }
-                        } else {
-                            gesture.set_state(gtk::EventSequenceState::Denied);
-                            return;
-                        }
-
-                        if let Some(s) = sender.get() {
-                            let widget = gesture.widget().unwrap();
-                            let name = widget.widget_name();
-                            let path_opt = {
-                                let s_str = name.as_str();
-                                if s_str.is_empty() || s_str == "gtk-widget" {
-                                    None
-                                } else {
-                                    Some(PathBuf::from(s_str))
-                                }
-                            };
-
-                            if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
-                                gesture.set_state(gtk::EventSequenceState::Claimed);
-                                s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
-                            }
-                        }
-                    }
-                },
-                add_controller = gtk::GestureClick {
-                    set_button: 0,
-                    connect_pressed => |gesture, _, _, _| {
-                        let button = gesture.current_button();
-                        if button == constants::MOUSE_RIGHT_CLICK {
-                            gesture.set_state(gtk::EventSequenceState::Claimed);
-                        }
-                    },
-                    connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
-                        if gesture.current_button() == MOUSE_RIGHT_CLICK {
                             if let Some(s) = sender.get() {
                                 let widget = gesture.widget().unwrap();
                                 let name = widget.widget_name();
@@ -601,56 +593,89 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                     let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                    gesture.set_state(gtk::EventSequenceState::Claimed);
                                     s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                 }
                             }
                         }
+                    },
+                    add_controller = gtk::GestureClick {
+                        set_button: 0,
+                        connect_pressed => |gesture, _, _, _| {
+                            let button = gesture.current_button();
+                            if button == constants::MOUSE_RIGHT_CLICK {
+                                gesture.set_state(gtk::EventSequenceState::Claimed);
+                            }
+                        },
+                        connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
+                            if gesture.current_button() == MOUSE_RIGHT_CLICK {
+                                if let Some(s) = sender.get() {
+                                    let widget = gesture.widget().unwrap();
+                                    let name = widget.widget_name();
+                                    let path_opt = {
+                                        let s_str = name.as_str();
+                                        if s_str.is_empty() || s_str == "gtk-widget" {
+                                            None
+                                        } else {
+                                            Some(PathBuf::from(s_str))
+                                        }
+                                    };
+
+                                    if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
+                                        let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                        s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                    }
+                                }
+                            }
+                        }
+                    },
+
+                    append: &preview_stack,
+
+                    #[name = "label_scroller"]
+                    gtk::ScrolledWindow {
+                        set_hscrollbar_policy: gtk::PolicyType::Never,
+                        set_vscrollbar_policy: gtk::PolicyType::Never,
+                        set_propagate_natural_width: true,
+                        set_propagate_natural_height: true,
+                        set_valign: gtk::Align::Start,
+                        set_hexpand: false,
+                        set_vexpand: false,
+                        add_css_class: "flux-label-scroller",
+
+                        #[name = "stack"]
+                        #[wrap(Some)]
+                        set_child = &gtk::Stack {
+                            set_transition_type: gtk::StackTransitionType::Crossfade,
+                            set_halign: gtk::Align::Center,
+                            set_vexpand: false,
+
+                            add_child = &gtk::Box {
+                                set_orientation: gtk::Orientation::Horizontal,
+                                set_halign: gtk::Align::Center,
+                                set_spacing: 4,
+
+                                #[name = "lock_icon"]
+                                gtk::Image {
+                                    set_icon_name: Some("changes-prevent-symbolic"),
+                                    set_pixel_size: 12,
+                                    set_visible: false,
+                                    add_css_class: "flux-lock-badge",
+                                },
+
+                                #[name = "label"]
+                                gtk::Label {
+                                    set_justify: gtk::Justification::Center,
+                                    set_ellipsize: gtk::pango::EllipsizeMode::End,
+                                    set_hexpand: false,
+                                    add_css_class: constants::FLUX_LABEL_CLASS,
+                                },
+                            } -> { set_name: constants::VIEW_LABEL }
+                        }
                     }
                 },
 
-                append: &preview_stack,
-
-                #[name = "label_scroller"]
-                gtk::ScrolledWindow {
-                    set_hscrollbar_policy: gtk::PolicyType::Never,
-                    set_vscrollbar_policy: gtk::PolicyType::Never,
-                    set_propagate_natural_width: true,
-                    set_propagate_natural_height: true,
-                    set_valign: gtk::Align::Start,
-                    set_hexpand: false,
-                    set_vexpand: false,
-                    add_css_class: "flux-label-scroller",
-
-                    #[name = "stack"]
-                    #[wrap(Some)]
-                    set_child = &gtk::Stack {
-                        set_transition_type: gtk::StackTransitionType::Crossfade,
-                        set_halign: gtk::Align::Center,
-                        set_vexpand: false,
-
-                        add_child = &gtk::Box {
-                            set_orientation: gtk::Orientation::Horizontal,
-                            set_halign: gtk::Align::Center,
-                            set_spacing: 4,
-
-                            #[name = "lock_icon"]
-                            gtk::Image {
-                                set_icon_name: Some("changes-prevent-symbolic"),
-                                set_pixel_size: 12,
-                                set_visible: false,
-                                add_css_class: "flux-lock-badge",
-                            },
-
-                            #[name = "label"]
-                            gtk::Label {
-                                set_justify: gtk::Justification::Center,
-                                set_ellipsize: gtk::pango::EllipsizeMode::End,
-                                set_hexpand: false,
-                                add_css_class: constants::FLUX_LABEL_CLASS,
-                            },
-                        } -> { set_name: constants::VIEW_LABEL }
-                    }
-                }
+                add_overlay: &git_badge,
             }
         }
 
@@ -661,7 +686,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         // Append the info label after the scroller so it sits on the far right
         // of the horizontal list row. In grid mode it is hidden.
-        root.append(&info_label);
+        card_box.append(&info_label);
 
         unsafe {
             root.set_data("preview_stack", preview_stack.clone());
@@ -671,6 +696,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         (
             root,
             FileWidgets {
+                card_box,
                 icon_widget,
                 video_widget,
                 preview_stack,
@@ -682,6 +708,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 info_label,
                 label_scroller,
                 scale_css_provider: None,
+                git_badge,
             },
         )
     }
@@ -700,24 +727,30 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         if self.is_cut {
             root.add_css_class("flux-card--cut");
+            widgets.card_box.add_css_class("flux-card--cut");
         } else {
             root.remove_css_class("flux-card--cut");
+            widgets.card_box.remove_css_class("flux-card--cut");
         }
 
         if self.is_copy {
             root.add_css_class("flux-card--copy");
+            widgets.card_box.add_css_class("flux-card--copy");
         } else {
             root.remove_css_class("flux-card--copy");
+            widgets.card_box.remove_css_class("flux-card--copy");
         }
 
         if self.is_list_mode {
             // Compact horizontal row: small icon on the left, filename fills the rest.
-            root.set_orientation(gtk::Orientation::Horizontal);
-            root.set_halign(gtk::Align::Fill);
-            root.set_valign(gtk::Align::Center);
-            root.set_hexpand(true);
-            root.set_vexpand(false);
-            root.set_spacing(10);
+            widgets
+                .card_box
+                .set_orientation(gtk::Orientation::Horizontal);
+            widgets.card_box.set_halign(gtk::Align::Fill);
+            widgets.card_box.set_valign(gtk::Align::Center);
+            widgets.card_box.set_hexpand(true);
+            widgets.card_box.set_vexpand(false);
+            widgets.card_box.set_spacing(10);
 
             widgets.icon_widget.set_pixel_size(self.icon_size);
             widgets
@@ -885,12 +918,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             }
         } else {
-            root.set_orientation(gtk::Orientation::Vertical);
-            root.set_halign(gtk::Align::Fill);
-            root.set_valign(gtk::Align::Fill);
-            root.set_hexpand(false);
-            root.set_vexpand(false);
-            root.set_spacing(0);
+            widgets.card_box.set_orientation(gtk::Orientation::Vertical);
+            widgets.card_box.set_halign(gtk::Align::Fill);
+            widgets.card_box.set_valign(gtk::Align::Fill);
+            widgets.card_box.set_hexpand(false);
+            widgets.card_box.set_vexpand(false);
+            widgets.card_box.set_spacing(0);
             widgets.icon_widget.set_pixel_size(self.icon_size);
             widgets.icon_widget.set_size_request(-1, -1);
             widgets.icon_widget.set_valign(gtk::Align::End);
@@ -958,12 +991,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         // Set the widget name to the absolute path so the app.rs controller can find it
         root.set_widget_name(&self.path.to_string_lossy());
+        widgets
+            .card_box
+            .set_widget_name(&self.path.to_string_lossy());
 
         if self.is_foreign_owner {
             root.add_css_class("flux-card--restricted");
+            widgets.card_box.add_css_class("flux-card--restricted");
             widgets.lock_icon.set_visible(true);
         } else {
             root.remove_css_class("flux-card--restricted");
+            widgets.card_box.remove_css_class("flux-card--restricted");
             widgets.lock_icon.set_visible(false);
         }
 
@@ -973,23 +1011,46 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             if self.is_broken_symlink {
                 root.add_css_class("flux-card--broken-symlink");
                 root.remove_css_class("flux-card--symlink");
+                widgets.card_box.add_css_class("flux-card--broken-symlink");
+                widgets.card_box.remove_css_class("flux-card--symlink");
             } else {
                 root.add_css_class("flux-card--symlink");
                 root.remove_css_class("flux-card--broken-symlink");
+                widgets.card_box.add_css_class("flux-card--symlink");
+                widgets
+                    .card_box
+                    .remove_css_class("flux-card--broken-symlink");
             }
         } else {
             root.remove_css_class("flux-card--symlink");
             root.remove_css_class("flux-card--broken-symlink");
+            widgets.card_box.remove_css_class("flux-card--symlink");
+            widgets
+                .card_box
+                .remove_css_class("flux-card--broken-symlink");
         }
 
         if self.is_dir && config.ui.show_empty_dir_emblem {
             if self.is_empty {
                 root.add_css_class("flux-card--empty");
+                widgets.card_box.add_css_class("flux-card--empty");
             } else {
                 root.remove_css_class("flux-card--empty");
+                widgets.card_box.remove_css_class("flux-card--empty");
             }
         } else {
             root.remove_css_class("flux-card--empty");
+            widgets.card_box.remove_css_class("flux-card--empty");
+        }
+
+        if let Some((emblem, class_name)) = self.git_status.badge_info() {
+            widgets.git_badge.set_label(emblem);
+            widgets
+                .git_badge
+                .set_css_classes(&["flux-git-badge", class_name]);
+            widgets.git_badge.set_visible(true);
+        } else {
+            widgets.git_badge.set_visible(false);
         }
 
         if self.is_editing {
@@ -1141,6 +1202,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             root.set_data("grid_item_index", self.grid_idx);
         }
     }
+
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
@@ -1170,8 +1232,15 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
         root.remove_css_class("flux-card--cut");
         root.remove_css_class("flux-card--copy");
+        root.remove_css_class("flux-card--restricted");
+        widgets.card_box.remove_css_class("flux-card--cut");
+        widgets.card_box.remove_css_class("flux-card--copy");
+        widgets.card_box.remove_css_class("flux-card--restricted");
 
         widgets.preview_stack.set_visible_child_name("icon");
+
+        widgets.git_badge.set_visible(false);
+        widgets.git_badge.set_css_classes(&["flux-git-badge"]);
 
         // Release the texture on both the widget and the item model
         widgets.icon_widget.set_paintable(None::<&gdk::Paintable>);
@@ -1188,6 +1257,11 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         root.remove_css_class("flux-card--symlink");
         root.remove_css_class("flux-card--broken-symlink");
         root.remove_css_class("flux-card--empty");
+        widgets.card_box.remove_css_class("flux-card--symlink");
+        widgets
+            .card_box
+            .remove_css_class("flux-card--broken-symlink");
+        widgets.card_box.remove_css_class("flux-card--empty");
 
         if let Some(existing_entry) = widgets.stack.child_by_name(constants::VIEW_ENTRY) {
             widgets.stack.remove(&existing_entry);

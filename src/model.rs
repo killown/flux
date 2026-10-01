@@ -783,6 +783,12 @@ pub struct CachedFolder {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Scanned directory for `git_status_map`.
+    pub git_status_dir: PathBuf,
+    /// Git file status lookup table for entries in `git_status_dir`.
+    pub git_status_map: std::collections::HashMap<PathBuf, crate::services::git::GitFileStatus>,
+    /// Tracks if active directory belongs to a git repository.
+    pub is_in_git_repo: bool,
     /// Timestamps of recent autoplay launches, used to enforce the launch-rate
     /// limit that prevents GStreamer pipeline FD exhaustion under rapid selection.
     pub video_preview_launches: std::collections::VecDeque<std::time::Instant>,
@@ -966,6 +972,16 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Filters grid view to files with uncommitted git changes.
+    ShowGitStatusView,
+    /// Toggles the header git status button.
+    SetGitRepoActive(bool),
+    /// Emitted when background git status scan finishes.
+    GitStatusReady {
+        path: PathBuf,
+        load_id: u64,
+        updates: std::collections::HashMap<PathBuf, crate::services::git::GitFileStatus>,
+    },
     /// Toggles the background SQLite FTS5 file indexer.
     SetEnableFileIndexing(bool),
     /// Opens multiple directory paths into tabs in a single batch.

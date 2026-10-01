@@ -786,6 +786,19 @@ impl FluxApp {
             AppMsg::OpenDebugWindow => {
                 crate::ui::debug::show_debug_window(self);
             }
+            AppMsg::ShowGitStatusView => {
+                self.handle_show_git_status_view(sender);
+            }
+            AppMsg::SetGitRepoActive(is_active) => {
+                self.is_in_git_repo = is_active;
+            }
+            AppMsg::GitStatusReady {
+                path,
+                load_id,
+                updates,
+            } => {
+                self.handle_git_status_ready(path, load_id, updates);
+            }
             AppMsg::ShowToast(msg) => self.handle_show_toast(msg),
         }
     }

@@ -1400,3 +1400,67 @@ toast label {
 toast label.flux-toast-label {
   font-weight: 500;
 }
+
+.flux-git-badge {
+  font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);
+  font-size: 8pt;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 1px 4px;
+  min-height: 14px;
+  min-width: 14px;
+  margin-top: 10px;
+  margin-right: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.flux-git-untracked {
+  background-color: alpha(#8e8e93, 0.25);
+  color: #8e8e93;
+}
+
+.flux-git-added {
+  background-color: alpha(#34c759, 0.25);
+  color: #34c759;
+}
+
+.flux-git-modified,
+.flux-git-mixed {
+  background-color: alpha(#007aff, 0.25);
+  color: #007aff;
+}
+
+.flux-git-staged {
+  background-color: alpha(#5856d6, 0.25);
+  color: #5856d6;
+}
+
+.flux-git-deleted {
+  background-color: alpha(#ff3b30, 0.25);
+  color: #ff3b30;
+}
+
+.flux-git-conflict {
+  background-color: alpha(#ff9500, 0.35);
+  color: #ff9500;
+}
+
+.flux-header-git-btn {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 18px;
+  font-weight: bold;
+}
+
+.flux-header-git-btn:hover {
+  background-color: alpha(@accent_bg_color, 0.8);
+}
+
+.flux-header-git-label {
+  color: @accent_fg_color;
+  font-family: var(--font-main);
+  font-weight: bold;
+  letter-spacing: 0px;
+}
