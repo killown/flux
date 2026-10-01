@@ -34,31 +34,26 @@ impl FluxApp {
         let mut any_changed = false;
         let total_items = tab.files.len();
 
-        for idx in 0..total_items {
+        for idx in (0..total_items).rev() {
             let Some(wrapper) = tab.files.get(idx) else {
                 continue;
             };
-            let mut item = wrapper.borrow_mut();
             let new_status = self
                 .git_status_map
-                .get(&item.path)
+                .get(&wrapper.borrow().path)
                 .copied()
                 .unwrap_or_default();
 
-            if item.git_status != new_status {
+            if wrapper.borrow().git_status != new_status {
+                let mut item = wrapper.borrow().clone();
                 item.git_status = new_status;
+                tab.files.remove(idx);
+                tab.files.insert(idx, item);
                 any_changed = true;
             }
         }
 
         if any_changed {
-            if let Some(model) = tab.files.view.model() {
-                model.upcast_ref::<gtk::gio::ListModel>().items_changed(
-                    0,
-                    total_items,
-                    total_items,
-                );
-            }
             tab.files.view.queue_draw();
         }
     }
