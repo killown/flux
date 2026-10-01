@@ -1186,6 +1186,16 @@ thread_local! {
     static ACTIVE_CSS_PROVIDER: RefCell<Option<gtk::CssProvider>> = const { RefCell::new(None) };
 }
 
+/// Applies runtime font DPI scaling to the default GTK settings.
+pub fn apply_ui_scale(scale: f64) {
+    let clamped = scale.clamp(0.75, 3.0);
+
+    if let Some(settings) = gtk::Settings::default() {
+        let dpi = (96.0 * clamped * 1024.0).round() as i32;
+        settings.set_gtk_xft_dpi(dpi);
+    }
+}
+
 /// Applies the active theme CSS to the global GTK display, cleanly removing the old stylesheet.
 pub fn load_custom_css() {
     let config = crate::utils::load_config();

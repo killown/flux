@@ -26,6 +26,12 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_set_ui_scale(&mut self, scale: f64) {
+        self.config.ui.ui_scale = scale;
+        utils::save_config(&self.config);
+        crate::utils::helpers::apply_ui_scale(scale);
+    }
+
     pub fn handle_set_sidebar_width(&mut self, val: i32) {
         let clamped = val.clamp(160, 500);
         self.config.ui.sidebar_width = clamped;

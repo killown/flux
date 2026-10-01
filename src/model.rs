@@ -78,6 +78,10 @@ fn default_content_search_max_file_mb() -> u64 {
     128
 }
 
+fn default_ui_scale() -> f64 {
+    1.0
+}
+
 /// Type alias for the conflict resolution channel used in file copy/move operations.
 pub type ConflictResolver = Arc<Mutex<Option<oneshot::Sender<(ConflictChoice, bool)>>>>;
 
@@ -481,6 +485,9 @@ impl Default for ThumbnailTypes {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
+    /// Global UI scale multiplier applied via font DPI and CSS variables.
+    #[serde(default = "default_ui_scale")]
+    pub ui_scale: f64,
     /// Skip content-search files larger than this (in MiB). 0 = no cap.
     #[serde(default = "default_content_search_max_file_mb")]
     pub content_search_max_file_mb: u64,
@@ -729,6 +736,7 @@ impl Default for UIConfig {
             tag_panel_width: default_tag_panel_width(),
             enable_file_indexing: false,
             content_search_max_file_mb: default_content_search_max_file_mb(),
+            ui_scale: 1.0,
         }
     }
 }
@@ -972,6 +980,8 @@ pub struct FluxApp {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Updates the global UI scale factor across the application.
+    SetUiScale(f64),
     /// Filters grid view to files with uncommitted git changes.
     ShowGitStatusView,
     /// Toggles the header git status button.

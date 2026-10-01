@@ -800,6 +800,7 @@ impl FluxApp {
                 self.handle_git_status_ready(path, load_id, updates);
             }
             AppMsg::ShowToast(msg) => self.handle_show_toast(msg),
+            AppMsg::SetUiScale(scale) => self.handle_set_ui_scale(scale),
         }
     }
 }

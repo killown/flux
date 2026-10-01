@@ -1615,6 +1615,14 @@ msgstr "Sair"
 msgid "Exit the application"
 msgstr "Sair do aplicativo"
 
+#: src/ui/settings.rs:???
+msgid "UI Scale"
+msgstr "Escala da Interface"
+
+#: src/ui/settings.rs:???
+msgid "Adjust interface scaling for high-resolution displays"
+msgstr "Ajustar o dimensionamento da interface para telas de alta resolução"
+
 # ============================================================
 # src/ui/dialogs.rs
 # ============================================================
