@@ -455,7 +455,7 @@ fn start_walk(
             search_debug!("[Search Debug] Falling back to WalkBuilder filesystem crawl...");
 
             let indexed_dir_mtimes: std::collections::HashMap<std::path::PathBuf, i64> =
-                if indexer_ready {
+                if indexer_ready && is_simple_name_search {
                     let mut map = std::collections::HashMap::new();
                     let db_path = crate::services::indexer::SearchIndex::db_path();
                     if let Ok(conn) = rusqlite::Connection::open_with_flags(
@@ -503,7 +503,8 @@ fn start_walk(
                 .follow_links(true)
                 .same_file_system(false);
 
-            let skip_stable_dirs = !only_folders;
+            let skip_stable_dirs =
+                !only_folders && is_simple_name_search && !indexed_dir_mtimes.is_empty();
             let matcher = forbidden_matcher();
             let walker = builder
                 .filter_entry(move |entry| {
@@ -573,7 +574,11 @@ fn start_walk(
                         if !is_dir || entry.depth() == 0 {
                             return WalkState::Continue;
                         }
-                    } else if !entry.file_type().is_some_and(|ft| ft.is_file()) {
+                    } else if is_dir {
+                        return WalkState::Continue;
+                    } else if !entry.file_type().is_some_and(|ft| ft.is_file())
+                        && !entry.path().is_file()
+                    {
                         return WalkState::Continue;
                     }
 
