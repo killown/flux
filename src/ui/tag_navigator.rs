@@ -237,6 +237,7 @@ pub fn build_tag_panel(
     let search_entry = gtk::SearchEntry::builder()
         .placeholder_text(tr("Search or type new tag…"))
         .hexpand(true)
+        .css_classes(["tag-search-entry"])
         .build();
     content_box.append(&search_entry);
 

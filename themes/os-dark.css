@@ -1,4 +1,4 @@
-/* ── Theme Root Variables ── */
+/* root variables */
 :root {
   --accent-color: #007aff;
   --shadow: rgba(0, 0, 0, 0.6);
@@ -8,16 +8,17 @@
   letter-spacing: 0px;
 }
 
-/* ── ToolbarView Integration ── */
+/* toolbarview integration */
 toolbarview {
   background-color: transparent;
 }
 
-/* ── HeaderBar & Navigation ── */
+/* headerbar and navigation */
 headerbar {
+  font-size: 1em;
   background-color: transparent;
-  padding: 4px 12px;
-  min-height: 38px;
+  padding: 0.3em 0.8em;
+  min-height: 2.4em;
   border: none;
   box-shadow: none;
   font-family: var(--font-main);
@@ -35,29 +36,35 @@ headerbar label {
   letter-spacing: 0px;
 }
 
-headerbar button {
+headerbar button,
+headerbar togglebutton,
+headerbar menubutton {
   background-color: transparent;
   color: @headerbar_fg_color;
   border: none;
   box-shadow: none;
-  border-radius: 6px;
-  padding: 4px 10px;
+  border-radius: 0.45em;
+  min-height: 2em;
+  min-width: 2em;
+  padding: 0.3em 0.6em;
 }
 
-headerbar button:hover {
+headerbar button:hover,
+headerbar togglebutton:hover,
+headerbar menubutton:hover {
   background-color: alpha(@headerbar_fg_color, 0.08);
 }
 
-headerbar togglebutton {
-  background-color: transparent;
-  color: @headerbar_fg_color;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 8px;
-}
-
-headerbar togglebutton:hover {
-  background-color: alpha(@headerbar_fg_color, 0.08);
+headerbar button image,
+headerbar togglebutton image,
+headerbar menubutton image,
+headerbar .image-button image,
+headerbar button > image,
+headerbar togglebutton > image,
+headerbar menubutton > image {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
 }
 
 headerbar togglebutton:checked,
@@ -66,12 +73,105 @@ headerbar togglebutton:active {
   color: @accent_color;
 }
 
-/* ── Sidebar & Navigation Tree (Dark) ── */
+.sort-container image {
+  color: @headerbar_fg_color;
+}
+
+.sort-label {
+  background-color: alpha(@window_fg_color, 0.05);
+  border-top: 1px solid alpha(@window_fg_color, 0.15);
+  border-left: 1px solid alpha(@window_fg_color, 0.1);
+  border-right: 1px solid alpha(@window_fg_color, 0.05);
+  border-bottom: 1px solid alpha(black, 0.4);
+  border-radius: 0.35em;
+  padding: 0.3em 0.8em;
+  margin: 0 0.6em;
+  font-size: 0.8em;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: alpha(@window_fg_color, 0.5);
+  box-shadow: 0 0.15em 0 alpha(black, 0.3);
+  transition: all 150ms ease-out;
+}
+
+.sort-label:hover {
+  background-color: alpha(@accent_color, 0.1);
+  color: @accent_color;
+  transform: translateY(-0.1em);
+  box-shadow: 0 0.2em 0 alpha(black, 0.4);
+}
+
+.sort-label:active {
+  transform: translateY(0.15em);
+  box-shadow: 0 0 0 transparent;
+  background-color: @accent_color;
+  color: @accent_fg_color;
+}
+
+/* window controls */
+windowcontrols {
+  font-size: 1em;
+}
+
+windowcontrols button {
+  background-color: transparent;
+  border: none;
+  border-color: transparent;
+  border-radius: 9999px;
+  padding: 0;
+  margin: 0 0.15em;
+  width: 1.8em;
+  height: 1.8em;
+  min-width: 1.8em;
+  min-height: 1.8em;
+  color: @headerbar_fg_color;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+windowcontrols button image,
+windowcontrols button image.icon,
+windowcontrols button > * {
+  margin: 0;
+  padding: 0;
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
+  -gtk-icon-transform: none;
+}
+
+windowcontrols button:hover {
+  background-color: alpha(@headerbar_fg_color, 0.12);
+}
+
+windowcontrols button:active {
+  background-color: alpha(@headerbar_fg_color, 0.2);
+}
+
+windowcontrols button.close:hover {
+  background-color: alpha(#ff3b30, 0.25);
+  color: #ff3b30;
+}
+
+windowcontrols button.close:active {
+  background-color: alpha(#ff3b30, 0.4);
+  color: #ff3b30;
+}
+
+windowcontrols button.minimize:hover,
+windowcontrols button.maximize:hover {
+  background-color: alpha(@headerbar_fg_color, 0.15);
+}
+
+/* sidebar */
 .sidebar {
+  font-size: 1em;
   background-color: color-mix(in srgb, @window_bg_color 20%, #000000 20%);
-  border-radius: 14px;
+  border-radius: 1.1em;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0.3em 1.5em rgba(0, 0, 0, 0.4);
 }
 
 .sidebar-inner {
@@ -84,11 +184,28 @@ headerbar togglebutton:active {
   background-color: transparent;
 }
 
+.sidebar-resize-handle {
+  min-width: 1.4em;
+  background: transparent;
+  margin-left: -0.5em;
+  margin-right: -0.5em;
+  padding: 0;
+  border: none;
+  opacity: 1;
+  transition: background-color 150ms ease;
+}
+
+.sidebar-row image {
+  -gtk-icon-size: 1.25em;
+  min-width: 1.25em;
+  min-height: 1.25em;
+}
+
 .sidebar-row:not(.sidebar-section) {
-  margin: 1px 14px;
-  padding: 3px 14px;
-  min-height: 24px;
-  border-radius: 10px;
+  margin: 0.1em 1em;
+  padding: 0.25em 1em;
+  min-height: 1.8em;
+  border-radius: 0.75em;
   background-color: transparent;
   border: none;
   transition:
@@ -100,19 +217,19 @@ headerbar togglebutton:active {
 .sidebar-row:not(.sidebar-section) label {
   color: alpha(@theme_fg_color, 0.85);
   font-family: var(--font-main);
-  font-size: 9.5pt;
+  font-size: 0.95em;
   letter-spacing: 0px;
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
   background-color: alpha(@theme_fg_color, 0.08);
-  transform: translateX(4px);
+  transform: translateX(0.3em);
 }
 
 .sidebar-row:not(.sidebar-section):selected {
   background-color: @accent_bg_color;
-  box-shadow: 0 4px 12px var(--shadow);
-  transform: translateX(6px);
+  box-shadow: 0 0.3em 0.9em var(--shadow);
+  transform: translateX(0.45em);
 }
 
 .sidebar-row:not(.sidebar-section):selected label {
@@ -121,9 +238,9 @@ headerbar togglebutton:active {
 }
 
 .sidebar-section {
-  margin-top: 6px;
-  margin-bottom: 1px;
-  padding: 6px 12px 3px 12px;
+  margin-top: 0.5em;
+  margin-bottom: 0.1em;
+  padding: 0.5em 0.9em 0.25em 0.9em;
   min-height: 0px;
   background: transparent;
   border-radius: 0px;
@@ -139,7 +256,7 @@ headerbar togglebutton:active {
 
 .sidebar-section-label {
   font-family: var(--font-main);
-  font-size: 0.75rem;
+  font-size: 0.75em;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -147,18 +264,18 @@ headerbar togglebutton:active {
   background: transparent;
   border: none;
   box-shadow: none;
-  margin-left: 26px;
-  margin-top: 6px;
+  margin-left: 1.8em;
+  margin-top: 0.5em;
 }
 
 .sidebar-mount {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom-color: rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-  min-height: 22px;
-  padding: 1px 6px;
-  margin: 1px 14px;
+  border-radius: 0.65em;
+  min-height: 1.8em;
+  padding: 0.1em 0.5em;
+  margin: 0.1em 1em;
   transition: all 0.15s ease;
 }
 
@@ -166,10 +283,10 @@ button.eject-button {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 1px 3px;
+  padding: 0.25em;
   min-height: 0;
   min-width: 0;
-  border-radius: 4px;
+  border-radius: 0.45em;
   color: alpha(@theme_fg_color, 0.45);
   opacity: 0.7;
   transition:
@@ -180,7 +297,9 @@ button.eject-button {
 
 button.eject-button image {
   color: inherit;
-  -gtk-icon-size: 12px;
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
 }
 
 button.eject-button:hover {
@@ -205,11 +324,137 @@ button.eject-button:active {
   opacity: 1;
 }
 
-/* ── Grid & List Item Views ── */
+/* sidebar pin zone and drag drop */
+.sidebar-dragging {
+  opacity: 0.45;
+}
+
+.sidebar-drop-hover {
+  background-color: alpha(@accent_color, 0.25);
+  box-shadow: inset 0 0 0 1px @accent_color;
+}
+
+.sidebar-pin-zone {
+  margin: 0.3em 0.6em 0.5em 0.6em;
+  padding: 0.6em 0.8em;
+  border-radius: 0.8em;
+  border: 1.5px dashed alpha(@accent_color, 0.5);
+  background-color: alpha(@accent_color, 0.05);
+  transition: all 150ms ease;
+  min-height: 2.6em;
+}
+
+.sidebar-pin-zone-label {
+  font-size: 0.9em;
+  font-weight: 600;
+  color: alpha(@accent_color, 0.85);
+  margin-left: 0.6em;
+}
+
+.sidebar-pin-zone image {
+  color: alpha(@accent_color, 0.85);
+  -gtk-icon-size: 1.15em;
+}
+
+.sidebar-pin-zone.sidebar-pin-zone-hover {
+  background-color: alpha(@accent_color, 0.18);
+  border-color: @accent_color;
+  border-style: solid;
+}
+
+.dragging {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+.drop-hover {
+  background-color: alpha(@accent_color, 0.2);
+  border: 2px dashed @accent_color;
+  box-shadow: inset 0 0 0 1.5px @accent_color;
+  transform: scale(1.05);
+}
+
+.sidebar-drop-target {
+  background-color: alpha(@accent_color, 0.15);
+  border-top: 2px solid @accent_color;
+}
+
+/* breadcrumb navigation */
+button.breadcrumb-btn {
+  background: linear-gradient(
+    to bottom,
+    alpha(@theme_fg_color, 0.06),
+    alpha(@theme_fg_color, 0.02)
+  );
+  padding: 0.25em 0.8em;
+  margin: 1px;
+  font-weight: 500;
+  transition: all 0.12s ease;
+  color: alpha(@theme_fg_color, 0.8);
+  font-family: var(--font-main);
+  font-size: 0.9em;
+}
+
+button.breadcrumb-btn:first-child {
+  border-top-left-radius: 1.2em;
+  border-bottom-left-radius: 1.2em;
+  border-right-width: 0px;
+  padding-left: 0.9em;
+}
+
+button.breadcrumb-btn:last-child {
+  border-top-right-radius: 1.2em;
+  border-bottom-right-radius: 1.2em;
+  border-right-width: 1px;
+  background: @accent_bg_color;
+  border-color: @accent_bg_color;
+  color: @accent_fg_color;
+  box-shadow:
+    0 0.15em 0.6em alpha(@accent_color, 0.3),
+    inset 0 1px 0 alpha(white, 0.2);
+  font-weight: 600;
+  padding: 0.25em 1em;
+}
+
+button.breadcrumb-btn:last-child label {
+  color: @accent_fg_color;
+  font-weight: 600;
+}
+
+button.breadcrumb-btn:last-child:hover {
+  background: color-mix(in srgb, @accent_bg_color, #000 10%);
+  box-shadow: 0 0.3em 0.9em alpha(@accent_color, 0.4);
+}
+
+button.breadcrumb-btn:hover:not(:last-child) {
+  background: linear-gradient(
+    to bottom,
+    alpha(@theme_fg_color, 0.12),
+    alpha(@theme_fg_color, 0.06)
+  );
+  box-shadow:
+    inset 0 1px 0 alpha(@window_fg_color, 0.08),
+    0 0.15em 0.3em rgba(0, 0, 0, 0.1);
+  border-color: alpha(@theme_fg_color, 0.18);
+  color: @theme_fg_color;
+}
+
+button.breadcrumb-btn:active:not(:last-child) {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(1px);
+}
+
+button.breadcrumb-btn label {
+  color: inherit;
+  font-family: var(--font-main);
+  letter-spacing: 0px;
+}
+
+/* grid and list views */
 gridview,
 listview {
   background-color: @window_bg_color;
-  padding: 0px 24px 16px 24px; /* Reduced top padding to 0px */
+  padding: 0 1.8em 1.2em 1.8em;
 }
 
 gridview child {
@@ -219,9 +464,9 @@ gridview child {
 
 .flux-card {
   background-color: @card_bg_color;
-  border-radius: 18px;
-  padding: 12px;
-  margin: 6px;
+  border-radius: 1.2em;
+  padding: 0.9em;
+  margin: 0.45em;
   border: none;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.12),
@@ -236,22 +481,26 @@ gridview child {
   background-color: alpha(@theme_fg_color, 0.06);
   box-shadow:
     0 0 0 1px alpha(@accent_color, 0.3),
-    0 8px 16px var(--shadow-hover);
-  transform: translateY(-4px);
+    0 0.6em 1.2em var(--shadow-hover);
+  transform: translateY(-0.3em);
+}
+
+.flux-label-scroller {
+  background-color: transparent;
 }
 
 .flux-label {
   color: @theme_fg_color;
   font-family: var(--font-main);
-  font-size: 10pt;
+  font-size: 1em;
   letter-spacing: 0px;
 }
 
 gridview child:selected .flux-card {
   box-shadow:
     0 0 0 2px @accent_color,
-    0 6px 18px alpha(@accent_color, 0.35);
-  transform: translateY(-2px);
+    0 0.45em 1.3em alpha(@accent_color, 0.35);
+  transform: translateY(-0.15em);
 }
 
 gridview child:selected .flux-label {
@@ -265,19 +514,19 @@ gridview child:selected .flux-label {
 
 .flux-lock-badge {
   color: #ff9500;
+  -gtk-icon-size: 1em;
 }
 
-/* HIG-Compliant Dark Mode Metadata Capsule for List Mode */
 .flux-list-info {
   font-family: var(--font-mono);
-  font-size: 8.5pt;
+  font-size: 0.85em;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
-  padding: 2px 10px;
-  min-width: 170px;
+  padding: 0.2em 0.8em;
+  min-width: 12em;
   background-color: alpha(@theme_fg_color, 0.07);
   border: 1px solid alpha(@theme_fg_color, 0.1);
-  border-radius: 99px;
+  border-radius: 999px;
   color: alpha(@theme_fg_color, 0.7);
   transition:
     background-color 150ms ease,
@@ -302,93 +551,95 @@ entry.flux-rename-entry {
   background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 10%);
   border: 1px solid @accent_color;
   box-shadow: 0 0 0 2px alpha(@accent_color, 0.35);
-  padding: 2px 8px;
-  font-size: 9.5pt;
-  min-height: 24px;
+  padding: 0.2em 0.6em;
+  font-size: 0.95em;
+  min-height: 1.8em;
 }
 
-/* ── Drag & Drop States ── */
-.sidebar-dragging {
-  opacity: 0.45;
+.flux-card.flux-card--empty {
+  border-left: 2.5px solid alpha(@theme_fg_color, 0.45);
 }
 
-.sidebar-drop-hover {
-  background-color: alpha(@accent_color, 0.25);
-  box-shadow: inset 0 0 0 1px @accent_color;
+.flux-card.flux-card--empty .flux-label {
+  color: alpha(@theme_fg_color, 0.65);
 }
 
-/* ── Breadcrumb Navigation ── */
-button.breadcrumb-btn {
-  background: linear-gradient(
-    to bottom,
-    alpha(@theme_fg_color, 0.06),
-    alpha(@theme_fg_color, 0.02)
-  );
-  padding: 3px 10px;
-  margin: 1px;
-  font-weight: 500;
-  transition: all 0.12s ease;
-  color: alpha(@theme_fg_color, 0.8);
-  font-family: var(--font-main);
-  font-size: 0.9em;
+.flux-card.flux-card--symlink {
+  border-right: 2.5px solid alpha(@accent_color, 0.75);
 }
 
-button.breadcrumb-btn:first-child {
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-  border-right-width: 0px;
-  padding-left: 12px;
-}
-
-button.breadcrumb-btn:last-child {
-  border-top-right-radius: 16px;
-  border-bottom-right-radius: 16px;
-  border-right-width: 1px;
-  background: @accent_bg_color;
-  border-color: @accent_bg_color;
-  color: @accent_fg_color;
-  box-shadow:
-    0 2px 8px alpha(@accent_color, 0.3),
-    inset 0 1px 0 alpha(white, 0.2);
-  font-weight: 600;
-  padding: 3px 14px;
-}
-
-button.breadcrumb-btn:last-child label {
-  color: @accent_fg_color;
-  font-weight: 600;
-}
-
-button.breadcrumb-btn:last-child:hover {
-  background: color-mix(in srgb, @accent_bg_color, #000 10%);
-  box-shadow: 0 4px 12px alpha(@accent_color, 0.4);
-}
-
-button.breadcrumb-btn:hover:not(:last-child) {
-  background: linear-gradient(
-    to bottom,
-    alpha(@theme_fg_color, 0.12),
-    alpha(@theme_fg_color, 0.06)
-  );
-  box-shadow:
-    inset 0 1px 0 alpha(@window_fg_color, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.1);
-  border-color: alpha(@theme_fg_color, 0.18);
+.flux-card.flux-card--symlink .flux-label {
   color: @theme_fg_color;
+  font-weight: 500;
 }
 
-button.breadcrumb-btn:active:not(:last-child) {
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  transform: translateY(1px);
+.flux-card.flux-card--broken-symlink {
+  border-right: 2.5px solid #ff453a;
 }
 
-button.breadcrumb-btn label {
-  color: inherit;
-  font-family: var(--font-main);
-  letter-spacing: 0px;
+.flux-card.flux-card--broken-symlink .flux-label {
+  color: #ff453a;
+  text-decoration-line: line-through;
 }
 
-/* ── Popovers & Context Menus ── */
+.flux-card.flux-card--cut {
+  background-color: alpha(#ff9500, 0.1);
+  box-shadow: inset 0 0 0 1.5px alpha(#ff9500, 0.45);
+  opacity: 0.6;
+}
+
+.flux-card.flux-card--cut .flux-label {
+  color: alpha(@theme_fg_color, 0.65);
+  font-style: italic;
+}
+
+.flux-card--copy {
+  opacity: 0.6;
+}
+
+/* filter bar */
+.flux-filter-bar {
+  background-color: alpha(@accent_bg_color, 0.08);
+  border-bottom: 1px solid alpha(@window_fg_color, 0.1);
+  min-height: 2.4em;
+}
+
+.flux-filter-chip {
+  background-color: alpha(@accent_bg_color, 0.18);
+  border: 1px solid alpha(@accent_color, 0.35);
+  border-radius: 999px;
+  padding: 0.2em 0.4em 0.2em 0.6em;
+  min-height: 1.8em;
+}
+
+.flux-filter-chip label {
+  font-size: 0.85em;
+  color: @accent_fg_color;
+}
+
+.flux-filter-chip button {
+  min-width: 1.5em;
+  min-height: 1.5em;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.flux-filter-chip button:hover {
+  opacity: 1;
+}
+
+/* search panel */
+.search-panel-icon {
+  -gtk-icon-size: 1.25em;
+  min-width: 1.25em;
+  min-height: 1.25em;
+}
+
+.search-panel-icon image {
+  -gtk-icon-size: 1.25em;
+}
+
+/* popovers and context menus */
 popover.menu {
   border: none;
   outline: none;
@@ -399,12 +650,15 @@ popover.menu contents {
   background-color: @window_bg_color;
   border: none;
   outline: none;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px var(--shadow);
+  border-radius: 0.9em;
+  box-shadow: 0 0.6em 1.8em var(--shadow);
 }
 
 popover.menu modelbutton {
   color: @theme_fg_color;
+  min-height: 2.1em;
+  padding: 0.3em 0.6em;
+  border-radius: 0.45em;
 }
 
 popover.menu modelbutton label {
@@ -444,10 +698,10 @@ popover.menu modelbutton:hover arrow.left {
 popover.menu > contents separator {
   background-color: alpha(@theme_fg_color, 0.1);
   min-height: 1px;
-  margin: 4px 8px;
+  margin: 0.3em 0.6em;
 }
 
-/* ── Text Entries & Inputs ── */
+/* text entries and inputs */
 entry,
 searchentry,
 passwordentry,
@@ -456,8 +710,8 @@ searchentry text,
 passwordentry text {
   background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 5%);
   border: none;
-  border-radius: 22px;
-  padding: 4px 12px;
+  border-radius: 1.5em;
+  padding: 0.3em 0.9em;
   color: @theme_fg_color;
   caret-color: @theme_fg_color;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -562,21 +816,22 @@ textview text {
   caret-color: @theme_fg_color;
 }
 
-/* ── Status Bar & Transfers (Floating Card Style) ── */
+/* status bar and transfers */
 .selection-status {
+  font-size: 1em;
   background-color: color-mix(in srgb, @window_bg_color 85%, #000000 15%);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 6px 16px;
-  min-height: 28px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  margin-bottom: 8px;
+  border-radius: 0.9em;
+  padding: 0.45em 1.2em;
+  min-height: 2.2em;
+  box-shadow: 0 0.3em 1.2em rgba(0, 0, 0, 0.3);
+  margin-bottom: 0.6em;
 }
 
 .selection-status label.caption {
   color: alpha(@theme_fg_color, 0.82);
   font-family: var(--font-mono);
-  font-size: 8.5pt;
+  font-size: 0.85em;
   letter-spacing: -0.01em;
 }
 
@@ -586,15 +841,15 @@ textview text {
 
 .selection-status progressbar {
   background-color: transparent;
-  min-height: 6px;
-  border-radius: 99px;
+  min-height: 0.45em;
+  border-radius: 999px;
 }
 
 .selection-status progressbar trough {
   background-color: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 99px;
-  min-height: 6px;
+  border-radius: 999px;
+  min-height: 0.45em;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
@@ -605,9 +860,9 @@ textview text {
     rgba(255, 255, 255, 0.22) 0%,
     rgba(0, 0, 0, 0.15) 100%
   );
-  border-radius: 99px;
-  min-height: 6px;
-  box-shadow: 0 0 6px alpha(@accent_color, 0.4);
+  border-radius: 999px;
+  min-height: 0.45em;
+  box-shadow: 0 0 0.45em alpha(@accent_color, 0.4);
 }
 
 .selection-status button.flat {
@@ -615,10 +870,10 @@ textview text {
   color: alpha(@theme_fg_color, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-top-color: rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  padding: 2px 8px;
-  min-height: 20px;
-  font-size: 8pt;
+  border-radius: 0.45em;
+  padding: 0.15em 0.6em;
+  min-height: 1.6em;
+  font-size: 0.8em;
   font-family: var(--font-mono);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transition:
@@ -641,11 +896,11 @@ textview text {
 .selection-status button.destructive-action {
   background-color: rgba(255, 59, 48, 0.14);
   border: 1px solid rgba(255, 59, 48, 0.25);
-  border-radius: 6px;
+  border-radius: 0.45em;
   color: #ff453a;
-  padding: 2px 7px;
-  min-height: 20px;
-  font-size: 8pt;
+  padding: 0.15em 0.5em;
+  min-height: 1.6em;
+  font-size: 0.8em;
   font-family: var(--font-mono);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transition:
@@ -678,7 +933,7 @@ window:backdrop .selection-status button.destructive-action {
   opacity: 0.6;
 }
 
-/* ── Quick Panel (Floating Dock) ── */
+/* quick panel */
 .quick-panel-scroll {
   background: none;
   border: none;
@@ -693,19 +948,19 @@ window:backdrop .selection-status button.destructive-action {
 .quick-panel {
   background: rgba(30, 30, 32, 0.82);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-  padding: 4px 6px;
+  border-radius: 0.9em;
+  padding: 0.3em 0.5em;
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 0.6em 1.8em rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .quick-panel button,
 .quick-panel-tab {
-  min-width: 82px;
-  min-height: 26px;
-  padding: 3px 14px;
-  border-radius: 8px;
+  min-width: 6.5em;
+  min-height: 2.1em;
+  padding: 0.25em 1.1em;
+  border-radius: 0.6em;
   background-color: rgba(255, 255, 255, 0.07);
   background-image: linear-gradient(
     to bottom,
@@ -728,7 +983,7 @@ window:backdrop .selection-status button.destructive-action {
 .quick-panel-tab label {
   color: alpha(@theme_fg_color, 0.88);
   font-family: var(--font-main);
-  font-size: 9.5pt;
+  font-size: 0.95em;
   font-weight: 500;
   letter-spacing: -0.01em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -766,7 +1021,7 @@ window:backdrop .selection-status button.destructive-action {
   border: 1px solid alpha(@accent_color, 0.5);
   border-top-color: rgba(255, 255, 255, 0.4);
   box-shadow:
-    0 2px 8px alpha(@accent_color, 0.45),
+    0 0.15em 0.6em alpha(@accent_color, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   color: #ffffff;
 }
@@ -782,13 +1037,34 @@ window:backdrop .selection-status button.destructive-action {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* ── Standard Buttons & Actions ── */
+/* general buttons and actions */
+.flat {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.circular {
+  border-radius: 9999px;
+  padding: 0.35em;
+}
+
+.circular image {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 0.4em 1.2em;
+}
+
 .suggested-action {
   background-color: @accent_bg_color;
   color: @accent_fg_color;
   border: none;
-  border-radius: 8px;
-  padding: 6px 18px;
+  border-radius: 0.6em;
+  padding: 0.45em 1.3em;
   font-weight: bold;
 }
 
@@ -803,8 +1079,8 @@ window:backdrop .selection-status button.destructive-action {
 .destructive-action {
   background-color: alpha(#ff3b30, 0.1);
   color: #ff3b30;
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 0.6em;
+  padding: 0.5em 1.2em;
   font-weight: bold;
   letter-spacing: 0px;
 }
@@ -817,14 +1093,28 @@ window:backdrop .selection-status button.destructive-action {
   background-color: alpha(#ff3b30, 0.2);
 }
 
-/* ── Form Controls & Widgets ── */
+.linked > button {
+  border-radius: 0;
+}
+
+.linked > button:first-child {
+  border-top-left-radius: 0.5em;
+  border-bottom-left-radius: 0.5em;
+}
+
+.linked > button:last-child {
+  border-top-right-radius: 0.5em;
+  border-bottom-right-radius: 0.5em;
+}
+
+/* form controls and widgets */
 check,
 radio {
   background-color: alpha(@theme_fg_color, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  min-height: 16px;
-  min-width: 16px;
+  border-radius: 0.3em;
+  min-height: 1.2em;
+  min-width: 1.2em;
 }
 
 check:checked,
@@ -847,11 +1137,11 @@ spinbutton,
 spinbutton text {
   background-color: alpha(@theme_fg_color, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 0.6em;
   color: @theme_fg_color;
   caret-color: @theme_fg_color;
-  padding: 0 4px;
-  min-height: 28px;
+  padding: 0 0.3em;
+  min-height: 2.1em;
 }
 
 spinbutton:focus-within {
@@ -872,9 +1162,9 @@ dropdown,
 combobox {
   background-color: alpha(@theme_fg_color, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 0.6em;
   color: @theme_fg_color;
-  min-height: 28px;
+  min-height: 2.1em;
 }
 
 dropdown button,
@@ -895,8 +1185,8 @@ dropdown label {
 
 scale trough {
   background: alpha(@theme_fg_color, 0.1);
-  border-radius: 10px;
-  min-height: 4px;
+  border-radius: 0.75em;
+  min-height: 0.3em;
 }
 
 scale highlight {
@@ -907,12 +1197,12 @@ scale slider {
   background: @theme_fg_color;
   border: 2px solid @accent_bg_color;
   border-radius: 50%;
-  min-width: 16px;
-  min-height: 16px;
+  min-width: 1.2em;
+  min-height: 1.2em;
 }
 
 levelbar block {
-  border-radius: 4px;
+  border-radius: 0.3em;
 }
 
 levelbar block.low {
@@ -929,22 +1219,23 @@ levelbar block.full {
 
 progressbar {
   background-color: alpha(@theme_fg_color, 0.05);
-  border-radius: 4px;
+  border-radius: 0.3em;
 }
 
 progressbar progress {
   background-color: @accent_bg_color;
-  border-radius: 4px;
-  min-height: 4px;
+  border-radius: 0.3em;
+  min-height: 0.3em;
 }
 
+/* scrollbars */
 scrollbar {
   background: transparent;
 }
 
 scrollbar slider {
   background-color: alpha(@theme_fg_color, 0.2);
-  border-radius: 10px;
+  border-radius: 0.75em;
 }
 
 scrollbar slider:hover {
@@ -959,7 +1250,7 @@ notebook > header {
 notebook > header > tabs > tab {
   background: transparent;
   color: @theme_fg_color;
-  padding: 4px 12px;
+  padding: 0.3em 0.9em;
   border: none;
   border-bottom: 2px solid transparent;
 }
@@ -969,22 +1260,22 @@ notebook > header > tabs > tab:checked {
   border-bottom-color: @accent_color;
 }
 
-/* ── Cards, Lists & Frames ── */
+/* cards lists and frames */
 .card {
   background: alpha(@theme_fg_color, 0.03);
-  border-radius: 12px;
+  border-radius: 0.9em;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .frame {
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 0.6em;
   background: transparent;
 }
 
 .boxed-list {
   background: alpha(@theme_fg_color, 0.03);
-  border-radius: 12px;
+  border-radius: 0.9em;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -1017,16 +1308,16 @@ row:selected {
 .property {
   background: transparent;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 6px 0px;
+  padding: 0.45em 0px;
   color: @theme_fg_color;
-  font-size: 9.5pt;
+  font-size: 0.95em;
 }
 
 .property label {
   color: @theme_fg_color;
 }
 
-/* ── Settings & Libadwaita Preferences ── */
+/* settings and preferences */
 window.settings-window,
 adwpreferenceswindow,
 .settings-window {
@@ -1046,14 +1337,14 @@ viewswitcher button label,
 adwviewswitcher button label {
   font-weight: 500;
   text-transform: none;
-  font-size: 9pt;
+  font-size: 0.9em;
 }
 
 viewswitcher button,
 adwviewswitcher button {
-  padding-left: 4px;
-  padding-right: 4px;
-  min-width: 60px;
+  padding-left: 0.3em;
+  padding-right: 0.3em;
+  min-width: 4.5em;
 }
 
 .settings-row label {
@@ -1096,18 +1387,13 @@ adwpreferencesgroup label.description,
   color: alpha(@theme_fg_color, 0.65);
 }
 
-/* ── Utilities, Tooltips & Status States ── */
+/* general typography and labels */
 tooltip.background {
   background-color: alpha(@window_bg_color, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  border-radius: 0.6em;
   color: @theme_fg_color;
-  padding: 6px 12px;
-}
-
-toast label {
-  color: @theme_fg_color;
-  letter-spacing: 0.4px;
+  padding: 0.45em 0.9em;
 }
 
 .dim-label {
@@ -1115,7 +1401,22 @@ toast label {
 }
 
 .caption {
+  font-size: 0.85em;
   color: alpha(@theme_fg_color, 0.65);
+}
+
+.body {
+  font-size: 1em;
+}
+
+.title-1 {
+  font-size: 1.6em;
+  font-weight: 800;
+}
+
+.title-3 {
+  font-size: 1.2em;
+  font-weight: 700;
 }
 
 .numeric {
@@ -1135,13 +1436,20 @@ toast label {
 }
 
 .monospace {
-  font-family: var(--font-mono);
+  font-family: var(--font-mono), monospace;
 }
 
+/* status feedback indicators */
 .error {
   border: 1px solid #ff3b30;
   background: alpha(#ff3b30, 0.08);
   color: #ff3b30;
+}
+
+.error image {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
 }
 
 .warning {
@@ -1150,119 +1458,21 @@ toast label {
   color: #ff9500;
 }
 
-/* ── Window Controls ── */
-windowcontrols button {
-  background-color: transparent;
-  border: none;
-  border-color: transparent;
-  border-radius: 0;
-  padding: 6px 6px;
-  min-width: 24px;
-  min-height: 24px;
-  color: @headerbar_fg_color;
-  transition:
-    background-color 150ms ease,
-    color 150ms ease;
+.warning image {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
 }
 
-windowcontrols button:hover {
-  background-color: alpha(@headerbar_fg_color, 0.12);
+.success {
+  color: #34c759;
 }
 
-windowcontrols button:active {
-  background-color: alpha(@headerbar_fg_color, 0.2);
-}
-
-windowcontrols button.close:hover {
-  background-color: alpha(#ff3b30, 0.25);
-  color: #ff3b30;
-}
-
-windowcontrols button.close:active {
-  background-color: alpha(#ff3b30, 0.4);
-  color: #ff3b30;
-}
-
-windowcontrols button.minimize:hover,
-windowcontrols button.maximize:hover {
-  background-color: alpha(@headerbar_fg_color, 0.15);
-}
-
-/* Position toasts cleanly above the floating dock capsule */
-toastoverlay.quick-dock-active toast {
-  margin-bottom: 60px;
-}
-
-/* ── Empty Folder & Symlink Dynamic Theme Styling ── */
-.flux-card.flux-card--empty {
-  border-left: 2.5px solid alpha(@theme_fg_color, 0.45);
-}
-
-.flux-card.flux-card--empty .flux-label {
-  color: alpha(@theme_fg_color, 0.65);
-}
-
-.flux-card.flux-card--symlink {
-  border-right: 2.5px solid alpha(@accent_color, 0.75);
-}
-
-.flux-card.flux-card--symlink .flux-label {
-  color: @theme_fg_color;
-  font-weight: 500;
-}
-
-.flux-card.flux-card--broken-symlink {
-  border-right: 2.5px solid #ff9500;
-}
-
-.flux-card.flux-card--broken-symlink .flux-label {
-  color: #ff9500;
-  text-decoration-line: line-through;
-}
-
-.flux-card.flux-card--cut {
-  background-color: alpha(#ff9500, 0.1);
-  box-shadow: inset 0 0 0 1.5px alpha(#ff9500, 0.45);
-  opacity: 0.6;
-}
-
-.flux-card.flux-card--cut .flux-label {
-  color: alpha(@theme_fg_color, 0.65);
-  font-style: italic;
-}
-
-.flux-card--copy {
-  opacity: 0.6;
-}
-
+/* tabbar */
 tabbar,
 tabbar.inline {
   border: none;
   background: transparent;
-  box-shadow: none;
-}
-
-tabbar,
-tabbar.inline {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-}
-
-tabbar scrollbar {
-  opacity: 0;
-  min-width: 0px;
-  min-height: 0px;
-  padding: 0;
-  margin: 0;
-  border: none;
-}
-
-tabbar undershoot,
-tabbar undershoot.left,
-tabbar undershoot.right {
-  background: none;
-  border: none;
   box-shadow: none;
 }
 
@@ -1284,10 +1494,10 @@ tabbar undershoot.right {
 }
 
 tabbar tab {
-  min-height: 24px;
-  padding: 2px 10px;
-  margin: 0 2px;
-  border-radius: 8px;
+  min-height: 1.8em;
+  padding: 0.15em 0.8em;
+  margin: 0 0.15em;
+  border-radius: 0.6em;
   background-color: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: none;
@@ -1313,7 +1523,7 @@ tabbar tab.selected {
   border: 1px solid rgba(0, 122, 255, 0.8);
   border-top-color: rgba(255, 255, 255, 0.4);
   box-shadow:
-    0 2px 8px rgba(0, 122, 255, 0.45),
+    0 0.15em 0.6em rgba(0, 122, 255, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -1330,7 +1540,7 @@ tabbar tab.selected:hover {
 
 tabbar tab label {
   font-family: var(--font-main);
-  font-size: 9pt;
+  font-size: 0.9em;
   font-weight: 500;
   color: alpha(@theme_fg_color, 0.65);
 }
@@ -1348,8 +1558,8 @@ tabbar tab.selected label {
 }
 
 tabbar tab button.flat {
-  min-height: 16px;
-  min-width: 16px;
+  min-height: 1.2em;
+  min-width: 1.2em;
   padding: 1px;
   border-radius: 50%;
   color: alpha(@theme_fg_color, 0.6);
@@ -1386,31 +1596,62 @@ tabbar tab.selected button.flat:hover {
   color: #ffffff;
 }
 
+/* toast notifications */
+toastoverlay.quick-dock-active toast {
+  margin-bottom: 4.5em;
+}
+
 toast {
+  font-size: 1em;
   background-color: alpha(@window_bg_color, 0.95);
   border: 1px solid alpha(@window_fg_color, 0.1);
-  border-radius: 12px;
-  box-shadow: 0 4px 16px alpha(black, 0.15);
+  border-radius: 0.9em;
+  box-shadow: 0 0.3em 1.2em alpha(black, 0.15);
 }
 
 toast label {
   color: @window_fg_color;
+  letter-spacing: 0.4px;
 }
 
 toast label.flux-toast-label {
   font-weight: 500;
 }
 
+toast button {
+  color: alpha(@window_fg_color, 0.75);
+  background-color: transparent;
+  border-radius: 0.45em;
+  padding: 0.15em 0.45em;
+  min-height: 1.6em;
+}
+
+toast button:hover {
+  background-color: alpha(@window_fg_color, 0.12);
+  color: @window_fg_color;
+}
+
+toast button:active {
+  background-color: alpha(@window_fg_color, 0.2);
+  color: @window_fg_color;
+}
+
+toast button image {
+  color: inherit;
+  -gtk-icon-size: 1.15em;
+}
+
+/* git badges and headers */
 .flux-git-badge {
   font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);
-  font-size: 8pt;
+  font-size: 0.8em;
   font-weight: 700;
-  border-radius: 4px;
-  padding: 1px 4px;
-  min-height: 14px;
-  min-width: 14px;
-  margin-top: 10px;
-  margin-right: 10px;
+  border-radius: 0.3em;
+  padding: 0.1em 0.35em;
+  min-height: 1.2em;
+  min-width: 1.2em;
+  margin-top: 0.7em;
+  margin-right: 0.7em;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
@@ -1449,8 +1690,8 @@ toast label.flux-toast-label {
   background-color: @accent_bg_color;
   color: @accent_fg_color;
   border: none;
-  border-radius: 8px;
-  padding: 6px 18px;
+  border-radius: 0.6em;
+  padding: 0.45em 1.4em;
   font-weight: bold;
 }
 
@@ -1463,4 +1704,76 @@ toast label.flux-toast-label {
   font-family: var(--font-main);
   font-weight: bold;
   letter-spacing: 0px;
+}
+
+/* diff panel */
+.diff-view {
+  font-size: 0.85em;
+  font-family: monospace;
+}
+
+/* keyboard shortcuts */
+.keycap {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8em;
+  background-color: alpha(@window_fg_color, 0.08);
+  border: 1px solid alpha(@window_fg_color, 0.15);
+  border-radius: 0.3em;
+  padding: 0.1em 0.4em;
+  box-shadow: 0 1px 0 alpha(black, 0.2);
+}
+
+/* background sync */
+.flux-bg-sync {
+  transition: none;
+}
+
+/* advanced search selectors scaling */
+adw-combo-row,
+dropdown {
+  font-size: 1em;
+  min-height: 2.2em;
+  padding: 0.2em 0.6em;
+}
+
+adw-combo-row button,
+dropdown button {
+  min-height: 2em;
+  padding: 0.2em 0.5em;
+}
+
+adw-combo-row image,
+dropdown image {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
+}
+
+/* ── Sidebar Panels & Tag Navigator Icon Scaling ── */
+.sidebar button,
+.sidebar menuitem,
+.sidebar popover modelbutton {
+  min-height: 2em;
+  min-width: 2em;
+}
+
+.sidebar button image,
+.sidebar popover image,
+.sidebar modelbutton image {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
+}
+
+.sidebar popover contents {
+  font-size: 1em;
+}
+
+/* tag navigator search entry icon scaling */
+.tag-search-entry image,
+.tag-search-entry text,
+.tag-search-entry image.search {
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
 }
