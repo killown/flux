@@ -345,6 +345,16 @@ impl FluxApp {
         });
     }
 
+    /// Resets search state and restores the pre-search view mode and column layout.
+    ///
+    /// # Critical Sequence Invariant
+    /// The file model (`files.clear()`) must be emptied **before** resetting
+    /// `is_list_mode` and updating `view` column boundaries.
+    ///
+    /// WARNING: If column constraints or list mode sync run while items are still present,
+    /// GTK's `GtkListItemFactory` recycles every row and triggers repeated
+    /// layout renegotiation passes on the main loop. In list mode, where items
+    /// use expanded horizontal layouts, this causes severe UI hangs on large folders.
     pub fn reset_from_content_search(&mut self) {
         if let Some(cancellable) = self.content_search_cancellable.take() {
             cancellable.cancel();
@@ -354,13 +364,21 @@ impl FluxApp {
         self.pending_thumbnails.clear();
         self.filter.clear();
         self.search_just_opened = false;
-        self.is_list_mode = self.saved_list_mode;
-        self.tabs[self.active_tab_index]
-            .files
-            .view
-            .set_max_columns(self.saved_max_columns);
         self.tabs[self.active_tab_index].files.clear();
-        self.sync_list_mode();
+        self.is_list_mode = self.saved_list_mode;
+        let target_max = if self.is_list_mode {
+            1
+        } else {
+            self.saved_max_columns.max(1)
+        };
+        let target_min = 1;
+        let view = &self.tabs[self.active_tab_index].files.view;
+        if view.min_columns() != target_min {
+            view.set_min_columns(target_min);
+        }
+        if view.max_columns() != target_max {
+            view.set_max_columns(target_max);
+        }
     }
 
     /// Appends a new content search match result to the grid.

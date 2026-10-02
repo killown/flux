@@ -1253,6 +1253,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         widgets.label.set_text("");
         widgets.label.set_attributes(None);
         widgets.info_label.set_text("");
+        widgets.info_label.set_attributes(None);
+        widgets.info_label.set_tooltip_text(None::<&str>);
+        widgets.info_label.set_visible(false);
 
         root.remove_css_class("flux-card--symlink");
         root.remove_css_class("flux-card--broken-symlink");
