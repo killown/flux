@@ -1664,6 +1664,7 @@ impl FactoryComponent for SidebarPlace {
                     gtk::Image {
                         #[watch]
                         set_icon_name: Some(&self.icon),
+                        set_icon_size: gtk::IconSize::Inherit,
                     },
                     gtk::Label {
                         #[watch]
@@ -1674,7 +1675,11 @@ impl FactoryComponent for SidebarPlace {
                     },
                     #[name = "eject_button"]
                     gtk::Button {
-                        set_icon_name: "media-eject",
+                        #[wrap(Some)]
+                        set_child = &gtk::Image {
+                            set_icon_name: Some("media-eject"),
+                            set_icon_size: gtk::IconSize::Inherit,
+                        },
                         #[watch]
                         set_visible: self.is_mount,
                         add_css_class: "eject-button",

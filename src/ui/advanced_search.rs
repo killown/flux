@@ -209,7 +209,11 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         .margin_bottom(4)
         .build();
 
-    let search_icon = gtk::Image::from_icon_name("system-search-symbolic");
+    let search_icon = gtk::Image::builder()
+        .icon_name("system-search-symbolic")
+        .icon_size(gtk::IconSize::Inherit)
+        .css_classes(["search-panel-icon"])
+        .build();
 
     let title_label = gtk::Label::builder()
         .label(tr("Search"))

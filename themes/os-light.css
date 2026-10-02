@@ -217,7 +217,7 @@ button.eject-button,
 button.eject-button image,
 button.eject-button label {
   color: inherit;
-  -gtk-icon-size: 14px;
+  -gtk-icon-size: 1.15em;
 }
 
 button.eject-button:hover {
@@ -1227,18 +1227,34 @@ adwtoast button label {
 }
 
 /* ── Window Controls ── */
+windowcontrols {
+  font-size: 1em;
+}
+
 windowcontrols button {
   background-color: transparent;
   border: none;
   border-color: transparent;
-  border-radius: 0;
-  padding: 6px 6px;
-  min-width: 24px;
-  min-height: 24px;
+  border-radius: 9999px;
+  padding: 0.35em;
+  margin: 0 0.15em;
+  min-width: 1.8em;
+  min-height: 1.8em;
   color: @headerbar_fg_color;
   transition:
     background-color 150ms ease,
     color 150ms ease;
+}
+
+windowcontrols button image,
+windowcontrols button image.icon,
+windowcontrols button > * {
+  margin: auto;
+  padding: 0;
+  -gtk-icon-size: 1.15em;
+  min-width: 1.15em;
+  min-height: 1.15em;
+  -gtk-icon-transform: none;
 }
 
 windowcontrols button:hover {
@@ -1537,4 +1553,11 @@ toast button image {
   font-family: var(--font-main);
   font-weight: bold;
   letter-spacing: 0px;
+}
+
+/* search panel header icon */
+.search-panel-icon {
+  -gtk-icon-size: 1.25em;
+  min-width: 1.25em;
+  min-height: 1.25em;
 }
