@@ -183,6 +183,7 @@ fn launch_main_app(
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+        register_resources();
         crate::utils::helpers::load_custom_css();
         crate::utils::helpers::load_custom_background_images();
         setup_config_watcher();
@@ -240,7 +241,6 @@ fn register_resources() {
 fn main() {
     i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
-    register_resources();
 
     let args: Vec<String> = std::env::args().collect();
     let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
