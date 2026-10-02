@@ -156,6 +156,11 @@ Temporary pinned directory panel for fast multi-directory cycling:
 - Reset to system default (`Ctrl+F3`)
 - Associations are re-keyed automatically on rename, move, and drag-and-drop
 
+### Custom CSS
+
+Put your own overrides in `~/.config/flux/style.css`. They load on top of the
+selected theme and reload live, so you only keep the rules you want to change.
+
 ### Integrated Terminal (`F4`)
 
 - Embedded terminal pane directly below the file grid

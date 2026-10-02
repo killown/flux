@@ -1249,6 +1249,29 @@ impl FluxApp {
 
 thread_local! {
     static ACTIVE_CSS_PROVIDER: RefCell<Option<gtk::CssProvider>> = const { RefCell::new(None) };
+    static ACTIVE_USER_CSS_PROVIDER: RefCell<Option<gtk::CssProvider>> = const { RefCell::new(None) };
+}
+
+/// Replaces the provider kept in `slot` with a new one built from `css`.
+fn swap_css_provider(
+    slot: &'static std::thread::LocalKey<RefCell<Option<gtk::CssProvider>>>,
+    display: &adw::gdk::Display,
+    css: Option<&str>,
+    priority: u32,
+) {
+    slot.with(|cell| {
+        let mut guard = cell.borrow_mut();
+
+        if let Some(ref old) = *guard {
+            gtk::style_context_remove_provider_for_display(display, old);
+        }
+
+        let provider = gtk::CssProvider::new();
+        provider.load_from_data(css.unwrap_or(""));
+        gtk::style_context_add_provider_for_display(display, &provider, priority);
+
+        *guard = Some(provider);
+    });
 }
 
 /// Applies runtime font DPI scaling to the default GTK settings.
@@ -1261,12 +1284,12 @@ pub fn apply_ui_scale(scale: f64) {
     }
 }
 
-/// Applies the active theme CSS to the global GTK display, cleanly removing the old stylesheet.
+/// Applies the theme CSS, then the user's style.css on top as overrides.
 pub fn load_custom_css() {
     let config = crate::utils::load_config();
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
 
-    let mut css_data = None;
+    let mut theme_css = None;
 
     if let Some(ref theme_name) = config.ui.theme {
         if theme_name != "default" {
@@ -1281,17 +1304,17 @@ pub fn load_custom_css() {
             let flatpak_theme = PathBuf::from("/app/share/flux/themes").join(&theme_filename);
             let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
 
-            css_data = fs::read_to_string(&local_theme)
+            theme_css = fs::read_to_string(&local_theme)
                 .or_else(|_| fs::read_to_string(&user_conf_theme))
                 .or_else(|_| fs::read_to_string(&flatpak_theme))
                 .or_else(|_| fs::read_to_string(&system_theme))
                 .ok();
 
-            if css_data.is_none() {
+            if theme_css.is_none() {
                 for dir in glib::system_data_dirs() {
                     let candidate = dir.join("flux/themes").join(&theme_filename);
                     if let Ok(content) = fs::read_to_string(&candidate) {
-                        css_data = Some(content);
+                        theme_css = Some(content);
                         break;
                     }
                 }
@@ -1299,36 +1322,25 @@ pub fn load_custom_css() {
         }
     }
 
-    if css_data.is_none() {
-        css_data = fs::read_to_string(config_dir.join("style.css"))
-            .or_else(|_| fs::read_to_string("/app/share/flux/style.css"))
-            .ok();
-    }
+    // User overrides: ~/.config/flux/style.css loads on top of the theme and always wins.
+    let user_css = fs::read_to_string(config_dir.join("style.css"))
+        .or_else(|_| fs::read_to_string("/app/share/flux/style.css"))
+        .ok();
 
     if let Some(display) = adw::gdk::Display::default() {
-        ACTIVE_CSS_PROVIDER.with(|cell| {
-            let mut guard = cell.borrow_mut();
-
-            if let Some(ref old_provider) = *guard {
-                gtk::style_context_remove_provider_for_display(&display, old_provider);
-            }
-
-            let new_provider = gtk::CssProvider::new();
-
-            if let Some(ref data) = css_data {
-                new_provider.load_from_data(data);
-            } else {
-                new_provider.load_from_data("");
-            }
-
-            gtk::style_context_add_provider_for_display(
-                &display,
-                &new_provider,
-                gtk::STYLE_PROVIDER_PRIORITY_USER,
-            );
-
-            *guard = Some(new_provider);
-        });
+        swap_css_provider(
+            &ACTIVE_CSS_PROVIDER,
+            &display,
+            theme_css.as_deref(),
+            gtk::STYLE_PROVIDER_PRIORITY_USER,
+        );
+        // One step above the theme so overrides win regardless of load order.
+        swap_css_provider(
+            &ACTIVE_USER_CSS_PROVIDER,
+            &display,
+            user_css.as_deref(),
+            gtk::STYLE_PROVIDER_PRIORITY_USER + 1,
+        );
     }
 
     if let Some(ref theme_name) = config.ui.theme {
