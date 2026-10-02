@@ -228,9 +228,19 @@ fn launch_main_app(
     });
 }
 
+/// Registers the bundled GResource icons with the default icon theme.
+fn register_resources() {
+    gio::resources_register_include!("flux.gresource").expect("failed to register resources");
+
+    if let Some(display) = gtk::gdk::Display::default() {
+        gtk::IconTheme::for_display(&display).add_resource_path("/io/github/killown/flux/icons");
+    }
+}
+
 fn main() {
     i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
+    register_resources();
 
     let args: Vec<String> = std::env::args().collect();
     let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
