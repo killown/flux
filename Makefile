@@ -60,7 +60,6 @@ install: translations update-themes
 
 	# 6. Themes & Shared Menus
 	@cp -r themes/. $(DESTDIR)$(CONFDIR)/themes/
-	@cp themes/default.css $(DESTDIR)$(CONFDIR)/style.css
 	@if [ -d menus ]; then cp -r menus/. $(DESTDIR)$(CONFDIR)/menus/; fi
 
 	# 7. Scripts
