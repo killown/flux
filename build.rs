@@ -2,6 +2,12 @@ use std::env;
 use std::process::Command;
 
 fn main() {
+    glib_build_tools::compile_resources(
+        &["data"],
+        "data/resources.gresource.xml",
+        "flux.gresource",
+    );
+
     // Skip if we are running under cargo-fuzz
     if std::env::var("CARGO_CFG_FUZZING").is_ok() {
         return;

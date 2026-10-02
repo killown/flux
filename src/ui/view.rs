@@ -536,12 +536,20 @@ impl SimpleAsyncComponent for FluxApp {
                         // Filter toggle button, opens the VIEW_FILTER stack child.
                         // Active state tracks whether any patterns are set.
                         pack_end = &gtk::ToggleButton {
-                            set_icon_name: constants::ICON_FILTER,
                             set_tooltip_text: Some(&tr("Filter by Pattern")),
                             add_css_class: "flat",
                             #[watch]
                             set_active: model.extension_filter.is_some(),
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+
+                            #[wrap(Some)]
+                            set_child = &gtk::Image {
+                                set_from_gicon: &gtk::gio::ThemedIcon::from_names(&[
+                                    "view-filter-symbolic",
+                                    "filter-symbolic",
+                                ]),
+                            },
+
                             connect_clicked[sender] => move |btn| {
                                 if btn.is_active() {
                                     sender.input(AppMsg::SwitchHeader(constants::VIEW_FILTER.to_string()));
