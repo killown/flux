@@ -388,7 +388,10 @@ impl FluxApp {
 
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
-        self.thumbnail_manager.clear_and_cancel_all();
+        let tm = self.thumbnail_manager.clone();
+        relm4::spawn(async move {
+            tm.clear_and_cancel_all();
+        });
 
         let show_hidden = self.show_hidden;
         let sort_strategy = self.sort_by;
@@ -1416,9 +1419,11 @@ impl FluxApp {
 
         let tab = &mut self.tabs[self.active_tab_index];
         if self.is_list_mode {
-            tab.files.view.set_min_columns(1);
-            tab.files.view.set_max_columns(1);
-        } else {
+            if tab.files.view.max_columns() != 1 {
+                tab.files.view.set_min_columns(1);
+                tab.files.view.set_max_columns(1);
+            }
+        } else if tab.files.view.max_columns() != 20 {
             tab.files.view.set_min_columns(1);
             tab.files.view.set_max_columns(20);
         }
