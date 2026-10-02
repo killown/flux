@@ -312,7 +312,7 @@ gridview child:selected .flux-card {
 .flux-label {
   margin-top: 4px;
   font-weight: 600;
-  font-size: 11px;
+  font-size: 10pt;
   text-shadow: 0px 1px 3px alpha(black, 0.3);
   transition: all 250ms ease;
   color: @window_fg_color;
