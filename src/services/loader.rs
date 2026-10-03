@@ -21,6 +21,7 @@ static GENERATED_EXT_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
 static RESOLVED_EXT_CACHE: OnceLock<RwLock<HashMap<String, Option<PathBuf>>>> = OnceLock::new();
 
 fn scan_directory_extensions(subpath: &str) -> HashSet<String> {
+    crate::hit!("scan_directory_extensions");
     let mut set = HashSet::new();
     if let Some(icons_dir) = dirs::data_local_dir().map(|d| d.join(subpath)) {
         if let Ok(entries) = std::fs::read_dir(&icons_dir) {

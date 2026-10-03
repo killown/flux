@@ -133,13 +133,13 @@ fn test_hwga_bind_icon_lookup_count_matches_disk_entries() {
 
     assert_eq!(processed_items.len(), expected_item_count);
 
-    let key = "flux_fm::ui::components::bind_icon_lookup";
-    let initial_calls = flux::utils::hwga::CallMonitor::get_stats(key)
+    let key = format!("{}::bind_icon_lookup", module_path!());
+    let initial_calls = flux::utils::hwga::CallMonitor::get_stats(&key)
         .map(|s| s.count)
         .unwrap_or(0);
 
     for item in &processed_items {
-        let _guard = flux::utils::hwga::CallGuard::new(key);
+        flux::hit!("bind_icon_lookup");
         let _ = icon_theme.lookup_by_gicon(
             &item.icon,
             48,
@@ -149,7 +149,7 @@ fn test_hwga_bind_icon_lookup_count_matches_disk_entries() {
         );
     }
 
-    let final_calls = flux::utils::hwga::CallMonitor::get_stats(key)
+    let final_calls = flux::utils::hwga::CallMonitor::get_stats(&key)
         .map(|s| s.count)
         .unwrap_or(0);
     let total_icon_lookups = final_calls - initial_calls;
