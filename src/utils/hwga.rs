@@ -208,7 +208,7 @@ impl CallMonitor {
                 stats.count,
                 stats.total_time.as_micros(),
                 avg_micros,
-                stats.min_micros(),
+                stats.min_time.as_micros(),
                 stats.max_time.as_micros()
             ));
             if iter.peek().is_some() {
