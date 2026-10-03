@@ -87,3 +87,76 @@ fn sort_items(items: &mut [FileLoadContext], by: SortBy, folders_first: bool, as
         }
     });
 }
+
+#[test]
+fn test_hwga_bind_icon_lookup_count_matches_disk_entries() {
+    if gtk::init().is_err() {
+        return;
+    }
+
+    flux::utils::helpers::register_resources();
+
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+
+    std::fs::create_dir(root.join("docs")).unwrap();
+    std::fs::create_dir(root.join("images")).unwrap();
+    for i in 0..15 {
+        std::fs::write(root.join(format!("file_{}.txt", i)), b"content").unwrap();
+    }
+
+    let disk_entries: Vec<std::path::PathBuf> = std::fs::read_dir(root)
+        .unwrap()
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .collect();
+    let expected_item_count = disk_entries.len();
+    assert_eq!(expected_item_count, 17);
+
+    let display = match gtk::gdk::Display::default() {
+        Some(d) => d,
+        None => return,
+    };
+    let icon_theme = gtk::IconTheme::for_display(&display);
+
+    let mut processed_items = Vec::new();
+    for path in &disk_entries {
+        let is_dir = path.is_dir();
+        let icon = flux::utils::get_icon_for_path(path, is_dir);
+        let name = path.file_name().unwrap().to_string_lossy().to_string();
+
+        let item = flux::ui::FileItem::builder(name.clone(), path.clone(), icon)
+            .display_label(name)
+            .is_dir(is_dir)
+            .build();
+        processed_items.push(item);
+    }
+
+    assert_eq!(processed_items.len(), expected_item_count);
+
+    let key = "flux_fm::ui::components::bind_icon_lookup";
+    let initial_calls = flux::utils::hwga::CallMonitor::get_stats(key)
+        .map(|s| s.count)
+        .unwrap_or(0);
+
+    for item in &processed_items {
+        let _guard = flux::utils::hwga::CallGuard::new(key);
+        let _ = icon_theme.lookup_by_gicon(
+            &item.icon,
+            48,
+            1,
+            gtk::TextDirection::None,
+            gtk::IconLookupFlags::empty(),
+        );
+    }
+
+    let final_calls = flux::utils::hwga::CallMonitor::get_stats(key)
+        .map(|s| s.count)
+        .unwrap_or(0);
+    let total_icon_lookups = final_calls - initial_calls;
+
+    assert_eq!(
+        total_icon_lookups, expected_item_count,
+        "HWGA lookup count ({}) does not match the items found on disk ({})",
+        total_icon_lookups, expected_item_count
+    );
+}

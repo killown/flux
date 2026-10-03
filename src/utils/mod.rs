@@ -9,6 +9,7 @@ pub mod deps;
 pub mod extension_template;
 pub mod glob;
 pub mod helpers;
+pub mod hwga;
 pub mod media;
 pub mod path;
 pub mod search;

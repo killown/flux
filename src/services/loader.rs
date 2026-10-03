@@ -956,8 +956,15 @@ impl FluxApp {
                         }
                     }
 
+                    let display_label = crate::utils::helpers::format_display_label(
+                        &item.display_name,
+                        item.is_dir,
+                        &self.config.ui.hidden_extensions,
+                    );
+
                     self.tabs[self.active_tab_index].files.append(
                         FileItem::builder(item.display_name.clone(), item.target_path, icon)
+                            .display_label(display_label)
                             .is_dir(item.is_dir)
                             .size(size)
                             .mtime(mtime)
@@ -973,6 +980,10 @@ impl FluxApp {
                             .max_width_chars(self.config.ui.max_width_chars)
                             .grid_spacing(self.config.ui.grid_spacing)
                             .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                            .scale_font_with_icons(self.config.ui.scale_font_with_icons)
+                            .default_icon_size(self.config.ui.default_icon_size)
+                            .show_empty_dir_emblem(self.config.ui.show_empty_dir_emblem)
+                            .disable_drag_and_drop(self.config.ui.disable_drag_and_drop)
                             .build(),
                     );
                 }
@@ -1109,8 +1120,15 @@ impl FluxApp {
                 (false, false)
             };
 
+            let display_label = crate::utils::helpers::format_display_label(
+                &display_name,
+                is_dir,
+                &self.config.ui.hidden_extensions,
+            );
+
             self.files.append(
                 FileItem::builder(display_name, path, icon)
+                    .display_label(display_label)
                     .is_dir(is_dir)
                     .is_empty(is_empty)
                     .expand_labels(self.config.ui.expand_labels)
@@ -1126,6 +1144,10 @@ impl FluxApp {
                     .is_symlink(is_symlink)
                     .is_broken_symlink(is_broken_symlink)
                     .show_symlink_emblem(self.config.ui.show_symlink_emblem)
+                    .scale_font_with_icons(self.config.ui.scale_font_with_icons)
+                    .default_icon_size(self.config.ui.default_icon_size)
+                    .show_empty_dir_emblem(self.config.ui.show_empty_dir_emblem)
+                    .disable_drag_and_drop(self.config.ui.disable_drag_and_drop)
                     .build(),
             );
         }
@@ -1306,7 +1328,14 @@ impl FluxApp {
                 .copied()
                 .unwrap_or_default();
 
+            let display_label = crate::utils::helpers::format_display_label(
+                &item.display_name,
+                item.is_dir,
+                &self.config.ui.hidden_extensions,
+            );
+
             let file_item = FileItem::builder(item.display_name, item.target_path, icon)
+                .display_label(display_label)
                 .is_dir(item.is_dir)
                 .thumbnail(thumbnail)
                 .icon_size(if is_list_mode {
@@ -1328,6 +1357,10 @@ impl FluxApp {
                 .is_broken_symlink(item.is_broken_symlink)
                 .show_symlink_emblem(self.config.ui.show_symlink_emblem)
                 .git_status(git_status)
+                .scale_font_with_icons(self.config.ui.scale_font_with_icons)
+                .default_icon_size(self.config.ui.default_icon_size)
+                .show_empty_dir_emblem(self.config.ui.show_empty_dir_emblem)
+                .disable_drag_and_drop(self.config.ui.disable_drag_and_drop)
                 .build();
 
             self.tabs[self.active_tab_index].files.append(file_item);

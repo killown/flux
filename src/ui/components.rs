@@ -68,11 +68,17 @@ pub struct FileItem {
     pub is_copy: bool,
     /// Working tree status for git emblems and filters.
     pub git_status: GitFileStatus,
+    pub display_label: String,
+    pub scale_font_with_icons: bool,
+    pub default_icon_size: i32,
+    pub show_empty_dir_emblem: bool,
+    pub disable_drag_and_drop: bool,
 }
 
 impl FileItem {
     pub fn builder(name: String, path: PathBuf, icon: adw::gio::Icon) -> FileItemBuilder {
         FileItemBuilder {
+            display_label: name.clone(),
             name,
             path,
             icon,
@@ -97,6 +103,10 @@ impl FileItem {
             thumbnail: None,
             search_snippet: None,
             git_status: GitFileStatus::None,
+            scale_font_with_icons: false,
+            default_icon_size: 96,
+            show_empty_dir_emblem: false,
+            disable_drag_and_drop: false,
         }
     }
 }
@@ -127,6 +137,11 @@ pub struct FileItemBuilder {
     thumbnail: Option<gdk::Texture>,
     search_snippet: Option<String>,
     git_status: GitFileStatus,
+    display_label: String,
+    scale_font_with_icons: bool,
+    default_icon_size: i32,
+    show_empty_dir_emblem: bool,
+    disable_drag_and_drop: bool,
 }
 
 #[allow(dead_code, clippy::wrong_self_convention)]
@@ -236,6 +251,31 @@ impl FileItemBuilder {
         self
     }
 
+    pub fn display_label(mut self, v: String) -> Self {
+        self.display_label = v;
+        self
+    }
+
+    pub fn scale_font_with_icons(mut self, v: bool) -> Self {
+        self.scale_font_with_icons = v;
+        self
+    }
+
+    pub fn default_icon_size(mut self, v: i32) -> Self {
+        self.default_icon_size = v;
+        self
+    }
+
+    pub fn show_empty_dir_emblem(mut self, v: bool) -> Self {
+        self.show_empty_dir_emblem = v;
+        self
+    }
+
+    pub fn disable_drag_and_drop(mut self, v: bool) -> Self {
+        self.disable_drag_and_drop = v;
+        self
+    }
+
     pub fn build(self) -> FileItem {
         FileItem {
             name: self.name,
@@ -264,6 +304,11 @@ impl FileItemBuilder {
             is_cut: self.is_cut,
             is_copy: self.is_copy,
             git_status: self.git_status,
+            display_label: self.display_label,
+            scale_font_with_icons: self.scale_font_with_icons,
+            default_icon_size: self.default_icon_size,
+            show_empty_dir_emblem: self.show_empty_dir_emblem,
+            disable_drag_and_drop: self.disable_drag_and_drop,
         }
     }
 }
@@ -717,13 +762,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     ///
     /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
-        let config = utils::load_config();
-        let display_label = utils::helpers::format_display_label(
-            &self.name,
-            self.is_dir,
-            &config.ui.hidden_extensions,
-        );
-        widgets.label.set_label(&display_label);
+        crate::hit!();
+        widgets.label.set_label(&self.display_label);
 
         if self.is_cut {
             root.add_css_class("flux-card--cut");
@@ -787,7 +827,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 widgets.scale_css_provider = None;
             }
 
-            if config.ui.scale_font_with_icons && self.icon_size > 0 {
+            if self.scale_font_with_icons && self.icon_size > 0 {
                 const DEFAULT_LIST_ICON_BASELINE: f64 = 64.0;
 
                 let ratio = self.icon_size as f64 / DEFAULT_LIST_ICON_BASELINE;
@@ -840,6 +880,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
             // Populate the info label with item count, size, or left-aligned content search snippet.
             {
+                let _g_info =
+                    crate::utils::hwga::CallGuard::new("flux_fm::ui::components::bind_info_label");
                 let mut info_parts: Vec<String> = Vec::new();
 
                 if let Some(ref snippet) = self.search_snippet {
@@ -941,9 +983,9 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.label.set_max_width_chars(self.max_width_chars);
             widgets.label.set_width_chars(self.grid_spacing);
 
-            if config.ui.scale_font_with_icons && self.icon_size > 0 {
-                let base_size = if config.ui.default_icon_size > 0 {
-                    config.ui.default_icon_size as f64
+            if self.scale_font_with_icons && self.icon_size > 0 {
+                let base_size = if self.default_icon_size > 0 {
+                    self.default_icon_size as f64
                 } else {
                     96.0f64
                 };
@@ -1030,7 +1072,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 .remove_css_class("flux-card--broken-symlink");
         }
 
-        if self.is_dir && config.ui.show_empty_dir_emblem {
+        if self.is_dir && self.show_empty_dir_emblem {
             if self.is_empty {
                 root.add_css_class("flux-card--empty");
                 widgets.card_box.add_css_class("flux-card--empty");
@@ -1155,6 +1197,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
             // Default: use the icon as-is
+            let _g_icon =
+                crate::utils::hwga::CallGuard::new("flux_fm::ui::components::bind_icon_lookup");
             widgets.icon_widget.set_pixel_size(self.icon_size);
 
             let display = root.display();
@@ -1165,17 +1209,19 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 self.icon_size,
                 scale,
                 gtk::TextDirection::None,
-                gtk::IconLookupFlags::PRELOAD,
+                gtk::IconLookupFlags::empty(),
             );
             widgets.icon_widget.set_paintable(Some(&paintable));
         }
 
-        if config.ui.disable_drag_and_drop {
+        if self.disable_drag_and_drop {
             widgets
                 .drag_source
                 .set_content(None::<&gdk::ContentProvider>);
             widgets.drop_target.set_actions(gdk::DragAction::empty());
         } else {
+            let _g_dnd =
+                crate::utils::hwga::CallGuard::new("flux_fm::ui::components::bind_dnd_setup");
             let file = gtk::gio::File::for_path(&self.path);
             let uri = format!("{}\r\n", file.uri());
             let file_list_provider = gdk::ContentProvider::for_bytes(
