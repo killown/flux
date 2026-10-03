@@ -66,7 +66,7 @@ parking_lot = "0.12.5"
 oxipng = { version = "10.2.0", default-features = false, features = ["parallel"] }
 pathdiff = "0.2.3"
 lofty = "0.25.1"
-mimalloc = { version = "0.1.52", default-features = false }
+mimalloc = "0.1.52"
 regex = "1.13.1"
 nucleo = "0.5.0"
 sysinfo = "0.39.6"
