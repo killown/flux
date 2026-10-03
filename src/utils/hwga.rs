@@ -69,6 +69,16 @@ impl CallMonitor {
         }
     }
 
+    /// Copy of all recorded stats, sorted by total time descending.
+    pub fn snapshot() -> Vec<(&'static str, FunctionStats)> {
+        let mut out: Vec<(&'static str, FunctionStats)> = Self::global()
+            .lock()
+            .map(|monitor| monitor.stats.iter().map(|(k, v)| (*k, *v)).collect())
+            .unwrap_or_default();
+        out.sort_by_key(|entry| std::cmp::Reverse(entry.1.total_time));
+        out
+    }
+
     pub fn dump() {
         if let Ok(monitor) = Self::global().lock() {
             if monitor.stats.is_empty() {
