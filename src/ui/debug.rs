@@ -410,6 +410,7 @@ struct DebugSnapshot {
     font_maps: Vec<FontMap>,
     font_total_bytes: u64,
     pending_thumb_paths: Vec<u32>,
+    hwga: Vec<(&'static str, crate::utils::hwga::FunctionStats)>,
 }
 
 impl DebugSnapshot {
@@ -671,6 +672,7 @@ impl DebugSnapshot {
             font_maps,
             font_total_bytes,
             pending_thumb_paths,
+            hwga: crate::utils::hwga::CallMonitor::snapshot(),
         }
     }
 
@@ -955,6 +957,43 @@ impl DebugSnapshot {
                 font.count,
                 font.name
             );
+        }
+        let _ = writeln!(buffer);
+
+        let _ = writeln!(
+            buffer,
+            "── HWGA Call Frequency & Timing ({} probes) ─────────────────────",
+            self.hwga.len()
+        );
+        if self.hwga.is_empty() {
+            let _ = writeln!(
+                buffer,
+                "  (no data - release build or no instrumented calls yet)"
+            );
+        } else {
+            let _ = writeln!(
+                buffer,
+                "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  Function",
+                "Calls", "Total", "Avg", "Min", "Max"
+            );
+            let _ = writeln!(
+                buffer,
+                "  {:-<7}  {:-<10}  {:-<10}  {:-<10}  {:-<10}  {:-<20}",
+                "", "", "", "", "", ""
+            );
+            for (name, stats) in &self.hwga {
+                let avg = stats.total_time / stats.count.max(1) as u32;
+                let _ = writeln!(
+                    buffer,
+                    "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  {}",
+                    stats.count,
+                    format!("{:.2?}", stats.total_time),
+                    format!("{:.2?}", avg),
+                    format!("{:.2?}", stats.min_time),
+                    format!("{:.2?}", stats.max_time),
+                    name
+                );
+            }
         }
         let _ = writeln!(buffer);
 
