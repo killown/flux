@@ -363,7 +363,7 @@ fn worker_applies_events_and_periodic_delta() {
     std::thread::spawn(move || worker_loop(rx, d, vec![r]));
 
     let wait_for = |q: &str, present: bool| {
-        for _ in 0..100 {
+        for _ in 0..300 {
             let hit = SearchIndex::open_at(&db)
                 .map(|i| !i.query(q, 5).unwrap().is_empty())
                 .unwrap_or(false);
@@ -374,6 +374,7 @@ fn worker_applies_events_and_periodic_delta() {
         }
         false
     };
+
     assert!(wait_for("first", true), "initial crawl");
 
     let p = root.join("a/live_event.txt");

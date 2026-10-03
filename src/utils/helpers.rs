@@ -682,12 +682,14 @@ impl FluxApp {
                 if self.search_panel_visible {
                     if let Some(ref r) = self.search_panel_revealer {
                         r.set_reveal_child(false);
+                        r.set_visible(false);
                     }
                     self.search_panel_visible = false;
                 }
                 if self.diff_panel_visible {
                     if let Some(ref r) = self.diff_panel_revealer {
                         r.set_reveal_child(false);
+                        r.set_visible(false);
                     }
                     self.diff_panel_visible = false;
                     self.active_diff_target = None;
@@ -697,12 +699,14 @@ impl FluxApp {
                 if self.tag_panel_visible {
                     if let Some(ref r) = self.tag_panel_revealer {
                         r.set_reveal_child(false);
+                        r.set_visible(false);
                     }
                     self.tag_panel_visible = false;
                 }
                 if self.diff_panel_visible {
                     if let Some(ref r) = self.diff_panel_revealer {
                         r.set_reveal_child(false);
+                        r.set_visible(false);
                     }
                     self.diff_panel_visible = false;
                     self.active_diff_target = None;
@@ -712,12 +716,14 @@ impl FluxApp {
                 if self.tag_panel_visible {
                     if let Some(ref r) = self.tag_panel_revealer {
                         r.set_reveal_child(false);
+                        r.set_visible(false);
                     }
                     self.tag_panel_visible = false;
                 }
                 if self.search_panel_visible {
                     if let Some(ref r) = self.search_panel_revealer {
                         r.set_reveal_child(false);
+                        r.set_visible(false);
                     }
                     self.search_panel_visible = false;
                 }

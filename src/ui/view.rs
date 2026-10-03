@@ -917,7 +917,6 @@ impl SimpleAsyncComponent for FluxApp {
                     set_transition_duration: 200,
                     set_reveal_child: false,
                     set_visible: false,
-                    set_size_request: (150, -1),
                 },
 
                 /// Right tag panel revealer (lazy initialized).

@@ -539,3 +539,21 @@ fn resolve_folder_icon_empty_name_returns_some() {
     let result = flux::utils::config::resolve_folder_icon_with_fallbacks(&theme, "");
     assert!(result.is_some());
 }
+
+#[test]
+fn split_mime_cmd_no_command_dialog_before_toast() {
+    use flux::utils::config::split_mime_cmd;
+    let (m, c, t, f) = split_mime_cmd(r#""all", "echo", "no_command_dialog", "Copied""#).unwrap();
+    assert_eq!(m, "all");
+    assert_eq!(c, "echo");
+    assert_eq!(t.as_deref(), Some("Copied"));
+    assert!(f);
+}
+
+#[test]
+fn split_mime_cmd_double_flag_only_last_wins() {
+    use flux::utils::config::split_mime_cmd;
+    let (_, _, _, f) =
+        split_mime_cmd(r#""all", "echo", "no_command_dialog", "no_command_dialog""#).unwrap();
+    assert!(f);
+}

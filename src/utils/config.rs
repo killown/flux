@@ -27,6 +27,13 @@ thread_local! {
 
 type ThumbConfigSnapshot = (bool, i32, ThumbnailTypes, usize, bool, f64);
 
+static CONFIG_CACHE: OnceLock<RwLock<Option<crate::model::Config>>> = OnceLock::new();
+
+#[inline]
+fn config_cache() -> &'static RwLock<Option<crate::model::Config>> {
+    CONFIG_CACHE.get_or_init(|| RwLock::new(None))
+}
+
 static THUMB_CONFIG: OnceLock<RwLock<ThumbConfigSnapshot>> = OnceLock::new();
 
 fn extract_thumb_config(config: &crate::model::Config) -> ThumbConfigSnapshot {
@@ -45,6 +52,40 @@ fn get_thumb_config() -> ThumbConfigSnapshot {
         .get_or_init(|| {
             let config = load_config();
             RwLock::new(extract_thumb_config(&config))
+        })
+        .read()
+        .clone()
+}
+
+type IconConfigSnapshot = (
+    HashMap<String, String>, // folder_icons
+    HashMap<String, String>, // file_icons
+    bool,                    // auto_generate_mime_icons
+    String,                  // auto_mime_accent_color
+    String,                  // auto_mime_body_color
+    String,                  // auto_mime_font_color
+    f64,                     // auto_mime_font_size
+);
+
+static ICON_CONFIG: OnceLock<RwLock<IconConfigSnapshot>> = OnceLock::new();
+
+fn extract_icon_config(config: &crate::model::Config) -> IconConfigSnapshot {
+    (
+        config.ui.folder_icons.clone(),
+        config.ui.file_icons.clone(),
+        config.ui.auto_generate_mime_icons,
+        config.ui.auto_mime_accent_color.clone(),
+        config.ui.auto_mime_body_color.clone(),
+        config.ui.auto_mime_font_color.clone(),
+        config.ui.auto_mime_font_size,
+    )
+}
+
+fn get_icon_config() -> IconConfigSnapshot {
+    ICON_CONFIG
+        .get_or_init(|| {
+            let config = load_config();
+            RwLock::new(extract_icon_config(&config))
         })
         .read()
         .clone()
@@ -153,6 +194,13 @@ pub fn save_config(config: &crate::model::Config) {
     if let Some(lock) = THUMB_CONFIG.get() {
         *lock.write() = extract_thumb_config(config);
     }
+    if let Some(lock) = ICON_CONFIG.get() {
+        *lock.write() = extract_icon_config(config);
+    }
+    {
+        let mut cache = config_cache().write();
+        *cache = Some(config.clone());
+    }
 
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
@@ -165,6 +213,12 @@ pub fn save_config(config: &crate::model::Config) {
         if fs::write(&tmp_path, toml_str).is_ok() {
             let _ = fs::rename(&tmp_path, &config_path);
         }
+    }
+}
+
+pub fn invalidate_config_cache() {
+    if let Some(lock) = CONFIG_CACHE.get() {
+        *lock.write() = None;
     }
 }
 
@@ -311,6 +365,22 @@ pub fn resolve_folder_icon_with_fallbacks(
 }
 
 pub fn load_config() -> crate::model::Config {
+    crate::hit!("load_config");
+    {
+        let cache = config_cache().read();
+        if let Some(cfg) = cache.as_ref() {
+            return cfg.clone();
+        }
+    }
+    let config = load_config_from_disk();
+    let mut cache = config_cache().write();
+    if cache.is_none() {
+        *cache = Some(config.clone());
+    }
+    cache.as_ref().unwrap().clone()
+}
+
+fn load_config_from_disk() -> crate::model::Config {
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
@@ -954,6 +1024,11 @@ fn container_mime_masks_extension(ext: &str, content_type: &str) -> bool {
     !ext_is_subtype
 }
 
+pub fn icon_gen_params() -> (bool, String, String, String, f64) {
+    let (_, _, auto_gen, accent, body, font, font_size) = get_icon_config();
+    (auto_gen, accent, body, font, font_size)
+}
+
 /// Returns a GIO icon for the given path, applying a custom icon name override when provided.
 ///
 /// # Arguments
@@ -966,13 +1041,15 @@ pub fn get_icon_for_path_with_override(
     is_dir: bool,
     custom_icon: Option<&str>,
 ) -> adw::gio::Icon {
+    crate::hit!("get_icon_for_path");
     if let Some(icon_name) = custom_icon {
         if let Ok(icon) = gio::Icon::for_string(icon_name) {
             return icon;
         }
     }
 
-    let cfg = load_config();
+    let (folder_icons, file_icons, auto_gen, _accent, _body, _font, _font_size) = get_icon_config();
+
     let path_str = path.to_string_lossy();
     let canon_str = path
         .canonicalize()
@@ -980,11 +1057,9 @@ pub fn get_icon_for_path_with_override(
         .map(|p| p.to_string_lossy().into_owned());
 
     if is_dir {
-        let folder_match = cfg
-            .ui
-            .folder_icons
+        let folder_match = folder_icons
             .get(path_str.as_ref())
-            .or_else(|| canon_str.as_ref().and_then(|k| cfg.ui.folder_icons.get(k)));
+            .or_else(|| canon_str.as_ref().and_then(|k| folder_icons.get(k)));
 
         if let Some(custom) = folder_match {
             if let Ok(icon) = gio::Icon::for_string(custom) {
@@ -1006,11 +1081,9 @@ pub fn get_icon_for_path_with_override(
         return gio::Icon::for_string("folder").unwrap();
     }
 
-    let file_match = cfg
-        .ui
-        .file_icons
+    let file_match = file_icons
         .get(path_str.as_ref())
-        .or_else(|| canon_str.as_ref().and_then(|k| cfg.ui.file_icons.get(k)));
+        .or_else(|| canon_str.as_ref().and_then(|k| file_icons.get(k)));
 
     if let Some(custom) = file_match {
         if let Ok(icon) = gio::Icon::for_string(custom) {
@@ -1152,17 +1225,12 @@ pub fn get_icon_for_path_with_override(
         }
 
         // Theme has no dedicated icon: generate ONLY if <= 9 chars
-        if !ext.is_empty() && ext.len() <= 9 {
-            let cfg = load_config();
-            if cfg.ui.auto_generate_mime_icons {
-                if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext)
+        if !ext.is_empty() && ext.len() <= 9 && auto_gen {
+            if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext) {
+                if let Ok(generated_icon) = gio::Icon::for_string(&generated_path.to_string_lossy())
                 {
-                    if let Ok(generated_icon) =
-                        gio::Icon::for_string(&generated_path.to_string_lossy())
-                    {
-                        map.insert(gen_key, generated_icon.clone());
-                        return generated_icon;
-                    }
+                    map.insert(gen_key, generated_icon.clone());
+                    return generated_icon;
                 }
             }
         }
