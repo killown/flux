@@ -880,8 +880,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
             // Populate the info label with item count, size, or left-aligned content search snippet.
             {
-                let _g_info =
-                    crate::utils::hwga::CallGuard::new("flux_fm::ui::components::bind_info_label");
+                crate::hit!("bind_info_label");
                 let mut info_parts: Vec<String> = Vec::new();
 
                 if let Some(ref snippet) = self.search_snippet {
@@ -1197,8 +1196,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
             // Default: use the icon as-is
-            let _g_icon =
-                crate::utils::hwga::CallGuard::new("flux_fm::ui::components::bind_icon_lookup");
+            crate::hit!("bind_dnd_setup");
             widgets.icon_widget.set_pixel_size(self.icon_size);
 
             let display = root.display();
@@ -1220,8 +1218,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 .set_content(None::<&gdk::ContentProvider>);
             widgets.drop_target.set_actions(gdk::DragAction::empty());
         } else {
-            let _g_dnd =
-                crate::utils::hwga::CallGuard::new("flux_fm::ui::components::bind_dnd_setup");
+            crate::hit!("scan_directory_extensions");
             let file = gtk::gio::File::for_path(&self.path);
             let uri = format!("{}\r\n", file.uri());
             let file_list_provider = gdk::ContentProvider::for_bytes(
@@ -1252,6 +1249,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
+        crate::hit!("bind");
         if let Some(stream) = widgets.video_widget.media_stream() {
             stream.pause();
 

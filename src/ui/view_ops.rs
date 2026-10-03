@@ -17,6 +17,7 @@ const VIDEO_PREVIEW_COOLDOWN: Duration = Duration::from_secs(5);
 impl FluxApp {
     /// Updates grid selection metadata and formats the status bar label.
     pub fn handle_selection_changed(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!();
         if self.task_queue.summary().is_some() {
             return;
         }
