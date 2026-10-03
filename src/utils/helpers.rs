@@ -1286,6 +1286,7 @@ pub fn apply_ui_scale(scale: f64) {
 
 /// Applies the theme CSS, then the user's style.css on top as overrides.
 pub fn load_custom_css() {
+    crate::hit!("load_custom_css");
     let config = crate::utils::load_config();
     let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
 

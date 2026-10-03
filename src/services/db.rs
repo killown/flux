@@ -129,6 +129,7 @@ impl StateManager {
         icon_size: u32,
         folders_first: bool,
     ) -> Result<()> {
+        crate::hit!("save_view");
         let path_str = path.to_string_lossy();
         let conn = self.conn.lock().unwrap();
 
@@ -147,6 +148,7 @@ impl StateManager {
 
     /// Retrieves saved view settings for the given path.
     pub fn get_view(&self, path: &Path) -> Result<Option<(String, bool, u32, bool)>> {
+        crate::hit!("get_view");
         let path_str = path.to_string_lossy();
         let conn = self.conn.lock().unwrap();
 
@@ -218,6 +220,7 @@ impl StateManager {
     /// Retrieves cached tags for a given path.
     #[allow(dead_code)]
     pub fn get_tags(&self, path: &Path) -> Result<Vec<String>> {
+        crate::hit!("get_tags");
         let path_str = path.to_string_lossy();
         let conn = self.conn.lock().unwrap();
         let mut stmt =

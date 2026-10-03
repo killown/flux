@@ -271,6 +271,7 @@ impl FluxApp {
     /// * `path` - The filesystem or virtual URI target (e.g., `trash://`) to enumerate.
     /// * `sender` - Component handle used to dispatch lifecycle updates and background tasks.
     pub fn load_path(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("load_path");
         let path_str = path.to_string_lossy().to_string();
 
         // ── Virtual / special paths - delegate and return immediately ────────────
@@ -1198,6 +1199,7 @@ impl FluxApp {
         is_cached: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_folder_loaded_chunk");
         if self.load_id.load(Ordering::SeqCst) == load_id {
             self.append_context_batch(chunk, load_id, is_cached, sender);
         }
@@ -1242,6 +1244,7 @@ impl FluxApp {
         _is_cached: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("append_context_batch");
         let max_width_chars = self.config.ui.max_width_chars;
         let grid_spacing = self.config.ui.grid_spacing;
         let is_list_mode = self.is_list_mode;
