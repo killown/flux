@@ -230,3 +230,26 @@ fn expand_tilde_tilde_in_middle_not_expanded() {
     let p = PathBuf::from("foo/~/bar");
     assert_eq!(p.expand_tilde(), PathBuf::from("foo/~/bar"));
 }
+
+#[test]
+fn test_format_display_label_hidden_extensions() {
+    use flux::utils::helpers::format_display_label;
+
+    let hidden = vec!["txt".to_string(), "tar.gz".to_string(), "*.png".to_string()];
+
+    assert_eq!(
+        format_display_label("document.txt", false, &hidden),
+        "document"
+    );
+    assert_eq!(
+        format_display_label("archive.tar.gz", false, &hidden),
+        "archive"
+    );
+    assert_eq!(format_display_label("image.png", false, &hidden), "image");
+    assert_eq!(format_display_label("other.rs", false, &hidden), "other.rs");
+
+    assert_eq!(
+        format_display_label("folder.txt", true, &hidden),
+        "folder.txt"
+    );
+}

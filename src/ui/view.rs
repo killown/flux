@@ -1326,6 +1326,10 @@ impl SimpleAsyncComponent for FluxApp {
             root.maximize();
         }
 
+        root.connect_realize(|_| {
+            crate::utils::helpers::register_resources();
+        });
+
         let terminal_widget = model.terminal.drawing_area.clone();
         let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         terminal_box.append(&terminal_widget);

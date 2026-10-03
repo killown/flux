@@ -183,7 +183,6 @@ fn launch_main_app(
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
-        register_resources();
         crate::utils::helpers::load_custom_css();
         crate::utils::helpers::load_custom_background_images();
         setup_config_watcher();
@@ -227,15 +226,6 @@ fn launch_main_app(
         no_header,
         no_statusbar,
     });
-}
-
-/// Registers the bundled GResource icons with the default icon theme.
-fn register_resources() {
-    gio::resources_register_include!("flux.gresource").expect("failed to register resources");
-
-    if let Some(display) = gtk::gdk::Display::default() {
-        gtk::IconTheme::for_display(&display).add_resource_path("/io/github/killown/flux/icons");
-    }
 }
 
 fn main() {
