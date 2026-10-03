@@ -151,9 +151,13 @@ impl CallMonitor {
 }
 
 extern "C" fn dump_extern() {
+    let Ok(target) = std::env::var("FLUX_HWGA_OUT") else {
+        return;
+    };
+
     CallMonitor::dump();
 
-    if let Ok(target) = std::env::var("FLUX_HWGA_OUT") {
+    {
         let path = if target == "auto" || target == "1" {
             std::env::temp_dir()
                 .join("flux-hwga")
