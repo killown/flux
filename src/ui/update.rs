@@ -5,6 +5,7 @@ use relm4::prelude::*;
 
 impl FluxApp {
     pub fn handle_update(&mut self, message: AppMsg, sender: relm4::AsyncComponentSender<Self>) {
+        crate::hit!("handle_update");
         match message {
             // ==========================================
             // Sidebar Operations

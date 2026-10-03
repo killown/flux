@@ -64,6 +64,7 @@ impl FluxApp {
     }
 
     pub fn handle_file_changed(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_file_changed");
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(parent);
         }
@@ -188,6 +189,7 @@ impl FluxApp {
     }
 
     pub fn handle_file_deleted_dispatch(&mut self, path: PathBuf) {
+        crate::hit!("handle_file_deleted");
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(&self.cache_key(parent));
         }

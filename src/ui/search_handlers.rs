@@ -12,6 +12,7 @@ use std::sync::atomic::Ordering;
 impl FluxApp {
     /// Resets the filter and view layout state when content search or tag search is active.
     pub fn handle_update_filter(&mut self, query: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_update_filter");
         if query.is_empty() && self.search_just_opened {
             self.search_just_opened = false;
             return;

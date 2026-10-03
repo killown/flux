@@ -17,7 +17,7 @@ const VIDEO_PREVIEW_COOLDOWN: Duration = Duration::from_secs(5);
 impl FluxApp {
     /// Updates grid selection metadata and formats the status bar label.
     pub fn handle_selection_changed(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!();
+        crate::hit!("handle_selection_changed");
         if self.task_queue.summary().is_some() {
             return;
         }
@@ -402,6 +402,7 @@ impl FluxApp {
     /// are updated instead. Only items matching the current mode have their `icon_size`
     /// field mutated, so switching modes always restores the independent size.
     pub fn handle_zoom(&mut self, delta: f64) {
+        crate::hit!("handle_zoom");
         if delta == 0.0 {
             return;
         }
@@ -488,6 +489,7 @@ impl FluxApp {
         progress_bottom: f64,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_update_visible_thumbnails_viewport");
         let active_files = &self.tabs[self.active_tab_index].files;
 
         if !self.config.ui.lazy_thumbnails || active_files.is_empty() {
@@ -594,6 +596,7 @@ impl FluxApp {
     }
 
     pub fn check_visible_thumbnails(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("check_visible_thumbnails");
         if !self.config.ui.lazy_thumbnails {
             return;
         }

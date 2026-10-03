@@ -1249,7 +1249,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     /// Clears the per-cell lazy-thumbnail guard so the next item bound to this
     /// recycled widget cell can request its own thumbnail without being suppressed.
     fn unbind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
-        crate::hit!("bind");
+        crate::hit!("unbind");
         if let Some(stream) = widgets.video_widget.media_stream() {
             stream.pause();
 
