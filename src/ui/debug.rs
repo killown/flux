@@ -973,24 +973,29 @@ impl DebugSnapshot {
         } else {
             let _ = writeln!(
                 buffer,
-                "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  Function",
-                "Calls", "Total", "Avg", "Min", "Max"
+                "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  {:>9}  Function",
+                "Calls", "Total", "Self", "p95", "Max", "Main>16ms"
             );
             let _ = writeln!(
                 buffer,
-                "  {:-<7}  {:-<10}  {:-<10}  {:-<10}  {:-<10}  {:-<20}",
-                "", "", "", "", "", ""
+                "  {:-<7}  {:-<10}  {:-<10}  {:-<10}  {:-<10}  {:-<9}  {:-<20}",
+                "", "", "", "", "", "", ""
             );
             for (name, stats) in &self.hwga {
-                let avg = stats.total_time / stats.count.max(1) as u32;
+                let main = if stats.main_count > 0 {
+                    format!("{}/{}", stats.main_over_budget, stats.main_count)
+                } else {
+                    "-".to_string()
+                };
                 let _ = writeln!(
                     buffer,
-                    "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  {}",
+                    "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  {:>9}  {}",
                     stats.count,
                     format!("{:.2?}", stats.total_time),
-                    format!("{:.2?}", avg),
-                    format!("{:.2?}", stats.min_time),
+                    format!("{:.2?}", stats.self_time),
+                    format!("{:.2?}", stats.p95),
                     format!("{:.2?}", stats.max_time),
+                    main,
                     name
                 );
             }
