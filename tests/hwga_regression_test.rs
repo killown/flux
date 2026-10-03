@@ -36,3 +36,22 @@ fn extension_icon_lookups_do_not_rescan_directories() {
     }
     assert_eq!(hwga::count(SCAN_PROBE), after_invalidate);
 }
+
+#[test]
+fn themed_icon_cache_prevents_gio_type_guess_storm() {
+    if gtk::init().is_err() {
+        return;
+    }
+    let sandbox = tempfile::tempdir().unwrap();
+    std::env::set_var("HOME", sandbox.path());
+    hwga::reset_all();
+
+    for i in 0..300 {
+        let ext = ["rs", "toml", "png", "mp4", "zip"][i % 5];
+        let p = std::path::PathBuf::from(format!("/tmp/flx_icon_{i}.{ext}"));
+        let _ = flux::utils::get_icon_for_path(&p, false);
+    }
+
+    let lookups = hwga::count("flux::utils::config::get_icon_for_path");
+    assert!(lookups <= 300, "resolution gate broken ({lookups})");
+}

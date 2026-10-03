@@ -107,19 +107,16 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
                     {
                         if let Ok(icon_mt) = meta.modified() {
                             if source_mt > icon_mt {
-                                let cfg = crate::utils::load_config();
-                                if cfg.ui.auto_generate_mime_icons {
+                                let (auto_gen, accent, body, font, font_size) =
+                                    crate::utils::config::icon_gen_params();
+                                if auto_gen {
                                     if let Ok(rebuilt) =
-                                        crate::utils::extension_template::save_generated_extension_icon(
-                                            &ext_lower,
-                                            &cfg.ui.auto_mime_accent_color,
-                                            &cfg.ui.auto_mime_body_color,
-                                            &cfg.ui.auto_mime_font_color,
-                                            cfg.ui.auto_mime_font_size,
-                                        )
-                                    {
-                                        return Some(rebuilt);
-                                    }
+            crate::utils::extension_template::save_generated_extension_icon(
+                &ext_lower, &accent, &body, &font, font_size,
+            )
+        {
+            return Some(rebuilt);
+        }
                                 }
                             }
                         }
@@ -159,14 +156,11 @@ pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
         return Some(gen);
     }
 
-    let cfg = crate::utils::load_config();
-    let result = if cfg.ui.auto_generate_mime_icons {
+    let (auto_gen, accent, body, font, font_size) = crate::utils::config::icon_gen_params();
+
+    let result = if auto_gen {
         if let Ok(generated) = crate::utils::extension_template::save_generated_extension_icon(
-            &ext_lower,
-            &cfg.ui.auto_mime_accent_color,
-            &cfg.ui.auto_mime_body_color,
-            &cfg.ui.auto_mime_font_color,
-            cfg.ui.auto_mime_font_size,
+            &ext_lower, &accent, &body, &font, font_size,
         ) {
             let gen_lock =
                 GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));

@@ -231,3 +231,101 @@ fn json_has_header_and_new_fields() {
         assert!(body.contains(key), "missing {key} in {body}");
     }
 }
+
+#[test]
+fn multi_level_nesting_self_time() {
+    let _g = lock();
+    hwga::reset_all();
+    {
+        flux::hit!("root");
+        std::thread::sleep(std::time::Duration::from_millis(2));
+        {
+            flux::hit!("mid");
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            {
+                flux::hit!("leaf");
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+        }
+    }
+    let root = CallMonitor::get_stats(&label("root")).unwrap();
+    let mid = CallMonitor::get_stats(&label("mid")).unwrap();
+    let leaf = CallMonitor::get_stats(&label("leaf")).unwrap();
+
+    assert!(root.self_time < root.total_time);
+    assert!(mid.self_time < mid.total_time);
+    assert_eq!(leaf.self_time, leaf.total_time);
+}
+
+#[test]
+fn reset_clears_active_snapshots() {
+    let _g = lock();
+    hwga::reset_all();
+    counted_call();
+    assert!(!CallMonitor::snapshot().is_empty());
+
+    CallMonitor::reset();
+    assert!(CallMonitor::snapshot().is_empty());
+}
+
+#[test]
+fn concurrent_probe_recording_stress() {
+    static PROBE: flux::hwga::Probe = flux::hwga::Probe::new("hwga_test::stress_probe");
+    let _g = lock();
+    hwga::reset_all();
+
+    let threads: Vec<_> = (0..8)
+        .map(|_| {
+            std::thread::spawn(|| {
+                for _ in 0..1000 {
+                    PROBE.record(std::time::Duration::from_micros(50));
+                }
+            })
+        })
+        .collect();
+
+    for t in threads {
+        t.join().unwrap();
+    }
+
+    let stats = CallMonitor::get_stats("hwga_test::stress_probe").unwrap();
+    assert_eq!(stats.count, 8000);
+}
+
+#[test]
+fn zero_and_tiny_durations_are_safe() {
+    static PROBE: flux::hwga::Probe = flux::hwga::Probe::new("hwga_test::zero_probe");
+    let _g = lock();
+    hwga::reset_all();
+
+    PROBE.record(std::time::Duration::ZERO);
+    PROBE.record(std::time::Duration::from_nanos(1));
+
+    let stats = CallMonitor::get_stats("hwga_test::zero_probe").unwrap();
+    assert_eq!(stats.count, 2);
+    assert_eq!(stats.min_time, std::time::Duration::ZERO);
+}
+
+#[test]
+fn hotpath_config_load_is_bounded() {
+    const PROBE: &str = "flux::utils::config::load_config";
+    let _g = lock();
+    let sandbox = tempfile::tempdir().unwrap();
+    std::env::set_var("HOME", sandbox.path());
+    std::env::set_var("XDG_CONFIG_HOME", sandbox.path().join("config"));
+    std::env::set_var("XDG_DATA_HOME", sandbox.path().join("data"));
+    hwga::reset_all();
+
+    let _ = flux::utils::load_config();
+    let baseline = hwga::count(PROBE);
+
+    for i in 0..500 {
+        let _ = flux::services::loader::get_extension_icon_path(&format!("flx{}", i % 5));
+    }
+
+    let hits = hwga::count(PROBE) - baseline;
+    assert!(
+        hits <= 10,
+        "load_config fired {hits}x across 500 icon lookups"
+    );
+}

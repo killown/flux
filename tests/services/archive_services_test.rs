@@ -460,3 +460,21 @@ Attributes = D
     assert_eq!(seen.get("docs/manual.pdf").unwrap().size, 204800);
     assert!(seen.get("images").unwrap().is_dir);
 }
+
+#[test]
+fn decode_archive_host_truncated_percent_preserved() {
+    use flux::services::archive::decode_archive_host;
+    assert_eq!(decode_archive_host("%").to_string_lossy(), "%");
+    assert_eq!(decode_archive_host("%2").to_string_lossy(), "%2");
+    assert_eq!(decode_archive_host("%2Fhome%").to_string_lossy(), "/home%");
+    assert_eq!(decode_archive_host("%2fhome").to_string_lossy(), "/home");
+    assert_eq!(decode_archive_host("%2520").to_string_lossy(), "%20");
+}
+
+#[test]
+fn parse_archive_uri_rejects_traversal() {
+    use flux::services::archive::parse_archive_uri;
+    assert!(parse_archive_uri("/archive://%2Ftmp%2Fx.zip/../etc/passwd").is_none());
+    assert!(parse_archive_uri("/archive://%2Ftmp%2Fx.zip/foo/../../etc").is_none());
+    assert!(parse_archive_uri("/archive://%2Ftmp%2Fx.zip//abs").is_none());
+}

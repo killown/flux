@@ -157,6 +157,8 @@ pub fn decode_archive_host(host: &str) -> PathBuf {
 /// `inner_prefix` is the path inside the archive being browsed (`""` = root).
 #[allow(dead_code)]
 pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
+    crate::hit!("parse_archive_uri");
+
     // Strip all possible URI prefixes that GTK / GIO / PathBuf might produce.
     let mut rest = uri
         .strip_prefix(ARCHIVE_URI)
