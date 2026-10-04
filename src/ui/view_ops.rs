@@ -549,6 +549,7 @@ impl FluxApp {
         load_id: u64,
         tab_index: usize,
     ) {
+        crate::hit!("handle_thumbnail_ready");
         if load_id != self.load_id.load(Ordering::SeqCst) {
             return;
         }
@@ -557,40 +558,34 @@ impl FluxApp {
             None => return,
         };
 
-        let pos = Some(grid_idx)
-            .filter(|&idx| idx < tab.files.len())
-            .and_then(|idx| {
-                tab.files
-                    .get(idx)
-                    .filter(|w| w.borrow().grid_idx == grid_idx)
-                    .map(|_| idx)
-            })
-            .or_else(|| {
-                (0..tab.files.len()).find(|&i| {
-                    tab.files
-                        .get(i)
-                        .map(|w| w.borrow().grid_idx == grid_idx)
-                        .unwrap_or(false)
-                })
-            });
+        if grid_idx >= tab.files.len() {
+            return;
+        }
 
-        if let Some(pos) = pos {
-            if let Some(wrapper) = tab.files.get(pos) {
-                let mut item = wrapper.borrow().clone();
-                item.thumbnail = Some(texture.clone());
-                let path = item.path.clone();
+        let matches = tab
+            .files
+            .get(grid_idx)
+            .is_some_and(|w| w.borrow().grid_idx == grid_idx);
+        if !matches {
+            debug_assert!(false, "grid_idx {grid_idx} does not match its slot");
+            return;
+        }
 
-                tab.files.remove(pos);
-                tab.files.insert(pos, item);
+        if let Some(wrapper) = tab.files.get(grid_idx) {
+            let mut item = wrapper.borrow().clone();
+            item.thumbnail = Some(texture.clone());
+            let path = item.path.clone();
 
-                let cache_key = self
-                    .current_path
-                    .canonicalize()
-                    .unwrap_or_else(|_| self.current_path.clone());
+            tab.files.remove(grid_idx);
+            tab.files.insert(grid_idx, item);
 
-                if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
-                    cached.thumbnails.insert(path, texture);
-                }
+            let cache_key = self
+                .current_path
+                .canonicalize()
+                .unwrap_or_else(|_| self.current_path.clone());
+
+            if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
+                cached.thumbnails.insert(path, texture);
             }
         }
     }

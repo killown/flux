@@ -172,6 +172,7 @@ impl FluxApp {
     }
 
     pub fn handle_refresh_path(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_refresh_path");
         if self.is_content_searching {
             return;
         }

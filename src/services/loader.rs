@@ -573,6 +573,7 @@ impl FluxApp {
                 .unwrap_or(false);
 
             let mut items: Vec<FileLoadContext> = loader_pool().install(|| {
+                let uid = unsafe { libc::geteuid() };
                 raw_entries
                     .into_par_iter()
                     .filter_map(|(name, is_dir, is_symlink)| {
@@ -646,7 +647,7 @@ impl FluxApp {
                             false
                         };
 
-                        Some(FileLoadContext::new(
+                        let item = FileLoadContext::new(
                             name,
                             target_path,
                             is_dir,
@@ -657,7 +658,31 @@ impl FluxApp {
                             custom_icon,
                             is_symlink,
                             is_broken_symlink,
-                        ))
+                        );
+
+                        // WARNING: do not remove these three lines.
+                        //
+                        // These getters are lazy: the first call fills a OnceLock
+                        // by asking the filesystem. If we let them stay empty until
+                        // the item reaches the UI, the syscalls happen later, on
+                        // the GTK main thread, one item at a time.
+                        //
+                        // Concretely:
+                        //   size()             -> read_dir().count() for directories
+                        //   mtime()            -> stat()
+                        //   is_foreign_owner() -> stat()
+                        //
+                        // With a batch of ~90 items that's roughly 180 syscalls
+                        // serialized inside the event loop. Before this fix each
+                        // FolderLoadedChunk spent ~40ms on that, which made folder
+                        // loads noticeably heavier. We call them here, inside the
+                        // Rayon pool, so the syscalls run in parallel on worker
+                        // threads instead.
+                        let _ = item.size();
+                        let _ = item.mtime();
+                        let _ = item.is_foreign_owner(uid);
+
+                        Some(item)
                     })
                     .collect()
             });
@@ -1388,6 +1413,7 @@ impl FluxApp {
         media_tasks: Vec<(u32, PathBuf)>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_folder_loaded");
         if load_id != self.load_id.load(Ordering::SeqCst) {
             return;
         }
