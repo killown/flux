@@ -104,7 +104,7 @@ impl FluxApp {
                         }
 
                         if let Some(texture) = texture {
-                            inner_sender.input(AppMsg::ThumbnailReady {
+                            let _ = inner_sender.input_sender().send(AppMsg::ThumbnailReady {
                                 grid_idx,
                                 texture,
                                 load_id: session_id,
@@ -181,7 +181,7 @@ impl FluxApp {
             manager.complete_task(grid_idx);
 
             if let Some(texture) = texture {
-                sender.input(AppMsg::ThumbnailReady {
+                let _ = sender.input_sender().send(AppMsg::ThumbnailReady {
                     grid_idx,
                     texture,
                     load_id: current_session,

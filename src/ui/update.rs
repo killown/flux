@@ -855,9 +855,9 @@ struct Head(String);
 #[cfg(debug_assertions)]
 impl std::fmt::Write for Head {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        let room = 48usize.saturating_sub(self.0.len());
+        let room = 80usize.saturating_sub(self.0.len());
         self.0.extend(s.chars().take(room));
-        if self.0.len() >= 48 {
+        if self.0.len() >= 80 {
             Err(std::fmt::Error)
         } else {
             Ok(())
@@ -872,6 +872,9 @@ struct SlowMsg {
 #[cfg(debug_assertions)]
 impl Drop for SlowMsg {
     fn drop(&mut self) {
+        if std::env::var_os("FLUX_HWGA_OUT").is_none() {
+            return;
+        }
         let took = self.start.elapsed();
         if took > std::time::Duration::from_millis(32) {
             eprintln!("[slow AppMsg] {took:?} {}", self.name);

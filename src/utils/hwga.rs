@@ -163,6 +163,20 @@ fn to_ns(d: Duration) -> u64 {
     d.as_nanos().min(u64::MAX as u128) as u64
 }
 
+/// Formats a duration with a unit that fits the magnitude.
+fn fmt_duration(d: Duration) -> String {
+    let ns = d.as_nanos();
+    if ns < 1_000 {
+        format!("{}ns", ns)
+    } else if ns < 1_000_000 {
+        format!("{:.1}µs", ns as f64 / 1_000.0)
+    } else if ns < 1_000_000_000 {
+        format!("{:.2}ms", ns as f64 / 1_000_000.0)
+    } else {
+        format!("{:.2}s", ns as f64 / 1_000_000_000.0)
+    }
+}
+
 /// Index of the log2 bucket holding `ns` (bucket `i` covers `2^i ..= 2^(i+1) - 1`).
 fn bucket_of(ns: u64) -> usize {
     (63 - ns.max(1).leading_zeros()) as usize
@@ -318,33 +332,61 @@ impl CallMonitor {
         if stats.is_empty() {
             return;
         }
-        println!("\n=== HWGA Call Frequency & Timing Report ===");
+
+        println!();
+        println!("═══════════════════════════════════════════════════════════════════════════════");
         println!(
-            "pid {} | flux {} {} | debug_assertions {} | up {:.1?} since first probe",
+            "  HWGA Call Frequency & Timing Report - pid {}  flux {} {}",
             std::process::id(),
             env!("CARGO_PKG_VERSION"),
             option_env!("FLUX_GIT_HASH").unwrap_or(""),
+        );
+        println!(
+            "  debug_assertions {}  |  up {:.1?} since first probe",
             cfg!(debug_assertions),
             START.get().map(|s| s.elapsed()).unwrap_or_default()
         );
+        println!("═══════════════════════════════════════════════════════════════════════════════");
+        println!();
+
+        println!(
+            "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  {:>10}  {:>9}  {}",
+            "Calls", "Total", "Self", "Avg", "p95", "Max", "Main>16ms", "Function"
+        );
+        println!(
+            "  {:-<7}  {:-<10}  {:-<10}  {:-<10}  {:-<10}  {:-<10}  {:-<9}  {:-<40}",
+            "", "", "", "", "", "", "", ""
+        );
+
+        let probe_count = stats.len();
         for (name, s) in stats {
-            let avg_time = s.total_time / s.count.max(1) as u32;
-            let mut line = format!(
-                "- {}: {} calls | Total: {:?} (self {:?}) | Avg: {:?} | p50 {:?} p95 {:?} p99 {:?} | Min: {:?} | Max: {:?}",
-                name, s.count, s.total_time, s.self_time, avg_time, s.p50, s.p95, s.p99, s.min_time, s.max_time
+            let avg = s.total_time / s.count.max(1) as u32;
+            let main = if s.main_count > 0 {
+                format!("{}/{}", s.main_over_budget, s.main_count)
+            } else {
+                "-".to_string()
+            };
+
+            println!(
+                "  {:>7}  {:>10}  {:>10}  {:>10}  {:>10}  {:>10}  {:>9}  {}",
+                s.count,
+                fmt_duration(s.total_time),
+                fmt_duration(s.self_time),
+                fmt_duration(avg),
+                fmt_duration(s.p95),
+                fmt_duration(s.max_time),
+                main,
+                name,
             );
-            if s.main_count > 0 {
-                line.push_str(&format!(
-                    " | main: {} calls, max {:?}, {} over {:?}",
-                    s.main_count, s.main_max, s.main_over_budget, MAIN_THREAD_BUDGET
-                ));
-            }
-            if s.peak_in_flight > 1 {
-                line.push_str(&format!(" | peak in-flight: {}", s.peak_in_flight));
-            }
-            println!("{line}");
         }
-        println!("===========================================\n");
+
+        println!();
+        println!(
+            "  budget: {:?}/frame  |  {} probes",
+            MAIN_THREAD_BUDGET, probe_count
+        );
+        println!("═══════════════════════════════════════════════════════════════════════════════");
+        println!();
     }
 
     /// Serializes active telemetry stats into a JSON file at the specified path.
