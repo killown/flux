@@ -29,6 +29,8 @@ impl FluxApp {
         root: &adw::Window,
         sender: AsyncComponentSender<Self>,
     ) -> (Self, gtk::Box) {
+        crate::hit!("init_components");
+
         // 1. Static and Global Configuration
         let _ = crate::model::SENDER.set(sender.input_sender().clone());
         relm4::set_global_css(include_str!("style.css"));
@@ -52,8 +54,11 @@ impl FluxApp {
         });
 
         // Wait for all to complete concurrently
-        let (state_db_res, config, menu_actions_list) = try_join!(db_rx, config_rx, menu_rx)
-            .expect("Initialization tasks should always complete");
+        let (state_db_res, config, menu_actions_list) = {
+            crate::hit!("init_components:resources");
+            try_join!(db_rx, config_rx, menu_rx)
+                .expect("Initialization tasks should always complete")
+        };
 
         let state_db = Arc::new(state_db_res);
         let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
@@ -309,9 +314,13 @@ impl FluxApp {
             .forward(sender.input_sender(), AppMsg::Navigate);
 
         // Terminal setup using custom terminal implementation from services
-        let terminal = crate::services::terminal::Terminal::new(&config.ui.terminal);
-        terminal.apply_theme(&config.ui.terminal);
-        terminal.connect_theme_changes(config.ui.terminal.clone());
+        let terminal = {
+            crate::hit!("init_components:terminal");
+            let terminal = crate::services::terminal::Terminal::new(&config.ui.terminal);
+            terminal.apply_theme(&config.ui.terminal);
+            terminal.connect_theme_changes(config.ui.terminal.clone());
+            terminal
+        };
 
         {
             let s = sender.clone();
@@ -534,7 +543,10 @@ impl FluxApp {
         model.saved_list_mode = model.is_list_mode;
 
         // 8. Initial State Population
-        model.setup_actions(&sender);
+        {
+            crate::hit!("init_components:actions");
+            model.setup_actions(&sender);
+        }
 
         if !model.exclusive_list.is_empty() {
             model.handle_rebuild_quick_panel(&sender);
@@ -648,6 +660,7 @@ impl FluxApp {
         let scrub_db = state_db.clone();
         let tag_to_apply = initial_tag_search;
         glib::timeout_add_local_once(std::time::Duration::from_millis(75), move || {
+            crate::hit!("init_components:deferred");
             std::thread::spawn(move || {
                 if let Err(e) = scrub_db.scrub_orphans() {
                     eprintln!("[DB] Scrub failed: {}", e);

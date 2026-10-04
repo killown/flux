@@ -958,6 +958,7 @@ impl SimpleAsyncComponent for FluxApp {
             no_header,
             no_statusbar,
         } = init;
+        crate::hit!("view::init");
 
         let (mut model, breadcrumb_box) = FluxApp::init_components(
             start_path,
@@ -972,6 +973,7 @@ impl SimpleAsyncComponent for FluxApp {
         .await;
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
+        crate::hit!("view::init:view_output");
         let widgets = view_output!();
 
         widgets.toolbar_view.add_top_bar(&model.tab_bar);

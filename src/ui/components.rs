@@ -762,7 +762,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
     ///
     /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
     fn bind(&mut self, widgets: &mut Self::Widgets, root: &mut Self::Root) {
-        crate::hit!();
+        crate::hit!("bind");
         widgets.label.set_label(&self.display_label);
 
         if self.is_cut {
