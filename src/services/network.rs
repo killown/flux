@@ -14,11 +14,28 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use gtk::gio;
 use gtk::prelude::*;
 
 use crate::model::FileLoadContext;
+
+/// Set `FLUX_DEBUG_NETWORK=1` to enable per-entry tracing on stderr.
+/// Off by default so a slow mount doesn't drown the journal in
+/// thousands of debug lines on every navigation.
+fn net_debug_enabled() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("FLUX_DEBUG_NETWORK").is_some())
+}
+
+macro_rules! net_debug {
+    ($($arg:tt)*) => {
+        if net_debug_enabled() {
+            eprintln!($($arg)*);
+        }
+    };
+}
 
 pub const NETWORK_ROOT_URI: &str = "network:///";
 pub const SMB_SCHEME: &str = "smb";
@@ -273,55 +290,116 @@ pub struct NetworkEntry {
     pub protocol: Option<NetworkProtocol>,
 }
 
-pub fn list_network_entries(
+/// Reads the first themed icon name off a `GIcon`, or `None` when the icon
+/// is not a `GThemedIcon`. Do not use `icon.to_string()` here: for a
+/// `GThemedIcon` that yields the debug repr (`". GThemedIcon inode-directory …"`)
+/// which is not a valid icon name and forces every caller to fall back to a
+/// slow path in `get_icon_for_path`.
+#[inline]
+fn themed_icon_name(icon: Option<gio::Icon>) -> Option<String> {
+    let icon = icon?;
+    let themed = icon.downcast_ref::<gio::ThemedIcon>()?;
+    themed.names().first().map(|s| s.to_string())
+}
+
+/// True when the error is `G_IO_ERROR_ALREADY_MOUNTED`. That is not a real
+/// failure: the volume is attached and the subsequent `enumerate_children`
+/// or `make_directory` call will proceed against the existing mount.
+#[inline]
+fn is_already_mounted(e: &glib::Error) -> bool {
+    e.kind::<gio::IOErrorEnum>() == Some(gio::IOErrorEnum::AlreadyMounted)
+        || e.matches(gio::IOErrorEnum::AlreadyMounted)
+}
+
+pub async fn list_network_entries(
     uri: &str,
     credentials: Option<&NetworkCredentials>,
 ) -> Result<Vec<NetworkEntry>, NetworkError> {
+    net_debug!("[network] ────────────────────────────────────────────────");
+    net_debug!("[network] list_network_entries ENTER uri = {uri:?}");
+    net_debug!(
+        "[network]   credentials = {:?}",
+        credentials.map(|c| {
+            format!(
+                "user={:?} anon={} domain={:?}",
+                c.username, c.anonymous, c.domain
+            )
+        })
+    );
+
     let cancellable = gio::Cancellable::new();
     let file = gio::File::for_uri(uri);
+    net_debug!("[network]   file.uri() = {:?}", file.uri());
+    net_debug!("[network]   file.path() = {:?}", file.path());
+    net_debug!("[network]   file.basename() = {:?}", file.basename());
 
     let mount_op = build_mount_op(credentials);
-    // Ignore mount errors, the volume may already be mounted, in which case
-    // enumerate_children below will succeed regardless.
-    mount_enclosing_volume_sync(&file, &mount_op).ok();
+    net_debug!("[network]   calling mount_enclosing_volume…");
+    match mount_enclosing_volume(&file, &mount_op).await {
+        Ok(()) => net_debug!("[network]   mount_enclosing_volume OK"),
+        Err(e) if is_already_mounted(&e) => {
+            net_debug!("[network]   mount_enclosing_volume: already mounted");
+        }
+        Err(e) => eprintln!("[network]   mount_enclosing_volume FAILED: {e}"),
+    }
 
-    let attributes = "standard::name,standard::display-name,standard::type,standard::size,\
-         time::modified,standard::icon,standard::content-type";
+    // WARNING: do not add `standard::content-type` here. GVFS's Google Drive
+    // backend resolves it per entry with a full metadata fetch, which turns a
+    // listing into an N-round-trip operation. `standard::type` is enough to
+    // distinguish files from directories on every mainstream backend.
+    let attributes =
+        "standard::name,standard::display-name,standard::type,standard::size,time::modified,standard::icon";
+    net_debug!("[network]   attributes = {attributes:?}");
 
-    let enumerator = file
-        .enumerate_children(
-            attributes,
-            gio::FileQueryInfoFlags::NONE,
-            Some(&cancellable),
-        )
-        .map_err(|e| classify_enum_error(e, uri))?;
+    net_debug!("[network]   calling enumerate_children…");
+    let enumerator = match file.enumerate_children(
+        attributes,
+        gio::FileQueryInfoFlags::NONE,
+        Some(&cancellable),
+    ) {
+        Ok(e) => {
+            net_debug!("[network]   enumerate_children OK");
+            e
+        }
+        Err(e) => {
+            eprintln!("[network]   enumerate_children FAILED: {e}");
+            eprintln!("[network]   error kind: {:?}", e.kind::<gio::IOErrorEnum>());
+            return Err(classify_enum_error(e, uri));
+        }
+    };
 
     let mut entries = Vec::new();
+    let mut raw_count = 0usize;
 
     for info in enumerator.flatten() {
+        raw_count += 1;
+        let name = info.name();
+        let file_type = info.file_type();
+        let size = info.size();
+        let has_icon = info.icon().is_some();
+
+        net_debug!(
+            "[network]   raw#{raw_count} name={name:?} type={file_type:?} size={size} \
+             has_icon={has_icon}"
+        );
+
         let display_name = info.display_name().to_string();
         let child_file = file.child(info.name());
         let child_uri = child_file.uri().to_string();
 
-        let content_type = info
-            .content_type()
-            .map(|c| c.to_string())
-            .unwrap_or_default();
-        let file_type = info.file_type();
         let is_dir = match file_type {
             gio::FileType::Directory => true,
             gio::FileType::Regular => false,
-            _ => content_type == "inode/directory",
+            _ => info.name().to_string_lossy().ends_with('/'),
         };
+
         let size = info.size().max(0) as u64;
         let mtime = info
             .modification_date_time()
             .map(|dt| dt.to_unix())
             .unwrap_or(0);
 
-        let mut icon_name = info
-            .icon()
-            .and_then(|icon| icon.to_string().map(|s| s.to_string()));
+        let mut icon_name = themed_icon_name(info.icon());
 
         if !is_dir {
             if let Some(ref name) = icon_name {
@@ -334,6 +412,11 @@ pub fn list_network_entries(
 
         let protocol = protocol_for_uri(&child_uri);
 
+        net_debug!(
+            "[network]     → push display_name={display_name:?} child_uri={child_uri:?} \
+             is_dir={is_dir} size={size} mtime={mtime} icon_name={icon_name:?} proto={protocol:?}"
+        );
+
         entries.push(NetworkEntry {
             display_name,
             uri: child_uri,
@@ -345,6 +428,11 @@ pub fn list_network_entries(
         });
     }
 
+    net_debug!(
+        "[network]   enumeration done: raw_count={raw_count} entries.len()={}",
+        entries.len()
+    );
+
     entries.sort_unstable_by(|a, b| {
         b.is_dir.cmp(&a.is_dir).then_with(|| {
             a.display_name
@@ -353,26 +441,49 @@ pub fn list_network_entries(
         })
     });
 
+    net_debug!(
+        "[network] list_network_entries EXIT uri = {uri:?} ({} entries)",
+        entries.len()
+    );
+    net_debug!("[network] ────────────────────────────────────────────────");
+
     Ok(entries)
 }
 
-pub fn create_network_directory(
+pub async fn create_network_directory(
     uri: &str,
     credentials: Option<&NetworkCredentials>,
 ) -> Result<(), NetworkError> {
+    net_debug!("[network] create_network_directory uri = {uri:?}");
     let file = gio::File::for_uri(uri);
     let mount_op = build_mount_op(credentials);
-    mount_enclosing_volume_sync(&file, &mount_op).ok();
-
-    file.make_directory(None::<&gio::Cancellable>)
-        .map_err(NetworkError::from)?;
-    Ok(())
+    match mount_enclosing_volume(&file, &mount_op).await {
+        Ok(()) => net_debug!("[network]   mount_enclosing_volume OK"),
+        Err(e) if is_already_mounted(&e) => {
+            net_debug!("[network]   mount_enclosing_volume: already mounted");
+        }
+        Err(e) => eprintln!("[network]   mount_enclosing_volume FAILED: {e}"),
+    }
+    match file.make_directory(None::<&gio::Cancellable>) {
+        Ok(()) => {
+            net_debug!("[network]   make_directory OK");
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("[network]   make_directory FAILED: {e}");
+            Err(NetworkError::from(e))
+        }
+    }
 }
 
 pub fn entries_to_load_contexts(
     entries: &[NetworkEntry],
     expand_labels: bool,
 ) -> Vec<FileLoadContext> {
+    net_debug!(
+        "[network] entries_to_load_contexts: {} entries",
+        entries.len()
+    );
     entries
         .iter()
         .map(|e| {
@@ -408,6 +519,7 @@ pub fn entries_to_load_contexts(
 }
 
 pub fn describe_network_location(uri: &str) -> (String, String) {
+    net_debug!("[network] describe_network_location uri = {uri:?}");
     if uri.is_empty() || uri.contains('\0') {
         return (String::new(), "folder-remote-symbolic".to_owned());
     }
@@ -427,33 +539,40 @@ pub fn describe_network_location(uri: &str) -> (String, String) {
         .unwrap_or_else(|| uri_display_name(uri));
 
     let icon = display
-        .and_then(|i| {
-            i.icon()
-                .and_then(|ic| ic.to_string().map(|s| s.to_string()))
-        })
+        .and_then(|i| themed_icon_name(i.icon()))
         .unwrap_or_else(|| {
             protocol_for_uri(uri)
                 .map(|p| p.icon_name().to_owned())
                 .unwrap_or_else(|| "folder-remote-symbolic".to_owned())
         });
 
+    net_debug!("[network]   → name={name:?} icon={icon:?}");
     (name, icon)
 }
 
-pub fn unmount_network_location(uri: &str) -> Result<(), NetworkError> {
+pub async fn unmount_network_location(uri: &str) -> Result<(), NetworkError> {
+    net_debug!("[network] unmount_network_location uri = {uri:?}");
     let file = gio::File::for_uri(uri);
     let mount = file
         .find_enclosing_mount(gio::Cancellable::NONE)
         .map_err(NetworkError::from)?;
 
+    net_debug!("[network]   found mount: {:?}", mount.name());
     let mount_op = gio::MountOperation::new();
-    unmount_with_operation_sync(&mount, &mount_op).map_err(NetworkError::from)?;
-
-    Ok(())
+    match unmount_with_operation(&mount, &mount_op).await {
+        Ok(()) => {
+            net_debug!("[network]   unmount OK");
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("[network]   unmount FAILED: {e}");
+            Err(NetworkError::from(e))
+        }
+    }
 }
 
 pub fn active_mounts() -> Vec<(String, String, String)> {
-    gio::VolumeMonitor::get()
+    let result: Vec<(String, String, String)> = gio::VolumeMonitor::get()
         .mounts()
         .into_iter()
         .filter_map(|mount| {
@@ -474,7 +593,12 @@ pub fn active_mounts() -> Vec<(String, String, String)> {
 
             Some((uri, name, icon))
         })
-        .collect()
+        .collect();
+    net_debug!("[network] active_mounts → {} mounts", result.len());
+    for (uri, name, _) in &result {
+        net_debug!("[network]   mount: {name:?} → {uri:?}");
+    }
+    result
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
@@ -551,10 +675,12 @@ impl ConnectToServerParams {
             })
             .unwrap_or_else(|| "/".to_owned());
 
-        Some(format!(
+        let uri = format!(
             "{scheme}://{user_part}{host}{port_part}{path_part}",
             host = self.host,
-        ))
+        );
+        net_debug!("[network] ConnectToServerParams::build_uri → {uri:?}");
+        Some(uri)
     }
 }
 
@@ -563,6 +689,7 @@ fn build_mount_op(credentials: Option<&NetworkCredentials>) -> gio::MountOperati
 
     if let Some(creds) = credentials {
         if creds.anonymous {
+            net_debug!("[network] build_mount_op: anonymous=true");
             op.set_anonymous(true);
             return op;
         }
@@ -581,61 +708,26 @@ fn build_mount_op(credentials: Option<&NetworkCredentials>) -> gio::MountOperati
     op
 }
 
-fn block_on_gio<T, E>(starter: impl FnOnce(Box<dyn FnOnce(Result<T, E>) + 'static>)) -> Result<T, E>
-where
-    T: 'static,
-    E: 'static,
-{
-    let ctx = glib::MainContext::new();
-    let _guard = ctx.acquire().expect("Failed to acquire thread MainContext");
-
-    let result = std::rc::Rc::new(std::cell::RefCell::new(None));
-    let result_clone = result.clone();
-
-    ctx.with_thread_default(|| {
-        starter(Box::new(move |res| {
-            *result_clone.borrow_mut() = Some(res);
-        }));
-    })
-    .expect("Failed to set thread default MainContext");
-
-    while result.borrow().is_none() {
-        ctx.iteration(true);
-    }
-
-    let val = result.borrow_mut().take().unwrap();
-    val
-}
-
-fn mount_enclosing_volume_sync(
+async fn mount_enclosing_volume(
     file: &gio::File,
     mount_op: &gio::MountOperation,
 ) -> Result<(), glib::Error> {
-    block_on_gio(|cb| {
-        file.mount_enclosing_volume(
-            gio::MountMountFlags::NONE,
-            Some(mount_op),
-            gio::Cancellable::NONE,
-            cb,
-        );
-    })
+    file.mount_enclosing_volume_future(gio::MountMountFlags::NONE, Some(mount_op))
+        .await
 }
 
-fn unmount_with_operation_sync(
+async fn unmount_with_operation(
     mount: &gio::Mount,
     mount_op: &gio::MountOperation,
 ) -> Result<(), glib::Error> {
-    block_on_gio(|cb| {
-        mount.unmount_with_operation(
-            gio::MountUnmountFlags::NONE,
-            Some(mount_op),
-            gio::Cancellable::NONE,
-            cb,
-        );
-    })
+    mount
+        .unmount_with_operation_future(gio::MountUnmountFlags::NONE, Some(mount_op))
+        .await
 }
+
 fn classify_enum_error(e: glib::Error, uri: &str) -> NetworkError {
     let msg = e.message().to_owned();
+    eprintln!("[network] classify_enum_error uri={uri:?} msg={msg:?}");
 
     if e.kind::<gio::IOErrorEnum>() == Some(gio::IOErrorEnum::NotSupported)
         || msg.contains("Operation not supported")
@@ -674,5 +766,6 @@ pub fn check_gvfs_deps() -> HashMap<&'static str, bool> {
             .unwrap_or(false);
         results.insert(binary, found);
     }
+    net_debug!("[network] check_gvfs_deps → {results:?}");
     results
 }

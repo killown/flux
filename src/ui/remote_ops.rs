@@ -3,6 +3,23 @@ use crate::ui::FileItem;
 use adw::gio;
 use adw::prelude::*;
 use relm4::prelude::*;
+use std::sync::OnceLock;
+
+/// Set `FLUX_DEBUG_NETWORK=1` to enable per-entry tracing on stderr.
+/// Off by default so a slow mount doesn't drown the journal in
+/// thousands of debug lines on every navigation.
+fn net_debug_enabled() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var_os("FLUX_DEBUG_NETWORK").is_some())
+}
+
+macro_rules! net_debug {
+    ($($arg:tt)*) => {
+        if net_debug_enabled() {
+            eprintln!($($arg)*);
+        }
+    };
+}
 
 impl FluxApp {
     pub fn handle_network_loaded(
@@ -10,12 +27,25 @@ impl FluxApp {
         uri: String,
         contexts: Vec<crate::model::FileLoadContext>,
     ) {
+        net_debug!(
+            "[network] handle_network_loaded uri={uri:?} current_path={:?} contexts={}",
+            self.current_path,
+            contexts.len()
+        );
         if self.current_path != std::path::Path::new(&uri) {
+            eprintln!(
+                "[network]   BAILING: current_path ({:?}) != uri ({:?})",
+                self.current_path,
+                std::path::Path::new(&uri)
+            );
             return;
         }
 
-        self.files.clear();
-        for item in contexts {
+        let active_tab = &mut self.tabs[self.active_tab_index];
+        let active_files = &mut active_tab.files;
+        active_files.clear();
+
+        for (idx, item) in contexts.iter().enumerate() {
             let icon = if item.is_dir {
                 item.custom_icon
                     .as_deref()
@@ -27,6 +57,12 @@ impl FluxApp {
                 crate::utils::get_icon_for_path(&item.target_path, item.is_dir)
             };
 
+            net_debug!(
+                "[network]   item#{idx} name={:?} is_dir={}",
+                item.display_name,
+                item.is_dir
+            );
+
             let size = item.size();
             let mtime = item.mtime();
             let is_foreign_owner = item.is_foreign_owner(unsafe { libc::geteuid() });
@@ -35,10 +71,10 @@ impl FluxApp {
             } else {
                 false
             };
-            let grid_idx = self.files.len();
+            let grid_idx = active_files.len();
 
-            self.files.append(
-                FileItem::builder(item.display_name, item.target_path, icon)
+            active_files.append(
+                FileItem::builder(item.display_name.clone(), item.target_path.clone(), icon)
                     .is_dir(item.is_dir)
                     .icon_size(if self.is_list_mode {
                         self.current_list_icon_size
@@ -61,7 +97,13 @@ impl FluxApp {
                     .build(),
             );
         }
+
+        net_debug!(
+            "[network]   appended all, active tab files.len()={}",
+            self.tabs[self.active_tab_index].files.len()
+        );
         self.update_breadcrumbs();
+        net_debug!("[network] handle_network_loaded EXIT");
     }
 
     pub fn handle_connect_to_server(
@@ -77,8 +119,8 @@ impl FluxApp {
 
     pub fn handle_unmount_network(&self, uri: String, sender: &AsyncComponentSender<Self>) {
         let sender_clone = sender.clone();
-        tokio::task::spawn_blocking(move || {
-            if let Err(e) = crate::services::network::unmount_network_location(&uri) {
+        relm4::spawn_local(async move {
+            if let Err(e) = crate::services::network::unmount_network_location(&uri).await {
                 sender_clone.input(AppMsg::ShowToast(e.to_string()));
             } else {
                 sender_clone.input(AppMsg::RefreshNetworkSidebar);

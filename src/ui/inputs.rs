@@ -86,16 +86,9 @@ pub fn setup_controllers(
                 if let Some(picked) = widget.pick(x, y, gtk::PickFlags::DEFAULT) {
                     let mut current: Option<gtk::Widget> = Some(picked);
                     while let Some(w) = current {
-                        let name = w.widget_name().to_string();
-                        if name.starts_with('/')
-                            || name.starts_with("trash://")
-                            || name.starts_with("smb://")
-                            || name.starts_with("sftp://")
-                            || name.starts_with("ftp://")
-                            || name.starts_with("nfs://")
-                            || name.starts_with("archive://")
-                        {
-                            let path = std::path::PathBuf::from(&name);
+                        let path_opt: Option<PathBuf> =
+                            unsafe { w.data::<PathBuf>("flux_path").map(|p| p.as_ref().clone()) };
+                        if let Some(path) = path_opt {
                             let modifiers = gesture.current_event_state();
 
                             if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
@@ -622,7 +615,7 @@ fn setup_deselect_on_background_click(
         };
 
         // Walk upward from the picked widget, if any ancestor carries a
-        // filesystem path name the click landed on a file/dir item.
+        // `flux_path` data entry the click landed on a file/dir item.
         let hit_item = grid_view
             .pick(x, y, gtk::PickFlags::DEFAULT)
             .map(|picked| {
@@ -631,15 +624,8 @@ fn setup_deselect_on_background_click(
                     match current {
                         None => break false,
                         Some(ref w) => {
-                            let name = w.widget_name().to_string();
-                            if name.starts_with('/')
-                                || name.starts_with("trash://")
-                                || name.starts_with("smb://")
-                                || name.starts_with("sftp://")
-                                || name.starts_with("ftp://")
-                                || name.starts_with("nfs://")
-                                || name.starts_with("archive://")
-                            {
+                            let is_item = unsafe { w.data::<PathBuf>("flux_path").is_some() };
+                            if is_item {
                                 break true;
                             }
                             current = w.parent();

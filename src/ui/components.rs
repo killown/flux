@@ -626,14 +626,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
 
                             if let Some(s) = sender.get() {
                                 let widget = gesture.widget().unwrap();
-                                let name = widget.widget_name();
-                                let path_opt = {
-                                    let s_str = name.as_str();
-                                    if s_str.is_empty() || s_str == "gtk-widget" {
-                                        None
-                                    } else {
-                                        Some(PathBuf::from(s_str))
-                                    }
+                                let path_opt: Option<PathBuf> = unsafe {
+                                    widget
+                                        .data::<PathBuf>("flux_path")
+                                        .map(|p| p.as_ref().clone())
                                 };
 
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
@@ -656,14 +652,10 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                             if gesture.current_button() == MOUSE_RIGHT_CLICK {
                                 if let Some(s) = sender.get() {
                                     let widget = gesture.widget().unwrap();
-                                    let name = widget.widget_name();
-                                    let path_opt = {
-                                        let s_str = name.as_str();
-                                        if s_str.is_empty() || s_str == "gtk-widget" {
-                                            None
-                                        } else {
-                                            Some(PathBuf::from(s_str))
-                                        }
+                                    let path_opt: Option<PathBuf> = unsafe {
+                                        widget
+                                            .data::<PathBuf>("flux_path")
+                                            .map(|p| p.as_ref().clone())
                                     };
 
                                     if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
@@ -1030,11 +1022,17 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.info_label.set_visible(false);
         }
 
-        // Set the widget name to the absolute path so the app.rs controller can find it
-        root.set_widget_name(&self.path.to_string_lossy());
-        widgets
-            .card_box
-            .set_widget_name(&self.path.to_string_lossy());
+        // WARNING: never use `set_widget_name(&self.path.to_string_lossy())` here.
+        // `bind()` runs on every visible item on each scroll/zoom/layout pass.
+        // Setting the widget name dirties the CSS node and forces GTK's style
+        // engine to re-run a full CSS selector match for the entire grid on
+        // every bind, which caused severe scrollbar lag in GridView mode with
+        // thousands of items. Opaque widget data via `set_data` bypasses the
+        // CSS engine entirely and is the correct, high-performance approach.
+        unsafe {
+            root.set_data("flux_path", self.path.clone());
+            widgets.card_box.set_data("flux_path", self.path.clone());
+        }
 
         if self.is_foreign_owner {
             root.add_css_class("flux-card--restricted");
@@ -1318,6 +1316,8 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             let _ = root.steal_data::<std::rc::Weak<RefCell<Option<PathBuf>>>>("active_path_cell");
             let _ = root.steal_data::<u32>("lazy_thumb_requested");
             let _ = root.steal_data::<u32>("grid_item_index");
+            let _ = root.steal_data::<PathBuf>("flux_path");
+            let _ = widgets.card_box.steal_data::<PathBuf>("flux_path");
         }
     }
 }

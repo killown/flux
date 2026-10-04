@@ -79,17 +79,28 @@ impl FluxApp {
                             current_path.to_string_lossy().trim_end_matches('/'),
                             name
                         );
-                        let file = gtk::gio::File::for_uri(&uri);
-                        if file.query_exists(gtk::gio::Cancellable::NONE) {
-                            s.input(AppMsg::ShowToast(crate::i18n::tr(
-                                "Directory or file already exists",
-                            )));
-                        } else if crate::services::network::create_network_directory(&uri, None)
-                            .is_ok()
-                        {
-                            s.input(AppMsg::Navigate(PathBuf::from(uri)));
-                        }
+                        let s_clone = s.clone();
+                        relm4::spawn_local(async move {
+                            let file = gtk::gio::File::for_uri(&uri);
+                            if file.query_exists(gtk::gio::Cancellable::NONE) {
+                                s_clone.input(AppMsg::ShowToast(crate::i18n::tr(
+                                    "Directory or file already exists",
+                                )));
+                                return;
+                            }
+                            if crate::services::network::create_network_directory(&uri, None)
+                                .await
+                                .is_ok()
+                            {
+                                s_clone.input(AppMsg::Navigate(PathBuf::from(uri)));
+                            } else {
+                                s_clone.input(AppMsg::ShowToast(crate::i18n::tr(
+                                    "Failed to create directory",
+                                )));
+                            }
+                        });
                     } else {
+                        // existing local-filesystem branch unchanged
                         let folder_path = current_path.join(name);
                         if folder_path.exists() {
                             s.input(AppMsg::ShowToast(crate::i18n::tr(
@@ -138,8 +149,10 @@ impl FluxApp {
                             );
                             let file = gtk::gio::File::for_uri(&uri);
                             if !file.query_exists(gtk::gio::Cancellable::NONE)
-                                && crate::services::network::create_network_directory(&uri, None)
-                                    .is_ok()
+                                && futures::executor::block_on(
+                                    crate::services::network::create_network_directory(&uri, None),
+                                )
+                                .is_ok()
                             {
                                 created_count += 1;
                             }

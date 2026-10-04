@@ -758,8 +758,10 @@ impl FluxApp {
         let uri_str = uri.to_string();
         let expand_labels = self.config.ui.expand_labels;
 
-        relm4::spawn_blocking(move || {
-            match crate::services::network::list_network_entries(&uri_str, credentials.as_ref()) {
+        relm4::spawn_local(async move {
+            match crate::services::network::list_network_entries(&uri_str, credentials.as_ref())
+                .await
+            {
                 Ok(entries) => {
                     let contexts =
                         crate::services::network::entries_to_load_contexts(&entries, expand_labels);
