@@ -23,7 +23,7 @@ fn default_true() -> bool {
 }
 
 fn default_loader_batch_size() -> usize {
-    50
+    10
 }
 
 fn default_folder_cache_capacity() -> usize {
