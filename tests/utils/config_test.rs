@@ -1,7 +1,6 @@
 use flux::model::{CustomAction, MenuEntry};
-use flux::utils::config::{
-    ensure_config_file, get_system_mounts, load_menu_config, save_menu_config, split_mime_cmd,
-};
+use flux::services::mounts::get_system_mounts;
+use flux::utils::config::{ensure_config_file, load_menu_config, save_menu_config, split_mime_cmd};
 use std::env;
 use std::fs;
 use std::path::PathBuf;

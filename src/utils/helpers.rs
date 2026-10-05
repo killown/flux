@@ -363,7 +363,7 @@ impl FluxApp {
         // 3. Mounts - Offloaded to background thread to prevent blocking the UI loop
         if let Some(sender) = crate::model::SENDER.get().cloned() {
             relm4::spawn_blocking(move || {
-                let mounts = utils::get_system_mounts();
+                let mounts = crate::services::mounts::get_system_mounts();
                 let _ = sender.send(AppMsg::SystemMountsReady(mounts));
             });
         }
