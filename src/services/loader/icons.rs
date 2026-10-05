@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::time::SystemTime;
 
-static CUSTOM_EXT_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
-static GENERATED_EXT_CACHE: OnceLock<RwLock<HashSet<String>>> = OnceLock::new();
+static CUSTOM_EXT_CACHE: RwLock<Option<HashSet<String>>> = RwLock::new(None);
+static GENERATED_EXT_CACHE: RwLock<Option<HashSet<String>>> = RwLock::new(None);
 static RESOLVED_EXT_CACHE: OnceLock<RwLock<HashMap<String, Option<PathBuf>>>> = OnceLock::new();
 
 fn scan_directory_extensions(subpath: &str) -> HashSet<String> {
@@ -57,8 +57,20 @@ pub fn get_custom_extension_icon_path(ext: &str) -> Option<PathBuf> {
         return None;
     }
     let ext_lower = ext.to_ascii_lowercase();
-    let cache_lock = CUSTOM_EXT_CACHE.get_or_init(|| RwLock::new(scan_custom_extension_icons()));
-    if !cache_lock.read().contains(&ext_lower) {
+    let custom_set = {
+        let guard = CUSTOM_EXT_CACHE.read();
+        if let Some(ref set) = *guard {
+            set.clone()
+        } else {
+            drop(guard);
+            let mut guard = CUSTOM_EXT_CACHE.write();
+            guard
+                .get_or_insert_with(scan_custom_extension_icons)
+                .clone()
+        }
+    };
+
+    if !custom_set.contains(&ext_lower) {
         return None;
     }
 
@@ -78,10 +90,20 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
         return None;
     }
     let ext_lower = ext.to_ascii_lowercase();
-    let cache_lock =
-        GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));
+    let gen_set = {
+        let guard = GENERATED_EXT_CACHE.read();
+        if let Some(ref set) = *guard {
+            set.clone()
+        } else {
+            drop(guard);
+            let mut guard = GENERATED_EXT_CACHE.write();
+            guard
+                .get_or_insert_with(scan_generated_extension_icons)
+                .clone()
+        }
+    };
 
-    let exists = cache_lock.read().contains(&ext_lower);
+    let exists = gen_set.contains(&ext_lower);
     let gen_dir = dirs::data_local_dir()?.join("flux/icons/extensions/generated");
     let latest_source_mtime = get_template_and_config_mtime();
 
@@ -89,7 +111,6 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
         for format in &["png", "svg", "webp", "jpg", "jpeg"] {
             let candidate = gen_dir.join(format!("{}.{}", ext_lower, format));
             if candidate.exists() {
-                // If it's an SVG and template/config was modified AFTER this icon was generated, re-generate it
                 if *format == "svg" {
                     if let (Some(source_mt), Ok(meta)) =
                         (latest_source_mtime, std::fs::metadata(&candidate))
@@ -100,12 +121,12 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
                                     crate::utils::media::icon_gen_params();
                                 if auto_gen {
                                     if let Ok(rebuilt) =
-            crate::utils::extension_template::save_generated_extension_icon(
-                &ext_lower, &accent, &body, &font, font_size,
-            )
-        {
-            return Some(rebuilt);
-        }
+                                        crate::utils::extension_template::save_generated_extension_icon(
+                                            &ext_lower, &accent, &body, &font, font_size,
+                                        )
+                                    {
+                                        return Some(rebuilt);
+                                    }
                                 }
                             }
                         }
@@ -151,9 +172,10 @@ pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
         if let Ok(generated) = crate::utils::extension_template::save_generated_extension_icon(
             &ext_lower, &accent, &body, &font, font_size,
         ) {
-            let gen_lock =
-                GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));
-            gen_lock.write().insert(ext_lower.clone());
+            let mut guard = GENERATED_EXT_CACHE.write();
+            if let Some(ref mut set) = *guard {
+                set.insert(ext_lower.clone());
+            }
             Some(generated)
         } else {
             None
@@ -168,12 +190,8 @@ pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
 
 /// Invalidates all extension icon lookup caches.
 pub fn invalidate_extension_icon_cache() {
-    let custom_lock = CUSTOM_EXT_CACHE.get_or_init(|| RwLock::new(scan_custom_extension_icons()));
-    *custom_lock.write() = scan_custom_extension_icons();
-
-    let gen_lock =
-        GENERATED_EXT_CACHE.get_or_init(|| RwLock::new(scan_generated_extension_icons()));
-    *gen_lock.write() = scan_generated_extension_icons();
+    *CUSTOM_EXT_CACHE.write() = Some(scan_custom_extension_icons());
+    *GENERATED_EXT_CACHE.write() = Some(scan_generated_extension_icons());
 
     let resolved_map = RESOLVED_EXT_CACHE.get_or_init(|| RwLock::new(HashMap::new()));
     resolved_map.write().clear();

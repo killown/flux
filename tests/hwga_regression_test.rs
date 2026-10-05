@@ -3,7 +3,7 @@
 use flux::hwga;
 use flux::services::loader::{get_extension_icon_path, invalidate_extension_icon_cache};
 
-const SCAN_PROBE: &str = "flux::services::loader::scan_directory_extensions";
+const SCAN_PROBE: &str = "flux::services::loader::icons::scan_directory_extensions";
 
 #[test]
 fn extension_icon_lookups_do_not_rescan_directories() {
@@ -52,6 +52,6 @@ fn themed_icon_cache_prevents_gio_type_guess_storm() {
         let _ = flux::utils::icon::get_icon_for_path(&p, false);
     }
 
-    let lookups = hwga::count("flux::utils::config::get_icon_for_path");
+    let lookups = hwga::count("flux::utils::icon::get_icon_for_path");
     assert!(lookups <= 300, "resolution gate broken ({lookups})");
 }
