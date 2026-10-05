@@ -817,6 +817,7 @@ impl FluxApp {
         mut password: Option<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("load_archive");
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
@@ -862,6 +863,7 @@ impl FluxApp {
         result: Result<Vec<archive::ArchiveEntry>, archive::ArchiveError>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_archive_loaded");
         self.is_loading = false;
 
         // Discard results from superseded navigation sessions.

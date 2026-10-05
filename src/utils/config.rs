@@ -92,6 +92,7 @@ fn get_icon_config() -> IconConfigSnapshot {
 }
 
 pub fn ensure_config_file() -> PathBuf {
+    crate::hit!("ensure_config_file");
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
@@ -795,6 +796,7 @@ pub fn extract_exe_icon(
 }
 
 pub fn load_menu_config() -> Vec<CustomAction> {
+    crate::hit!("load_menu_config");
     let config_path = ensure_config_file();
     let content = std::fs::read_to_string(config_path).unwrap_or_default();
 
@@ -1826,6 +1828,7 @@ pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
 /// `Some(texture)` on success, `None` if the file is not visual media, if any
 /// required external tool (`ffmpeg`) is unavailable, or if I/O fails.
 pub async fn get_or_create_thumbnail(path: &Path) -> Option<gdk::Texture> {
+    crate::hit!("get_or_create_thumbnail");
     let path_str = path.to_string_lossy();
 
     // WARNING: Never generate thumbnails for files inside the thumbnail cache itself.

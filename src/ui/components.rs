@@ -774,6 +774,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         if self.is_list_mode {
+            crate::hit!("bind_layout_list");
             // Compact horizontal row: small icon on the left, filename fills the rest.
             widgets
                 .card_box
@@ -951,6 +952,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             }
         } else {
+            crate::hit!("bind_layout_grid");
             widgets.card_box.set_orientation(gtk::Orientation::Vertical);
             widgets.card_box.set_halign(gtk::Align::Fill);
             widgets.card_box.set_valign(gtk::Align::Fill);
@@ -1029,11 +1031,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         // every bind, which caused severe scrollbar lag in GridView mode with
         // thousands of items. Opaque widget data via `set_data` bypasses the
         // CSS engine entirely and is the correct, high-performance approach.
+        crate::hit!("bind_flux_path_data");
         unsafe {
             root.set_data("flux_path", self.path.clone());
             widgets.card_box.set_data("flux_path", self.path.clone());
         }
 
+        crate::hit!("bind_emblem_classes");
         if self.is_foreign_owner {
             root.add_css_class("flux-card--restricted");
             widgets.card_box.add_css_class("flux-card--restricted");
@@ -1082,6 +1086,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             widgets.card_box.remove_css_class("flux-card--empty");
         }
 
+        crate::hit!("bind_git_badge");
         if let Some((emblem, class_name)) = self.git_status.badge_info() {
             widgets.git_badge.set_label(emblem);
             widgets
@@ -1093,6 +1098,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         if self.is_editing {
+            crate::hit!("bind_rename_entry");
             let entry = match widgets.stack.child_by_name(constants::VIEW_ENTRY) {
                 Some(w) => w.downcast::<gtk::Entry>().unwrap(),
                 None => {
@@ -1182,6 +1188,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
                 }
             ));
         } else {
+            crate::hit!("bind_rename_teardown");
             // Reclaim memory if a temporary Entry was previously instantiated
             if let Some(existing_entry) = widgets.stack.child_by_name(constants::VIEW_ENTRY) {
                 widgets.stack.remove(&existing_entry);
@@ -1191,10 +1198,12 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         if let Some(ref texture) = self.thumbnail {
+            crate::hit!("bind_thumbnail_paint");
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
+            crate::hit!("bind_icon_paint");
+
             // Default: use the icon as-is
-            crate::hit!("bind_dnd_setup");
             widgets.icon_widget.set_pixel_size(self.icon_size);
 
             let display = root.display();
@@ -1211,12 +1220,13 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
         }
 
         if self.disable_drag_and_drop {
+            crate::hit!("bind_dnd_disabled");
             widgets
                 .drag_source
                 .set_content(None::<&gdk::ContentProvider>);
             widgets.drop_target.set_actions(gdk::DragAction::empty());
         } else {
-            crate::hit!("scan_directory_extensions");
+            crate::hit!("bind_dnd_payload");
             let file = gtk::gio::File::for_path(&self.path);
             let uri = format!("{}\r\n", file.uri());
             let file_list_provider = gdk::ContentProvider::for_bytes(
@@ -1234,6 +1244,7 @@ impl relm4::typed_view::grid::RelmGridItem for FileItem {
             });
         }
 
+        crate::hit!("bind_path_cells");
         // Update the shared cell with the current path so gestures can read it
         *self.active_path.borrow_mut() = Some(self.path.clone());
 

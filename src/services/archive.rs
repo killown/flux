@@ -200,6 +200,7 @@ pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
 /// Constructs an `archive://` URI `PathBuf` for a given archive file and inner path.
 #[inline]
 pub fn build_archive_uri(archive_path: &Path, inner_path: &str) -> PathBuf {
+    crate::hit!("build_archive_uri");
     let host = encode_archive_host(archive_path);
     let uri = if inner_path.is_empty() {
         format!("{}{}/", ARCHIVE_URI, host)
@@ -1262,6 +1263,7 @@ pub fn entries_to_load_contexts(
     archive_path: &Path,
     expand_labels: bool,
 ) -> Vec<FileLoadContext> {
+    crate::hit!("entries_to_load_contexts");
     entries
         .iter()
         .map(|e| {

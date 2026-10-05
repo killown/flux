@@ -7,6 +7,7 @@ use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
@@ -781,12 +782,22 @@ impl FluxApp {
         );
     }
 
-    /// Locates the rendered child widget in the grid view matching the given file path.
+    /// Finds the grid cell widget that is currently showing the given file path.
+    ///
+    /// Looks up the item by the `flux_path` data key that `FileItem::bind` stores on
+    /// the overlay root and card box.
+    ///
+    /// NOTE: do not rewrite this to match on `widget_name()`. `bind()` intentionally
+    /// never sets the widget name (see the warning in `components.rs`), so a name
+    /// lookup always returns `None` and video previews silently do nothing.
     pub fn find_widget_by_path(&self, path: &std::path::Path) -> Option<gtk::Widget> {
-        let name = path.to_string_lossy();
-
-        fn search(widget: &gtk::Widget, target: &str) -> Option<gtk::Widget> {
-            if widget.widget_name().as_str() == target {
+        fn search(widget: &gtk::Widget, target: &std::path::Path) -> Option<gtk::Widget> {
+            let hit = unsafe {
+                widget
+                    .data::<PathBuf>("flux_path")
+                    .is_some_and(|p| p.as_ref() == target)
+            };
+            if hit {
                 return Some(widget.clone());
             }
             let mut child = widget.first_child();
@@ -799,8 +810,11 @@ impl FluxApp {
             None
         }
 
-        let active_view = self.tabs.get(self.active_tab_index).map(|t| &t.files.view);
-        active_view.and_then(|v| search(v.as_ref(), name.as_ref()))
+        let active_view = self
+            .tabs
+            .get(self.active_tab_index)
+            .map(|t| &t.files.view)?;
+        search(active_view.as_ref(), path)
     }
 
     pub fn stop_video_preview(&mut self) {
@@ -828,6 +842,7 @@ impl FluxApp {
     }
 
     pub fn sync_video_preview(&mut self) {
+        crate::hit!("sync_video_preview");
         if !self.config.ui.autoplay_video_previews {
             self.stop_video_preview();
             return;
@@ -889,6 +904,7 @@ impl FluxApp {
     }
 
     pub fn handle_trigger_video_preview(&mut self, path: std::path::PathBuf) {
+        crate::hit!("handle_trigger_video_preview");
         self.video_preview_source = None;
 
         let now = Instant::now();
