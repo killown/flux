@@ -81,7 +81,7 @@ impl FluxApp {
             ) {
                 let is_dir = info.file_type() == gio::FileType::Directory;
                 let display_name = info.display_name().to_string();
-                let icon = utils::get_icon_for_path(&path, is_dir);
+                let icon = utils::icon::get_icon_for_path(&path, is_dir);
 
                 let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
                     self.tabs[self.active_tab_index]

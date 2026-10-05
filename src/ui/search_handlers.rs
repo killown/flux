@@ -219,10 +219,10 @@ impl FluxApp {
                     .map(|d| d.as_secs() as i64)
                     .unwrap_or(0);
 
-                let icon = utils::get_icon_for_path(&path, is_dir);
+                let icon = utils::icon::get_icon_for_path(&path, is_dir);
 
                 if !is_dir {
-                    let (is_img, is_vid) = utils::is_visual_media(&path);
+                    let (is_img, is_vid) = utils::media::is_visual_media(&path);
                     if is_img || is_vid {
                         media_tasks.push((grid_idx, path.clone()));
                     }
@@ -394,7 +394,7 @@ impl FluxApp {
             return;
         }
 
-        let icon = utils::get_icon_for_path(&path, false);
+        let icon = utils::icon::get_icon_for_path(&path, false);
 
         let rel_path = path
             .strip_prefix(&self.current_path)

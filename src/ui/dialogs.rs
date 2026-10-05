@@ -357,7 +357,7 @@ impl FluxApp {
                             .create(gtk::gio::FileCreateFlags::NONE, gtk::gio::Cancellable::NONE)
                         {
                             let _ = stream.close(gtk::gio::Cancellable::NONE);
-                            crate::utils::open_file(PathBuf::from(uri));
+                            Self::open_file(PathBuf::from(uri));
                             s.input(AppMsg::Refresh);
                         }
                     } else {
@@ -372,7 +372,7 @@ impl FluxApp {
                             .open(&file_path)
                             .is_ok()
                         {
-                            crate::utils::open_file(file_path);
+                            Self::open_file(file_path);
                             s.input(AppMsg::Refresh);
                         }
                     }
@@ -671,7 +671,7 @@ impl FluxApp {
 
                                 let mut matched = false;
                                 for place in &mut config.sidebar {
-                                    if crate::utils::expand_path(&place.path) == target_path_clone {
+                                    if Self::expand_path(&place.path) == target_path_clone {
                                         place.icon = name.to_string();
                                         matched = true;
                                     }
@@ -1195,7 +1195,7 @@ impl FluxApp {
                     {
                         s.input(AppMsg::Navigate(PathBuf::from(trimmed)));
                     } else {
-                        let expanded = crate::utils::expand_path(trimmed);
+                        let expanded = Self::expand_path(trimmed);
                         s.input(AppMsg::Navigate(expanded));
                     }
                 }
@@ -1855,7 +1855,7 @@ impl FluxApp {
                     .subtitle(rel.as_str())
                     .build();
 
-                let gicon = crate::utils::get_icon_for_path(&path, false);
+                let gicon = crate::utils::icon::get_icon_for_path(&path, false);
                 let icon_img = gtk::Image::from_gicon(&gicon);
                 icon_img.set_pixel_size(24);
                 row.add_prefix(&icon_img);
@@ -2042,7 +2042,7 @@ impl FluxApp {
 
                             if std::fs::copy(&src_path, &dest_path).is_ok() {
                                 crate::services::loader::invalidate_extension_icon_cache();
-                                crate::utils::invalidate_themed_icon_cache();
+                                crate::utils::icon::invalidate_themed_icon_cache();
                                 sender.input(AppMsg::Refresh);
 
                                 if let Some(ref msg) = toast {

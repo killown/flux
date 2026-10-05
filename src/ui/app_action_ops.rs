@@ -219,9 +219,9 @@ impl FluxApp {
     pub fn handle_clear_recents(&mut self, sender: &AsyncComponentSender<Self>) {
         let selection = self.get_selection();
         let result = if selection.is_empty() {
-            crate::utils::remove_recents(None)
+            Self::remove_recents(None)
         } else {
-            crate::utils::remove_recents(Some(&selection))
+            Self::remove_recents(Some(&selection))
         };
 
         match result {
@@ -249,7 +249,7 @@ impl FluxApp {
         relm4::spawn_blocking(move || {
             let mime = resolved_path
                 .as_ref()
-                .map(|p| utils::get_mime_type(p))
+                .map(|p| utils::media::get_mime_type(p))
                 .unwrap_or_else(|| constants::MIME_DIR.to_string());
 
             sender_ctx.input(AppMsg::ShowContextMenu {

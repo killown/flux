@@ -889,7 +889,7 @@ impl FluxApp {
                         ) {
                             Ok(tmp) => {
                                 if let Ok((_file, path_buf)) = tmp.keep() {
-                                    crate::utils::open_file(path_buf);
+                                    Self::open_file(path_buf);
                                 }
                             }
                             Err(crate::services::archive::ArchiveError::PasswordRequired) => {
@@ -951,10 +951,10 @@ impl FluxApp {
                                 }
                             }
                         } else {
-                            crate::utils::open_file(path_clone);
+                            Self::open_file(path_clone);
                         }
                     } else {
-                        crate::utils::open_file(path_clone);
+                        Self::open_file(path_clone);
                     }
                 });
                 break;
@@ -1202,7 +1202,7 @@ impl FluxApp {
 
         for (offset, item) in results.into_iter().enumerate() {
             let is_dir = item.path.is_dir();
-            let icon = utils::get_icon_for_path(&item.path, is_dir);
+            let icon = utils::icon::get_icon_for_path(&item.path, is_dir);
             let size = item.size;
             let mtime = item.mtime;
 

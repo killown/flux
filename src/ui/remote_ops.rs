@@ -51,10 +51,10 @@ impl FluxApp {
                     .as_deref()
                     .and_then(|n| gio::Icon::for_string(n).ok())
                     .unwrap_or_else(|| {
-                        crate::utils::get_icon_for_path(&item.target_path, item.is_dir)
+                        crate::utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
                     })
             } else {
-                crate::utils::get_icon_for_path(&item.target_path, item.is_dir)
+                crate::utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
             };
 
             net_debug!(

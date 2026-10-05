@@ -49,7 +49,7 @@ fn themed_icon_cache_prevents_gio_type_guess_storm() {
     for i in 0..300 {
         let ext = ["rs", "toml", "png", "mp4", "zip"][i % 5];
         let p = std::path::PathBuf::from(format!("/tmp/flx_icon_{i}.{ext}"));
-        let _ = flux::utils::get_icon_for_path(&p, false);
+        let _ = flux::utils::icon::get_icon_for_path(&p, false);
     }
 
     let lookups = hwga::count("flux::utils::config::get_icon_for_path");

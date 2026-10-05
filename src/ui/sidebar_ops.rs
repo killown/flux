@@ -19,7 +19,7 @@ impl FluxApp {
             } else if place.path == "tags://" {
                 PathBuf::from(&place.path)
             } else {
-                utils::expand_path(&place.path)
+                Self::expand_path(&place.path)
             };
 
             self.sidebar.guard().push_back(crate::ui::SidebarPlace {
@@ -160,11 +160,11 @@ impl FluxApp {
         let path = self
             .get_selected_path()
             .unwrap_or_else(|| self.current_path.clone());
-        let expanded_path = crate::utils::expand_path(&path.to_string_lossy());
+        let expanded_path = Self::expand_path(&path.to_string_lossy());
         let path_str = expanded_path.to_string_lossy().to_string();
 
         let existing_idx = self.config.sidebar.iter().position(|entry| {
-            let expanded = crate::utils::expand_path(&entry.path);
+            let expanded = Self::expand_path(&entry.path);
             expanded.to_string_lossy() == path_str
         });
 

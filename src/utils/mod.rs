@@ -10,6 +10,7 @@ pub mod extension_template;
 pub mod glob;
 pub mod helpers;
 pub mod hwga;
+pub mod icon;
 pub mod media;
 pub mod path;
 pub mod search;
@@ -17,7 +18,7 @@ pub mod xattr;
 
 // 2. Public Re-exports
 pub use config::*;
-pub use path::{osstr_to_bytes, strip_current_dir, PathExt};
+pub use path::{osstr_to_bytes, strip_current_dir};
 
 /// System-level configuration constants for utilities.
 pub mod constants {}

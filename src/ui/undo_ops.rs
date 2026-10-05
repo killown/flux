@@ -84,7 +84,7 @@ impl FluxApp {
                 old_name,
                 new_name,
             } => {
-                if crate::utils::rename_path(&new_path, &old_name).is_ok() {
+                if Self::rename_path(&new_path, &old_name).is_ok() {
                     self.file_op_history.push_redo(FileOp::Rename {
                         old_path: new_path,
                         new_path: old_path,
@@ -201,7 +201,7 @@ impl FluxApp {
                 old_name,
                 new_name,
             } => {
-                if crate::utils::rename_path(&old_path, &new_name).is_ok() {
+                if Self::rename_path(&old_path, &new_name).is_ok() {
                     self.file_op_history.push_undo(FileOp::Rename {
                         old_path: new_path,
                         new_path: old_path,

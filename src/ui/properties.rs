@@ -309,7 +309,7 @@ impl SimpleComponent for FileProperties {
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let mime_type = utils::get_mime_type(&path);
+        let mime_type = utils::media::get_mime_type(&path);
 
         let mut file_content = Vec::new();
         if let Ok(f) = fs::File::open(&path) {

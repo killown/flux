@@ -197,6 +197,28 @@ pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
     Some((decode_archive_host(host), inner.to_owned()))
 }
 
+/// Extracts an archive entry to a temporary path and generates its thumbnail.
+pub fn get_archive_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
+    let path_str = path.to_string_lossy();
+    let (archive_path, inner_path) = parse_archive_uri(&path_str)?;
+    let extracted_path = extract_archive_entry_to_temp(&archive_path, &inner_path)?;
+
+    let texture = crate::utils::media::generate_thumbnail_sync(&extracted_path);
+    let _ = std::fs::remove_file(&extracted_path);
+
+    texture
+}
+
+/// Extracts an archive entry to a temporary file path.
+pub fn extract_archive_entry_to_temp(
+    archive_path: &std::path::Path,
+    inner_path: &str,
+) -> Option<std::path::PathBuf> {
+    let temp_file = extract_entry_to_tempfile(archive_path, inner_path, None).ok()?;
+    let (_, path) = temp_file.keep().ok()?;
+    Some(path)
+}
+
 /// Constructs an `archive://` URI `PathBuf` for a given archive file and inner path.
 #[inline]
 pub fn build_archive_uri(archive_path: &Path, inner_path: &str) -> PathBuf {
@@ -227,7 +249,7 @@ pub fn is_browsable_archive(path: &Path) -> bool {
     }
 
     // Fall back to MIME type for custom extension mappings (e.g. .cbz -> zip, .cbr -> rar)
-    let mime = crate::utils::config::get_mime_type(path);
+    let mime = crate::utils::media::get_mime_type(path);
     matches!(
         mime.as_str(),
         "application/zip"
@@ -1082,7 +1104,7 @@ pub fn get_backend(
         return Box::new(DebBackend);
     }
 
-    let mime = crate::utils::config::get_mime_type(archive_path);
+    let mime = crate::utils::media::get_mime_type(archive_path);
     match mime.as_str() {
         "application/zip" | "application/x-zip-compressed" => Box::new(ZipBackend),
         "application/x-7z-compressed" => Box::new(SevenZBackend),

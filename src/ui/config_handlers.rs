@@ -247,7 +247,7 @@ impl FluxApp {
 
         // Live-update matching grid items instantly
         let new_icon = gtk::gio::Icon::for_string(&image_path.to_string_lossy())
-            .unwrap_or_else(|_| utils::get_icon_for_path(&path, false));
+            .unwrap_or_else(|_| utils::icon::get_icon_for_path(&path, false));
 
         for i in 0..self.files.len() {
             if let Some(wrapper) = self.files.get(i) {
@@ -273,7 +273,7 @@ impl FluxApp {
         self.folder_cache.remove(&path);
 
         // Live-update matching grid items instantly back to default
-        let default_icon = utils::get_icon_for_path(&path, false);
+        let default_icon = utils::icon::get_icon_for_path(&path, false);
         for i in 0..self.files.len() {
             if let Some(wrapper) = self.files.get(i) {
                 let mut item = wrapper.borrow().clone();
@@ -400,7 +400,7 @@ impl FluxApp {
         self.config.ui.auto_mime_body_color = color;
         utils::save_config(&self.config);
         crate::services::loader::invalidate_extension_icon_cache();
-        crate::utils::invalidate_themed_icon_cache();
+        crate::utils::icon::invalidate_themed_icon_cache();
         self.load_path(self.current_path.clone(), sender);
     }
 
@@ -412,7 +412,7 @@ impl FluxApp {
         self.config.ui.auto_mime_font_color = color;
         utils::save_config(&self.config);
         crate::services::loader::invalidate_extension_icon_cache();
-        crate::utils::invalidate_themed_icon_cache();
+        crate::utils::icon::invalidate_themed_icon_cache();
         self.load_path(self.current_path.clone(), sender);
     }
 
@@ -465,7 +465,7 @@ impl FluxApp {
         }
 
         crate::services::loader::invalidate_extension_icon_cache();
-        crate::utils::invalidate_themed_icon_cache();
+        crate::utils::icon::invalidate_themed_icon_cache();
         self.tabs[self.active_tab_index].files.clear();
         self.load_path(self.current_path.clone(), sender);
     }
@@ -563,7 +563,7 @@ impl FluxApp {
         let mut modified = false;
 
         for place in &mut self.config.sidebar {
-            let expanded = utils::expand_path(&place.path);
+            let expanded = Self::expand_path(&place.path);
             if expanded == path {
                 place.name = new_name.clone();
                 modified = true;

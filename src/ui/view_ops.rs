@@ -176,7 +176,7 @@ impl FluxApp {
                     // Spawn async tasks for MIME, dimensions, media duration
                     let path_for_async = path.clone();
                     relm4::spawn_blocking(move || {
-                        let mime = utils::get_mime_type(&path_for_async);
+                        let mime = utils::media::get_mime_type(&path_for_async);
                         let dimensions = if mime.starts_with("image/") {
                             crate::utils::media::probe_image_dimensions(&path_for_async)
                         } else {
@@ -522,7 +522,7 @@ impl FluxApp {
             if let Some(wrapper) = self.tabs[self.active_tab_index].files.get(idx) {
                 let item = wrapper.borrow();
                 if !item.is_dir && item.thumbnail.is_none() && self.pending_thumbnails.insert(idx) {
-                    let (is_img, is_vid) = crate::utils::is_visual_media(&item.path);
+                    let (is_img, is_vid) = utils::media::is_visual_media(&item.path);
                     if is_img || is_vid {
                         let token = self.thumbnail_manager.register_token(idx);
                         self.spawn_single_thumbnail(
@@ -668,9 +668,9 @@ impl FluxApp {
                 let is_pdf = ext == "pdf";
                 let is_font = matches!(ext.as_str(), "ttf" | "otf" | "woff" | "woff2" | "ttc");
                 let is_exe = ext == "exe";
-                let is_audio = utils::is_audio_file(&path);
+                let is_audio = utils::media::is_audio_file(&path);
                 let (is_img, is_vid) = if !is_pdf && !is_font && !is_exe && !is_audio {
-                    utils::is_visual_media(&path)
+                    utils::media::is_visual_media(&path)
                 } else {
                     (false, false)
                 };
@@ -866,7 +866,7 @@ impl FluxApp {
         }
 
         let selected_path = selection[0].clone();
-        let (_, is_vid) = crate::utils::is_visual_media(&selected_path);
+        let (_, is_vid) = utils::media::is_visual_media(&selected_path);
         if !is_vid {
             self.stop_video_preview();
             return;

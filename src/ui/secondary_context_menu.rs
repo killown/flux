@@ -315,7 +315,7 @@ impl FluxApp {
         relm4::spawn_blocking(move || {
             let mime = target_path_bg
                 .as_ref()
-                .map(|p| utils::get_mime_type(p))
+                .map(|p| utils::media::get_mime_type(p))
                 .unwrap_or_else(|| constants::MIME_DIR.to_string());
 
             let actions = match resolve_secondary_menu_template(&mime) {

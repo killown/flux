@@ -2,7 +2,7 @@ use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
 use crate::services::archive;
 use crate::ui::FileItem;
 use crate::utils;
-use crate::utils::is_audio_file;
+use crate::utils::media::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
@@ -108,7 +108,7 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
                         if let Ok(icon_mt) = meta.modified() {
                             if source_mt > icon_mt {
                                 let (auto_gen, accent, body, font, font_size) =
-                                    crate::utils::config::icon_gen_params();
+                                    crate::utils::media::icon_gen_params();
                                 if auto_gen {
                                     if let Ok(rebuilt) =
             crate::utils::extension_template::save_generated_extension_icon(
@@ -156,7 +156,7 @@ pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
         return Some(gen);
     }
 
-    let (auto_gen, accent, body, font, font_size) = crate::utils::config::icon_gen_params();
+    let (auto_gen, accent, body, font, font_size) = crate::utils::media::icon_gen_params();
 
     let result = if auto_gen {
         if let Ok(generated) = crate::utils::extension_template::save_generated_extension_icon(
@@ -970,7 +970,7 @@ impl FluxApp {
                         false
                     };
 
-                    let icon = utils::get_icon_for_path(&item.target_path, item.is_dir);
+                    let icon = utils::icon::get_icon_for_path(&item.target_path, item.is_dir);
 
                     // Collect visual media files for thumbnail generation
                     if !item.is_dir {
@@ -1124,7 +1124,7 @@ impl FluxApp {
                 }
             }
 
-            let icon = utils::get_icon_for_path(&path, is_dir);
+            let icon = utils::icon::get_icon_for_path(&path, is_dir);
 
             let (is_img, is_vid) = is_visual_media_by_ext(&path);
             let is_audio = is_audio_file(&path);
@@ -1138,7 +1138,7 @@ impl FluxApp {
                 false
             };
 
-            let real_path = crate::utils::expand_path(&path.to_string_lossy());
+            let real_path = Self::expand_path(&path.to_string_lossy());
             let (is_symlink, is_broken_symlink) = if real_path.is_symlink() {
                 (true, std::fs::metadata(&real_path).is_err())
             } else {
@@ -1317,10 +1317,11 @@ impl FluxApp {
                 .or_else(|| item.custom_icon.clone());
 
             let icon = if let Some(ref custom) = custom_icon {
-                gtk::gio::Icon::for_string(custom)
-                    .unwrap_or_else(|_| utils::get_icon_for_path(&item.target_path, item.is_dir))
+                gtk::gio::Icon::for_string(custom).unwrap_or_else(|_| {
+                    utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
+                })
             } else {
-                utils::get_icon_for_path(&item.target_path, item.is_dir)
+                utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
             };
 
             let thumbnail = cached_thumbs

@@ -121,7 +121,7 @@ fn set_icon_on_target(config: &mut Config, target: &std::path::Path, image: &std
         config.ui.folder_icons.insert(key, img_val.clone());
         // Also update matching sidebar pinned location icons
         for place in &mut config.sidebar {
-            let expanded = crate::utils::expand_path(&place.path);
+            let expanded = FluxApp::expand_path(&place.path);
             if expanded == target {
                 place.icon = img_val.clone();
             }

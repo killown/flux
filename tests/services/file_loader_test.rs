@@ -121,7 +121,7 @@ fn test_hwga_bind_icon_lookup_count_matches_disk_entries() {
     let mut processed_items = Vec::new();
     for path in &disk_entries {
         let is_dir = path.is_dir();
-        let icon = flux::utils::get_icon_for_path(path, is_dir);
+        let icon = flux::utils::icon::get_icon_for_path(path, is_dir);
         let name = path.file_name().unwrap().to_string_lossy().to_string();
 
         let item = flux::ui::FileItem::builder(name.clone(), path.clone(), icon)

@@ -141,7 +141,7 @@ impl FluxApp {
                             return;
                         }
 
-                        let texture = utils::get_or_create_thumbnail(&media_path).await;
+                        let texture = utils::media::get_or_create_thumbnail(&media_path).await;
 
                         if inner_session.load(Ordering::Acquire) != session_id {
                             return;
@@ -213,7 +213,7 @@ impl FluxApp {
                 return;
             }
 
-            let texture = utils::get_or_create_thumbnail(&media_path).await;
+            let texture = utils::media::get_or_create_thumbnail(&media_path).await;
 
             if cancel_flag.load(Ordering::Acquire)
                 || session_arc.load(Ordering::Acquire) != current_session
