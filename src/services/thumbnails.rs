@@ -8,6 +8,29 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use tokio::sync::Semaphore;
 
+/// Clamp the thumbnail worker count so it can't eat the whole FD budget.
+///
+/// Each thumbnail holds a couple of fds while it runs, and on a folder with
+/// thousands of images that adds up fast. Give thumbnails a quarter of
+/// RLIMIT_NOFILE and leave the rest for GTK, GIO, SQLite and the terminal.
+fn effective_thumbnail_permits(configured: usize) -> usize {
+    let mut lim = libc::rlimit {
+        rlim_cur: 0,
+        rlim_max: 0,
+    };
+    let soft = unsafe {
+        if libc::getrlimit(libc::RLIMIT_NOFILE, &mut lim) == 0 {
+            lim.rlim_cur as usize
+        } else {
+            1024
+        }
+    };
+
+    // Below 2 the pipeline just serializes for no reason.
+    let budget = (soft / 4).max(2);
+    configured.max(1).min(budget)
+}
+
 /// Tracks active lazy thumbnail generation tasks to allow viewport-based cancellation.
 #[derive(Default, Debug)]
 pub struct ThumbnailTaskManager {
@@ -16,10 +39,12 @@ pub struct ThumbnailTaskManager {
 }
 
 impl ThumbnailTaskManager {
-    /// Returns the shared semaphore matching the configured worker thread limit.
+    /// Returns the shared semaphore matching the configured worker thread limit,
+    /// clamped to the process's FD budget.
     pub fn get_semaphore(&self, max_threads: usize) -> Arc<Semaphore> {
+        let permits = effective_thumbnail_permits(max_threads);
         self.semaphore
-            .get_or_init(|| Arc::new(Semaphore::new(max_threads.max(1))))
+            .get_or_init(|| Arc::new(Semaphore::new(permits)))
             .clone()
     }
 
@@ -83,16 +108,35 @@ impl FluxApp {
         }
 
         let max_threads = self.config.ui.thumbnail_threads.max(1);
+        // Clamp against RLIMIT_NOFILE so eager cold loads can't blow the FD
+        // ceiling on folders with thousands of images.
+        let sem = self.thumbnail_manager.get_semaphore(max_threads);
 
         relm4::spawn(async move {
-            // Process tasks with bounded concurrency to eliminate task churn
+            // Process tasks with bounded concurrency to eliminate task churn.
+            // The semaphore is the real FD throttle, buffer_unordered only
+            // limits how many futures are polled at once.
             stream::iter(media_tasks)
                 .map(|(grid_idx, media_path)| {
                     let inner_sender = sender.clone();
                     let inner_session = session_arc.clone();
                     let session_id = current_session;
+                    let sem = sem.clone();
 
                     async move {
+                        if inner_session.load(Ordering::Acquire) != session_id {
+                            return;
+                        }
+
+                        // Acquire a permit before opening any file. A stale
+                        // task will still block here, but the session check
+                        // right after bails out before any I/O happens, so
+                        // it doesn't waste an FD budget slot on real work.
+                        let _permit = match sem.acquire().await {
+                            Ok(p) => p,
+                            Err(_) => return,
+                        };
+
                         if inner_session.load(Ordering::Acquire) != session_id {
                             return;
                         }
