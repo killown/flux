@@ -1,6 +1,5 @@
 mod services {
     mod archive_backend_test;
-    mod archive_hwga_test;
     mod archive_services_test;
     mod archive_synthesis_test;
     mod db_advanced_test;
