@@ -357,6 +357,9 @@ fn worker_applies_events_and_periodic_delta() {
     let root = tmp.path().join("home");
     touch(&root.join("a/first.txt"));
     let db = tmp.path().join("index.db");
+
+    SearchIndex::open_at(&db).unwrap();
+
     ENABLED.store(true, Ordering::Relaxed);
     let (tx, rx) = mpsc::channel();
     let (r, d) = (root.clone(), db.clone());

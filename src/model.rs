@@ -883,7 +883,7 @@ pub struct FluxApp {
     /// In-session undo/redo history for file operations.
     pub file_op_history: crate::ui::undo_redo::FileOpHistory,
     /// Handle to the active command output dialog, if open.
-    pub command_dialog: Option<crate::ui::command_dialog::CommandDialogHandle>,
+    pub command_dialog: Option<crate::ui::dialog::command::CommandDialogHandle>,
     /// Weak reference to the inline header path entry for live text sync.
     pub header_path_entry: glib::WeakRef<gtk::Entry>,
     // Search state for content search mode.
@@ -1004,7 +1004,7 @@ pub struct FluxApp {
     ///
     /// `None` while no dialog is showing, `Some` while at least one transfer
     /// is active and the dialog threshold has been reached.
-    pub transfer_dialog: Option<crate::ui::transfer_dialog::TransferDialogHandle>,
+    pub transfer_dialog: Option<crate::ui::dialog::transfer::TransferDialogHandle>,
     /// True while a per-file conflict-resolution dialog is blocking a worker.
     /// Prevents `handle_show_transfer_dialog` from opening the transfer
     /// progress window on top of the conflict prompt.

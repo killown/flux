@@ -533,7 +533,7 @@ impl FluxApp {
                     .expect("FileConflictDetected handled more than once");
 
                 self.conflict_dialog_active = true;
-                crate::ui::conflict_dialog::show_conflict_dialog(context, tx, sender.clone());
+                crate::ui::dialog::conflict::show_conflict_dialog(context, tx, sender.clone());
             }
             AppMsg::InspectDirectory(path) => {
                 self.show_dir_inspector_dialog(path, &sender);
@@ -643,7 +643,7 @@ impl FluxApp {
                 auth_failed,
             } => {
                 let window = gtk::Application::default().active_window().unwrap();
-                crate::ui::network_dialogs::show_credentials_dialog(
+                crate::ui::dialog::network::show_credentials_dialog(
                     &window,
                     uri,
                     message,

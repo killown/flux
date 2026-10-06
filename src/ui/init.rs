@@ -576,7 +576,7 @@ impl FluxApp {
         app.add_action(&reload_action);
 
         // ── Register Connect to Server action ──
-        crate::ui::network_dialogs::register_connect_action(
+        crate::ui::dialog::network::register_connect_action(
             &app,
             root,
             sender.input_sender().clone(),

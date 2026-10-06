@@ -100,7 +100,7 @@ impl FluxApp {
             return;
         }
 
-        let dialog = crate::ui::transfer_dialog::create_transfer_dialog(
+        let dialog = crate::ui::dialog::transfer::create_transfer_dialog(
             self.task_queue.clone(),
             crate::model::SENDER
                 .get()
@@ -134,7 +134,7 @@ impl FluxApp {
             return;
         }
 
-        let dialog = crate::ui::command_dialog::create_command_dialog(
+        let dialog = crate::ui::dialog::command::create_command_dialog(
             id,
             self.task_queue.clone(),
             crate::model::SENDER
