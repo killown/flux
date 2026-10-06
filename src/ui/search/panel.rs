@@ -1,6 +1,6 @@
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
-use crate::services::extension_search::AdvancedSearchParams;
+use crate::services::search::AdvancedSearchParams;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 

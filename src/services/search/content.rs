@@ -1,6 +1,7 @@
+use super::forbidden::forbidden_matcher;
+use super::scan::scan_file;
 use crate::model::{AppMsg, FluxApp};
 use crate::services::constants::MAX_CONTENT_SEARCH_RESULTS;
-use crate::services::content_scan::scan_file;
 use crate::ui::ops::paste::NEXT_TASK_ID;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
@@ -13,28 +14,7 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::os::unix::fs::MetadataExt;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, OnceLock};
-
-/// Static AhoCorasick matcher for forbidden system and virtual paths.
-static FORBIDDEN_PATHS: OnceLock<AhoCorasick> = OnceLock::new();
-
-fn forbidden_matcher() -> &'static AhoCorasick {
-    FORBIDDEN_PATHS.get_or_init(|| {
-        AhoCorasick::builder()
-            .build([
-                b"/proc/".as_slice(),
-                b"/sys/".as_slice(),
-                b"/dev/".as_slice(),
-                b"/run/".as_slice(),
-                b"/var/run/".as_slice(),
-                b"/dosdevices/".as_slice(),
-                b"/Prefixes/".as_slice(),
-                b"/compatdata/".as_slice(),
-                b"/drive_c/".as_slice(),
-            ])
-            .expect("valid forbidden path patterns")
-    })
-}
+use std::sync::Arc;
 
 pub fn start_content_search(
     app: &mut FluxApp,

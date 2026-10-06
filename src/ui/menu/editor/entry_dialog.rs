@@ -120,7 +120,7 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         let entry_ref = label_entry_clone.clone();
         let parent_win = window_weak.upgrade();
 
-        crate::ui::icon_picker::show_menu_icon_picker(
+        crate::ui::dialog::menu_icon_picker::show_menu_icon_picker(
             parent_win.as_ref().map(|w| w.upcast_ref()),
             move |glyph| {
                 let current = entry_ref.text().to_string();
@@ -132,7 +132,7 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
                 entry_ref.set_text(&format!(
                     "{}{}{}",
                     glyph,
-                    crate::ui::icon_picker::MENU_ICON_PADDING,
+                    crate::ui::dialog::menu_icon_picker::MENU_ICON_PADDING,
                     cleaned
                 ));
             },
@@ -186,7 +186,7 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         let entry_ref = sub_entry_clone.clone();
         let parent_win = sub_window_weak.upgrade();
 
-        crate::ui::icon_picker::show_menu_icon_picker(
+        crate::ui::dialog::menu_icon_picker::show_menu_icon_picker(
             parent_win.as_ref().map(|w| w.upcast_ref()),
             move |glyph| {
                 let current = entry_ref.text().to_string();
@@ -198,7 +198,7 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
                 entry_ref.set_text(&format!(
                     "{}{}{}",
                     glyph,
-                    crate::ui::icon_picker::MENU_ICON_PADDING,
+                    crate::ui::dialog::menu_icon_picker::MENU_ICON_PADDING,
                     cleaned
                 ));
             },

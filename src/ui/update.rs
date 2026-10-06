@@ -292,19 +292,17 @@ impl FluxApp {
             AppMsg::StartAdvancedSearch(params) => {
                 self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
                 self.last_search_was_advanced = true;
-                crate::services::extension_search::start_advanced_search(self, params, sender);
+                crate::services::search::start_advanced_search(self, params, sender);
             }
             AppMsg::StartExtensionSearch(patterns) => {
-                crate::services::extension_search::start_extension_search(self, patterns, sender);
+                crate::services::search::start_extension_search(self, patterns, sender);
             }
             AppMsg::ExtensionSearchBatch { results, session } => {
                 self.handle_extension_search_batch(results, session);
             }
             AppMsg::StartContentSearch(term, ext_filter) => {
                 self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
-                crate::services::content_search::start_content_search(
-                    self, term, ext_filter, sender,
-                )
+                crate::services::search::start_content_search(self, term, ext_filter, sender)
             }
             AppMsg::SetEnableFileIndexing(enabled) => {
                 self.config.ui.enable_file_indexing = enabled;

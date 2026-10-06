@@ -73,7 +73,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         let parent_widget = self.files.view.clone();
-        crate::ui::tag_picker::show_tag_picker(
+        crate::ui::dialog::tag_picker::show_tag_picker(
             &parent_widget,
             paths,
             tags,

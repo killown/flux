@@ -4,9 +4,7 @@
 //! logic to separate the presentation layer from the core application state.
 
 // --- 1. Submodule Declarations ---
-pub mod advanced_search;
 pub mod debug;
-pub mod icon_picker;
 pub mod init;
 pub mod inputs;
 pub mod keymap;
@@ -23,11 +21,10 @@ pub mod dialog;
 pub mod diff_panel;
 pub mod navigation;
 pub mod ops;
-pub mod search_handlers;
+pub mod search;
 pub mod sidebar_network;
 pub mod tabs;
 pub mod tag_navigator;
-pub mod tag_picker;
 pub mod undo_redo;
 pub use tabs::TabState;
 
