@@ -24,7 +24,7 @@ use gtk::gio;
 use tempfile::tempdir;
 
 use flux::services::tasks::{new_queue, TaskQueue};
-use flux::ui::paste_ops::perform_file_op;
+use flux::ui::ops::paste::perform_file_op;
 
 // ─── stop_flag contract ───────────────────────────────────────────────────────
 

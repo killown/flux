@@ -283,7 +283,7 @@ fn main() {
         }
 
         StartupAction::MenuEditor => {
-            crate::ui::menu_editor::run();
+            crate::ui::menu::editor::run();
         }
 
         StartupAction::UnknownFlag(flag) => {

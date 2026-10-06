@@ -1,5 +1,5 @@
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::paste_ops::NEXT_TASK_ID;
+use crate::ui::ops::paste::NEXT_TASK_ID;
 use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};

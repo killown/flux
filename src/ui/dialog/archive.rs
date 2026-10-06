@@ -118,7 +118,7 @@ impl FluxApp {
                 relm4::spawn_blocking(move || {
                     let total_bytes = std::fs::metadata(&a_path).map(|m| m.len()).unwrap_or(0);
                     let show_progress = total_bytes >= 100 * 1024 * 1024;
-                    let task_id = crate::ui::paste_ops::NEXT_TASK_ID
+                    let task_id = crate::ui::ops::paste::NEXT_TASK_ID
                         .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     let cancellable = gtk::gio::Cancellable::new();
                     let label = format!("Deleting {}", file_name_clone);

@@ -1,4 +1,4 @@
-use flux::ui::secondary_context_menu::{parse_secondary_template, resolve_secondary_menu_template};
+use flux::ui::menu::secondary::{parse_secondary_template, resolve_secondary_menu_template};
 use std::fs;
 use tempfile::TempDir;
 

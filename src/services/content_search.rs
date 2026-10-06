@@ -1,7 +1,7 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::services::constants::MAX_CONTENT_SEARCH_RESULTS;
 use crate::services::content_scan::scan_file;
-use crate::ui::paste_ops::NEXT_TASK_ID;
+use crate::ui::ops::paste::NEXT_TASK_ID;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;
