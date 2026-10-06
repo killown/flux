@@ -1345,7 +1345,7 @@ impl SimpleAsyncComponent for FluxApp {
 
         if model.config.ui.enable_file_indexing {
             gtk::glib::idle_add_local_once(|| {
-                crate::services::indexer::build_home_index_async();
+                crate::services::search::indexer::build_home_index_async();
             });
         }
 

@@ -76,7 +76,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             }
 
                             if state {
-                                crate::services::indexer::build_home_index_async();
+                                crate::services::search::indexer::build_home_index_async();
                             }
                             glib::Propagation::Proceed
                         }

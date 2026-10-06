@@ -308,7 +308,7 @@ impl FluxApp {
                 self.config.ui.enable_file_indexing = enabled;
                 crate::utils::save_config(&self.config);
                 if enabled {
-                    crate::services::indexer::build_home_index_async();
+                    crate::services::search::indexer::build_home_index_async();
                 }
             }
             AppMsg::ContentSearchResult {

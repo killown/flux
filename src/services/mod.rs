@@ -8,7 +8,6 @@
 pub mod archive;
 pub mod db;
 pub mod git;
-pub mod indexer;
 pub mod inspector;
 pub mod loader;
 pub mod luks;

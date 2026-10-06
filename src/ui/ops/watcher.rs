@@ -9,7 +9,7 @@ use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_file_deleted(&mut self, path: PathBuf) {
-        crate::services::indexer::notify_deleted(&path);
+        crate::services::search::indexer::notify_deleted(&path);
 
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(parent);
@@ -100,7 +100,7 @@ impl FluxApp {
                         self.tabs[self.active_tab_index].files.insert(idx, item);
                     }
                 } else {
-                    crate::services::indexer::notify_created(&path);
+                    crate::services::search::indexer::notify_created(&path);
 
                     let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
                         FluxApp::is_dir_empty(&path)
@@ -143,7 +143,7 @@ impl FluxApp {
                     sender.input(AppMsg::Refresh);
                 }
             } else {
-                crate::services::indexer::notify_deleted(&path);
+                crate::services::search::indexer::notify_deleted(&path);
 
                 // File no longer exists, treat as deleted, remove from grid directly
                 let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
@@ -213,7 +213,7 @@ impl FluxApp {
         new_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
-        crate::services::indexer::notify_moved(&old_path, &new_path);
+        crate::services::search::indexer::notify_moved(&old_path, &new_path);
 
         if let Some(p) = old_path.parent() {
             self.folder_cache.remove(&self.cache_key(p));

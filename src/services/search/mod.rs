@@ -3,6 +3,7 @@
 mod content;
 mod extension;
 mod forbidden;
+pub mod indexer;
 mod scan;
 mod types;
 
