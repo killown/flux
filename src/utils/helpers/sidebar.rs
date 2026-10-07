@@ -228,20 +228,20 @@ impl FluxApp {
             let panel = match panel_type {
                 RightPanelType::Tag => {
                     let tags = self.state_db.list_all_tags().unwrap_or_default();
-                    crate::ui::tag_panel::build_tag_panel(
+                    crate::ui::panels::build_tag_panel(
                         tags,
                         self.config.ui.tag_panel_width,
                         sender.clone(),
                     )
                 }
-                RightPanelType::Search => crate::ui::search::build_search_panel(
+                RightPanelType::Search => crate::ui::panels::build_search_panel(
                     self.config.ui.search_panel_width,
                     sender.clone(),
                 ),
                 RightPanelType::Diff => {
                     let buf = gtk::TextBuffer::new(None);
                     self.diff_text_buffer = Some(buf.clone());
-                    crate::ui::diff_panel::build_diff_panel(
+                    crate::ui::panels::build_diff_panel(
                         self.config.ui.diff_panel_width,
                         buf,
                         sender.clone(),

@@ -1,3 +1,6 @@
+use super::header::panel_header;
+use super::resize::resizable_panel;
+use super::spec::PanelSpec;
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 use adw::prelude::*;
@@ -57,7 +60,6 @@ pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
     }
 }
 
-/// Parses the start line number from a hunk header `@@ -a,b +c,d @@`.
 fn parse_hunk_target_line(line: &str) -> Option<usize> {
     let minus_idx = line.find('-')?;
     let rest = &line[minus_idx + 1..];
@@ -65,7 +67,6 @@ fn parse_hunk_target_line(line: &str) -> Option<usize> {
     num_str.parse().ok()
 }
 
-/// Cleans a diff added line into a safe, distinctive search token for Vim.
 fn sanitize_diff_query(raw_text: &str) -> Option<String> {
     let without_diff_marker = raw_text.strip_prefix('+').unwrap_or(raw_text).trim();
 
@@ -101,7 +102,6 @@ fn sanitize_diff_query(raw_text: &str) -> Option<String> {
     }
 }
 
-/// Finds the hunk header line and extracts its start line and the sanitized search token.
 fn find_hunk_info_from_iter(iter: &gtk::TextIter) -> Option<(usize, Option<String>)> {
     let mut current = *iter;
 
@@ -154,171 +154,15 @@ pub fn build_diff_panel(
     text_buffer: gtk::TextBuffer,
     sender: AsyncComponentSender<FluxApp>,
 ) -> gtk::Box {
-    let effective_width = if initial_width <= 0 {
-        420
-    } else {
-        initial_width.clamp(280, 900)
-    };
+    let spec = PanelSpec::diff().with_initial(initial_width);
 
     let panel = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(0)
-        .width_request(effective_width)
+        .width_request(spec.effective())
         .hexpand(false)
         .build();
-
     panel.add_css_class("sidebar");
-
-    let resize_handle = gtk::Separator::builder()
-        .orientation(gtk::Orientation::Vertical)
-        .css_classes(["sidebar-resize-handle"])
-        .build();
-
-    let drag_gesture = gtk::GestureDrag::new();
-    let start_width = std::rc::Rc::new(std::cell::Cell::new(effective_width));
-    let start_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
-    let hover_timer = std::rc::Rc::new(std::cell::Cell::new(None::<gtk::glib::SourceId>));
-    let is_ready = std::rc::Rc::new(std::cell::Cell::new(false));
-    let motion_ctrl = gtk::EventControllerMotion::new();
-
-    {
-        let timer_c = hover_timer.clone();
-        let ready_c = is_ready.clone();
-        motion_ctrl.connect_enter(move |ctrl, _, _| {
-            if let Some(id) = timer_c.take() {
-                id.remove();
-            }
-            ready_c.set(false);
-            let ctrl_weak = ctrl.downgrade();
-            let timer_inner = timer_c.clone();
-            let ready_inner = ready_c.clone();
-
-            let id = gtk::glib::timeout_add_local_once(
-                std::time::Duration::from_millis(100),
-                move || {
-                    timer_inner.set(None);
-                    ready_inner.set(true);
-                    if let Some(c) = ctrl_weak.upgrade() {
-                        if let Some(widget) = c.widget() {
-                            widget.set_cursor_from_name(Some("col-resize"));
-                        }
-                    }
-                },
-            );
-            timer_c.set(Some(id));
-        });
-    }
-
-    {
-        let timer_c = hover_timer;
-        let ready_c = is_ready.clone();
-        motion_ctrl.connect_leave(move |ctrl| {
-            if let Some(id) = timer_c.take() {
-                id.remove();
-            }
-            ready_c.set(false);
-            if let Some(widget) = ctrl.widget() {
-                widget.set_cursor(None);
-            }
-        });
-    }
-
-    resize_handle.add_controller(motion_ctrl);
-
-    {
-        let panel_weak = panel.downgrade();
-        let start_width_c = start_width.clone();
-        let start_root_x_c = start_root_x.clone();
-        let ready_c = is_ready.clone();
-
-        drag_gesture.connect_drag_begin(move |gesture, x, _| {
-            if !ready_c.get() {
-                gesture.set_state(gtk::EventSequenceState::Denied);
-                return;
-            }
-            if let Some(p) = panel_weak.upgrade() {
-                start_width_c.set(p.width());
-                if let Some(root) = p.root() {
-                    if let Some(handle) = gesture.widget() {
-                        let (rx, _) = handle
-                            .translate_coordinates(&root, x, 0.0)
-                            .unwrap_or((x, 0.0));
-                        start_root_x_c.set(rx);
-                    }
-                }
-            }
-        });
-    }
-
-    {
-        let panel_weak = panel.downgrade();
-        let start_width_c = start_width.clone();
-        let start_root_x_c = start_root_x.clone();
-        let ready_c = is_ready.clone();
-
-        drag_gesture.connect_drag_update(move |gesture, _, _| {
-            if !ready_c.get() {
-                return;
-            }
-            if let Some(p) = panel_weak.upgrade() {
-                if let Some(root) = p.root() {
-                    if let Some(handle) = gesture.widget() {
-                        if let Some((curr_x, _)) = gesture.point(None) {
-                            if let Some((curr_root_x, _)) =
-                                handle.translate_coordinates(&root, curr_x, 0.0)
-                            {
-                                let delta_x = curr_root_x - start_root_x_c.get();
-                                let new_w = (start_width_c.get() - delta_x as i32).clamp(280, 900);
-                                if p.width_request() != new_w {
-                                    p.set_width_request(new_w);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    {
-        let panel_weak = panel.downgrade();
-        let s = sender.clone();
-        let ready_c = is_ready;
-
-        drag_gesture.connect_drag_end(move |gesture, _, _| {
-            if !ready_c.get() {
-                return;
-            }
-            if let Some(p) = panel_weak.upgrade() {
-                let final_width = p.width().clamp(280, 900);
-                p.set_width_request(final_width);
-                s.input(AppMsg::SetDiffPanelWidth(final_width));
-            }
-            if let Some(widget) = gesture.widget() {
-                widget.set_cursor(None);
-            }
-        });
-    }
-
-    resize_handle.add_controller(drag_gesture);
-
-    let header_box = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(8)
-        .margin_start(12)
-        .margin_end(12)
-        .margin_top(8)
-        .margin_bottom(6)
-        .build();
-
-    let diff_icon = gtk::Image::from_icon_name("text-x-generic-symbolic");
-
-    let title_label = gtk::Label::builder()
-        .label(tr("Git Diff"))
-        .css_classes(["heading"])
-        .hexpand(true)
-        .xalign(0.0)
-        .build();
 
     let copy_btn = gtk::Button::builder()
         .icon_name("edit-copy-symbolic")
@@ -342,25 +186,16 @@ pub fn build_diff_panel(
         });
     }
 
-    let close_btn = gtk::Button::builder()
-        .icon_name("window-close-symbolic")
-        .css_classes(["flat", "circular"])
-        .valign(gtk::Align::Center)
-        .tooltip_text(tr("Close"))
-        .build();
-
     {
         let s = sender.clone();
-        close_btn.connect_clicked(move |_| {
-            s.input(AppMsg::ToggleDiffPanel);
-        });
+        let header = panel_header(
+            Some("text-x-generic-symbolic"),
+            &tr("Git Diff"),
+            &[copy_btn.upcast::<gtk::Widget>()],
+            move || s.input(AppMsg::ToggleDiffPanel),
+        );
+        panel.append(&header);
     }
-
-    header_box.append(&diff_icon);
-    header_box.append(&title_label);
-    header_box.append(&copy_btn);
-    header_box.append(&close_btn);
-    panel.append(&header_box);
 
     let text_view = gtk::TextView::builder()
         .buffer(&text_buffer)
@@ -441,14 +276,8 @@ pub fn build_diff_panel(
 
     panel.append(&scrolled);
 
-    let root_container = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(0)
-        .hexpand(false)
-        .halign(gtk::Align::End)
-        .build();
-
-    root_container.append(&resize_handle);
-    root_container.append(&panel);
-    root_container
+    let sender_for_resize = sender.clone();
+    resizable_panel(&spec, &panel, move |w| {
+        sender_for_resize.input(AppMsg::SetDiffPanelWidth(w));
+    })
 }

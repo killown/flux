@@ -5,6 +5,3 @@ mod extension_filter;
 mod filter;
 mod input;
 mod misc;
-mod panel;
-
-pub use panel::build_search_panel;

@@ -1,3 +1,6 @@
+use super::header::panel_header;
+use super::resize::resizable_panel;
+use super::spec::PanelSpec;
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 use crate::services::search::AdvancedSearchParams;
@@ -32,195 +35,15 @@ fn apply_flat_filters(
 
 /// Builds and returns the lazy-initialized right search sidebar panel widget tree.
 pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
-    let effective_width = if initial_width <= 0 {
-        350
-    } else {
-        initial_width.clamp(250, 800)
-    };
+    let spec = PanelSpec::search().with_initial(initial_width);
 
     let panel = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(0)
-        .width_request(effective_width)
+        .width_request(spec.effective())
         .hexpand(false)
         .build();
-
     panel.add_css_class("sidebar");
-
-    // ── Drag Handle (Left Edge) using a decoupled EventControllerMotion ─────────
-    // Using root coordinates instead of local widget delta avoids coordinate shifts
-    let resize_handle = gtk::Separator::builder()
-        .orientation(gtk::Orientation::Vertical)
-        .css_classes(["sidebar-resize-handle"])
-        .build();
-
-    let drag_gesture = gtk::GestureDrag::new();
-    let start_width = std::rc::Rc::new(std::cell::Cell::new(effective_width));
-    let start_root_x = std::rc::Rc::new(std::cell::Cell::new(0.0));
-    let hover_timer = std::rc::Rc::new(std::cell::Cell::new(None::<gtk::glib::SourceId>));
-    let is_ready = std::rc::Rc::new(std::cell::Cell::new(false));
-
-    let motion_ctrl = gtk::EventControllerMotion::new();
-
-    {
-        let timer_c = hover_timer.clone();
-        let ready_c = is_ready.clone();
-        motion_ctrl.connect_enter(move |ctrl, _, _| {
-            if let Some(id) = timer_c.take() {
-                id.remove();
-            }
-            ready_c.set(false);
-
-            let ctrl_weak = ctrl.downgrade();
-            let timer_inner = timer_c.clone();
-            let ready_inner = ready_c.clone();
-
-            let id = gtk::glib::timeout_add_local_once(
-                std::time::Duration::from_millis(100),
-                move || {
-                    timer_inner.set(None);
-                    ready_inner.set(true);
-                    if let Some(c) = ctrl_weak.upgrade() {
-                        if let Some(widget) = c.widget() {
-                            widget.set_cursor_from_name(Some("col-resize"));
-                        }
-                    }
-                },
-            );
-            timer_c.set(Some(id));
-        });
-    }
-
-    {
-        let timer_c = hover_timer;
-        let ready_c = is_ready.clone();
-        motion_ctrl.connect_leave(move |ctrl| {
-            if let Some(id) = timer_c.take() {
-                id.remove();
-            }
-            ready_c.set(false);
-            if let Some(widget) = ctrl.widget() {
-                widget.set_cursor(None);
-            }
-        });
-    }
-
-    resize_handle.add_controller(motion_ctrl);
-
-    {
-        let panel_weak = panel.downgrade();
-        let start_width_c = start_width.clone();
-        let start_root_x_c = start_root_x.clone();
-        let ready_c = is_ready.clone();
-
-        drag_gesture.connect_drag_begin(move |gesture, x, _| {
-            if !ready_c.get() {
-                gesture.set_state(gtk::EventSequenceState::Denied);
-                return;
-            }
-            if let Some(p) = panel_weak.upgrade() {
-                start_width_c.set(p.width());
-                // Translate the initial click point to root/window coordinate space
-                // Root coordinates remain completely static while children resize!
-                if let Some(root) = p.root() {
-                    if let Some(handle) = gesture.widget() {
-                        let (rx, _) = handle
-                            .translate_coordinates(&root, x, 0.0)
-                            .unwrap_or((x, 0.0));
-                        start_root_x_c.set(rx);
-                    }
-                }
-            }
-        });
-    }
-
-    {
-        let panel_weak = panel.downgrade();
-        let start_width_c = start_width.clone();
-        let start_root_x_c = start_root_x.clone();
-        let ready_c = is_ready.clone();
-
-        drag_gesture.connect_drag_update(move |gesture, _, _| {
-            if !ready_c.get() {
-                return;
-            }
-            if let Some(p) = panel_weak.upgrade() {
-                if let Some(root) = p.root() {
-                    if let Some(handle) = gesture.widget() {
-                        // Query the current point and translate directly to root coordinates
-                        if let Some((curr_x, _)) = gesture.point(None) {
-                            if let Some((curr_root_x, _)) =
-                                handle.translate_coordinates(&root, curr_x, 0.0)
-                            {
-                                // Real delta = how much the pointer moved in global window space
-                                let delta_x = curr_root_x - start_root_x_c.get();
-                                let new_w = (start_width_c.get() - delta_x as i32).clamp(250, 800);
-
-                                if p.width_request() != new_w {
-                                    p.set_width_request(new_w);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    {
-        let panel_weak = panel.downgrade();
-        let s = sender.clone();
-        let ready_c = is_ready;
-
-        drag_gesture.connect_drag_end(move |gesture, _, _| {
-            if !ready_c.get() {
-                return;
-            }
-            if let Some(p) = panel_weak.upgrade() {
-                let final_width = p.width().clamp(250, 800);
-                p.set_width_request(final_width);
-                s.input(AppMsg::SetSearchPanelWidth(final_width));
-            }
-            if let Some(widget) = gesture.widget() {
-                widget.set_cursor(None);
-            }
-        });
-    }
-
-    resize_handle.add_controller(drag_gesture);
-
-    let root_container = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(0)
-        .hexpand(false)
-        .halign(gtk::Align::End)
-        .build();
-
-    root_container.append(&resize_handle);
-    root_container.append(&panel);
-
-    // ── Header: [search icon] "Search" ... [Search Button] [X close button] ──
-    let header_box = gtk::Box::builder()
-        .orientation(gtk::Orientation::Horizontal)
-        .spacing(8)
-        .margin_start(12)
-        .margin_end(12)
-        .margin_top(8)
-        .margin_bottom(4)
-        .build();
-
-    let search_icon = gtk::Image::builder()
-        .icon_name("system-search-symbolic")
-        .icon_size(gtk::IconSize::Inherit)
-        .css_classes(["search-panel-icon"])
-        .build();
-
-    let title_label = gtk::Label::builder()
-        .label(tr("Search"))
-        .css_classes(["heading"])
-        .hexpand(true)
-        .xalign(0.0)
-        .build();
 
     let reset_btn = gtk::Button::builder()
         .icon_name("edit-clear-symbolic")
@@ -235,42 +58,20 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         .valign(gtk::Align::Center)
         .build();
 
-    let close_btn = gtk::Button::builder()
-        .icon_name("window-close-symbolic")
-        .css_classes(["flat", "circular"])
-        .valign(gtk::Align::Center)
-        .tooltip_text(tr("Cancel"))
-        .build();
-
     {
         let s = sender.clone();
-        close_btn.connect_clicked(move |_| {
-            s.input(AppMsg::ToggleSearchPanel);
-        });
+        let header = panel_header(
+            Some("system-search-symbolic"),
+            &tr("Search"),
+            &[
+                reset_btn.clone().upcast::<gtk::Widget>(),
+                search_btn.clone().upcast::<gtk::Widget>(),
+            ],
+            move || s.input(AppMsg::ToggleSearchPanel),
+        );
+        panel.append(&header);
     }
 
-    header_box.append(&search_icon);
-    header_box.append(&title_label);
-    header_box.append(&reset_btn);
-    header_box.append(&search_btn);
-    header_box.append(&close_btn);
-    panel.append(&header_box);
-
-    // ── Escape Key Handling ──────────────────────────────────────────────────
-    let esc_controller = gtk::EventControllerKey::new();
-    {
-        let s = sender.clone();
-        esc_controller.connect_key_pressed(move |_, keyval, _, _| {
-            if keyval == adw::gdk::Key::Escape {
-                s.input(AppMsg::ToggleSearchPanel);
-                return gtk::glib::Propagation::Stop;
-            }
-            gtk::glib::Propagation::Proceed
-        });
-    }
-    root_container.add_controller(esc_controller);
-
-    // ── Panel Body ───────────────────────────────────────────────────────────
     let content_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(12)
@@ -280,7 +81,6 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         .margin_bottom(12)
         .build();
 
-    // Error label starts hidden and unallocated so it doesn't take up any vertical space by default
     let error_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .spacing(8)
@@ -409,7 +209,6 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
 
     content_box.append(&scope_group);
 
-    // ── Additional Filters (Date & Size) ─────────────────────────────────────
     let filters_expander = adw::ExpanderRow::builder()
         .title(tr("Narrow results"))
         .subtitle(tr("Filter by date and file size"))
@@ -503,7 +302,6 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
     filters_group.add(&filters_expander);
     content_box.append(&filters_group);
 
-    // ── Explicit Search Trigger Execution ────────────────────────────────────
     let execute_search = {
         let s = sender.clone();
         let name_e = name_entry.clone();
@@ -556,7 +354,6 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 None
             };
 
-            // Content search takes priority when the field has ≥3 chars
             if content_text.len() >= 3 {
                 let ext_filter = if pat_text.is_empty() {
                     None
@@ -686,7 +483,6 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         }
     };
 
-    // ── Reset Button Action ──────────────────────────────────────────────────
     {
         let s = sender.clone();
         let name_e = name_entry.clone();
@@ -723,7 +519,6 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         });
     }
 
-    // ── Wire Search Button & Enter Key Handlers ──────────────────────────────
     {
         let run = execute_search.clone();
         search_btn.connect_clicked(move |_| {
@@ -754,5 +549,25 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         first_focus.grab_focus();
     });
 
-    root_container
+    let root = {
+        let sender_for_resize = sender.clone();
+        resizable_panel(&spec, &panel, move |w| {
+            sender_for_resize.input(AppMsg::SetSearchPanelWidth(w));
+        })
+    };
+
+    let esc_controller = gtk::EventControllerKey::new();
+    {
+        let s = sender.clone();
+        esc_controller.connect_key_pressed(move |_, keyval, _, _| {
+            if keyval == adw::gdk::Key::Escape {
+                s.input(AppMsg::ToggleSearchPanel);
+                return gtk::glib::Propagation::Stop;
+            }
+            gtk::glib::Propagation::Proceed
+        });
+    }
+    root.add_controller(esc_controller);
+
+    root
 }

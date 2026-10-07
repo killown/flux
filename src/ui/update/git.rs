@@ -29,7 +29,7 @@ pub(super) fn handle(
         AppMsg::ShowFileDiff(path) => app.handle_show_file_diff(path, sender),
         AppMsg::DiffLoaded { path, diff } => {
             if let Some(ref buffer) = app.diff_text_buffer {
-                crate::ui::diff_panel::apply_diff_markup(buffer, &diff);
+                crate::ui::panels::apply_diff_markup(buffer, &diff);
             }
             app.active_diff_target = Some(path);
         }
