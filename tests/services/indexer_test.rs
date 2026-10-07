@@ -1,4 +1,4 @@
-use flux::services::indexer::{
+use flux::services::search::indexer::{
     apply_event, delta_scan, full_scan, now_ns, remove_tree, worker_loop, Job, SearchIndex, ENABLED,
 };
 use rusqlite::Connection;
