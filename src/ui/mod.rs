@@ -5,11 +5,11 @@
 
 // --- 1. Submodule Declarations ---
 pub mod debug;
-pub mod init;
 pub mod inputs;
 pub mod keymap;
 pub mod menu;
 pub mod settings;
+pub mod startup;
 pub mod update;
 pub mod view;
 pub use components::SidebarMsg;
