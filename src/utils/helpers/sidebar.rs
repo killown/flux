@@ -228,7 +228,7 @@ impl FluxApp {
             let panel = match panel_type {
                 RightPanelType::Tag => {
                     let tags = self.state_db.list_all_tags().unwrap_or_default();
-                    crate::ui::tag_navigator::build_tag_panel(
+                    crate::ui::tag_panel::build_tag_panel(
                         tags,
                         self.config.ui.tag_panel_width,
                         sender.clone(),

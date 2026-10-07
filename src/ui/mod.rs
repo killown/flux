@@ -24,7 +24,7 @@ pub mod ops;
 pub mod search;
 pub mod sidebar_network;
 pub mod tabs;
-pub mod tag_navigator;
+pub mod tag_panel;
 pub mod undo_redo;
 pub use tabs::TabState;
 
