@@ -1,32 +1,8 @@
+use super::constants;
+use super::parse::parse_trigger;
 use crate::model::ShortcutsConfig;
 
-/// Hardcoded fallback shortcuts.
-pub mod constants {
-    pub const HOME: &str = "<ctrl>Home";
-    pub const QUIT: &str = "<ctrl>q";
-    pub const OPEN: &str = "Return";
-    pub const DELETE: &str = "Delete";
-    pub const BACK: &str = "<alt>Left";
-    pub const FORWARD: &str = "<alt>Right";
-    pub const REFRESH: &str = "F5";
-    pub const SEARCH: &str = "<ctrl>f";
-    pub const PROPERTIES: &str = "<ctrl>i";
-    pub const TOGGLE_HIDDEN: &str = "<ctrl>h";
-    pub const SETTINGS: &str = "F10";
-    pub const MENU_EDITOR: &str = "F9";
-    pub const ROOT: &str = "slash";
-    pub const CHANGE_ICON: &str = "F3";
-    pub const RESET_ICON: &str = "<ctrl>F3";
-    pub const TOGGLE_TERMINAL: &str = "F4";
-    pub const TOGGLE_HEADER: &str = "F6";
-    pub const TOGGLE_FOLDERS_FIRST: &str = "F7";
-    pub const NEW_TAB: &str = "<ctrl>t";
-    pub const CLOSE_TAB: &str = "<ctrl>w";
-    pub const NEXT_TAB: &str = "<ctrl>Tab";
-    pub const PREV_TAB: &str = "<ctrl><shift>Tab";
-}
-
-/// A collection of resolved GTK ShortcutTriggers.
+/// A collection of resolved GTK `ShortcutTrigger`s.
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct KeyMap {
@@ -88,23 +64,6 @@ impl KeyMap {
             close_tab: parse_trigger(&config.close_tab, constants::CLOSE_TAB),
             next_tab: parse_trigger(&config.next_tab, constants::NEXT_TAB),
             prev_tab: parse_trigger(&config.prev_tab, constants::PREV_TAB),
-        }
-    }
-}
-
-fn parse_trigger(user_val: &Option<String>, default: &str) -> gtk::ShortcutTrigger {
-    let pattern = user_val.as_deref().unwrap_or(default);
-    match gtk::ShortcutTrigger::parse_string(pattern) {
-        Some(trigger) => trigger,
-        None => {
-            eprintln!(
-                "[KEYMAP ERROR] GTK rejected shortcut '{}'. Falling back to '{}'.",
-                pattern, default
-            );
-            // Try the default, then a minimal safe fallback
-            gtk::ShortcutTrigger::parse_string(default)
-                .or_else(|| gtk::ShortcutTrigger::parse_string("Escape"))
-                .expect("Failed to parse fallback shortcut 'Escape'")
         }
     }
 }
