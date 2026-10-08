@@ -15,7 +15,7 @@ pub mod update;
 pub mod view;
 pub use components::SidebarMsg;
 pub use settings::SettingsWindow;
-pub mod clipboard_paste;
+pub mod clipboard;
 pub mod config_handlers;
 pub mod conflict_policy;
 pub mod dialog;
