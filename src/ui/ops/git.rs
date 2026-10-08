@@ -103,37 +103,31 @@ impl FluxApp {
                 return;
             };
 
-            let mut filtered_entries: Vec<(PathBuf, GitFileStatus)> = status_map
+            // `is_dir` is stated once per entry and reused by the sort and the loop below.
+            let mut filtered_entries: Vec<(PathBuf, GitFileStatus, bool)> = status_map
                 .into_iter()
                 .filter(|(_, status)| {
                     *status != GitFileStatus::None && *status != GitFileStatus::Ignored
                 })
+                .map(|(path, status)| {
+                    let is_dir = path.is_dir();
+                    (path, status, is_dir)
+                })
                 .collect();
 
-            filtered_entries.sort_by(|(path_a, _), (path_b, _)| {
-                let is_dir_a = path_a.is_dir();
-                let is_dir_b = path_b.is_dir();
-
-                match (is_dir_a, is_dir_b) {
-                    (true, false) => std::cmp::Ordering::Less,
-                    (false, true) => std::cmp::Ordering::Greater,
-                    _ => path_a
-                        .to_string_lossy()
-                        .to_lowercase()
-                        .cmp(&path_b.to_string_lossy().to_lowercase()),
-                }
+            filtered_entries.sort_by_cached_key(|(path, _, is_dir)| {
+                (!*is_dir, path.to_string_lossy().to_lowercase())
             });
 
             let mut contexts = Vec::with_capacity(filtered_entries.len());
             let mut status_updates = HashMap::with_capacity(filtered_entries.len());
 
-            for (path, status) in filtered_entries {
+            for (path, status, is_dir) in filtered_entries {
                 let name = path
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| path.to_string_lossy().to_string());
 
-                let is_dir = path.is_dir();
                 let sort_name = name.to_lowercase();
                 let sort_ext = path
                     .extension()
