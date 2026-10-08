@@ -1,134 +1,13 @@
+use super::cache::THEMED_ICON_CACHE;
+use super::theme::resolve_folder_icon_with_fallbacks;
+use super::xdg::get_default_xdg_folder_icon;
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;
 use gtk::glib;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-thread_local! {
-    static THEMED_ICON_CACHE: RefCell<HashMap<String, adw::gio::Icon>> = RefCell::new(HashMap::new());
-}
-
-/// Clears the cached GIO icons so they can be re-resolved under a new GTK theme.
-pub fn invalidate_themed_icon_cache() {
-    THEMED_ICON_CACHE.with(|cache| {
-        cache.borrow_mut().clear();
-    });
-}
-
-/// Maps well-known user directories (XDG folders) to standard theme icon names.
-pub fn get_default_xdg_folder_icon(path: &Path) -> Option<&'static str> {
-    let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
-    let home = dirs::home_dir();
-
-    // Guard: Never assign an XDG folder icon to $HOME itself if an XDG path is disabled
-    if let Some(ref h) = home {
-        if path == h || resolved == *h {
-            return Some("user-home");
-        }
-    }
-
-    let is_same = |dir: Option<PathBuf>| -> bool {
-        if let Some(d) = dir {
-            if let Some(ref h) = home {
-                if d == *h {
-                    return false;
-                }
-            }
-            if path == d {
-                return true;
-            }
-            if let Ok(canon) = d.canonicalize() {
-                return resolved == canon;
-            }
-        }
-        false
-    };
-
-    if is_same(dirs::download_dir()) {
-        return Some("folder-download");
-    }
-    if is_same(dirs::document_dir()) {
-        return Some("folder-documents");
-    }
-    if is_same(dirs::picture_dir()) {
-        return Some("folder-pictures");
-    }
-    if is_same(dirs::video_dir()) {
-        return Some("folder-videos");
-    }
-    if is_same(dirs::audio_dir()) {
-        return Some("folder-music");
-    }
-    if is_same(dirs::desktop_dir()) {
-        return Some("user-desktop");
-    }
-    if is_same(dirs::public_dir()) {
-        return Some("folder-publicshare");
-    }
-    if is_same(dirs::template_dir()) {
-        return Some("folder-templates");
-    }
-
-    None
-}
-
-/// Resolves standard icon theme name variations across desktop environments.
-pub fn resolve_folder_icon_with_fallbacks(
-    theme: &gtk::IconTheme,
-    base_name: &str,
-) -> Option<gio::Icon> {
-    let variants: &[&str] = match base_name {
-        "folder-download" => &[
-            "folder-download",
-            "folder-downloads",
-            "folder-download-symbolic",
-        ],
-        "folder-documents" => &[
-            "folder-documents",
-            "folder-document",
-            "folder-documents-symbolic",
-        ],
-        "folder-pictures" => &[
-            "folder-pictures",
-            "folder-picture",
-            "folder-images",
-            "folder-pictures-symbolic",
-        ],
-        "folder-videos" => &["folder-videos", "folder-video", "folder-videos-symbolic"],
-        "folder-music" => &[
-            "folder-music",
-            "folder-audio",
-            "folder-sound",
-            "folder-music-symbolic",
-        ],
-        "user-desktop" => &["user-desktop", "folder-desktop", "user-desktop-symbolic"],
-        "user-home" => &["user-home", "folder-home", "user-home-symbolic"],
-        "folder-publicshare" => &[
-            "folder-publicshare",
-            "folder-public",
-            "folder-publicshare-symbolic",
-        ],
-        "folder-templates" => &[
-            "folder-templates",
-            "folder-template",
-            "folder-templates-symbolic",
-        ],
-        other => &[other],
-    };
-
-    for candidate in variants {
-        if theme.has_icon(candidate) {
-            if let Ok(icon) = gio::Icon::for_string(candidate) {
-                return Some(icon);
-            }
-        }
-    }
-
-    gio::Icon::for_string(variants[0]).ok()
-}
-
+/// Returns a GIO icon for `path` using the default (no-override) resolution.
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
     get_icon_for_path_with_override(path, is_dir, None)
 }
@@ -138,19 +17,22 @@ fn is_generic_icon_name(name: &str) -> bool {
     name.ends_with("-x-generic") || name == "application-octet-stream" || name == "unknown"
 }
 
-/// Returns a GIO icon for the given path, applying a custom icon name override when provided.
+/// Returns a GIO icon for the given path, applying a custom icon name override
+/// when provided.
 ///
 /// # Arguments
 ///
-/// * `path`          - Absolute path to the file or directory.
-/// * `is_dir`        - Whether the entry is a directory.
-/// * `custom_icon`   - Optional GTK icon name to use instead of the derived default.
+/// * `path`        - absolute path to the file or directory.
+/// * `is_dir`      - whether the entry is a directory.
+/// * `custom_icon` - optional GTK icon name to use instead of the derived default.
 pub fn get_icon_for_path_with_override(
     path: &Path,
     is_dir: bool,
     custom_icon: Option<&str>,
 ) -> adw::gio::Icon {
     crate::hit!("get_icon_for_path");
+
+    // ── Explicit custom override ────────────────────────────────────────────
     if let Some(icon_name) = custom_icon {
         if let Ok(icon) = gio::Icon::for_string(icon_name) {
             return icon;
@@ -166,6 +48,7 @@ pub fn get_icon_for_path_with_override(
         .ok()
         .map(|p| p.to_string_lossy().into_owned());
 
+    // ── Directories ─────────────────────────────────────────────────────────
     if is_dir {
         let folder_match = folder_icons
             .get(path_str.as_ref())
@@ -191,6 +74,7 @@ pub fn get_icon_for_path_with_override(
         return gio::Icon::for_string("folder").unwrap();
     }
 
+    // ── Files: per-path custom icon ─────────────────────────────────────────
     let file_match = file_icons
         .get(path_str.as_ref())
         .or_else(|| canon_str.as_ref().and_then(|k| file_icons.get(k)));
@@ -201,6 +85,7 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
+    // ── Filename / extension (computed once) ────────────────────────────────
     let filename = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
         path_str.rsplit('/').next().unwrap_or("").to_string()
     } else {
@@ -215,6 +100,7 @@ pub fn get_icon_for_path_with_override(
         .and_then(|e| e.to_str())
         .unwrap_or("");
 
+    // `.desktop` file: read the embedded Icon= key.
     if ext.eq_ignore_ascii_case("desktop") {
         let keyfile = glib::KeyFile::new();
         if keyfile
@@ -234,6 +120,7 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
+    // Per-extension custom icon (only place this lookup happens now).
     if !ext.is_empty() {
         if let Some(icon_path) = crate::services::loader::get_custom_extension_icon_path(ext) {
             if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
@@ -242,30 +129,7 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
-    let path_str = path.to_string_lossy();
-
-    let filename = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-        path_str.rsplit('/').next().unwrap_or("").to_string()
-    } else {
-        path.file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .into_owned()
-    };
-
-    let ext = std::path::Path::new(&filename)
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
-
-    if !ext.is_empty() {
-        if let Some(icon_path) = crate::services::loader::get_custom_extension_icon_path(ext) {
-            if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
-                return icon;
-            }
-        }
-    }
-
+    // ── MIME resolution ─────────────────────────────────────────────────────
     let content_type = if let Some(mime) = crate::utils::media::guess_mime_from_extension(&filename)
     {
         mime
@@ -278,12 +142,14 @@ pub fn get_icon_for_path_with_override(
         ct.to_string()
     };
 
-    // WARNING: keep the cache two-tiered. Do not serve `content_type`
-    // entries to extensioned lookups, and do not merge the tiers into one
-    // map. Extensionless files plant a shared fallback that would then
+    // ── Cache-aware lookup ──────────────────────────────────────────────────
+    //
+    // WARNING: keep the cache two-tiered. Do not serve `content_type` entries
+    // to extensioned lookups, and do not merge the tiers into one map.
+    // Extensionless files plant a shared fallback that would then
     // short-circuit every .txt / .conf / .log past generation, killing
     // generated icons for the rest of the session.
-    crate::utils::icon::THEMED_ICON_CACHE.with(|cache| {
+    THEMED_ICON_CACHE.with(|cache| {
         let mut map = cache.borrow_mut();
 
         let gen_key = if ext.is_empty() {
@@ -308,8 +174,8 @@ pub fn get_icon_for_path_with_override(
 
         // WARNING: do not drop either condition. Without the theme check,
         // .png / .mp4 / .pdf ignore purpose-drawn theme icons. Without
-        // `container_mime_masks_extension`, .conf / .cfg / .dat inherit
-        // the application/xml icon instead of generating.
+        // `container_mime_masks_extension`, .conf / .cfg / .dat inherit the
+        // application/xml icon instead of generating.
         let has_specific_theme_icon = if let Some(display) = gdk::Display::default() {
             let theme = gtk::IconTheme::for_display(&display);
             if let Some(themed) = icon.downcast_ref::<gio::ThemedIcon>() {
@@ -336,7 +202,7 @@ pub fn get_icon_for_path_with_override(
             return icon;
         }
 
-        // Theme has no dedicated icon: generate ONLY if <= 9 chars
+        // Theme has no dedicated icon: generate ONLY if <= 9 chars.
         if !ext.is_empty() && ext.len() <= 9 && auto_gen {
             if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext) {
                 if let Ok(generated_icon) = gio::Icon::for_string(&generated_path.to_string_lossy())
