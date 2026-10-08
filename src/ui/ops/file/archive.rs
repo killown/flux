@@ -66,17 +66,15 @@ impl FluxApp {
         let done_flag_extractor = done_flag.clone();
 
         std::thread::spawn(move || {
+            /// Sums regular-file bytes without following symlinks.
             fn dir_size(path: &std::path::Path) -> u64 {
                 let Ok(rd) = std::fs::read_dir(path) else {
                     return 0;
                 };
-                rd.flatten().fold(0u64, |acc, e| {
-                    let p = e.path();
-                    if p.is_dir() {
-                        acc + dir_size(&p)
-                    } else {
-                        acc + p.metadata().map(|m| m.len()).unwrap_or(0)
-                    }
+                rd.flatten().fold(0u64, |acc, e| match e.file_type() {
+                    Ok(t) if t.is_dir() => acc + dir_size(&e.path()),
+                    Ok(t) if t.is_file() => acc + e.metadata().map(|m| m.len()).unwrap_or(0),
+                    _ => acc,
                 })
             }
             loop {
