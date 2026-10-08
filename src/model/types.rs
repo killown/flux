@@ -19,6 +19,7 @@ pub enum RightPanelType {
     Search,
     Diff,
     Location,
+    Connect,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -27,11 +27,7 @@ impl FluxApp {
     }
 
     /// Registers app-level actions and icon theme change listeners.
-    pub(super) fn register_app_actions(
-        model: &FluxApp,
-        root: &adw::Window,
-        sender: &AsyncComponentSender<Self>,
-    ) {
+    pub(super) fn register_app_actions(model: &FluxApp, sender: &AsyncComponentSender<Self>) {
         let app = relm4::main_adw_application();
         let sender_reload = sender.clone();
         let reload_action = gio::SimpleAction::new("reload-sidebar", None);
@@ -39,13 +35,6 @@ impl FluxApp {
             sender_reload.input(AppMsg::RefreshSidebar);
         });
         app.add_action(&reload_action);
-
-        // ── Register Connect to Server action ──
-        crate::ui::dialog::network::register_connect_action(
-            &app,
-            root,
-            sender.input_sender().clone(),
-        );
 
         // Stateful radio action: GIO compares each menu item's target against this
         // action's state and renders a native radio checkmark on the matching item.

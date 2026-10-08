@@ -192,6 +192,7 @@ impl FluxApp {
             ("<Control>v", AppMsg::Paste),
             ("Delete", AppMsg::Delete),
             ("<Control>l", AppMsg::ToggleLocationPanel),
+            ("<Control><Shift>l", AppMsg::ToggleConnectPanel),
         ];
 
         for (trigger_str, msg) in shortcuts {

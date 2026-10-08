@@ -25,3 +25,5 @@ pub use search::build_search_panel;
 pub use tag::build_tag_panel;
 pub mod location;
 pub use location::build_location_panel;
+pub mod connect;
+pub use connect::build_connect_panel;

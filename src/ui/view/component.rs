@@ -943,6 +943,15 @@ impl SimpleAsyncComponent for FluxApp {
                     set_reveal_child: false,
                     set_visible: false,
                 },
+
+                /// Right connect-to-server panel revealer (lazy initialized).
+                #[name = "connect_panel_revealer"]
+                gtk::Revealer {
+                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
+                    set_transition_duration: 200,
+                    set_reveal_child: false,
+                    set_visible: false,
+                },
             }
         }
     }

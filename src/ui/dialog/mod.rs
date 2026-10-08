@@ -6,7 +6,6 @@
 pub mod command;
 pub mod conflict;
 pub mod menu_icon_picker;
-pub mod network;
 pub mod tag_picker;
 pub mod transfer;
 

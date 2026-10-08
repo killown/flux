@@ -171,6 +171,13 @@ impl FluxApp {
             }
             self.location_panel_visible = false;
         }
+        if keep != RightPanelType::Connect && self.connect_panel_visible {
+            if let Some(ref r) = self.connect_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.connect_panel_visible = false;
+        }
     }
 
     pub fn toggle_sidebar_right_panel(
@@ -182,6 +189,12 @@ impl FluxApp {
         self.hide_other_right_panels(panel_type);
 
         let (revealer, initialized, visible, is_search) = match panel_type {
+            RightPanelType::Connect => (
+                self.connect_panel_revealer.clone(),
+                &mut self.connect_panel_initialized,
+                &mut self.connect_panel_visible,
+                false,
+            ),
             RightPanelType::Tag => (
                 self.tag_panel_revealer.clone(),
                 &mut self.tag_panel_initialized,
@@ -214,6 +227,7 @@ impl FluxApp {
 
         if !*initialized {
             let panel = match panel_type {
+                RightPanelType::Connect => crate::ui::panels::build_connect_panel(sender.clone()),
                 RightPanelType::Tag => {
                     let tags = self.state_db.list_all_tags().unwrap_or_default();
                     crate::ui::panels::build_tag_panel(

@@ -93,6 +93,9 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            connect_panel_revealer: None,
+            connect_panel_visible: false,
+            connect_panel_initialized: false,
             location_panel_revealer: None,
             location_panel_visible: false,
             location_panel_initialized: false,
@@ -220,7 +223,7 @@ impl FluxApp {
         Self::start_task_queue_tick(&sender);
 
         // Global Action Registration + 9.5. Icon Theme Change Listeners
-        Self::register_app_actions(&model, root, &sender);
+        Self::register_app_actions(&model, &sender);
 
         // Defer background maintenance and initial data fetching to unblock window presentation
         Self::schedule_deferred_startup(&state_db, initial_tag_search, &sender);

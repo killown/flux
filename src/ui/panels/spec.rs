@@ -44,8 +44,10 @@ impl PanelSpec {
     pub const fn search() -> Self {
         Self::new(250, 800, 350)
     }
-
     pub const fn location() -> Self {
+        Self::new(250, 800, 350)
+    }
+    pub const fn connect() -> Self {
         Self::new(250, 800, 350)
     }
 }

@@ -7,6 +7,8 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles the right connect-to-server panel (Ctrl+Shift+L).
+    ToggleConnectPanel,
     /// Opens the currently active diff target at the specified line number with an optional forward search pattern.
     OpenActiveDiffLine { line: usize, query: Option<String> },
     /// Toggles the visibility of the right-side git diff review sidebar.

@@ -24,6 +24,9 @@ pub(super) fn handle(
         AppMsg::ToggleLocationPanel => {
             app.toggle_sidebar_right_panel(crate::model::RightPanelType::Location, sender)
         }
+        AppMsg::ToggleConnectPanel => {
+            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Connect, sender)
+        }
         AppMsg::JumpToRecent(rank) => {
             let target_index = if rank == 0 { 0 } else { rank - 1 };
             if let Some(target_path) = app.recent_stack.get(target_index).cloned() {

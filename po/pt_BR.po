@@ -666,12 +666,12 @@ msgid "flux - Keyboard Shortcuts"
 msgstr "flux - Atalhos de teclado"
 
 #: src/ui/help.rs:???
-msgid "Open location dialog"
-msgstr "Abrir diálogo de localização"
+msgid "Show/hide location panel"
+msgstr "Mostrar/ocultar painel de localização"
 
 #: src/ui/help.rs:???
-msgid "Connect to server"
-msgstr "Conectar ao servidor"
+msgid "Show/hide connect to server"
+msgstr "Mostrar/ocultar conectar ao servidor"
 
 #: src/ui/help.rs:???
 msgid "Content Search"
@@ -2673,8 +2673,8 @@ msgstr "Aplicar"
 # ============================================================
 
 #: src/ui/network_dialogs.rs:???
-msgid "Connect to Server"
-msgstr "Conectar ao servidor"
+msgid "Show/hide connect to Server"
+msgstr "Mostrar/ocultar conectar ao servidor"
 
 #: src/ui/network_dialogs.rs:???
 msgid "Authentication Required"

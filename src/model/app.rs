@@ -11,6 +11,12 @@ use std::sync::Arc;
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Revealer widget wrapping the right connect-to-server panel.
+    pub connect_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the right connect-to-server panel is currently visible.
+    pub connect_panel_visible: bool,
+    /// Whether the right connect-to-server panel widgets have been instantiated.
+    pub connect_panel_initialized: bool,
     /// Revealer widget wrapping the right location panel.
     pub location_panel_revealer: Option<gtk::Revealer>,
     /// Whether the right location panel is currently visible.

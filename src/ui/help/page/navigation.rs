@@ -27,8 +27,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 &tr("Navigate to root directory"),
                 &sc(config, |s| s.root.clone(), "/"),
             ),
-            row(&tr("Open location dialog"), "Ctrl + L"),
-            row(&tr("Connect to server"), "Ctrl + Shift + L"),
+            row(&tr("Show/hide location panel"), "Ctrl + L"),
+            row(&tr("Show/hide connect to server"), "Ctrl + Shift + L"),
             row(&tr("Open tag navigator"), "Ctrl + Shift + T"),
         ],
     );
