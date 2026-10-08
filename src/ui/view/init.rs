@@ -318,6 +318,7 @@ impl FluxApp {
         model.search_panel_revealer = Some(widgets.search_panel_revealer.clone());
         model.tag_panel_revealer = Some(widgets.tag_panel_revealer.clone());
         model.diff_panel_revealer = Some(widgets.diff_panel_revealer.clone());
+        model.location_panel_revealer = Some(widgets.location_panel_revealer.clone());
 
         if let Some(paned) = &model.terminal_paned {
             let sender_clone = sender.clone();

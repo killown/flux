@@ -23,3 +23,5 @@ pub use spec::PanelSpec;
 pub use diff::{apply_diff_markup, build_diff_panel};
 pub use search::build_search_panel;
 pub use tag::build_tag_panel;
+pub mod location;
+pub use location::build_location_panel;

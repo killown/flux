@@ -397,11 +397,8 @@ pub enum AppMsg {
     ///
     /// Works for both local filesystem paths and network URIs (SMB, SFTP, FTP).
     PromptNewFile,
-    /// Opens the "Go to Location" path/URI entry dialog (Ctrl+L).
-    ///
-    /// Presents a modal GTK dialog allowing the user to type or paste a local
-    /// directory path or remote network URI to navigate to.
-    PromptLocationDialog,
+    /// Toggles the right location panel (Ctrl+L).
+    ToggleLocationPanel,
     /// Delivers the result of an async network directory listing.
     ///
     /// Analogous to `ArchiveLoaded`, carries the pre-computed load contexts so

@@ -15,7 +15,6 @@ mod archive;
 mod create;
 mod icon;
 mod inspector;
-mod location;
 mod luks;
 mod open_with;
 mod paste;

@@ -11,6 +11,14 @@ use std::sync::Arc;
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Revealer widget wrapping the right location panel.
+    pub location_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the right location panel is currently visible.
+    pub location_panel_visible: bool,
+    /// Whether the right location panel widgets have been instantiated.
+    pub location_panel_initialized: bool,
+    /// Path entry inside the location panel, refreshed on each open.
+    pub location_entry: Option<gtk::Entry>,
     /// Sliding revealer widget that wraps the right-side git diff review panel.
     pub diff_panel_revealer: Option<gtk::Revealer>,
     /// Whether the git diff review panel is currently expanded and visible.

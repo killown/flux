@@ -140,64 +140,46 @@ impl FluxApp {
         }
     }
 
+    /// Hides every right-side panel except `keep`, so only one is open at a time.
+    fn hide_other_right_panels(&mut self, keep: RightPanelType) {
+        if keep != RightPanelType::Tag && self.tag_panel_visible {
+            if let Some(ref r) = self.tag_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.tag_panel_visible = false;
+        }
+        if keep != RightPanelType::Search && self.search_panel_visible {
+            if let Some(ref r) = self.search_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.search_panel_visible = false;
+        }
+        if keep != RightPanelType::Diff && self.diff_panel_visible {
+            if let Some(ref r) = self.diff_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.diff_panel_visible = false;
+            self.active_diff_target = None;
+        }
+        if keep != RightPanelType::Location && self.location_panel_visible {
+            if let Some(ref r) = self.location_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.location_panel_visible = false;
+        }
+    }
+
     pub fn toggle_sidebar_right_panel(
         &mut self,
         panel_type: RightPanelType,
         sender: &AsyncComponentSender<Self>,
     ) {
         // Ensure mutually exclusive right-side panels
-        match panel_type {
-            RightPanelType::Tag => {
-                if self.search_panel_visible {
-                    if let Some(ref r) = self.search_panel_revealer {
-                        r.set_reveal_child(false);
-                        r.set_visible(false);
-                    }
-                    self.search_panel_visible = false;
-                }
-                if self.diff_panel_visible {
-                    if let Some(ref r) = self.diff_panel_revealer {
-                        r.set_reveal_child(false);
-                        r.set_visible(false);
-                    }
-                    self.diff_panel_visible = false;
-                    self.active_diff_target = None;
-                }
-            }
-            RightPanelType::Search => {
-                if self.tag_panel_visible {
-                    if let Some(ref r) = self.tag_panel_revealer {
-                        r.set_reveal_child(false);
-                        r.set_visible(false);
-                    }
-                    self.tag_panel_visible = false;
-                }
-                if self.diff_panel_visible {
-                    if let Some(ref r) = self.diff_panel_revealer {
-                        r.set_reveal_child(false);
-                        r.set_visible(false);
-                    }
-                    self.diff_panel_visible = false;
-                    self.active_diff_target = None;
-                }
-            }
-            RightPanelType::Diff => {
-                if self.tag_panel_visible {
-                    if let Some(ref r) = self.tag_panel_revealer {
-                        r.set_reveal_child(false);
-                        r.set_visible(false);
-                    }
-                    self.tag_panel_visible = false;
-                }
-                if self.search_panel_visible {
-                    if let Some(ref r) = self.search_panel_revealer {
-                        r.set_reveal_child(false);
-                        r.set_visible(false);
-                    }
-                    self.search_panel_visible = false;
-                }
-            }
-        }
+        self.hide_other_right_panels(panel_type);
 
         let (revealer, initialized, visible, is_search) = match panel_type {
             RightPanelType::Tag => (
@@ -216,6 +198,12 @@ impl FluxApp {
                 self.diff_panel_revealer.clone(),
                 &mut self.diff_panel_initialized,
                 &mut self.diff_panel_visible,
+                false,
+            ),
+            RightPanelType::Location => (
+                self.location_panel_revealer.clone(),
+                &mut self.location_panel_initialized,
+                &mut self.location_panel_visible,
                 false,
             ),
         };
@@ -247,9 +235,23 @@ impl FluxApp {
                         sender.clone(),
                     )
                 }
+                RightPanelType::Location => {
+                    let (panel, entry) = crate::ui::panels::build_location_panel(
+                        &self.current_path.to_string_lossy(),
+                        self.state_db.clone(),
+                        sender.clone(),
+                    );
+                    self.location_entry = Some(entry);
+                    panel
+                }
             };
             revealer.set_child(Some(&panel));
             *initialized = true;
+        } else if panel_type == RightPanelType::Location && !*visible {
+            // Panel is built once, so refresh the entry with the current path on each open.
+            if let Some(ref entry) = self.location_entry {
+                entry.set_text(&self.current_path.to_string_lossy());
+            }
         }
 
         *visible = !*visible;
@@ -298,7 +300,7 @@ impl FluxApp {
             }
         } else if panel_type == RightPanelType::Diff {
             self.active_diff_target = None;
-        } else {
+        } else if panel_type == RightPanelType::Tag {
             sender.input(AppMsg::CancelContentSearch);
             sender.input(AppMsg::Refresh);
         }

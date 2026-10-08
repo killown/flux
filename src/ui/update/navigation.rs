@@ -21,7 +21,9 @@ pub(super) fn handle(
             sender.input(AppMsg::Refresh);
         }
         AppMsg::SyncPathEntry => {}
-        AppMsg::PromptLocationDialog => FluxApp::show_location_dialog(app, sender.clone()),
+        AppMsg::ToggleLocationPanel => {
+            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Location, sender)
+        }
         AppMsg::JumpToRecent(rank) => {
             let target_index = if rank == 0 { 0 } else { rank - 1 };
             if let Some(target_path) = app.recent_stack.get(target_index).cloned() {

@@ -93,6 +93,10 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            location_panel_revealer: None,
+            location_panel_visible: false,
+            location_panel_initialized: false,
+            location_entry: None,
             diff_panel_revealer: None,
             diff_panel_visible: false,
             diff_panel_initialized: false,
