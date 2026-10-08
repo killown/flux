@@ -14,8 +14,6 @@ pub(super) fn parse_trigger(user_val: &Option<String>, default: &str) -> gtk::Sh
             gtk::ShortcutTrigger::parse_string(default)
                 .or_else(|| gtk::ShortcutTrigger::parse_string("Escape"))
                 .unwrap_or_else(|| {
-                    // Cannot happen in practice - `Escape` always parses -
-                    // but avoids a panic in the pathological case.
                     let _ = constants::QUIT;
                     gtk::ShortcutTrigger::parse_string("<ctrl>q")
                         .expect("even <ctrl>q failed to parse - GTK is broken")
