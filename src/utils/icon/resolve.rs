@@ -39,20 +39,36 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
-    let (folder_icons, file_icons, auto_gen, _accent, _body, _font, _font_size) =
-        crate::utils::config::get_icon_config();
+    let mut icon_config_cache: Option<crate::utils::config::IconConfigSnapshot> = None;
+    let mut get_icon_config_lazy = || -> crate::utils::config::IconConfigSnapshot {
+        icon_config_cache
+            .get_or_insert_with(crate::utils::config::get_icon_config)
+            .clone()
+    };
+
+    let mut canon_str_cache: Option<Option<String>> = None;
+    let mut get_canon_str_lazy = || -> Option<String> {
+        canon_str_cache
+            .get_or_insert_with(|| {
+                path.canonicalize()
+                    .ok()
+                    .map(|p| p.to_string_lossy().into_owned())
+            })
+            .clone()
+    };
 
     let path_str = path.to_string_lossy();
-    let canon_str = path
-        .canonicalize()
-        .ok()
-        .map(|p| p.to_string_lossy().into_owned());
 
     // ── Directories ─────────────────────────────────────────────────────────
     if is_dir {
-        let folder_match = folder_icons
-            .get(path_str.as_ref())
-            .or_else(|| canon_str.as_ref().and_then(|k| folder_icons.get(k)));
+        let (folder_icons, _, _, _, _, _, _) = &*get_icon_config_lazy();
+
+        let mut folder_match = folder_icons.get(path_str.as_ref());
+        if folder_match.is_none() {
+            if let Some(ref canon) = get_canon_str_lazy() {
+                folder_match = folder_icons.get(canon);
+            }
+        }
 
         if let Some(custom) = folder_match {
             if let Ok(icon) = gio::Icon::for_string(custom) {
@@ -75,9 +91,14 @@ pub fn get_icon_for_path_with_override(
     }
 
     // ── Files: per-path custom icon ─────────────────────────────────────────
-    let file_match = file_icons
-        .get(path_str.as_ref())
-        .or_else(|| canon_str.as_ref().and_then(|k| file_icons.get(k)));
+    let (_, file_icons, _, _, _, _, _) = &*get_icon_config_lazy();
+
+    let mut file_match = file_icons.get(path_str.as_ref());
+    if file_match.is_none() {
+        if let Some(ref canon) = get_canon_str_lazy() {
+            file_match = file_icons.get(canon);
+        }
+    }
 
     if let Some(custom) = file_match {
         if let Ok(icon) = gio::Icon::for_string(custom) {
@@ -203,12 +224,17 @@ pub fn get_icon_for_path_with_override(
         }
 
         // Theme has no dedicated icon: generate ONLY if <= 9 chars.
-        if !ext.is_empty() && ext.len() <= 9 && auto_gen {
-            if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext) {
-                if let Ok(generated_icon) = gio::Icon::for_string(&generated_path.to_string_lossy())
+        if !ext.is_empty() && ext.len() <= 9 {
+            let (_, _, auto_gen, _, _, _, _) = &*get_icon_config_lazy();
+            if *auto_gen {
+                if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext)
                 {
-                    map.insert(gen_key, generated_icon.clone());
-                    return generated_icon;
+                    if let Ok(generated_icon) =
+                        gio::Icon::for_string(&generated_path.to_string_lossy())
+                    {
+                        map.insert(gen_key, generated_icon.clone());
+                        return generated_icon;
+                    }
                 }
             }
         }

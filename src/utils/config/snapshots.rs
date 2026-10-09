@@ -2,7 +2,7 @@ use super::cache::load_config;
 use crate::model::ThumbnailTypes;
 use parking_lot::RwLock;
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 pub(super) type ThumbConfigSnapshot = (bool, i32, ThumbnailTypes, usize, bool, f64);
 
@@ -29,7 +29,8 @@ pub fn get_thumb_config() -> ThumbConfigSnapshot {
         .clone()
 }
 
-pub(super) type IconConfigSnapshot = (
+/// The actual data stored inside the Arc.
+pub(super) type IconConfigData = (
     HashMap<String, String>, // folder_icons
     HashMap<String, String>, // file_icons
     bool,                    // auto_generate_mime_icons
@@ -39,10 +40,13 @@ pub(super) type IconConfigSnapshot = (
     f64,                     // auto_mime_font_size
 );
 
+/// Public so it can be used by other utils modules for lazy caching.
+pub type IconConfigSnapshot = Arc<IconConfigData>;
+
 pub(super) static ICON_CONFIG: OnceLock<RwLock<IconConfigSnapshot>> = OnceLock::new();
 
 pub(super) fn extract_icon_config(config: &crate::model::Config) -> IconConfigSnapshot {
-    (
+    Arc::new((
         config.ui.folder_icons.clone(),
         config.ui.file_icons.clone(),
         config.ui.auto_generate_mime_icons,
@@ -50,7 +54,7 @@ pub(super) fn extract_icon_config(config: &crate::model::Config) -> IconConfigSn
         config.ui.auto_mime_body_color.clone(),
         config.ui.auto_mime_font_color.clone(),
         config.ui.auto_mime_font_size,
-    )
+    ))
 }
 
 pub fn get_icon_config() -> IconConfigSnapshot {

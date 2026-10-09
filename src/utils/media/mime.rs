@@ -58,8 +58,15 @@ pub fn container_mime_masks_extension(ext: &str, content_type: &str) -> bool {
 }
 
 pub fn icon_gen_params() -> (bool, String, String, String, f64) {
-    let (_, _, auto_gen, accent, body, font, font_size) = crate::utils::config::get_icon_config();
-    (auto_gen, accent, body, font, font_size)
+    let icon_cfg = crate::utils::config::get_icon_config();
+    let (_, _, auto_gen, accent, body, font, font_size) = &*icon_cfg;
+    (
+        *auto_gen,
+        accent.clone(),
+        body.clone(),
+        font.clone(),
+        *font_size,
+    )
 }
 
 pub fn get_mime_type(path: &Path) -> String {
