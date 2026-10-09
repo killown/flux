@@ -138,6 +138,7 @@ impl FluxApp {
                 show_symlink,
                 expand_labels,
                 show_empty,
+                hidden_extensions,
             ) = {
                 let tab = &mut self.tabs[self.active_tab_index];
                 tab.files.clear_filters();
@@ -161,6 +162,7 @@ impl FluxApp {
                     self.config.ui.show_symlink_emblem,
                     self.config.ui.expand_labels,
                     self.config.ui.show_empty_dir_emblem,
+                    self.config.ui.hidden_extensions.clone(),
                 )
             };
 
@@ -233,8 +235,14 @@ impl FluxApp {
                     false
                 };
 
+                // Apply hidden_extensions to the display label, matching the
+                // behavior of the main directory loader.
+                let display_label =
+                    crate::utils::helpers::format_display_label(&name, is_dir, &hidden_extensions);
+
                 active_files.append(
                     crate::ui::FileItem::builder(name, path.clone(), icon)
+                        .display_label(display_label)
                         .is_dir(is_dir)
                         .icon_size(if list_mode {
                             list_icon_size
