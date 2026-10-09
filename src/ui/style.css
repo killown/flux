@@ -118,8 +118,6 @@ windowcontrols button {
   border-radius: 9999px;
   padding: 0;
   margin: 0 0.15em;
-  width: 24px;
-  height: 24px;
   min-width: 24px;
   min-height: 24px;
   color: @headerbar_fg_color;
@@ -129,7 +127,6 @@ windowcontrols button {
 }
 
 windowcontrols button image,
-windowcontrols button image,
 windowcontrols button image.icon,
 windowcontrols button > * {
   margin: auto;
@@ -137,8 +134,6 @@ windowcontrols button > * {
   -gtk-icon-size: 1.15em;
   min-width: 1.15em;
   min-height: 1.15em;
-  max-width: 1.15em;
-  max-height: 1.15em;
 }
 
 windowcontrols button:hover {
