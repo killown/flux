@@ -7,7 +7,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-pub(super) const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" version="1.1">
+pub(super) const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" version="1.1">
   <!-- Outer soft shadow -->
   <path style="opacity:0.2" d="M 12.75,5 C 11.2265,5 10,6.2488 10,7.8 v 50.4 c 0,1.55008 1.2265,2.8 2.75,2.8 h 38.5 C 52.7724,61 54,59.75008 54,58.2 V 7.8 C 54,6.2488 52.7724,5 51.25,5 Z"/>
 
@@ -26,7 +26,7 @@ pub(super) const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3
   <path style="opacity:0.15;fill:#000000" d="M 10,58.8 H 54 V 57.2 C 54,58.75008 52.7724,60 51.25,60 H 12.75 C 11.2265,60 10,58.75008 10,57.2 Z"/>
 
   <!-- Extension text, nudged below center of the accent block -->
-  <text x="32" y="53.5"
+  <text x="32" y="52"
         font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-size="{{FONT_SIZE}}"
         font-weight="700"
@@ -45,14 +45,27 @@ pub(super) fn get_or_create_template() -> String {
         .map(|d| d.join("flux/icons/template.svg"))
         .unwrap_or_else(|| PathBuf::from("template.svg"));
 
-    if let Ok(content) = fs::read_to_string(&template_path) {
-        return content;
+    let version_path = template_path.with_extension("svg.version");
+    let expected = format!("{:x}", md5::compute(EMBEDDED_DEFAULT_TEMPLATE));
+    let stored = fs::read_to_string(&version_path).unwrap_or_default();
+
+    if stored.trim() == expected {
+        if let Ok(content) = fs::read_to_string(&template_path) {
+            return content;
+        }
     }
 
     if let Some(parent) = template_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
     let _ = fs::write(&template_path, EMBEDDED_DEFAULT_TEMPLATE);
+    let _ = fs::write(&version_path, &expected);
+
+    // Force the generated SVGs to rebuild from the new template.
+    if let Some(gen_dir) = dirs::data_local_dir().map(|d| d.join("flux/icons/extensions/generated"))
+    {
+        let _ = fs::remove_dir_all(&gen_dir);
+    }
 
     EMBEDDED_DEFAULT_TEMPLATE.to_string()
 }
