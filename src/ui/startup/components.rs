@@ -28,12 +28,14 @@ impl FluxApp {
 
         // Static and Global Configuration
         let _ = crate::model::SENDER.set(sender.input_sender().clone());
-        relm4::set_global_css(include_str!("../style.css"));
+        {
+            crate::hit!("init_components:css");
+            relm4::set_global_css(include_str!("../style.css"));
+        }
 
-        // Resource Loading (asynchronous, parallel)
-        let (state_db_res, config, menu_actions_list) = Self::load_resources().await;
+        // Resource Loading (config and menu awaited, the DB opens in the background)
+        let (pending_db, config, menu_actions_list) = Self::load_resources().await;
 
-        let state_db = Arc::new(state_db_res);
         let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
 
         crate::utils::helpers::apply_ui_scale(config.ui.ui_scale);
@@ -42,15 +44,22 @@ impl FluxApp {
         let action_group = Self::register_window_actions(root, &sender);
 
         // Grid View Configuration
-        let files = Self::build_file_grid(&config, &sender);
+        let files = {
+            crate::hit!("init_components:grid");
+            Self::build_file_grid(&config, &sender)
+        };
 
         // Tab Container Initialization
-        let (tab_view, tab_bar, initial_tab) =
-            Self::build_tabs(start_path.clone(), &config, &sender);
+        let (tab_view, tab_bar, initial_tab) = {
+            crate::hit!("init_components:tabs");
+            Self::build_tabs(start_path.clone(), &config, &sender)
+        };
 
         // Sidebar and Volume Monitoring
-        let (sidebar, volume_monitor, network_section, sidebar_root) =
-            Self::build_sidebar(&config, &sender);
+        let (sidebar, volume_monitor, network_section, sidebar_root) = {
+            crate::hit!("init_components:sidebar");
+            Self::build_sidebar(&config, &sender)
+        };
 
         // Breadcrumb Setup (Returned for local_ref)
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -74,6 +83,9 @@ impl FluxApp {
                 initial_exclusive_index = Some(0);
             }
         }
+
+        // The DB has been opening in parallel with the UI construction above.
+        let state_db = Arc::new(pending_db.wait().await);
 
         // Model Assembly
         let initial_icon_size = dirs::home_dir()

@@ -13,8 +13,17 @@ impl FluxApp {
         let terminal = {
             crate::hit!("init_components:terminal");
             let terminal = crate::services::terminal::Terminal::new(&config.ui.terminal);
-            terminal.apply_theme(&config.ui.terminal);
             terminal.connect_theme_changes(config.ui.terminal.clone());
+
+            // Resolve theme colors on first map, when the widget has its real style context.
+            let applied = std::rc::Rc::new(std::cell::Cell::new(false));
+            let term_for_theme = terminal.clone();
+            let term_config = config.ui.terminal.clone();
+            terminal.drawing_area.connect_map(move |_| {
+                if !applied.replace(true) {
+                    term_for_theme.apply_theme(&term_config);
+                }
+            });
             terminal
         };
 

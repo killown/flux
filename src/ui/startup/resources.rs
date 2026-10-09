@@ -3,9 +3,22 @@ use crate::services::db::StateManager;
 use crate::utils;
 use futures::try_join;
 
+/// State DB that is still opening on a worker thread.
+pub(super) struct PendingDb(tokio::sync::oneshot::Receiver<StateManager>);
+
+impl PendingDb {
+    /// Waits for the DB to finish opening.
+    pub(super) async fn wait(self) -> StateManager {
+        crate::hit!("init_components:db_wait");
+        self.0
+            .await
+            .expect("Initialization tasks should always complete")
+    }
+}
+
 impl FluxApp {
-    /// Loads the state DB, config and menu actions concurrently.
-    pub(super) async fn load_resources() -> (StateManager, Config, Vec<CustomAction>) {
+    /// Loads config and menu actions, and starts opening the state DB in the background.
+    pub(super) async fn load_resources() -> (PendingDb, Config, Vec<CustomAction>) {
         // Resource Loading (asynchronous, parallel)
         let (config_tx, config_rx) = tokio::sync::oneshot::channel();
         let (menu_tx, menu_rx) = tokio::sync::oneshot::channel();
@@ -24,12 +37,11 @@ impl FluxApp {
             let _ = menu_tx.send(menu);
         });
 
-        // Wait for all to complete concurrently
-        let (state_db_res, config, menu_actions_list) = {
+        // Only config and menu are awaited here, the DB keeps opening while the UI is built.
+        let (config, menu_actions_list) = {
             crate::hit!("init_components:resources");
-            try_join!(db_rx, config_rx, menu_rx)
-                .expect("Initialization tasks should always complete")
+            try_join!(config_rx, menu_rx).expect("Initialization tasks should always complete")
         };
-        (state_db_res, config, menu_actions_list)
+        (PendingDb(db_rx), config, menu_actions_list)
     }
 }
