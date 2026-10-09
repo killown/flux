@@ -477,21 +477,49 @@ impl FileItem {
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
             crate::hit!("bind_icon_paint");
-
-            // Default: use the icon as-is
             widgets.icon_widget.set_pixel_size(self.icon_size);
 
-            let display = root.display();
-            let icon_theme = gtk::IconTheme::for_display(&display);
-            let scale = root.scale_factor().max(1);
-            let paintable = icon_theme.lookup_by_gicon(
-                &self.icon,
-                self.icon_size,
-                scale,
-                gtk::TextDirection::None,
-                gtk::IconLookupFlags::empty(),
-            );
-            widgets.icon_widget.set_paintable(Some(&paintable));
+            // Custom file-path icons must be loaded as textures and scaled ourselves,
+            // because GtkIconTheme::lookup_by_gicon returns a paintable at the file's
+            // natural size for GFileIcon, which the Image widget then paints verbatim
+            // (stretching the grid cell's width).
+            // NOTE: This is necessary, otherwise the grid layout will be inconsistent and the icon will
+            // not match the requested size.
+            let custom_path = self
+                .icon
+                .downcast_ref::<gtk::gio::FileIcon>()
+                .and_then(|fi| fi.file().path());
+
+            if let Some(path) = custom_path {
+                if let Ok(texture) = gdk::Texture::from_filename(&path) {
+                    widgets.icon_widget.set_paintable(Some(&texture));
+                } else {
+                    // fall through to theme lookup
+                    let display = root.display();
+                    let icon_theme = gtk::IconTheme::for_display(&display);
+                    let scale = root.scale_factor().max(1);
+                    let paintable = icon_theme.lookup_by_gicon(
+                        &self.icon,
+                        self.icon_size,
+                        scale,
+                        gtk::TextDirection::None,
+                        gtk::IconLookupFlags::empty(),
+                    );
+                    widgets.icon_widget.set_paintable(Some(&paintable));
+                }
+            } else {
+                let display = root.display();
+                let icon_theme = gtk::IconTheme::for_display(&display);
+                let scale = root.scale_factor().max(1);
+                let paintable = icon_theme.lookup_by_gicon(
+                    &self.icon,
+                    self.icon_size,
+                    scale,
+                    gtk::TextDirection::None,
+                    gtk::IconLookupFlags::empty(),
+                );
+                widgets.icon_widget.set_paintable(Some(&paintable));
+            }
         }
 
         if self.disable_drag_and_drop {
