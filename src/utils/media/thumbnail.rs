@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use super::pdf::pdf_thumbnail;
+use super::png::{mtime_secs, read_thumb_mtime};
 
 /// Retrieves a thumbnail [`gdk::Texture`] for a visual media file, generating
 /// and caching it on first access.
@@ -76,34 +77,22 @@ fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathB
     Some((cache_dir, cache_path, hash))
 }
 
-/// Returns whether a cached thumbnail PNG is still valid for the given source file.
+/// Returns whether cached PNG bytes still match the source, using `Thumb::MTime` per the spec.
 ///
-/// Compares the source's `mtime` against the thumbnail's own `mtime`. A thumbnail
-/// is considered stale when the source was modified after the thumbnail was written,
-/// or when the on-disk entry is zero bytes (partial write / crash residue).
-///
-/// # Arguments
-///
-/// * `cache_path`   - Path to the candidate `.png` thumbnail.
-/// * `source_meta`  - [`fs::Metadata`] of the original source file.
-fn thumbnail_is_valid(cache_path: &Path, source_meta: &fs::Metadata) -> bool {
-    let cache_meta = match fs::metadata(cache_path) {
-        Ok(m) => m,
-        Err(_) => return false,
-    };
-
-    let cache_mtime = cache_meta.modified().ok();
-    let source_mtime = source_meta.modified().ok();
-
-    // Source newer than cache → stale.
-    if let (Some(ct), Some(st)) = (cache_mtime, source_mtime) {
-        if st > ct {
-            return false;
-        }
+/// Entries without `Thumb::MTime` (older flux caches) fall back to comparing file mtimes.
+fn thumbnail_is_valid(cache_meta: &fs::Metadata, png: &[u8], source_meta: &fs::Metadata) -> bool {
+    if cache_meta.len() == 0 {
+        return false;
     }
 
-    // Guard against zero-byte truncation or partial writes.
-    cache_meta.len() > 0
+    if let (Some(stored), Some(current)) = (read_thumb_mtime(png), mtime_secs(source_meta)) {
+        return stored == current;
+    }
+
+    match (cache_meta.modified().ok(), source_meta.modified().ok()) {
+        (Some(ct), Some(st)) => st <= ct,
+        _ => true,
+    }
 }
 
 pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
@@ -195,13 +184,13 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
             if meta.len() > 1024 * 1024 {
                 let _ = std::fs::remove_file(&existing);
             } else {
-                let is_valid = source_meta
-                    .as_ref()
-                    .map(|m| thumbnail_is_valid(&existing, m))
-                    .unwrap_or(true);
+                if let Ok(bytes) = std::fs::read(&existing) {
+                    let is_valid = source_meta
+                        .as_ref()
+                        .map(|m| thumbnail_is_valid(&meta, &bytes, m))
+                        .unwrap_or(true);
 
-                if is_valid {
-                    if let Ok(bytes) = std::fs::read(&existing) {
+                    if is_valid {
                         if let Ok(texture) = gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)) {
                             return Some(texture);
                         }
@@ -225,12 +214,7 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
     }
 
     if is_img {
-        return crate::utils::media::decode_image_thumbnail(
-            path,
-            &cache_path,
-            &cache_dir,
-            target_size,
-        );
+        return crate::utils::media::decode_image_thumbnail(path, &cache_path, target_size);
     }
 
     if is_vid {

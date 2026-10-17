@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::time::Duration;
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 /// Probes a media file for its total stream duration asynchronously without blocking the
 /// thread pool worker.
@@ -102,13 +102,14 @@ pub(crate) fn extract_video_frame(
     }
 
     if success && tmp_path.exists() {
-        if let Ok(raw_png) = std::fs::read(&tmp_path) {
-            let optimized = optimize_png_bytes(&raw_png);
-            let _ = std::fs::write(&tmp_path, optimized);
-        }
-        let _ = std::fs::rename(&tmp_path, cache_path);
-        if let Ok(bytes) = std::fs::read(cache_path) {
-            return gtk::gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok();
+        let bytes = std::fs::read(&tmp_path);
+        let _ = std::fs::remove_file(&tmp_path);
+        if let Ok(bytes) = bytes {
+            let texture = gtk::gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok();
+            if texture.is_some() {
+                store_thumbnail(&bytes, path, cache_path);
+            }
+            return texture;
         }
     } else {
         let _ = std::fs::remove_file(&tmp_path);

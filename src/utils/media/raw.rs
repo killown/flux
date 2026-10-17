@@ -4,7 +4,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::sync::OnceLock;
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 /// Returns `true` if `exiftool` is present on `$PATH`.
 fn exiftool_available() -> bool {
@@ -46,20 +46,23 @@ pub(crate) fn raw_thumbnail(
     // Primary: exiftool. Correct on every modern camera.
     if exiftool_available() {
         if let Some(bytes) = exiftool_preview(path, target_size) {
-            std::fs::write(cache_path, &bytes).ok()?;
-            return gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok();
+            let texture = gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok()?;
+            store_thumbnail(&bytes, path, cache_path);
+            return Some(texture);
         }
     }
 
     // Fallback: native thumbnailer. Faster, but broken for some cameras.
     if let Some(tool) = find_raw_thumbnailer() {
         if let Some(tex) = try_raw_thumbnailer(tool, path, cache_dir, target_size) {
-            let bytes = std::fs::read(&tex).ok()?;
-            if png_looks_real(&bytes) {
-                std::fs::rename(&tex, cache_path).ok()?;
-                return gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok();
-            }
+            let bytes = std::fs::read(&tex);
             let _ = std::fs::remove_file(&tex);
+            let bytes = bytes.ok()?;
+            if png_looks_real(&bytes) {
+                let texture = gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)).ok()?;
+                store_thumbnail(&bytes, path, cache_path);
+                return Some(texture);
+            }
         }
     }
 
@@ -153,9 +156,9 @@ fn exiftool_preview(path: &Path, target_size: i32) -> Option<Vec<u8>> {
 
         let scaled = pixbuf.scale_simple(new_w, new_h, gdk_pixbuf::InterpType::Bilinear)?;
         let bytes = scaled
-            .save_to_bufferv("png", &[("compression", "9")])
+            .save_to_bufferv("png", &[("compression", "1")])
             .ok()?;
-        return Some(optimize_png_bytes(&bytes));
+        return Some(bytes);
     }
 
     None

@@ -3,7 +3,7 @@ use gtk::pango::prelude::FontMapExt;
 use std::fs;
 use std::path::Path;
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 /// Registers a font file with the process-local fontconfig instance so Pango
 /// can resolve it without system installation.
@@ -223,9 +223,8 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
         stride,
     );
 
-    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
-        let optimized = optimize_png_bytes(&buffer);
-        let _ = std::fs::write(cache_path, optimized);
+    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
+        store_thumbnail(&buffer, path, cache_path);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))

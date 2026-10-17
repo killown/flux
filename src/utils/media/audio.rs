@@ -2,7 +2,7 @@ use adw::gdk;
 use gdk_pixbuf::prelude::*;
 use std::path::Path;
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 pub fn audio_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
     use lofty::prelude::*;
@@ -36,9 +36,8 @@ pub fn audio_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Opti
     let y_offset = (max_dim - new_h) / 2;
     scaled.copy_area(0, 0, new_w, new_h, &canvas, x_offset, y_offset);
 
-    if let Ok(buffer) = canvas.save_to_bufferv("png", &[("compression", "9")]) {
-        let optimized = optimize_png_bytes(&buffer);
-        let _ = std::fs::write(cache_path, optimized);
+    if let Ok(buffer) = canvas.save_to_bufferv("png", &[("compression", "1")]) {
+        store_thumbnail(&buffer, path, cache_path);
     }
 
     Some(gdk::Texture::for_pixbuf(&canvas))

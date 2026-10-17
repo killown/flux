@@ -1,7 +1,7 @@
 use adw::gdk;
 use std::path::{Path, PathBuf};
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 /// Extracts the highest resolution icon embedded inside a Windows PE executable.
 pub fn extract_exe_icon(
@@ -72,9 +72,8 @@ pub fn extract_exe_icon(
     let pixbuf =
         gdk_pixbuf::Pixbuf::from_file_at_scale(&source_png, target_size, target_size, true).ok()?;
 
-    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
-        let optimized = optimize_png_bytes(&buffer);
-        let _ = std::fs::write(cache_path, optimized);
+    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
+        store_thumbnail(&buffer, exe_path, cache_path);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))

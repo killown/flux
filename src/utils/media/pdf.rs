@@ -1,7 +1,7 @@
 use adw::gdk;
 use std::path::Path;
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 /// Renders the first page of a PDF to a PNG thumbnail and writes it to `cache_path`.
 ///
@@ -69,9 +69,8 @@ pub(super) fn pdf_thumbnail(
         stride,
     );
 
-    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "9")]) {
-        let optimized = optimize_png_bytes(&buffer);
-        let _ = std::fs::write(cache_path, optimized);
+    if let Ok(buffer) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
+        store_thumbnail(&buffer, path, cache_path);
     }
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))

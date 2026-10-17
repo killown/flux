@@ -1,46 +1,20 @@
 use std::path::Path;
 
-use super::png::optimize_png_bytes;
+use super::png::store_thumbnail;
 
 pub(crate) fn decode_image_thumbnail(
     path: &std::path::Path,
     cache_path: &std::path::Path,
-    cache_dir: &std::path::Path,
     target_size: i32,
 ) -> Option<gtk::gdk::Texture> {
     let pixbuf =
         gdk_pixbuf::Pixbuf::from_file_at_scale(path, target_size, target_size, true).ok()?;
 
-    let tmp_path = cache_dir.join(format!(
-        ".tmp.{}.{}.png",
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0)
-    ));
-
-    let written = pixbuf
-        .save_to_bufferv("png", &[("compression", "1")])
-        .ok()
-        .map(|buf| {
-            let optimized = optimize_png_bytes(&buf);
-            if std::fs::write(&tmp_path, optimized).is_ok() {
-                std::fs::rename(&tmp_path, cache_path).is_ok()
-            } else {
-                let _ = std::fs::remove_file(&tmp_path);
-                false
-            }
-        })
-        .unwrap_or(false);
-
-    if written {
-        std::fs::read(cache_path)
-            .ok()
-            .and_then(|b| gtk::gdk::Texture::from_bytes(&glib::Bytes::from(&b)).ok())
-    } else {
-        None
+    if let Ok(buf) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
+        store_thumbnail(&buf, path, cache_path);
     }
+
+    Some(gtk::gdk::Texture::for_pixbuf(&pixbuf))
 }
 
 #[inline]
