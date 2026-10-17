@@ -8,9 +8,19 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum FilterMode {
+    #[default]
+    All,
+    OnlyFolders,
+    OnlyFiles,
+}
+
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Session-scoped folder/file filter applied to every directory load, persists across navigation.
+    pub filter_mode: FilterMode,
     /// The preview panel's `adw::ViewStack`, read out of the panel registry at build time,
     /// the window header hosts a `ViewSwitcher` bound to it.
     pub preview_view_stack: Option<adw::ViewStack>,

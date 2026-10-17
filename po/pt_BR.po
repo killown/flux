@@ -525,6 +525,18 @@ msgstr "itens"
 # src/ui/help.rs
 # ============================================================
 
+#: src/ui/help/page/system_view.rs:37
+msgid "Cycle folder/file filter"
+msgstr "Alternar filtro de pastas/arquivos"
+
+#: src/utils/helpers/format.rs:20
+msgid "[Folders Only]"
+msgstr "[Apenas Pastas]"
+
+#: src/utils/helpers/format.rs:21
+msgid "[Files Only]"
+msgstr "[Apenas Arquivos]"
+
 #: src/ui/help/page/system_view.rs:29
 msgid "Toggle wide preview"
 msgstr "Mostrar/ocultar pré-visualização ampla"

@@ -260,6 +260,8 @@ impl FluxApp {
             sender_debounce.input(AppMsg::ShowLoadingSpinner(session));
         });
 
+        let filter_mode = self.filter_mode;
+
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
             // Fast directory reading without individual stat() calls per file
@@ -357,6 +359,14 @@ impl FluxApp {
                     .into_par_iter()
                     .filter_map(|(name, is_dir, is_symlink)| {
                         if !show_hidden && name.starts_with('.') {
+                            return None;
+                        }
+
+                        // Apply Folder/File filter
+                        if filter_mode == crate::model::FilterMode::OnlyFolders && !is_dir {
+                            return None;
+                        }
+                        if filter_mode == crate::model::FilterMode::OnlyFiles && is_dir {
                             return None;
                         }
 

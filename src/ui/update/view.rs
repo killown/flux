@@ -32,6 +32,14 @@ pub(super) fn handle(
             app.handle_preview_prefetch(path, session, sender)
         }
         AppMsg::PreviewPrefetched { .. } => {}
+        AppMsg::CycleFilterMode => {
+            app.filter_mode = match app.filter_mode {
+                crate::model::FilterMode::All => crate::model::FilterMode::OnlyFolders,
+                crate::model::FilterMode::OnlyFolders => crate::model::FilterMode::OnlyFiles,
+                crate::model::FilterMode::OnlyFiles => crate::model::FilterMode::All,
+            };
+            sender.input(AppMsg::Refresh);
+        }
 
         AppMsg::SetIconSize(val) => app.handle_set_icon_size(val, sender),
         AppMsg::SetListIconSize(val) => app.handle_set_list_icon_size(val, sender),

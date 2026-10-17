@@ -57,6 +57,13 @@ pub fn setup_capture(
                 sender.input(AppMsg::AddExclusive(None));
                 glib::Propagation::Stop
             }
+            gdk::Key::e | gdk::Key::E if is_ctrl && is_shift && !is_alt => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::CycleFilterMode);
+                glib::Propagation::Stop
+            }
             gdk::Key::End if is_ctrl => {
                 sender.input(AppMsg::ClearExclusive);
                 glib::Propagation::Stop

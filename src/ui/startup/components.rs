@@ -169,6 +169,7 @@ impl FluxApp {
             _volume_monitor: volume_monitor,
             filter: String::new(),
             extension_filter: None,
+            filter_mode: crate::model::FilterMode::All,
             is_list_mode: config.default_list_mode,
             header_view: constants::VIEW_PATH.to_string(),
             recent_stack: std::collections::VecDeque::with_capacity(

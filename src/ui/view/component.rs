@@ -919,6 +919,7 @@ impl SimpleAsyncComponent for FluxApp {
                             set_label: &crate::utils::helpers::format_right_status(
                                 &model.current_path,
                                 model.extension_filter.as_deref(),
+                                model.filter_mode,
                             ),
                             add_css_class: "caption",
                             add_css_class: "dim-label",

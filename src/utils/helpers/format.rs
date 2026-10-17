@@ -7,8 +7,19 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
 /// Computes the right-side status string containing active filters and free volume space.
-pub fn format_right_status(current_path: &Path, extension_filter: Option<&[String]>) -> String {
+pub fn format_right_status(
+    current_path: &Path,
+    extension_filter: Option<&[String]>,
+    filter_mode: crate::model::FilterMode,
+) -> String {
     let mut parts = Vec::new();
+
+    // Add filter mode indicator
+    match filter_mode {
+        crate::model::FilterMode::OnlyFolders => parts.push(tr("[Folders Only]")),
+        crate::model::FilterMode::OnlyFiles => parts.push(tr("[Files Only]")),
+        crate::model::FilterMode::All => {}
+    }
 
     if let Some(patterns) = extension_filter {
         if !patterns.is_empty() {
