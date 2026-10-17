@@ -83,10 +83,8 @@ fn paint(cr: &Context, tv: &gtk::TextView, _sc: &gtk::ScrolledWindow, w: i32, h:
 
     // If the top of the viewport cuts through a wrapped line, step back to the
     // beginning of that line so we paint its number at the correct spot.
-    if !iter.starts_line() {
-        if iter.backward_line() {
-            n = iter.line();
-        }
+    if !iter.starts_line() && iter.backward_line() {
+        n = iter.line();
     }
 
     // Iterate down through the buffer from the current visible line.
