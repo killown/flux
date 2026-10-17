@@ -24,19 +24,19 @@ Cold start on a Ryzen 5 5600X, mean of 10 runs:
 | Thunar       |  290 ms |
 | Nautilus     |  743 ms |
 
-## What it does
+## Features
 
-- Filter the current folder as you type (fuzzy, forgives typos). Size filters work too: `>10MB`, `<500KB`, `10MB..50MB`. Globs and MIME types work: `*.png`, `image/*`.
-- Search inside files by starting with a colon: `:term`, or `:.rs,py:term` to limit it to some extensions. `Ctrl+F` opens a search panel with name, content, date, size and depth options.
-- Browse zip, 7z, rar, tar.\*, iso and deb files like folders, without extracting. Password-protected zip/7z/rar are supported, and you can edit zips in place.
-- Open SMB, SFTP, FTP, WebDAV, NFS, MTP and Google Drive locations through GVFS (`Ctrl+Shift+L`).
-- Unlock and eject LUKS volumes.
-- Preview images, video, audio, PDFs and archives in a side panel that follows your selection.
-- Built-in terminal on `F4`. When you `cd` in it, the file view follows.
-- Tag files and find them again with `#tag` or `Ctrl+Shift+T`.
-- Copy and move in a background queue with speed and ETA. Conflicts are resolved in a dialog, undo/redo works for renames, moves and trash, and system paths are protected from deletion.
-- Edit the right-click menus in a visual editor (`F9`), set custom icons for files, folders and extensions, and add your own CSS.
-- The properties window shows SHA-256, entropy, ELF info, media duration and size, and git history.
+- **Archives behave like folders.** Open zip, 7z, rar, tar, iso and deb files like any directory, with thumbnails and previews of what's inside. Nothing gets extracted.
+- **A preview panel that keeps up.** Images, video, audio and PDFs show as you move through files. `F11` goes wide, and videos even play right in the grid. Previews only show what's inside a file; editing is left to your preferred app.
+- **Search that's already there.** Type to filter the folder, press `Ctrl+F` for a search panel on the right, or start with `:` to search inside files. There is no index to build and no background service.
+- **Your servers and drives.** SMB, SFTP, FTP, WebDAV, NFS, MTP and Google Drive, plus encrypted LUKS volumes.
+- **A terminal that follows you.** Press `F4`, `cd` somewhere, and the file view goes with you.
+- **Icons and covers.** Change the icon for a file type, a single file or a folder with any image. Use it to give videos, games and music their own cover art, and set whole batches from the command line.
+- **Tags.** Label files and find them again with `#tag` or `Ctrl+Shift+T`.
+
+<p align="center">
+  <img src="https://github.com/killown/flux/raw/main/screenshots/covers.png" alt="Flux grid view with custom cover art set as folder icons for a game library" width="100%">
+</p>
 
 ## Install
 
@@ -87,7 +87,7 @@ Network browsing needs `gvfs` plus a backend such as `gvfs-smb` or `gvfs-sftp`. 
 | Key                      | Action                    |
 | :----------------------- | :------------------------ |
 | `Ctrl+L`                 | Go to location            |
-| `Ctrl+F`                 | Advanced search           |
+| `Ctrl+F`                 | Search panel (right side) |
 | `Alt+Left` / `Alt+Right` | Back / forward            |
 | `F2`                     | Rename                    |
 | `F4`                     | Terminal                  |
@@ -95,6 +95,7 @@ Network browsing needs `gvfs` plus a backend such as `gvfs-smb` or `gvfs-sftp`. 
 | `F8`                     | Sidebar                   |
 | `F9`                     | Context menu editor       |
 | `F10`                    | Preferences               |
+| `F11`                    | Wide preview              |
 | `Ctrl+H`                 | Hidden files              |
 | `Ctrl+Z` / `Ctrl+Y`      | Undo / redo               |
 | `Ctrl+T`                 | Edit tags                 |
@@ -102,17 +103,29 @@ Network browsing needs `gvfs` plus a backend such as `gvfs-smb` or `gvfs-sftp`. 
 
 `F1` shows the rest.
 
-## Customizing menus
+## Customization
 
-Right-click menus come from `~/.config/flux/menu.rs`. You can edit it by hand or use the editor on `F9`:
+Flux is built to be changed:
+
+- Style the whole interface with CSS in `~/.config/flux/style.css`. It loads on top of the theme and reloads when you save.
+- Rearrange the sidebar: drag and drop to move items and create new sections.
+- Move the window controls to either side.
+- Hide the sidebar, header bar and status bar (`F8`, `F6`, `F7`), or start with `--no-sidebar`, `--no-header` or `--no-statusbar`.
+- Hide file extensions.
+- Set a custom icon for a single file or folder, or for every file with a given extension.
+- Set or reset icons in bulk from the command line, with one `TARGET<TAB>IMAGE` pair per line:
+
+```bash
+printf '%s\t%s\n' ~/Videos ~/icons/video.svg ~/Music ~/icons/music.svg | flux --set-icons-stdin
+```
+
+- Edit the right-click menus by hand in `~/.config/flux/menu.rs`, or use the editor on `F9`. A second menu on `Ctrl+Right-Click` changes with the file type, so the main menu can stay short:
 
 ```rust
 "󰉋   Inspect Directory" => "directory", "builtin::inspect_dir"
 "󰋜   Open With…"        => "all", "builtin::open_with_dialog"
 "󰆴   Move to Trash"     => "all", "builtin::delete"
 ```
-
-Styling goes in `~/.config/flux/style.css`. It loads on top of the theme and reloads when you save.
 
 ## Under the hood
 
