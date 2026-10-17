@@ -12,6 +12,8 @@ const KEY_URI: &str = "Thumb::URI";
 const KEY_MTIME: &str = "Thumb::MTime";
 const OPTIMIZE_QUEUE_LEN: usize = 256;
 
+type OptimizeJob = (PathBuf, Vec<u8>);
+
 /// Optimizes raw PNG bytes with oxipng, keeping `tEXt` chunks such as `Thumb::MTime`.
 pub fn optimize_png_bytes(bytes: &[u8]) -> Vec<u8> {
     let mut keep = IndexSet::default();
@@ -136,9 +138,9 @@ pub fn store_thumbnail(png: &[u8], source: &Path, cache_path: &Path) {
 }
 
 fn queue_optimize(path: PathBuf, bytes: Vec<u8>) {
-    static QUEUE: OnceLock<Option<SyncSender<(PathBuf, Vec<u8>)>>> = OnceLock::new();
+    static QUEUE: OnceLock<Option<SyncSender<OptimizeJob>>> = OnceLock::new();
     let tx = QUEUE.get_or_init(|| {
-        let (tx, rx) = sync_channel::<(PathBuf, Vec<u8>)>(OPTIMIZE_QUEUE_LEN);
+        let (tx, rx) = sync_channel::<OptimizeJob>(OPTIMIZE_QUEUE_LEN);
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(1)
             .thread_name(|_| "flux-png-optimizer".to_string())

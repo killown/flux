@@ -5,7 +5,7 @@ mod watcher;
 
 use crate::model::Config;
 use crate::ui::FileProperties;
-use flux::args::{resolve_startup_action, StartupAction};
+use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
 use relm4::prelude::*;
 use std::io::BufRead;
 use std::path::PathBuf;
@@ -152,33 +152,46 @@ pub fn run() {
             let mut config = crate::utils::load_config();
             let stdin = std::io::stdin();
             let mut count = 0;
+            let mut skipped = 0;
 
-            for line in stdin.lock().lines().map_while(Result::ok) {
+            for (idx, line) in stdin.lock().lines().map_while(Result::ok).enumerate() {
                 let trimmed = line.trim();
                 if trimmed.is_empty() || trimmed.starts_with('#') {
                     continue;
                 }
-                let parts: Vec<&str> = if trimmed.contains('\t') {
-                    trimmed.split('\t').collect()
-                } else {
-                    trimmed.split_whitespace().collect()
+                let line_no = idx + 1;
+
+                let (target, image) = match parse_icon_pair(trimmed) {
+                    Ok(pair) => pair,
+                    Err(msg) => {
+                        eprintln!("flux: line {line_no}: {msg}");
+                        skipped += 1;
+                        continue;
+                    }
                 };
 
-                if parts.len() >= 2 {
-                    let target = PathBuf::from(parts[0]);
-                    let image = PathBuf::from(parts[1]);
-                    let target_canon = target.canonicalize().unwrap_or(target);
-                    let image_canon = image.canonicalize().unwrap_or(image);
+                let target_canon = target.canonicalize().unwrap_or(target);
+                let image_canon = image.canonicalize().unwrap_or(image);
 
-                    if image_canon.exists() {
-                        set_icon_on_target(&mut config, &target_canon, &image_canon);
-                        count += 1;
-                    }
+                if !image_canon.exists() {
+                    eprintln!(
+                        "flux: line {line_no}: icon file not found: {}",
+                        image_canon.display()
+                    );
+                    skipped += 1;
+                    continue;
                 }
+
+                set_icon_on_target(&mut config, &target_canon, &image_canon);
+                count += 1;
             }
 
             crate::utils::save_config(&config);
             println!("Batch updated {} custom icon(s)", count);
+            if skipped > 0 {
+                eprintln!("flux: skipped {skipped} line(s)");
+                std::process::exit(1);
+            }
         }
 
         StartupAction::ResetIcon(target) => {

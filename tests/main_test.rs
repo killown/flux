@@ -1,4 +1,6 @@
-use flux::args::{resolve_startup_action, resolve_startup_action_with_reader, StartupAction};
+use flux::args::{
+    parse_icon_pair, resolve_startup_action, resolve_startup_action_with_reader, StartupAction,
+};
 use std::io::Cursor;
 use std::path::PathBuf;
 
@@ -413,4 +415,93 @@ fn tag_search_variants_all_normalize() {
             panic!("expected TagSearch for {}", prefix);
         }
     }
+}
+
+fn pair(target: &str, image: &str) -> Result<(PathBuf, PathBuf), String> {
+    Ok((PathBuf::from(target), PathBuf::from(image)))
+}
+
+#[test]
+fn icon_pair_tab_separated_keeps_spaces() {
+    assert_eq!(
+        parse_icon_pair("/home/me/My Photos\t/icons/my icon.png"),
+        pair("/home/me/My Photos", "/icons/my icon.png")
+    );
+}
+
+#[test]
+fn icon_pair_tab_ignores_extra_columns() {
+    assert_eq!(parse_icon_pair("/a\t/b.png\tnote"), pair("/a", "/b.png"));
+}
+
+#[test]
+fn icon_pair_two_plain_words() {
+    assert_eq!(parse_icon_pair("/a /b.png"), pair("/a", "/b.png"));
+    assert_eq!(parse_icon_pair("  /a \t /b.png  "), pair("/a", "/b.png"));
+}
+
+#[test]
+fn icon_pair_single_quoted_paths_with_spaces() {
+    assert_eq!(
+        parse_icon_pair("'/home/me/My Photos' '/icons/my icon.png'"),
+        pair("/home/me/My Photos", "/icons/my icon.png")
+    );
+}
+
+#[test]
+fn icon_pair_double_quoted_paths_with_spaces_and_escapes() {
+    assert_eq!(
+        parse_icon_pair(r#""/home/me/My Photos" "/icons/say \"hi\".png""#),
+        pair("/home/me/My Photos", "/icons/say \"hi\".png")
+    );
+}
+
+#[test]
+fn icon_pair_backslash_escaped_spaces() {
+    assert_eq!(
+        parse_icon_pair(r"/home/me/My\ Photos /icons/my\ icon.png"),
+        pair("/home/me/My Photos", "/icons/my icon.png")
+    );
+}
+
+#[test]
+fn icon_pair_strips_file_uri_prefix() {
+    assert_eq!(
+        parse_icon_pair("file:///a/b\tfile:///c/d.png"),
+        pair("/a/b", "/c/d.png")
+    );
+}
+
+#[test]
+fn icon_pair_unquoted_spaces_are_rejected_with_count() {
+    let err = parse_icon_pair("/home/me/My Photos /icons/a.png").unwrap_err();
+    assert!(err.contains("found 3"), "unexpected message: {err}");
+}
+
+#[test]
+fn icon_pair_single_value_is_rejected() {
+    let err = parse_icon_pair("/only/one").unwrap_err();
+    assert!(err.contains("found 1"), "unexpected message: {err}");
+}
+
+#[test]
+fn icon_pair_unterminated_quote_is_rejected() {
+    assert!(parse_icon_pair("'/a /b.png")
+        .unwrap_err()
+        .contains("unterminated"));
+    assert!(parse_icon_pair("\"/a /b.png")
+        .unwrap_err()
+        .contains("unterminated"));
+}
+
+#[test]
+fn icon_pair_empty_field_after_tab_is_rejected() {
+    assert!(parse_icon_pair("/a\t").is_err());
+    assert!(parse_icon_pair("\t/b.png").is_err());
+    assert!(parse_icon_pair("").is_err());
+}
+
+#[test]
+fn icon_pair_empty_quoted_value_is_rejected() {
+    assert!(parse_icon_pair("'' /b.png").is_err());
 }

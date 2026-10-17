@@ -9,6 +9,93 @@ fn uri_to_path(s: &str) -> PathBuf {
     }
 }
 
+/// Splits shell-style text into words, honouring quotes and backslash escapes.
+fn split_words(line: &str) -> Result<Vec<String>, String> {
+    let mut words = Vec::new();
+    let mut cur = String::new();
+    let mut in_word = false;
+    let mut chars = line.chars();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '\'' => {
+                in_word = true;
+                loop {
+                    match chars.next() {
+                        Some('\'') => break,
+                        Some(ch) => cur.push(ch),
+                        None => return Err("unterminated single quote".to_string()),
+                    }
+                }
+            }
+            '"' => {
+                in_word = true;
+                loop {
+                    match chars.next() {
+                        Some('"') => break,
+                        Some('\\') => match chars.next() {
+                            Some(ch @ ('"' | '\\')) => cur.push(ch),
+                            Some(ch) => {
+                                cur.push('\\');
+                                cur.push(ch);
+                            }
+                            None => return Err("unterminated double quote".to_string()),
+                        },
+                        Some(ch) => cur.push(ch),
+                        None => return Err("unterminated double quote".to_string()),
+                    }
+                }
+            }
+            '\\' => {
+                in_word = true;
+                cur.push(chars.next().unwrap_or('\\'));
+            }
+            c if c.is_whitespace() => {
+                if in_word {
+                    words.push(std::mem::take(&mut cur));
+                    in_word = false;
+                }
+            }
+            c => {
+                in_word = true;
+                cur.push(c);
+            }
+        }
+    }
+    if in_word {
+        words.push(cur);
+    }
+    Ok(words)
+}
+
+/// Parses one `--set-icons-stdin` line into `(target, image)`, tab-separated, or two quoted/escaped words.
+pub fn parse_icon_pair(line: &str) -> Result<(PathBuf, PathBuf), String> {
+    let line = line.trim();
+
+    let (target, image) = if line.contains('\t') {
+        let mut fields = line.splitn(3, '\t');
+        let target = fields.next().unwrap_or("").trim().to_string();
+        let image = fields.next().unwrap_or("").trim().to_string();
+        (target, image)
+    } else {
+        let mut words = split_words(line)?;
+        if words.len() != 2 {
+            return Err(format!(
+                "expected TARGET and IMAGE, found {} value(s), separate them with a tab or quote paths containing spaces",
+                words.len()
+            ));
+        }
+        let image = words.pop().unwrap_or_default();
+        let target = words.pop().unwrap_or_default();
+        (target, image)
+    };
+
+    if target.is_empty() || image.is_empty() {
+        return Err("TARGET and IMAGE must both be non-empty".to_string());
+    }
+    Ok((uri_to_path(&target), uri_to_path(&image)))
+}
+
 /// Describes the action the process should take after argument parsing.
 #[derive(Debug, PartialEq)]
 pub enum StartupAction {
