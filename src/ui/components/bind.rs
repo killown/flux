@@ -67,9 +67,9 @@ impl FileItem {
             widgets.icon_widget.set_valign(gtk::Align::Center);
             widgets.icon_widget.set_halign(gtk::Align::Start);
 
-            widgets
-                .video_widget
-                .set_size_request(self.icon_size, self.icon_size);
+            if let Some(frame) = widgets.preview_stack.child_by_name("video") {
+                frame.set_size_request(self.icon_size, self.icon_size);
+            }
 
             widgets
                 .preview_stack
@@ -84,7 +84,7 @@ impl FileItem {
             widgets.label.set_max_width_chars(-1);
             // Never wrap or ellipsize in list mode: the ScrolledWindow handles overflow.
             widgets.label.set_wrap(false);
-            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::None);
+            widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
 
             if let Some(ref old_provider) = widgets.scale_css_provider {
                 widgets.label.style_context().remove_provider(old_provider);
@@ -238,9 +238,9 @@ impl FileItem {
             widgets.icon_widget.set_size_request(-1, -1);
             widgets.icon_widget.set_valign(gtk::Align::End);
             widgets.icon_widget.set_halign(gtk::Align::Center);
-            widgets
-                .video_widget
-                .set_size_request(self.icon_size, self.icon_size);
+            if let Some(frame) = widgets.preview_stack.child_by_name("video") {
+                frame.set_size_request(self.icon_size, self.icon_size);
+            }
             widgets.preview_stack.set_size_request(-1, -1);
             widgets.preview_stack.set_valign(gtk::Align::End);
             widgets.preview_stack.set_halign(gtk::Align::Center);

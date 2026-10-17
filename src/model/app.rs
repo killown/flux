@@ -11,6 +11,22 @@ use std::sync::Arc;
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// The preview panel's `adw::ViewStack`, read out of the panel registry at build time,
+    /// the window header hosts a `ViewSwitcher` bound to it.
+    pub preview_view_stack: Option<adw::ViewStack>,
+    /// The Preview/Details switcher, hoisted into the header bar.
+    pub preview_view_switcher: Option<adw::ViewSwitcher>,
+    /// Session token for in-flight preview loads. Bumped on every toggle and
+    /// every selection change that should invalidate the previous preview.
+    pub preview_session: Arc<AtomicU64>,
+    /// Bounded LRU of prefetched preview payloads keyed on path + mtime.
+    pub preview_cache: std::sync::Arc<crate::ui::ops::view::prefetch::PreviewCache>,
+    /// Revealer widget wrapping the peek-preview right side panel.
+    pub preview_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the peek-preview panel is visible.
+    pub preview_panel_visible: bool,
+    /// Whether the preview panel's widget tree has been lazily instantiated.
+    pub preview_panel_initialized: bool,
     /// Revealer widget wrapping the right connect-to-server panel.
     pub connect_panel_revealer: Option<gtk::Revealer>,
     /// Whether the right connect-to-server panel is currently visible.

@@ -8,14 +8,24 @@ use relm4::prelude::*;
 pub fn setup_navigation(
     window: &impl IsA<gtk::Widget>,
     header_stack: &gtk::Stack,
+    terminal_area: &gtk::DrawingArea,
     sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
     let controller = gtk::EventControllerKey::new();
+    controller.set_propagation_phase(gtk::PropagationPhase::Capture);
     let header_stack = header_stack.clone();
+    let terminal_area = terminal_area.clone();
 
     controller.connect_key_pressed(move |ctrl, keyval, _, state| {
         let page_name = header_stack.visible_child_name().unwrap_or_default();
-        FluxApp::handle_key_event(ctrl, keyval, state, &sender, page_name.as_str())
+        FluxApp::handle_key_event(
+            ctrl,
+            keyval,
+            state,
+            &sender,
+            page_name.as_str(),
+            terminal_area.has_focus(),
+        )
     });
 
     window.add_controller(controller);

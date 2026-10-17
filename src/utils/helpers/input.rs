@@ -24,6 +24,25 @@ pub fn parse_mouse_button(raw: &str) -> Option<u32> {
     }
 }
 
+// ── PEEK PREVIEW ──────────────────────────────────────────────────────────
+/// Predicate for whether `Ctrl+Space` should toggle the peek-preview panel.
+///
+/// Requires the Ctrl modifier explicitly. Bare `Space` is not bound: on
+/// compositors that expose a bare modifier-only key event (e.g. niri
+/// emitting Meta on `Mod+Space`), a plain Space binding collides with
+/// unrelated compositor behaviour. Requiring Ctrl also keeps the typing
+/// contract trivial - no Entry ever receives Ctrl+Space as text.
+pub fn should_trigger_preview(
+    keyval: gdk::Key,
+    modifiers: gdk::ModifierType,
+    is_editable: bool,
+    terminal_focused: bool,
+) -> bool {
+    let ctrl = modifiers.contains(gdk::ModifierType::CONTROL_MASK);
+    keyval == gdk::Key::space && ctrl && !is_editable && !terminal_focused
+}
+// ──────────────────────────────────────────────────────────────────────────
+
 impl FluxApp {
     /// Processes keyboard events to trigger system shortcuts or manage focus-dependent navigation.
     ///
@@ -33,12 +52,16 @@ impl FluxApp {
     ///     state: Bitmask of modifier keys (Ctrl, Alt, etc.).
     ///     sender: The component's message sender.
     ///     header_view: ID of the currently active header bar view.
+    ///     terminal_focused: True when the embedded terminal's DrawingArea
+    ///         holds keyboard focus. The terminal keeps `Space` (Page Down
+    ///         in less/man/vim), so preview must not steal it.
     pub fn handle_key_event(
         ctrl: &gtk::EventControllerKey,
         keyval: gdk::Key,
         state: gdk::ModifierType,
         sender: &AsyncComponentSender<Self>,
         header_view: &str,
+        terminal_focused: bool,
     ) -> glib::Propagation {
         let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
@@ -89,6 +112,14 @@ impl FluxApp {
             return glib::Propagation::Stop;
         }
 
+        // Yield every remaining key to the embedded terminal. The window-level
+        // capture controller runs before the terminal's own controller, so
+        // without this the type-to-search branch below would steal plain
+        // letters and redirect focus to the search entry.
+        if terminal_focused {
+            return glib::Propagation::Proceed;
+        }
+
         // Focus Bypass Check (The Search Logic)
         let is_editable = ctrl
             .widget()
@@ -108,6 +139,19 @@ impl FluxApp {
             }
             return glib::Propagation::Proceed;
         }
+
+        // ── PEEK PREVIEW ─────────────────────────────────────────────────
+        // Space toggles the peek-preview panel. Guarded by `is_editable`
+        // above and by `terminal_focused`, so typing a space in the search
+        // bar, rename entry, location entry, or any other Entry/SearchEntry
+        // never reaches this branch, and the embedded terminal keeps its
+        // own Space (Page Down in less/man/vim). Placed before type-to-search
+        // because Space is not a search-starting character.
+        if should_trigger_preview(keyval, modifiers, is_editable, terminal_focused) {
+            sender.input(AppMsg::TogglePreview);
+            return glib::Propagation::Stop;
+        }
+        // ─────────────────────────────────────────────────────────────────
 
         // Global Capture (Type-to-search)
         // Only triggers when no modifiers (like Ctrl or Shift) are held,
@@ -215,6 +259,12 @@ impl FluxApp {
                 glib::Propagation::Stop
             })),
         ));
+
+        // NOTE: `Space` is intentionally NOT registered here. ShortcutController
+        // at Global scope fires regardless of which widget has focus, which
+        // would open the preview when the user types a space into the search
+        // bar. The binding lives in `handle_key_event` instead, guarded by
+        // the `is_editable` check.
     }
 
     /// Registers GIO actions to the application's internal action group.

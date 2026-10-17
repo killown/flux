@@ -105,6 +105,15 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            preview_cache: std::sync::Arc::new(
+                crate::ui::ops::view::prefetch::PreviewCache::default(),
+            ),
+            preview_view_stack: None,
+            preview_view_switcher: None,
+            preview_panel_revealer: None,
+            preview_panel_visible: false,
+            preview_panel_initialized: false,
+            preview_session: Arc::new(AtomicU64::new(0)),
             connect_panel_revealer: None,
             connect_panel_visible: false,
             connect_panel_initialized: false,

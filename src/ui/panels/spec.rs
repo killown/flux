@@ -50,4 +50,7 @@ impl PanelSpec {
     pub const fn connect() -> Self {
         Self::new(250, 800, 350)
     }
+    pub const fn preview() -> Self {
+        Self::new(300, 2400, 400)
+    }
 }

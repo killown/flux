@@ -6,6 +6,7 @@ use adw::gio::prelude::*;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
+use std::sync::atomic::Ordering;
 
 impl FluxApp {
     /// Updates grid selection metadata and formats the status bar label.
@@ -17,6 +18,16 @@ impl FluxApp {
         crate::hit!("handle_selection_changed");
         if self.task_queue.summary().is_some() {
             return;
+        }
+
+        // Keep the peek-preview panel in sync with the selection while it is open.
+        // Without this, arrowing down leaves the panel showing the previous file
+        // and the user has to press Space just to refresh it.
+        if self.preview_panel_visible {
+            if let Some(path) = self.get_selected_path() {
+                let session = self.preview_session.fetch_add(1, Ordering::SeqCst) + 1;
+                sender.input(AppMsg::PreviewLoad { path, session });
+            }
         }
 
         let resolved_tab_idx = tab_id

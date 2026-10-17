@@ -327,6 +327,7 @@ impl FluxApp {
         model.search_panel_revealer = Some(widgets.search_panel_revealer.clone());
         model.tag_panel_revealer = Some(widgets.tag_panel_revealer.clone());
         model.diff_panel_revealer = Some(widgets.diff_panel_revealer.clone());
+        model.preview_panel_revealer = Some(widgets.preview_panel_revealer.clone());
         model.location_panel_revealer = Some(widgets.location_panel_revealer.clone());
         model.connect_panel_revealer = Some(widgets.connect_panel_revealer.clone());
 

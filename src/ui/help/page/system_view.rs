@@ -13,7 +13,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             ),
             row(
                 &tr("Toggle folders first in current directory"),
-                &sc(config, |s| s.toggle_folders_first.clone(), "F3"),
+                &sc(config, |s| s.toggle_folders_first.clone(), "F7"),
             ),
             row(&tr("Toggle embedded terminal"), "F4"),
             row(

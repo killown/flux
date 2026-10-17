@@ -29,6 +29,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             ),
             row(&tr("Show/hide location panel"), "Ctrl + L"),
             row(&tr("Show/hide connect to server"), "Ctrl + Shift + L"),
+            row(&tr("Show/hide file preview"), "Ctrl + Space"),
             row(&tr("Open tag navigator"), "Ctrl + Shift + T"),
         ],
     );

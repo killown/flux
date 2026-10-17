@@ -178,6 +178,13 @@ impl FluxApp {
             }
             self.connect_panel_visible = false;
         }
+        if keep != RightPanelType::Preview && self.preview_panel_visible {
+            if let Some(ref r) = self.preview_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.preview_panel_visible = false;
+        }
     }
 
     pub fn toggle_sidebar_right_panel(
@@ -219,6 +226,17 @@ impl FluxApp {
                 &mut self.location_panel_visible,
                 false,
             ),
+            // ── PEEK PREVIEW ─────────────────────────────────────────────
+            // Not a search panel (`is_search = false`), so closing it does
+            // not cancel an in-flight content search. Toggled by `Space`
+            // from the file grid.
+            RightPanelType::Preview => (
+                self.preview_panel_revealer.clone(),
+                &mut self.preview_panel_initialized,
+                &mut self.preview_panel_visible,
+                false,
+            ),
+            // ─────────────────────────────────────────────────────────────
         };
 
         let Some(revealer) = revealer else {
@@ -258,9 +276,27 @@ impl FluxApp {
                     self.location_entry = Some(entry);
                     panel
                 }
+                // ── PEEK PREVIEW ─────────────────────────────────────────
+                // `build_preview_panel` installs its own handle into the
+                // thread-local registry so `handle_preview_ready` can push
+                // content without threading a handle through `FluxApp`.
+                //
+                // Pull the `view_stack` and `switcher` out of the registry
+                // so the header bar's reactive bindings can pick them up.
+                RightPanelType::Preview => crate::ui::panels::build_preview_panel(
+                    self.config.ui.preview_panel_width,
+                    sender.clone(),
+                ),
+                // ─────────────────────────────────────────────────────────
             };
             revealer.set_child(Some(&panel));
             *initialized = true;
+
+            if panel_type == RightPanelType::Preview {
+                self.preview_view_stack = crate::ui::panels::preview_registry::get_view_stack();
+                self.preview_view_switcher =
+                    crate::ui::panels::preview_registry::get_view_switcher();
+            }
         } else if panel_type == RightPanelType::Location && !*visible {
             // Panel is built once, so refresh the entry with the current path on each open.
             if let Some(ref entry) = self.location_entry {
@@ -272,7 +308,13 @@ impl FluxApp {
         revealer.set_visible(*visible);
         revealer.set_reveal_child(*visible);
 
-        if *visible {
+        // ── PEEK PREVIEW ─────────────────────────────────────────────────
+        // The preview panel has no entry and must not steal focus from the
+        // grid: grabbing focus here would break arrow-key scrubbing while
+        // the panel is open. Skip the whole focus dance for Preview.
+        let skip_focus = matches!(panel_type, RightPanelType::Preview);
+
+        if *visible && !skip_focus {
             if let Some(panel_box) = revealer.child() {
                 let mut next = panel_box.first_child();
                 let mut focused = false;
@@ -305,6 +347,11 @@ impl FluxApp {
                     panel_box.grab_focus();
                 }
             }
+        } else if *visible {
+            // Nothing to focus for Preview. Kept as an explicit branch so
+            // the intent is obvious and a future Preview variant with its
+            // own focusable child has an obvious place to hook in.
+            let _ = &revealer;
         } else if is_search {
             if self.is_content_searching || self.last_search_was_advanced {
                 self.last_search_was_advanced = false;
@@ -318,5 +365,15 @@ impl FluxApp {
             sender.input(AppMsg::CancelContentSearch);
             sender.input(AppMsg::Refresh);
         }
+
+        // ── PEEK PREVIEW header stack page ──────────────────────────────
+        // While the preview panel is visible, the header stack shows the
+        // `"preview-switcher"` page instead of the breadcrumbs. Closing
+        // the panel reverts to the path view.
+        if panel_type == RightPanelType::Preview {
+            self.preview_view_stack = crate::ui::panels::preview_registry::get_view_stack();
+            self.preview_view_switcher = crate::ui::panels::preview_registry::get_view_switcher();
+        }
+        // ─────────────────────────────────────────────────────────────────
     }
 }

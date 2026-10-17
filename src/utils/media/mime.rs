@@ -158,6 +158,7 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
         .and_then(|e| e.to_str())
         .map(|e| e.to_ascii_lowercase());
     match ext.as_deref() {
+        // Image extensions, hard yes, no sniffing.
         Some(
             "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
             | "tif" | "jxl" | "svg",
@@ -168,13 +169,25 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
             | "pef" | "raw" | "rwl" | "x3f" | "3fr" | "fff" | "iiq" | "k25" | "kdc" | "mef" | "mos"
             | "mrw" | "pxn" | "r3d" | "dcr" | "erf" | "cap",
         ) => (true, false),
+        // Video extensions - hard yes.
         Some(
             "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ts"
             | "ogv",
         ) => (false, true),
+        // AUDIO extensions, hard NO for both. Never fall through to
+        // `content_type_guess`: a mislabeled container (`x.wav.mp3`,
+        // `x.m4a.mp3`, re-muxed PCM) can be sniffed as `video/mp4` and
+        // routed into GStreamer's decodebin3, which aborts on the
+        // malformed stream (mq_slot_handle_stream_start assertion).
+        Some("mp3" | "flac" | "m4a" | "ogg" | "wav" | "aac" | "wma" | "opus") => (false, false),
         _ => {
             let filename = path.file_name().unwrap_or_default().to_string_lossy();
             let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+            // Audio content types are also forced to (false, false) even when
+            // the extension was unknown, an `.mp3`-in-`.bin` case.
+            if ct.starts_with("audio/") {
+                return (false, false);
+            }
             (ct.starts_with("image/"), ct.starts_with("video/"))
         }
     }

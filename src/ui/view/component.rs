@@ -132,7 +132,7 @@ impl SimpleAsyncComponent for FluxApp {
                     #[name = "header_bar"]
                     add_top_bar = &adw::HeaderBar {
                         #[watch]
-                        set_visible: model.header_visible,
+                        set_visible: model.header_visible && !model.preview_panel_visible,
                         #[watch]
                         set_show_start_title_buttons: false,
                         #[watch]
@@ -247,6 +247,22 @@ impl SimpleAsyncComponent for FluxApp {
                                     },
                                 }
                             } -> { set_name: constants::VIEW_PATH },
+
+                            /// HIG-style centered switcher for the Preview / Details
+                            add_child = &gtk::Box {
+                                set_halign: gtk::Align::Center,
+                                set_valign: gtk::Align::Center,
+
+                                #[watch]
+                                set_visible: model.preview_panel_visible,
+
+                                append = &adw::ViewSwitcher {
+                                    #[watch]
+                                    set_stack: model.preview_view_stack.as_ref(),
+                                    set_policy: adw::ViewSwitcherPolicy::Wide,
+                                    set_halign: gtk::Align::Center,
+                                },
+                            } -> { set_name: "preview-switcher" },
 
                             /// Direct path entry field for manual location input.
                             #[name = "header_path_entry"]
@@ -559,6 +575,17 @@ impl SimpleAsyncComponent for FluxApp {
                             },
                         },
 
+                        /// Toggle the peek-preview right-side panel.
+                        pack_end = &gtk::ToggleButton {
+                            #[watch]
+                            set_active: model.preview_panel_visible,
+                            set_icon_name: "view-reveal-symbolic",
+                            set_tooltip_text: Some(&tr("Toggle Preview Panel")),
+                            add_css_class: "flat",
+                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                            connect_clicked => AppMsg::TogglePreview,
+                        },
+
                         /// Visual indicator of the current active sorting mode.
                         pack_end = &gtk::Box {
                             set_orientation: gtk::Orientation::Horizontal,
@@ -833,7 +860,7 @@ impl SimpleAsyncComponent for FluxApp {
                     /// Selection status bar at the bottom of the main content view.
                     add_bottom_bar = &gtk::Box {
                         #[watch]
-                        set_visible: model.statusbar_visible,
+                        set_visible: model.statusbar_visible && !model.preview_panel_visible,
                         set_margin_start: 8,
                         set_margin_end: 8,
                         set_margin_bottom: 2,
@@ -946,6 +973,15 @@ impl SimpleAsyncComponent for FluxApp {
 
                 /// Right connect-to-server panel revealer (lazy initialized).
                 #[name = "connect_panel_revealer"]
+                gtk::Revealer {
+                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
+                    set_transition_duration: 200,
+                    set_reveal_child: false,
+                    set_visible: false,
+                },
+
+                /// Right peek-preview panel revealer (lazy initialized).
+                #[name = "preview_panel_revealer"]
                 gtk::Revealer {
                     set_transition_type: gtk::RevealerTransitionType::SlideLeft,
                     set_transition_duration: 200,

@@ -7,6 +7,25 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Dispatches neighbour prefetch on selection change when the preview panel is open.
+    PreviewPrefetch { path: PathBuf, session: u64 },
+    /// Delivers a prefetched payload so the cache stays warm without the user selecting it.
+    PreviewPrefetched {
+        path: PathBuf,
+        content: std::sync::Arc<crate::ui::panels::preview::PreviewContent>,
+    },
+    /// Toggle the peek-preview side panel. Bound to `Space` in the grid.
+    TogglePreview,
+    /// Load a preview for `path` into the preview panel. Dispatched by
+    /// `TogglePreview` and, when the panel is already open, by
+    /// `SelectionChanged`. `session` guards against stale background results.
+    PreviewLoad { path: PathBuf, session: u64 },
+    /// Deliver a resolved preview payload to the panel. Stale sessions dropped.
+    PreviewReady {
+        path: PathBuf,
+        session: u64,
+        content: crate::ui::panels::preview::PreviewContent,
+    },
     /// Toggles the right connect-to-server panel (Ctrl+Shift+L).
     ToggleConnectPanel,
     /// Opens the currently active diff target at the specified line number with an optional forward search pattern.
@@ -17,6 +36,8 @@ pub enum AppMsg {
     ShowFileDiff(PathBuf),
     /// Delivers the loaded git diff output for a target file to update the view.
     DiffLoaded { path: PathBuf, diff: String },
+    /// Updates and persists the width of the peek-preview panel.
+    SetPreviewPanelWidth(i32),
     /// Updates and persists the width of the git diff review panel.
     SetDiffPanelWidth(i32),
     /// Toggles whether selecting a modified file automatically opens the diff sidebar.

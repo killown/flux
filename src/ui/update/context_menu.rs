@@ -1,6 +1,7 @@
 use crate::model::{AppMsg, FluxApp};
 use relm4::prelude::*;
 
+#[allow(clippy::result_large_err)]
 pub(super) fn handle(
     app: &mut FluxApp,
     msg: AppMsg,

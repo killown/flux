@@ -73,3 +73,7 @@ pub(super) fn default_auto_show_diff() -> bool {
 pub(super) fn default_diff_editor() -> String {
     "nvim".to_string()
 }
+
+pub(super) fn default_preview_panel_width() -> i32 {
+    400
+}

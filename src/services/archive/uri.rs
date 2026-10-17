@@ -51,6 +51,21 @@ pub fn decode_archive_host(host: &str) -> PathBuf {
     PathBuf::from(String::from_utf8_lossy(&out).into_owned())
 }
 
+/// Extracts an archive entry to a persistent scratch file for media playback.
+///
+/// The file is registered with the archive temp registry so it survives
+/// until `clear_archive_session_temp`, unlike `extract_archive_entry_to_temp`
+/// which deletes it immediately after thumbnail generation.
+pub fn extract_archive_entry_for_playback(
+    archive_path: &std::path::Path,
+    inner_path: &str,
+) -> Option<std::path::PathBuf> {
+    let temp_file = extract_entry_to_tempfile(archive_path, inner_path, None).ok()?;
+    let (_, path) = temp_file.keep().ok()?;
+    crate::services::archive::register_temp_file(path.clone());
+    Some(path)
+}
+
 /// Splits an `archive://` URI into `(archive_path_on_disk, inner_prefix)`.
 ///
 /// `inner_prefix` is the path inside the archive being browsed (`""` = root).

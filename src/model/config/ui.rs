@@ -3,8 +3,9 @@ use crate::model::defaults::{
     default_content_search_max_file_mb, default_diff_editor, default_diff_panel_width,
     default_ffmpeg_seek_seconds, default_ffmpeg_threads, default_folder_cache_capacity,
     default_loader_batch_size, default_max_history, default_max_search_results,
-    default_mime_font_size, default_search_panel_width, default_tag_panel_width,
-    default_thumbnail_size, default_thumbnail_threads, default_true, default_ui_scale,
+    default_mime_font_size, default_preview_panel_width, default_search_panel_width,
+    default_tag_panel_width, default_thumbnail_size, default_thumbnail_threads, default_true,
+    default_ui_scale,
 };
 use crate::model::{DeviceRename, SortBy, TerminalConfig, ThumbnailTypes};
 use serde::{Deserialize, Serialize};
@@ -17,6 +18,9 @@ pub struct UIConfig {
     /// Editor binary or command used when opening diff hunk locations.
     #[serde(default = "default_diff_editor")]
     pub diff_editor: String,
+    /// Width in pixels of the right-side peek-preview panel.
+    #[serde(default = "default_preview_panel_width")]
+    pub preview_panel_width: i32,
     /// Width in pixels allocated for the right-side git diff review sidebar.
     #[serde(default = "default_diff_panel_width")]
     pub diff_panel_width: i32,
@@ -209,11 +213,16 @@ pub struct UIConfig {
     /// When true, drag-and-drop operations for files and folders are completely disabled.
     #[serde(default)]
     pub disable_drag_and_drop: bool,
+    /// When true, the peek-preview text viewer syntax-highlights source files
+    /// with syntect. Set to `false` to see plain monospace text.
+    #[serde(default = "default_true")]
+    pub preview_syntax_highlighting: bool,
 }
 
 impl Default for UIConfig {
     fn default() -> Self {
         Self {
+            preview_panel_width: default_preview_panel_width(),
             bg_alpha_window: 0.65,
             bg_alpha_sidebar_left: 0.65,
             bg_alpha_sidebar_right: 0.65,
@@ -278,6 +287,7 @@ impl Default for UIConfig {
             content_search_max_file_mb: default_content_search_max_file_mb(),
             ui_scale: 1.0,
             diff_editor: default_diff_editor(),
+            preview_syntax_highlighting: true,
         }
     }
 }

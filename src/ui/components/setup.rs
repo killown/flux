@@ -138,10 +138,22 @@ impl FileItem {
         let video_widget = gtk::Video::builder()
             .autoplay(true)
             .loop_(true)
-            .halign(gtk::Align::Center)
-            .valign(gtk::Align::End)
-            .vexpand(false)
+            .halign(gtk::Align::Fill)
+            .valign(gtk::Align::Fill)
             .css_classes([constants::THUMBNAIL_CLASS])
+            .build();
+
+        // gtk::Video reports the video's intrinsic size as its natural size,
+        // which would stretch the grid cell. A ScrolledWindow that does not
+        // propagate natural size reports only the size we request on it.
+        let video_frame = gtk::ScrolledWindow::builder()
+            .hscrollbar_policy(gtk::PolicyType::Never)
+            .vscrollbar_policy(gtk::PolicyType::Never)
+            .propagate_natural_width(false)
+            .propagate_natural_height(false)
+            .halign(gtk::Align::Fill)
+            .valign(gtk::Align::Fill)
+            .child(&video_widget)
             .build();
 
         let preview_stack = gtk::Stack::builder()
@@ -154,7 +166,7 @@ impl FileItem {
             .build();
 
         preview_stack.add_named(&icon_widget, Some("icon"));
-        preview_stack.add_named(&video_widget, Some("video"));
+        preview_stack.add_named(&video_frame, Some("video"));
         preview_stack.set_visible_child_name("icon");
 
         let git_badge = gtk::Label::builder()

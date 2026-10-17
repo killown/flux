@@ -79,6 +79,12 @@ impl FluxApp {
             return;
         }
 
+        // The peek-preview panel already plays the selected video.
+        if self.preview_panel_visible {
+            self.stop_video_preview();
+            return;
+        }
+
         let now = Instant::now();
 
         if self

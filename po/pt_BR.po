@@ -525,6 +525,10 @@ msgstr "itens"
 # src/ui/help.rs
 # ============================================================
 
+#: src/ui/help/page/navigation.rs:???
+msgid "Show/hide file preview"
+msgstr "Mostrar/ocultar pré-visualização de arquivo"
+
 #: src/ui/help.rs:41
 msgid "flux - Shortcuts"
 msgstr "flux - Atalhos"
@@ -2848,6 +2852,318 @@ msgstr "instale p7zip-full no Debian/Ubuntu, p7zip em outros sistemas (ícones d
 #: src/utils/deps.rs:???
 msgid "install icoutils for .exe icon extraction"
 msgstr "instale icoutils para extração de ícones de .exe"
+
+
+# ============================================================
+# Peek Preview Panel (src/ui/panels/preview.rs)
+# ============================================================
+
+#: src/ui/panels/preview.rs:???
+msgid "No preview"
+msgstr "Sem pré-visualização"
+
+#: src/ui/panels/preview.rs:???
+msgid "Select an item to preview."
+msgstr "Selecione um item para pré-visualizar."
+
+#: src/ui/panels/preview.rs:???
+msgid "No preview available"
+msgstr "Pré-visualização não disponível"
+
+#: src/ui/panels/preview.rs:???
+msgid "Preview"
+msgstr "Pré-visualização"
+
+#: src/ui/panels/preview.rs:???
+msgid "Details"
+msgstr "Detalhes"
+
+#: src/ui/panels/preview.rs:???
+msgid "Play"
+msgstr "Reproduzir"
+
+#: src/ui/panels/preview.rs:???
+msgid "Stop"
+msgstr "Parar"
+
+#: src/ui/panels/preview.rs:???
+msgid "Ready."
+msgstr "Pronto."
+
+#: src/ui/panels/preview.rs:???
+msgid "Playing…"
+msgstr "Reproduzindo…"
+
+#: src/ui/panels/preview.rs:???
+msgid "Stopped."
+msgstr "Interrompido."
+
+#: src/ui/panels/preview.rs:???
+msgid "Finished."
+msgstr "Concluído."
+
+#: src/ui/panels/preview.rs:???
+msgid "mpv could not play this file"
+msgstr "o mpv não conseguiu reproduzir este arquivo"
+
+#: src/ui/panels/preview.rs:???
+msgid "Audio preview requires mpv. Install it with your package manager."
+msgstr "A pré-visualização de áudio requer o mpv. Instale-o com seu gerenciador de pacotes."
+
+#: src/ui/panels/preview.rs:???
+msgid "mpv is not installed. Install it to enable audio preview, or use Open."
+msgstr "O mpv não está instalado. Instale-o para habilitar a pré-visualização de áudio, ou use Abrir."
+
+#: src/ui/panels/preview.rs:???
+msgid "Previous page"
+msgstr "Página anterior"
+
+#: src/ui/panels/preview.rs:???
+msgid "Next page"
+msgstr "Próxima página"
+
+#: src/ui/panels/preview.rs:???
+msgid "Wrap lines"
+msgstr "Quebrar linhas"
+
+#: src/ui/panels/preview.rs:???
+msgid "Invert colors"
+msgstr "Inverter cores"
+
+#: src/ui/panels/preview.rs:???
+msgid "Toggle Markdown source"
+msgstr "Alternar fonte Markdown"
+
+#: src/ui/panels/preview.rs:???
+msgid "Zoom out"
+msgstr "Reduzir zoom"
+
+#: src/ui/panels/preview.rs:???
+msgid "Zoom in"
+msgstr "Aumentar zoom"
+
+#: src/ui/panels/preview.rs:???
+msgid "Reset zoom"
+msgstr "Redefinir zoom"
+
+#: src/ui/panels/preview.rs:???
+msgid "Show file details"
+msgstr "Mostrar detalhes do arquivo"
+
+#: src/ui/panels/preview.rs:???
+msgid "Binary file - showing the first bytes as hex."
+msgstr "Arquivo binário - mostrando os primeiros bytes em hexadecimal."
+
+#: src/ui/panels/preview.rs:???
+msgid "Preview truncated - showing the start of the file."
+msgstr "Pré-visualização truncada - mostrando o início do arquivo."
+
+#: src/ui/panels/preview.rs:???
+msgid "Language:"
+msgstr "Linguagem:"
+
+#: src/ui/panels/preview.rs:???
+msgid "Table truncated - showing the first rows/columns."
+msgstr "Tabela truncada - mostrando as primeiras linhas/colunas."
+
+#: src/ui/panels/preview.rs:???
+msgid "Empty"
+msgstr "Vazio"
+
+#: src/ui/panels/preview.rs:???
+msgid "Preview failed"
+msgstr "Falha na pré-visualização"
+
+#: src/ui/panels/preview.rs:???
+msgid "Could not render this page."
+msgstr "Não foi possível renderizar esta página."
+
+# ============================================================
+# Peek Preview Content (src/ui/ops/view/preview.rs)
+# ============================================================
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Select a file first."
+msgstr "Selecione um arquivo primeiro."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Preview failed."
+msgstr "Falha na pré-visualização."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Preview timed out. Use Open to view this file."
+msgstr "Tempo esgotado na pré-visualização. Use Abrir para ver este arquivo."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Preview failed. Use Open to view this file."
+msgstr "Falha na pré-visualização. Use Abrir para ver este arquivo."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "File no longer exists."
+msgstr "O arquivo não existe mais."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Note"
+msgstr "Observação"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Extracted from"
+msgstr "Extraído de"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Converted from"
+msgstr "Convertido de"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Pages"
+msgstr "Páginas"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Page size"
+msgstr "Tamanho da página"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Could not open this PDF (encrypted or damaged)."
+msgstr "Não foi possível abrir este PDF (criptografado ou danificado)."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Symlink to"
+msgstr "Link simbólico para"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Format"
+msgstr "Formato"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Rows"
+msgstr "Linhas"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Columns"
+msgstr "Colunas"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Delimiter"
+msgstr "Delimitador"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Encoding"
+msgstr "Codificação"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Line endings"
+msgstr "Fins de linha"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Lines"
+msgstr "Linhas"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Words"
+msgstr "Palavras"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Folders"
+msgstr "Pastas"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Files"
+msgstr "Arquivos"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Folder"
+msgstr "Pasta"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Top-level entries"
+msgstr "Entradas no nível superior"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Cannot read this folder."
+msgstr "Não foi possível ler esta pasta."
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Title"
+msgstr "Título"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Artist"
+msgstr "Artista"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Album"
+msgstr "Álbum"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Genre"
+msgstr "Gênero"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Year"
+msgstr "Ano"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Duration"
+msgstr "Duração"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Bitrate"
+msgstr "Taxa de bits"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Sample rate"
+msgstr "Taxa de amostragem"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Channels"
+msgstr "Canais"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Resolution"
+msgstr "Resolução"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Codec"
+msgstr "Codec"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Frame rate"
+msgstr "Taxa de quadros"
+
+#: src/ui/ops/view/preview.rs:???
+msgid "Toggle Preview Panel"
+msgstr "Mostrar/ocultar painel de pré-visualização"
+
+
+
+
+# ============================================================
+# Peek Preview: Binary inspection (src/ui/panels/preview_binary.rs)
+# ============================================================
+
+#: src/ui/panels/preview_binary.rs:???
+msgid "Description"
+msgstr "Descrição"
+
+#: src/ui/panels/preview_binary.rs:???
+msgid "Product"
+msgstr "Produto"
+
+#: src/ui/panels/preview_binary.rs:???
+msgid "Company"
+msgstr "Empresa"
+
+#: src/ui/panels/preview_binary.rs:???
+msgid "Version"
+msgstr "Versão"
+
+#: src/ui/panels/preview_binary.rs:???
+msgid "Copyright"
+msgstr "Direitos autorais"
+
+#: src/ui/panels/preview_binary.rs:???
+msgid "Categories"
+msgstr "Categorias"
 
 # ============================================================
 # sem referência mapeada

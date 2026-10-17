@@ -20,6 +20,18 @@ pub(super) fn handle(
         AppMsg::SetExpandLabels(val) => app.handle_set_expand_labels(val, sender),
         AppMsg::Zoom(delta) => app.handle_zoom(delta),
         AppMsg::SwitchHeader(view_name) => app.handle_switch_header(view_name),
+        AppMsg::TogglePreview => app.handle_toggle_preview(sender),
+        AppMsg::PreviewLoad { path, session } => app.handle_preview_load(path, session),
+        AppMsg::PreviewReady {
+            path,
+            session,
+            content,
+        } => app.handle_preview_ready(path, session, content),
+        AppMsg::SetPreviewPanelWidth(val) => app.handle_set_preview_panel_width(val),
+        AppMsg::PreviewPrefetch { path, session } => {
+            app.handle_preview_prefetch(path, session, sender)
+        }
+        AppMsg::PreviewPrefetched { .. } => {}
 
         AppMsg::SetIconSize(val) => app.handle_set_icon_size(val, sender),
         AppMsg::SetListIconSize(val) => app.handle_set_list_icon_size(val, sender),

@@ -44,8 +44,9 @@ pub use temp::{
 };
 #[allow(unused_imports)]
 pub use uri::{
-    build_archive_uri, decode_archive_host, encode_archive_host, extract_archive_entry_to_temp,
-    get_archive_thumbnail, parse_archive_uri, ARCHIVE_URI,
+    build_archive_uri, decode_archive_host, encode_archive_host,
+    extract_archive_entry_for_playback, extract_archive_entry_to_temp, get_archive_thumbnail,
+    parse_archive_uri, ARCHIVE_URI,
 };
 
 use backends::{extract_dir_7z_at, extract_dir_tar_at, extract_dir_zip_at};

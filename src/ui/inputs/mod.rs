@@ -28,7 +28,7 @@ pub fn setup_controllers(
 ) {
     grid_view.set_enable_rubberband(true);
 
-    navigation::setup_navigation(window, header_stack, sender.clone());
+    navigation::setup_navigation(window, header_stack, terminal_area, sender.clone());
     click_toggle::setup_click_toggle(window, grid_view, config_single_click);
     middle_click::setup_middle_click(window, sender.clone());
     capture::setup_capture(window, sender.clone(), terminal_area);

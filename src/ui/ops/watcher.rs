@@ -332,6 +332,7 @@ impl FluxApp {
 
     pub fn handle_file_deleted_dispatch(&mut self, path: PathBuf) {
         crate::hit!("handle_file_deleted");
+        self.preview_cache.clear();
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(&self.cache_key(parent));
         }

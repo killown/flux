@@ -15,7 +15,7 @@ mod task;
 mod terminal;
 mod toast;
 mod undo;
-mod view;
+pub(crate) mod view;
 mod watcher;
 
 pub(crate) use watcher::debounce_path_event;
