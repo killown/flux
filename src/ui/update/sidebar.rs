@@ -38,6 +38,8 @@ pub(super) fn handle(
         } => app.handle_pin_folder_at(path, before, label_name),
         AppMsg::ShowSidebarPinZone(_) => {}
         AppMsg::ToggleSidebar => app.handle_toggle_sidebar(),
+        AppMsg::ToggleWidePreview => app.handle_toggle_wide_preview(sender),
+        AppMsg::SetWidePreviewDefault(on) => app.handle_set_wide_preview_default(on),
         AppMsg::SetSidebarWidth(val) => app.handle_set_sidebar_width(val),
         AppMsg::ShowSidebarIconPicker(path) => app.show_sidebar_icon_picker(path, sender),
 

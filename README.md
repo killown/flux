@@ -255,6 +255,7 @@ Active mounts appear in the sidebar with eject controls. Network bookmarks persi
 | `F6`                          | Toggle header bar                                      |
 | `F7`                          | Toggle status bar                                      |
 | `F8`                          | Toggle sidebar                                         |
+| `F11`                         | Toggle wide preview (hides sidebar, shrinks grid)      |
 | `Ctrl + Scroll`               | Resize grid items                                      |
 | `Ctrl + Middle Click`         | Open folder in new window                              |
 | `Ctrl + H`                    | Toggle hidden files                                    |

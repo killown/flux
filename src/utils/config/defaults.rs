@@ -182,6 +182,7 @@ path = "search://"
             crate::model::Config {
                 ui: crate::model::UIConfig {
                     preview_syntax_highlighting: true,
+                    wide_preview: false,
                     preview_panel_width: 400,
                     diff_editor: "nvim".to_string(),
                     ui_scale: 1.0,

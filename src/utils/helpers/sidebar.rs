@@ -184,6 +184,7 @@ impl FluxApp {
                 r.set_visible(false);
             }
             self.preview_panel_visible = false;
+            self.exit_wide_preview();
         }
     }
 

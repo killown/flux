@@ -820,6 +820,10 @@ pub enum AppMsg {
     ShowAbout,
     /// Toggles the visibility of the sidebar.
     ToggleSidebar,
+    /// Toggles wide-preview mode: sidebar hidden, file grid squeezed, preview panel fills the rest.
+    ToggleWidePreview,
+    /// Sets whether the preview panel always opens in wide mode (header button), saved to config.
+    SetWidePreviewDefault(bool),
     /// Toggles the global thumbnail generation setting.
     ///
     /// When disabled, no thumbnails are generated for any file type, improving

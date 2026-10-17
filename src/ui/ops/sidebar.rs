@@ -348,6 +348,10 @@ impl FluxApp {
     }
 
     pub fn handle_toggle_sidebar(&mut self) {
+        if self.wide_preview_sidebar.is_some() {
+            self.exit_wide_preview();
+            return;
+        }
         self.sidebar_visible = !self.sidebar_visible;
         self.config.ui.sidebar_visible = self.sidebar_visible;
         crate::utils::save_config(&self.config);

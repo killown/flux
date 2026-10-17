@@ -24,6 +24,9 @@ impl FluxApp {
     pub fn handle_toggle_preview(&mut self, sender: &AsyncComponentSender<Self>) {
         if !self.preview_panel_visible {
             self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
+            if self.config.ui.wide_preview {
+                self.enter_wide_preview();
+            }
 
             // Nothing selected yet: the panel opens on its "empty" state
             // (the StatusPage registered as the stack's first child), and
@@ -42,7 +45,90 @@ impl FluxApp {
         // so no reload is needed here. Bumping the session discards any
         // in-flight preview results.
         self.preview_session.fetch_add(1, Ordering::SeqCst);
+        self.exit_wide_preview();
         self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
+    }
+
+    /// Toggles wide-preview mode (sidebar hidden, panel fills the remaining width).
+    /// Also persists `config.ui.wide_preview` so the next open matches.
+    pub fn handle_toggle_wide_preview(&mut self, sender: &AsyncComponentSender<Self>) {
+        if self.wide_preview_sidebar.is_some() {
+            self.set_wide_preview_default(false);
+            self.exit_wide_preview();
+            return;
+        }
+
+        if !self.preview_panel_visible {
+            self.handle_toggle_preview(sender);
+        }
+        self.set_wide_preview_default(true);
+        self.enter_wide_preview();
+    }
+
+    /// Header-button handler: stores the permanent wide setting and applies it right away.
+    pub fn handle_set_wide_preview_default(&mut self, on: bool) {
+        if self.config.ui.wide_preview == on {
+            return;
+        }
+        self.set_wide_preview_default(on);
+        if on {
+            self.enter_wide_preview();
+        } else {
+            self.exit_wide_preview();
+        }
+    }
+
+    /// Saves `config.ui.wide_preview` and syncs the panel's header button.
+    fn set_wide_preview_default(&mut self, on: bool) {
+        if self.config.ui.wide_preview != on {
+            self.config.ui.wide_preview = on;
+            crate::utils::save_config(&self.config);
+        }
+        let _ = preview_registry::with(|h| h.set_wide_default_active(on));
+    }
+
+    /// Enters wide-preview mode when the panel is open, no-op if already wide.
+    fn enter_wide_preview(&mut self) {
+        if self.wide_preview_sidebar.is_some() || !self.preview_panel_visible {
+            return;
+        }
+        let Some(revealer) = self.preview_panel_revealer.clone() else {
+            return;
+        };
+
+        self.wide_preview_sidebar = Some(self.sidebar_visible);
+        self.apply_sidebar_visibility(false);
+        set_wide_preview_layout(&revealer, true, self.is_list_mode);
+    }
+
+    /// Re-applies the wide-preview split after a view-mode change.
+    pub fn refresh_wide_preview_layout(&self) {
+        if self.wide_preview_sidebar.is_none() {
+            return;
+        }
+        if let Some(revealer) = self.preview_panel_revealer.as_ref() {
+            set_wide_preview_layout(revealer, true, self.is_list_mode);
+        }
+    }
+
+    /// Leaves wide-preview mode, restoring the sidebar and the normal panel layout, no-op when inactive.
+    pub fn exit_wide_preview(&mut self) {
+        let Some(sidebar_was_visible) = self.wide_preview_sidebar.take() else {
+            return;
+        };
+        self.apply_sidebar_visibility(sidebar_was_visible);
+        if let Some(revealer) = self.preview_panel_revealer.clone() {
+            set_wide_preview_layout(&revealer, false, false);
+        }
+    }
+
+    /// Shows or hides the sidebar for this session only, without touching the saved config.
+    fn apply_sidebar_visibility(&mut self, visible: bool) {
+        use gtk::prelude::*;
+        self.sidebar_visible = visible;
+        if let Some(ref widget) = self.sidebar_widget {
+            widget.set_visible(visible);
+        }
     }
 
     pub fn handle_preview_load(&self, path: PathBuf, session: u64) {
@@ -865,4 +951,46 @@ fn read_head(path: &Path, cap: usize) -> std::io::Result<Vec<u8>> {
     }
     buf.truncate(total);
     Ok(buf)
+}
+
+/// Minimum width kept for the file list in wide-preview mode, so names are not trimmed.
+const WIDE_PREVIEW_LIST_MIN_WIDTH: i32 = 480;
+/// Minimum width always left to the preview panel in wide-preview mode.
+const WIDE_PREVIEW_PANEL_MIN_WIDTH: i32 = 360;
+
+/// Switches the preview panel between its fixed width and filling all the space the file grid leaves.
+fn set_wide_preview_layout(revealer: &gtk::Revealer, wide: bool, list_mode: bool) {
+    use gtk::prelude::*;
+
+    revealer.set_hexpand(wide);
+    if let Some(wrapper) = revealer.child() {
+        wrapper.set_hexpand(wide);
+        wrapper.set_halign(if wide {
+            gtk::Align::Fill
+        } else {
+            gtk::Align::End
+        });
+        if let Some(panel) = wrapper.last_child() {
+            panel.set_hexpand(wide);
+        }
+    }
+
+    let row = revealer.parent();
+    let total = row.as_ref().map_or(0, |r| r.width());
+    let files_min_width = if wide && list_mode {
+        (total / 3)
+            .max(WIDE_PREVIEW_LIST_MIN_WIDTH)
+            .min((total - WIDE_PREVIEW_PANEL_MIN_WIDTH).max(0))
+    } else {
+        -1
+    };
+
+    let mut sibling = row.and_then(|row| row.first_child());
+    while let Some(widget) = sibling {
+        if widget.is::<adw::ToolbarView>() {
+            widget.set_hexpand(!wide);
+            widget.set_width_request(files_min_width);
+        }
+        sibling = widget.next_sibling();
+    }
 }

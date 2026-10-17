@@ -525,6 +525,14 @@ msgstr "itens"
 # src/ui/help.rs
 # ============================================================
 
+#: src/ui/help/page/system_view.rs:29
+msgid "Toggle wide preview"
+msgstr "Mostrar/ocultar pré-visualização ampla"
+
+#: src/ui/panels/preview.rs:434
+msgid "Always open preview wide (F11)"
+msgstr "Abrir pré-visualização ampla sempre (F11)"
+
 #: src/ui/help/page/navigation.rs:???
 msgid "Show/hide file preview"
 msgstr "Mostrar/ocultar pré-visualização de arquivo"

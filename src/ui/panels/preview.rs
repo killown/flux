@@ -243,6 +243,7 @@ pub struct PreviewPanelHandle {
     pub(crate) wrap_btn: gtk::ToggleButton,
     pub(crate) invert_btn: gtk::ToggleButton,
     pub(crate) md_source_btn: gtk::ToggleButton,
+    pub(crate) wide_btn: gtk::ToggleButton,
     pub(crate) zoom_btn: gtk::Button,
     pub(crate) banner: adw::Banner,
     pub(crate) image: gtk::Picture,
@@ -428,6 +429,13 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .icon_name("dialog-information-symbolic")
         .tooltip_text(tr("Show file details"))
         .css_classes(["flat"])
+        .build();
+
+    let wide_btn = gtk::ToggleButton::builder()
+        .icon_name("view-dual-symbolic")
+        .tooltip_text(tr("Always open preview wide (F11)"))
+        .css_classes(["flat"])
+        .active(crate::utils::load_config().ui.wide_preview)
         .build();
 
     let spacer = gtk::Box::builder().hexpand(true).build();
@@ -685,6 +693,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         zoom_out.clone().upcast(),
         zoom_btn.clone().upcast(),
         zoom_in.clone().upcast(),
+        wide_btn.clone().upcast(),
     ];
     {
         let s = sender.clone();
@@ -695,6 +704,10 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             move || s.input(AppMsg::TogglePreview),
         );
         panel.append(&header);
+    }
+    {
+        let s = sender.clone();
+        wide_btn.connect_toggled(move |b| s.input(AppMsg::SetWidePreviewDefault(b.is_active())));
     }
     panel.append(&banner);
     panel.append(&view_stack);
@@ -709,6 +722,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         wrap_btn: wrap_btn.clone(),
         invert_btn: invert_btn.clone(),
         md_source_btn: md_source_btn.clone(),
+        wide_btn: wide_btn.clone(),
         zoom_btn: zoom_btn.clone(),
         banner,
         image,
@@ -885,6 +899,13 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 // ─── Behaviour ────────────────────────────────────────────────────────────────
 
 impl PreviewPanelHandle {
+    /// Reflects `config.ui.wide_preview` on the header button without echoing a message back.
+    pub fn set_wide_default_active(&self, on: bool) {
+        if self.wide_btn.is_active() != on {
+            self.wide_btn.set_active(on);
+        }
+    }
+
     pub fn apply(&self, content: &PreviewContent) {
         let st = &self.state;
         st.token.set(st.token.get() + 1);

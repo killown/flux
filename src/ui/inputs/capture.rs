@@ -93,6 +93,14 @@ pub fn setup_capture(
                 sender.input(AppMsg::ToggleSidebar);
                 glib::Propagation::Stop
             }
+            // Wide preview: F11 is left to the shell when the terminal has focus.
+            gdk::Key::F11 if !is_ctrl && !is_shift && !is_alt => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleWidePreview);
+                glib::Propagation::Stop
+            }
             // Tags: Ctrl + Shift + T
             gdk::Key::t | gdk::Key::T if is_ctrl && is_shift && !is_alt => {
                 if terminal_focused {

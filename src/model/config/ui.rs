@@ -217,6 +217,9 @@ pub struct UIConfig {
     /// with syntect. Set to `false` to see plain monospace text.
     #[serde(default = "default_true")]
     pub preview_syntax_highlighting: bool,
+    /// When true, the peek-preview panel opens in wide mode (sidebar hidden, panel fills the rest).
+    #[serde(default)]
+    pub wide_preview: bool,
 }
 
 impl Default for UIConfig {
@@ -288,6 +291,7 @@ impl Default for UIConfig {
             ui_scale: 1.0,
             diff_editor: default_diff_editor(),
             preview_syntax_highlighting: true,
+            wide_preview: false,
         }
     }
 }

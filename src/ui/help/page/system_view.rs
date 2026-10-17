@@ -13,7 +13,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             ),
             row(
                 &tr("Toggle folders first in current directory"),
-                &sc(config, |s| s.toggle_folders_first.clone(), "F7"),
+                &sc(config, |s| s.toggle_folders_first.clone(), "F3"),
             ),
             row(&tr("Toggle embedded terminal"), "F4"),
             row(
@@ -26,6 +26,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             ),
             row(&tr("Toggle status bar"), "F7"),
             row(&tr("Toggle sidebar"), "F8"),
+            row(&tr("Toggle wide preview"), "F11"),
             row(&tr("Resize grid items"), "Ctrl + Scroll"),
             row(&tr("Open folder in new tab"), "Middle Click"),
             row(&tr("Open folder in new window"), "Ctrl + Middle Click"),

@@ -42,6 +42,7 @@ impl FluxApp {
         }
 
         self.sync_list_mode();
+        self.refresh_wide_preview_layout();
     }
 
     /// Toggles between ascending and descending sort order.
