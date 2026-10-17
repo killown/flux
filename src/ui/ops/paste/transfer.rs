@@ -73,6 +73,7 @@ pub fn perform_file_op_with_progress(
     }
 
     let mut created: Vec<PathBuf> = Vec::new();
+    let mut done_bytes: i64 = 0;
 
     let copy_res = if src.is_dir() {
         copy_dir_recursive(
@@ -84,6 +85,7 @@ pub fn perform_file_op_with_progress(
                 None => None,
             },
             &mut created,
+            &mut done_bytes,
         )
         .map_err(|e| e.to_string())
     } else {
@@ -166,6 +168,7 @@ pub(super) fn copy_dir_recursive(
     cancellable: &gio::Cancellable,
     mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
     created: &mut Vec<PathBuf>,
+    done: &mut i64,
 ) -> std::io::Result<()> {
     if src == dest {
         return Ok(());
@@ -204,22 +207,30 @@ pub(super) fn copy_dir_recursive(
                     None => None,
                 },
                 created,
+                done,
             )?;
         } else {
             if child_dest.symlink_metadata().is_err() {
                 created.push(child_dest.clone());
             }
+            let base = *done;
+            let child_len = entry.metadata().map(|m| m.len() as i64).unwrap_or(0);
+            let mut last = 0i64;
+            let mut child_cb = |current: i64, total: i64| {
+                last = current;
+                if let Some(cb) = progress_cb.as_mut() {
+                    cb(base + current, total);
+                }
+            };
             gio::File::for_path(&child_src)
                 .copy(
                     &gio::File::for_path(&child_dest),
                     gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
                     Some(cancellable),
-                    match progress_cb.as_mut() {
-                        Some(f) => Some(&mut **f),
-                        None => None,
-                    },
+                    Some(&mut child_cb),
                 )
                 .map_err(|e| std::io::Error::other(e.to_string()))?;
+            *done = base + last.max(child_len);
         }
     }
 
