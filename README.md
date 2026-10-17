@@ -31,9 +31,9 @@ Cold start on a Ryzen 5 5600X, mean of 10 runs:
 - **Search that's already there.** Type to filter the folder, press `Ctrl+F` for a search panel on the right, or start with `:` to search inside files. There is no index to build and no background service.
 - **Your servers and drives.** SMB, SFTP, FTP, WebDAV, NFS, MTP and Google Drive, plus encrypted LUKS volumes.
 - **A terminal that follows you.** Press `F4`, `cd` somewhere, and the file view goes with you.
-- **Icons and covers.** Change the icon for a file type, a single file or a folder with any image. Use it to give videos, games and music their own cover art, and set whole batches from the command line.
 - **Tags.** Label files and find them again with `#tag` or `Ctrl+Shift+T`.
 
+- **Icons and covers.** Change the icon for a file type, a single file or a folder with any image. Use it to give videos, games and music their own cover art, and set whole batches from the command line.
 <p align="center">
   <img src="https://github.com/killown/flux/raw/main/screenshots/covers.png" alt="Flux grid view with custom cover art set as folder icons for a game library" width="100%">
 </p>
