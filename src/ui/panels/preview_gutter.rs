@@ -56,34 +56,17 @@ impl LineNumberGutter {
     }
 }
 
-fn paint(cr: &Context, tv: &gtk::TextView, sc: &gtk::ScrolledWindow, w: i32, h: i32) {
+fn paint(cr: &Context, tv: &gtk::TextView, _sc: &gtk::ScrolledWindow, w: i32, h: i32) {
     let buf = tv.buffer();
     let line_count = buf.line_count();
     if line_count == 0 {
         return;
     }
 
-    // Derive the line height from a pango layout of the current font.
     let ctx = tv.pango_context();
     let layout = pango::Layout::new(&ctx);
     if let Some(fd) = ctx.font_description() {
         layout.set_font_description(Some(&fd));
-    }
-    layout.set_text("0");
-    let lh = layout.pixel_extents().1.height() as f64;
-    if lh <= 0.0 {
-        return;
-    }
-
-    let vadj = sc.vadjustment();
-    let val = vadj.value();
-    let top_margin = tv.top_margin() as f64;
-
-    let first_visible = ((val - top_margin) / lh).floor().max(0.0) as i32;
-    let last_visible = (((val + h as f64) - top_margin) / lh).ceil() as i32;
-    let last_visible = last_visible.min(line_count);
-    if last_visible <= first_visible {
-        return;
     }
 
     let digits = line_count.to_string().len() as i32;
@@ -92,20 +75,42 @@ fn paint(cr: &Context, tv: &gtk::TextView, sc: &gtk::ScrolledWindow, w: i32, h: 
     let x = (w - text_w).max(0) as f64 + pad as f64;
 
     cr.set_source_rgba(0.5, 0.5, 0.5, 0.7);
-    for n in first_visible..last_visible {
-        let Some(mut iter) = buf.iter_at_line(n) else {
-            continue;
-        };
-        if iter.line() != n {
-            continue;
+
+    // line_at_y takes a coordinate relative to the viewport's top edge (0).
+    // It returns (TextIter, line_index) of the line at that position.
+    let (mut iter, mut n) = tv.line_at_y(0);
+    n = n.max(0);
+
+    // If the top of the viewport cuts through a wrapped line, step back to the
+    // beginning of that line so we paint its number at the correct spot.
+    if !iter.starts_line() {
+        if iter.backward_line() {
+            n = iter.line();
         }
-        let y = top_margin + (n as f64) * lh - val;
-        if y + lh < 0.0 || y > h as f64 {
-            continue;
+    }
+
+    // Iterate down through the buffer from the current visible line.
+    while n < line_count {
+        // Exact pixel position of this line, translated to the viewport.
+        let rect = tv.iter_location(&iter);
+        let (_, by) = tv.buffer_to_window_coords(gtk::TextWindowType::Text, rect.x(), rect.y());
+
+        // Stop if this line is below the visible gutter area.
+        if by > h {
+            break;
         }
-        layout.set_text(&format!("{}", n + 1));
-        cr.move_to(x, y);
-        pangocairo::functions::show_layout(cr, &layout);
-        let _ = &mut iter;
+
+        // Skip drawing if the line is scrolled above the top.
+        if by >= -20 {
+            layout.set_text(&format!("{}", n + 1));
+            cr.move_to(x, by as f64);
+            pangocairo::functions::show_layout(cr, &layout);
+        }
+
+        // Advance to the next line in the buffer.
+        if !iter.forward_line() {
+            break;
+        }
+        n = iter.line();
     }
 }
