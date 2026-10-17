@@ -9,6 +9,7 @@ mod pdf;
 mod png;
 mod raw;
 mod thumbnail;
+mod tiers;
 mod video;
 
 // Public API surface (preserves original `pub` items).
@@ -26,6 +27,8 @@ pub use png::optimize_png_bytes;
 pub(crate) use raw::raw_thumbnail;
 pub use raw::raw_thumbnailer_available;
 pub use thumbnail::get_or_create_thumbnail;
+#[allow(unused_imports)]
+pub use tiers::{find_cached_thumbnail, thumbnail_lookup_tiers, tier_for_size};
 pub use video::probe_media_duration;
 
 // Crate-internal API surface (preserves original `pub(crate)` items).

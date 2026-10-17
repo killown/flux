@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use super::pdf::pdf_thumbnail;
 use super::png::{mtime_secs, read_thumb_mtime};
+use super::tiers::{find_cached_thumbnail, tier_for_size};
 
 /// Retrieves a thumbnail [`gdk::Texture`] for a visual media file, generating
 /// and caching it on first access.
@@ -61,14 +62,9 @@ pub async fn get_or_create_thumbnail(path: &std::path::Path) -> Option<gtk::gdk:
 /// and `cache_path` is the full `.png` destination. Returns `None` if
 /// `dirs::cache_dir()` is unavailable or `path` contains non-UTF-8 bytes.
 fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathBuf, String)> {
-    let thumb_folder = match target_size {
-        s if s > 512 => "xx-large",
-        s if s > 256 => "x-large",
-        s if s > 128 => "large",
-        _ => "normal",
-    };
-
-    let cache_dir = dirs::cache_dir()?.join("thumbnails").join(thumb_folder);
+    let cache_dir = dirs::cache_dir()?
+        .join("thumbnails")
+        .join(tier_for_size(target_size));
 
     let uri = gio::File::for_path(path).uri();
     let hash = format!("{:x}", md5::compute(uri.as_bytes()));
@@ -168,36 +164,27 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
 
     let source_meta = std::fs::metadata(path).ok();
 
-    let existing_thumbnail: Option<PathBuf> = if cache_path.exists() {
-        Some(cache_path.clone())
-    } else if let Some(base_cache) = dirs::cache_dir().map(|c| c.join("thumbnails")) {
-        ["xx-large", "x-large", "large", "normal"]
-            .iter()
-            .map(|tier| base_cache.join(tier).join(format!("{hash}.png")))
-            .find(|p| p.exists())
-    } else {
-        None
-    };
+    let existing_thumbnail = cache_dir
+        .parent()
+        .and_then(|root| find_cached_thumbnail(root, &hash, target_size));
 
-    if let Some(existing) = existing_thumbnail {
-        if let Ok(meta) = std::fs::metadata(&existing) {
-            if meta.len() > 1024 * 1024 {
-                let _ = std::fs::remove_file(&existing);
-            } else {
-                if let Ok(bytes) = std::fs::read(&existing) {
-                    let is_valid = source_meta
-                        .as_ref()
-                        .map(|m| thumbnail_is_valid(&meta, &bytes, m))
-                        .unwrap_or(true);
+    if let Some((existing, meta)) = existing_thumbnail {
+        if meta.len() > 1024 * 1024 {
+            let _ = std::fs::remove_file(&existing);
+        } else {
+            if let Ok(bytes) = std::fs::read(&existing) {
+                let is_valid = source_meta
+                    .as_ref()
+                    .map(|m| thumbnail_is_valid(&meta, &bytes, m))
+                    .unwrap_or(true);
 
-                    if is_valid {
-                        if let Ok(texture) = gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)) {
-                            return Some(texture);
-                        }
+                if is_valid {
+                    if let Ok(texture) = gdk::Texture::from_bytes(&glib::Bytes::from(&bytes)) {
+                        return Some(texture);
                     }
                 }
-                let _ = std::fs::remove_file(&existing);
             }
+            let _ = std::fs::remove_file(&existing);
         }
     }
 

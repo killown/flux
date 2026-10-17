@@ -7,5 +7,6 @@ mod utils {
     mod hwga_test;
     mod media_test;
     mod search_parser_test;
+    mod thumbnail_tiers_test;
     mod xattr_test;
 }
