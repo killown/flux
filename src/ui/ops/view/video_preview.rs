@@ -64,6 +64,7 @@ impl FluxApp {
                     if let Some(stream) = video.media_stream() {
                         stream.pause();
                     }
+                    video.set_media_stream(None::<&gtk::MediaStream>);
                 }
                 if let Some(stack_ptr) = widget.data::<gtk::Stack>("preview_stack") {
                     stack_ptr.as_ref().set_visible_child_name("icon");

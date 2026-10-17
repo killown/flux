@@ -184,6 +184,8 @@ impl FluxApp {
                 r.set_visible(false);
             }
             self.preview_panel_visible = false;
+            crate::ui::panels::preview_registry::with(|h| h.stop_media());
+            self.stop_video_preview();
             self.exit_wide_preview();
         }
     }
@@ -306,6 +308,7 @@ impl FluxApp {
         }
 
         *visible = !*visible;
+        let now_visible = *visible;
         revealer.set_visible(*visible);
         revealer.set_reveal_child(*visible);
 
@@ -315,7 +318,7 @@ impl FluxApp {
         // the panel is open. Skip the whole focus dance for Preview.
         let skip_focus = matches!(panel_type, RightPanelType::Preview);
 
-        if *visible && !skip_focus {
+        if now_visible && !skip_focus {
             if let Some(panel_box) = revealer.child() {
                 let mut next = panel_box.first_child();
                 let mut focused = false;
@@ -348,7 +351,7 @@ impl FluxApp {
                     panel_box.grab_focus();
                 }
             }
-        } else if *visible {
+        } else if now_visible {
             // Nothing to focus for Preview. Kept as an explicit branch so
             // the intent is obvious and a future Preview variant with its
             // own focusable child has an obvious place to hook in.
@@ -365,6 +368,14 @@ impl FluxApp {
         } else if panel_type == RightPanelType::Tag {
             sender.input(AppMsg::CancelContentSearch);
             sender.input(AppMsg::Refresh);
+        }
+
+        // Previews own live media (video/audio), stop it on close so nothing
+        // keeps playing after the panel is hidden. Placed after the last
+        // `*visible` read so `self` is free to take `&mut self` here.
+        if !now_visible && matches!(panel_type, RightPanelType::Preview) {
+            crate::ui::panels::preview_registry::with(|h| h.stop_media());
+            self.stop_video_preview();
         }
 
         // ── PEEK PREVIEW header stack page ──────────────────────────────

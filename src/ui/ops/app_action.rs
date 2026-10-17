@@ -50,7 +50,7 @@ impl FluxApp {
         tab_id: Option<u64>,
         sender: &AsyncComponentSender<Self>,
     ) {
-        self.stop_video_preview();
+        self.stop_preview_media();
 
         let modifiers = gdk::Display::default()
             .and_then(|d| d.default_seat())
@@ -178,7 +178,7 @@ impl FluxApp {
 
     /// Handles explicit primary item activation (e.g. Return / Double-click).
     pub fn handle_activate(&mut self, sender: &AsyncComponentSender<Self>) {
-        self.stop_video_preview();
+        self.stop_preview_media();
 
         let modifiers = gdk::Display::default()
             .and_then(|d| d.default_seat())

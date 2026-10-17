@@ -45,6 +45,7 @@ impl FluxApp {
         // so no reload is needed here. Bumping the session discards any
         // in-flight preview results.
         self.preview_session.fetch_add(1, Ordering::SeqCst);
+        self.stop_preview_media();
         self.exit_wide_preview();
         self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
     }
@@ -63,6 +64,14 @@ impl FluxApp {
         }
         self.set_wide_preview_default(true);
         self.enter_wide_preview();
+    }
+
+    /// Stops the preview panel's inline media (video via `gtk::Video`, audio via
+    /// the `mpv` child) and the grid card's autoplay preview. Safe to call when
+    /// nothing is playing.
+    pub fn stop_preview_media(&mut self) {
+        let _ = preview_registry::with(|h| h.stop_media());
+        self.stop_video_preview();
     }
 
     /// Header-button handler: stores the permanent wide setting and applies it right away.
