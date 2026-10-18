@@ -7,11 +7,15 @@ CONFDIR    = $(PREFIX)/share/flux
 SCRIPTDIR  = $(CONFDIR)/scripts
 LOCALEDIR  = $(PREFIX)/share/locale
 
-# Detect the built binary – prefer local profile, then release, then debug
-BIN_PATH := $(shell if [ -f target/local/flux-fm ]; then echo target/local/flux-fm; \
-                     elif [ -f target/release/flux-fm ]; then echo target/release/flux-fm; \
-                     elif [ -f target/debug/flux-fm ]; then echo target/debug/flux-fm; \
-                     else echo target/release/flux-fm; fi)
+# Detect the built binary, prefer local profile, then release, then debug.
+# Overridable by an environment variable so build.rs can pin the exact profile
+# it just compiled (see BIN_PATH=target/local/flux-fm in build.rs). When unset,
+# falls back to the first existing path. If none exists, this is empty and
+# `install:` below aborts instead of silently copying a stale release binary.
+BIN_PATH   ?= $(shell if [ -f target/local/flux-fm ]; then echo target/local/flux-fm; \
+                      elif [ -f target/release/flux-fm ]; then echo target/release/flux-fm; \
+                      elif [ -f target/debug/flux-fm ]; then echo target/debug/flux-fm; \
+                      fi)
 
 # User configuration target directory
 USER_CONFDIR = $(HOME)/.config/flux
@@ -29,6 +33,14 @@ THEME_REPO = https://github.com/killown/flux-themes.git
 .PHONY: install translations set-archive-defaults update-themes
 
 install: translations update-themes
+	# 0. Guard: fail loudly when no built binary is found, instead of
+	#    silently installing a stale target/release/flux-fm while the user
+	#    is on a --profile local build.
+	@if [ -z "$(BIN_PATH)" ] || [ ! -f "$(BIN_PATH)" ]; then \
+		echo "error: no built binary found (looked for target/local, target/release, target/debug)" >&2; \
+		exit 1; \
+	fi
+
 	# 1. Create directories
 	@mkdir -p \
 		$(DESTDIR)$(BINDIR) \

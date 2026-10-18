@@ -40,14 +40,16 @@ fn main() {
         let _ = Command::new("cargo").args(["fmt"]).status();
 
         println!("cargo:warning=>>> Local profile build detected. Syncing assets via Makefile...");
-        let status = Command::new("make").arg("install").status();
-
-        if let Ok(s) = status {
-            if s.success() {
-                println!("cargo:warning=>>> Assets synced successfully.");
-            } else {
-                println!("cargo:warning=>>> Makefile failed with status: {}", s);
-            }
+        // Pin BIN_PATH to the exact profile this build script is running under,
+        // so make install can never fall back to a stale target/release/flux-fm.
+        match Command::new("make")
+            .arg("install")
+            .env("BIN_PATH", "target/local/flux-fm")
+            .status()
+        {
+            Ok(s) if s.success() => println!("cargo:warning=>>> Assets synced successfully."),
+            Ok(s) => panic!("make install failed with status: {}", s),
+            Err(e) => panic!("make install failed to spawn: {}", e),
         }
     }
 
@@ -56,5 +58,4 @@ fn main() {
     println!("cargo:rerun-if-changed=scripts/properties.py");
     println!("cargo:rerun-if-changed=flux.desktop");
     println!("cargo:rerun-if-changed=.git/HEAD");
-    println!("cargo:rerun-if-changed=.git/index");
 }
