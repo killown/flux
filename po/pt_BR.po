@@ -3292,8 +3292,17 @@ msgstr "O rótulo não pode conter \"=>\""
 msgid "quotes and line breaks are not allowed"
 msgstr "aspas e quebras de linha não são permitidas"
 
-msgid "Submenu"
-msgstr "Submenu"
+msgid "Add Actions"
+msgstr "Adicionar Ações"
 
-msgid "Notification"
-msgstr "Notificação"
+msgid "Add Search"
+msgstr "Adicionar Pesquisa"
+
+msgid "Add Tags"
+msgstr "Adicionar Etiquetas"
+
+msgid "Already in sidebar"
+msgstr "Já está na barra lateral"
+
+msgid "Actions"
+msgstr "Ações"

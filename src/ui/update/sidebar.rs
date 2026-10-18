@@ -59,6 +59,9 @@ pub(super) fn handle(
                 )));
             }
         }
+        AppMsg::AddPanelSidebarEntry { name, path, icon } => {
+            app.handle_add_panel_sidebar_entry(name, path, icon, sender)
+        }
         AppMsg::MoveFilesToTarget {
             sources,
             destination,

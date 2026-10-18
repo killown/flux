@@ -120,4 +120,27 @@ impl FluxApp {
         crate::utils::save_config(&self.config);
         self.refresh_sidebar();
     }
+
+    /// Pins a right-panel shortcut (Actions / Search / Tags) to the sidebar.
+    /// No-op when the entry already exists, so the menu is idempotent.
+    pub fn handle_add_panel_sidebar_entry(
+        &mut self,
+        name: String,
+        path: String,
+        icon: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if self.config.sidebar.iter().any(|p| p.path == path) {
+            sender.input(AppMsg::ShowToast(crate::i18n::tr("Already in sidebar")));
+            return;
+        }
+        self.config.sidebar.push(crate::model::CustomPlace {
+            name,
+            kind: None,
+            icon,
+            path,
+        });
+        utils::save_config(&self.config);
+        sender.input(AppMsg::RefreshSidebar);
+    }
 }

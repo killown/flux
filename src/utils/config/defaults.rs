@@ -271,6 +271,7 @@ path = "actions://"
             "Shortcuts" => tr("Shortcuts"),
             "Tags" => tr("Tags"),
             "Search" => tr("Search"),
+            "Actions" => tr("Actions"),
             other => other.to_string(),
         };
     }

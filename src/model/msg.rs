@@ -7,6 +7,13 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Adds a right-panel shortcut (Actions / Search / Tags) to the sidebar
+    /// if it isn't already pinned, then refreshes the sidebar.
+    AddPanelSidebarEntry {
+        name: String,
+        path: String,
+        icon: String,
+    },
     /// Cycles the view filter: All -> OnlyFolders -> OnlyFiles -> All.
     CycleFilterMode,
     /// Dispatches neighbour prefetch on selection change when the preview panel is open.

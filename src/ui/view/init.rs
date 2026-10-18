@@ -270,7 +270,7 @@ impl FluxApp {
         widgets: &FluxAppWidgets,
         sender: &AsyncComponentSender<Self>,
     ) {
-        // Right-click on empty sidebar space → "New Section".
+        // Right-click on empty sidebar space → "New Section" and panel shortcuts.
         // On the ScrolledWindow, not sidebar_box: the empty area below the last
         // row is inside it, and GtkScrolledWindow eats the click before it can
         // bubble out. Bubble phase lets rows with their own menu win first,
@@ -292,7 +292,18 @@ impl FluxApp {
 
             let menu = gtk::PopoverMenu::builder().has_arrow(false).build();
             let menu_model = gio::Menu::new();
+
             menu_model.append(Some(&tr("New Section")), Some("sidebar_empty.new_section"));
+            menu_model.append(
+                Some(&tr("Add Actions")),
+                Some("sidebar_empty.add_panel_actions"),
+            );
+            menu_model.append(
+                Some(&tr("Add Search")),
+                Some("sidebar_empty.add_panel_search"),
+            );
+            menu_model.append(Some(&tr("Add Tags")), Some("sidebar_empty.add_panel_tags"));
+
             menu.set_menu_model(Some(&menu_model));
 
             if let Some(widget) = gesture.widget() {
@@ -301,12 +312,44 @@ impl FluxApp {
                 menu.set_pointing_to(Some(&rect));
 
                 let ag = gio::SimpleActionGroup::new();
+
                 let new_action = gio::SimpleAction::new("new_section", None);
                 let s2 = s_ns.clone();
                 new_action.connect_activate(move |_, _| {
                     s2.input(AppMsg::PromptNewSidebarSection);
                 });
                 ag.add_action(&new_action);
+
+                for (name, panel_name, path, icon) in [
+                    (
+                        "add_panel_actions",
+                        "Actions",
+                        "actions://",
+                        "application-x-executable-symbolic",
+                    ),
+                    (
+                        "add_panel_search",
+                        "Search",
+                        "search://",
+                        "system-search-symbolic",
+                    ),
+                    ("add_panel_tags", "Tags", "tags://", "tag-symbolic"),
+                ] {
+                    let act = gio::SimpleAction::new(name, None);
+                    let s3 = s_ns.clone();
+                    let name = panel_name.to_string();
+                    let path = path.to_string();
+                    let icon = icon.to_string();
+                    act.connect_activate(move |_, _| {
+                        s3.input(AppMsg::AddPanelSidebarEntry {
+                            name: name.clone(),
+                            path: path.clone(),
+                            icon: icon.clone(),
+                        });
+                    });
+                    ag.add_action(&act);
+                }
+
                 widget.insert_action_group("sidebar_empty", Some(&ag));
                 menu.popup();
             }
