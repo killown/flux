@@ -28,10 +28,6 @@ impl PanelSpec {
             self.initial_width.clamp(self.min_width, self.max_width)
         }
     }
-
-    pub fn clamp(&self, w: i32) -> i32 {
-        w.clamp(self.min_width, self.max_width)
-    }
 }
 
 impl PanelSpec {

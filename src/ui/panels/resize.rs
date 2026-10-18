@@ -1,6 +1,43 @@
 use super::spec::PanelSpec;
 use gtk::prelude::*;
 
+/// Returns the workarea width of the monitor the widget's surface is on,
+/// or `0` when it cannot be determined (callers should treat `0` as "skip clamp").
+fn monitor_workarea_width(widget: &impl IsA<gtk::Widget>) -> i32 {
+    let widget = widget.upcast_ref::<gtk::Widget>();
+    let Some(native) = widget.native() else {
+        return 0;
+    };
+    let Some(surface) = native.surface() else {
+        return 0;
+    };
+    let Ok(display) = surface.display().downcast::<gtk::gdk::Display>() else {
+        return 0;
+    };
+    display
+        .monitor_at_surface(&surface)
+        .map_or(0, |m| m.geometry().width())
+}
+
+/// Effective upper bound for a panel: `spec.max_width`, hard-clamped to the
+/// monitor workarea so the drag gesture can never inflate the toplevel window
+/// past the physical screen edge (trivially possible on multi-monitor setups
+/// where the compositor has room to grow the window).
+///
+/// The `0.80` factor is a tunable, not a hard requirement: it guarantees the
+/// file grid keeps at least ~20% of the monitor so the main view stays
+/// interactive while the panel is dragged open. Raise it if the grid should
+/// stay wider, lower it if the panel needs more room on very wide monitors.
+/// The panel never goes below `spec.min_width` regardless.
+fn max_panel_width(widget: &impl IsA<gtk::Widget>, spec: &PanelSpec) -> i32 {
+    let monitor_w = monitor_workarea_width(widget);
+    if monitor_w <= 0 {
+        return spec.max_width;
+    }
+    let hard_cap = (monitor_w as f64 * 0.80).round() as i32;
+    spec.max_width.min(hard_cap).max(spec.min_width)
+}
+
 /// Build `<handle><panel>` with full hover + drag-to-resize behavior.
 /// `on_resize_end` fires once on drag release with the final clamped width.
 pub fn resizable_panel(
@@ -102,7 +139,9 @@ pub fn resizable_panel(
                                 handle.translate_coordinates(&root, curr_x, 0.0)
                             {
                                 let delta_x = curr_root_x - start_root_x_c.get();
-                                let new_w = spec.clamp(start_width_c.get() - delta_x as i32);
+                                let raw = start_width_c.get() - delta_x as i32;
+                                let cap = max_panel_width(&p, &spec);
+                                let new_w = raw.clamp(spec.min_width, cap);
                                 if p.width_request() != new_w {
                                     p.set_width_request(new_w);
                                 }
@@ -122,7 +161,8 @@ pub fn resizable_panel(
                 return;
             }
             if let Some(p) = panel_weak.upgrade() {
-                let final_width = spec.clamp(p.width());
+                let cap = max_panel_width(&p, &spec);
+                let final_width = p.width().clamp(spec.min_width, cap);
                 p.set_width_request(final_width);
                 on_resize_end(final_width);
             }
