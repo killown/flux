@@ -5,57 +5,65 @@ use std::path::Path;
 
 use super::png::store_thumbnail;
 
-/// Registers a font file with the process-local fontconfig instance so Pango
-/// can resolve it without system installation.
-///
-/// Calls `FcConfigAppFontAddFile` from libfontconfig (a transitive system
-/// dependency of GTK/Pango - always present on the target platform). The
-/// registration is process-local and cleaned up on exit, no global state is
-/// modified.
-///
-/// Returns `true` when the file was registered with the *current* fontconfig
-/// config, `false` otherwise. Callers must check this before attempting to
-/// resolve glyphs by family name - an unregistered font will render as tofu
-/// because Pango cannot find its family.
-fn register_font_with_fontconfig(path: &Path) -> bool {
+/// Private fontconfig config used only for font thumbnails, never the process-wide one.
+static PRIVATE_FC: std::sync::Mutex<usize> = std::sync::Mutex::new(0);
+
+mod ffi {
+    use std::ffi::c_void;
+    use std::os::raw::c_char;
+
     #[link(name = "fontconfig")]
     extern "C" {
-        fn FcInitLoadConfigAndFonts() -> *mut std::ffi::c_void;
-        fn FcConfigAppFontAddFile(
-            config: *mut std::ffi::c_void,
-            file: *const std::os::raw::c_char,
-        ) -> i32;
-        fn FcConfigBuildFonts(config: *mut std::ffi::c_void) -> i32;
-        fn FcConfigGetCurrent() -> *mut std::ffi::c_void;
-        fn FcConfigSetCurrent(config: *mut std::ffi::c_void) -> i32;
+        pub fn FcInitLoadConfigAndFonts() -> *mut c_void;
+        pub fn FcConfigAppFontAddFile(config: *mut c_void, file: *const c_char) -> i32;
+        pub fn FcConfigAppFontClear(config: *mut c_void);
     }
 
-    unsafe {
-        let _ = FcInitLoadConfigAndFonts();
+    #[link(name = "pangoft2-1.0")]
+    extern "C" {
+        pub fn pango_fc_font_map_set_config(fontmap: *mut c_void, fcconfig: *mut c_void);
     }
+}
 
-    let Ok(cpath) = std::ffi::CString::new(path.to_string_lossy().as_bytes()) else {
-        return false;
-    };
+/// Isolated font map holding one registered font, serialized by a global mutex until dropped.
+struct PrivateFontMap {
+    // Field order matters: the map must drop before the lock is released.
+    map: gtk::pango::FontMap,
+    registered: bool,
+    _guard: std::sync::MutexGuard<'static, usize>,
+}
 
-    unsafe {
-        let config = FcConfigGetCurrent();
-        if config.is_null() {
-            return false;
+impl PrivateFontMap {
+    fn new(path: &Path) -> Self {
+        use glib::prelude::ObjectType;
+        use std::os::unix::ffi::OsStrExt;
+
+        let mut guard = PRIVATE_FC.lock().unwrap_or_else(|e| e.into_inner());
+        let map = pangocairo::FontMap::new();
+        let mut registered = false;
+
+        unsafe {
+            if *guard == 0 {
+                *guard = ffi::FcInitLoadConfigAndFonts() as usize;
+            }
+            let config = *guard as *mut std::ffi::c_void;
+
+            if !config.is_null() {
+                // Drop the previous thumbnail's font so the config never accumulates fonts.
+                ffi::FcConfigAppFontClear(config);
+                if let Ok(cpath) = std::ffi::CString::new(path.as_os_str().as_bytes()) {
+                    registered = ffi::FcConfigAppFontAddFile(config, cpath.as_ptr()) != 0;
+                }
+                let raw = map.as_ptr() as *mut std::ffi::c_void;
+                ffi::pango_fc_font_map_set_config(raw, config);
+            }
         }
 
-        let added = FcConfigAppFontAddFile(config, cpath.as_ptr());
-        if added == 0 {
-            return false;
+        Self {
+            map,
+            registered,
+            _guard: guard,
         }
-
-        let built = FcConfigBuildFonts(config);
-        if built == 0 {
-            return false;
-        }
-
-        let set = FcConfigSetCurrent(config);
-        set != 0
     }
 }
 
@@ -185,9 +193,8 @@ fn read_font_family(path: &Path) -> Option<String> {
 }
 
 pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
-    // Register the font file with fontconfig so Pango can load it by family
-    // name without requiring system installation.
-    register_font_with_fontconfig(path);
+    // Private config under a mutex: never mutate the global fontconfig from worker threads.
+    let private = PrivateFontMap::new(path);
 
     // Prefer the actual internal family name from the binary name table,
     // fall back to the filename stem if parsing fails.
@@ -206,8 +213,7 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
     cx.set_source_rgb(1.0, 1.0, 1.0);
     cx.paint().ok()?;
 
-    let font_map = pangocairo::FontMap::new();
-    let pango_cx = font_map.create_context();
+    let pango_cx = private.map.create_context();
     pangocairo::functions::update_context(&cx, &pango_cx);
 
     // Sample lines: family name hint at top, pangram below.
@@ -295,7 +301,8 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
 /// file's `name` table, so the user can tell what the file claims to be
 /// without seeing a screen of tofu.
 pub fn font_specimen(path: &Path, target_size: i32) -> Option<gdk::Texture> {
-    let registered = register_font_with_fontconfig(path);
+    let private = PrivateFontMap::new(path);
+    let registered = private.registered;
 
     let family = read_font_family(path)
         .or_else(|| path.file_stem().map(|s| s.to_string_lossy().into_owned()))
@@ -312,8 +319,7 @@ pub fn font_specimen(path: &Path, target_size: i32) -> Option<gdk::Texture> {
     cx.set_source_rgb(1.0, 1.0, 1.0);
     cx.paint().ok()?;
 
-    let font_map = pangocairo::FontMap::new();
-    let pango_cx = font_map.create_context();
+    let pango_cx = private.map.create_context();
     pangocairo::functions::update_context(&cx, &pango_cx);
 
     let family_available = font_family_available(&pango_cx, &family);
