@@ -71,6 +71,11 @@ pub(super) const BUILTINS: &[BuiltinDef] = &[
         desc: "Opens the Directory Inspector with disk usage and largest files.",
     },
     BuiltinDef {
+        name: "builtin::install_fonts",
+        scope: "font/all",
+        desc: "Installs the selected font files into ~/.local/share/fonts.",
+    },
+    BuiltinDef {
         name: "builtin::open_with",
         scope: "file",
         desc: "Populates a dynamic submenu of registered applications for the MIME type.",

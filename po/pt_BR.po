@@ -2878,6 +2878,27 @@ msgstr "instale icoutils para extração de ícones de .exe"
 # Peek Preview Panel (src/ui/panels/preview.rs)
 # ============================================================
 
+msgid "Install font"
+msgstr "Instalar fonte"
+
+#: src/ui/panels/preview.rs, src/services/fonts.rs
+msgid "Already installed"
+msgstr "Já instalada"
+
+#: src/services/fonts.rs
+msgid "Could not install the font"
+msgstr "Não foi possível instalar a fonte"
+
+#: src/services/fonts.rs
+msgid "failed"
+msgstr "falharam"
+
+#: src/services/fonts.rs
+msgid "Installed 1 font"
+msgid_plural "Installed {} fonts"
+msgstr[0] "1 fonte instalada"
+msgstr[1] "{} fontes instaladas"
+
 #: src/ui/panels/preview.rs:???
 msgid "No preview"
 msgstr "Sem pré-visualização"
@@ -3306,3 +3327,6 @@ msgstr "Já está na barra lateral"
 
 msgid "Actions"
 msgstr "Ações"
+
+msgid "Installs the selected font files into ~/.local/share/fonts."
+msgstr "Instala os arquivos de fonte selecionados em ~/.local/share/fonts."

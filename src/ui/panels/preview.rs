@@ -244,6 +244,7 @@ pub struct PreviewPanelHandle {
     pub(crate) invert_btn: gtk::ToggleButton,
     pub(crate) md_source_btn: gtk::ToggleButton,
     pub(crate) wide_btn: gtk::ToggleButton,
+    pub(crate) install_font_btn: gtk::Button,
     pub(crate) zoom_btn: gtk::Button,
     pub(crate) banner: adw::Banner,
     pub(crate) image: gtk::Picture,
@@ -417,6 +418,9 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .css_classes(["flat"])
         .visible(false)
         .build();
+    let install_font_btn =
+        flat_icon_button("system-software-install-symbolic", &tr("Install font"));
+    install_font_btn.set_visible(false);
     let zoom_out = flat_icon_button("zoom-out-symbolic", &tr("Zoom out"));
     let zoom_in = flat_icon_button("zoom-in-symbolic", &tr("Zoom in"));
     let zoom_btn = gtk::Button::builder()
@@ -688,6 +692,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         spacer.clone().upcast(),
         wrap_btn.clone().upcast(),
         md_source_btn.clone().upcast(),
+        install_font_btn.clone().upcast(),
         invert_btn.clone().upcast(),
         details_toggle.clone().upcast(),
         zoom_out.clone().upcast(),
@@ -709,6 +714,15 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         let s = sender.clone();
         wide_btn.connect_toggled(move |b| s.input(AppMsg::SetWidePreviewDefault(b.is_active())));
     }
+    {
+        let s = sender.clone();
+        install_font_btn.connect_clicked(move |_| {
+            let path = preview_registry::with(|h| h.state.path.borrow().clone()).flatten();
+            if let Some(path) = path {
+                s.input(AppMsg::InstallFonts(vec![path]));
+            }
+        });
+    }
     panel.append(&banner);
     panel.append(&view_stack);
 
@@ -723,6 +737,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         invert_btn: invert_btn.clone(),
         md_source_btn: md_source_btn.clone(),
         wide_btn: wide_btn.clone(),
+        install_font_btn: install_font_btn.clone(),
         zoom_btn: zoom_btn.clone(),
         banner,
         image,
@@ -924,6 +939,15 @@ impl PreviewPanelHandle {
             PreviewContent::Image { tex, info } => {
                 self.show_info(info);
                 self.set_mode(Mode::Image);
+                let is_font = crate::services::fonts::is_font_path(&info.path);
+                let installed = is_font && crate::services::fonts::is_installed(&info.path);
+                self.install_font_btn.set_visible(is_font);
+                self.install_font_btn.set_sensitive(!installed);
+                self.install_font_btn.set_tooltip_text(Some(&if installed {
+                    tr("Already installed")
+                } else {
+                    tr("Install font")
+                }));
                 st.zoom.set(1.0);
                 self.sync_zoom_label();
                 st.tex_px.set((tex.width(), tex.height()));
@@ -1291,6 +1315,7 @@ impl PreviewPanelHandle {
         self.wrap_btn
             .set_visible(mode == Mode::Text || mode == Mode::Markdown);
         self.md_source_btn.set_visible(mode == Mode::Markdown);
+        self.install_font_btn.set_visible(false);
     }
 
     fn show_info(&self, info: &FileInfo) {

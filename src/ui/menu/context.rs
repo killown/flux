@@ -547,6 +547,33 @@ impl FluxApp {
                         )
                     }
 
+                    // ── Font install: every selected font, else the clicked one ──
+                    "builtin::install_fonts" => {
+                        let mut targets: Vec<PathBuf> = self
+                            .get_selection()
+                            .into_iter()
+                            .filter(|p| crate::services::fonts::is_font_path(p))
+                            .collect();
+                        if targets.is_empty() {
+                            if let Some(p) = resolved_path
+                                .as_ref()
+                                .filter(|p| crate::services::fonts::is_font_path(p))
+                            {
+                                targets.push(p.clone());
+                            }
+                        }
+                        if targets.is_empty() {
+                            continue;
+                        }
+                        register_simple(
+                            &action_group,
+                            "install-fonts",
+                            sender,
+                            action_toast.clone(),
+                            move |s, _| s.input(AppMsg::InstallFonts(targets.clone())),
+                        )
+                    }
+
                     // ── File-only builtins ────────────────────────────────────
                     "builtin::tagfile" => {
                         if mime == constants::MIME_DIR {

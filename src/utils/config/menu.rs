@@ -32,6 +32,7 @@ pub fn ensure_config_file() -> PathBuf {
 "󰏊      Paste" => "all", "builtin::paste"
 "󰑕      Rename" => "all", "builtin::rename"
 "󰓹      Edit Tags" => "file", "builtin::tagfile"
+"󰐕      Install Font" => "font/all", "builtin::install_fonts"
 "󰩹      Delete" => "all", "builtin::delete"
 "󰦬      Restore File" => "trash", "gio trash --restore %p"
 "󰆴      Shred File (Permanent)" => "all", "python3 $HOME/.local/share/flux/scripts/flux_shredder.py %p", "no_command_dialog"

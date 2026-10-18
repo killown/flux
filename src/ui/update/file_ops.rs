@@ -29,6 +29,13 @@ pub(super) fn handle(
         AppMsg::PerformRename(old_path, new_name) => {
             app.handle_perform_rename(old_path, new_name, sender)
         }
+        AppMsg::InstallFonts(paths) => {
+            let s = sender.clone();
+            relm4::spawn_blocking(move || {
+                let report = crate::services::fonts::install_fonts(&paths);
+                s.input(AppMsg::ShowToast(report.message()));
+            });
+        }
         AppMsg::Delete => {
             let selection = app.get_selection();
             if app.is_content_searching {

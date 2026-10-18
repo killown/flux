@@ -410,6 +410,8 @@ pub enum AppMsg {
     SetFileIcon { path: PathBuf, image_path: PathBuf },
     /// Removes the custom image override for the given file path, restoring the default icon.
     ResetFileIcon(PathBuf),
+    /// Installs the given font files into the user font directory.
+    InstallFonts(Vec<PathBuf>),
     /// Dispatched when a LUKS image file is double-clicked and confirmed as LUKS.
     UnlockLuksImage { path: PathBuf },
     /// Dispatched by the background thread after successful unlock + mount.
