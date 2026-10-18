@@ -23,6 +23,12 @@ use std::time::Duration;
 impl FluxApp {
     pub fn handle_toggle_preview(&mut self, sender: &AsyncComponentSender<Self>) {
         if !self.preview_panel_visible {
+            // Stop grid autoplay before the panel is shown. A live gtk::Video in
+            // the grid reports its intrinsic size as natural width, and while the
+            // preview panel is squeezing the grid's column allocation the toplevel
+            // would otherwise negotiate grid_natural + panel_width and grow past
+            // the monitor.
+            self.stop_video_preview();
             self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
             if self.config.ui.wide_preview {
                 self.enter_wide_preview();
