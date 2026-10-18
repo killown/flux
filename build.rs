@@ -33,7 +33,9 @@ fn main() {
     // Arch's makepkg sets SOURCE_DATE_EPOCH.
     let is_packaging = env::var("SOURCE_DATE_EPOCH").is_ok();
 
-    if is_local_profile && !is_packaging {
+    let sync_assets = env::var("FLUX_SYNC_ASSETS").is_ok();
+
+    if is_local_profile && !is_packaging && sync_assets {
         // Only run formatting and asset syncing during local development release builds
         let _ = Command::new("cargo").args(["fmt"]).status();
 
