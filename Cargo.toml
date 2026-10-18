@@ -29,6 +29,11 @@ chrono = "0.4.43"
 sha2 = "0.11.0"
 xattr = "1.6.1"
 imagesize = "0.14.0"
+image = { version = "0.25", default-features = false, features = [
+  "default-formats",
+  "avif",
+  "exr",
+] }
 md5 = "0.8.0"
 rusqlite = { version = "0.40.2", features = ["bundled", "bundled-full"] }
 gio-unix = { version = "0.22.0", package = "gio-unix" }

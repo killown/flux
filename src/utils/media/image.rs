@@ -1,20 +1,47 @@
+use gtk::gdk;
 use std::path::Path;
 
 use super::png::store_thumbnail;
 
+/// Decodes an image into a scaled thumbnail texture without triggering Glycin.
+///
+/// NOTE: We use the pure Rust `image` crate here instead of `gdk_pixbuf::Pixbuf::from_file_at_scale`.
+/// GdkPixbuf delegates to Glycin, which spins up a `bubblewrap` sandbox that frequently
+/// fails on some systems (causing timeouts and GVFS warnings). The `image` crate is
+/// memory-safe, avoids external processes, and guarantees we don't accidentally
+/// `realloc` gigabytes on a malformed header.
 pub(crate) fn decode_image_thumbnail(
-    path: &std::path::Path,
-    cache_path: &std::path::Path,
+    path: &Path,
+    cache_path: &Path,
     target_size: i32,
-) -> Option<gtk::gdk::Texture> {
-    let pixbuf =
-        gdk_pixbuf::Pixbuf::from_file_at_scale(path, target_size, target_size, true).ok()?;
+) -> Option<gdk::Texture> {
+    let img = image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?;
+
+    let thumb = img.thumbnail(target_size as u32, target_size as u32);
+
+    let rgba = thumb.to_rgba8();
+    let (width, height) = rgba.dimensions();
+
+    let pixbuf = gdk_pixbuf::Pixbuf::from_mut_slice(
+        rgba.into_raw(),
+        gdk_pixbuf::Colorspace::Rgb,
+        true, // has_alpha
+        8,    // bits_per_sample
+        width as i32,
+        height as i32,
+        (width * 4) as i32, // rowstride (4 bytes per pixel)
+    );
 
     if let Ok(buf) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
         store_thumbnail(&buf, path, cache_path);
     }
 
-    Some(gtk::gdk::Texture::for_pixbuf(&pixbuf))
+    Some(gdk::Texture::for_pixbuf(&pixbuf))
 }
 
 #[inline]
