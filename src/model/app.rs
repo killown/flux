@@ -98,6 +98,14 @@ pub struct FluxApp {
     pub search_panel_visible: bool,
     /// Whether the right search sidebar panel widgets have been instantiated.
     pub search_panel_initialized: bool,
+    /// Revealer widget wrapping the right contextual-actions panel.
+    pub actions_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the right contextual-actions panel is currently visible.
+    pub actions_panel_visible: bool,
+    /// Whether the contextual-actions panel widget tree has been instantiated.
+    pub actions_panel_initialized: bool,
+    /// Session token for in-flight contextual-actions loads, guards stale results.
+    pub actions_panel_session: Arc<AtomicU64>,
     /// Line number of the item targeted by the last context menu. 0 when not a content-search hit.
     pub active_item_line: usize,
     /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.

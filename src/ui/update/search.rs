@@ -9,6 +9,7 @@ pub(super) fn handle(
     match msg {
         AppMsg::SetTagPanelWidth(val) => app.handle_set_tag_panel_width(val),
         AppMsg::SetSearchPanelWidth(val) => app.handle_set_search_panel_width(val),
+        AppMsg::SetActionsPanelWidth(val) => app.handle_set_actions_panel_width(val),
         AppMsg::UpdateFilter(query) => app.handle_update_filter(query, sender),
         AppMsg::SearchInput(c) => app.handle_search_input(c),
         AppMsg::SearchBackspace => app.handle_search_backspace(sender),
@@ -70,6 +71,9 @@ pub(super) fn handle(
         }
         AppMsg::ToggleSearchPanel => {
             app.toggle_sidebar_right_panel(crate::model::RightPanelType::Search, sender)
+        }
+        AppMsg::ToggleActionsPanel => {
+            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Actions, sender)
         }
         other => return Err(other),
     }

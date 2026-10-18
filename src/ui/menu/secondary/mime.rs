@@ -1,6 +1,6 @@
 /// Splits "image/png" or "application-wpoffice" into ("image", "png") or ("application", "wpoffice").
 #[inline]
-pub(super) fn split_mime(mime: &str) -> (&str, &str) {
+pub fn split_mime(mime: &str) -> (&str, &str) {
     if let Some(idx) = mime.find('/') {
         (&mime[..idx], &mime[idx + 1..])
     } else if let Some(idx) = mime.find('-') {

@@ -50,6 +50,10 @@ pub(super) fn default_tag_panel_width() -> i32 {
     350
 }
 
+pub(super) fn default_actions_panel_width() -> i32 {
+    380
+}
+
 pub(super) fn default_bg_alpha() -> f64 {
     0.65
 }

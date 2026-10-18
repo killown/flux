@@ -7,7 +7,13 @@ pub(super) fn handle(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
     match msg {
-        AppMsg::SelectionChanged { tab_id } => app.handle_selection_changed(tab_id, sender),
+        AppMsg::SelectionChanged { tab_id } => {
+            app.handle_selection_changed(tab_id, sender);
+            // Keep the contextual-actions panel in sync with the selection while open.
+            if app.actions_panel_visible {
+                app.request_actions_panel_load(sender);
+            }
+        }
         AppMsg::ToggleListMode => app.handle_toggle_list_mode(),
         AppMsg::ToggleSortOrder => app.handle_toggle_sort_order(sender),
         AppMsg::CycleSort => app.handle_cycle_sort(sender),

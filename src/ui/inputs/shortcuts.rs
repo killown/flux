@@ -70,6 +70,7 @@ pub fn setup_global_shortcuts(
     bind_trigger!("<Primary><Shift>z", AppMsg::Redo);
     bind_trigger!("<Primary>y", AppMsg::Redo);
     bind_trigger!("<Primary><Shift>t", AppMsg::ToggleTagPanel);
+    bind_trigger!("<Primary><Shift>a", AppMsg::ToggleActionsPanel);
 
     window.add_controller(sc);
 

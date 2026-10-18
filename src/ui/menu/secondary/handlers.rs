@@ -1,3 +1,4 @@
+use super::matching::action_matches_mime;
 use super::template::{parse_secondary_template, resolve_secondary_menu_template};
 use crate::model::{AppMsg, CustomAction, FluxApp};
 use crate::ui::constants;
@@ -114,35 +115,7 @@ impl FluxApp {
         let mut submenu_map: indexmap::IndexMap<String, gio::Menu> = indexmap::IndexMap::new();
 
         for action in &actions {
-            let mut matches = false;
-            'outer: for allowed_mime in &action.mime_types {
-                let requirements: Vec<&str> = allowed_mime.split('+').collect();
-                for req in &requirements {
-                    let hit = match req.trim() {
-                        "all" | constants::FILTER_ALL => true,
-                        "image/all" | "image/*" => mime.starts_with("image/"),
-                        "video/all" | "video/*" => mime.starts_with("video/"),
-                        "audio/all" | "audio/*" => mime.starts_with("audio/"),
-                        "font/all" | "font/*" => mime.starts_with("font/"),
-                        "application/all" | "application/*" => mime.starts_with("application/"),
-                        "text/all" | "text/*" => {
-                            mime.starts_with("text/")
-                                || gio::content_type_is_a(&mime, constants::MIME_TEXT)
-                                || mime == constants::MIME_EMPTY
-                        }
-                        constants::FILTER_FOLDER | "directory" => mime == constants::MIME_DIR,
-                        constants::FILTER_FILE => mime != constants::MIME_DIR,
-                        t if t.ends_with('/') => mime.starts_with(t),
-                        t => t == mime,
-                    };
-                    if hit {
-                        matches = true;
-                        break 'outer;
-                    }
-                }
-            }
-
-            if !matches {
+            if !action_matches_mime(action, &mime) {
                 continue;
             }
 

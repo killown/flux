@@ -53,4 +53,7 @@ impl PanelSpec {
     pub const fn preview() -> Self {
         Self::new(300, 2400, 400)
     }
+    pub const fn actions() -> Self {
+        Self::new(280, 700, 380)
+    }
 }

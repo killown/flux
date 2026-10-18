@@ -5,6 +5,7 @@
 //!
 //! Concrete panels: [`tag`], [`diff`], [`search`].
 
+pub mod actions;
 pub mod diff;
 pub mod header;
 pub mod preview;
@@ -25,8 +26,10 @@ pub use header::panel_header;
 pub use resize::resizable_panel;
 #[allow(unused_imports)]
 pub use spec::PanelSpec;
+pub(crate) mod actions_registry;
 pub(crate) mod preview_registry;
 
+pub use actions::build_actions_panel;
 pub use diff::{apply_diff_markup, build_diff_panel};
 pub use preview::build_preview_panel;
 pub use search::build_search_panel;

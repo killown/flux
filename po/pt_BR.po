@@ -3186,6 +3186,34 @@ msgid "Categories"
 msgstr "Categorias"
 
 # ============================================================
+# src/ui/panels/actions.rs (Contextual Actions panel)
+# ============================================================
+
+#: src/ui/panels/actions.rs:46
+msgid "Contextual Actions"
+msgstr "Ações Contextuais"
+
+#: src/ui/panels/actions.rs:54
+msgid "Filter actions…"
+msgstr "Filtrar ações…"
+
+#: src/ui/panels/actions.rs:88
+msgid "No contextual actions"
+msgstr "Nenhuma ação contextual"
+
+#: src/ui/panels/actions.rs:81
+msgid "Create ~/.config/flux/menus/menu-<category>-<subtype>.rs to add actions for this file type."
+msgstr "Crie ~/.config/flux/menus/menu-<categoria>-<subtipo>.rs para adicionar ações para este tipo de arquivo."
+
+#: src/ui/panels/actions.rs:192
+msgid "Run"
+msgstr "Executar"
+
+#: src/ui/help/page/application.rs:26
+msgid "Toggle contextual actions panel"
+msgstr "Alternar painel de ações contextuais"
+
+# ============================================================
 # sem referência mapeada
 # ============================================================
 
@@ -3230,3 +3258,42 @@ msgstr "Abre a pasta selecionada ou local atual em uma nova aba."
 
 msgid "Video preview throttled: too many quick selections, waiting {}s"
 msgstr "Pré-visualização de vídeo limitada: muitas seleções rápidas, aguardando {}s"
+
+msgid "New Action"
+msgstr "Nova ação"
+
+msgid "Save to"
+msgstr "Salvar em"
+
+msgid "A type-specific file replaces broader templates for that type"
+msgstr "Um arquivo específico do tipo substitui os modelos mais amplos para esse tipo"
+
+msgid "Command (%p = path · %d = dir · %f = filename)"
+msgstr "Comando (%p = caminho · %d = pasta · %f = nome do arquivo)"
+
+msgid "Action saved to"
+msgstr "Ação salva em"
+
+msgid "Could not save action"
+msgstr "Não foi possível salvar a ação"
+
+msgid "The label cannot be empty"
+msgstr "O rótulo não pode ficar vazio"
+
+msgid "The MIME types cannot be empty"
+msgstr "Os tipos MIME não podem ficar vazios"
+
+msgid "The command cannot be empty"
+msgstr "O comando não pode ficar vazio"
+
+msgid "The label cannot contain \"=>\""
+msgstr "O rótulo não pode conter \"=>\""
+
+msgid "quotes and line breaks are not allowed"
+msgstr "aspas e quebras de linha não são permitidas"
+
+msgid "Submenu"
+msgstr "Submenu"
+
+msgid "Notification"
+msgstr "Notificação"

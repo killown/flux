@@ -111,6 +111,11 @@ path = "tags://"
 name = "Search"
 icon = "system-search-symbolic"
 path = "search://"
+
+[[sidebar]]
+name = "Actions"
+icon = "application-x-executable-symbolic"
+path = "actions://"
 "#,
         );
 
@@ -192,6 +197,7 @@ path = "search://"
                     scale_font_with_icons: false,
                     hidden_extensions: Vec::new(),
                     tag_panel_width: 350,
+                    actions_panel_width: 380,
                     search_panel_width: 350,
                     auto_show_diff: true,
                     diff_panel_width: 420,

@@ -1648,6 +1648,14 @@ toast button image {
   -gtk-icon-size: 1.15em;
 }
 
+/* ── contextual actions panel ── */
+.flux-action-glyph {
+  font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);
+  font-size: 1.1em;
+  min-width: 1.4em;
+  min-height: 1.2em;
+}
+
 /* ── git badges and headers ── */
 .flux-git-badge {
   font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);

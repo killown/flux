@@ -989,6 +989,15 @@ impl SimpleAsyncComponent for FluxApp {
                     set_reveal_child: false,
                     set_visible: false,
                 },
+
+                /// Right contextual-actions panel revealer (lazy initialized).
+                #[name = "actions_panel_revealer"]
+                gtk::Revealer {
+                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
+                    set_transition_duration: 200,
+                    set_reveal_child: false,
+                    set_visible: false,
+                },
             }
         }
     }

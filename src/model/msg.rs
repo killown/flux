@@ -108,6 +108,21 @@ pub enum AppMsg {
     ToggleTagPanel,
     /// Toggles the visibility of the lazy-initialized right search sidebar panel.
     ToggleSearchPanel,
+    /// Persists and updates the contextual-actions panel width in pixels.
+    SetActionsPanelWidth(i32),
+    /// Toggles the right contextual-actions panel (Ctrl+Shift+A).
+    ToggleActionsPanel,
+    /// Asks the contextual-actions panel to refresh for the current selection.
+    /// MIME resolution runs on a blocking worker, `session` guards stale results.
+    ActionsPanelLoad { session: u64 },
+    /// Delivers the parsed secondary-menu actions for the resolved MIME type.
+    /// Stale sessions are dropped before any widget is touched.
+    ActionsPanelReady {
+        session: u64,
+        mime: String,
+        actions: Vec<crate::model::CustomAction>,
+        template_path: Option<PathBuf>,
+    },
     /// Activates the spinner after the debounce timeout if the session is still current.
     ShowLoadingSpinner(u64),
     /// Toggle whether symbolic link indicators and badges are displayed.
@@ -680,6 +695,29 @@ pub enum AppMsg {
     SwitchHeader(String),
     /// Execute a shell command.
     ExecuteCommand(String),
+    /// Executes a command from a secondary (`menu-*.rs`) template.
+    /// Carries `no_command_dialog`, which is not present in `menu_actions`.
+    ExecuteSecondaryAction {
+        command: String,
+        no_command_dialog: bool,
+    },
+    /// Opens the "New Action" dialog of the contextual-actions panel for `mime`.
+    PromptNewContextualAction { mime: String },
+    /// Appends one action to the `menu-*.rs` template for `mime` (off the main thread).
+    ///
+    /// `category_scope` picks `menu-<category>-all.rs` over `menu-<category>-<subtype>.rs`.
+    SaveContextualAction {
+        mime: String,
+        category_scope: bool,
+        label: String,
+        submenu: Option<String>,
+        mime_types: String,
+        command: String,
+        toast: Option<String>,
+        no_command_dialog: bool,
+    },
+    /// Result of `SaveContextualAction`: `Err` carries a user-facing message.
+    ContextualActionSaved(Result<std::path::PathBuf, String>),
     /// Adjust the icon size based on scroll delta.
     Zoom(f64),
     /// Move back in history.

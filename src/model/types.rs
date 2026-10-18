@@ -21,6 +21,7 @@ pub enum RightPanelType {
     Location,
     Connect,
     Preview,
+    Actions,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

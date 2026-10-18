@@ -23,6 +23,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 &tr("Toggle ascending/descending sort order"),
                 &sc(config, |s| s.toggle_sort_order.clone(), "Ctrl + Shift + S"),
             ),
+            row(&tr("Toggle contextual actions panel"), "Ctrl + Shift + A"),
         ],
     );
 

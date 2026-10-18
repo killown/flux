@@ -15,6 +15,7 @@ mod create;
 mod icon;
 mod inspector;
 mod luks;
+mod new_action;
 mod open_with;
 mod paste;
 mod sidebar;

@@ -44,6 +44,42 @@ pub(super) fn handle(
         AppMsg::Activate => app.handle_activate(sender),
         AppMsg::LaunchWithApp(app_id) => app.handle_launch_with_app(app_id),
         AppMsg::ExecuteCommand(cmd_template) => app.handle_execute_command(cmd_template, sender),
+        AppMsg::ExecuteSecondaryAction {
+            command,
+            no_command_dialog,
+        } => app.handle_execute_command_with(command, Some(no_command_dialog), sender),
+        AppMsg::PromptNewContextualAction { mime } => {
+            app.show_prompt_new_contextual_action(mime, sender)
+        }
+        AppMsg::SaveContextualAction {
+            mime,
+            category_scope,
+            label,
+            submenu,
+            mime_types,
+            command,
+            toast,
+            no_command_dialog,
+        } => app.handle_save_contextual_action(
+            mime,
+            category_scope,
+            crate::ui::menu::secondary::NewSecondaryAction {
+                label,
+                submenu,
+                mime_types,
+                command,
+                toast,
+                no_command_dialog,
+            },
+        ),
+        AppMsg::ContextualActionSaved(result) => app.handle_contextual_action_saved(result, sender),
+        AppMsg::ActionsPanelLoad { session } => app.handle_actions_panel_refresh(session),
+        AppMsg::ActionsPanelReady {
+            session,
+            mime,
+            actions,
+            template_path,
+        } => app.handle_actions_panel_ready(session, mime, actions, template_path, sender),
         AppMsg::ToggleNoCommandDialog(action_name) => {
             app.handle_toggle_no_command_dialog(action_name)
         }

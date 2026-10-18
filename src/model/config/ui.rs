@@ -1,5 +1,5 @@
 use crate::model::defaults::{
-    default_accent_color, default_auto_show_diff, default_bg_alpha,
+    default_accent_color, default_actions_panel_width, default_auto_show_diff, default_bg_alpha,
     default_content_search_max_file_mb, default_diff_editor, default_diff_panel_width,
     default_ffmpeg_seek_seconds, default_ffmpeg_threads, default_folder_cache_capacity,
     default_loader_batch_size, default_max_history, default_max_search_results,
@@ -57,6 +57,9 @@ pub struct UIConfig {
     /// Default width of the right search panel in pixels.
     #[serde(default = "default_search_panel_width")]
     pub search_panel_width: i32,
+    /// Default width of the right contextual-actions panel in pixels.
+    #[serde(default = "default_actions_panel_width")]
+    pub actions_panel_width: i32,
     /// Show a symbolic link badge and target hints in file views.
     #[serde(default = "default_true")]
     pub show_symlink_emblem: bool,
@@ -284,6 +287,7 @@ impl Default for UIConfig {
             header_visible: true,
             search_panel_width: default_search_panel_width(),
             tag_panel_width: default_tag_panel_width(),
+            actions_panel_width: default_actions_panel_width(),
             diff_panel_width: default_diff_panel_width(),
             auto_show_diff: default_auto_show_diff(),
             enable_file_indexing: false,

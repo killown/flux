@@ -26,6 +26,12 @@ impl FluxApp {
             return;
         }
 
+        // Intercept Contextual Actions panel shortcut entry
+        if path_str == "actions://" || path_str == "actions:///" {
+            sender.input(AppMsg::ToggleActionsPanel);
+            return;
+        }
+
         if self.diff_panel_visible {
             self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
         }

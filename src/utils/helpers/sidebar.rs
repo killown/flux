@@ -188,6 +188,14 @@ impl FluxApp {
             self.stop_video_preview();
             self.exit_wide_preview();
         }
+        if keep != RightPanelType::Actions && self.actions_panel_visible {
+            if let Some(ref r) = self.actions_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.actions_panel_visible = false;
+            self.reset_actions_panel();
+        }
     }
 
     pub fn toggle_sidebar_right_panel(
@@ -240,6 +248,13 @@ impl FluxApp {
                 false,
             ),
             // ─────────────────────────────────────────────────────────────
+            // Not a search panel, closing it only drops its own session.
+            RightPanelType::Actions => (
+                self.actions_panel_revealer.clone(),
+                &mut self.actions_panel_initialized,
+                &mut self.actions_panel_visible,
+                false,
+            ),
         };
 
         let Some(revealer) = revealer else {
@@ -291,6 +306,12 @@ impl FluxApp {
                     sender.clone(),
                 ),
                 // ─────────────────────────────────────────────────────────
+                // `build_actions_panel` installs its list/search/stack handles
+                // into the thread-local `actions_registry`.
+                RightPanelType::Actions => crate::ui::panels::build_actions_panel(
+                    self.config.ui.actions_panel_width,
+                    sender.clone(),
+                ),
             };
             revealer.set_child(Some(&panel));
             *initialized = true;
@@ -316,7 +337,13 @@ impl FluxApp {
         // The preview panel has no entry and must not steal focus from the
         // grid: grabbing focus here would break arrow-key scrubbing while
         // the panel is open. Skip the whole focus dance for Preview.
-        let skip_focus = matches!(panel_type, RightPanelType::Preview);
+        //
+        // The contextual-actions panel also follows grid selection, so it must not
+        // steal focus, arrow keys need to keep working while it is open.
+        let skip_focus = matches!(
+            panel_type,
+            RightPanelType::Preview | RightPanelType::Actions
+        );
 
         if now_visible && !skip_focus {
             if let Some(panel_box) = revealer.child() {
@@ -387,5 +414,15 @@ impl FluxApp {
             self.preview_view_switcher = crate::ui::panels::preview_registry::get_view_switcher();
         }
         // ─────────────────────────────────────────────────────────────────
+
+        // Opening loads the actions for the current selection, closing bumps the
+        // session so any in-flight result is dropped and empties the list.
+        if panel_type == RightPanelType::Actions {
+            if now_visible {
+                self.request_actions_panel_load(sender);
+            } else {
+                self.reset_actions_panel();
+            }
+        }
     }
 }

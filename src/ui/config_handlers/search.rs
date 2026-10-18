@@ -15,6 +15,12 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_set_actions_panel_width(&mut self, val: i32) {
+        let clamped = val.clamp(280, 700);
+        self.config.ui.actions_panel_width = clamped;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_set_max_content_search_results(
         &mut self,
         val: usize,

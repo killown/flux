@@ -153,6 +153,17 @@ impl FluxApp {
         cmd_template: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        self.handle_execute_command_with(cmd_template, None, sender);
+    }
+
+    /// Like [`Self::handle_execute_command`], but lets the caller override the
+    /// `no_command_dialog` flag. `None` falls back to the matching `menu_actions` entry.
+    pub fn handle_execute_command_with(
+        &self,
+        cmd_template: String,
+        no_command_dialog_override: Option<bool>,
+        sender: &AsyncComponentSender<Self>,
+    ) {
         let final_targets = self.resolve_command_targets();
 
         if cmd_template == "builtin::open_with" {
@@ -209,12 +220,13 @@ impl FluxApp {
         }
 
         // Resolve the no_command_dialog flag from the matching menu action.
-        let no_command_dialog = self
-            .menu_actions
-            .iter()
-            .find(|action| action.command == cmd_template)
-            .map(|a| a.no_command_dialog)
-            .unwrap_or(false);
+        let no_command_dialog = no_command_dialog_override.unwrap_or_else(|| {
+            self.menu_actions
+                .iter()
+                .find(|action| action.command == cmd_template)
+                .map(|a| a.no_command_dialog)
+                .unwrap_or(false)
+        });
 
         // Check if this command should be completely untracked (e.g. file properties)
         let bypass_tracking = no_command_dialog || !should_track_in_transfer_dialog(&cmd_template);
