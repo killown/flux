@@ -12,6 +12,8 @@ Flux is a GTK4/Libadwaita file manager for Linux, written in Rust. I wanted some
   </a>
 </p>
 
+> The icons shown in the screenshot are from [WhiteSur Icon Theme](https://github.com/vinceliuice/WhiteSur-icon-theme) (GPL-3.0).
+
 ## Startup time
 
 Cold start on a Ryzen 5 5600X, mean of 10 runs:
