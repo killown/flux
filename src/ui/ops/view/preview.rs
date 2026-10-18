@@ -292,62 +292,38 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
 
     let mut info = build_info(path, virtual_path);
 
-    if virtual_path {
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .map(str::to_ascii_lowercase)
-            .unwrap_or_default();
-
-        let is_video = VIDEO_EXTS.contains(&ext.as_str());
-        let is_audio = AUDIO_EXTS.contains(&ext.as_str());
-
-        if is_video || is_audio {
-            if let Some((archive_path, inner)) =
-                crate::services::archive::parse_archive_uri(&path.to_string_lossy())
-            {
-                if let Some(temp_path) =
-                    crate::services::archive::extract_archive_entry_for_playback(
-                        &archive_path,
-                        &inner,
-                    )
-                {
-                    info.extra.push((
-                        tr("Extracted from"),
-                        archive_path
-                            .file_name()
-                            .map(|n| n.to_string_lossy().into_owned())
-                            .unwrap_or_default(),
-                    ));
-
-                    if is_video {
-                        info.extra.extend(video_info(&temp_path));
-                    } else {
-                        info.extra.extend(audio_info(&temp_path));
-                    }
-
-                    let cover = if is_audio {
-                        crate::utils::media::generate_thumbnail_sync(&temp_path)
-                    } else {
-                        None
-                    };
-
-                    return PreviewContent::Media {
-                        path: temp_path,
-                        video: is_video,
-                        cover,
-                        info,
-                    };
-                }
+    // For virtual archive paths, extract the entry once to the persistent
+    // preview cache and run the normal preview pipeline against that real
+    // path. This makes text, Markdown, CSV, PDF, Office, font and image
+    // previews all work inside archives, not just audio/video.
+    let real_path: Option<PathBuf> = if virtual_path {
+        if let Some((archive_path, inner)) =
+            crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+        {
+            let extracted =
+                crate::services::archive::extract_archive_entry_for_playback(&archive_path, &inner);
+            if extracted.is_some() {
+                info.extra.push((
+                    tr("Extracted from"),
+                    archive_path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().into_owned())
+                        .unwrap_or_default(),
+                ));
             }
-            // Extraction failed, fall through to the metadata card.
+            extracted
+        } else {
+            None
         }
+    } else {
+        Some(path.to_path_buf())
+    };
 
-        return match crate::utils::media::generate_thumbnail_sync(path) {
-            Some(tex) => PreviewContent::Image { tex, info },
-            None => PreviewContent::Metadata { info },
-        };
-    }
+    let Some(real_path) = real_path else {
+        // Extraction failed: keep the metadata card so the panel is never blank.
+        return PreviewContent::Metadata { info };
+    };
+    let path = real_path.as_path();
 
     if path.is_dir() {
         return dir_listing(path, info);
@@ -450,23 +426,10 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         || info.mime == "application/font-sfnt"
         || info.mime == "application/font-woff";
     if is_font {
-        // Virtual archive paths cannot be opened by fontconfig, so extract
-        // the entry to a temp file first (same pattern as audio/video).
-        let real_path = if virtual_path {
-            if let Some((archive_path, inner)) =
-                crate::services::archive::parse_archive_uri(&path.to_string_lossy())
-            {
-                crate::services::archive::extract_archive_entry_for_playback(&archive_path, &inner)
-            } else {
-                None
-            }
-        } else {
-            Some(path.to_path_buf())
-        };
-        if let Some(ref real) = real_path {
-            if let Some(tex) = crate::utils::media::font_specimen(real, 1024) {
-                return PreviewContent::Image { tex, info };
-            }
+        // The path is already a real on-disk file (extracted from the archive
+        // above if this was a virtual path), so fontconfig can open it directly.
+        if let Some(tex) = crate::utils::media::font_specimen(path, 1024) {
+            return PreviewContent::Image { tex, info };
         }
     }
 
