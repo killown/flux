@@ -442,6 +442,34 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         };
     }
 
+    // ── Fonts ───────────────────────────────────────────────────────────────
+    let is_font = matches!(ext, "ttf" | "otf" | "woff" | "woff2" | "ttc")
+        || info.mime.starts_with("font/")
+        || info.mime == "application/x-font-ttf"
+        || info.mime == "application/x-font-otf"
+        || info.mime == "application/font-sfnt"
+        || info.mime == "application/font-woff";
+    if is_font {
+        // Virtual archive paths cannot be opened by fontconfig, so extract
+        // the entry to a temp file first (same pattern as audio/video).
+        let real_path = if virtual_path {
+            if let Some((archive_path, inner)) =
+                crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+            {
+                crate::services::archive::extract_archive_entry_for_playback(&archive_path, &inner)
+            } else {
+                None
+            }
+        } else {
+            Some(path.to_path_buf())
+        };
+        if let Some(ref real) = real_path {
+            if let Some(tex) = crate::utils::media::font_specimen(real, 1024) {
+                return PreviewContent::Image { tex, info };
+            }
+        }
+    }
+
     // ── Thumbnailer (fonts, executables, RAW) ───────────────────────────────
     if let Some(tex) = crate::utils::media::generate_thumbnail_sync(path) {
         return PreviewContent::Image { tex, info };

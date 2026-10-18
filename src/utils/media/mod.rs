@@ -15,7 +15,7 @@ mod video;
 // Public API surface (preserves original `pub` items).
 pub use appimage::{extract_appimage_icon, seven_zip_available};
 pub use exe::extract_exe_icon;
-pub use font::font_thumbnail;
+pub use font::{font_specimen, font_thumbnail};
 pub use format::{aspect_ratio_label, format_duration};
 pub use image::probe_image_dimensions;
 pub use mime::{

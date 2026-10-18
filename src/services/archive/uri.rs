@@ -51,19 +51,71 @@ pub fn decode_archive_host(host: &str) -> PathBuf {
     PathBuf::from(String::from_utf8_lossy(&out).into_owned())
 }
 
-/// Extracts an archive entry to a persistent scratch file for media playback.
+/// Extracts an archive entry to a persistent preview cache for media and
+/// font preview.
 ///
-/// The file is registered with the archive temp registry so it survives
-/// until `clear_archive_session_temp`, unlike `extract_archive_entry_to_temp`
-/// which deletes it immediately after thumbnail generation.
+/// Uses `~/.cache/flux/previews/` instead of the flux scratch dir, because
+/// font previews register the extracted file with Fontconfig, and Fontconfig
+/// (via Cairo/Pango) reads the file lazily when glyphs are rasterized. If
+/// the file is deleted before rasterization (which is what happens with the
+/// scratch dir, since it is cleared on navigate-away), Cairo reports
+/// "file not found" and the preview renders as tofu.
+///
+/// The cache dir is not cleared on navigation. Files accumulate until the
+/// OS cache-cleanup policy or the user removes them, the total is bounded
+/// by the number of archives previewed per session.
 pub fn extract_archive_entry_for_playback(
     archive_path: &std::path::Path,
     inner_path: &str,
 ) -> Option<std::path::PathBuf> {
+    let cache_dir = dirs::cache_dir()?.join("flux/previews");
+    std::fs::create_dir_all(&cache_dir).ok()?;
+
+    let original_ext = std::path::Path::new(inner_path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+
+    // Key the cache filename on (archive path, inner path, mtime) so repeated
+    // previews of the same entry within a session (thumbnail + panel) reuse
+    // the same file instead of extracting twice.
+    let archive_mtime = std::fs::metadata(archive_path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    let key = format!(
+        "{}:{}:{}",
+        archive_path.display(),
+        inner_path,
+        archive_mtime,
+    );
+    let hash = format!("{:x}", md5::compute(key.as_bytes()));
+
+    let visible_name = if original_ext.is_empty() {
+        format!("preview-{}", hash)
+    } else {
+        format!("preview-{}.{}", hash, original_ext)
+    };
+
+    let visible_path = cache_dir.join(&visible_name);
+    if visible_path.exists() {
+        return Some(visible_path);
+    }
+
     let temp_file = extract_entry_to_tempfile(archive_path, inner_path, None).ok()?;
-    let (_, path) = temp_file.keep().ok()?;
-    crate::services::archive::register_temp_file(path.clone());
-    Some(path)
+
+    // `/tmp` is often tmpfs while `~/.cache` lives on disk, `fs::rename`
+    // returns EXDEV across filesystems. Fall back to copy + unlink so the
+    // persistent preview cache is actually populated.
+    if std::fs::rename(temp_file.path(), &visible_path).is_err() {
+        std::fs::copy(temp_file.path(), &visible_path).ok()?;
+    }
+
+    let _ = temp_file.keep();
+    Some(visible_path)
 }
 
 /// Splits an `archive://` URI into `(archive_path_on_disk, inner_prefix)`.
@@ -115,22 +167,12 @@ pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
 pub fn get_archive_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
     let path_str = path.to_string_lossy();
     let (archive_path, inner_path) = parse_archive_uri(&path_str)?;
-    let extracted_path = extract_archive_entry_to_temp(&archive_path, &inner_path)?;
-
-    let texture = crate::utils::media::generate_thumbnail_sync(&extracted_path);
-    let _ = std::fs::remove_file(&extracted_path);
-
-    texture
-}
-
-/// Extracts an archive entry to a temporary file path.
-pub fn extract_archive_entry_to_temp(
-    archive_path: &std::path::Path,
-    inner_path: &str,
-) -> Option<std::path::PathBuf> {
-    let temp_file = extract_entry_to_tempfile(archive_path, inner_path, None).ok()?;
-    let (_, path) = temp_file.keep().ok()?;
-    Some(path)
+    // Persistent cache: `font_thumbnail` registers this path with fontconfig
+    // and Cairo reads it lazily when glyphs are rasterized. A temp file that
+    // `get_archive_thumbnail` deletes on return would poison fontconfig and
+    // render tofu on the next preview.
+    let extracted_path = extract_archive_entry_for_playback(&archive_path, &inner_path)?;
+    crate::utils::media::generate_thumbnail_sync(&extracted_path)
 }
 
 /// Constructs an `archive://` URI `PathBuf` for a given archive file and inner path.
