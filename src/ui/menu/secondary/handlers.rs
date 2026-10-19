@@ -88,6 +88,9 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         if actions.is_empty() {
+            sender.input(AppMsg::ShowToast(crate::i18n::tr(
+                "No contextual actions for this type",
+            )));
             return;
         }
 

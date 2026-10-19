@@ -668,6 +668,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 #[name = "grid_overlay"]
                                 gtk::Overlay {
                                     set_vexpand: true,
+                                    set_widget_name: crate::utils::helpers::GRID_OVERLAY_NAME,
 
                                     #[wrap(Some)]
                                     set_child: tab_view_container = &gtk::Box {

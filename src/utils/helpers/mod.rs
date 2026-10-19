@@ -25,6 +25,34 @@ pub fn translate_point(
         .map(|p| (f64::from(p.x()), f64::from(p.y())))
 }
 
+/// Widget name of the overlay that parents the context-menu popover.
+pub const GRID_OVERLAY_NAME: &str = "flux-grid-overlay";
+
+/// Depth-first lookup of a descendant (or `root` itself) by widget name.
+pub fn find_widget_by_name(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
+    use gtk::prelude::*;
+    if root.widget_name() == name {
+        return Some(root.clone());
+    }
+    let mut child = root.first_child();
+    while let Some(c) = child {
+        if let Some(found) = find_widget_by_name(&c, name) {
+            return Some(found);
+        }
+        child = c.next_sibling();
+    }
+    None
+}
+
+/// Maps `(x, y)` from `from` into the popover parent's space, falling back to the input.
+pub fn to_popover_space(from: &gtk::Widget, x: f64, y: f64) -> (f64, f64) {
+    use gtk::prelude::*;
+    from.root()
+        .and_then(|r| find_widget_by_name(r.upcast_ref(), GRID_OVERLAY_NAME))
+        .and_then(|overlay| translate_point(from, &overlay, x, y))
+        .unwrap_or((x, y))
+}
+
 #[allow(unused_imports)]
 pub use background::{clear_custom_background_images, load_custom_background_images};
 #[allow(unused_imports)]

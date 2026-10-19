@@ -52,7 +52,7 @@ pub fn setup_secondary_menu_gesture(
 
         if let Some(root) = widget_weak.upgrade() {
             if let Some(picked) = root.pick(x, y, gtk::PickFlags::DEFAULT) {
-                // Translate window-relative coordinates (x, y) into GridView space
+                // Translate window-relative coordinates (x, y) into popover-parent space
                 if let Some(popover_parent) = picked.ancestor(gtk::GridView::static_type()) {
                     if let Some((tx, ty)) =
                         crate::utils::helpers::translate_point(&root, &popover_parent, x, y)
@@ -60,6 +60,9 @@ pub fn setup_secondary_menu_gesture(
                         rel_x = tx;
                         rel_y = ty;
                     }
+                } else {
+                    // Outside the grid (e.g. the preview panel): map into the overlay instead.
+                    (rel_x, rel_y) = crate::utils::helpers::to_popover_space(&root, x, y);
                 }
 
                 let mut cur: Option<gtk::Widget> = Some(picked);

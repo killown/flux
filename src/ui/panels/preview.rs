@@ -687,6 +687,11 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .halign(gtk::Align::Center)
         .build();
 
+    let menu_btn = flat_icon_button("view-more-symbolic", &tr("Menu"));
+    let actions_btn = flat_icon_button("system-run-symbolic", &tr("Contextual actions"));
+    attach_menu_button(&menu_btn, sender.clone(), false);
+    attach_menu_button(&actions_btn, sender.clone(), true);
+
     let extras: Vec<gtk::Widget> = vec![
         nav_box.clone().upcast(),
         spacer.clone().upcast(),
@@ -699,6 +704,8 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         zoom_btn.clone().upcast(),
         zoom_in.clone().upcast(),
         wide_btn.clone().upcast(),
+        menu_btn.clone().upcast(),
+        actions_btn.clone().upcast(),
     ];
     {
         let s = sender.clone();
@@ -957,6 +964,8 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     panel.connect_unmap(|_| {
         preview_registry::with(|h| h.stop_media());
     });
+
+    attach_context_menu(&panel, &text_view, sender.clone());
 
     let sender_for_resize = sender.clone();
     resizable_panel(&spec, &panel, move |w| {
@@ -1675,6 +1684,63 @@ fn flat_icon_button(icon: &str, tip: &str) -> gtk::Button {
         .tooltip_text(tip)
         .css_classes(["flat"])
         .build()
+}
+
+/// Opens the primary or secondary menu for the previewed file, anchored under `btn`.
+fn attach_menu_button(btn: &gtk::Button, sender: AsyncComponentSender<FluxApp>, secondary: bool) {
+    btn.connect_clicked(move |b| {
+        let (x, y) = crate::utils::helpers::to_popover_space(
+            b.upcast_ref(),
+            f64::from(b.width()) / 2.0,
+            f64::from(b.height()),
+        );
+        // `None` makes the handler resolve the selected file, which the preview follows.
+        sender.input(if secondary {
+            AppMsg::PrepareSecondaryMenu { x, y, path: None }
+        } else {
+            AppMsg::PrepareContextMenu(x, y, None)
+        });
+    });
+}
+
+/// Right-click opens the primary menu for the previewed (selected) file.
+fn attach_context_menu(
+    panel: &gtk::Box,
+    text_view: &gtk::TextView,
+    sender: AsyncComponentSender<FluxApp>,
+) {
+    let gesture = gtk::GestureClick::new();
+    gesture.set_button(gtk::gdk::BUTTON_SECONDARY);
+    gesture.set_propagation_phase(gtk::PropagationPhase::Capture);
+
+    let tv = text_view.clone();
+    gesture.connect_pressed(move |g, _, x, y| {
+        let Some(panel) = g.widget() else { return };
+
+        // Ctrl+right-click belongs to the window-level secondary-menu gesture.
+        let ctrl = g.current_event().is_some_and(|e| {
+            e.modifier_state()
+                .contains(gtk::gdk::ModifierType::CONTROL_MASK)
+        });
+
+        if ctrl {
+            return;
+        }
+
+        // Keep the native copy menu when right-clicking selected text.
+        let on_text = panel.pick(x, y, gtk::PickFlags::DEFAULT).is_some_and(|w| {
+            w.upcast_ref::<gtk::Widget>() == tv.upcast_ref::<gtk::Widget>() || w.is_ancestor(&tv)
+        });
+        if on_text && tv.buffer().has_selection() {
+            return;
+        }
+
+        g.set_state(gtk::EventSequenceState::Claimed);
+        let (rx, ry) = crate::utils::helpers::to_popover_space(&panel, x, y);
+        // `None` makes the handler resolve the selected file, which the preview follows.
+        sender.input(AppMsg::PrepareContextMenu(rx, ry, None));
+    });
+    panel.add_controller(gesture);
 }
 
 fn attach_zoom_scroll(sw: &gtk::ScrolledWindow) {
