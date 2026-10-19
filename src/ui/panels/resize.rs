@@ -173,6 +173,13 @@ pub fn resizable_panel(
     }
     resize_handle.add_controller(drag_gesture);
 
+    let clamp = adw::Clamp::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .maximum_size(i32::MAX)
+        .tightening_threshold(i32::MAX)
+        .child(panel)
+        .build();
+
     let root_container = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .spacing(0)
@@ -180,6 +187,6 @@ pub fn resizable_panel(
         .halign(gtk::Align::End)
         .build();
     root_container.append(&resize_handle);
-    root_container.append(panel);
+    root_container.append(&clamp);
     root_container
 }

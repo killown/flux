@@ -182,7 +182,7 @@ impl FluxApp {
             true,
             self.is_list_mode,
             self.config.ui.preview_panel_width,
-        ); // enter_wide_preview
+        );
     }
 
     /// Re-applies the wide-preview split after a view-mode change.
@@ -196,7 +196,7 @@ impl FluxApp {
                 true,
                 self.is_list_mode,
                 self.config.ui.preview_panel_width,
-            ); // refresh_wide_preview_layout
+            );
         }
     }
 
@@ -208,7 +208,6 @@ impl FluxApp {
         self.apply_sidebar_visibility(sidebar_was_visible);
         if let Some(revealer) = self.preview_panel_revealer.clone() {
             set_wide_preview_layout(&revealer, false, false, self.config.ui.preview_panel_width);
-            // exit_wide_preview
         }
     }
 
@@ -1040,7 +1039,22 @@ const WIDE_PREVIEW_LIST_MIN_WIDTH: i32 = 480;
 /// Minimum width always left to the preview panel in wide-preview mode.
 const WIDE_PREVIEW_PANEL_MIN_WIDTH: i32 = 360;
 
-/// Switches the preview between its saved fixed width and filling the space the list leaves.
+/// Width in logical pixels of the monitor the widget is on, or 0 when unknown.
+fn monitor_width(widget: &impl IsA<gtk::Widget>) -> i32 {
+    use gtk::prelude::*;
+
+    let Some(native) = widget.native() else {
+        return 0;
+    };
+    let Some(surface) = native.surface() else {
+        return 0;
+    };
+    gtk::gdk::Display::default()
+        .and_then(|d| d.monitor_at_surface(&surface))
+        .map_or(0, |m| m.geometry().width())
+}
+
+/// Switches the preview between its capped fixed width and filling the space the list leaves.
 fn set_wide_preview_layout(
     revealer: &gtk::Revealer,
     wide: bool,
@@ -1048,6 +1062,16 @@ fn set_wide_preview_layout(
     saved_width: i32,
 ) {
     use gtk::prelude::*;
+
+    let row = revealer.parent();
+    let total = row.as_ref().map_or(0, |r| r.width());
+
+    // The window can never be wider than the monitor, so half of it caps the fixed panel.
+    let max_window = match monitor_width(revealer) {
+        0 => total,
+        w => w,
+    };
+    let max_panel = (max_window / 2).max(WIDE_PREVIEW_PANEL_MIN_WIDTH);
 
     revealer.set_hexpand(wide);
     if let Some(wrapper) = revealer.child() {
@@ -1057,19 +1081,26 @@ fn set_wide_preview_layout(
         } else {
             gtk::Align::End
         });
-        if let Some(panel) = wrapper.last_child() {
-            panel.set_hexpand(wide);
-            // In wide mode the panel requests only its minimum, otherwise it adds to the list and overflows the window.
-            panel.set_width_request(if wide {
-                WIDE_PREVIEW_PANEL_MIN_WIDTH
-            } else {
-                saved_width
-            });
+        if let Some(clamp) = wrapper.last_child().and_downcast::<adw::Clamp>() {
+            // Cap only when wide is off, wide must fill the space the list leaves.
+            let cap = if wide { i32::MAX } else { max_panel };
+            clamp.set_maximum_size(cap);
+            clamp.set_tightening_threshold(cap);
+            clamp.set_hexpand(wide);
+            if let Some(panel) = clamp.child() {
+                panel.set_hexpand(wide);
+                let width = if wide {
+                    WIDE_PREVIEW_PANEL_MIN_WIDTH
+                } else if max_window > 0 {
+                    saved_width.clamp(WIDE_PREVIEW_PANEL_MIN_WIDTH, max_panel)
+                } else {
+                    saved_width
+                };
+                panel.set_width_request(width);
+            }
         }
     }
 
-    let row = revealer.parent();
-    let total = row.as_ref().map_or(0, |r| r.width());
     let files_min_width = if wide && list_mode && total > 0 {
         (total / 3)
             .max(WIDE_PREVIEW_LIST_MIN_WIDTH)
