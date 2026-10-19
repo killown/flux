@@ -177,7 +177,12 @@ impl FluxApp {
 
         self.wide_preview_sidebar = Some(self.sidebar_visible);
         self.apply_sidebar_visibility(false);
-        set_wide_preview_layout(&revealer, true, self.is_list_mode);
+        set_wide_preview_layout(
+            &revealer,
+            true,
+            self.is_list_mode,
+            self.config.ui.preview_panel_width,
+        ); // enter_wide_preview
     }
 
     /// Re-applies the wide-preview split after a view-mode change.
@@ -186,7 +191,12 @@ impl FluxApp {
             return;
         }
         if let Some(revealer) = self.preview_panel_revealer.as_ref() {
-            set_wide_preview_layout(revealer, true, self.is_list_mode);
+            set_wide_preview_layout(
+                revealer,
+                true,
+                self.is_list_mode,
+                self.config.ui.preview_panel_width,
+            ); // refresh_wide_preview_layout
         }
     }
 
@@ -197,7 +207,8 @@ impl FluxApp {
         };
         self.apply_sidebar_visibility(sidebar_was_visible);
         if let Some(revealer) = self.preview_panel_revealer.clone() {
-            set_wide_preview_layout(&revealer, false, false);
+            set_wide_preview_layout(&revealer, false, false, self.config.ui.preview_panel_width);
+            // exit_wide_preview
         }
     }
 
@@ -1029,8 +1040,13 @@ const WIDE_PREVIEW_LIST_MIN_WIDTH: i32 = 480;
 /// Minimum width always left to the preview panel in wide-preview mode.
 const WIDE_PREVIEW_PANEL_MIN_WIDTH: i32 = 360;
 
-/// Switches the preview panel between its fixed width and filling all the space the file grid leaves.
-fn set_wide_preview_layout(revealer: &gtk::Revealer, wide: bool, list_mode: bool) {
+/// Switches the preview between its saved fixed width and filling the space the list leaves.
+fn set_wide_preview_layout(
+    revealer: &gtk::Revealer,
+    wide: bool,
+    list_mode: bool,
+    saved_width: i32,
+) {
     use gtk::prelude::*;
 
     revealer.set_hexpand(wide);
@@ -1043,12 +1059,18 @@ fn set_wide_preview_layout(revealer: &gtk::Revealer, wide: bool, list_mode: bool
         });
         if let Some(panel) = wrapper.last_child() {
             panel.set_hexpand(wide);
+            // In wide mode the panel requests only its minimum, otherwise it adds to the list and overflows the window.
+            panel.set_width_request(if wide {
+                WIDE_PREVIEW_PANEL_MIN_WIDTH
+            } else {
+                saved_width
+            });
         }
     }
 
     let row = revealer.parent();
     let total = row.as_ref().map_or(0, |r| r.width());
-    let files_min_width = if wide && list_mode {
+    let files_min_width = if wide && list_mode && total > 0 {
         (total / 3)
             .max(WIDE_PREVIEW_LIST_MIN_WIDTH)
             .min((total - WIDE_PREVIEW_PANEL_MIN_WIDTH).max(0))

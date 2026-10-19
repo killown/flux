@@ -89,9 +89,10 @@ impl FileItem {
             widgets.label.set_halign(gtk::Align::Start);
             widgets.label.set_hexpand(true);
             widgets.label.set_justify(gtk::Justification::Left);
-            widgets.label.set_width_chars(-1);
-            widgets.label.set_max_width_chars(-1);
-            // Never wrap or ellipsize in list mode: the ScrolledWindow handles overflow.
+            widgets.label.set_width_chars(1);
+            widgets
+                .label
+                .set_max_width_chars(self.max_width_chars.max(10));
             widgets.label.set_wrap(false);
             widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
 
