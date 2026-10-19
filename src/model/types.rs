@@ -33,6 +33,8 @@ pub enum BackgroundSlot {
 
 /// Startup parameters passed from the argument parser to the Relm4 component initializer.
 pub struct AppInit {
+    /// Open the preview panel in wide mode once the first folder has loaded.
+    pub preview: bool,
     /// The dir the file manager should open on startup.
     pub start_path: PathBuf,
     /// If the user started flux with an archive file, open it right after init.

@@ -15,6 +15,7 @@ pub(super) fn launch_main_app(
     no_sidebar: bool,
     no_header: bool,
     no_statusbar: bool,
+    preview: bool,
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms.
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
@@ -60,5 +61,6 @@ pub(super) fn launch_main_app(
         no_sidebar,
         no_header,
         no_statusbar,
+        preview,
     });
 }

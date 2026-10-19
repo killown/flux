@@ -105,6 +105,7 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            startup_preview: false,
             mime_filter: None,
             mime_filter_from_space: false,
             preview_cache: std::sync::Arc::new(

@@ -19,6 +19,8 @@ pub enum FilterMode {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// One-shot: open the preview panel in wide mode after the first folder load (CLI `--preview`).
+    pub startup_preview: bool,
     /// True when the current `mime_filter` was applied by the `Space` shortcut,
     /// meaning closing the preview panel should also clear it.
     pub mime_filter_from_space: bool,

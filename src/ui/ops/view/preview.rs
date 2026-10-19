@@ -136,6 +136,14 @@ impl FluxApp {
         self.enter_wide_preview();
     }
 
+    /// Opens the preview panel in wide mode for CLI `--preview`, without touching the saved wide setting.
+    pub fn handle_startup_preview(&mut self, sender: &AsyncComponentSender<Self>) {
+        if !self.preview_panel_visible {
+            self.handle_toggle_preview(sender);
+        }
+        self.enter_wide_preview();
+    }
+
     /// Stops the preview panel's inline media (video via `gtk::Video`, audio via
     /// the `mpv` child) and the grid card's autoplay preview. Safe to call when
     /// nothing is playing.

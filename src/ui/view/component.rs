@@ -1031,6 +1031,7 @@ impl SimpleAsyncComponent for FluxApp {
             no_sidebar,
             no_header,
             no_statusbar,
+            preview,
         } = init;
         crate::hit!("view::init");
 
@@ -1045,6 +1046,7 @@ impl SimpleAsyncComponent for FluxApp {
             sender.clone(),
         )
         .await;
+        model.startup_preview = preview;
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
         crate::hit!("view::init:view_output");

@@ -63,6 +63,7 @@ pub fn run() {
             println!(
                 "      --quick-list-stdin      Open with quick-panel populated from standard input"
             );
+            println!("      --preview PATH          Open folder PATH with the preview panel in wide mode");
             println!("      --menu-editor           To manage menu.rs");
         }
 
@@ -82,6 +83,12 @@ pub fn run() {
             std::process::exit(1);
         }
 
+        StartupAction::InvalidArgument(msg) => {
+            eprintln!("flux: {msg}");
+            eprintln!("Try 'flux --help' for more information.");
+            std::process::exit(1);
+        }
+
         StartupAction::OpenArchive(archive_path) => {
             let start_path = archive_path.parent().unwrap_or(&archive_path).to_path_buf();
             launch::launch_main_app(
@@ -89,6 +96,7 @@ pub fn run() {
                 Some(archive_path),
                 None,
                 None,
+                false,
                 false,
                 false,
                 false,
@@ -101,7 +109,34 @@ pub fn run() {
             no_header,
             no_statusbar,
         } => {
-            launch::launch_main_app(path, None, None, None, no_sidebar, no_header, no_statusbar);
+            launch::launch_main_app(
+                path,
+                None,
+                None,
+                None,
+                no_sidebar,
+                no_header,
+                no_statusbar,
+                false,
+            );
+        }
+
+        StartupAction::Preview {
+            path,
+            no_sidebar,
+            no_header,
+            no_statusbar,
+        } => {
+            launch::launch_main_app(
+                path,
+                None,
+                None,
+                None,
+                no_sidebar,
+                no_header,
+                no_statusbar,
+                true,
+            );
         }
 
         StartupAction::TagSearch {
@@ -118,6 +153,7 @@ pub fn run() {
                 no_sidebar,
                 no_header,
                 no_statusbar,
+                false,
             );
         }
 
@@ -136,6 +172,7 @@ pub fn run() {
                 no_sidebar,
                 no_header,
                 no_statusbar,
+                false,
             );
         }
 

@@ -32,6 +32,11 @@ impl FluxApp {
     pub fn handle_folder_loaded_finish(&mut self, load_id: u64) {
         if self.load_id.load(Ordering::SeqCst) == load_id {
             self.is_loading = false;
+            if std::mem::take(&mut self.startup_preview) {
+                if let Some(s) = crate::model::SENDER.get() {
+                    let _ = s.send(AppMsg::StartupPreview);
+                }
+            }
         }
     }
 

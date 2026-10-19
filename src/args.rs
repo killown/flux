@@ -106,6 +106,13 @@ pub enum StartupAction {
         no_header: bool,
         no_statusbar: bool,
     },
+    /// Launch the main window at the given path with the preview panel open in wide mode.
+    Preview {
+        path: PathBuf,
+        no_sidebar: bool,
+        no_header: bool,
+        no_statusbar: bool,
+    },
     /// Launch the main window with an active tag search filter applied.
     TagSearch {
         tag: String,
@@ -140,6 +147,8 @@ pub enum StartupAction {
     PrintHelp,
     /// Exit with an error because an unrecognised flag was supplied.
     UnknownFlag(String),
+    /// Exit with an error because a flag received a missing or invalid value.
+    InvalidArgument(String),
 }
 
 /// Parses the raw process argument list into a [`StartupAction`].
@@ -199,6 +208,25 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             None => StartupAction::PrintHelp,
         },
         Some("--reset-icons-stdin") => StartupAction::ResetIconsStdin,
+        Some("--preview") => match filtered_args.get(1) {
+            None => StartupAction::InvalidArgument("--preview requires a folder path".to_string()),
+            Some(arg) => {
+                let path = uri_to_path(arg);
+                if path.is_dir() {
+                    StartupAction::Preview {
+                        path,
+                        no_sidebar,
+                        no_header,
+                        no_statusbar,
+                    }
+                } else {
+                    StartupAction::InvalidArgument(format!(
+                        "--preview: not a directory: {}",
+                        path.display()
+                    ))
+                }
+            }
+        },
         Some("--quick-list") => {
             let list: Vec<PathBuf> = filtered_args[1..]
                 .iter()
