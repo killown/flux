@@ -14,6 +14,7 @@ impl FluxApp {
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         let path_str = path.to_string_lossy();
         self.mime_filter = None;
+        self.mime_filter_from_space = false;
 
         // Intercept panel toggles before touching any current state or running resets
         if path_str == "tags://" || path_str == "tags:///" {

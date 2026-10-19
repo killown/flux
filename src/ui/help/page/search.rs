@@ -20,11 +20,15 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 &tr("Show only files matching the selected item's MIME type"),
                 "Ctrl + M",
             ),
-            row(&tr("Clear the active MIME filter"), "Esc / Ctrl + M"),
+            row(
+                &tr("Clear the active MIME filter or close the preview panel"),
+                "Esc / Ctrl + M / Space",
+            ),
         ],
     );
     filter_group.set_description(Some(&tr(
-        "Select a file or folder, then Ctrl+M to hide everything else in the current folder",
+        "Select a file, then press Space or Ctrl+M to preview it and hide other files. \
+        Pressing Space or Esc again closes the preview and removes the filter.",
     )));
 
     let content_group = group(

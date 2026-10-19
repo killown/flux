@@ -19,6 +19,9 @@ pub enum FilterMode {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// True when the current `mime_filter` was applied by the `Space` shortcut,
+    /// meaning closing the preview panel should also clear it.
+    pub mime_filter_from_space: bool,
     /// Ephemeral MIME filter: only entries whose MIME type equals this are shown.
     pub mime_filter: Option<String>,
     /// Session-scoped folder/file filter applied to every directory load, persists across navigation.

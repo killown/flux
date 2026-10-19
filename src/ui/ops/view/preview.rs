@@ -65,9 +65,59 @@ impl FluxApp {
         // so no reload is needed here. Bumping the session discards any
         // in-flight preview results.
         self.preview_session.fetch_add(1, Ordering::SeqCst);
+
+        // When the preview panel is closed, any active MIME filter is cleared.
+        // This makes the "open preview and filter" action (Space) a true toggle.
+        if self.mime_filter.is_some() {
+            self.mime_filter = None;
+            self.mime_filter_from_space = false; // Still good practice to reset
+            crate::ui::panels::preview_registry::set_mime_filter_active(false);
+            sender.input(AppMsg::Refresh);
+        }
+
         self.stop_preview_media();
         self.exit_wide_preview();
         self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
+    }
+
+    /// Opens the preview panel if closed, then applies the selected item's MIME filter.
+    ///
+    /// When nothing is selected, falls back to the first item so the shortcut
+    /// always produces a preview + filter, never a silent no-op.
+    pub fn handle_toggle_preview_and_filter_by_selected_mime(
+        &mut self,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if !self.preview_panel_visible {
+            self.handle_toggle_preview(sender);
+        }
+
+        if self.mime_filter.is_some() {
+            return;
+        }
+
+        self.mime_filter_from_space = true;
+
+        if self.get_selected_path().is_none() {
+            let view = self.tabs[self.active_tab_index].files.view.clone();
+            let sender_clone = sender.clone();
+            glib::idle_add_local_once(move || {
+                let Some(model) = view
+                    .model()
+                    .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                else {
+                    return;
+                };
+                if model.n_items() == 0 {
+                    return;
+                }
+                model.select_item(0, true);
+                sender_clone.input(AppMsg::FilterBySelectedMime);
+            });
+            return;
+        }
+
+        sender.input(AppMsg::FilterBySelectedMime);
     }
 
     /// Toggles wide-preview mode (sidebar hidden, panel fills the remaining width).

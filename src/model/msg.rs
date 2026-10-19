@@ -7,6 +7,8 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Opens the preview panel (if closed) and applies the selected item's MIME filter.
+    TogglePreviewAndFilterBySelectedMime,
     /// Toggles an ephemeral filter showing only files sharing the selected item's MIME type.
     FilterBySelectedMime,
     /// Removes the ephemeral MIME filter and restores the full listing.

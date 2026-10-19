@@ -525,6 +525,18 @@ msgstr "itens"
 # src/ui/help.rs
 # ============================================================
 
+#: src/ui/help/page/navigation.rs:???
+msgid "Toggle preview panel and MIME filter"
+msgstr "Alternar painel de pré-visualização e filtro MIME"
+
+#: src/ui/help/page/search.rs:???
+msgid "Clear the active MIME filter or close the preview panel"
+msgstr "Limpar o filtro MIME ativo ou fechar o painel de pré-visualização"
+
+#: src/ui/help/page/search.rs:???
+msgid "Select a file, then press Space or Ctrl+M to preview it and hide other files. Pressing Space or Esc again closes the preview and removes the filter."
+msgstr "Selecione um arquivo e pressione Espaço ou Ctrl+M para pré-visualizá-lo e ocultar os outros arquivos. Pressionar Espaço ou Esc novamente fecha a pré-visualização e remove o filtro."
+
 #: src/ui/help/page/system_view.rs:37
 msgid "Cycle folder/file filter"
 msgstr "Alternar filtro de pastas/arquivos"

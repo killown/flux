@@ -34,6 +34,9 @@ pub(super) fn handle(
             session,
             content,
         } => app.handle_preview_ready(path, session, content),
+        AppMsg::TogglePreviewAndFilterBySelectedMime => {
+            app.handle_toggle_preview_and_filter_by_selected_mime(sender)
+        }
         AppMsg::SetPreviewPanelWidth(val) => app.handle_set_preview_panel_width(val),
         AppMsg::PreviewPrefetch { path, session } => {
             app.handle_preview_prefetch(path, session, sender)

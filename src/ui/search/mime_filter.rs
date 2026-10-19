@@ -8,6 +8,9 @@ impl FluxApp {
             sender.input(AppMsg::ClearMimeFilter);
             return;
         }
+        // Any explicit toggle (Ctrl+M, header button) claims ownership:
+        // closing the preview panel must not clear this filter.
+        self.mime_filter_from_space = false;
         if self
             .current_path
             .to_string_lossy()
@@ -30,6 +33,7 @@ impl FluxApp {
 
     /// Drops the ephemeral MIME filter and reloads the current directory.
     pub fn handle_clear_mime_filter(&mut self, sender: &AsyncComponentSender<Self>) {
+        self.mime_filter_from_space = false;
         if self.mime_filter.take().is_some() {
             crate::ui::panels::preview_registry::set_mime_filter_active(false);
             sender.input(AppMsg::Refresh);

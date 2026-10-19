@@ -26,12 +26,6 @@ pub fn parse_mouse_button(raw: &str) -> Option<u32> {
 
 // ── PEEK PREVIEW ──────────────────────────────────────────────────────────
 /// Predicate for whether `Ctrl+Space` should toggle the peek-preview panel.
-///
-/// Requires the Ctrl modifier explicitly. Bare `Space` is not bound: on
-/// compositors that expose a bare modifier-only key event (e.g. niri
-/// emitting Meta on `Mod+Space`), a plain Space binding collides with
-/// unrelated compositor behaviour. Requiring Ctrl also keeps the typing
-/// contract trivial - no Entry ever receives Ctrl+Space as text.
 pub fn should_trigger_preview(
     keyval: gdk::Key,
     modifiers: gdk::ModifierType,
@@ -40,6 +34,18 @@ pub fn should_trigger_preview(
 ) -> bool {
     let ctrl = modifiers.contains(gdk::ModifierType::CONTROL_MASK);
     keyval == gdk::Key::space && ctrl && !is_editable && !terminal_focused
+}
+
+/// Predicate for whether bare `Space` should open the preview panel and
+/// apply the selected item's MIME filter. Blocked in text entries and in the
+/// embedded terminal, where Space has its own meaning.
+pub fn should_trigger_preview_and_mime(
+    keyval: gdk::Key,
+    modifiers: gdk::ModifierType,
+    is_editable: bool,
+    terminal_focused: bool,
+) -> bool {
+    keyval == gdk::Key::space && modifiers.is_empty() && !is_editable && !terminal_focused
 }
 // ──────────────────────────────────────────────────────────────────────────
 
@@ -149,6 +155,14 @@ impl FluxApp {
         // because Space is not a search-starting character.
         if should_trigger_preview(keyval, modifiers, is_editable, terminal_focused) {
             sender.input(AppMsg::TogglePreview);
+            return glib::Propagation::Stop;
+        }
+
+        // Bare Space opens the preview panel and applies the selected
+        // item's MIME filter. Only fires when nothing is already filtered
+        // by MIME, so pressing Space again does not clear it.
+        if should_trigger_preview_and_mime(keyval, modifiers, is_editable, terminal_focused) {
+            sender.input(AppMsg::TogglePreviewAndFilterBySelectedMime);
             return glib::Propagation::Stop;
         }
         // ─────────────────────────────────────────────────────────────────
