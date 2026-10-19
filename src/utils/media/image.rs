@@ -3,18 +3,35 @@ use std::path::Path;
 
 use super::png::store_thumbnail;
 
-/// Decodes an image into a scaled thumbnail texture without triggering Glycin.
+/// Upper bound for SVG sources we are willing to rasterize for a thumbnail.
+const MAX_SVG_BYTES: u64 = 16 * 1024 * 1024;
+
+#[inline]
+fn is_svg(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("svg") || e.eq_ignore_ascii_case("svgz"))
+}
+
+/// Rasterizes an SVG at `target_size` via gdk-pixbuf's SVG loader (librsvg).
 ///
-/// NOTE: We use the pure Rust `image` crate here instead of `gdk_pixbuf::Pixbuf::from_file_at_scale`.
-/// GdkPixbuf delegates to Glycin, which spins up a `bubblewrap` sandbox that frequently
-/// fails on some systems (causing timeouts and GVFS warnings). The `image` crate is
-/// memory-safe, avoids external processes, and guarantees we don't accidentally
-/// `realloc` gigabytes on a malformed header.
-pub(crate) fn decode_image_thumbnail(
-    path: &Path,
-    cache_path: &Path,
-    target_size: i32,
-) -> Option<gdk::Texture> {
+/// The `image` crate has no SVG decoder, so without this branch every `.svg`
+/// fails to decode and the grid falls back to the generic theme icon.
+/// Size is capped and aspect ratio preserved, vectors scale up cleanly.
+fn decode_svg_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf> {
+    let len = std::fs::metadata(path).ok()?.len();
+    if len == 0 || len > MAX_SVG_BYTES {
+        return None;
+    }
+    gdk_pixbuf::Pixbuf::from_file_at_scale(path, target_size, target_size, true).ok()
+}
+
+/// Decodes any supported image into an RGBA pixbuf scaled to fit `target_size`.
+fn decode_to_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf> {
+    if is_svg(path) {
+        return decode_svg_pixbuf(path, target_size);
+    }
+
     let img = image::ImageReader::open(path)
         .ok()?
         .with_guessed_format()
@@ -26,7 +43,7 @@ pub(crate) fn decode_image_thumbnail(
     let rgba = thumb.to_rgba8();
     let (width, height) = rgba.dimensions();
 
-    let pixbuf = gdk_pixbuf::Pixbuf::from_mut_slice(
+    Some(gdk_pixbuf::Pixbuf::from_mut_slice(
         rgba.into_raw(),
         gdk_pixbuf::Colorspace::Rgb,
         true,
@@ -34,7 +51,24 @@ pub(crate) fn decode_image_thumbnail(
         width as i32,
         height as i32,
         (width * 4) as i32,
-    );
+    ))
+}
+
+/// Decodes an image into a scaled thumbnail texture without triggering Glycin
+/// for raster formats.
+///
+/// NOTE: Raster formats use the pure Rust `image` crate instead of
+/// `gdk_pixbuf::Pixbuf::from_file_at_scale`. GdkPixbuf delegates to Glycin, which
+/// spins up a `bubblewrap` sandbox that frequently fails on some systems (causing
+/// timeouts and GVFS warnings). The `image` crate is memory-safe, avoids external
+/// processes, and guarantees we don't accidentally `realloc` gigabytes on a
+/// malformed header. SVG is the exception because `image` cannot decode it.
+pub(crate) fn decode_image_thumbnail(
+    path: &Path,
+    cache_path: &Path,
+    target_size: i32,
+) -> Option<gdk::Texture> {
+    let pixbuf = decode_to_pixbuf(path, target_size)?;
 
     if let Ok(buf) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
         store_thumbnail(&buf, path, cache_path);
@@ -47,27 +81,7 @@ pub(crate) fn decode_image_thumbnail_ephemeral(
     path: &Path,
     target_size: i32,
 ) -> Option<gdk::Texture> {
-    let img = image::ImageReader::open(path)
-        .ok()?
-        .with_guessed_format()
-        .ok()?
-        .decode()
-        .ok()?;
-
-    let thumb = img.thumbnail(target_size as u32, target_size as u32);
-    let rgba = thumb.to_rgba8();
-    let (width, height) = rgba.dimensions();
-
-    let pixbuf = gdk_pixbuf::Pixbuf::from_mut_slice(
-        rgba.into_raw(),
-        gdk_pixbuf::Colorspace::Rgb,
-        true,
-        8,
-        width as i32,
-        height as i32,
-        (width * 4) as i32,
-    );
-
+    let pixbuf = decode_to_pixbuf(path, target_size)?;
     Some(gdk::Texture::for_pixbuf(&pixbuf))
 }
 
