@@ -32,11 +32,6 @@ impl FluxApp {
     pub fn handle_folder_loaded_finish(&mut self, load_id: u64) {
         if self.load_id.load(Ordering::SeqCst) == load_id {
             self.is_loading = false;
-            if std::mem::take(&mut self.startup_preview) {
-                if let Some(s) = crate::model::SENDER.get() {
-                    let _ = s.send(AppMsg::StartupPreview);
-                }
-            }
         }
     }
 
@@ -401,5 +396,8 @@ impl FluxApp {
             selection_model.unselect_all();
         }
         self.selection_status.clear();
+
+        // CLI `--preview`: the panel is already open, fill it as soon as the first batch is in.
+        self.schedule_startup_preview_selection();
     }
 }

@@ -1061,6 +1061,15 @@ impl SimpleAsyncComponent for FluxApp {
         Self::setup_window(&model, &widgets, &root);
         Self::schedule_startup_tasks(&model, &sender, open_archive);
 
+        // CLI `--preview`: open the wide preview panel as soon as the window exists,
+        // instead of waiting for the folder to finish loading.
+        if preview {
+            let s = sender.clone();
+            gtk::glib::idle_add_local_once(move || {
+                s.input(crate::model::AppMsg::StartupPreview);
+            });
+        }
+
         AsyncComponentParts { model, widgets }
     }
 }

@@ -137,11 +137,45 @@ impl FluxApp {
     }
 
     /// Opens the preview panel in wide mode for CLI `--preview`, without touching the saved wide setting.
+    ///
+    /// Runs right after the window is built, without waiting for the folder to load.
+    /// `startup_preview` stays set until the first item exists and can be selected
+    /// (see [`Self::schedule_startup_preview_selection`]).
     pub fn handle_startup_preview(&mut self, sender: &AsyncComponentSender<Self>) {
         if !self.preview_panel_visible {
             self.handle_toggle_preview(sender);
         }
         self.enter_wide_preview();
+        // The folder may already have delivered items before this message ran.
+        self.schedule_startup_preview_selection();
+    }
+
+    /// Selects the first item once, so the already-open `--preview` panel gets populated.
+    /// No-op until the panel is open and the grid has items, clears `startup_preview` when it fires.
+    pub fn schedule_startup_preview_selection(&mut self) {
+        if !self.startup_preview || !self.preview_panel_visible {
+            return;
+        }
+        let view = self.tabs[self.active_tab_index].files.view.clone();
+        let has_items = view
+            .model()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+            .is_some_and(|m| m.n_items() > 0);
+        if !has_items {
+            return;
+        }
+        self.startup_preview = false;
+        // Deferred to idle so the grid/panel allocation settles first.
+        glib::idle_add_local_once(move || {
+            if let Some(model) = view
+                .model()
+                .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+            {
+                if model.n_items() > 0 {
+                    model.select_item(0, true);
+                }
+            }
+        });
     }
 
     /// Stops the preview panel's inline media (video via `gtk::Video`, audio via
