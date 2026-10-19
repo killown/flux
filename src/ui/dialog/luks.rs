@@ -12,41 +12,34 @@ impl FluxApp {
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 
-        let dialog = gtk::MessageDialog::new(
-            parent.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Question,
-            gtk::ButtonsType::None,
-            crate::i18n::tr("Unlock LUKS Volume"),
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::tr("Unlock LUKS Volume")),
+            Some(&crate::i18n::tr(
+                "Enter the passphrase to unlock this encrypted image.",
+            )),
         );
-        dialog.set_secondary_text(Some(&crate::i18n::tr(
-            "Enter the passphrase to unlock this encrypted image.",
-        )));
 
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let unlock_btn = dialog.add_button(&crate::i18n::tr("Unlock"), gtk::ResponseType::Ok);
-        unlock_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("ok", &crate::i18n::tr("Unlock"));
+        dialog.set_response_appearance("ok", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("ok"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::PasswordEntry::builder()
             .show_peek_icon(true)
             .activates_default(true)
-            .margin_top(8)
-            .margin_bottom(4)
-            .margin_start(16)
-            .margin_end(16)
             .build();
 
         entry.connect_map(|e| {
             e.grab_focus();
         });
 
-        dialog.content_area().append(&entry);
-        dialog.present();
+        dialog.set_extra_child(Some(&entry));
+        dialog.present(parent.as_ref());
 
         let entry_clone = entry.clone();
-        dialog.connect_response(move |dlg, resp| {
-            if resp == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "ok" {
                 let passphrase = entry_clone.text().to_string();
                 if !passphrase.is_empty() {
                     let path = image_path.clone();
@@ -67,7 +60,6 @@ impl FluxApp {
                     });
                 }
             }
-            dlg.close();
         });
     }
 }

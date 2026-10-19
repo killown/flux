@@ -200,24 +200,23 @@ pub fn build_tag_panel(
                         pop.popdown();
                         let toplevel = btn.root().and_downcast::<gtk::Window>();
                         let heading = tr("Delete Tag");
-                        let dialog = gtk::MessageDialog::new(
-                            toplevel.as_ref(),
-                            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-                            gtk::MessageType::Question,
-                            gtk::ButtonsType::None,
-                            &heading,
+                        let dialog = adw::AlertDialog::new(
+                            Some(&heading),
+                            Some(&format!(
+                                "{}: \"#{}\"?",
+                                tr("Are you sure you want to delete this tag globally"),
+                                tag_name
+                            )),
                         );
 
-                        dialog.set_secondary_text(Some(&format!(
-                            "{}: \"#{}\"?",
-                            tr("Are you sure you want to delete this tag globally"),
-                            tag_name
-                        )));
-
-                        dialog.add_button(&tr("Cancel"), gtk::ResponseType::Cancel);
-                        let del_btn = dialog.add_button(&tr("Delete"), gtk::ResponseType::Ok);
-                        del_btn.style_context().add_class("destructive-action");
-                        dialog.set_default_response(gtk::ResponseType::Cancel);
+                        dialog.add_response("cancel", &tr("Cancel"));
+                        dialog.add_response("delete", &tr("Delete"));
+                        dialog.set_response_appearance(
+                            "delete",
+                            adw::ResponseAppearance::Destructive,
+                        );
+                        dialog.set_default_response(Some("cancel"));
+                        dialog.set_close_response("cancel");
 
                         let s = s.clone();
                         let tag_name = tag_name.clone();
@@ -225,16 +224,15 @@ pub fn build_tag_panel(
                         let list_box = list_box.clone();
                         let row = row.clone();
 
-                        dialog.connect_response(move |dlg, response| {
-                            if response == gtk::ResponseType::Ok {
+                        dialog.connect_response(None, move |_, response| {
+                            if response == "delete" {
                                 all_known_tags.borrow_mut().remove(&tag_name);
                                 list_box.remove(&row);
                                 s.input(AppMsg::DeleteTagGlobally(tag_name.clone()));
                             }
-                            dlg.close();
                         });
 
-                        dialog.present();
+                        dialog.present(toplevel.as_ref());
                     });
                 }
                 menu_box.append(&delete_item);

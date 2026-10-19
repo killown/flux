@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-Install the GNOME 49 platform and SDK along with the corresponding Rust SDK extension:
+Install the GNOME 50 platform and SDK along with the corresponding Rust SDK extension:
 
 ```bash
-flatpak install --user flathub org.gnome.Platform//49 org.gnome.Sdk//49
+flatpak install --user flathub org.gnome.Platform//50 org.gnome.Sdk//50
 flatpak install --user flathub org.freedesktop.Sdk.Extension.rust-stable//25.08
 ```
 
@@ -17,6 +17,8 @@ Flatpak builds offline, so all Cargo dependencies must be pre-fetched into a sou
 pip install aiohttp toml tomlkit
 python3 flatpak-cargo-generator.py ../../Cargo.lock -o cargo-sources.json
 ```
+
+`flatpak-cargo-generator.py` is kept in this directory. The `Flatpak cargo sources` GitHub workflow runs it automatically and commits the result whenever `Cargo.lock` changes on `main`, so the manual step is only needed for local builds.
 
 If `Cargo.lock` is not yet present or updated, generate it from the repository root first:
 

@@ -26,7 +26,7 @@ fn swap_css_provider(
         }
 
         let provider = gtk::CssProvider::new();
-        provider.load_from_data(css.unwrap_or(""));
+        provider.load_from_string(css.unwrap_or(""));
         gtk::style_context_add_provider_for_display(display, &provider, priority);
 
         *guard = Some(provider);

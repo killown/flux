@@ -1,0 +1,40 @@
+name: Flatpak cargo sources
+
+# Keeps packaging/flatpak/cargo-sources.json in sync with Cargo.lock.
+on:
+  push:
+    branches: [main]
+    paths: [Cargo.lock]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install generator dependencies
+        run: pip install aiohttp toml tomlkit
+
+      - name: Regenerate cargo-sources.json
+        working-directory: packaging/flatpak
+        run: python3 flatpak-cargo-generator.py ../../Cargo.lock -o cargo-sources.json
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- packaging/flatpak/cargo-sources.json; then
+            echo "cargo-sources.json already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packaging/flatpak/cargo-sources.json
+          git commit -m "flatpak: regenerate cargo-sources.json"
+          git push

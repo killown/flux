@@ -3,6 +3,7 @@ use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 impl FluxApp {
     /// Displays a grid-based icon picker dialog to set custom folder icons.
@@ -11,12 +12,7 @@ impl FluxApp {
         let parent = toplevels
             .first()
             .and_then(|w| w.downcast_ref::<gtk::Window>());
-        let dialog = gtk::Dialog::builder()
-            .title("Select Folder Icon")
-            .transient_for(parent.unwrap())
-            .modal(true)
-            .use_header_bar(1)
-            .build();
+        let dialog = adw::Dialog::builder().title("Select Folder Icon").build();
         let flow_box = gtk::FlowBox::builder()
             .valign(gtk::Align::Start)
             .max_children_per_line(6)
@@ -36,9 +32,49 @@ impl FluxApp {
             .margin_start(6)
             .margin_end(6)
             .build();
-        let content_area = dialog.content_area();
+        let content_area = gtk::Box::new(gtk::Orientation::Vertical, 0);
         content_area.append(&search_entry);
         content_area.append(&scrolled);
+
+        let header = adw::HeaderBar::new();
+        let cancel_btn = gtk::Button::with_label("Cancel");
+        let select_btn = gtk::Button::with_label("Select");
+        select_btn.add_css_class("suggested-action");
+        header.pack_start(&cancel_btn);
+        header.pack_end(&select_btn);
+
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content_area));
+        dialog.set_child(Some(&toolbar_view));
+
+        let confirm: Rc<dyn Fn()> = Rc::new({
+            let flow_box_select = flow_box.clone();
+            let sender_clone = sender.clone();
+            let target_path_clone = target_path.clone();
+            let dialog_weak = dialog.downgrade();
+            move || {
+                if let Some(row) = flow_box_select.selected_children().first() {
+                    if let Some(button) = row.child().and_then(|c| c.downcast::<gtk::Button>().ok())
+                    {
+                        unsafe {
+                            if let Some(name) =
+                                button.data::<String>("icon-name").map(|p| p.as_ref())
+                            {
+                                sender_clone.input(AppMsg::SetFolderIcon {
+                                    path: target_path_clone.clone(),
+                                    icon_name: name.to_string(),
+                                });
+                            }
+                        }
+                    }
+                }
+                if let Some(dlg) = dialog_weak.upgrade() {
+                    dlg.close();
+                }
+            }
+        });
+
         let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
         let icon_names = icon_theme.icon_names();
         for icon_name in icon_names {
@@ -54,7 +90,7 @@ impl FluxApp {
                 unsafe {
                     button.set_data("icon-name", icon_name.to_string());
                 }
-                let dialog_btn_clone = dialog.clone();
+                let confirm_btn_clone = confirm.clone();
                 let flow_box_btn_clone = flow_box.clone();
                 button.connect_clicked(move |btn| {
                     if let Some(row) = btn
@@ -62,7 +98,7 @@ impl FluxApp {
                         .and_then(|p| p.downcast::<gtk::FlowBoxChild>().ok())
                     {
                         flow_box_btn_clone.select_child(&row);
-                        dialog_btn_clone.response(gtk::ResponseType::Ok);
+                        confirm_btn_clone();
                     }
                 });
                 flow_box.append(&button);
@@ -90,38 +126,20 @@ impl FluxApp {
                 child = widget.next_sibling();
             }
         });
-        let dialog_select = dialog.clone();
-        flow_box.connect_child_activated(move |_, _| {
-            dialog_select.response(gtk::ResponseType::Ok);
-        });
-        dialog.add_button("Cancel", gtk::ResponseType::Cancel);
-        dialog.add_button("Select", gtk::ResponseType::Ok);
+        let confirm_activate = confirm.clone();
+        flow_box.connect_child_activated(move |_, _| confirm_activate());
 
-        let flow_box_select = flow_box.clone();
-        let sender_clone = sender.clone();
-        let target_path_clone = target_path.clone();
+        let confirm_select = confirm.clone();
+        select_btn.connect_clicked(move |_| confirm_select());
 
-        dialog.connect_response(move |win, response| {
-            if response == gtk::ResponseType::Ok {
-                if let Some(row) = flow_box_select.selected_children().first() {
-                    if let Some(button) = row.child().and_then(|c| c.downcast::<gtk::Button>().ok())
-                    {
-                        unsafe {
-                            if let Some(name) =
-                                button.data::<String>("icon-name").map(|p| p.as_ref())
-                            {
-                                sender_clone.input(AppMsg::SetFolderIcon {
-                                    path: target_path_clone.clone(),
-                                    icon_name: name.to_string(),
-                                });
-                            }
-                        }
-                    }
-                }
+        let dialog_cancel = dialog.downgrade();
+        cancel_btn.connect_clicked(move |_| {
+            if let Some(dlg) = dialog_cancel.upgrade() {
+                dlg.close();
             }
-            win.destroy();
         });
-        dialog.present();
+
+        dialog.present(parent);
     }
 
     pub fn show_custom_icon_file_chooser(
@@ -136,28 +154,26 @@ impl FluxApp {
         filter.add_mime_type("image/webp");
         filter.add_mime_type("image/svg+xml");
 
+        let filters = gtk::gio::ListStore::new::<gtk::FileFilter>();
+        filters.append(&filter);
+
         let toplevels = gtk::Window::list_toplevels();
         let parent = toplevels
             .first()
             .and_then(|w| w.downcast_ref::<gtk::Window>())
             .cloned();
 
-        let chooser = gtk::FileChooserNative::builder()
+        let chooser = gtk::FileDialog::builder()
             .title(crate::i18n::tr("Select Custom Icon Image"))
-            .action(gtk::FileChooserAction::Open)
             .accept_label(crate::i18n::tr("Set Icon"))
-            .cancel_label(crate::i18n::tr("Cancel"))
+            .filters(&filters)
             .build();
 
-        if let Some(ref win) = parent {
-            chooser.set_transient_for(Some(win));
-        }
-        chooser.add_filter(&filter);
-
-        let chooser_ref = chooser.clone();
-        chooser.connect_response(move |_, response| {
-            if response == gtk::ResponseType::Accept {
-                if let Some(file) = chooser_ref.file() {
+        chooser.open(
+            parent.as_ref(),
+            gtk::gio::Cancellable::NONE,
+            move |result| {
+                if let Ok(file) = result {
                     if let Some(image_path) = file.path() {
                         sender.input(AppMsg::SetFileIcon {
                             path: target_path.clone(),
@@ -168,9 +184,8 @@ impl FluxApp {
                         }
                     }
                 }
-            }
-        });
-        chooser.show();
+            },
+        );
     }
 
     pub fn show_extension_icon_file_chooser(
@@ -178,59 +193,61 @@ impl FluxApp {
         toast: Option<String>,
         sender: relm4::AsyncComponentSender<Self>,
     ) {
-        let chooser = gtk::FileChooserNative::new(
-            Some("Select Extension Icon"),
-            gtk::Window::NONE,
-            gtk::FileChooserAction::Open,
-            Some("Open"),
-            Some("Cancel"),
-        );
-
         let filter = gtk::FileFilter::new();
         filter.set_name(Some("Image Files"));
         filter.add_mime_type("image/png");
         filter.add_mime_type("image/svg+xml");
         filter.add_mime_type("image/webp");
         filter.add_mime_type("image/jpeg");
-        chooser.add_filter(&filter);
 
-        chooser.connect_response(move |dialog, response| {
-            if response == gtk::ResponseType::Accept {
-                if let Some(file) = dialog.file() {
-                    if let Some(src_path) = file.path() {
-                        if let Some(mut target_dir) = dirs::data_local_dir() {
-                            target_dir.push("flux/icons/extensions/custom");
-                            let _ = std::fs::create_dir_all(&target_dir);
+        let filters = gtk::gio::ListStore::new::<gtk::FileFilter>();
+        filters.append(&filter);
 
-                            let file_ext = src_path
-                                .extension()
-                                .and_then(|e| e.to_str())
-                                .unwrap_or("png");
+        let chooser = gtk::FileDialog::builder()
+            .title("Select Extension Icon")
+            .accept_label("Open")
+            .filters(&filters)
+            .build();
 
-                            let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
-                            let dest_path = target_dir.join(format!("{}.{}", clean_ext, file_ext));
+        chooser.open(
+            gtk::Window::NONE,
+            gtk::gio::Cancellable::NONE,
+            move |result| {
+                let Ok(file) = result else {
+                    return;
+                };
+                let Some(src_path) = file.path() else {
+                    return;
+                };
+                let Some(mut target_dir) = dirs::data_local_dir() else {
+                    return;
+                };
+                target_dir.push("flux/icons/extensions/custom");
+                let _ = std::fs::create_dir_all(&target_dir);
 
-                            for fmt in &["png", "svg", "webp", "jpg", "jpeg"] {
-                                let old = target_dir.join(format!("{}.{}", clean_ext, fmt));
-                                let _ = std::fs::remove_file(old);
-                            }
+                let file_ext = src_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("png");
 
-                            if std::fs::copy(&src_path, &dest_path).is_ok() {
-                                crate::services::loader::invalidate_extension_icon_cache();
-                                crate::utils::icon::invalidate_themed_icon_cache();
-                                sender.input(AppMsg::Refresh);
+                let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
+                let dest_path = target_dir.join(format!("{}.{}", clean_ext, file_ext));
 
-                                if let Some(ref msg) = toast {
-                                    sender.input(AppMsg::ShowToast(msg.clone()));
-                                }
-                            }
-                        }
+                for fmt in &["png", "svg", "webp", "jpg", "jpeg"] {
+                    let old = target_dir.join(format!("{}.{}", clean_ext, fmt));
+                    let _ = std::fs::remove_file(old);
+                }
+
+                if std::fs::copy(&src_path, &dest_path).is_ok() {
+                    crate::services::loader::invalidate_extension_icon_cache();
+                    crate::utils::icon::invalidate_themed_icon_cache();
+                    sender.input(AppMsg::Refresh);
+
+                    if let Some(ref msg) = toast {
+                        sender.input(AppMsg::ShowToast(msg.clone()));
                     }
                 }
-            }
-            dialog.destroy();
-        });
-
-        chooser.show();
+            },
+        );
     }
 }

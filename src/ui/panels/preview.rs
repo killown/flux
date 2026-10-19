@@ -724,7 +724,60 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         });
     }
     panel.append(&banner);
-    panel.append(&view_stack);
+
+    // Floating prev/next buttons over the preview content. They step the grid
+    // selection so the panel follows with the adjacent item (the same thing
+    // Left/Right do on the grid). Semi-transparent by default, fully opaque on
+    // hover so they stay discoverable without dominating the image.
+    //
+    // The glyph is set through an explicit `gtk::Image::pixel_size` child
+    // instead of the button's `icon_name`. GTK4 buttons with `icon_name` fold
+    // the icon's `-gtk-icon-size` into their natural size before the CSS
+    // `min-width`/`min-height` floor applies, so increasing `-gtk-icon-size`
+    // in CSS does not grow the visible button. `pixel_size` sets an absolute
+    // child size that propagates straight to the button's natural size.
+    let nav_prev = gtk::Button::builder()
+        .halign(gtk::Align::Start)
+        .valign(gtk::Align::Center)
+        .margin_start(8)
+        .css_classes(["flat", "circular", "preview-nav-btn"])
+        .tooltip_text(tr("Previous item"))
+        .build();
+    nav_prev.set_child(Some(
+        &gtk::Image::builder()
+            .icon_name("go-previous-symbolic")
+            .pixel_size(56)
+            .build(),
+    ));
+    let nav_next = gtk::Button::builder()
+        .halign(gtk::Align::End)
+        .valign(gtk::Align::Center)
+        .margin_end(8)
+        .css_classes(["flat", "circular", "preview-nav-btn"])
+        .tooltip_text(tr("Next item"))
+        .build();
+    nav_next.set_child(Some(
+        &gtk::Image::builder()
+            .icon_name("go-next-symbolic")
+            .pixel_size(56)
+            .build(),
+    ));
+
+    {
+        let s = sender.clone();
+        nav_prev.connect_clicked(move |_| s.input(AppMsg::SelectionStep(-1)));
+    }
+    {
+        let s = sender.clone();
+        nav_next.connect_clicked(move |_| s.input(AppMsg::SelectionStep(1)));
+    }
+
+    let view_overlay = gtk::Overlay::builder().vexpand(true).hexpand(true).build();
+    view_overlay.set_child(Some(&view_stack));
+    view_overlay.add_overlay(&nav_prev);
+    view_overlay.add_overlay(&nav_next);
+
+    panel.append(&view_overlay);
 
     let handle = PreviewPanelHandle {
         stack,
@@ -1586,10 +1639,28 @@ fn install_css() {
         return;
     };
     let provider = gtk::CssProvider::new();
-    provider.load_from_data(
+    provider.load_from_string(
         ".flux-pdf-page { box-shadow: 0 1px 6px alpha(black, 0.35); }\n\
          .flux-pdf-invert { filter: invert(1) hue-rotate(180deg); }\n\
-         .flux-preview-gutter { background-color: alpha(currentColor, 0.03); }",
+         .flux-preview-gutter { background-color: alpha(currentColor, 0.03); }\n\
+         .preview-nav-btn {\n\
+           min-width: 3.2em; min-height: 3.2em;\n\
+           background-color: alpha(black, 0.35);\n\
+           color: alpha(white, 0.85);\n\
+           opacity: 0.55;\n\
+           transition: opacity 150ms ease, background-color 150ms ease;\n\
+         }\n\
+         .preview-nav-btn image {\n\
+           -gtk-icon-size: 1.8em;\n\
+         }\n\
+         .preview-nav-btn:hover {\n\
+           opacity: 1;\n\
+           background-color: alpha(black, 0.6);\n\
+         }\n\
+         .preview-nav-btn:active {\n\
+           opacity: 1;\n\
+           background-color: alpha(black, 0.75);\n\
+         }",
     );
     gtk::style_context_add_provider_for_display(
         &display,

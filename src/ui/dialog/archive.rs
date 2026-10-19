@@ -23,45 +23,36 @@ impl FluxApp {
             crate::i18n::tr("Archive is password-protected")
         };
 
-        let dialog = gtk::MessageDialog::new(
-            parent.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Question,
-            gtk::ButtonsType::None,
-            &title,
-        );
+        let dialog = adw::AlertDialog::new(Some(&title), None);
 
         let secondary = if wrong_password {
             crate::i18n::tr("The password you entered was incorrect. Please try again.")
         } else {
             crate::i18n::tr("This archive is encrypted. Enter the password to browse its contents.")
         };
-        dialog.set_secondary_text(Some(&secondary));
+        dialog.set_body(&secondary);
 
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let unlock_btn = dialog.add_button(&crate::i18n::tr("Unlock"), gtk::ResponseType::Ok);
-        unlock_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("ok", &crate::i18n::tr("Unlock"));
+        dialog.set_response_appearance("ok", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("ok"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::PasswordEntry::builder()
             .show_peek_icon(true)
             .activates_default(true)
-            .margin_top(8)
-            .margin_bottom(4)
-            .margin_start(16)
-            .margin_end(16)
             .build();
 
         entry.connect_map(|e| {
             e.grab_focus();
         });
 
-        dialog.content_area().append(&entry);
-        dialog.present();
+        dialog.set_extra_child(Some(&entry));
+        dialog.present(parent.as_ref());
 
         let entry_clone = entry.clone();
-        dialog.connect_response(move |dlg, resp| {
-            if resp == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "ok" {
                 let password = entry_clone.text().to_string();
                 if !password.is_empty() {
                     s.input(AppMsg::LoadArchiveWithPassword {
@@ -71,7 +62,6 @@ impl FluxApp {
                     });
                 }
             }
-            dlg.close();
         });
     }
 
@@ -91,25 +81,21 @@ impl FluxApp {
             .to_string();
 
         let title = crate::i18n::tr("Permanently delete \"{}\"?").replace("{}", &file_name);
-        let dialog = gtk::MessageDialog::new(
-            parent.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Warning,
-            gtk::ButtonsType::None,
-            &title,
+        let dialog = adw::AlertDialog::new(
+            Some(&title),
+            Some(&crate::i18n::tr(
+                "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone.",
+            )),
         );
 
-        dialog.set_secondary_text(Some(&crate::i18n::tr(
-            "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone.",
-        )));
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("delete", &crate::i18n::tr("Delete"));
+        dialog.set_response_appearance("delete", adw::ResponseAppearance::Destructive);
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_close_response("cancel");
 
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let delete_btn = dialog.add_button(&crate::i18n::tr("Delete"), gtk::ResponseType::Ok);
-        delete_btn.style_context().add_class("destructive-action");
-        dialog.set_default_response(gtk::ResponseType::Cancel);
-
-        dialog.connect_response(move |dlg, resp| {
-            if resp == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "delete" {
                 let s_clone = s.clone();
                 let a_path = archive_path.clone();
                 let i_path = inner_path.clone();
@@ -177,9 +163,8 @@ impl FluxApp {
                     }
                 });
             }
-            dlg.close();
         });
 
-        dialog.present();
+        dialog.present(parent.as_ref());
     }
 }

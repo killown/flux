@@ -28,6 +28,7 @@ pub(super) fn handle(
         AppMsg::SwitchHeader(view_name) => app.handle_switch_header(view_name),
         AppMsg::TogglePreview => app.handle_toggle_preview(sender),
         AppMsg::PreviewLoad { path, session } => app.handle_preview_load(path, session),
+        AppMsg::SelectionStep(delta) => app.handle_selection_step(delta, sender),
         AppMsg::PreviewReady {
             path,
             session,

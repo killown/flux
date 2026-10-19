@@ -47,7 +47,7 @@ Cold start on a Ryzen 5 5600X, mean of 10 runs:
 
 ## Install
 
-Flux needs GTK 4 and libadwaita 1.4 or newer, so Debian 12 and Ubuntu 22.04 are too old.
+Flux needs GTK 4 and libadwaita 1.5 or newer, so Debian 12 and Ubuntu 22.04 are too old.
 
 Arch (AUR):
 

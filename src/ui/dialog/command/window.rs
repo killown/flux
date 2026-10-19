@@ -298,7 +298,7 @@ pub fn create_command_dialog(
             if state {
                 // Hide the dialog instead of closing it, so the task keeps running
                 let _ = sender_switch.send(AppMsg::CommandDialogClosed);
-                dialog_switch.hide();
+                dialog_switch.set_visible(false);
             }
         }
         glib::Propagation::Proceed

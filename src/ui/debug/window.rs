@@ -86,30 +86,28 @@ pub fn show_debug_window(app: &FluxApp) {
     toast_overlay.set_child(Some(&layout_root));
     window.set_content(Some(&toast_overlay));
 
-    // Export button with FileChooserNative and visual Toast feedback
+    // Export button with FileDialog and visual Toast feedback
     {
         let report_payload = output.clone();
         let toast_overlay_clone = toast_overlay.clone();
         let parent_win = window.clone();
 
         export_button.connect_clicked(move |_| {
-            let chooser = gtk::FileChooserNative::builder()
+            let chooser = gtk::FileDialog::builder()
                 .title("Save Memory Profile Report")
-                .action(gtk::FileChooserAction::Save)
                 .accept_label("Save")
-                .cancel_label("Cancel")
                 .modal(true)
-                .transient_for(&parent_win)
+                .initial_name("flux_memory_profile.txt")
                 .build();
-
-            chooser.set_current_name("flux_memory_profile.txt");
 
             let payload = report_payload.clone();
             let overlay = toast_overlay_clone.clone();
 
-            chooser.connect_response(move |dialog, response| {
-                if response == gtk::ResponseType::Accept {
-                    if let Some(file) = dialog.file() {
+            chooser.save(
+                Some(&parent_win),
+                gtk::gio::Cancellable::NONE,
+                move |result| {
+                    if let Ok(file) = result {
                         if let Some(path) = file.path() {
                             match fs::write(&path, payload.as_bytes()) {
                                 Ok(()) => {
@@ -123,11 +121,8 @@ pub fn show_debug_window(app: &FluxApp) {
                             }
                         }
                     }
-                }
-                dialog.destroy();
-            });
-
-            chooser.show();
+                },
+            );
         });
     }
 

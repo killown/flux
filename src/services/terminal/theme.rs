@@ -59,6 +59,9 @@ impl Terminal {
     /// - **fg_color**: config hex → `@theme_fg_color` → fallback `#E5E5E5 / #1A1A1A`
     /// - **bg_color**: config hex → `@window_bg_color` → fallback `#1A1A1A / #FAFAFA`
     /// - **font**: config string (non-default) → system monospace → `"monospace 13"`
+    // `GtkStyleContext::lookup_color` is deprecated since GTK 4.10 with no direct
+    // replacement for named theme colors (`@window_bg_color`, `@accent_bg_color`, ...).
+    #[allow(deprecated)]
     pub fn apply_theme(&self, config: &TerminalConfig) {
         let widget = self.drawing_area.upcast_ref::<gtk::Widget>();
 

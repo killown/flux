@@ -23,29 +23,21 @@ impl FluxApp {
                 conflicts.len()
             )
         };
-        let dialog = gtk::MessageDialog::new(
-            window.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Warning,
-            gtk::ButtonsType::None,
-            "Replace Existing Folder?",
-        );
-        dialog.set_secondary_text(Some(&body));
-        dialog.add_button("Cancel", gtk::ResponseType::Cancel);
-
-        let replace_btn = dialog.add_button("Replace", gtk::ResponseType::Accept);
-        replace_btn.style_context().add_class("destructive-action");
+        let dialog = adw::AlertDialog::new(Some("Replace Existing Folder?"), Some(&body));
+        dialog.add_response("cancel", "Cancel");
+        dialog.add_response("replace", "Replace");
+        dialog.set_response_appearance("replace", adw::ResponseAppearance::Destructive);
+        dialog.set_close_response("cancel");
 
         let s = sender.clone();
-        dialog.connect_response(move |dlg, response| {
-            dlg.close();
-            if response == gtk::ResponseType::Accept {
+        dialog.connect_response(None, move |_, response| {
+            if response == "replace" {
                 s.input(AppMsg::PerformPasteForced {
                     files: files.clone(),
                     is_cut,
                 });
             }
         });
-        dialog.present();
+        dialog.present(window.as_ref());
     }
 }

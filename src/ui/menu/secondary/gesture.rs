@@ -54,7 +54,9 @@ pub fn setup_secondary_menu_gesture(
             if let Some(picked) = root.pick(x, y, gtk::PickFlags::DEFAULT) {
                 // Translate window-relative coordinates (x, y) into GridView space
                 if let Some(popover_parent) = picked.ancestor(gtk::GridView::static_type()) {
-                    if let Some((tx, ty)) = root.translate_coordinates(&popover_parent, x, y) {
+                    if let Some((tx, ty)) =
+                        crate::utils::helpers::translate_point(&root, &popover_parent, x, y)
+                    {
                         rel_x = tx;
                         rel_y = ty;
                     }

@@ -112,7 +112,7 @@ window.csd {{
 
             if !css.is_empty() {
                 let provider = gtk::CssProvider::new();
-                provider.load_from_data(&css);
+                provider.load_from_string(&css);
                 gtk::style_context_add_provider_for_display(
                     &display,
                     &provider,

@@ -5,7 +5,7 @@ use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 use crate::services::db::StateManager;
 use adw::prelude::*;
-use relm4::{AsyncComponentSender, RelmRemoveAllExt};
+use relm4::AsyncComponentSender;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::Arc;

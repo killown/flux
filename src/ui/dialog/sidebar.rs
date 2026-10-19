@@ -3,6 +3,7 @@ use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 impl FluxApp {
     /// Displays a modal prompt to create a new sidebar section header.
@@ -10,41 +11,33 @@ impl FluxApp {
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 
-        let dialog = gtk::MessageDialog::new(
-            parent.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Other,
-            gtk::ButtonsType::None,
-            crate::i18n::tr("New Section"),
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::tr("New Section")),
+            Some(&crate::i18n::tr("Enter a title for the new section:")),
         );
-        dialog.set_secondary_text(Some(&crate::i18n::tr("Enter a title for the new section:")));
 
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let ok_btn = dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
-        ok_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("ok", &crate::i18n::tr("Create"));
+        dialog.set_response_appearance("ok", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("ok"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::Entry::builder()
             .placeholder_text(crate::i18n::tr("Section title"))
             .activates_default(true)
-            .margin_top(8)
-            .margin_bottom(4)
-            .margin_start(16)
-            .margin_end(16)
             .build();
         entry.connect_map(|e| {
             e.grab_focus();
         });
-        dialog.content_area().append(&entry);
-        dialog.present();
+        dialog.set_extra_child(Some(&entry));
+        dialog.present(parent.as_ref());
 
         let entry_clone = entry.clone();
-        dialog.connect_response(move |dlg, resp| {
-            if resp == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "ok" {
                 let title = entry_clone.text().trim().to_string();
                 s.input(AppMsg::AddSidebarSection(title));
             }
-            dlg.close();
         });
     }
 
@@ -58,63 +51,31 @@ impl FluxApp {
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 
-        let dialog = gtk::MessageDialog::new(
-            parent.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Other,
-            gtk::ButtonsType::None,
-            "",
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::tr("Rename Section")),
+            Some(&crate::i18n::tr("Enter a new title for this section:")),
         );
 
-        let title_markup = format!(
-            "<span weight=\"bold\" size=\"medium\">{}</span>",
-            crate::i18n::tr("Rename Section")
-        );
-        dialog.set_markup(&title_markup);
-        dialog.set_secondary_text(Some(&crate::i18n::tr(
-            "Enter a new title for this section:",
-        )));
-
-        let message_area = dialog.message_area();
-        message_area.set_margin_top(12);
-        message_area.set_margin_bottom(6);
-        message_area.set_margin_start(12);
-        message_area.set_margin_end(12);
-
-        // Prevent GtkMessageDialog's primary title label from line-wrapping
-        let mut child = message_area.first_child();
-        while let Some(w) = child {
-            if let Some(label) = w.downcast_ref::<gtk::Label>() {
-                label.set_wrap(false);
-                label.set_ellipsize(gtk::pango::EllipsizeMode::None);
-                break;
-            }
-            child = w.next_sibling();
-        }
-
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let ok_btn = dialog.add_button(&crate::i18n::tr("Rename"), gtk::ResponseType::Ok);
-        ok_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("ok", &crate::i18n::tr("Rename"));
+        dialog.set_response_appearance("ok", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("ok"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::Entry::builder()
             .text(&current_name)
             .activates_default(true)
-            .margin_top(8)
-            .margin_bottom(4)
-            .margin_start(16)
-            .margin_end(16)
             .build();
         entry.select_region(0, -1);
         entry.connect_map(|e| {
             e.grab_focus();
         });
-        dialog.content_area().append(&entry);
-        dialog.present();
+        dialog.set_extra_child(Some(&entry));
+        dialog.present(parent.as_ref());
 
         let entry_clone = entry.clone();
-        dialog.connect_response(move |dlg, resp| {
-            if resp == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "ok" {
                 let new_name = entry_clone.text().trim().to_string();
                 if new_name != old_name {
                     s.input(AppMsg::RenameSidebarSection {
@@ -123,7 +84,6 @@ impl FluxApp {
                     });
                 }
             }
-            dlg.close();
         });
     }
 
@@ -137,29 +97,22 @@ impl FluxApp {
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 
-        let dialog = gtk::MessageDialog::new(
-            parent.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Other,
-            gtk::ButtonsType::None,
-            crate::i18n::tr("Rename Bookmark"),
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::tr("Rename Bookmark")),
+            Some(&crate::i18n::tr(
+                "Enter a new display name for this bookmark:",
+            )),
         );
-        dialog.set_secondary_text(Some(&crate::i18n::tr(
-            "Enter a new display name for this bookmark:",
-        )));
 
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let rename_btn = dialog.add_button(&crate::i18n::tr("Rename"), gtk::ResponseType::Ok);
-        rename_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("ok", &crate::i18n::tr("Rename"));
+        dialog.set_response_appearance("ok", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("ok"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::Entry::builder()
             .text(&current_name)
             .activates_default(true)
-            .margin_top(8)
-            .margin_bottom(4)
-            .margin_start(16)
-            .margin_end(16)
             .build();
 
         entry.select_region(0, -1);
@@ -167,12 +120,12 @@ impl FluxApp {
             e.grab_focus();
         });
 
-        dialog.content_area().append(&entry);
-        dialog.present();
+        dialog.set_extra_child(Some(&entry));
+        dialog.present(parent.as_ref());
 
         let entry_clone = entry.clone();
-        dialog.connect_response(move |dlg, resp| {
-            if resp == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "ok" {
                 let new_name = entry_clone.text().trim().to_string();
                 if !new_name.is_empty() {
                     s.input(AppMsg::RenameSidebarPlace {
@@ -181,7 +134,6 @@ impl FluxApp {
                     });
                 }
             }
-            dlg.close();
         });
     }
 
@@ -195,11 +147,8 @@ impl FluxApp {
         let parent = toplevels
             .first()
             .and_then(|w| w.downcast_ref::<gtk::Window>());
-        let dialog = gtk::Dialog::builder()
+        let dialog = adw::Dialog::builder()
             .title(crate::i18n::tr("Select Sidebar Icon"))
-            .transient_for(parent.unwrap())
-            .modal(true)
-            .use_header_bar(1)
             .build();
         let flow_box = gtk::FlowBox::builder()
             .valign(gtk::Align::Start)
@@ -220,77 +169,28 @@ impl FluxApp {
             .margin_start(6)
             .margin_end(6)
             .build();
-        let content_area = dialog.content_area();
+        let content_area = gtk::Box::new(gtk::Orientation::Vertical, 0);
         content_area.append(&search_entry);
         content_area.append(&scrolled);
 
-        let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
-        let icon_names = icon_theme.icon_names();
+        let header = adw::HeaderBar::new();
+        let cancel_btn = gtk::Button::with_label(&crate::i18n::tr("Cancel"));
+        let select_btn = gtk::Button::with_label(&crate::i18n::tr("Select"));
+        select_btn.add_css_class("suggested-action");
+        header.pack_start(&cancel_btn);
+        header.pack_end(&select_btn);
 
-        for icon_name in icon_names {
-            let name_str = icon_name.as_str();
-            if name_str.ends_with("-symbolic") {
-                let image = gtk::Image::from_icon_name(name_str);
-                image.set_pixel_size(20);
-                let button = gtk::Button::builder()
-                    .child(&image)
-                    .tooltip_text(name_str)
-                    .has_frame(false)
-                    .build();
-                unsafe {
-                    button.set_data("icon-name", icon_name.to_string());
-                }
-                let dialog_btn_clone = dialog.clone();
-                let flow_box_btn_clone = flow_box.clone();
-                button.connect_clicked(move |btn| {
-                    if let Some(row) = btn
-                        .parent()
-                        .and_then(|p| p.downcast::<gtk::FlowBoxChild>().ok())
-                    {
-                        flow_box_btn_clone.select_child(&row);
-                        dialog_btn_clone.response(gtk::ResponseType::Ok);
-                    }
-                });
-                flow_box.append(&button);
-            }
-        }
+        let toolbar_view = adw::ToolbarView::new();
+        toolbar_view.add_top_bar(&header);
+        toolbar_view.set_content(Some(&content_area));
+        dialog.set_child(Some(&toolbar_view));
 
-        let flow_box_clone = flow_box.clone();
-        search_entry.connect_search_changed(move |entry| {
-            let text = entry.text().to_string().to_lowercase();
-            let mut child = flow_box_clone.first_child();
-            while let Some(ref widget) = child {
-                if let Some(child_row) = widget.downcast_ref::<gtk::FlowBoxChild>() {
-                    if let Some(button) = child_row
-                        .child()
-                        .and_then(|c| c.downcast::<gtk::Button>().ok())
-                    {
-                        unsafe {
-                            if let Some(name) =
-                                button.data::<String>("icon-name").map(|p| p.as_ref())
-                            {
-                                child_row.set_visible(name.to_lowercase().contains(&text));
-                            }
-                        }
-                    }
-                }
-                child = widget.next_sibling();
-            }
-        });
-
-        let dialog_select = dialog.clone();
-        flow_box.connect_child_activated(move |_, _| {
-            dialog_select.response(gtk::ResponseType::Ok);
-        });
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        dialog.add_button(&crate::i18n::tr("Select"), gtk::ResponseType::Ok);
-
-        let flow_box_select = flow_box.clone();
-        let sender_clone = sender.clone();
-        let target_path_clone = target_path.clone();
-
-        dialog.connect_response(move |win, response| {
-            if response == gtk::ResponseType::Ok {
+        let confirm: Rc<dyn Fn()> = Rc::new({
+            let flow_box_select = flow_box.clone();
+            let sender_clone = sender.clone();
+            let target_path_clone = target_path.clone();
+            let dialog_weak = dialog.downgrade();
+            move || {
                 if let Some(row) = flow_box_select.selected_children().first() {
                     if let Some(button) = row.child().and_then(|c| c.downcast::<gtk::Button>().ok())
                     {
@@ -341,9 +241,79 @@ impl FluxApp {
                         }
                     }
                 }
+                if let Some(dlg) = dialog_weak.upgrade() {
+                    dlg.close();
+                }
             }
-            win.destroy();
         });
-        dialog.present();
+
+        let icon_theme = gtk::IconTheme::for_display(&gdk::Display::default().unwrap());
+        let icon_names = icon_theme.icon_names();
+
+        for icon_name in icon_names {
+            let name_str = icon_name.as_str();
+            if name_str.ends_with("-symbolic") {
+                let image = gtk::Image::from_icon_name(name_str);
+                image.set_pixel_size(20);
+                let button = gtk::Button::builder()
+                    .child(&image)
+                    .tooltip_text(name_str)
+                    .has_frame(false)
+                    .build();
+                unsafe {
+                    button.set_data("icon-name", icon_name.to_string());
+                }
+                let confirm_btn_clone = confirm.clone();
+                let flow_box_btn_clone = flow_box.clone();
+                button.connect_clicked(move |btn| {
+                    if let Some(row) = btn
+                        .parent()
+                        .and_then(|p| p.downcast::<gtk::FlowBoxChild>().ok())
+                    {
+                        flow_box_btn_clone.select_child(&row);
+                        confirm_btn_clone();
+                    }
+                });
+                flow_box.append(&button);
+            }
+        }
+
+        let flow_box_clone = flow_box.clone();
+        search_entry.connect_search_changed(move |entry| {
+            let text = entry.text().to_string().to_lowercase();
+            let mut child = flow_box_clone.first_child();
+            while let Some(ref widget) = child {
+                if let Some(child_row) = widget.downcast_ref::<gtk::FlowBoxChild>() {
+                    if let Some(button) = child_row
+                        .child()
+                        .and_then(|c| c.downcast::<gtk::Button>().ok())
+                    {
+                        unsafe {
+                            if let Some(name) =
+                                button.data::<String>("icon-name").map(|p| p.as_ref())
+                            {
+                                child_row.set_visible(name.to_lowercase().contains(&text));
+                            }
+                        }
+                    }
+                }
+                child = widget.next_sibling();
+            }
+        });
+
+        let confirm_activate = confirm.clone();
+        flow_box.connect_child_activated(move |_, _| confirm_activate());
+
+        let confirm_select = confirm.clone();
+        select_btn.connect_clicked(move |_| confirm_select());
+
+        let dialog_cancel = dialog.downgrade();
+        cancel_btn.connect_clicked(move |_| {
+            if let Some(dlg) = dialog_cancel.upgrade() {
+                dlg.close();
+            }
+        });
+
+        dialog.present(parent);
     }
 }

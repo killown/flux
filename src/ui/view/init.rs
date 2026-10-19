@@ -113,9 +113,10 @@ impl FluxApp {
                         start_w.set(s.width());
                         if let Some(root_win) = s.root() {
                             if let Some(handle) = gesture.widget() {
-                                let (rx, _) = handle
-                                    .translate_coordinates(&root_win, x, 0.0)
-                                    .unwrap_or((x, 0.0));
+                                let (rx, _) = crate::utils::helpers::translate_point(
+                                    &handle, &root_win, x, 0.0,
+                                )
+                                .unwrap_or((x, 0.0));
                                 start_rx.set(rx);
                             }
                         }
@@ -138,7 +139,9 @@ impl FluxApp {
                             if let Some(handle) = gesture.widget() {
                                 if let Some((curr_x, _)) = gesture.point(None) {
                                     if let Some((curr_root_x, _)) =
-                                        handle.translate_coordinates(&root_win, curr_x, 0.0)
+                                        crate::utils::helpers::translate_point(
+                                            &handle, &root_win, curr_x, 0.0,
+                                        )
                                     {
                                         let delta_x = curr_root_x - start_rx.get();
                                         let new_w =

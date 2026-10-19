@@ -14,6 +14,8 @@ use crate::ui::panels::preview_office;
 use crate::ui::panels::preview_registry;
 use crate::ui::panels::preview_syntax;
 use crate::ui::panels::preview_table;
+use adw::prelude::*;
+use gtk::glib;
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -34,10 +36,22 @@ impl FluxApp {
                 self.enter_wide_preview();
             }
 
-            // Nothing selected yet: the panel opens on its "empty" state
-            // (the StatusPage registered as the stack's first child), and
-            // the first SelectionChanged while it's open will populate it.
+            // Nothing selected yet (e.g. opened from the header button): select
+            // the first item so the panel opens populated. The resulting
+            // SelectionChanged, now that the panel is open, loads its preview.
+            // Deferred to idle so the panel/grid allocation settles first.
             let Some(path) = self.get_selected_path() else {
+                let view = self.tabs[self.active_tab_index].files.view.clone();
+                glib::idle_add_local_once(move || {
+                    if let Some(model) = view
+                        .model()
+                        .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+                    {
+                        if model.n_items() > 0 {
+                            model.select_item(0, true);
+                        }
+                    }
+                });
                 return;
             };
 

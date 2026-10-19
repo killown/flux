@@ -1792,3 +1792,7 @@ dropdown image {
   min-width: 1.15em;
   min-height: 1.15em;
 }
+
+.preview-nav-btn image {
+  -gtk-icon-size: 2em;
+}

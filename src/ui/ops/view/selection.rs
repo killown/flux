@@ -362,4 +362,68 @@ impl FluxApp {
 
         self.selection_status.push_str(&format!(" - {}", mime));
     }
+
+    /// Moves the multi-selection by `delta` along the *visual* (filtered)
+    /// order, so stepping in a filtered or content-search list skips
+    /// over filtered-out rows instead of landing on them.
+    ///
+    /// Clamps at both ends. When nothing is selected, `+1` selects the
+    /// first item and `-1` selects the last, which matches how Left/Right
+    /// behave from an empty grid.
+    pub fn handle_selection_step(&mut self, delta: i32, _sender: &AsyncComponentSender<Self>) {
+        if delta == 0 {
+            return;
+        }
+        let Some(model) = self.tabs[self.active_tab_index]
+            .files
+            .view
+            .model()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+        else {
+            return;
+        };
+        let n_items = model.n_items();
+        if n_items == 0 {
+            return;
+        }
+
+        let current: Option<u32> = {
+            let bitset = model.selection();
+            gtk::BitsetIter::init_first(&bitset).map(|(_, first)| first)
+        };
+
+        let next = match current {
+            Some(idx) => {
+                if delta < 0 {
+                    idx.saturating_sub((-delta) as u32)
+                } else {
+                    (idx + delta as u32).min(n_items - 1)
+                }
+            }
+            None => {
+                if delta < 0 {
+                    n_items - 1
+                } else {
+                    0
+                }
+            }
+        };
+
+        if current == Some(next) {
+            return;
+        }
+
+        model.unselect_all();
+        model.select_item(next, true);
+
+        // Follow the step in the grid so the selected card stays visible.
+        // GridView::scroll_to handles both list mode (1 column) and grid mode
+        // (N columns), where a single "step" can be horizontal within a row
+        // or vertical to the next row.
+        self.tabs[self.active_tab_index].files.view.scroll_to(
+            next,
+            gtk::ListScrollFlags::FOCUS | gtk::ListScrollFlags::SELECT,
+            None,
+        );
+    }
 }

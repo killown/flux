@@ -11,6 +11,15 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+/// Detaches a per-widget CSS provider.
+///
+/// GTK 4.10 deprecated `GtkStyleContext` without a per-widget replacement, so the
+/// deprecation is silenced here, in one place, instead of at every call site.
+#[allow(deprecated)]
+fn remove_style_provider(widget: &impl IsA<gtk::Widget>, provider: &gtk::CssProvider) {
+    widget.style_context().remove_provider(provider);
+}
+
 /// Formats a byte count into a human-readable string (B / KB / MB / GB).
 fn format_size(bytes: u64) -> String {
     const KB: u64 = 1_024;
@@ -87,11 +96,8 @@ impl FileItem {
             widgets.label.set_ellipsize(gtk::pango::EllipsizeMode::End);
 
             if let Some(ref old_provider) = widgets.scale_css_provider {
-                widgets.label.style_context().remove_provider(old_provider);
-                widgets
-                    .info_label
-                    .style_context()
-                    .remove_provider(old_provider);
+                remove_style_provider(&widgets.label, old_provider);
+                remove_style_provider(&widgets.info_label, old_provider);
                 widgets.scale_css_provider = None;
             }
 
@@ -585,8 +591,8 @@ impl FileItem {
         }
 
         if let Some(ref provider) = widgets.scale_css_provider {
-            widgets.label.style_context().remove_provider(provider);
-            widgets.info_label.style_context().remove_provider(provider);
+            remove_style_provider(&widgets.label, provider);
+            remove_style_provider(&widgets.info_label, provider);
             widgets.scale_css_provider = None;
         }
 

@@ -10,20 +10,17 @@ impl FluxApp {
         let current_path = self.current_path.clone();
         let s = sender.clone();
 
-        let dialog = gtk::MessageDialog::new(
-            window.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Other,
-            gtk::ButtonsType::None,
-            crate::i18n::tr("New Folder"),
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::tr("New Folder")),
+            Some(&crate::i18n::tr(
+                "Enter folder name(s), separated by commas for batch creation:",
+            )),
         );
-        dialog.set_secondary_text(Some(&crate::i18n::tr(
-            "Enter folder name(s), separated by commas for batch creation:",
-        )));
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let create_btn = dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
-        create_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("create", &crate::i18n::tr("Create"));
+        dialog.set_response_appearance("create", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("create"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::Entry::builder()
             .text("New Folder")
@@ -34,10 +31,10 @@ impl FluxApp {
             e.grab_focus();
         });
 
-        dialog.content_area().append(&entry);
+        dialog.set_extra_child(Some(&entry));
 
-        dialog.connect_response(move |dlg, response| {
-            if response == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, response| {
+            if response == "create" {
                 let input = entry.text().to_string();
                 let names: Vec<String> = input
                     .split(',')
@@ -167,10 +164,9 @@ impl FluxApp {
                     )));
                 }
             }
-            dlg.close();
         });
 
-        dialog.present();
+        dialog.present(window.as_ref());
     }
 
     /// Displays a modal dialog prompting for single or batch file creation.
@@ -179,20 +175,17 @@ impl FluxApp {
         let current_path = self.current_path.clone();
         let s = sender.clone();
 
-        let dialog = gtk::MessageDialog::new(
-            window.as_ref(),
-            gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-            gtk::MessageType::Other,
-            gtk::ButtonsType::None,
-            crate::i18n::tr("New File"),
+        let dialog = adw::AlertDialog::new(
+            Some(&crate::i18n::tr("New File")),
+            Some(&crate::i18n::tr(
+                "Enter file name(s), separated by commas for batch creation:",
+            )),
         );
-        dialog.set_secondary_text(Some(&crate::i18n::tr(
-            "Enter file name(s), separated by commas for batch creation:",
-        )));
-        dialog.add_button(&crate::i18n::tr("Cancel"), gtk::ResponseType::Cancel);
-        let create_btn = dialog.add_button(&crate::i18n::tr("Create"), gtk::ResponseType::Ok);
-        create_btn.style_context().add_class("suggested-action");
-        dialog.set_default_response(gtk::ResponseType::Ok);
+        dialog.add_response("cancel", &crate::i18n::tr("Cancel"));
+        dialog.add_response("create", &crate::i18n::tr("Create"));
+        dialog.set_response_appearance("create", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("create"));
+        dialog.set_close_response("cancel");
 
         let entry = gtk::Entry::builder()
             .text("new_file.txt")
@@ -203,10 +196,10 @@ impl FluxApp {
             e.grab_focus();
         });
 
-        dialog.content_area().append(&entry);
+        dialog.set_extra_child(Some(&entry));
 
-        dialog.connect_response(move |dlg, response| {
-            if response == gtk::ResponseType::Ok {
+        dialog.connect_response(None, move |_, response| {
+            if response == "create" {
                 let input = entry.text().to_string();
                 let names: Vec<String> = input
                     .split(',')
@@ -292,9 +285,8 @@ impl FluxApp {
                     )));
                 }
             }
-            dlg.close();
         });
 
-        dialog.present();
+        dialog.present(window.as_ref());
     }
 }

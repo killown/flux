@@ -310,7 +310,7 @@ impl FileItem {
                                 };
 
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                    let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                    let (rel_x, rel_y) = crate::utils::helpers::translate_point(&widget, &popover_parent, x, y).unwrap_or((x, y));
                                     gesture.set_state(gtk::EventSequenceState::Claimed);
                                     s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                 }
@@ -336,7 +336,7 @@ impl FileItem {
                                     };
 
                                     if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
-                                        let (rel_x, rel_y) = widget.translate_coordinates(&popover_parent, x, y).unwrap_or((x, y));
+                                        let (rel_x, rel_y) = crate::utils::helpers::translate_point(&widget, &popover_parent, x, y).unwrap_or((x, y));
                                         s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                     }
                                 }

@@ -13,10 +13,10 @@ mod util;
 use card::build_extra_child;
 
 // Standard Response IDs
-const RESP_CANCEL: gtk::ResponseType = gtk::ResponseType::Cancel;
-const RESP_SKIP: gtk::ResponseType = gtk::ResponseType::Reject;
-const RESP_RENAME: gtk::ResponseType = gtk::ResponseType::Apply;
-const RESP_REPLACE: gtk::ResponseType = gtk::ResponseType::Accept;
+const RESP_CANCEL: &str = "cancel";
+const RESP_SKIP: &str = "skip";
+const RESP_RENAME: &str = "rename";
+const RESP_REPLACE: &str = "replace";
 
 pub fn show_conflict_dialog(
     ctx: ConflictContext,
@@ -57,47 +57,25 @@ pub fn show_conflict_dialog(
     };
 
     // Create dialog
-    let dialog = gtk::MessageDialog::new(
-        window.as_ref(),
-        gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
-        gtk::MessageType::Question,
-        gtk::ButtonsType::None,
-        &heading,
-    );
-    dialog.set_secondary_text(Some(&body));
-
-    if let Some(ref win) = window {
-        dialog.set_transient_for(Some(win));
-    }
+    let dialog = adw::AlertDialog::new(Some(&heading), Some(&body));
 
     // Add buttons in desired order
-    dialog.add_button(&crate::i18n::tr("Cancel"), RESP_CANCEL);
-    dialog.add_button(&crate::i18n::tr("Skip"), RESP_SKIP);
-    dialog.add_button(&crate::i18n::tr("Auto-Rename"), RESP_RENAME);
-    dialog.add_button(&crate::i18n::tr("Replace"), RESP_REPLACE);
+    dialog.add_response(RESP_CANCEL, &crate::i18n::tr("Cancel"));
+    dialog.add_response(RESP_SKIP, &crate::i18n::tr("Skip"));
+    dialog.add_response(RESP_RENAME, &crate::i18n::tr("Auto-Rename"));
+    dialog.add_response(RESP_REPLACE, &crate::i18n::tr("Replace"));
 
     // Style buttons: Replace → destructive, Auto‑Rename → suggested
-    if let Some(btn) = dialog.widget_for_response(RESP_REPLACE) {
-        btn.style_context().add_class("destructive-action");
-    }
-    if let Some(btn) = dialog.widget_for_response(RESP_RENAME) {
-        btn.style_context().add_class("suggested-action");
-    }
+    dialog.set_response_appearance(RESP_REPLACE, adw::ResponseAppearance::Destructive);
+    dialog.set_response_appearance(RESP_RENAME, adw::ResponseAppearance::Suggested);
 
     // Default response
-    dialog.set_default_response(RESP_SKIP);
+    dialog.set_default_response(Some(RESP_SKIP));
+    dialog.set_close_response(RESP_CANCEL);
 
     // ── Extra child: file preview card ──────────────────────────────────────
     let (extra, apply_all) = build_extra_child(&ctx, &file_name, &op_word);
-    if let Some(content_area) = dialog
-        .content_area()
-        .first_child()
-        .and_then(|w| w.downcast::<gtk::Box>().ok())
-    {
-        content_area.append(&extra);
-    } else {
-        dialog.content_area().append(&extra);
-    }
+    dialog.set_extra_child(Some(&extra));
 
     // ── Response handler ────────────────────────────────────────────────────
     #[allow(clippy::type_complexity)]
@@ -107,7 +85,7 @@ pub fn show_conflict_dialog(
     let apply_all_check = apply_all;
     let s = sender.clone();
 
-    dialog.connect_response(move |dlg, response_id| {
+    dialog.connect_response(None, move |_, response_id| {
         let choice = match response_id {
             RESP_REPLACE => ConflictChoice::Replace,
             RESP_SKIP => ConflictChoice::Skip,
@@ -125,9 +103,7 @@ pub fn show_conflict_dialog(
         if let Some(tx) = tx_cell.take() {
             let _ = tx.send((choice, apply_all_active));
         }
-
-        dlg.close();
     });
 
-    dialog.present();
+    dialog.present(window.as_ref());
 }

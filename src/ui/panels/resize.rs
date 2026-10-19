@@ -112,9 +112,9 @@ pub fn resizable_panel(
                 start_width_c.set(p.width());
                 if let Some(root) = p.root() {
                     if let Some(handle) = gesture.widget() {
-                        let (rx, _) = handle
-                            .translate_coordinates(&root, x, 0.0)
-                            .unwrap_or((x, 0.0));
+                        let (rx, _) =
+                            crate::utils::helpers::translate_point(&handle, &root, x, 0.0)
+                                .unwrap_or((x, 0.0));
                         start_root_x_c.set(rx);
                     }
                 }
@@ -136,7 +136,7 @@ pub fn resizable_panel(
                     if let Some(handle) = gesture.widget() {
                         if let Some((curr_x, _)) = gesture.point(None) {
                             if let Some((curr_root_x, _)) =
-                                handle.translate_coordinates(&root, curr_x, 0.0)
+                                crate::utils::helpers::translate_point(&handle, &root, curr_x, 0.0)
                             {
                                 let delta_x = curr_root_x - start_root_x_c.get();
                                 let raw = start_width_c.get() - delta_x as i32;

@@ -7,6 +7,10 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Moves the grid selection by `delta` (`-1` = previous, `+1` = next)
+    /// along the currently visible (filtered) order, so the preview panel
+    /// follows with the next item. Clamps at the ends instead of wrapping.
+    SelectionStep(i32),
     /// Adds a right-panel shortcut (Actions / Search / Tags) to the sidebar
     /// if it isn't already pinned, then refreshes the sidebar.
     AddPanelSidebarEntry {
