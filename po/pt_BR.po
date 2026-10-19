@@ -2,13 +2,15 @@
 # Copyright (C) 2026 Thiago Lucio
 # This file is distributed under the same license as the flux package.
 # neo <thiago.dev.lucio@gmail.com>, 2026.
-# FIXME: the file needs some organization because some sections are not in the correct order
+#
+# Organização: strings compartilhadas primeiro, depois uma seção por arquivo-fonte
+# (ordem: cli, model, services, ui, utils), e por fim pendências e entradas obsoletas.
 msgid ""
 msgstr ""
 "Project-Id-Version: flux\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-03 00:42-0300\n"
-"PO-Revision-Date: 2026-07-19 00:00-0300\n"
+"PO-Revision-Date: 2026-10-19 19:35-0300\n"
 "Last-Translator: neo <thiago.dev.lucio@gmail.com>\n"
 "Language-Team: Brazilian Portuguese <ldpbr-translation@lists.sourceforge.net>\n"
 "Language: pt_BR\n"
@@ -18,528 +20,3592 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 # ============================================================
-# src/utils/helpers.rs
+# Common strings (used in 3+ source files)
 # ============================================================
 
-#: src/utils/helpers.rs:75
-msgid "A fast, keyboard-driven file manager built with GTK4 and Libadwaita."
-msgstr "Um gerenciador de arquivos rápido, orientado a teclado, construído com GTK4 e Libadwaita."
-
-#: src/utils/helpers.rs:83
-msgid "Source Code"
-msgstr "Código-fonte"
-
-#: src/utils/helpers.rs:???
-msgid "Copy failed: {}"
-msgstr "Falha ao copiar: {}"
-
-
-# ============================================================
-# Quick List (src/ui/navigation.rs & src/ui/update.rs)
-# ============================================================
-
-#: src/ui/navigation.rs:???
-msgid "Set to Current Folder"
-msgstr "Definir como Pasta Atual"
-
-#: src/ui/navigation.rs:???
-msgid "Open in New Window"
-msgstr "Abrir em Nova Janela"
-
-#: src/ui/navigation.rs:???
-msgid "Remove from Quick List"
-msgstr "Remover da Lista Rápida"
-
-#: src/ui/update.rs:???
-msgid "Quick list slot updated"
-msgstr "Slot da lista rápida atualizado"
-
-# ============================================================
-# src/utils/config.rs (menu de contexto)
-# ============================================================
-
-msgid "Flux Background"
-msgstr "Fundo do Flux"
-
-msgid "Window Background"
-msgstr "Fundo da Janela"
-
-msgid "Left Sidebar Background"
-msgstr "Fundo da Barra Lateral Esquerda"
-
-msgid "Right Sidebar Background"
-msgstr "Fundo da Barra Lateral Direita"
-
-msgid "Reset All Backgrounds"
-msgstr "Restaurar Todos os Fundos"
-
-msgid "Window background updated!"
-msgstr "Fundo da janela atualizado!"
-
-msgid "Sidebar background updated!"
-msgstr "Fundo da barra lateral atualizado!"
-
-msgid "Right panel background updated!"
-msgstr "Fundo do painel direito atualizado!"
-
-msgid "Backgrounds reset to default"
-msgstr "Fundos restaurados para o padrão"
-
-#: src/ui/context_menu.rs:???
-msgid "Send to Quick List"
-msgstr "Enviar para a Lista Rápida"
-
-#: src/ui/context_menu.rs:???
-msgid "Move to"
-msgstr "Mover para"
-
-#: src/ui/context_menu.rs:???
-msgid "Copy to"
-msgstr "Copiar para"
-
-#: src/utils/config.rs:???
-msgid "Add to Quick List"
-msgstr "Adicionar à Lista Rápida"
-
-#: src/utils/config.rs:???
-msgid "Other Application..."
-msgstr "Outro Aplicativo..."
-
-#: src/utils/config.rs:???
-msgid "Inspect Directory"
-msgstr "Inspecionar Diretório"
-
-#: src/utils/config.rs:???
-msgid "Shred File (Permanent)"
-msgstr "Destruir Arquivo (Permanente)"
-
-#: src/utils/config.rs:???
-msgid "Toggle Pin"
-msgstr "Fixar/Desafixar"
-
-#: src/utils/config.rs:???
-msgid "Open in VSCode"
-msgstr "Abrir no VS Code"
-
-#: src/utils/config.rs:???
-msgid "File Properties"
-msgstr "Propriedades do Arquivo"
-
-#: src/utils/config.rs:???
-msgid "Folder Info"
-msgstr "Informações da Pasta"
-
-#: src/utils/config.rs:???
-msgid "Icons"
-msgstr "Ícones"
-
-#: src/utils/config.rs:???
-msgid "Set File Icon"
-msgstr "Definir Ícone do Arquivo"
-
-#: src/utils/config.rs:???
-msgid "Reset File Icon"
-msgstr "Restaurar Ícone do Arquivo"
-
-#: src/utils/config.rs:???
-msgid "Set Extension Icon"
-msgstr "Definir Ícone da Extensão"
-
-#: src/utils/config.rs:???
-msgid "Reset Extension Icon"
-msgstr "Restaurar Ícone da Extensão"
-
-#: src/utils/config.rs:???
-msgid "Compress"
-msgstr "Compactar"
-
-#: src/utils/config.rs:???
-msgid "To ZIP"
-msgstr "Para ZIP"
-
-#: src/utils/config.rs:???
-msgid "To 7Z"
-msgstr "Para 7Z"
-
-#: src/utils/config.rs:???
-msgid "To TAR.GZ"
-msgstr "Para TAR.GZ"
-
-#: src/utils/config.rs:???
-msgid "Extract Here!"
-msgstr "Extrair Aqui!"
-
-#: src/utils/config.rs:???
-msgid "Media Edit"
-msgstr "Edição de Mídia"
-
-#: src/utils/config.rs:???
-msgid "Join Videos"
-msgstr "Juntar Vídeos"
-
-#: src/utils/config.rs:???
-msgid "Cut Video"
-msgstr "Cortar Vídeo"
-
-#: src/utils/config.rs:???
-msgid "Mix Audio"
-msgstr "Misturar Áudio"
-
-#: src/utils/config.rs:???
-msgid "Merge Video + Audio"
-msgstr "Mesclar Vídeo + Áudio"
-
-#: src/utils/config.rs:???
-msgid "Media Convert"
-msgstr "Conversão de Mídia"
-
-#: src/utils/config.rs:???
-msgid "To MP4"
-msgstr "Para MP4"
-
-#: src/utils/config.rs:???
-msgid "To MKV"
-msgstr "Para MKV"
-
-#: src/utils/config.rs:???
-msgid "To WebM"
-msgstr "Para WebM"
-
-#: src/utils/config.rs:???
-msgid "To MOV"
-msgstr "Para MOV"
-
-#: src/utils/config.rs:???
-msgid "Audio to MP3"
-msgstr "Áudio para MP3"
-
-#: src/utils/config.rs:???
-msgid "Media Extract"
-msgstr "Extração de Mídia"
-
-#: src/utils/config.rs:???
-msgid "MP3 from Video"
-msgstr "MP3 do Vídeo"
-
-#: src/utils/config.rs:???
-msgid "Media Optimize"
-msgstr "Otimização de Mídia"
-
-#: src/utils/config.rs:???
-msgid "Reduce Video Size"
-msgstr "Reduzir Tamanho do Vídeo"
-
-#: src/utils/config.rs:???
-msgid "Image Wallpaper"
-msgstr "Papel de Parede"
-
-#: src/utils/config.rs:???
-msgid "Set (swww)"
-msgstr "Definir (swww)"
-
-#: src/utils/config.rs:???
-msgid "Set (wbg)"
-msgstr "Definir (wbg)"
-
-#: src/utils/config.rs:???
-msgid "Image Convert"
-msgstr "Conversão de Imagem"
-
-#: src/utils/config.rs:???
-msgid "To PNG"
-msgstr "Para PNG"
-
-#: src/utils/config.rs:???
-msgid "To AVIF"
-msgstr "Para AVIF"
-
-#: src/utils/config.rs:???
-msgid "To JPG"
-msgstr "Para JPG"
-
-#: src/utils/config.rs:???
-msgid "Convert to PDF"
-msgstr "Converter para PDF"
-
-#: src/utils/config.rs:???
-msgid "Tools"
-msgstr "Ferramentas"
-
-#: src/utils/config.rs:???
-msgid "Git Gui"
-msgstr "Git Gui"
-
-#: src/utils/config.rs:???
-msgid "Download Video (1080p)"
-msgstr "Baixar Vídeo (1080p)"
-
-#: src/utils/config.rs:???
-msgid "Copy Name"
-msgstr "Copiar Nome"
-
-#: src/utils/config.rs:???
-msgid "Advanced Archive Manager"
-msgstr "Compactador Avançado"
-
-#: src/utils/config.rs:???
-msgid "Copy"
-msgstr "Copiar"
-
-#: src/utils/config.rs:???
-msgid "Cut"
-msgstr "Cortar"
-
-#: src/utils/config.rs:???
-msgid "Paste"
-msgstr "Colar"
-
-#: src/utils/config.rs:???
-msgid "Change Owner"
-msgstr "Alterar Proprietário"
-
-#: src/utils/config.rs:???
-msgid "Advanced Shredder"
-msgstr "Destruidor Avançado"
-
-#: src/utils/config.rs:???
-msgid "Tags"
-msgstr "Etiquetas"
-
-# ============================================================
-# src/services/archive.rs
-# ============================================================
-
-#: src/services/archive.rs:120 src/ui/update.rs:1041 src/ui/view.rs:305
+#: src/services/archive/error.rs:20 src/ui/dialog/archive.rs:23 src/ui/view/component.rs:768
 msgid "Archive is password-protected"
 msgstr "O arquivo está protegido por senha"
 
-#: src/services/archive.rs:121
-msgid "Incorrect password"
-msgstr "Senha incorreta"
+#: src/ui/dialog/archive.rs:35 src/ui/dialog/archive.rs:91 src/ui/dialog/command/window.rs:125 src/ui/dialog/conflict/mod.rs:63 src/ui/dialog/create.rs:19 src/ui/dialog/create.rs:184 src/ui/dialog/luks.rs:22 src/ui/dialog/new_action.rs:215 src/ui/dialog/open_with.rs:41 src/ui/dialog/sidebar.rs:19 src/ui/dialog/sidebar.rs:59 src/ui/dialog/sidebar.rs:107 src/ui/dialog/sidebar.rs:177 src/ui/dialog/tag_picker.rs:72 src/ui/dialog/transfer.rs:292 src/ui/menu/editor/entry_dialog.rs:347 src/ui/menu/editor/new_menu_dialog.rs:50 src/ui/panels/tag.rs:212
+msgid "Cancel"
+msgstr "Cancelar"
 
-#: src/services/archive.rs:???
+#: src/ui/clipboard/html.rs:30 src/ui/clipboard/image.rs:46 src/ui/clipboard/stream.rs:63
+msgid "Clipboard read error"
+msgstr "Erro ao ler a área de transferência"
+
+#: src/ui/dialog/create.rs:20 src/ui/dialog/create.rs:185 src/ui/dialog/sidebar.rs:20 src/ui/menu/editor/new_menu_dialog.rs:52
+msgid "Create"
+msgstr "Criar"
+
+#: src/ui/properties/probes.rs:61 src/ui/settings/page/behavior.rs:101 src/utils/helpers/view.rs:19
+msgid "Date"
+msgstr "Data"
+
+#: src/ui/dialog/archive.rs:92 src/ui/menu/editor/rows.rs:133 src/ui/panels/tag.rs:213 src/ui/settings/page/shortcuts.rs:170 src/utils/config/menu.rs:254
+msgid "Delete"
+msgstr "Excluir"
+
+#: src/ui/components/bind.rs:179 src/ui/ops/view/preview.rs:941 src/utils/helpers/format.rs:31
+msgid "items"
+msgstr "itens"
+
+#: src/ui/dialog/new_action.rs:163 src/ui/menu/editor/entry_dialog.rs:160 src/ui/menu/secondary/template.rs:196
+msgid "Label"
+msgstr "Rótulo"
+
+#: src/ui/dialog/new_action.rs:165 src/ui/menu/editor/entry_dialog.rs:239 src/ui/menu/secondary/template.rs:200
+msgid "MIME Types"
+msgstr "Tipos MIME"
+
+#: src/ui/panels/preview.rs:1696 src/ui/panels/search.rs:218 src/ui/properties/sections.rs:120
+msgid "Modified"
+msgstr "Modificado"
+
+#: src/ui/panels/preview.rs:1680 src/ui/panels/preview_binary.rs:108 src/ui/settings/page/behavior.rs:101 src/utils/helpers/view.rs:18
+msgid "Name"
+msgstr "Nome"
+
+#: src/ui/components/sidebar.rs:125 src/ui/components/sidebar.rs:145 src/ui/dialog/sidebar.rs:60 src/ui/dialog/sidebar.rs:108 src/ui/settings/page/shortcuts.rs:186 src/utils/config/menu.rs:252
+msgid "Rename"
+msgstr "Renomear"
+
+#: src/ui/help/page/search.rs:54 src/ui/panels/search.rs:56 src/ui/panels/search.rs:65 src/ui/settings/page/shortcuts.rs:303 src/utils/config/defaults.rs:274
+msgid "Search"
+msgstr "Pesquisar"
+
+#: src/ui/panels/preview.rs:1689 src/ui/properties/sections.rs:87 src/ui/settings/page/behavior.rs:101 src/utils/helpers/view.rs:20
+msgid "Size"
+msgstr "Tamanho"
+
+#: src/ui/panels/preview.rs:1681 src/ui/properties/probes.rs:112 src/ui/settings/page/behavior.rs:101 src/utils/helpers/view.rs:21
+msgid "Type"
+msgstr "Tipo"
+
+# ============================================================
+# src/services/archive/backends/iso.rs
+# ============================================================
+
+#: src/services/archive/backends/iso.rs:170 src/services/archive/backends/iso.rs:263
 msgid "failed to parse ISO image"
 msgstr "falha ao analisar imagem ISO"
 
-#: src/services/archive.rs:???
+#: src/services/archive/backends/iso.rs:235
 msgid "7z spawn error. Install p7zip-full (apt) or p7zip (pacman)."
 msgstr "Erro ao executar 7z. Instale p7zip-full (apt) ou p7zip (pacman)."
 
-#: src/services/archive.rs:???
+# ============================================================
+# src/services/archive/backends/rar.rs
+# ============================================================
+
+#: src/services/archive/backends/rar.rs:129
 msgid "RAR support requires 'unar' or 'unrar' (install via your package manager)"
 msgstr "O suporte a RAR requer 'unar' ou 'unrar' (instale via seu gerenciador de pacotes)"
 
 # ============================================================
-# src/services/network.rs
+# src/services/archive/error.rs
 # ============================================================
 
-#: src/services/network.rs:???
-msgid "Credentials required"
-msgstr "Credenciais necessárias"
-
-#: src/services/network.rs:???
-msgid "Authentication failed"
-msgstr "Falha na autenticação"
-
-#: src/services/network.rs:???
-msgid "Host unreachable"
-msgstr "Host inacessível"
-
-#: src/services/network.rs:???
-msgid "GVFS unavailable"
-msgstr "GVFS indisponível"
+#: src/services/archive/error.rs:22
+msgid "Incorrect password"
+msgstr "Senha incorreta"
 
 # ============================================================
-# src/services/luks.rs
+# src/services/fonts.rs
 # ============================================================
 
-#: src/services/luks.rs:163
+#: src/services/fonts.rs:37
+msgid "Installed 1 font"
+msgid_plural "Installed {} fonts"
+msgstr[0] "1 fonte instalada"
+msgstr[1] "{} fontes instaladas"
+
+#: src/services/fonts.rs:39
+msgid "failed"
+msgstr "falharam"
+
+#: src/services/fonts.rs:43 src/ui/panels/preview.rs:1247
+msgid "Already installed"
+msgstr "Já instalada"
+
+#: src/services/fonts.rs:45
+msgid "Could not install the font"
+msgstr "Não foi possível instalar a fonte"
+
+# ============================================================
+# src/services/loader/network.rs
+# ============================================================
+
+#: src/services/loader/network.rs:40
+msgid "Authentication failed. Please check your credentials."
+msgstr "Falha na autenticação. Verifique suas credenciais."
+
+# ============================================================
+# src/services/luks/mount.rs
+# ============================================================
+
+#: src/services/luks/mount.rs:107
 msgid "Wrong passphrase."
 msgstr "Senha incorreta."
 
 # ============================================================
-# src/model.rs
+# src/services/network/error.rs
 # ============================================================
 
-#: src/model.rs:??? src/ui/components.rs:???
-msgid "Recents"
-msgstr "Recentes"
+#: src/services/network/error.rs:29
+msgid "Credentials required"
+msgstr "Credenciais necessárias"
+
+#: src/services/network/error.rs:31
+msgid "Authentication failed"
+msgstr "Falha na autenticação"
+
+#: src/services/network/error.rs:33
+msgid "Host unreachable"
+msgstr "Host inacessível"
 
 # ============================================================
-# src/ui/init.rs
+# src/services/trash/local.rs
 # ============================================================
 
-#: src/ui/init.rs:296
-msgid "By Name"
-msgstr "Por nome"
-
-#: src/ui/init.rs:297
-msgid "By Date"
-msgstr "Por data"
-
-#: src/ui/init.rs:298
-msgid "By Size"
-msgstr "Por tamanho"
-
-#: src/ui/init.rs:299
-msgid "By Type"
-msgstr "Por tipo"
-
-#: src/ui/init.rs:303 src/ui/settings.rs:297
-msgid "Ascending"
-msgstr "Crescente"
-
-#: src/ui/init.rs:304 src/ui/settings.rs:297
-msgid "Descending"
-msgstr "Decrescente"
-
-#: src/ui/init.rs:307
-msgid "Sort By"
-msgstr "Ordenar por"
-
-#: src/ui/init.rs:311 src/ui/settings.rs:19
-msgid "Preferences"
-msgstr "Preferências"
-
-#: src/ui/init.rs:312
-msgid "Keyboard Shortcuts"
-msgstr "Atalhos de teclado"
-
-#: src/ui/init.rs:318
-msgid "Context Menu Editor"
-msgstr "Editor de menu de contexto"
-
-#: src/ui/init.rs:321
-msgid "New Window"
-msgstr "Nova janela"
-
-#: src/ui/init.rs:325
-msgid "About Flux"
-msgstr "Sobre o Flux"
-
-#: src/ui/init.rs:325
-msgid "Toggle Sidebar"
-msgstr "Alternar barra lateral"
+#: src/services/trash/local.rs:35
+msgid "Could not move to trash"
+msgstr "Não foi possível mover para a lixeira"
 
 # ============================================================
-# src/ui/view.rs
+# src/ui/clipboard/handler.rs
 # ============================================================
 
-#: src/ui/view.rs:21
-msgid "Trash"
-msgstr "Lixeira"
+#: src/ui/clipboard/handler.rs:10
+msgid "No display available for clipboard operation"
+msgstr "Nenhum display disponível para a operação da área de transferência"
 
-#: src/ui/view.rs:???
-msgid "Empty Trash"
-msgstr "Esvaziar Lixeira"
-
-#: src/ui/view.rs:219
-msgid "Main Menu"
-msgstr "Menu principal"
-
-#: src/ui/view.rs:309
-msgid "Enter the password to browse its contents."
-msgstr "Digite a senha para navegar pelo seu conteúdo."
-
-#: src/ui/view.rs:386
-msgid "Cancel all transfers"
-msgstr "Cancelar todas as transferências"
-
-#: src/ui/view.rs:764
-msgid "Pin to Sidebar"
-msgstr "Fixar na barra lateral"
-
-#: src/ui/view.rs:???
-msgid "Clear Recents"
-msgstr "Limpar Recentes"
-
-#: src/ui/view.rs:???
-msgid "Clear all recents"
-msgstr "Limpar todos os recentes"
-
-#: src/ui/view.rs:???
-msgid "Remove selected items from recents"
-msgstr "Remover itens selecionados dos recentes"
-
-#: src/ui/view.rs:???
-msgid "Remove Selected"
-msgstr "Remover Selecionados"
-
-#: src/ui/view.rs:???
-msgid "Toggle List Mode"
-msgstr "Alternar modo lista"
-
-#: src/ui/view.rs:???
-msgid "Filter by Pattern"
-msgstr "Filtrar por Padrão"
-
-#: src/ui/view.rs:???
-msgid "Patterns: *.py, image/*, audio/*"
-msgstr "Padrões: *.py, image/*, audio/*"
-
-#: src/ui/view.rs:???
-msgid "Clear filter"
-msgstr "Limpar filtro"
-
-#: src/ui/view.rs:???
-msgid "Filter:"
-msgstr "Filtro:"
-
-#: src/ui/view.rs:???
-msgid "Extract"
-msgstr "Extrair"
-
-#: src/ui/view.rs:???
-msgid " Show Progress"
-msgstr "Mostrar Progresso"
-
-#: src/ui/view.rs:???
-msgid "Open transfer progress dialog"
-msgstr "Abrir diálogo de progresso de transferência"
+#: src/ui/clipboard/handler.rs:46
+msgid "Nothing pasteable in clipboard"
+msgstr "Nenhum conteúdo colável na área de transferência"
 
 # ============================================================
-# src/ui/components.rs
+# src/ui/clipboard/image.rs
 # ============================================================
 
-#: src/ui/components.rs:???
-msgid "Open in New Tab"
-msgstr "Abrir em Nova Aba"
+#: src/ui/clipboard/image.rs:26
+msgid "Image pasted as file"
+msgstr "Imagem colada como arquivo"
 
-#: src/ui/components.rs:453
-msgid "Remove from sidebar"
-msgstr "Remover da barra lateral"
+#: src/ui/clipboard/image.rs:32
+msgid "Failed to save image"
+msgstr "Falha ao salvar a imagem"
 
-#: src/ui/components.rs:???
-msgid "Change icon"
-msgstr "Alterar ícone"
+#: src/ui/clipboard/image.rs:39
+msgid "Could not read image from clipboard"
+msgstr "Não foi possível ler a imagem da área de transferência"
 
-#: src/ui/components.rs:???
+# ============================================================
+# src/ui/clipboard/stream.rs
+# ============================================================
+
+#: src/ui/clipboard/stream.rs:33
+msgid "Could not read HTML from clipboard"
+msgstr "Não foi possível ler o HTML da área de transferência"
+
+#: src/ui/clipboard/stream.rs:44
+msgid "HTML pasted as file"
+msgstr "HTML colado como arquivo"
+
+#: src/ui/clipboard/stream.rs:50
+msgid "Failed to save HTML"
+msgstr "Falha ao salvar o HTML"
+
+# ============================================================
+# src/ui/clipboard/text.rs
+# ============================================================
+
+#: src/ui/clipboard/text.rs:30
+msgid "Text pasted as file"
+msgstr "Texto colado como arquivo"
+
+#: src/ui/clipboard/text.rs:36
+msgid "Failed to save text"
+msgstr "Falha ao salvar o texto"
+
+# ============================================================
+# src/ui/components/bind.rs
+# ============================================================
+
+#: src/ui/components/bind.rs:206 src/ui/panels/search.rs:222
+msgid "Today"
+msgstr "Hoje"
+
+#: src/ui/components/bind.rs:218 src/ui/dialog/conflict/util.rs:88
+msgid "Yesterday"
+msgstr "Ontem"
+
+# ============================================================
+# src/ui/components/sidebar.rs
+# ============================================================
+
+#: src/ui/components/sidebar.rs:126
 msgid "Remove section"
 msgstr "Remover seção"
 
-#: src/ui/components.rs:???
-msgid "items"
-msgstr "itens"
+#: src/ui/components/sidebar.rs:144 src/utils/config/menu.rs:246
+msgid "Open in New Tab"
+msgstr "Abrir em Nova Aba"
+
+#: src/ui/components/sidebar.rs:146
+msgid "Change icon"
+msgstr "Alterar ícone"
+
+#: src/ui/components/sidebar.rs:147
+msgid "Remove from sidebar"
+msgstr "Remover da barra lateral"
 
 # ============================================================
-# src/ui/help.rs
+# src/ui/config_handlers/sidebar.rs
 # ============================================================
 
-#: src/ui/help/page/navigation.rs:???
+#: src/ui/config_handlers/sidebar.rs:134
+msgid "Already in sidebar"
+msgstr "Já está na barra lateral"
+
+# ============================================================
+# src/ui/dialog/about.rs
+# ============================================================
+
+#: src/ui/dialog/about.rs:13
+msgid "Source Code"
+msgstr "Código-fonte"
+
+#: src/ui/dialog/about.rs:14
+msgid "A fast, keyboard-driven file manager built with GTK4 and Libadwaita."
+msgstr "Um gerenciador de arquivos rápido, orientado a teclado, construído com GTK4 e Libadwaita."
+
+# ============================================================
+# src/ui/dialog/archive.rs
+# ============================================================
+
+#: src/ui/dialog/archive.rs:21
+msgid "Wrong Password"
+msgstr "Senha incorreta"
+
+#: src/ui/dialog/archive.rs:29
+msgid "The password you entered was incorrect. Please try again."
+msgstr "A senha digitada está incorreta. Tente novamente."
+
+#: src/ui/dialog/archive.rs:31
+msgid "This archive is encrypted. Enter the password to browse its contents."
+msgstr "Este arquivo está criptografado. Digite a senha para navegar pelo seu conteúdo."
+
+#: src/ui/dialog/archive.rs:36 src/ui/dialog/luks.rs:23
+msgid "Unlock"
+msgstr "Desbloquear"
+
+#: src/ui/dialog/archive.rs:83
+msgid "Permanently delete \"{}\"?"
+msgstr "Excluir permanentemente \"{}\"?"
+
+#: src/ui/dialog/archive.rs:86
+msgid "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone."
+msgstr "Este item será excluído permanentemente do arquivo. Esta ação é irreversível e não pode ser desfeita."
+
+# ============================================================
+# src/ui/dialog/command/procfs.rs
+# ============================================================
+
+#: src/ui/dialog/command/procfs.rs:98
+msgid "Running"
+msgstr "Executando"
+
+#: src/ui/dialog/command/procfs.rs:99
+msgid "Sleeping"
+msgstr "Em espera"
+
+#: src/ui/dialog/command/procfs.rs:100
+msgid "Uninterruptible Sleep"
+msgstr "Sono ininterrupto"
+
+#: src/ui/dialog/command/procfs.rs:101
+msgid "Zombie"
+msgstr "Zumbi"
+
+#: src/ui/dialog/command/procfs.rs:102
+msgid "Stopped"
+msgstr "Parado"
+
+#: src/ui/dialog/command/procfs.rs:103
+msgid "Tracing Stop"
+msgstr "Parada por rastreamento"
+
+#: src/ui/dialog/command/procfs.rs:104
+msgid "Dead"
+msgstr "Morto"
+
+#: src/ui/dialog/command/procfs.rs:105 src/ui/dialog/command/window.rs:333
+msgid "Unknown"
+msgstr "Desconhecido"
+
+# ============================================================
+# src/ui/dialog/command/window.rs
+# ============================================================
+
+#: src/ui/dialog/command/window.rs:64 src/ui/dialog/command/window.rs:118
+msgid "Command Output"
+msgstr "Saída do Comando"
+
+#: src/ui/dialog/command/window.rs:100
+msgid "Suppress dialog"
+msgstr "Ocultar diálogo"
+
+#: src/ui/dialog/command/window.rs:105
+msgid "When enabled, this command will not show the output dialog again. This setting is saved in your menu configuration."
+msgstr "Quando ativado, este comando não mostrará mais o diálogo de saída. Esta configuração é salva no seu arquivo de configuração de menu."
+
+#: src/ui/dialog/command/window.rs:107
+msgid "Toggle to suppress the dialog for this specific command."
+msgstr "Alternar para ocultar o diálogo para este comando específico."
+
+#: src/ui/dialog/command/window.rs:212
+msgid "Copy all info to clipboard"
+msgstr "Copiar todas as informações para a área de transferência"
+
+#: src/ui/dialog/command/window.rs:254 src/ui/dialog/command/window.rs:344 src/ui/dialog/command/window.rs:439 src/ui/dialog/command/window.rs:466
+msgid "PID:"
+msgstr "PID:"
+
+#: src/ui/dialog/command/window.rs:321 src/ui/dialog/command/window.rs:420
+msgid "I/O: (unavailable)"
+msgstr "E/S: (indisponível)"
+
+#: src/ui/dialog/command/window.rs:322 src/ui/dialog/command/window.rs:334 src/ui/dialog/command/window.rs:335 src/ui/dialog/command/window.rs:336 src/ui/dialog/command/window.rs:340 src/ui/dialog/command/window.rs:418
+msgid "N/A"
+msgstr "N/D"
+
+#: src/ui/dialog/command/window.rs:346 src/ui/dialog/command/window.rs:442
+msgid "State:"
+msgstr "Estado:"
+
+#: src/ui/dialog/command/window.rs:348 src/ui/dialog/command/window.rs:449
+msgid "CPU time:"
+msgstr "Tempo de CPU:"
+
+#: src/ui/dialog/command/window.rs:350
+msgid "Memory (RSS):"
+msgstr "Memória (RSS):"
+
+#: src/ui/dialog/command/window.rs:352 src/ui/dialog/command/window.rs:462
+msgid "Threads:"
+msgstr "Threads:"
+
+#: src/ui/dialog/command/window.rs:354 src/ui/dialog/command/window.rs:470
+msgid "Open FDs:"
+msgstr "FDs abertos:"
+
+#: src/ui/dialog/command/window.rs:356 src/ui/dialog/command/window.rs:471
+msgid "CWD:"
+msgstr "Diretório atual:"
+
+#: src/ui/dialog/command/window.rs:358 src/ui/dialog/command/window.rs:472
+msgid "I/O:"
+msgstr "E/S:"
+
+#: src/ui/dialog/command/window.rs:360
+msgid "Command:"
+msgstr "Comando:"
+
+#: src/ui/dialog/command/window.rs:395
+msgid "State: Completed / Terminated"
+msgstr "Estado: Concluído / Finalizado"
+
+#: src/ui/dialog/command/window.rs:444
+msgid "PPID:"
+msgstr "PPID:"
+
+#: src/ui/dialog/command/window.rs:452
+msgid "user+sys"
+msgstr "usuário+sistema"
+
+#: src/ui/dialog/command/window.rs:456
+msgid "Memory (RSS/VMS):"
+msgstr "Memória (RSS/VMS):"
+
+#: src/ui/dialog/command/window.rs:467
+msgid "State: (unavailable)"
+msgstr "Estado: (indisponível)"
+
+# ============================================================
+# src/ui/dialog/conflict/card.rs
+# ============================================================
+
+#: src/ui/dialog/conflict/card.rs:44
+msgid "Existing file"
+msgstr "Arquivo existente"
+
+#: src/ui/dialog/conflict/card.rs:76
+msgid "Auto-rename will save as"
+msgstr "Renomeação automática salvará como"
+
+#: src/ui/dialog/conflict/card.rs:98
+msgid "Apply to all remaining conflicts"
+msgstr "Aplicar a todos os conflitos restantes"
+
+# ============================================================
+# src/ui/dialog/conflict/mod.rs
+# ============================================================
+
+#: src/ui/dialog/conflict/mod.rs:36
+msgid "move"
+msgstr "mover"
+
+#: src/ui/dialog/conflict/mod.rs:38
+msgid "copy"
+msgstr "copiar"
+
+#: src/ui/dialog/conflict/mod.rs:42
+msgid "Replace existing file?"
+msgstr "Substituir arquivo existente?"
+
+#: src/ui/dialog/conflict/mod.rs:47
+msgid "Conflict"
+msgstr "Conflito"
+
+#: src/ui/dialog/conflict/mod.rs:50
+msgid "A file with this name already exists. Choose what to do with it."
+msgstr "Um arquivo com este nome já existe. Escolha o que fazer com ele."
+
+#: src/ui/dialog/conflict/mod.rs:53
+msgid "A file with this name already exists in the destination. Choose what to do with it."
+msgstr "Um arquivo com este nome já existe no destino. Escolha o que fazer com ele."
+
+#: src/ui/dialog/conflict/mod.rs:64
+msgid "Skip"
+msgstr "Pular"
+
+#: src/ui/dialog/conflict/mod.rs:65
+msgid "Auto-Rename"
+msgstr "Renomear automaticamente"
+
+#: src/ui/dialog/conflict/mod.rs:66
+msgid "Replace"
+msgstr "Substituir"
+
+# ============================================================
+# src/ui/dialog/conflict/util.rs
+# ============================================================
+
+#: src/ui/dialog/conflict/util.rs:65 src/ui/dialog/conflict/util.rs:70
+msgid "just now"
+msgstr "agora mesmo"
+
+#: src/ui/dialog/conflict/util.rs:74
+msgid "1 minute ago"
+msgstr "1 minuto atrás"
+
+#: src/ui/dialog/conflict/util.rs:76
+msgid "minutes ago"
+msgstr "minutos atrás"
+
+#: src/ui/dialog/conflict/util.rs:81
+msgid "1 hour ago"
+msgstr "1 hora atrás"
+
+#: src/ui/dialog/conflict/util.rs:83
+msgid "hours ago"
+msgstr "horas atrás"
+
+#: src/ui/dialog/conflict/util.rs:90
+msgid "days ago"
+msgstr "dias atrás"
+
+# ============================================================
+# src/ui/dialog/create.rs
+# ============================================================
+
+#: src/ui/dialog/create.rs:14 src/utils/config/menu.rs:262
+msgid "New Folder"
+msgstr "Nova Pasta"
+
+#: src/ui/dialog/create.rs:15
+msgid "Enter folder name(s), separated by commas for batch creation:"
+msgstr "Digite o(s) nome(s) da(s) pasta(s), separados por vírgula para criação em lote:"
+
+#: src/ui/dialog/create.rs:79 src/ui/dialog/create.rs:99 src/ui/dialog/create.rs:220 src/ui/dialog/create.rs:233
+msgid "Directory or file already exists"
+msgstr "O diretório ou arquivo já existe"
+
+#: src/ui/dialog/create.rs:90
+msgid "Failed to create directory"
+msgstr "Falha ao criar diretório"
+
+#: src/ui/dialog/create.rs:179 src/utils/config/menu.rs:263
+msgid "New File"
+msgstr "Novo Arquivo"
+
+#: src/ui/dialog/create.rs:180
+msgid "Enter file name(s), separated by commas for batch creation:"
+msgstr "Digite o(s) nome(s) do(s) arquivo(s), separados por vírgula para criação em lote:"
+
+# ============================================================
+# src/ui/dialog/icon.rs
+# ============================================================
+
+#: src/ui/dialog/icon.rs:167
+msgid "Select Custom Icon Image"
+msgstr "Selecionar imagem de ícone personalizada"
+
+#: src/ui/dialog/icon.rs:168
+msgid "Set Icon"
+msgstr "Definir ícone"
+
+# ============================================================
+# src/ui/dialog/inspector.rs
+# ============================================================
+
+#: src/ui/dialog/inspector.rs:22
+msgid "Directory Inspector"
+msgstr "Inspetor de Diretório"
+
+#: src/ui/dialog/inspector.rs:45
+msgid "Directory Overview"
+msgstr "Visão Geral do Diretório"
+
+#: src/ui/dialog/inspector.rs:51 src/ui/panels/header.rs:38
+msgid "Close"
+msgstr "Fechar"
+
+#: src/ui/dialog/inspector.rs:70
+msgid "Scanning directory tree…"
+msgstr "Analisando estrutura de diretórios…"
+
+#: src/ui/dialog/inspector.rs:142
+msgid "Storage Summary"
+msgstr "Resumo do Armazenamento"
+
+#: src/ui/dialog/inspector.rs:144
+msgid "Scanned in {} ms"
+msgstr "Analisado em {} ms"
+
+#: src/ui/dialog/inspector.rs:151
+msgid "Total Size"
+msgstr "Tamanho Total"
+
+#: src/ui/dialog/inspector.rs:157 src/ui/ops/view/preview.rs:887
+msgid "Items"
+msgstr "Itens"
+
+#: src/ui/dialog/inspector.rs:159
+msgid "{} files, {} subfolders"
+msgstr "{} arquivos, {} subpastas"
+
+#: src/ui/dialog/inspector.rs:169
+msgid "Filter by name, extension (.mp4), or size (>10M, <1G)..."
+msgstr "Filtrar por nome, extensão (.mp4) ou tamanho (>10M, <1G)..."
+
+#: src/ui/dialog/inspector.rs:178
+msgid "Largest Files (Top 100)"
+msgstr "Maiores Arquivos (Top 100)"
+
+#: src/ui/dialog/inspector.rs:219
+msgid "Open enclosing folder"
+msgstr "Abrir pasta recipiente"
+
+#: src/ui/dialog/inspector.rs:240
+msgid "Move to trash"
+msgstr "Mover para a lixeira"
+
+#: src/ui/dialog/inspector.rs:251
+msgid "Item moved to trash."
+msgstr "Item movido para a lixeira."
+
+# ============================================================
+# src/ui/dialog/luks.rs
+# ============================================================
+
+#: src/ui/dialog/luks.rs:16
+msgid "Unlock LUKS Volume"
+msgstr "Desbloquear volume LUKS"
+
+#: src/ui/dialog/luks.rs:17
+msgid "Enter the passphrase to unlock this encrypted image."
+msgstr "Digite a senha para desbloquear esta imagem criptografada."
+
+# ============================================================
+# src/ui/dialog/menu_icon_picker/mod.rs
+# ============================================================
+
+#: src/ui/dialog/menu_icon_picker/mod.rs:16
+msgid "Select Nerd Font Icon"
+msgstr "Selecionar Ícone Nerd Font"
+
+#: src/ui/dialog/menu_icon_picker/mod.rs:131
+msgid "Search icons (copy, folder, file, rust)..."
+msgstr "Pesquisar ícones (copiar, pasta, arquivo, rust)..."
+
+# ============================================================
+# src/ui/dialog/new_action.rs
+# ============================================================
+
+#: src/ui/dialog/new_action.rs:138 src/ui/menu/editor/entry_dialog.rs:34
+msgid "Identity"
+msgstr "Identificação"
+
+#: src/ui/dialog/new_action.rs:141 src/ui/menu/editor/entry_dialog.rs:37
+msgid "Action"
+msgstr "Ação"
+
+#: src/ui/dialog/new_action.rs:151
+msgid "Save to"
+msgstr "Salvar em"
+
+#: src/ui/dialog/new_action.rs:152
+msgid "A type-specific file replaces broader templates for that type"
+msgstr "Um arquivo específico do tipo substitui os modelos mais amplos para esse tipo"
+
+#: src/ui/dialog/new_action.rs:164 src/ui/menu/editor/entry_dialog.rs:226
+msgid "Submenu (blank = top-level)"
+msgstr "Submenu (vazio = nível superior)"
+
+#: src/ui/dialog/new_action.rs:167
+#, no-c-format
+msgid "Command (%p = path · %d = dir · %f = filename)"
+msgstr "Comando (%p = caminho · %d = pasta · %f = nome do arquivo)"
+
+#: src/ui/dialog/new_action.rs:168 src/ui/menu/editor/entry_dialog.rs:307
+msgid "Notification (optional)"
+msgstr "Notificação (opcional)"
+
+#: src/ui/dialog/new_action.rs:175 src/ui/menu/editor/entry_dialog.rs:319
+msgid "Suppress Transfer Dialog"
+msgstr "Ocultar Diálogo de Transferência"
+
+#: src/ui/dialog/new_action.rs:176 src/ui/menu/editor/entry_dialog.rs:320
+msgid "Do not track execution progress or open transfer dialog"
+msgstr "Não acompanhar progresso de execução nem abrir diálogo de transferência"
+
+#: src/ui/dialog/new_action.rs:217 src/ui/menu/editor/entry_dialog.rs:351
+msgid "Add"
+msgstr "Adicionar"
+
+# ============================================================
+# src/ui/dialog/open_with.rs
+# ============================================================
+
+#: src/ui/dialog/open_with.rs:12
+msgid "Open With…"
+msgstr "Abrir com…"
+
+#: src/ui/dialog/open_with.rs:36 src/ui/properties/window.rs:143
+msgid "Open With"
+msgstr "Abrir com"
+
+#: src/ui/dialog/open_with.rs:46 src/ui/settings/page/shortcuts.rs:80
+msgid "Open"
+msgstr "Abrir"
+
+#: src/ui/dialog/open_with.rs:86
+msgid "Search applications…"
+msgstr "Pesquisar aplicativos…"
+
+#: src/ui/dialog/open_with.rs:160 src/utils/config/defaults.rs:271
+msgid "Default"
+msgstr "Padrão"
+
+#: src/ui/dialog/open_with.rs:244
+msgid "Always use for this file type"
+msgstr "Sempre usar para este tipo de arquivo"
+
+# ============================================================
+# src/ui/dialog/sidebar.rs
+# ============================================================
+
+#: src/ui/dialog/sidebar.rs:15 src/ui/view/init.rs:299
+msgid "New Section"
+msgstr "Nova Seção"
+
+#: src/ui/dialog/sidebar.rs:16
+msgid "Enter a title for the new section:"
+msgstr "Digite um título para a nova seção:"
+
+#: src/ui/dialog/sidebar.rs:26
+msgid "Section title"
+msgstr "Título da seção"
+
+#: src/ui/dialog/sidebar.rs:55
+msgid "Rename Section"
+msgstr "Renomear Seção"
+
+#: src/ui/dialog/sidebar.rs:56
+msgid "Enter a new title for this section:"
+msgstr "Digite um novo título para esta seção:"
+
+#: src/ui/dialog/sidebar.rs:101
+msgid "Rename Bookmark"
+msgstr "Renomear favorito"
+
+#: src/ui/dialog/sidebar.rs:102
+msgid "Enter a new display name for this bookmark:"
+msgstr "Digite um novo nome de exibição para este favorito:"
+
+#: src/ui/dialog/sidebar.rs:151
+msgid "Select Sidebar Icon"
+msgstr "Selecionar ícone da barra lateral"
+
+#: src/ui/dialog/sidebar.rs:178
+msgid "Select"
+msgstr "Selecionar"
+
+# ============================================================
+# src/ui/dialog/tag_picker.rs
+# ============================================================
+
+#: src/ui/dialog/tag_picker.rs:26 src/ui/dialog/tag_picker.rs:67 src/utils/config/menu.rs:253
+msgid "Edit Tags"
+msgstr "Editar Etiquetas"
+
+#: src/ui/dialog/tag_picker.rs:74
+msgid "Apply"
+msgstr "Aplicar"
+
+#: src/ui/dialog/tag_picker.rs:94 src/ui/panels/tag.rs:56
+msgid "Search or type new tag…"
+msgstr "Pesquisar ou digitar nova etiqueta…"
+
+#: src/ui/dialog/tag_picker.rs:113
+msgid "No Tags Found"
+msgstr "Nenhuma Etiqueta Encontrada"
+
+#: src/ui/dialog/tag_picker.rs:114
+msgid "Press Enter to create and assign this tag"
+msgstr "Pressione Enter para criar e atribuir esta etiqueta"
+
+#: src/ui/dialog/tag_picker.rs:180
+msgid "Delete tag everywhere"
+msgstr "Excluir etiqueta em todos os lugares"
+
+# ============================================================
+# src/ui/dialog/transfer.rs
+# ============================================================
+
+#: src/ui/dialog/transfer.rs:70
+msgid "File Transfer"
+msgstr "Transferência de Arquivos"
+
+#: src/ui/dialog/transfer.rs:264
+msgid "- {} remaining"
+msgstr "- {} restante"
+
+# ============================================================
+# src/ui/help/mod.rs
+# ============================================================
+
+#: src/ui/help/mod.rs:24
+msgid "flux - Keyboard Shortcuts"
+msgstr "flux - Atalhos de teclado"
+
+# ============================================================
+# src/ui/help/page/application.rs
+# ============================================================
+
+#: src/ui/help/page/application.rs:8
+msgid "Application Shortcuts"
+msgstr "Atalhos do aplicativo"
+
+#: src/ui/help/page/application.rs:11 src/ui/settings/page/shortcuts.rs:437
+msgid "Open context menu editor"
+msgstr "Abrir editor de menu de contexto"
+
+#: src/ui/help/page/application.rs:15
+msgid "Open preferences"
+msgstr "Abrir preferências"
+
+#: src/ui/help/page/application.rs:19 src/ui/settings/page/shortcuts.rs:352
+msgid "Cycle through sorting modes"
+msgstr "Alternar modos de ordenação"
+
+#: src/ui/help/page/application.rs:23
+msgid "Toggle ascending/descending sort order"
+msgstr "Alternar ordem crescente/decrescente"
+
+#: src/ui/help/page/application.rs:26
+msgid "Toggle contextual actions panel"
+msgstr "Alternar painel de ações contextuais"
+
+#: src/ui/help/page/application.rs:31 src/ui/settings/page/shortcuts.rs:417
+msgid "Application"
+msgstr "Aplicativo"
+
+# ============================================================
+# src/ui/help/page/navigation.rs
+# ============================================================
+
+#: src/ui/help/page/navigation.rs:8
+msgid "Navigation Shortcuts"
+msgstr "Atalhos de navegação"
+
+#: src/ui/help/page/navigation.rs:11
+msgid "Go back in history"
+msgstr "Voltar no histórico"
+
+#: src/ui/help/page/navigation.rs:15
+msgid "Go forward in history"
+msgstr "Avançar no histórico"
+
+#: src/ui/help/page/navigation.rs:19
+msgid "Navigate to home directory"
+msgstr "Navegar para a pasta pessoal"
+
+#: src/ui/help/page/navigation.rs:23 src/ui/settings/page/shortcuts.rs:81
+msgid "Open selected file or directory"
+msgstr "Abrir arquivo ou pasta selecionado"
+
+#: src/ui/help/page/navigation.rs:27
+msgid "Navigate to root directory"
+msgstr "Ir para o diretório raiz"
+
+#: src/ui/help/page/navigation.rs:30
+msgid "Show/hide location panel"
+msgstr "Mostrar/ocultar painel de localização"
+
+#: src/ui/help/page/navigation.rs:31
+msgid "Show/hide connect to server"
+msgstr "Mostrar/ocultar conectar ao servidor"
+
+#: src/ui/help/page/navigation.rs:33
 msgid "Toggle preview panel and MIME filter"
 msgstr "Alternar painel de pré-visualização e filtro MIME"
 
-#: src/ui/help/page/search.rs:???
+#: src/ui/help/page/navigation.rs:36
+msgid "Open tag navigator"
+msgstr "Abrir navegador de etiquetas"
+
+#: src/ui/help/page/navigation.rs:41 src/ui/settings/page/shortcuts.rs:98
+msgid "Tabs"
+msgstr "Abas"
+
+#: src/ui/help/page/navigation.rs:43
+msgid "New tab"
+msgstr "Nova aba"
+
+#: src/ui/help/page/navigation.rs:44
+msgid "Close tab"
+msgstr "Fechar aba"
+
+#: src/ui/help/page/navigation.rs:45
+msgid "Next tab"
+msgstr "Próxima aba"
+
+#: src/ui/help/page/navigation.rs:46
+msgid "Previous tab"
+msgstr "Aba anterior"
+
+#: src/ui/help/page/navigation.rs:51 src/ui/settings/page/shortcuts.rs:13
+msgid "Navigation"
+msgstr "Navegação"
+
+# ============================================================
+# src/ui/help/page/quick_list.rs
+# ============================================================
+
+#: src/ui/help/page/quick_list.rs:7
+msgid "Quick List Shortcuts"
+msgstr "Atalhos da lista rápida"
+
+#: src/ui/help/page/quick_list.rs:9
+msgid "Add selection or current folder to list"
+msgstr "Adicionar seleção ou pasta atual à lista"
+
+#: src/ui/help/page/quick_list.rs:11
+msgid "Pin selection or current folder to sidebar permanently"
+msgstr "Fixar seleção ou pasta atual na barra lateral permanentemente"
+
+#: src/ui/help/page/quick_list.rs:14
+msgid "Cycle to the next folder in the list"
+msgstr "Avançar para a próxima pasta da lista"
+
+#: src/ui/help/page/quick_list.rs:15
+msgid "Clear the entire list"
+msgstr "Limpar toda a lista"
+
+#: src/ui/help/page/quick_list.rs:19
+msgid "Quick List"
+msgstr "Lista rápida"
+
+# ============================================================
+# src/ui/help/page/search.rs
+# ============================================================
+
+#: src/ui/help/page/search.rs:9
+msgid "Search Shortcuts"
+msgstr "Atalhos de busca"
+
+#: src/ui/help/page/search.rs:11
+msgid "Search files"
+msgstr "Pesquisar arquivos"
+
+#: src/ui/help/page/search.rs:17
+msgid "Quick Filters"
+msgstr "Filtros Rápidos"
+
+#: src/ui/help/page/search.rs:20
+msgid "Show only files matching the selected item's MIME type"
+msgstr "Mostrar apenas arquivos do mesmo tipo MIME do item selecionado"
+
+#: src/ui/help/page/search.rs:24
 msgid "Clear the active MIME filter or close the preview panel"
 msgstr "Limpar o filtro MIME ativo ou fechar o painel de pré-visualização"
 
-#: src/ui/help/page/search.rs:???
+#: src/ui/help/page/search.rs:29
 msgid "Select a file, then press Space or Ctrl+M to preview it and hide other files. Pressing Space or Esc again closes the preview and removes the filter."
 msgstr "Selecione um arquivo e pressione Espaço ou Ctrl+M para pré-visualizá-lo e ocultar os outros arquivos. Pressionar Espaço ou Esc novamente fecha a pré-visualização e remove o filtro."
+
+#: src/ui/help/page/search.rs:35
+msgid "Content Search"
+msgstr "Pesquisa de conteúdo"
+
+#: src/ui/help/page/search.rs:38
+msgid "Start content search"
+msgstr "Iniciar pesquisa de conteúdo"
+
+#: src/ui/help/page/search.rs:39
+msgid "Type :term to search all files, or :.ext:term to filter by extension"
+msgstr "Digite :term para pesquisar em todos os arquivos, ou :.ext:term para filtrar por extensão"
+
+#: src/ui/help/page/search.rs:43
+msgid "Cancel content search"
+msgstr "Cancelar pesquisa de conteúdo"
+
+#: src/ui/help/page/search.rs:44
+msgid "Press Escape while in search view"
+msgstr "Pressione Escape enquanto estiver na visualização de pesquisa"
+
+#: src/ui/help/page/search.rs:49
+msgid "Search inside file contents (not just filenames)"
+msgstr "Pesquisar dentro do conteúdo dos arquivos (não apenas nos nomes)"
+
+# ============================================================
+# src/ui/help/page/system_view.rs
+# ============================================================
+
+#: src/ui/help/page/system_view.rs:8
+msgid "System & View Shortcuts"
+msgstr "Atalhos de sistema e exibição"
+
+#: src/ui/help/page/system_view.rs:11 src/ui/settings/page/shortcuts.rs:187
+msgid "Rename selected item"
+msgstr "Renomear item selecionado"
+
+#: src/ui/help/page/system_view.rs:15
+msgid "Toggle folders first in current directory"
+msgstr "Alternar pastas primeiro no diretório atual"
+
+#: src/ui/help/page/system_view.rs:18
+msgid "Toggle embedded terminal"
+msgstr "Mostrar/ocultar terminal integrado"
+
+#: src/ui/help/page/system_view.rs:20
+msgid "Refresh current directory"
+msgstr "Atualizar diretório atual"
+
+#: src/ui/help/page/system_view.rs:24
+msgid "Toggle header bar"
+msgstr "Mostrar/ocultar barra de cabeçalho"
+
+#: src/ui/help/page/system_view.rs:27
+msgid "Toggle status bar"
+msgstr "Mostrar/ocultar barra de status"
+
+#: src/ui/help/page/system_view.rs:28
+msgid "Toggle sidebar"
+msgstr "Mostrar/ocultar barra lateral"
+
+#: src/ui/help/page/system_view.rs:29
+msgid "Toggle wide preview"
+msgstr "Mostrar/ocultar pré-visualização ampla"
+
+#: src/ui/help/page/system_view.rs:30
+msgid "Resize grid items"
+msgstr "Redimensionar itens da grade"
+
+#: src/ui/help/page/system_view.rs:31
+msgid "Open folder in new tab"
+msgstr "Abrir pasta em nova aba"
+
+#: src/ui/help/page/system_view.rs:32
+msgid "Open folder in new window"
+msgstr "Abrir pasta em nova janela"
+
+#: src/ui/help/page/system_view.rs:34
+msgid "Toggle hidden files"
+msgstr "Mostrar/ocultar arquivos ocultos"
 
 #: src/ui/help/page/system_view.rs:37
 msgid "Cycle folder/file filter"
 msgstr "Alternar filtro de pastas/arquivos"
+
+#: src/ui/help/page/system_view.rs:39 src/ui/settings/page/shortcuts.rs:171
+msgid "Move selected items to trash"
+msgstr "Mover itens selecionados para a lixeira"
+
+#: src/ui/help/page/system_view.rs:42
+msgid "Undo file operation"
+msgstr "Desfazer operação de arquivo"
+
+#: src/ui/help/page/system_view.rs:43
+msgid "Redo file operation"
+msgstr "Refazer operação de arquivo"
+
+#: src/ui/help/page/system_view.rs:45
+msgid "Copy absolute path of selected items"
+msgstr "Copiar caminho absoluto dos itens selecionados"
+
+#: src/ui/help/page/system_view.rs:49
+msgid "Create symbolic link from clipboard paths"
+msgstr "Criar link simbólico a partir dos caminhos na área de transferência"
+
+#: src/ui/help/page/system_view.rs:53
+msgid "Create hard link from clipboard paths"
+msgstr "Criar link físico a partir dos caminhos na área de transferência"
+
+#: src/ui/help/page/system_view.rs:60
+msgid "Open memory debug profiler"
+msgstr "Abrir perfilador de memória"
+
+#: src/ui/help/page/system_view.rs:64
+msgid "System & View"
+msgstr "Sistema e exibição"
+
+# ============================================================
+# src/ui/menu/context.rs
+# ============================================================
+
+#: src/ui/menu/context.rs:251
+msgid "Move to"
+msgstr "Mover para"
+
+#: src/ui/menu/context.rs:252
+msgid "Copy to"
+msgstr "Copiar para"
+
+#: src/ui/menu/context.rs:254
+msgid "Send to Quick List"
+msgstr "Enviar para a Lista Rápida"
+
+# ============================================================
+# src/ui/menu/editor/builtin_dialog.rs
+# ============================================================
+
+#: src/ui/menu/editor/builtin_dialog.rs:14
+msgid "Select Built-in Action"
+msgstr "Selecionar Ação Integrada"
+
+#: src/ui/menu/editor/builtin_dialog.rs:37
+msgid "Search built-ins…"
+msgstr "Pesquisar ações integradas…"
+
+#: src/ui/menu/editor/builtin_dialog.rs:57
+msgid "Scope"
+msgstr "Escopo"
+
+#: src/ui/menu/editor/builtin_dialog.rs:65
+msgid "Copy to clipboard"
+msgstr "Copiar para a área de transferência"
+
+#: src/ui/menu/editor/builtin_dialog.rs:78
+msgid "Use"
+msgstr "Usar"
+
+# ============================================================
+# src/ui/menu/editor/builtins.rs
+# ============================================================
+
+#: src/ui/menu/editor/builtins.rs:11
+msgid "Copies the selected files or folders to the clipboard."
+msgstr "Copia os arquivos ou pastas selecionados para a área de transferência."
+
+#: src/ui/menu/editor/builtins.rs:16
+msgid "Cuts the selected files or folders to the clipboard."
+msgstr "Recorta os arquivos ou pastas selecionados para a área de transferência."
+
+#: src/ui/menu/editor/builtins.rs:21
+msgid "Pastes items from the clipboard into the current directory."
+msgstr "Cola os itens da área de transferência no diretório atual."
+
+#: src/ui/menu/editor/builtins.rs:26
+msgid "Opens the selected folder or current location in a new tab."
+msgstr "Abre a pasta selecionada ou local atual em uma nova aba."
+
+#: src/ui/menu/editor/builtins.rs:31
+msgid "Triggers inline filename renaming on the selected item."
+msgstr "Inicia a renomeação em linha do item selecionado."
+
+#: src/ui/menu/editor/builtins.rs:36
+msgid "Moves the selected files or folders to the system trash."
+msgstr "Move os arquivos ou pastas selecionados para a lixeira do sistema."
+
+#: src/ui/menu/editor/builtins.rs:41
+msgid "Opens the new folder creation prompt."
+msgstr "Abre o diálogo de criação de nova pasta."
+
+#: src/ui/menu/editor/builtins.rs:46
+msgid "Opens the new file creation prompt."
+msgstr "Abre o diálogo de criação de novo arquivo."
+
+#: src/ui/menu/editor/builtins.rs:51
+msgid "Pins or unpins the target folder in the sidebar."
+msgstr "Fixa ou desafixa a pasta de destino na barra lateral."
+
+#: src/ui/menu/editor/builtins.rs:56
+msgid "Adds the selected folder or current directory to the Quick List."
+msgstr "Adiciona a pasta selecionada ou o diretório atual à Lista Rápida."
+
+#: src/ui/menu/editor/builtins.rs:61
+msgid "Opens a submenu to move or copy items directly to Quick List slots."
+msgstr "Abre um submenu para mover ou copiar itens diretamente para os slots da Lista Rápida."
+
+#: src/ui/menu/editor/builtins.rs:66
+msgid "Opens the file tag editor popover."
+msgstr "Abre o editor de etiquetas do arquivo."
+
+#: src/ui/menu/editor/builtins.rs:71
+msgid "Opens the Directory Inspector with disk usage and largest files."
+msgstr "Abre o Inspetor de Diretório com uso de disco e maiores arquivos."
+
+#: src/ui/menu/editor/builtins.rs:76
+msgid "Installs the selected font files into ~/.local/share/fonts."
+msgstr "Instala os arquivos de fonte selecionados em ~/.local/share/fonts."
+
+#: src/ui/menu/editor/builtins.rs:81
+msgid "Populates a dynamic submenu of registered applications for the MIME type."
+msgstr "Preenche um submenu dinâmico com aplicativos registrados para o tipo MIME."
+
+#: src/ui/menu/editor/builtins.rs:86
+msgid "Opens the full system application chooser dialog."
+msgstr "Abre o diálogo de seleção de aplicativos do sistema."
+
+#: src/ui/menu/editor/builtins.rs:91
+msgid "Opens the folder icon picker to assign a theme icon."
+msgstr "Abre o seletor de ícones de pasta para atribuir um ícone do tema."
+
+#: src/ui/menu/editor/builtins.rs:96
+msgid "Opens a file chooser to assign a custom image as file/folder icon."
+msgstr "Abre o seletor de arquivos para atribuir uma imagem personalizada como ícone."
+
+#: src/ui/menu/editor/builtins.rs:101
+msgid "Restores the default icon for the selected file or folder."
+msgstr "Restaura o ícone padrão para o arquivo ou pasta selecionado."
+
+#: src/ui/menu/editor/builtins.rs:106
+msgid "Sets a custom image icon for the target file's extension globally."
+msgstr "Define uma imagem como ícone global para a extensão do arquivo."
+
+#: src/ui/menu/editor/builtins.rs:111
+msgid "Resets the custom icon for the target extension back to theme default."
+msgstr "Restaura o ícone da extensão para o padrão do tema."
+
+#: src/ui/menu/editor/builtins.rs:116
+msgid "Sets the selected image as the main window background."
+msgstr "Define a imagem selecionada como fundo da janela principal."
+
+#: src/ui/menu/editor/builtins.rs:121
+msgid "Sets the selected image as the left sidebar background."
+msgstr "Define a imagem selecionada como fundo da barra lateral esquerda."
+
+#: src/ui/menu/editor/builtins.rs:126
+msgid "Sets the selected image as the right panel background."
+msgstr "Define a imagem selecionada como fundo do painel direito."
+
+#: src/ui/menu/editor/builtins.rs:131
+msgid "Clears all custom background images and resets styling to default."
+msgstr "Limpa todas as imagens de fundo e restaura o estilo padrão."
+
+# ============================================================
+# src/ui/menu/editor/entry_dialog.rs
+# ============================================================
+
+#: src/ui/menu/editor/entry_dialog.rs:12
+msgid "Edit Entry"
+msgstr "Editar entrada"
+
+#: src/ui/menu/editor/entry_dialog.rs:14
+msgid "Add Entry"
+msgstr "Adicionar entrada"
+
+#: src/ui/menu/editor/entry_dialog.rs:101
+msgid "Set exact line order (1-based)"
+msgstr "Definir ordem exata da linha (iniciando em 1)"
+
+#: src/ui/dialog/new_action.rs:50 src/ui/menu/editor/entry_dialog.rs:112 src/ui/menu/editor/entry_dialog.rs:178
+msgid "Pick Icon"
+msgstr "Escolher Ícone"
+
+#: src/ui/menu/editor/entry_dialog.rs:252
+msgid "Pick Built-in"
+msgstr "Escolher Built-in"
+
+#: src/ui/menu/editor/entry_dialog.rs:294
+#, no-c-format
+msgid "Command (%p = path · %d = dir · %f = filename · %l = line)"
+msgstr "Comando (%p = caminho · %d = diretório · %f = nome do arquivo · %l = linha)"
+
+#: src/ui/menu/editor/entry_dialog.rs:349 src/ui/menu/editor/mod.rs:97
+msgid "Save"
+msgstr "Salvar"
+
+# ============================================================
+# src/ui/menu/editor/mod.rs
+# ============================================================
+
+#: src/ui/menu/editor/mod.rs:67
+msgid "Flux Menu Editor"
+msgstr "Editor de menu do Flux"
+
+#: src/ui/menu/editor/mod.rs:90
+msgid "Add new entry  (Ctrl+N)"
+msgstr "Adicionar nova entrada  (Ctrl+N)"
+
+#: src/ui/menu/editor/mod.rs:94
+msgid "Create menu config"
+msgstr "Criar configuração de menu"
+
+#: src/ui/menu/editor/mod.rs:98
+msgid "Write to config file  (Ctrl+S)"
+msgstr "Salvar no arquivo de configuração  (Ctrl+S)"
+
+#: src/ui/menu/editor/mod.rs:115
+msgid "Select menu configuration file to edit"
+msgstr "Selecione o arquivo de configuração de menu para editar"
+
+#: src/ui/menu/editor/mod.rs:124
+msgid "Search entries…"
+msgstr "Pesquisar entradas…"
+
+#: src/ui/menu/editor/mod.rs:127
+msgid "Filter entries  (Ctrl+F)"
+msgstr "Filtrar entradas  (Ctrl+F)"
+
+# ============================================================
+# src/ui/menu/editor/new_menu_dialog.rs
+# ============================================================
+
+#: src/ui/menu/editor/new_menu_dialog.rs:9
+msgid "Create Menu"
+msgstr "Criar Menu"
+
+#: src/ui/menu/editor/new_menu_dialog.rs:22
+msgid "Menu File Name"
+msgstr "Nome do Arquivo de Menu"
+
+#: src/ui/menu/editor/new_menu_dialog.rs:23
+msgid "Enter a menu name (e.g. 'menu-application-all.rs' for 'application/all' MIME type)"
+msgstr "Digite o nome do menu (ex: 'menu-application-all.rs' para o tipo MIME 'application/all')"
+
+# ============================================================
+# src/ui/menu/editor/rows.rs
+# ============================================================
+
+#: src/ui/menu/editor/rows.rs:38
+msgid "No entries yet"
+msgstr "Nenhuma entrada ainda"
+
+#: src/ui/menu/editor/rows.rs:39
+msgid "Press + or Ctrl+N to add your first menu action"
+msgstr "Pressione + ou Ctrl+N para adicionar sua primeira ação de menu"
+
+#: src/ui/menu/editor/rows.rs:48
+msgid "No results"
+msgstr "Nenhum resultado"
+
+#: src/ui/menu/editor/rows.rs:49
+msgid "Try a different search term"
+msgstr "Tente um termo de pesquisa diferente"
+
+#: src/ui/menu/editor/rows.rs:130
+msgid "Move up"
+msgstr "Mover para cima"
+
+#: src/ui/menu/editor/rows.rs:131
+msgid "Move down"
+msgstr "Mover para baixo"
+
+#: src/ui/menu/editor/rows.rs:132
+msgid "Edit"
+msgstr "Editar"
+
+# ============================================================
+# src/ui/menu/secondary/handlers.rs
+# ============================================================
+
+#: src/ui/menu/secondary/handlers.rs:91
+msgid "No contextual actions for this type"
+msgstr "Nenhuma ação contextual para este tipo"
+
+# ============================================================
+# src/ui/menu/secondary/template.rs
+# ============================================================
+
+#: src/ui/menu/secondary/template.rs:165
+msgid "quotes and line breaks are not allowed"
+msgstr "aspas e quebras de linha não são permitidas"
+
+#: src/ui/menu/secondary/template.rs:188
+msgid "The label cannot be empty"
+msgstr "O rótulo não pode ficar vazio"
+
+#: src/ui/menu/secondary/template.rs:191
+msgid "The MIME types cannot be empty"
+msgstr "Os tipos MIME não podem ficar vazios"
+
+#: src/ui/menu/secondary/template.rs:194
+msgid "The command cannot be empty"
+msgstr "O comando não pode ficar vazio"
+
+#: src/ui/menu/secondary/template.rs:198
+msgid "Submenu"
+msgstr "Submenu"
+
+#: src/ui/menu/secondary/template.rs:201
+msgid "Command"
+msgstr "Comando"
+
+#: src/ui/menu/secondary/template.rs:203
+msgid "Notification"
+msgstr "Notificação"
+
+#: src/ui/menu/secondary/template.rs:206
+msgid "The label cannot contain \"=>\""
+msgstr "O rótulo não pode conter \"=>\""
+
+# ============================================================
+# src/ui/navigation/navigate.rs
+# ============================================================
+
+#: src/ui/navigation/navigate.rs:238
+msgid "Path not found"
+msgstr "Caminho não encontrado"
+
+# ============================================================
+# src/ui/navigation/quick_list.rs
+# ============================================================
+
+#: src/ui/navigation/quick_list.rs:168
+msgid "Set to Current Folder"
+msgstr "Definir como Pasta Atual"
+
+#: src/ui/navigation/quick_list.rs:179
+msgid "Open in New Window"
+msgstr "Abrir em Nova Janela"
+
+#: src/ui/navigation/quick_list.rs:192
+msgid "Remove from Quick List"
+msgstr "Remover da Lista Rápida"
+
+# ============================================================
+# src/ui/ops/file/clipboard.rs
+# ============================================================
+
+#: src/ui/ops/file/clipboard.rs:49
+msgid "No items selected."
+msgstr "Nenhum item selecionado."
+
+#: src/ui/ops/file/clipboard.rs:69
+msgid "Paths copied to clipboard."
+msgstr "Caminhos copiados para a área de transferência."
+
+# ============================================================
+# src/ui/ops/file/link.rs
+# ============================================================
+
+#: src/ui/ops/file/link.rs:12
+msgid "No clipboard available."
+msgstr "Área de transferência indisponível."
+
+#: src/ui/ops/file/link.rs:26
+msgid "Clipboard does not contain text."
+msgstr "A área de transferência não contém texto."
+
+#: src/ui/ops/file/link.rs:89
+msgid "No valid paths found in clipboard."
+msgstr "Nenhum caminho válido encontrado na área de transferência."
+
+#: src/ui/ops/file/link.rs:132
+msgid "No such file or directory"
+msgstr "Arquivo ou diretório inexistente"
+
+#: src/ui/ops/file/link.rs:146
+msgid "Invalid filename"
+msgstr "Nome de arquivo inválido"
+
+#: src/ui/ops/file/link.rs:177
+msgid "Hard links to directories are not supported."
+msgstr "Links físicos para diretórios não são suportados."
+
+#: src/ui/ops/file/link.rs:199
+msgid "Created link"
+msgstr "Link criado"
+
+#: src/ui/ops/file/link.rs:203 src/ui/properties/sections.rs:116
+msgid "Created"
+msgstr "Criado"
+
+#: src/ui/ops/file/link.rs:211
+msgid "Errors"
+msgstr "Erros"
+
+# ============================================================
+# src/ui/ops/tag.rs
+# ============================================================
+
+#: src/ui/ops/tag.rs:17
+msgid "Tags updated"
+msgstr "Etiquetas atualizadas"
+
+#: src/ui/ops/tag.rs:39
+msgid "Tag removed"
+msgstr "Etiqueta removida"
+
+# ============================================================
+# src/ui/ops/view/preview.rs
+# ============================================================
+
+#: src/ui/ops/view/preview.rs:334
+msgid "Preview failed."
+msgstr "Falha na pré-visualização."
+
+#: src/ui/ops/view/preview.rs:347
+msgid "Preview timed out. Use Open to view this file."
+msgstr "Tempo esgotado na pré-visualização. Use Abrir para ver este arquivo."
+
+#: src/ui/ops/view/preview.rs:351
+msgid "Preview failed. Use Open to view this file."
+msgstr "Falha na pré-visualização. Use Abrir para ver este arquivo."
+
+#: src/ui/ops/view/preview.rs:368 src/ui/ops/view/preview.rs:649
+msgid "Note"
+msgstr "Observação"
+
+#: src/ui/ops/view/preview.rs:379
+msgid "File no longer exists."
+msgstr "O arquivo não existe mais."
+
+#: src/ui/ops/view/preview.rs:396
+msgid "Extracted from"
+msgstr "Extraído de"
+
+#: src/ui/ops/view/preview.rs:437
+msgid "Converted from"
+msgstr "Convertido de"
+
+#: src/ui/ops/view/preview.rs:465
+msgid "Rows"
+msgstr "Linhas"
+
+#: src/ui/ops/view/preview.rs:467
+msgid "Columns"
+msgstr "Colunas"
+
+#: src/ui/ops/view/preview.rs:473
+msgid "Delimiter"
+msgstr "Delimitador"
+
+#: src/ui/ops/view/preview.rs:557
+msgid "Encoding"
+msgstr "Codificação"
+
+#: src/ui/ops/view/preview.rs:565
+msgid "Line endings"
+msgstr "Fins de linha"
+
+#: src/ui/ops/view/preview.rs:569
+msgid "Lines"
+msgstr "Linhas"
+
+#: src/ui/ops/view/preview.rs:578
+msgid "Words"
+msgstr "Palavras"
+
+#: src/ui/ops/view/preview.rs:604
+msgid "Language"
+msgstr "Linguagem"
+
+#: src/ui/ops/view/preview.rs:636
+msgid "Pages"
+msgstr "Páginas"
+
+#: src/ui/ops/view/preview.rs:638
+msgid "Page size"
+msgstr "Tamanho da página"
+
+#: src/ui/ops/view/preview.rs:650
+msgid "Could not open this PDF (encrypted or damaged)."
+msgstr "Não foi possível abrir este PDF (criptografado ou danificado)."
+
+#: src/ui/ops/view/preview.rs:696 src/ui/properties/sections.rs:131
+msgid "Permissions"
+msgstr "Permissões"
+
+#: src/ui/ops/view/preview.rs:703
+msgid "Symlink to"
+msgstr "Link simbólico para"
+
+#: src/ui/ops/view/preview.rs:745 src/ui/properties/sections.rs:177
+msgid "Dimensions"
+msgstr "Dimensões"
+
+#: src/ui/ops/view/preview.rs:747 src/ui/panels/preview_binary.rs:19
+msgid "Format"
+msgstr "Formato"
+
+#: src/ui/ops/view/preview.rs:768
+msgid "Title"
+msgstr "Título"
+
+#: src/ui/ops/view/preview.rs:771
+msgid "Artist"
+msgstr "Artista"
+
+#: src/ui/ops/view/preview.rs:774
+msgid "Album"
+msgstr "Álbum"
+
+#: src/ui/ops/view/preview.rs:777
+msgid "Genre"
+msgstr "Gênero"
+
+#: src/ui/ops/view/preview.rs:783
+msgid "Year"
+msgstr "Ano"
+
+#: src/ui/ops/view/preview.rs:788 src/ui/ops/view/preview.rs:843
+msgid "Duration"
+msgstr "Duração"
+
+#: src/ui/ops/view/preview.rs:790 src/ui/ops/view/preview.rs:846
+msgid "Bitrate"
+msgstr "Taxa de bits"
+
+#: src/ui/ops/view/preview.rs:793
+msgid "Sample rate"
+msgstr "Taxa de amostragem"
+
+#: src/ui/ops/view/preview.rs:796
+msgid "Channels"
+msgstr "Canais"
+
+#: src/ui/ops/view/preview.rs:830
+msgid "Resolution"
+msgstr "Resolução"
+
+#: src/ui/ops/view/preview.rs:833
+msgid "Codec"
+msgstr "Codec"
+
+#: src/ui/ops/view/preview.rs:840
+msgid "Frame rate"
+msgstr "Taxa de quadros"
+
+#: src/ui/ops/view/preview.rs:867
+msgid "Cannot read this folder."
+msgstr "Não foi possível ler esta pasta."
+
+#: src/ui/ops/view/preview.rs:894
+msgid "Folders"
+msgstr "Pastas"
+
+#: src/ui/ops/view/preview.rs:896
+msgid "Files"
+msgstr "Arquivos"
+
+#: src/ui/ops/view/preview.rs:909
+msgid "Folder"
+msgstr "Pasta"
+
+#: src/ui/ops/view/preview.rs:931
+msgid "Top-level entries"
+msgstr "Entradas no nível superior"
+
+# ============================================================
+# src/ui/ops/view/selection.rs
+# ============================================================
+
+#: src/ui/ops/view/selection.rs:146
+msgid "Remove Selected"
+msgstr "Remover Selecionados"
+
+#: src/ui/ops/view/selection.rs:147
+msgid "Remove selected items from recents"
+msgstr "Remover itens selecionados dos recentes"
+
+#: src/ui/ops/view/selection.rs:149 src/ui/startup/components.rs:202
+msgid "Clear Recents"
+msgstr "Limpar Recentes"
+
+#: src/ui/ops/view/selection.rs:150 src/ui/startup/components.rs:203
+msgid "Clear all recents"
+msgstr "Limpar todos os recentes"
+
+# ============================================================
+# src/ui/ops/view/video_preview.rs
+# ============================================================
+
+#: src/ui/ops/view/video_preview.rs:171
+msgid "Video preview throttled: too many quick selections, waiting {}s"
+msgstr "Pré-visualização de vídeo limitada: muitas seleções rápidas, aguardando {}s"
+
+# ============================================================
+# src/ui/panels/actions.rs
+# ============================================================
+
+#: src/ui/dialog/new_action.rs:119 src/ui/panels/actions.rs:47 src/ui/panels/actions.rs:107
+msgid "New Action"
+msgstr "Nova ação"
+
+#: src/ui/panels/actions.rs:59
+msgid "Contextual Actions"
+msgstr "Ações Contextuais"
+
+#: src/ui/panels/actions.rs:67
+msgid "Filter actions…"
+msgstr "Filtrar ações…"
+
+#: src/ui/panels/actions.rs:96
+msgid "Create ~/.config/flux/menus/menu-<category>-<subtype>.rs to add actions for this file type."
+msgstr "Crie ~/.config/flux/menus/menu-<categoria>-<subtipo>.rs para adicionar ações para este tipo de arquivo."
+
+#: src/ui/panels/actions.rs:101
+msgid "No contextual actions"
+msgstr "Nenhuma ação contextual"
+
+#: src/ui/panels/actions.rs:220
+msgid "Run"
+msgstr "Executar"
+
+#: src/ui/panels/actions.rs:404
+msgid "Action saved to"
+msgstr "Ação salva em"
+
+#: src/ui/panels/actions.rs:413
+msgid "Could not save action"
+msgstr "Não foi possível salvar a ação"
+
+# ============================================================
+# src/ui/panels/connect.rs
+# ============================================================
+
+#: src/ui/panels/connect.rs:109 src/ui/panels/location.rs:79
+msgid "Connect"
+msgstr "Conectar"
+
+#: src/ui/panels/connect.rs:118
+msgid "Connect to Server"
+msgstr "Conectar ao Servidor"
+
+#: src/ui/panels/connect.rs:137
+msgid "Protocol"
+msgstr "Protocolo"
+
+#: src/ui/panels/connect.rs:144
+msgid "Server Address"
+msgstr "Endereço do servidor"
+
+#: src/ui/panels/connect.rs:150
+msgid "Port"
+msgstr "Porta"
+
+#: src/ui/panels/connect.rs:151 src/ui/panels/connect.rs:157 src/ui/panels/connect.rs:163
+msgid "optional"
+msgstr "opcional"
+
+#: src/ui/panels/connect.rs:156
+msgid "Share / Path"
+msgstr "Compartilhamento / Caminho"
+
+#: src/ui/panels/connect.rs:162
+msgid "Username"
+msgstr "Nome de usuário"
+
+# ============================================================
+# src/ui/panels/diff.rs
+# ============================================================
+
+#: src/ui/panels/diff.rs:171
+msgid "Copy Diff to Clipboard"
+msgstr "Copiar Diff para a Área de Transferência"
+
+#: src/ui/panels/diff.rs:184
+msgid "Diff copied to clipboard"
+msgstr "Diff copiado para a área de transferência"
+
+#: src/ui/panels/diff.rs:193
+msgid "Git Diff"
+msgstr "Git Diff"
+
+# ============================================================
+# src/ui/panels/location.rs
+# ============================================================
+
+#: src/ui/panels/location.rs:88
+msgid "Enter Location"
+msgstr "Digitar localização"
+
+#: src/ui/panels/location.rs:106
+msgid "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):"
+msgstr "Digite um caminho local ou URI de rede (ex.: smb://servidor/compartilhamento, sftp://host, /home):"
+
+#: src/ui/panels/location.rs:130
+msgid "Clear History"
+msgstr "Limpar histórico"
+
+# ============================================================
+# src/ui/panels/preview.rs
+# ============================================================
+
+#: src/ui/panels/preview.rs:320
+msgid "Finished."
+msgstr "Concluído."
+
+#: src/ui/panels/preview.rs:322
+msgid "mpv could not play this file"
+msgstr "o mpv não conseguiu reproduzir este arquivo"
+
+#: src/ui/panels/preview.rs:542
+msgid "Previous page"
+msgstr "Página anterior"
+
+#: src/ui/panels/preview.rs:543
+msgid "Next page"
+msgstr "Próxima página"
+
+#: src/ui/panels/preview.rs:556
+msgid "Wrap lines"
+msgstr "Quebrar linhas"
+
+#: src/ui/panels/preview.rs:562
+msgid "Invert colors"
+msgstr "Inverter cores"
+
+#: src/ui/panels/preview.rs:568
+msgid "Toggle Markdown source"
+msgstr "Alternar fonte Markdown"
+
+#: src/ui/panels/preview.rs:573 src/ui/panels/preview.rs:1249
+msgid "Install font"
+msgstr "Instalar fonte"
+
+#: src/ui/panels/preview.rs:575
+msgid "Zoom out"
+msgstr "Reduzir zoom"
+
+#: src/ui/panels/preview.rs:576
+msgid "Zoom in"
+msgstr "Aumentar zoom"
+
+#: src/ui/panels/preview.rs:579
+msgid "Reset zoom"
+msgstr "Redefinir zoom"
+
+#: src/ui/panels/preview.rs:585
+msgid "Show file details"
+msgstr "Mostrar detalhes do arquivo"
+
+#: src/ui/panels/preview.rs:591
+msgid "Always open preview wide (F11)"
+msgstr "Abrir pré-visualização ampla sempre (F11)"
+
+#: src/ui/panels/preview.rs:598
+msgid "Show only files of this type (Ctrl+M)"
+msgstr "Mostrar apenas arquivos deste tipo (Ctrl+M)"
+
+#: src/ui/panels/preview.rs:614
+msgid "No preview"
+msgstr "Sem pré-visualização"
+
+#: src/ui/panels/preview.rs:615
+msgid "Select an item to preview."
+msgstr "Selecione um item para pré-visualizar."
+
+#: src/ui/panels/preview.rs:628 src/ui/panels/preview.rs:1499
+msgid "No preview available"
+msgstr "Pré-visualização não disponível"
+
+#: src/ui/panels/preview.rs:681 src/ui/panels/preview.rs:1477 src/ui/panels/preview.rs:1585 src/ui/panels/preview.rs:1603
+msgid "Play"
+msgstr "Reproduzir"
+
+#: src/ui/panels/preview.rs:684
+msgid "Back 10 seconds"
+msgstr "Voltar 10 segundos"
+
+#: src/ui/panels/preview.rs:685
+msgid "Forward 10 seconds"
+msgstr "Avançar 10 segundos"
+
+#: src/ui/panels/preview.rs:700
+msgid "Volume"
+msgstr "Volume"
+
+#: src/ui/panels/preview.rs:889 src/ui/panels/preview.rs:931
+msgid "Preview"
+msgstr "Pré-visualização"
+
+#: src/ui/panels/preview.rs:895
+msgid "Details"
+msgstr "Detalhes"
+
+#: src/ui/panels/preview.rs:906
+msgid "Menu"
+msgstr "Menu"
+
+#: src/ui/panels/preview.rs:907
+msgid "Contextual actions"
+msgstr "Ações contextuais"
+
+#: src/ui/panels/preview.rs:981
+msgid "Previous item"
+msgstr "Item anterior"
+
+#: src/ui/panels/preview.rs:994
+msgid "Next item"
+msgstr "Próximo item"
+
+#: src/ui/panels/preview.rs:1331
+msgid "Binary file - showing the first bytes as hex."
+msgstr "Arquivo binário - mostrando os primeiros bytes em hexadecimal."
+
+#: src/ui/panels/preview.rs:1335
+msgid "Preview truncated - showing the start of the file."
+msgstr "Pré-visualização truncada - mostrando o início do arquivo."
+
+#: src/ui/panels/preview.rs:1339
+msgid "Language:"
+msgstr "Linguagem:"
+
+#: src/ui/panels/preview.rs:1377
+msgid "Table truncated - showing the first rows/columns."
+msgstr "Tabela truncada - mostrando as primeiras linhas/colunas."
+
+#: src/ui/panels/preview.rs:1388
+msgid "Empty"
+msgstr "Vazio"
+
+#: src/ui/panels/preview.rs:1469
+msgid "mpv is not installed. Install it to enable audio preview, or use Open."
+msgstr "O mpv não está instalado. Instale-o para habilitar a pré-visualização de áudio, ou use Abrir."
+
+#: src/ui/panels/preview.rs:1474
+msgid "Ready."
+msgstr "Pronto."
+
+#: src/ui/panels/preview.rs:1517
+msgid "Preview failed"
+msgstr "Falha na pré-visualização"
+
+#: src/ui/panels/preview.rs:1603 src/ui/panels/preview.rs:1636
+msgid "Pause"
+msgstr "Pausar"
+
+#: src/ui/panels/preview.rs:1641
+msgid "Audio preview requires mpv. Install it with your package manager."
+msgstr "A pré-visualização de áudio requer o mpv. Instale-o com seu gerenciador de pacotes."
+
+#: src/ui/panels/preview.rs:1664
+msgid "Stopped."
+msgstr "Interrompido."
+
+#: src/ui/panels/preview.rs:1708
+msgid "Location"
+msgstr "Localização"
+
+#: src/ui/panels/preview.rs:1871
+msgid "Could not render this page."
+msgstr "Não foi possível renderizar esta página."
+
+# ============================================================
+# src/ui/panels/preview_binary.rs
+# ============================================================
+
+#: src/ui/panels/preview_binary.rs:67 src/ui/panels/preview_binary.rs:109
+msgid "Description"
+msgstr "Descrição"
+
+#: src/ui/panels/preview_binary.rs:68
+msgid "Product"
+msgstr "Produto"
+
+#: src/ui/panels/preview_binary.rs:69
+msgid "Company"
+msgstr "Empresa"
+
+#: src/ui/panels/preview_binary.rs:70 src/ui/panels/preview_binary.rs:110
+msgid "Version"
+msgstr "Versão"
+
+#: src/ui/panels/preview_binary.rs:71
+msgid "Copyright"
+msgstr "Direitos autorais"
+
+#: src/ui/panels/preview_binary.rs:111
+msgid "Categories"
+msgstr "Categorias"
+
+# ============================================================
+# src/ui/panels/search.rs
+# ============================================================
+
+#: src/ui/panels/search.rs:52 src/ui/view/component.rs:391
+msgid "Clear filter"
+msgstr "Limpar filtro"
+
+#: src/ui/panels/search.rs:107
+msgid "What to find"
+msgstr "O que encontrar"
+
+#: src/ui/panels/search.rs:166
+msgid "File name"
+msgstr "Nome do arquivo"
+
+#: src/ui/panels/search.rs:166
+msgid "invoice, draft*, photo"
+msgstr "fatura, rascunho*, foto"
+
+#: src/ui/panels/search.rs:169
+msgid "Exact match"
+msgstr "Correspondência exata"
+
+#: src/ui/panels/search.rs:170
+msgid "Match exact filename without wildcards"
+msgstr "Corresponder nome exato do arquivo sem curingas"
+
+#: src/ui/panels/search.rs:175
+msgid "Regular expression"
+msgstr "Expressão regular"
+
+#: src/ui/panels/search.rs:176
+msgid "Use regular expressions for file name matching"
+msgstr "Utilizar expressões regulares para a correspondência de nomes de ficheiro"
+
+#: src/ui/panels/search.rs:181
+msgid "Inside files"
+msgstr "Dentro dos arquivos"
+
+#: src/ui/panels/search.rs:182
+msgid "Requires 3+ characters"
+msgstr "Requer 3+ caracteres"
+
+#: src/ui/panels/search.rs:186
+msgid "Pattern / Extension"
+msgstr "Padrão / Extensão"
+
+#: src/ui/panels/search.rs:193
+msgid "Where to look"
+msgstr "Onde procurar"
+
+#: src/ui/panels/search.rs:196
+msgid "Search inside subfolders"
+msgstr "Pesquisar dentro das subpastas"
+
+#: src/ui/panels/search.rs:199
+msgid "Only search folders"
+msgstr "Pesquisar apenas pastas"
+
+#: src/ui/panels/search.rs:200
+msgid "Match directory names only"
+msgstr "Corresponder apenas a nomes de pastas"
+
+#: src/ui/panels/search.rs:205
+msgid "Include hidden files"
+msgstr "Incluir arquivos ocultos"
+
+#: src/ui/panels/search.rs:206
+msgid "Files beginning with a dot"
+msgstr "Arquivos que começam com ponto"
+
+#: src/ui/panels/search.rs:213
+msgid "Narrow results"
+msgstr "Restringir resultados"
+
+#: src/ui/panels/search.rs:214
+msgid "Filter by date and file size"
+msgstr "Filtrar por data e tamanho de arquivo"
+
+#: src/ui/panels/search.rs:220
+msgid "Any time"
+msgstr "Qualquer momento"
+
+#: src/ui/panels/search.rs:221
+msgid "Last hour"
+msgstr "Última hora"
+
+#: src/ui/panels/search.rs:223
+msgid "Last 7 days"
+msgstr "Últimos 7 dias"
+
+#: src/ui/panels/search.rs:224
+msgid "Last 30 days"
+msgstr "Últimos 30 dias"
+
+#: src/ui/panels/search.rs:225
+msgid "Last year"
+msgstr "Último ano"
+
+#: src/ui/panels/search.rs:231
+msgid "File size"
+msgstr "Tamanho do arquivo"
+
+#: src/ui/panels/search.rs:232
+msgid "Any size"
+msgstr "Qualquer tamanho"
+
+#: src/ui/panels/search.rs:232
+msgid "Larger than"
+msgstr "Maior que"
+
+#: src/ui/panels/search.rs:232
+msgid "Smaller than"
+msgstr "Menor que"
+
+#: src/ui/panels/search.rs:246
+msgid "Amount"
+msgstr "Valor"
+
+# ============================================================
+# src/ui/panels/tag.rs
+# ============================================================
+
+#: src/ui/panels/tag.rs:31
+msgid "Tag Navigator"
+msgstr "Navegador de Etiquetas"
+
+#: src/ui/panels/tag.rs:121
+msgid "Tag options"
+msgstr "Opções da etiqueta"
+
+#: src/ui/panels/tag.rs:137
+msgid "Apply to selection"
+msgstr "Aplicar à seleção"
+
+#: src/ui/panels/tag.rs:153
+msgid "Remove from selection"
+msgstr "Remover da seleção"
+
+#: src/ui/panels/tag.rs:169 src/ui/view/init.rs:199
+msgid "Pin to Sidebar"
+msgstr "Fixar na barra lateral"
+
+#: src/ui/panels/tag.rs:189
+msgid "Delete tag globally"
+msgstr "Excluir etiqueta globalmente"
+
+#: src/ui/panels/tag.rs:202
+msgid "Delete Tag"
+msgstr "Excluir Etiqueta"
+
+#: src/ui/panels/tag.rs:207
+msgid "Are you sure you want to delete this tag globally"
+msgstr "Tem certeza de que deseja excluir esta etiqueta globalmente"
+
+# ============================================================
+# src/ui/properties/probes.rs
+# ============================================================
+
+#: src/ui/properties/probes.rs:60
+msgid "Hash"
+msgstr "Hash"
+
+#: src/ui/properties/probes.rs:62
+msgid "Subject"
+msgstr "Assunto"
+
+#: src/ui/properties/probes.rs:113
+msgid "Arch"
+msgstr "Arquitetura"
+
+#: src/ui/properties/probes.rs:114
+msgid "Endian"
+msgstr "Ordem de bytes"
+
+#: src/ui/properties/probes.rs:134
+msgid "Line Count"
+msgstr "Número de linhas"
+
+#: src/ui/properties/probes.rs:135
+msgid "Word Count"
+msgstr "Número de palavras"
+
+#: src/ui/properties/probes.rs:136
+msgid "TODOs"
+msgstr "TODOs"
+
+#: src/ui/properties/probes.rs:137
+msgid "Line Endings"
+msgstr "Terminação de linha"
+
+# ============================================================
+# src/ui/properties/sections.rs
+# ============================================================
+
+#: src/ui/properties/sections.rs:33
+msgid "File Identity"
+msgstr "Identificação do arquivo"
+
+#: src/ui/properties/sections.rs:35
+msgid "Filename"
+msgstr "Nome do arquivo"
+
+#: src/ui/properties/sections.rs:37
+msgid "Extension"
+msgstr "Extensão"
+
+#: src/ui/properties/sections.rs:40
+msgid "None"
+msgstr "Nenhuma"
+
+#: src/ui/properties/sections.rs:42
+msgid "MIME Type"
+msgstr "Tipo MIME"
+
+#: src/ui/properties/sections.rs:50
+msgid "Symlink Info"
+msgstr "Informações do link simbólico"
+
+#: src/ui/properties/sections.rs:52
+msgid "Target"
+msgstr "Destino"
+
+#: src/ui/properties/sections.rs:53
+msgid "Broken"
+msgstr "Quebrado"
+
+#: src/ui/properties/sections.rs:55
+msgid "Canonical"
+msgstr "Canônico"
+
+#: src/ui/properties/sections.rs:78
+msgid "Extended Attributes"
+msgstr "Atributos estendidos"
+
+#: src/ui/properties/sections.rs:85
+msgid "Full Path"
+msgstr "Caminho completo"
+
+#: src/ui/properties/sections.rs:90
+msgid "Disk Usage"
+msgstr "Uso em disco"
+
+#: src/ui/properties/sections.rs:91
+msgid "Inode"
+msgstr "Inode"
+
+#: src/ui/properties/sections.rs:92
+msgid "Device ID"
+msgstr "ID do dispositivo"
+
+#: src/ui/properties/sections.rs:101
+msgid "Mount Source"
+msgstr "Origem da montagem"
+
+#: src/ui/properties/sections.rs:102
+msgid "FS Type"
+msgstr "Tipo de sistema de arquivos"
+
+#: src/ui/properties/sections.rs:105
+msgid "System & Disk"
+msgstr "Sistema e disco"
+
+#: src/ui/properties/sections.rs:113
+msgid "Temporal"
+msgstr "Temporal"
+
+#: src/ui/properties/sections.rs:124
+msgid "Accessed"
+msgstr "Acessado"
+
+#: src/ui/properties/sections.rs:132
+msgid "UID/GID"
+msgstr "UID/GID"
+
+#: src/ui/properties/sections.rs:136
+msgid "Entropy"
+msgstr "Entropia"
+
+#: src/ui/properties/sections.rs:144
+msgid "Security"
+msgstr "Segurança"
+
+#: src/ui/properties/sections.rs:144
+msgid "SHA256"
+msgstr "SHA256"
+
+#: src/ui/properties/sections.rs:151
+msgid "Executable Analysis"
+msgstr "Análise do executável"
+
+#: src/ui/properties/sections.rs:167
+msgid "Content Metrics"
+msgstr "Métricas do conteúdo"
+
+#: src/ui/properties/sections.rs:175
+msgid "Visual Media"
+msgstr "Mídia visual"
+
+#: src/ui/properties/sections.rs:179
+msgid "Aspect Ratio"
+msgstr "Proporção de tela"
+
+#: src/ui/properties/sections.rs:189
+msgid "Git History"
+msgstr "Histórico Git"
+
+# ============================================================
+# src/ui/properties/window.rs
+# ============================================================
+
+#: src/ui/properties/window.rs:37 src/ui/settings/page/shortcuts.rs:202
+msgid "Properties"
+msgstr "Propriedades"
+
+#: src/ui/properties/window.rs:106
+msgid "System Handler"
+msgstr "Aplicativo padrão"
+
+#: src/ui/properties/window.rs:109
+msgid "Default application for"
+msgstr "Aplicativo padrão para"
+
+#: src/ui/properties/window.rs:177
+msgid "Copied to clipboard"
+msgstr "Copiado para a área de transferência"
+
+#: src/ui/properties/window.rs:196
+msgid "Set as default:"
+msgstr "Definir como padrão:"
+
+# ============================================================
+# src/ui/settings/mod.rs
+# ============================================================
+
+#: src/ui/settings/mod.rs:20 src/ui/startup/menu.rs:48
+msgid "Preferences"
+msgstr "Preferências"
+
+# ============================================================
+# src/ui/settings/page/appearance.rs
+# ============================================================
+
+#: src/ui/settings/page/appearance.rs:10
+msgid "Appearance"
+msgstr "Aparência"
+
+#: src/ui/settings/page/appearance.rs:14
+msgid "Layout"
+msgstr "Layout"
+
+#: src/ui/settings/page/appearance.rs:15
+msgid "Adjust the visual layout of the file grid and sidebar"
+msgstr "Ajustar o layout visual da grade de arquivos e barra lateral"
+
+#: src/ui/settings/page/appearance.rs:17
+msgid "UI Scale"
+msgstr "Escala da Interface"
+
+#: src/ui/settings/page/appearance.rs:18
+msgid "Adjust interface scaling for high-resolution displays"
+msgstr "Ajustar o dimensionamento da interface para telas de alta resolução"
+
+#: src/ui/settings/page/appearance.rs:46
+msgid "Default Icon Size"
+msgstr "Tamanho padrão dos ícones"
+
+#: src/ui/settings/page/appearance.rs:47
+msgid "Base size of icons in the grid view"
+msgstr "Tamanho base dos ícones na grade"
+
+#: src/ui/settings/page/appearance.rs:60
+msgid "List Icon Size"
+msgstr "Tamanho do ícone em modo lista"
+
+#: src/ui/settings/page/appearance.rs:61
+msgid "Icon size used in list mode"
+msgstr "Tamanho do ícone usado quando em modo lista"
+
+#: src/ui/settings/page/appearance.rs:74
+msgid "Scale Font with Icons"
+msgstr "Dimensionar Fonte com Ícones"
+
+#: src/ui/settings/page/appearance.rs:75
+msgid "Dynamically adjust label font size when zooming or resizing grid icons"
+msgstr "Ajustar dinamicamente o tamanho da fonte do rótulo ao redimensionar os ícones da grade"
+
+#: src/ui/settings/page/appearance.rs:88
+msgid "Grid Spacing"
+msgstr "Espaçamento da grade"
+
+#: src/ui/settings/page/appearance.rs:89
+msgid "Pixel spacing between items in the grid view"
+msgstr "Espaçamento em pixels entre itens na grade"
+
+#: src/ui/settings/page/appearance.rs:102
+msgid "Max Label Length"
+msgstr "Comprimento máximo do nome"
+
+#: src/ui/settings/page/appearance.rs:103
+msgid "Characters before truncating filenames"
+msgstr "Caracteres antes de truncar nomes de arquivo"
+
+#: src/ui/settings/page/appearance.rs:116
+msgid "Expand Filenames"
+msgstr "Expandir nomes de arquivo"
+
+#: src/ui/settings/page/appearance.rs:117
+msgid "Wrap filenames across multiple lines"
+msgstr "Quebrar nomes de arquivo em múltiplas linhas"
+
+#: src/ui/settings/page/appearance.rs:132
+msgid "Background Tint Opacity"
+msgstr "Opacidade da Camada de Fundo"
+
+#: src/ui/settings/page/appearance.rs:133
+msgid "Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)"
+msgstr "Ajustar a opacidade da sobreposição de gradiente escuro para imagens de fundo (0.0 = transparente, 1.0 = sólido)"
+
+#: src/ui/settings/page/appearance.rs:135
+msgid "Window Background Opacity"
+msgstr "Opacidade do Fundo da Janela"
+
+#: src/ui/settings/page/appearance.rs:136
+msgid "Tint overlay for the main background"
+msgstr "Sobreposição de cor para o fundo principal"
+
+#: src/ui/settings/page/appearance.rs:160
+msgid "Left Sidebar Opacity"
+msgstr "Opacidade da Barra Lateral Esquerda"
+
+#: src/ui/settings/page/appearance.rs:161
+msgid "Tint overlay for the left sidebar"
+msgstr "Sobreposição de cor para a barra lateral esquerda"
+
+#: src/ui/settings/page/appearance.rs:185
+msgid "Right Sidebar Opacity"
+msgstr "Opacidade da Barra Lateral Direita"
+
+#: src/ui/settings/page/appearance.rs:186
+msgid "Tint overlay for the search / tag panel"
+msgstr "Sobreposição de cor para o painel de pesquisa / etiquetas"
+
+#: src/ui/settings/page/appearance.rs:212
+msgid "Window"
+msgstr "Janela"
+
+#: src/ui/settings/page/appearance.rs:213
+msgid "Window behavior and startup settings"
+msgstr "Comportamento da janela e configurações de inicialização"
+
+#: src/ui/settings/page/appearance.rs:215
+msgid "Start Maximized"
+msgstr "Iniciar maximizado"
+
+#: src/ui/settings/page/appearance.rs:216
+msgid "Open the application in maximized state"
+msgstr "Abrir o aplicativo maximizado"
+
+#: src/ui/settings/page/appearance.rs:228
+msgid "Client-Side Decorations"
+msgstr "Decorações do lado do cliente"
+
+#: src/ui/settings/page/appearance.rs:229
+msgid "Show window controls in the header bar"
+msgstr "Mostrar controles da janela na barra de cabeçalho"
+
+#: src/ui/settings/page/appearance.rs:241
+msgid "Window Controls on Left"
+msgstr "Controles da janela à esquerda"
+
+#: src/ui/settings/page/appearance.rs:242
+msgid "Move close/minimize/maximize buttons to the left"
+msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda"
+
+#: src/ui/settings/page/appearance.rs:255
+msgid "Startup Width"
+msgstr "Largura inicial"
+
+#: src/ui/settings/page/appearance.rs:256
+msgid "Initial window width in pixels"
+msgstr "Largura inicial da janela em pixels"
+
+#: src/ui/settings/page/appearance.rs:269
+msgid "Startup Height"
+msgstr "Altura inicial"
+
+#: src/ui/settings/page/appearance.rs:270
+msgid "Initial window height in pixels"
+msgstr "Altura inicial da janela em pixels"
+
+#: src/ui/settings/page/appearance.rs:285 src/ui/settings/page/appearance.rs:288
+msgid "Theme"
+msgstr "Tema"
+
+#: src/ui/settings/page/appearance.rs:286
+msgid "Customize the visual appearance with CSS themes"
+msgstr "Personalizar a aparência visual com temas CSS"
+
+#: src/ui/settings/page/appearance.rs:289
+msgid "Select a custom CSS theme"
+msgstr "Selecionar um tema CSS personalizado"
+
+#: src/ui/settings/page/appearance.rs:324
+msgid "Show Recents"
+msgstr "Mostrar Recentes"
+
+#: src/ui/settings/page/appearance.rs:325
+msgid "Show recently visited files in the sidebar"
+msgstr "Mostrar arquivos visitados recentemente na barra lateral"
+
+#: src/ui/settings/page/appearance.rs:337
+msgid "Recents Position"
+msgstr "Posição dos Recentes"
+
+#: src/ui/settings/page/appearance.rs:338
+msgid "Row index of Recents in the sidebar (0 = top)"
+msgstr "Índice da linha dos Recentes na barra lateral (0 = topo)"
+
+#: src/ui/settings/page/appearance.rs:351
+msgid "XDG Directories"
+msgstr "Diretórios XDG"
+
+#: src/ui/settings/page/appearance.rs:352
+msgid "Show standard user directories in sidebar"
+msgstr "Exibir diretórios padrão do usuário na barra lateral"
+
+#: src/ui/settings/page/appearance.rs:366
+msgid "Generated Extension Icons"
+msgstr "Ícones de Extensão Gerados"
+
+#: src/ui/settings/page/appearance.rs:367
+msgid "Settings for dynamically generated icons when system themes lack a dedicated icon"
+msgstr "Configurações para ícones gerados dinamicamente quando o tema do sistema não possui um ícone específico"
+
+#: src/ui/settings/page/appearance.rs:369
+msgid "Auto-Generate Icons"
+msgstr "Gerar Ícones Automaticamente"
+
+#: src/ui/settings/page/appearance.rs:370
+msgid "Synthesize SVG icons for unknown file extensions using template.svg"
+msgstr "Criar ícones SVG para extensões de arquivo desconhecidas usando template.svg"
+
+#: src/ui/settings/page/appearance.rs:382
+msgid "Accent Color"
+msgstr "Cor de Destaque"
+
+#: src/ui/settings/page/appearance.rs:383
+msgid "Hex color code for extension badges (e.g., '#1273b2')"
+msgstr "Código de cor hexadecimal para a etiqueta de extensão (ex.: '#1273b2')"
+
+#: src/ui/settings/page/appearance.rs:400
+msgid "Body Color"
+msgstr "Cor do Corpo"
+
+#: src/ui/settings/page/appearance.rs:401
+msgid "Hex color code for icon body (e.g., '#e4e4e4')"
+msgstr "Código de cor hexadecimal para o corpo do ícone (ex.: '#e4e4e4')"
+
+#: src/ui/settings/page/appearance.rs:418
+msgid "Font Color"
+msgstr "Cor da Fonte"
+
+#: src/ui/settings/page/appearance.rs:419
+msgid "Hex color code for extension text (e.g., '#ffffff')"
+msgstr "Código de cor hexadecimal para o texto da extensão (ex.: '#ffffff')"
+
+#: src/ui/settings/page/appearance.rs:436
+msgid "Base Font Size"
+msgstr "Tamanho Base da Fonte"
+
+#: src/ui/settings/page/appearance.rs:437
+msgid "Base font scale for extension labels inside generated badges"
+msgstr "Escala base da fonte para os rótulos de extensão dentro dos emblemas gerados"
+
+# ============================================================
+# src/ui/settings/page/behavior.rs
+# ============================================================
+
+#: src/ui/settings/page/behavior.rs:9
+msgid "Behavior"
+msgstr "Comportamento"
+
+#: src/ui/settings/page/behavior.rs:13 src/ui/settings/page/shortcuts.rs:167
+msgid "File Operations"
+msgstr "Operações com arquivos"
+
+#: src/ui/settings/page/behavior.rs:14
+msgid "How files and directories are opened and managed"
+msgstr "Como arquivos e diretórios são abertos e gerenciados"
+
+#: src/ui/settings/page/behavior.rs:16
+msgid "Single Click to Open"
+msgstr "Abrir com um clique"
+
+#: src/ui/settings/page/behavior.rs:17
+msgid "Open files with a single click instead of double click"
+msgstr "Abrir arquivos com um único clique em vez de duplo clique"
+
+#: src/ui/settings/page/behavior.rs:29
+msgid "Disable Drag and Drop"
+msgstr "Desativar arrastar e soltar"
+
+#: src/ui/settings/page/behavior.rs:30
+msgid "Prevent moving or copying files via mouse drag"
+msgstr "Impedir mover ou copiar arquivos arrastando com o mouse"
+
+#: src/ui/settings/page/behavior.rs:42
+msgid "Highlight Empty Folders"
+msgstr "Destacar pastas vazias"
+
+#: src/ui/settings/page/behavior.rs:43
+msgid "Color the border of folders that contain no items"
+msgstr "Colorir a borda de pastas que não contêm itens"
+
+#: src/ui/settings/page/behavior.rs:55
+msgid "Highlight Symbolic Links"
+msgstr "Destacar links simbólicos"
+
+#: src/ui/settings/page/behavior.rs:56
+msgid "Color the border of symbolic links"
+msgstr "Colorir a borda de links simbólicos"
+
+#: src/ui/settings/page/behavior.rs:68
+msgid "Auto-Show Git Diff"
+msgstr "Exibição Automática do Git Diff"
+
+#: src/ui/settings/page/behavior.rs:69
+msgid "Automatically open the diff panel when selecting a modified file"
+msgstr "Abrir automaticamente o painel de diff ao selecionar um arquivo modificado"
+
+#: src/ui/settings/page/behavior.rs:81
+msgid "Default Layout"
+msgstr "Layout padrão"
+
+#: src/ui/settings/page/behavior.rs:82
+msgid "Start with grid view (off) or list view (on)"
+msgstr "Iniciar com visualização em grade (desligado) ou em lista (ligado)"
+
+#: src/ui/settings/page/behavior.rs:96
+msgid "Sorting & Filtering"
+msgstr "Ordenação e Filtragem"
+
+#: src/ui/settings/page/behavior.rs:97
+msgid "How files are ordered and displayed"
+msgstr "Como os arquivos são ordenados e exibidos"
+
+#: src/ui/settings/page/behavior.rs:99
+msgid "Default Sort"
+msgstr "Ordenação padrão"
+
+#: src/ui/settings/page/behavior.rs:100
+msgid "Primary sorting method"
+msgstr "Método de ordenação principal"
+
+#: src/ui/settings/page/behavior.rs:124
+msgid "Sort Order"
+msgstr "Ordem de classificação"
+
+#: src/ui/settings/page/behavior.rs:125
+msgid "Direction of the primary sort"
+msgstr "Direção da ordenação principal"
+
+#: src/ui/settings/page/behavior.rs:126 src/ui/startup/menu.rs:34
+msgid "Ascending"
+msgstr "Crescente"
+
+#: src/ui/settings/page/behavior.rs:126 src/ui/startup/menu.rs:34
+msgid "Descending"
+msgstr "Decrescente"
+
+#: src/ui/settings/page/behavior.rs:141
+msgid "Hide File Extensions"
+msgstr "Ocultar Extensões de Arquivo"
+
+#: src/ui/settings/page/behavior.rs:142
+msgid "Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"
+msgstr "Extensões separadas por vírgula para ocultar dos rótulos, ou * para todas (ex.: desktop, AppImage, tar.*)"
+
+#: src/ui/settings/page/behavior.rs:166
+msgid "Folders First"
+msgstr "Pastas primeiro"
+
+#: src/ui/settings/page/behavior.rs:167
+msgid "Display folders before files"
+msgstr "Exibir pastas antes dos arquivos"
+
+#: src/ui/settings/page/behavior.rs:179
+msgid "Show Hidden Files"
+msgstr "Exibir arquivos ocultos"
+
+#: src/ui/settings/page/behavior.rs:180
+msgid "Display files and folders starting with a dot"
+msgstr "Exibir arquivos e pastas que começam com ponto"
+
+# ============================================================
+# src/ui/settings/page/shortcuts.rs
+# ============================================================
+
+#: src/ui/settings/page/shortcuts.rs:9 src/utils/config/defaults.rs:272
+msgid "Shortcuts"
+msgstr "Atalhos"
+
+#: src/ui/settings/page/shortcuts.rs:14
+msgid "Shortcuts for navigating between directories"
+msgstr "Atalhos para navegar entre diretórios"
+
+#: src/ui/settings/page/shortcuts.rs:16
+msgid "Back"
+msgstr "Voltar"
+
+#: src/ui/settings/page/shortcuts.rs:17
+msgid "Go to previous directory in history"
+msgstr "Ir para o diretório anterior no histórico"
+
+#: src/ui/settings/page/shortcuts.rs:32
+msgid "Forward"
+msgstr "Avançar"
+
+#: src/ui/settings/page/shortcuts.rs:33
+msgid "Go to next directory in history"
+msgstr "Ir para o próximo diretório no histórico"
+
+#: src/ui/settings/page/shortcuts.rs:48
+msgid "Home"
+msgstr "Início"
+
+#: src/ui/settings/page/shortcuts.rs:49
+msgid "Navigate to user's home directory"
+msgstr "Navegar para a pasta pessoal do usuário"
+
+#: src/ui/settings/page/shortcuts.rs:64
+msgid "Root"
+msgstr "Raiz"
+
+#: src/ui/settings/page/shortcuts.rs:65
+msgid "Navigate to filesystem root directory"
+msgstr "Navegar para o diretório raiz do sistema de arquivos"
+
+#: src/ui/settings/page/shortcuts.rs:99
+msgid "Shortcuts for managing browser tabs"
+msgstr "Atalhos para gerenciar abas do navegador"
+
+#: src/ui/settings/page/shortcuts.rs:101
+msgid "New Tab"
+msgstr "Nova Aba"
+
+#: src/ui/settings/page/shortcuts.rs:102
+msgid "Open a new tab"
+msgstr "Abrir uma nova aba"
+
+#: src/ui/settings/page/shortcuts.rs:117
+msgid "Close Tab"
+msgstr "Fechar Aba"
+
+#: src/ui/settings/page/shortcuts.rs:118
+msgid "Close current tab"
+msgstr "Fechar aba atual"
+
+#: src/ui/settings/page/shortcuts.rs:133
+msgid "Next Tab"
+msgstr "Próxima Aba"
+
+#: src/ui/settings/page/shortcuts.rs:134
+msgid "Switch to next tab"
+msgstr "Alternar para a próxima aba"
+
+#: src/ui/settings/page/shortcuts.rs:149
+msgid "Previous Tab"
+msgstr "Aba Anterior"
+
+#: src/ui/settings/page/shortcuts.rs:150
+msgid "Switch to previous tab"
+msgstr "Alternar para a aba anterior"
+
+#: src/ui/settings/page/shortcuts.rs:168
+msgid "Shortcuts for managing files"
+msgstr "Atalhos para gerenciar arquivos"
+
+#: src/ui/settings/page/shortcuts.rs:203
+msgid "Inspect file properties or metadata"
+msgstr "Inspecionar propriedades ou metadados do arquivo"
+
+#: src/ui/settings/page/shortcuts.rs:218 src/utils/config/menu.rs:233
+msgid "Copy Path"
+msgstr "Copiar caminho"
+
+#: src/ui/settings/page/shortcuts.rs:219
+msgid "Copy absolute path of selected items to clipboard"
+msgstr "Copiar caminho absoluto dos itens selecionados para a área de transferência"
+
+#: src/ui/settings/page/shortcuts.rs:234
+msgid "Create Symbolic Link"
+msgstr "Criar link simbólico"
+
+#: src/ui/settings/page/shortcuts.rs:235
+msgid "Create symlink from clipboard path"
+msgstr "Criar link simbólico a partir do caminho na área de transferência"
+
+#: src/ui/settings/page/shortcuts.rs:250
+msgid "Create Hard Link"
+msgstr "Criar link físico"
+
+#: src/ui/settings/page/shortcuts.rs:251
+msgid "Create hardlink from clipboard path"
+msgstr "Criar link físico a partir do caminho na área de transferência"
+
+#: src/ui/settings/page/shortcuts.rs:268
+msgid "View & Customization"
+msgstr "Exibição e personalização"
+
+#: src/ui/settings/page/shortcuts.rs:269
+msgid "Shortcuts for controlling the interface"
+msgstr "Atalhos para controlar a interface"
+
+#: src/ui/settings/page/shortcuts.rs:271
+msgid "Toggle Header Bar"
+msgstr "Alternar barra de cabeçalho"
+
+#: src/ui/settings/page/shortcuts.rs:272
+msgid "Show or hide the top navigation toolbar"
+msgstr "Mostrar ou ocultar a barra de ferramentas de navegação superior"
+
+#: src/ui/settings/page/shortcuts.rs:287
+msgid "Refresh"
+msgstr "Atualizar"
+
+#: src/ui/settings/page/shortcuts.rs:288
+msgid "Reload current directory"
+msgstr "Recarregar diretório atual"
+
+#: src/ui/settings/page/shortcuts.rs:304
+msgid "Focus search/filter bar"
+msgstr "Focar barra de pesquisa/filtro"
+
+#: src/ui/settings/page/shortcuts.rs:319
+msgid "Toggle Hidden"
+msgstr "Alternar ocultos"
+
+#: src/ui/settings/page/shortcuts.rs:320
+msgid "Show/hide hidden files and folders"
+msgstr "Mostrar/ocultar arquivos e pastas ocultos"
+
+#: src/ui/settings/page/shortcuts.rs:335
+msgid "Toggle Folders First"
+msgstr "Alternar Pastas Primeiro"
+
+#: src/ui/settings/page/shortcuts.rs:336
+msgid "Toggle folders first placement in current directory"
+msgstr "Alternar exibição de pastas primeiro no diretório atual"
+
+#: src/ui/settings/page/shortcuts.rs:351
+msgid "Cycle Sort"
+msgstr "Alternar ordenação"
+
+#: src/ui/settings/page/shortcuts.rs:367
+msgid "Toggle Sort Order"
+msgstr "Alternar ordem de classificação"
+
+#: src/ui/settings/page/shortcuts.rs:368
+msgid "Toggle ascending/descending order"
+msgstr "Alternar ordem crescente/decrescente"
+
+#: src/ui/settings/page/shortcuts.rs:383
+msgid "Change Icon"
+msgstr "Alterar ícone"
+
+#: src/ui/settings/page/shortcuts.rs:384
+msgid "Open icon picker for the current folder"
+msgstr "Abrir seletor de ícones para a pasta atual"
+
+#: src/ui/settings/page/shortcuts.rs:399
+msgid "Reset Icon"
+msgstr "Restaurar ícone"
+
+#: src/ui/settings/page/shortcuts.rs:400
+msgid "Reset folder icon to system default"
+msgstr "Restaurar ícone da pasta para o padrão do sistema"
+
+#: src/ui/settings/page/shortcuts.rs:418
+msgid "Shortcuts for opening preferences and application tools"
+msgstr "Atalhos para abrir preferências e ferramentas do aplicativo"
+
+#: src/ui/settings/page/shortcuts.rs:420
+msgid "Settings"
+msgstr "Configurações"
+
+#: src/ui/settings/page/shortcuts.rs:421
+msgid "Open preferences window"
+msgstr "Abrir janela de preferências"
+
+#: src/ui/settings/page/shortcuts.rs:436
+msgid "Menu Editor"
+msgstr "Editor de menu"
+
+#: src/ui/settings/page/shortcuts.rs:452
+msgid "Quit"
+msgstr "Sair"
+
+#: src/ui/settings/page/shortcuts.rs:453
+msgid "Exit the application"
+msgstr "Sair do aplicativo"
+
+# ============================================================
+# src/ui/settings/page/system.rs
+# ============================================================
+
+#: src/ui/settings/page/system.rs:10
+msgid "System"
+msgstr "Sistema"
+
+#: src/ui/settings/page/system.rs:14
+msgid "Performance & Engine"
+msgstr "Desempenho e motor"
+
+#: src/ui/settings/page/system.rs:15
+msgid "Configure background worker limits and streaming chunk sizes"
+msgstr "Configurar limites dos processos em segundo plano e tamanhos de lote de carregamento"
+
+#: src/ui/settings/page/system.rs:17
+msgid "UI Batch Streaming Size"
+msgstr "Tamanho do lote na interface"
+
+#: src/ui/settings/page/system.rs:18
+msgid "Number of items appended per frame when loading directories"
+msgstr "Número de itens adicionados por quadro ao carregar diretórios"
+
+#: src/ui/settings/page/system.rs:38
+msgid "Thumbnail Workers"
+msgstr "Processos de miniaturas"
+
+#: src/ui/settings/page/system.rs:39
+msgid "Concurrent background threads used to render thumbnails"
+msgstr "Threads simultâneas em segundo plano para renderizar miniaturas"
+
+#: src/ui/settings/page/system.rs:61
+msgid "Memory & Limits"
+msgstr "Memória e limites"
+
+#: src/ui/settings/page/system.rs:62
+msgid "Tune caching thresholds and search result cutoffs"
+msgstr "Ajustar limites de cache e cortes de resultados de pesquisa"
+
+#: src/ui/settings/page/system.rs:64
+msgid "Fast File Indexing"
+msgstr "Indexação Rápida de Arquivos"
+
+#: src/ui/settings/page/system.rs:65
+msgid "Build an SQLite FTS5 database to enable sub-millisecond filename searches"
+msgstr "Construir um banco SQLite FTS5 para habilitar pesquisas de nomes de arquivos em menos de um milissegundo"
+
+#: src/ui/settings/page/system.rs:86
+msgid "Folder Cache Capacity"
+msgstr "Capacidade de cache de pastas"
+
+#: src/ui/settings/page/system.rs:87
+msgid "Maximum number of recently visited folders kept in RAM (0 to disable)"
+msgstr "Número máximo de pastas visitadas recentemente mantidas na RAM (0 para desativar)"
+
+#: src/ui/settings/page/system.rs:107
+msgid "Max Search Results"
+msgstr "Máximo de resultados de pesquisa"
+
+#: src/ui/settings/page/system.rs:108
+msgid "Maximum files indexed per filename/extension search run"
+msgstr "Máximo de arquivos indexados por busca de nome/extensão"
+
+#: src/ui/settings/page/system.rs:128
+msgid "Max Content Search Results"
+msgstr "Máx. Resultados de Conteúdo"
+
+#: src/ui/settings/page/system.rs:129
+msgid "Maximum number of matches to return (higher values may be slower)"
+msgstr "Número máximo de correspondências a retornar (valores mais altos podem ser mais lentos)"
+
+#: src/ui/settings/page/system.rs:145
+msgid "Navigation History Depth"
+msgstr "Profundidade do histórico de navegação"
+
+#: src/ui/settings/page/system.rs:146
+msgid "Maximum number of backward/forward directory jumps saved"
+msgstr "Número máximo de saltos para trás/para frente salvos no histórico"
+
+#: src/ui/settings/page/system.rs:168
+msgid "Video Extraction (FFmpeg)"
+msgstr "Extração de Vídeo (FFmpeg)"
+
+#: src/ui/settings/page/system.rs:169
+msgid "Configure video frame extraction and decoding options"
+msgstr "Configurar opções de extração e decodificação de quadros de vídeo"
+
+#: src/ui/settings/page/system.rs:171
+msgid "Initial Frame Offset"
+msgstr "Deslocamento inicial do quadro"
+
+#: src/ui/settings/page/system.rs:172
+msgid "Timestamp in seconds into the video to capture thumbnail"
+msgstr "Momento em segundos do vídeo para capturar a miniatura"
+
+#: src/ui/settings/page/system.rs:193
+msgid "FFmpeg Decoder Threads"
+msgstr "Threads do decodificador FFmpeg"
+
+#: src/ui/settings/page/system.rs:194
+msgid "Threads allocated to each video frame capture task"
+msgstr "Threads alocadas para cada processo de captura de quadros de vídeo"
+
+#: src/ui/settings/page/system.rs:214
+msgid "Auto-Rotate Videos"
+msgstr "Rotacionar vídeos automaticamente"
+
+#: src/ui/settings/page/system.rs:215
+msgid "Rotate thumbnails based on container orientation metadata"
+msgstr "Girar miniaturas com base nos metadados de orientação do vídeo"
+
+# ============================================================
+# src/ui/settings/page/terminal.rs
+# ============================================================
+
+#: src/ui/settings/page/terminal.rs:9
+msgid "Terminal"
+msgstr "Terminal"
+
+#: src/ui/settings/page/terminal.rs:13
+msgid "Appearance & Execution"
+msgstr "Aparência e Execução"
+
+#: src/ui/settings/page/terminal.rs:14
+msgid "Customize the embedded terminal look, feel, and executable"
+msgstr "Personalizar a aparência e o executável do terminal integrado"
+
+#: src/ui/settings/page/terminal.rs:16
+msgid "Shell Executable"
+msgstr "Executável do Shell"
+
+#: src/ui/settings/page/terminal.rs:17
+msgid "Custom shell path (e.g., '/bin/zsh'). Leave blank for default"
+msgstr "Caminho do shell personalizado (ex.: '/bin/zsh'). Deixe em branco para o padrão"
+
+#: src/ui/settings/page/terminal.rs:32
+msgid "Height (lines)"
+msgstr "Altura (linhas)"
+
+#: src/ui/settings/page/terminal.rs:33
+msgid "Number of character lines in the terminal"
+msgstr "Número de linhas de caracteres no terminal"
+
+#: src/ui/settings/page/terminal.rs:49 src/ui/settings/page/thumbnails.rs:266
+msgid "Font"
+msgstr "Fonte"
+
+#: src/ui/settings/page/terminal.rs:50
+msgid "Pango font description"
+msgstr "Descrição de fonte Pango"
+
+#: src/ui/settings/page/terminal.rs:62
+msgid "Foreground Color"
+msgstr "Cor do texto"
+
+#: src/ui/settings/page/terminal.rs:63
+msgid "Text color (hex, e.g., '#E5E5E5')"
+msgstr "Cor do texto (hex, ex.: '#E5E5E5')"
+
+#: src/ui/settings/page/terminal.rs:75
+msgid "Background Color"
+msgstr "Cor de fundo"
+
+#: src/ui/settings/page/terminal.rs:76
+msgid "Background color (hex, e.g., '#1A1A1A')"
+msgstr "Cor de fundo (hex, ex.: '#1A1A1A')"
+
+# ============================================================
+# src/ui/settings/page/thumbnails.rs
+# ============================================================
+
+#: src/ui/settings/page/thumbnails.rs:9
+msgid "Thumbnails"
+msgstr "Miniaturas"
+
+#: src/ui/settings/page/thumbnails.rs:13
+msgid "Preview Settings"
+msgstr "Configurações de pré-visualização"
+
+#: src/ui/settings/page/thumbnails.rs:14
+msgid "Enable or disable thumbnail generation for different file types"
+msgstr "Habilitar ou desabilitar a geração de miniaturas para diferentes tipos de arquivo"
+
+#: src/ui/settings/page/thumbnails.rs:16
+msgid "Enable Thumbnails"
+msgstr "Habilitar miniaturas"
+
+#: src/ui/settings/page/thumbnails.rs:17
+msgid "Show previews for supported file types"
+msgstr "Mostrar pré-visualizações para tipos de arquivo suportados"
+
+#: src/ui/settings/page/thumbnails.rs:29
+msgid "Thumbnail Size"
+msgstr "Tamanho das Miniaturas"
+
+#: src/ui/settings/page/thumbnails.rs:30
+msgid "Target resolution for media previews (higher values increase memory usage)"
+msgstr "Resolução alvo para pré-visualizações (valores maiores aumentam o uso de memória)"
+
+#: src/ui/settings/page/thumbnails.rs:59
+msgid "Lazy Thumbnails"
+msgstr "Miniaturas Sob Demanda"
+
+#: src/ui/settings/page/thumbnails.rs:60
+msgid "Generate thumbnails only for items in view"
+msgstr "Gerar miniaturas apenas para itens visíveis"
+
+#: src/ui/settings/page/thumbnails.rs:73
+msgid "Cache Thumbnails in Zip Files"
+msgstr "Armazenar miniaturas em arquivos ZIP"
+
+#: src/ui/settings/page/thumbnails.rs:74
+msgid "Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"
+msgstr "Guardar miniaturas em uma pasta oculta .flux-cache dentro de cada ZIP que você navegar, para abrir mais rápido na próxima vez. Isso modifica o arquivo ZIP"
+
+#: src/ui/settings/page/thumbnails.rs:87
+msgid "Autoplay Video Previews"
+msgstr "Reprodução Automática de Vídeos"
+
+#: src/ui/settings/page/thumbnails.rs:88
+msgid "Play a muted preview when a single video card is selected"
+msgstr "Reproduzir pré-visualização sem som ao selecionar um único cartão de vídeo"
+
+#: src/ui/settings/page/thumbnails.rs:102
+msgid "Images"
+msgstr "Imagens"
+
+#: src/ui/settings/page/thumbnails.rs:103
+msgid "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
+msgstr "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
+
+#: src/ui/settings/page/thumbnails.rs:119
+msgid "Videos"
+msgstr "Vídeos"
+
+#: src/ui/settings/page/thumbnails.rs:120
+msgid "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
+msgstr "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
+
+#: src/ui/settings/page/thumbnails.rs:136
+msgid "Fonts"
+msgstr "Fontes"
+
+#: src/ui/settings/page/thumbnails.rs:137
+msgid "TTF, OTF, WOFF, WOFF2, TTC"
+msgstr "TTF, OTF, WOFF, WOFF2, TTC"
+
+#: src/ui/settings/page/thumbnails.rs:153
+msgid "PDF Documents"
+msgstr "Documentos PDF"
+
+#: src/ui/settings/page/thumbnails.rs:154
+msgid "Portable Document Format files"
+msgstr "Arquivos em formato PDF"
+
+#: src/ui/settings/page/thumbnails.rs:170
+msgid "Windows Executables"
+msgstr "Executáveis do Windows"
+
+#: src/ui/settings/page/thumbnails.rs:171 src/ui/settings/page/thumbnails.rs:308
+msgid "EXE"
+msgstr "EXE"
+
+#: src/ui/settings/page/thumbnails.rs:187 src/ui/settings/page/thumbnails.rs:329
+msgid "Audio"
+msgstr "Áudio"
+
+#: src/ui/settings/page/thumbnails.rs:188
+msgid "MP3, FLAC, M4A, OGG, WAV (embedded album art)"
+msgstr "MP3, FLAC, M4A, OGG, WAV (arte do álbum incorporada)"
+
+#: src/ui/settings/page/thumbnails.rs:206
+msgid "Preview Examples"
+msgstr "Exemplos de pré-visualização"
+
+#: src/ui/settings/page/thumbnails.rs:207
+msgid "How thumbnails will appear in the file grid"
+msgstr "Como as miniaturas aparecerão na grade de arquivos"
+
+#: src/ui/settings/page/thumbnails.rs:224
+msgid "Image"
+msgstr "Imagem"
+
+#: src/ui/settings/page/thumbnails.rs:245
+msgid "Video"
+msgstr "Vídeo"
+
+#: src/ui/settings/page/thumbnails.rs:287
+msgid "PDF"
+msgstr "PDF"
+
+# ============================================================
+# src/ui/sidebar_network.rs
+# ============================================================
+
+#: src/ui/sidebar_network.rs:66
+msgid "Connected Servers"
+msgstr "Servidores conectados"
+
+# ============================================================
+# src/ui/startup/menu.rs
+# ============================================================
+
+#: src/ui/startup/menu.rs:19
+msgid "By Name"
+msgstr "Por nome"
+
+#: src/ui/startup/menu.rs:20
+msgid "By Date"
+msgstr "Por data"
+
+#: src/ui/startup/menu.rs:21
+msgid "By Size"
+msgstr "Por tamanho"
+
+#: src/ui/startup/menu.rs:22
+msgid "By Type"
+msgstr "Por tipo"
+
+#: src/ui/startup/menu.rs:44
+msgid "Sort By"
+msgstr "Ordenar por"
+
+#: src/ui/startup/menu.rs:49
+msgid "Keyboard Shortcuts"
+msgstr "Atalhos de teclado"
+
+#: src/ui/startup/menu.rs:53
+msgid "Toggle Sidebar"
+msgstr "Alternar barra lateral"
+
+#: src/ui/startup/menu.rs:62
+msgid "Context Menu Editor"
+msgstr "Editor de menu de contexto"
+
+#: src/ui/startup/menu.rs:65
+msgid "New Window"
+msgstr "Nova janela"
+
+#: src/ui/startup/menu.rs:70
+msgid "About Flux"
+msgstr "Sobre o Flux"
+
+# ============================================================
+# src/ui/update/network.rs
+# ============================================================
+
+#: src/ui/update/network.rs:25
+msgid "Volume mounted."
+msgstr "Volume montado."
+
+# ============================================================
+# src/ui/update/sidebar.rs
+# ============================================================
+
+#: src/ui/update/sidebar.rs:57
+msgid "Quick list slot updated"
+msgstr "Slot da lista rápida atualizado"
+
+# ============================================================
+# src/ui/view/component.rs
+# ============================================================
+
+#: src/ui/view/component.rs:68 src/utils/helpers/sidebar.rs:116
+msgid "Trash"
+msgstr "Lixeira"
+
+#: src/ui/view/component.rs:389
+msgid "Patterns: *.py, image/*, audio/*"
+msgstr "Padrões: *.py, image/*, audio/*"
+
+#: src/ui/view/component.rs:445 src/ui/view/component.rs:457
+msgid "Empty Trash"
+msgstr "Esvaziar Lixeira"
+
+#: src/ui/view/component.rs:466
+msgid "Extract Archive"
+msgstr "Extrair Arquivo Compactado"
+
+#: src/ui/view/component.rs:478
+msgid "Extract"
+msgstr "Extrair"
+
+#: src/ui/view/component.rs:488
+msgid "Show Git Changes"
+msgstr "Mostrar Alterações do Git"
+
+#: src/ui/view/component.rs:498
+msgid "Git Status"
+msgstr "Status do Git"
+
+#: src/ui/view/component.rs:529
+msgid "Main Menu"
+msgstr "Menu principal"
+
+#: src/ui/view/component.rs:545
+msgid "Toggle List Mode"
+msgstr "Alternar modo lista"
+
+#: src/ui/view/component.rs:554
+msgid "Filter by Pattern"
+msgstr "Filtrar por Padrão"
+
+#: src/ui/view/component.rs:583
+msgid "Toggle Preview Panel"
+msgstr "Mostrar/ocultar painel de pré-visualização"
+
+#: src/ui/view/component.rs:639
+msgid "Filter:"
+msgstr "Filtro:"
+
+#: src/ui/view/component.rs:773
+msgid "Enter the password to browse its contents."
+msgstr "Digite a senha para navegar pelo seu conteúdo."
+
+#: src/ui/view/component.rs:781
+msgid "No Results Found"
+msgstr "Nenhum Resultado Encontrado"
+
+#: src/ui/view/component.rs:782
+msgid "No matching files found in this location."
+msgstr "Nenhum arquivo correspondente encontrado neste local."
+
+#: src/ui/view/component.rs:899
+msgid " Show Progress"
+msgstr "Mostrar Progresso"
+
+#: src/ui/view/component.rs:900
+msgid "Open transfer progress dialog"
+msgstr "Abrir diálogo de progresso de transferência"
+
+#: src/ui/view/component.rs:910
+msgid "Cancel all transfers"
+msgstr "Cancelar todas as transferências"
+
+# ============================================================
+# src/ui/view/init.rs
+# ============================================================
+
+#: src/ui/view/init.rs:301
+msgid "Add Actions"
+msgstr "Adicionar Ações"
+
+#: src/ui/view/init.rs:305
+msgid "Add Search"
+msgstr "Adicionar Pesquisa"
+
+#: src/ui/view/init.rs:308
+msgid "Add Tags"
+msgstr "Adicionar Etiquetas"
+
+# ============================================================
+# src/utils/config/defaults.rs
+# ============================================================
+
+#: src/utils/config/defaults.rs:273 src/utils/helpers/sidebar.rs:118
+msgid "Tags"
+msgstr "Etiquetas"
+
+#: src/utils/config/defaults.rs:275
+msgid "Actions"
+msgstr "Ações"
+
+# ============================================================
+# src/utils/config/menu.rs
+# ============================================================
+
+#: src/utils/config/menu.rs:88
+msgid "Window background updated!"
+msgstr "Fundo da janela atualizado!"
+
+#: src/utils/config/menu.rs:89
+msgid "Sidebar background updated!"
+msgstr "Fundo da barra lateral atualizado!"
+
+#: src/utils/config/menu.rs:90
+msgid "Right panel background updated!"
+msgstr "Fundo do painel direito atualizado!"
+
+#: src/utils/config/menu.rs:91
+msgid "Backgrounds reset to default"
+msgstr "Fundos restaurados para o padrão"
+
+#: src/utils/config/menu.rs:182
+msgid "Icons"
+msgstr "Ícones"
+
+#: src/utils/config/menu.rs:183
+msgid "Compress"
+msgstr "Compactar"
+
+#: src/utils/config/menu.rs:184
+msgid "Media Edit"
+msgstr "Edição de Mídia"
+
+#: src/utils/config/menu.rs:185
+msgid "Media Convert"
+msgstr "Conversão de Mídia"
+
+#: src/utils/config/menu.rs:186
+msgid "Media Extract"
+msgstr "Extração de Mídia"
+
+#: src/utils/config/menu.rs:187
+msgid "Media Optimize"
+msgstr "Otimização de Mídia"
+
+#: src/utils/config/menu.rs:188
+msgid "Image Wallpaper"
+msgstr "Papel de Parede"
+
+#: src/utils/config/menu.rs:189
+msgid "Image Convert"
+msgstr "Conversão de Imagem"
+
+#: src/utils/config/menu.rs:190
+msgid "Flux Background"
+msgstr "Fundo do Flux"
+
+#: src/utils/config/menu.rs:191
+msgid "Tools"
+msgstr "Ferramentas"
+
+#: src/utils/config/menu.rs:204
+msgid "Set File Icon"
+msgstr "Definir Ícone do Arquivo"
+
+#: src/utils/config/menu.rs:205
+msgid "Reset File Icon"
+msgstr "Restaurar Ícone do Arquivo"
+
+#: src/utils/config/menu.rs:206
+msgid "Set Extension Icon"
+msgstr "Definir Ícone da Extensão"
+
+#: src/utils/config/menu.rs:207
+msgid "Reset Extension Icon"
+msgstr "Restaurar Ícone da Extensão"
+
+#: src/utils/config/menu.rs:208
+msgid "To ZIP"
+msgstr "Para ZIP"
+
+#: src/utils/config/menu.rs:209
+msgid "To 7Z"
+msgstr "Para 7Z"
+
+#: src/utils/config/menu.rs:210
+msgid "To TAR.GZ"
+msgstr "Para TAR.GZ"
+
+#: src/utils/config/menu.rs:211
+msgid "Join Videos"
+msgstr "Juntar Vídeos"
+
+#: src/utils/config/menu.rs:212
+msgid "Cut Video"
+msgstr "Cortar Vídeo"
+
+#: src/utils/config/menu.rs:213
+msgid "Mix Audio"
+msgstr "Misturar Áudio"
+
+#: src/utils/config/menu.rs:214
+msgid "Merge Video + Audio"
+msgstr "Mesclar Vídeo + Áudio"
+
+#: src/utils/config/menu.rs:215
+msgid "To MP4"
+msgstr "Para MP4"
+
+#: src/utils/config/menu.rs:216
+msgid "To MKV"
+msgstr "Para MKV"
+
+#: src/utils/config/menu.rs:217
+msgid "To WebM"
+msgstr "Para WebM"
+
+#: src/utils/config/menu.rs:218
+msgid "To MOV"
+msgstr "Para MOV"
+
+#: src/utils/config/menu.rs:219
+msgid "Audio to MP3"
+msgstr "Áudio para MP3"
+
+#: src/utils/config/menu.rs:220
+msgid "MP3 from Video"
+msgstr "MP3 do Vídeo"
+
+#: src/utils/config/menu.rs:221
+msgid "Reduce Video Size"
+msgstr "Reduzir Tamanho do Vídeo"
+
+#: src/utils/config/menu.rs:222
+msgid "Set (swww)"
+msgstr "Definir (swww)"
+
+#: src/utils/config/menu.rs:223
+msgid "Set (wbg)"
+msgstr "Definir (wbg)"
+
+#: src/utils/config/menu.rs:224
+msgid "To PNG"
+msgstr "Para PNG"
+
+#: src/utils/config/menu.rs:225
+msgid "To AVIF"
+msgstr "Para AVIF"
+
+#: src/utils/config/menu.rs:226
+msgid "To JPG"
+msgstr "Para JPG"
+
+#: src/utils/config/menu.rs:227
+msgid "Window Background"
+msgstr "Fundo da Janela"
+
+#: src/utils/config/menu.rs:228
+msgid "Left Sidebar Background"
+msgstr "Fundo da Barra Lateral Esquerda"
+
+#: src/utils/config/menu.rs:229
+msgid "Right Sidebar Background"
+msgstr "Fundo da Barra Lateral Direita"
+
+#: src/utils/config/menu.rs:230
+msgid "Reset All Backgrounds"
+msgstr "Restaurar Todos os Fundos"
+
+#: src/utils/config/menu.rs:231
+msgid "Git Gui"
+msgstr "Git Gui"
+
+#: src/utils/config/menu.rs:232
+msgid "Download Video (1080p)"
+msgstr "Baixar Vídeo (1080p)"
+
+#: src/utils/config/menu.rs:234
+msgid "Copy Name"
+msgstr "Copiar Nome"
+
+#: src/utils/config/menu.rs:235
+msgid "Advanced Archive Manager"
+msgstr "Compactador Avançado"
+
+#: src/utils/config/menu.rs:245
+msgid "Add to Quick List"
+msgstr "Adicionar à Lista Rápida"
+
+#: src/utils/config/menu.rs:247
+msgid "Other Application..."
+msgstr "Outro Aplicativo..."
+
+#: src/utils/config/menu.rs:248
+msgid "Inspect Directory"
+msgstr "Inspecionar Diretório"
+
+#: src/utils/config/menu.rs:249
+msgid "Copy"
+msgstr "Copiar"
+
+#: src/utils/config/menu.rs:250
+msgid "Cut"
+msgstr "Cortar"
+
+#: src/utils/config/menu.rs:251
+msgid "Paste"
+msgstr "Colar"
+
+#: src/utils/config/menu.rs:255
+msgid "Restore File"
+msgstr "Restaurar Arquivo"
+
+#: src/utils/config/menu.rs:256
+msgid "Shred File (Permanent)"
+msgstr "Destruir Arquivo (Permanente)"
+
+#: src/utils/config/menu.rs:257
+msgid "Open Terminal"
+msgstr "Abrir Terminal"
+
+#: src/utils/config/menu.rs:258
+msgid "Toggle Pin"
+msgstr "Fixar/Desafixar"
+
+#: src/utils/config/menu.rs:259
+msgid "Open in VSCode"
+msgstr "Abrir no VS Code"
+
+#: src/utils/config/menu.rs:260
+msgid "File Properties"
+msgstr "Propriedades do Arquivo"
+
+#: src/utils/config/menu.rs:261
+msgid "Folder Info"
+msgstr "Informações da Pasta"
+
+#: src/utils/config/menu.rs:264
+msgid "Extract Here!"
+msgstr "Extrair Aqui!"
+
+#: src/utils/config/menu.rs:265
+msgid "Convert to PDF"
+msgstr "Converter para PDF"
+
+#: src/utils/config/menu.rs:266
+msgid "Open Line in Nvim"
+msgstr "Abrir Linha no Nvim"
+
+# ============================================================
+# src/utils/deps.rs
+# ============================================================
+
+#: src/utils/deps.rs:20
+msgid "optional dependency '{}' not found in PATH ({})"
+msgstr "dependência opcional '{}' não encontrada no PATH ({})"
+
+#: src/utils/deps.rs:26
+msgid "optional dependency '{}' not found in PATH"
+msgstr "dependência opcional '{}' não encontrada no PATH"
+
+#: src/utils/deps.rs:37
+msgid "install raw-thumbnailer for RAW camera thumbnails"
+msgstr "instale raw-thumbnailer para miniaturas de câmeras RAW"
+
+#: src/utils/deps.rs:43
+msgid "install p7zip-full on Debian/Ubuntu, p7zip elsewhere (AppImage icons)"
+msgstr "instale p7zip-full no Debian/Ubuntu, p7zip em outros sistemas (ícones de AppImage)"
+
+#: src/utils/deps.rs:49 src/utils/deps.rs:55
+msgid "install icoutils for .exe icon extraction"
+msgstr "instale icoutils para extração de ícones de .exe"
+
+# ============================================================
+# src/utils/helpers/files.rs
+# ============================================================
+
+#: src/utils/helpers/files.rs:177
+msgid "Failed to launch AppImage: {}"
+msgstr "Falha ao iniciar o AppImage: {}"
+
+#: src/utils/helpers/files.rs:188
+msgid "Opening {}"
+msgstr "Abrindo {}"
+
+#: src/utils/helpers/files.rs:193
+msgid "Failed to open {}: {}"
+msgstr "Falha ao abrir {}: {}"
+
+# ============================================================
+# src/utils/helpers/format.rs
+# ============================================================
 
 #: src/utils/helpers/format.rs:20
 msgid "[Folders Only]"
@@ -549,2834 +3615,61 @@ msgstr "[Apenas Pastas]"
 msgid "[Files Only]"
 msgstr "[Apenas Arquivos]"
 
-#: src/ui/help/page/system_view.rs:29
-msgid "Toggle wide preview"
-msgstr "Mostrar/ocultar pré-visualização ampla"
-
-#: src/ui/panels/preview.rs:434
-msgid "Always open preview wide (F11)"
-msgstr "Abrir pré-visualização ampla sempre (F11)"
-
-#: src/ui/help/page/navigation.rs:???
-msgid "Show/hide file preview"
-msgstr "Mostrar/ocultar pré-visualização de arquivo"
-
-#: src/ui/help.rs:41
-msgid "flux - Shortcuts"
-msgstr "flux - Atalhos"
-
-#: src/ui/help.rs:48
-msgid "Navigation Shortcuts"
-msgstr "Atalhos de navegação"
-
-#: src/ui/help.rs:56 src/ui/settings.rs:418
-msgid "Navigation"
-msgstr "Navegação"
-
-#: src/ui/help.rs:59
-msgid "Go back in history"
-msgstr "Voltar no histórico"
-
-#: src/ui/help.rs:63
-msgid "Go forward in history"
-msgstr "Avançar no histórico"
-
-#: src/ui/help.rs:67
-msgid "Open selected file or directory"
-msgstr "Abrir arquivo ou pasta selecionado"
-
-#: src/ui/help.rs:71
-msgid "Navigate to root directory"
-msgstr "Ir para o diretório raiz"
-
-#: src/ui/help.rs:76
-msgid "Quick List (Exclusive List)"
-msgstr "Lista rápida (lista exclusiva)"
-
-#: src/ui/help.rs:79
-msgid "Add selection or current folder to list"
-msgstr "Adicionar seleção ou pasta atual à lista"
-
-#: src/ui/help.rs:83
-msgid "Pin selection or current folder to sidebar permanently"
-msgstr "Fixar seleção ou pasta atual na barra lateral permanentemente"
-
-#: src/ui/help.rs:87
-msgid "Cycle to the next folder in the list"
-msgstr "Avançar para a próxima pasta da lista"
-
-#: src/ui/help.rs:91
-msgid "Clear the entire list"
-msgstr "Limpar toda a lista"
-
-#: src/ui/help.rs:96
-msgid "System & View"
-msgstr "Sistema e exibição"
-
-#: src/ui/help.rs:99
-msgid "Rename selected item"
-msgstr "Renomear item selecionado"
-
-#: src/ui/help.rs:103
-msgid "Change current folder icon"
-msgstr "Alterar ícone da pasta atual"
-
-#: src/ui/help.rs:107
-msgid "Reset current folder icon to default"
-msgstr "Restaurar ícone padrão da pasta atual"
-
-#: src/ui/help.rs:107
-msgid "Quick List"
-msgstr "Lista rápida"
-
-#: src/ui/help.rs:111
-msgid "Quick List Shortcuts"
-msgstr "Atalhos da lista rápida"
-
-#: src/ui/help.rs:111
-msgid "Toggle embedded terminal"
-msgstr "Mostrar/ocultar terminal integrado"
-
-#: src/ui/help.rs:115
-msgid "Refresh current directory"
-msgstr "Atualizar diretório atual"
-
-#: src/ui/help.rs:119
-msgid "Search files"
-msgstr "Pesquisar arquivos"
-
-#: src/ui/help.rs:123
-msgid "Toggle hidden files"
-msgstr "Mostrar/ocultar arquivos ocultos"
-
-#: src/ui/help.rs:127
-msgid "Move selected items to trash"
-msgstr "Mover itens selecionados para a lixeira"
-
-#: src/ui/help.rs:132
-msgid "Application"
-msgstr "Aplicativo"
-
-#: src/ui/help.rs:135
-msgid "Open context menu editor"
-msgstr "Abrir editor de menu de contexto"
-
-#: src/ui/help.rs:139
-msgid "Open preferences"
-msgstr "Abrir preferências"
-
-#: src/ui/help.rs:143
-msgid "Cycle through sorting modes"
-msgstr "Alternar modos de ordenação"
-
-#: src/ui/help.rs:147
-msgid "Toggle ascending/descending sort order"
-msgstr "Alternar ordem crescente/decrescente"
-
-#: src/ui/help.rs:152
-msgid "Open advanced search dialog"
-msgstr "Abrir diálogo de pesquisa avançada"
-
-#: src/ui/help.rs:188
-msgid "System & View Shortcuts"
-msgstr "Atalhos de sistema e exibição"
-
-#: src/ui/help.rs:232
-msgid "Toggle folders first in current directory"
-msgstr "Alternar pastas primeiro no diretório atual"
-
-#: src/ui/help.rs:246
-msgid "Resize grid items"
-msgstr "Redimensionar itens da grade"
-
-#: src/ui/help.rs:253
-msgid "Open folder in new window"
-msgstr "Abrir pasta em nova janela"
-
-#: src/ui/help.rs:324
-msgid "Application Shortcuts"
-msgstr "Atalhos do aplicativo"
-
-#: src/ui/help.rs:???
-msgid "flux - Keyboard Shortcuts"
-msgstr "flux - Atalhos de teclado"
-
-#: src/ui/help.rs:???
-msgid "Show/hide location panel"
-msgstr "Mostrar/ocultar painel de localização"
-
-#: src/ui/help.rs:???
-msgid "Show/hide connect to server"
-msgstr "Mostrar/ocultar conectar ao servidor"
-
-#: src/ui/help.rs:???
-msgid "Content Search"
-msgstr "Pesquisa de conteúdo"
-
-#: src/ui/help.rs:???
-msgid "Search inside file contents (not just filenames)"
-msgstr "Pesquisar dentro do conteúdo dos arquivos (não apenas nos nomes)"
-
-#: src/ui/help.rs:???
-msgid "Start content search"
-msgstr "Iniciar pesquisa de conteúdo"
-
-#: src/ui/help.rs:???
-msgid "Type colon (:) then at least 3 characters in the search bar"
-msgstr "Digite dois pontos (:) e pelo menos 3 caracteres na barra de pesquisa"
-
-#: src/ui/help.rs:???
-msgid "Cancel content search"
-msgstr "Cancelar pesquisa de conteúdo"
-
-#: src/ui/help.rs:???
-msgid "Press Escape while in search view"
-msgstr "Pressione Escape enquanto estiver na visualização de pesquisa"
-
-#: src/ui/help.rs:???
-msgid "Type :term to search all files, or :.ext:term to filter by extension"
-msgstr "Digite :term para pesquisar em todos os arquivos, ou :.ext:term para filtrar por extensão"
-
-#: src/ui/help.rs:???
-msgid "Undo file operation"
-msgstr "Desfazer operação de arquivo"
-
-#: src/ui/help.rs:???
-msgid "Redo file operation"
-msgstr "Refazer operação de arquivo"
-
-#: src/ui/help.rs:???
-msgid "Open memory debug profiler"
-msgstr "Abrir perfilador de memória"
-
-#: src/ui/help.rs:???
-msgid "Copy absolute path of selected items"
-msgstr "Copiar caminho absoluto dos itens selecionados"
-
-#: src/ui/help.rs:???
-msgid "Create symbolic link from clipboard paths"
-msgstr "Criar link simbólico a partir dos caminhos na área de transferência"
-
-#: src/ui/help.rs:???
-msgid "Create hard link from clipboard paths"
-msgstr "Criar link físico a partir dos caminhos na área de transferência"
-
-#: src/ui/help.rs:???
-msgid "Navigate to home directory"
-msgstr "Navegar para a pasta pessoal"
-
-#: src/ui/help.rs:???
-msgid "Toggle header bar"
-msgstr "Mostrar/ocultar barra de cabeçalho"
-
-# ============================================================
-# src/ui/settings.rs
-# ============================================================
-
-#: src/ui/settings/page/thumbnails.rs
-msgid "Cache Thumbnails in Zip Files"
-msgstr "Armazenar miniaturas em arquivos ZIP"
-
-#: src/ui/settings/page/thumbnails.rs
-msgid "Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"
-msgstr "Guardar miniaturas em uma pasta oculta .flux-cache dentro de cada ZIP que você navegar, para abrir mais rápido na próxima vez. Isso modifica o arquivo ZIP"
-
-msgid "Tabs"
-msgstr "Abas"
-
-msgid "Shortcuts for managing browser tabs"
-msgstr "Atalhos para gerenciar abas do navegador"
-
-msgid "New Tab"
-msgstr "Nova Aba"
-
-msgid "Open a new tab"
-msgstr "Abrir uma nova aba"
-
-msgid "Close Tab"
-msgstr "Fechar Aba"
-
-msgid "Close current tab"
-msgstr "Fechar aba atual"
-
-msgid "Next Tab"
-msgstr "Próxima Aba"
-
-msgid "Switch to next tab"
-msgstr "Alternar para a próxima aba"
-
-msgid "Previous Tab"
-msgstr "Aba Anterior"
-
-msgid "Switch to previous tab"
-msgstr "Alternar para a aba anterior"
-
-msgid "Background Tint Opacity"
-msgstr "Opacidade da Camada de Fundo"
-
-msgid "Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)"
-msgstr "Ajustar a opacidade da sobreposição de gradiente escuro para imagens de fundo (0.0 = transparente, 1.0 = sólido)"
-
-msgid "Window Background Opacity"
-msgstr "Opacidade do Fundo da Janela"
-
-msgid "Tint overlay for the main background"
-msgstr "Sobreposição de cor para o fundo principal"
-
-msgid "Left Sidebar Opacity"
-msgstr "Opacidade da Barra Lateral Esquerda"
-
-msgid "Tint overlay for the left sidebar"
-msgstr "Sobreposição de cor para a barra lateral esquerda"
-
-msgid "Right Sidebar Opacity"
-msgstr "Opacidade da Barra Lateral Direita"
-
-msgid "Tint overlay for the search / tag panel"
-msgstr "Sobreposição de cor para o painel de pesquisa / etiquetas"
-
-#: src/ui/settings.rs:???
-msgid "Scale Font with Icons"
-msgstr "Dimensionar Fonte com Ícones"
-
-#: src/ui/settings.rs:???
-msgid "Dynamically adjust label font size when zooming or resizing grid icons"
-msgstr "Ajustar dinamicamente o tamanho da fonte do rótulo ao redimensionar os ícones da grade"
-
-#: src/ui/settings.rs:???
-msgid "Hide File Extensions"
-msgstr "Ocultar Extensões de Arquivo"
-
-#: src/ui/settings.rs:???
-msgid "Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"
-msgstr "Extensões separadas por vírgula para ocultar dos rótulos, ou * para todas (ex.: desktop, AppImage, tar.*)"
-
-#: src/ui/settings.rs:???
-msgid "Highlight Symbolic Links"
-msgstr "Destacar links simbólicos"
-
-#: src/ui/settings.rs:???
-msgid "Color the border of symbolic links"
-msgstr "Colorir a borda de links simbólicos"
-
-#: src/ui/settings.rs:27
-msgid "Appearance"
-msgstr "Aparência"
-
-#: src/ui/settings.rs:31
-msgid "Layout"
-msgstr "Layout"
-
-#: src/ui/settings.rs:33
-msgid "Adjust the visual layout of the file grid and sidebar"
-msgstr "Ajustar o layout visual da grade de arquivos e barra lateral"
-
-#: src/ui/settings.rs:34
-msgid "Default Icon Size"
-msgstr "Tamanho padrão dos ícones"
-
-#: src/ui/settings.rs:35
-msgid "Base size of icons in the grid view"
-msgstr "Tamanho base dos ícones na grade"
-
-#: src/ui/settings.rs:49
-msgid "Grid Spacing"
-msgstr "Espaçamento da grade"
-
-#: src/ui/settings.rs:50
-msgid "Pixel spacing between items in the grid view"
-msgstr "Espaçamento em pixels entre itens na grade"
-
-#: src/ui/settings.rs:64
-msgid "Max Label Length"
-msgstr "Comprimento máximo do nome"
-
-#: src/ui/settings.rs:65
-msgid "Characters before truncating filenames"
-msgstr "Caracteres antes de truncar nomes de arquivo"
-
-#: src/ui/settings.rs:79
-msgid "Expand Filenames"
-msgstr "Expandir nomes de arquivo"
-
-#: src/ui/settings.rs:80
-msgid "Wrap filenames across multiple lines"
-msgstr "Quebrar nomes de arquivo em múltiplas linhas"
-
-#: src/ui/settings.rs:109
-msgid "Startup Width"
-msgstr "Largura inicial"
-
-#: src/ui/settings.rs:110
-msgid "Initial window width in pixels"
-msgstr "Largura inicial da janela em pixels"
-
-#: src/ui/settings.rs:112 src/ui/settings.rs:539
-msgid "Window"
-msgstr "Janela"
-
-#: src/ui/settings.rs:112
-msgid "Window behavior and startup settings"
-msgstr "Comportamento da janela e configurações de inicialização"
-
-#: src/ui/settings.rs:123
-msgid "List Icon Size"
-msgstr "Tamanho do ícone em modo lista"
-
-#: src/ui/settings.rs:124
-msgid "Icon size used in list mode"
-msgstr "Tamanho do ícone usado quando em modo lista"
-
-#: src/ui/settings.rs:124
-msgid "Startup Height"
-msgstr "Altura inicial"
-
-#: src/ui/settings.rs:125
-msgid "Initial window height in pixels"
-msgstr "Altura inicial da janela em pixels"
-
-#: src/ui/settings.rs:139
-msgid "Show Client-Side Decorations (CSD)"
-msgstr "Exibir decorações do lado do cliente (CSD)"
-
-#: src/ui/settings.rs:152
-msgid "Start Maximized"
-msgstr "Iniciar maximizado"
-
-#: src/ui/settings.rs:153
-msgid "Open the application in maximized state"
-msgstr "Abrir o aplicativo maximizado"
-
-#: src/ui/settings.rs:155
-msgid "Theme"
-msgstr "Tema"
-
-#: src/ui/settings.rs:155
-msgid "Customize the visual appearance with CSS themes"
-msgstr "Personalizar a aparência visual com temas CSS"
-
-#: src/ui/settings.rs:167
-msgid "Theming"
-msgstr "Temas"
-
-#: src/ui/settings.rs:170
-msgid "Select a custom CSS theme"
-msgstr "Selecionar um tema CSS personalizado"
-
-#: src/ui/settings.rs:225
-msgid "Show XDG Directories"
-msgstr "Exibir diretórios XDG"
-
-#: src/ui/settings.rs:227
-msgid "Show standard user directories in sidebar"
-msgstr "Exibir diretórios padrão do usuário na barra lateral"
-
-#: src/ui/settings.rs:233
-msgid "Thumbnails"
-msgstr "Miniaturas"
-
-#: src/ui/settings.rs:235
-msgid "Enable or disable thumbnail generation for different file types"
-msgstr "Habilitar ou desabilitar a geração de miniaturas para diferentes tipos de arquivo"
-
-#: src/ui/settings.rs:238
-msgid "Preview Settings"
-msgstr "Configurações de pré-visualização"
-
-#: src/ui/settings.rs:241
-msgid "Enable Thumbnails"
-msgstr "Habilitar miniaturas"
-
-#: src/ui/settings.rs:242
-msgid "Show previews for supported file types"
-msgstr "Mostrar pré-visualizações para tipos de arquivo suportados"
-
-#: src/ui/settings.rs:243
-msgid "Behavior"
-msgstr "Comportamento"
-
-#: src/ui/settings.rs:247 src/ui/settings.rs:467
-msgid "File Operations"
-msgstr "Operações com arquivos"
-
-#: src/ui/settings.rs:250
-msgid "Single Click to Open"
-msgstr "Abrir com um clique"
-
-#: src/ui/settings.rs:251
-msgid "Open files with a single click instead of double click"
-msgstr "Abrir arquivos com um único clique em vez de duplo clique"
-
-#: src/ui/settings.rs:256
-msgid "Images"
-msgstr "Imagens"
-
-#: src/ui/settings.rs:257
-msgid "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
-msgstr "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
-
-#: src/ui/settings.rs:265
-msgid "Sorting and Filtering"
-msgstr "Ordenação e filtragem"
-
-#: src/ui/settings.rs:268
-msgid "Default Sort"
-msgstr "Ordenação padrão"
-
-#: src/ui/settings.rs:269
-msgid "Primary sorting method"
-msgstr "Método de ordenação principal"
-
-#: src/ui/settings.rs:271 src/ui/properties.rs:373
-msgid "Size"
-msgstr "Tamanho"
-
-#: src/ui/settings.rs:271 src/ui/properties.rs:70
-msgid "Date"
-msgstr "Data"
-
-#: src/ui/settings.rs:271 src/ui/properties.rs:120
-msgid "Type"
-msgstr "Tipo"
-
-#: src/ui/settings.rs:272
-msgid "Videos"
-msgstr "Vídeos"
-
-#: src/ui/settings.rs:273
-msgid "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
-msgstr "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
-
-#: src/ui/settings.rs:281
-msgid "XDG Directories"
-msgstr "Diretórios XDG"
-
-#: src/ui/settings.rs:288
-msgid "Fonts"
-msgstr "Fontes"
-
-#: src/ui/settings.rs:289
-msgid "TTF, OTF, WOFF, WOFF2, TTC"
-msgstr "TTF, OTF, WOFF, WOFF2, TTC"
-
-#: src/ui/settings.rs:294
-msgid "Sort Order"
-msgstr "Ordem de classificação"
-
-#: src/ui/settings.rs:294
-msgid "Windows Executables"
-msgstr "Executáveis do Windows"
-
-#: src/ui/settings.rs:295
-msgid "Direction of the primary sort"
-msgstr "Direção da ordenação principal"
-
-#: src/ui/settings.rs:295 src/ui/settings.rs:372
-msgid "EXE"
-msgstr "EXE"
-
-#: src/ui/settings.rs:304
-msgid "PDF Documents"
-msgstr "Documentos PDF"
-
-#: src/ui/settings.rs:305
-msgid "Portable Document Format files"
-msgstr "Arquivos em formato PDF"
-
-#: src/ui/settings.rs:312
-msgid "Folders First"
-msgstr "Pastas primeiro"
-
-#: src/ui/settings.rs:313
-msgid "Display folders before files"
-msgstr "Exibir pastas antes dos arquivos"
-
-#: src/ui/settings.rs:320
-msgid "Preview Examples"
-msgstr "Exemplos de pré-visualização"
-
-#: src/ui/settings.rs:321
-msgid "How thumbnails will appear in the file grid"
-msgstr "Como as miniaturas aparecerão na grade de arquivos"
-
-#: src/ui/settings.rs:326
-msgid "Show Hidden Files"
-msgstr "Exibir arquivos ocultos"
-
-#: src/ui/settings.rs:327
-msgid "Display files and folders starting with a dot"
-msgstr "Exibir arquivos e pastas que começam com ponto"
-
-#: src/ui/settings.rs:329
-msgid "Image"
-msgstr "Imagem"
-
-#: src/ui/settings.rs:333
-msgid "Body Color"
-msgstr "Cor do Corpo"
-
-#: src/ui/settings.rs:334
-msgid "Hex color code for icon body (e.g., '#e4e4e4')"
-msgstr "Código de cor hexadecimal para o corpo do ícone (ex.: '#e4e4e4')"
-
-#: src/ui/settings.rs:344
-msgid "Terminal"
-msgstr "Terminal"
-
-#: src/ui/settings.rs:344
-msgid "Video"
-msgstr "Vídeo"
-
-#: src/ui/settings.rs:346
-msgid "File operations and sorting preferences"
-msgstr "Operações com arquivos e preferências de ordenação"
-
-#: src/ui/settings.rs:347
-msgid "Customize the embedded terminal look, feel, and executable"
-msgstr "Personalizar a aparência e o executável do terminal integrado"
-
-#: src/ui/settings.rs:348
-msgid "Configuration"
-msgstr "Configuração"
-
-#: src/ui/settings.rs:349
-msgid "Shell Executable"
-msgstr "Executável do Shell"
-
-#: src/ui/settings.rs:350
-msgid "Height"
-msgstr "Altura"
-
-#: src/ui/settings.rs:350
-msgid "How files and directories are opened and managed"
-msgstr "Como arquivos e diretórios são abertos e gerenciados"
-
-#: src/ui/settings.rs:350
-msgid "Custom shell path (e.g., '/bin/zsh'). Leave blank for default"
-msgstr "Caminho do shell personalizado (ex.: '/bin/zsh'). Deixe em branco para o padrão"
-
-#: src/ui/settings.rs:351
-msgid "Height of the terminal pane in pixels"
-msgstr "Altura do painel do terminal em pixels"
-
-#: src/ui/settings.rs:353
-msgid "Font Color"
-msgstr "Cor da Fonte"
-
-#: src/ui/settings.rs:354
-msgid "Hex color code for extension text (e.g., '#ffffff')"
-msgstr "Código de cor hexadecimal para o texto da extensão (ex.: '#ffffff')"
-
-#: src/ui/settings.rs:359 src/ui/settings.rs:368
-msgid "Font"
-msgstr "Fonte"
-
-#: src/ui/settings.rs:365
-msgid "How files are ordered and displayed"
-msgstr "Como os arquivos são ordenados e exibidos"
-
-#: src/ui/settings.rs:369
-msgid "Pango font description"
-msgstr "Descrição de fonte Pango"
-
-#: src/ui/settings.rs:374
-msgid "PDF"
-msgstr "PDF"
-
-#: src/ui/settings.rs:382
-msgid "Foreground Color"
-msgstr "Cor do texto"
-
-#: src/ui/settings.rs:383
-msgid "Text color (hex, e.g., '#E5E5E5')"
-msgstr "Cor do texto (hex, ex.: '#E5E5E5')"
-
-#: src/ui/settings.rs:396
-msgid "Background Color"
-msgstr "Cor de fundo"
-
-#: src/ui/settings.rs:397
-msgid "Background color (hex, e.g., '#1A1A1A')"
-msgstr "Cor de fundo (hex, ex.: '#1A1A1A')"
-
-#: src/ui/settings.rs:421
-msgid "Back"
-msgstr "Voltar"
-
-#: src/ui/settings.rs:436
-msgid "Forward"
-msgstr "Avançar"
-
-#: src/ui/settings.rs:440
-msgid "Embedded terminal appearance and behavior"
-msgstr "Aparência e comportamento do terminal integrado"
-
-#: src/ui/settings.rs:445
-msgid "Customize the embedded terminal look and feel"
-msgstr "Personalizar a aparência do terminal integrado"
-
-#: src/ui/settings.rs:451
-msgid "Open"
-msgstr "Abrir"
-
-#: src/ui/settings.rs:470 src/ui/menu_editor.rs:417
-msgid "Delete"
-msgstr "Excluir"
-
-#: src/ui/settings.rs:486
-msgid "View and Application"
-msgstr "Exibição e aplicativo"
-
-#: src/ui/settings.rs:489
-msgid "Refresh"
-msgstr "Atualizar"
-
-#: src/ui/settings.rs:519
-msgid "Toggle Hidden"
-msgstr "Alternar ocultos"
-
-#: src/ui/settings.rs:532
-msgid "Custom keyboard shortcuts for common actions"
-msgstr "Atalhos de teclado personalizados para ações comuns"
-
-#: src/ui/settings.rs:535
-msgid "Rename"
-msgstr "Renomear"
-
-#: src/ui/settings.rs:560 src/ui/settings.rs:708
-msgid "Audio"
-msgstr "Áudio"
-
-#: src/ui/settings.rs:561
-msgid "MP3, FLAC, M4A, OGG, WAV (embedded album art)"
-msgstr "MP3, FLAC, M4A, OGG, WAV (arte do álbum incorporada)"
-
-#: src/ui/settings.rs:609
-msgid "Shortcuts for navigating between directories"
-msgstr "Atalhos para navegar entre diretórios"
-
-#: src/ui/settings.rs:637
-msgid "Go to previous directory in history"
-msgstr "Ir para o diretório anterior no histórico"
-
-#: src/ui/settings.rs:652
-msgid "Go to next directory in history"
-msgstr "Ir para o próximo diretório no histórico"
-
-#: src/ui/settings.rs:683
-msgid "Shortcuts for managing files"
-msgstr "Atalhos para gerenciar arquivos"
-
-#: src/ui/settings.rs:717
-msgid "Shortcuts for controlling the interface"
-msgstr "Atalhos para controlar a interface"
-
-#: src/ui/settings.rs:734
-msgid "Reload current directory"
-msgstr "Recarregar diretório atual"
-
-#: src/ui/settings.rs:749
-msgid "Focus search/filter bar"
-msgstr "Focar barra de pesquisa/filtro"
-
-#: src/ui/settings.rs:764
-msgid "Show/hide hidden files and folders"
-msgstr "Mostrar/ocultar arquivos e pastas ocultos"
-
-#: src/ui/settings.rs:793
-msgid "Sorting & Filtering"
-msgstr "Ordenação e Filtragem"
-
-#: src/ui/settings.rs:868
-msgid "Appearance & Execution"
-msgstr "Aparência e Execução"
-
-#: src/ui/settings.rs:???
-msgid "Shortcuts"
-msgstr "Atalhos"
-
-#: src/ui/settings.rs:???
-msgid "Search"
-msgstr "Pesquisar"
-
-#: src/ui/settings.rs:???
-msgid "Show Recents"
-msgstr "Mostrar Recentes"
-
-#: src/ui/settings.rs:???
-msgid "Show recently visited files in the sidebar"
-msgstr "Mostrar arquivos visitados recentemente na barra lateral"
-
-#: src/ui/settings.rs:???
-msgid "Height (lines)"
-msgstr "Altura (linhas)"
-
-#: src/ui/settings.rs:???
-msgid "Number of character lines in the terminal"
-msgstr "Número de linhas de caracteres no terminal"
-
-#: src/ui/settings.rs:???
-msgid "Client-Side Decorations"
-msgstr "Decorações do lado do cliente"
-
-#: src/ui/settings.rs:???
-msgid "Show window controls in the header bar"
-msgstr "Mostrar controles da janela na barra de cabeçalho"
-
-#: src/ui/settings.rs:???
-msgid "Recents Position"
-msgstr "Posição dos Recentes"
-
-#: src/ui/settings.rs:???
-msgid "Row index of Recents in the sidebar (0 = top)"
-msgstr "Índice da linha dos Recentes na barra lateral (0 = topo)"
-
-#: src/ui/settings.rs:???
-msgid "Default Layout"
-msgstr "Layout padrão"
-
-#: src/ui/settings.rs:???
-msgid "Start with grid view (off) or list view (on)"
-msgstr "Iniciar com visualização em grade (desligado) ou em lista (ligado)"
-
-#: src/ui/settings.rs:???
-msgid "Max Results"
-msgstr "Máx. Resultados"
-
-#: src/ui/settings.rs:???
-msgid "Maximum number of matches to return (higher values may be slower)"
-msgstr "Número máximo de correspondências a retornar (valores mais altos podem ser mais lentos)"
-
-#: src/ui/settings.rs:???
-msgid "Configure how content search behaves"
-msgstr "Configure o comportamento da pesquisa de conteúdo"
-
-#: src/ui/settings.rs:???
-msgid "Lazy Thumbnails"
-msgstr "Miniaturas Sob Demanda"
-
-#: src/ui/settings.rs:???
-msgid "Generate thumbnails only for items in view"
-msgstr "Gerar miniaturas apenas para itens visíveis"
-
-#: src/ui/settings.rs:???
-msgid "Disable Drag and Drop"
-msgstr "Desativar arrastar e soltar"
-
-#: src/ui/settings.rs:???
-msgid "Prevent moving or copying files via mouse drag"
-msgstr "Impedir mover ou copiar arquivos arrastando com o mouse"
-
-#: src/ui/settings.rs:???
-msgid "System"
-msgstr "Sistema"
-
-#: src/ui/settings.rs:???
-msgid "Performance & Engine"
-msgstr "Desempenho e motor"
-
-#: src/ui/settings.rs:???
-msgid "Configure background worker limits and streaming chunk sizes"
-msgstr "Configurar limites dos processos em segundo plano e tamanhos de lote de carregamento"
-
-#: src/ui/settings.rs:???
-msgid "UI Batch Streaming Size"
-msgstr "Tamanho do lote na interface"
-
-#: src/ui/settings.rs:???
-msgid "Number of items appended per frame when loading directories"
-msgstr "Número de itens adicionados por quadro ao carregar diretórios"
-
-#: src/ui/settings.rs:???
-msgid "Thumbnail Workers"
-msgstr "Processos de miniaturas"
-
-#: src/ui/settings.rs:???
-msgid "Concurrent background threads used to render thumbnails"
-msgstr "Threads simultâneas em segundo plano para renderizar miniaturas"
-
-#: src/ui/settings.rs:???
-msgid "Memory & Limits"
-msgstr "Memória e limites"
-
-#: src/ui/settings.rs:???
-msgid "Fast File Indexing"
-msgstr "Indexação Rápida de Arquivos"
-
-#: src/ui/settings.rs:???
-msgid "Build an SQLite FTS5 database to enable sub-millisecond filename searches"
-msgstr "Construir um banco SQLite FTS5 para habilitar pesquisas de nomes de arquivos em menos de um milissegundo"
-
-#: src/ui/settings.rs:???
-msgid "Tune caching thresholds and search result cutoffs"
-msgstr "Ajustar limites de cache e cortes de resultados de pesquisa"
-
-#: src/ui/settings.rs:???
-msgid "Folder Cache Capacity"
-msgstr "Capacidade de cache de pastas"
-
-#: src/ui/settings.rs:???
-msgid "Maximum number of recently visited folders kept in RAM (0 to disable)"
-msgstr "Número máximo de pastas visitadas recentemente mantidas na RAM (0 para desativar)"
-
-#: src/ui/settings.rs:???
-msgid "Max Search Results"
-msgstr "Máximo de resultados de pesquisa"
-
-#: src/ui/settings.rs:???
-msgid "Maximum files indexed per filename/extension search run"
-msgstr "Máximo de arquivos indexados por busca de nome/extensão"
-
-#: src/ui/settings.rs:???
-msgid "Navigation History Depth"
-msgstr "Profundidade do histórico de navegação"
-
-#: src/ui/settings.rs:???
-msgid "Maximum number of backward/forward directory jumps saved"
-msgstr "Número máximo de saltos para trás/para frente salvos no histórico"
-
-#: src/ui/settings.rs:???
-msgid "Video Extraction (FFmpeg)"
-msgstr "Extração de Vídeo (FFmpeg)"
-
-#: src/ui/settings.rs:???
-msgid "Configure video frame extraction and decoding options"
-msgstr "Configurar opções de extração e decodificação de quadros de vídeo"
-
-#: src/ui/settings.rs:???
-msgid "Initial Frame Offset"
-msgstr "Deslocamento inicial do quadro"
-
-#: src/ui/settings.rs:???
-msgid "Timestamp in seconds into the video to capture thumbnail"
-msgstr "Momento em segundos do vídeo para capturar a miniatura"
-
-#: src/ui/settings.rs:???
-msgid "FFmpeg Decoder Threads"
-msgstr "Threads do decodificador FFmpeg"
-
-#: src/ui/settings.rs:???
-msgid "Threads allocated to each video frame capture task"
-msgstr "Threads alocadas para cada processo de captura de quadros de vídeo"
-
-#: src/ui/settings.rs:???
-msgid "Auto-Rotate Videos"
-msgstr "Rotacionar vídeos automaticamente"
-
-#: src/ui/settings.rs:???
-msgid "Rotate thumbnails based on container orientation metadata"
-msgstr "Girar miniaturas com base nos metadados de orientação do vídeo"
-
-#: src/ui/settings.rs:???
-msgid "Max Content Search Results"
-msgstr "Máx. Resultados de Conteúdo"
-
-#: src/ui/settings.rs:???
-msgid "Highlight Empty Folders"
-msgstr "Destacar pastas vazias"
-
-#: src/ui/settings.rs:???
-msgid "Color the border of folders that contain no items"
-msgstr "Colorir a borda de pastas que não contêm itens"
-
-#: src/ui/settings.rs:???
-msgid "Window Controls on Left"
-msgstr "Controles da janela à esquerda"
-
-#: src/ui/settings.rs:???
-msgid "Move close/minimize/maximize buttons to the left"
-msgstr "Mover os botões fechar/minimizar/maximizar para a esquerda"
-
-#: src/ui/settings.rs:???
-msgid "Thumbnail Size"
-msgstr "Tamanho das Miniaturas"
-
-#: src/ui/settings.rs:???
-msgid "Target resolution for media previews (higher values increase memory usage)"
-msgstr "Resolução alvo para pré-visualizações (valores maiores aumentam o uso de memória)"
-
-#: src/ui/settings.rs:???
-msgid "Autoplay Video Previews"
-msgstr "Reprodução Automática de Vídeos"
-
-#: src/ui/settings.rs:???
-msgid "Play a muted preview when a single video card is selected"
-msgstr "Reproduzir pré-visualização sem som ao selecionar um único cartão de vídeo"
-
-#: src/ui/settings.rs:???
-msgid "Generated Extension Icons"
-msgstr "Ícones de Extensão Gerados"
-
-#: src/ui/settings.rs:???
-msgid "Settings for dynamically generated icons when system themes lack a dedicated icon"
-msgstr "Configurações para ícones gerados dinamicamente quando o tema do sistema não possui um ícone específico"
-
-#: src/ui/settings.rs:???
-msgid "Auto-Generate Icons"
-msgstr "Gerar Ícones Automaticamente"
-
-#: src/ui/settings.rs:???
-msgid "Synthesize SVG icons for unknown file extensions using template.svg"
-msgstr "Criar ícones SVG para extensões de arquivo desconhecidas usando template.svg"
-
-#: src/ui/settings.rs:???
-msgid "Accent Color"
-msgstr "Cor de Destaque"
-
-#: src/ui/settings.rs:???
-msgid "Hex color code for extension badges (e.g., '#1273b2')"
-msgstr "Código de cor hexadecimal para a etiqueta de extensão (ex.: '#1273b2')"
-
-#: src/ui/settings.rs:???
-msgid "Base Font Size"
-msgstr "Tamanho Base da Fonte"
-
-#: src/ui/settings.rs:???
-msgid "Base font scale for extension labels inside generated badges"
-msgstr "Escala base da fonte para os rótulos de extensão dentro dos emblemas gerados"
-
-#: src/ui/settings.rs:???
-msgid "Toggle Folders First"
-msgstr "Alternar Pastas Primeiro"
-
-#: src/ui/settings.rs:???
-msgid "Toggle folders first placement in current directory"
-msgstr "Alternar exibição de pastas primeiro no diretório atual"
-
-#: src/ui/settings.rs:???
-msgid "Home"
-msgstr "Início"
-
-#: src/ui/settings.rs:???
-msgid "Navigate to user's home directory"
-msgstr "Navegar para a pasta pessoal do usuário"
-
-#: src/ui/settings.rs:???
-msgid "Root"
-msgstr "Raiz"
-
-#: src/ui/settings.rs:???
-msgid "Navigate to filesystem root directory"
-msgstr "Navegar para o diretório raiz do sistema de arquivos"
-
-#: src/ui/settings.rs:???
-msgid "Properties"
-msgstr "Propriedades"
-
-#: src/ui/settings.rs:???
-msgid "Inspect file properties or metadata"
-msgstr "Inspecionar propriedades ou metadados do arquivo"
-
-#: src/ui/settings.rs:???
-msgid "Copy Path"
-msgstr "Copiar caminho"
-
-#: src/ui/settings.rs:???
-msgid "Copy absolute path of selected items to clipboard"
-msgstr "Copiar caminho absoluto dos itens selecionados para a área de transferência"
-
-#: src/ui/settings.rs:???
-msgid "Create Symbolic Link"
-msgstr "Criar link simbólico"
-
-#: src/ui/settings.rs:???
-msgid "Create symlink from clipboard path"
-msgstr "Criar link simbólico a partir do caminho na área de transferência"
-
-#: src/ui/settings.rs:???
-msgid "Create Hard Link"
-msgstr "Criar link físico"
-
-#: src/ui/settings.rs:???
-msgid "Create hardlink from clipboard path"
-msgstr "Criar link físico a partir do caminho na área de transferência"
-
-#: src/ui/settings.rs:???
-msgid "View & Customization"
-msgstr "Exibição e personalização"
-
-#: src/ui/settings.rs:???
-msgid "Shortcuts for controlling the interface and icons"
-msgstr "Atalhos para controlar a interface e ícones"
-
-#: src/ui/settings.rs:???
-msgid "Toggle Header Bar"
-msgstr "Alternar barra de cabeçalho"
-
-#: src/ui/settings.rs:???
-msgid "Show or hide the top navigation toolbar"
-msgstr "Mostrar ou ocultar a barra de ferramentas de navegação superior"
-
-#: src/ui/settings.rs:???
-msgid "Cycle Sort"
-msgstr "Alternar ordenação"
-
-#: src/ui/settings.rs:???
-msgid "Toggle Sort Order"
-msgstr "Alternar ordem de classificação"
-
-#: src/ui/settings.rs:???
-msgid "Toggle ascending/descending order"
-msgstr "Alternar ordem crescente/decrescente"
-
-#: src/ui/settings.rs:???
-msgid "Change Icon"
-msgstr "Alterar ícone"
-
-#: src/ui/settings.rs:???
-msgid "Open icon picker for the current folder"
-msgstr "Abrir seletor de ícones para a pasta atual"
-
-#: src/ui/settings.rs:???
-msgid "Reset Icon"
-msgstr "Restaurar ícone"
-
-#: src/ui/settings.rs:???
-msgid "Reset folder icon to system default"
-msgstr "Restaurar ícone da pasta para o padrão do sistema"
-
-#: src/ui/settings.rs:???
-msgid "Shortcuts for opening preferences and application tools"
-msgstr "Atalhos para abrir preferências e ferramentas do aplicativo"
-
-#: src/ui/settings.rs:???
-msgid "Settings"
-msgstr "Configurações"
-
-#: src/ui/settings.rs:???
-msgid "Open preferences window"
-msgstr "Abrir janela de preferências"
-
-#: src/ui/settings.rs:???
-msgid "Menu Editor"
-msgstr "Editor de menu"
-
-#: src/ui/settings.rs:???
-msgid "Quit"
-msgstr "Sair"
-
-#: src/ui/settings.rs:???
-msgid "Exit the application"
-msgstr "Sair do aplicativo"
-
-#: src/ui/settings.rs:???
-msgid "UI Scale"
-msgstr "Escala da Interface"
-
-#: src/ui/settings.rs:???
-msgid "Adjust interface scaling for high-resolution displays"
-msgstr "Ajustar o dimensionamento da interface para telas de alta resolução"
-
-# ============================================================
-# Git Diff Panel (src/ui/diff_panel.rs & src/ui/settings.rs)
-# ============================================================
-
-#: src/ui/diff_panel.rs:???
-msgid "Git Diff"
-msgstr "Git Diff"
-
-#: src/ui/diff_panel.rs:???
-msgid "Copy Diff to Clipboard"
-msgstr "Copiar Diff para a Área de Transferência"
-
-#: src/ui/diff_panel.rs:???
-msgid "Diff copied to clipboard"
-msgstr "Diff copiado para a área de transferência"
-
-#: src/ui/settings.rs:???
-msgid "Auto-Show Git Diff"
-msgstr "Exibição Automática do Git Diff"
-
-#: src/ui/settings.rs:???
-msgid "Automatically open the diff panel when selecting a modified file"
-msgstr "Abrir automaticamente o painel de diff ao selecionar um arquivo modificado"
-
-# ============================================================
-# src/ui/dialogs.rs
-# ============================================================
-
-#: src/ui/dialogs.rs:431
-msgid "Unlock LUKS Volume"
-msgstr "Desbloquear volume LUKS"
-
-#: src/ui/dialogs.rs:435
-msgid "Enter the passphrase to unlock this encrypted image."
-msgstr "Digite a senha para desbloquear esta imagem criptografada."
-
-#: src/ui/dialogs.rs:???
-msgid "Select Icon"
-msgstr "Selecionar ícone"
-
-#: src/ui/dialogs.rs:???
-msgid "Select Folder Icon"
-msgstr "Selecionar ícone da pasta"
-
-#: src/ui/dialogs.rs:???
-msgid "Select Sidebar Icon"
-msgstr "Selecionar ícone da barra lateral"
-
-#: src/ui/dialogs.rs:???
-msgid "Select"
-msgstr "Selecionar"
-
-#: src/ui/dialogs.rs:???
-msgid "Rename Bookmark"
-msgstr "Renomear favorito"
-
-#: src/ui/dialogs.rs:???
-msgid "Enter a new display name for this bookmark:"
-msgstr "Digite um novo nome de exibição para este favorito:"
-
-#: src/ui/dialogs.rs:???
-msgid "Permanently delete \"{}\"?"
-msgstr "Excluir permanentemente \"{}\"?"
-
-#: src/ui/dialogs.rs:???
-msgid "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone."
-msgstr "Este item será excluído permanentemente do arquivo. Esta ação é irreversível e não pode ser desfeita."
-
-#: src/ui/dialogs.rs:???
-msgid "Open With…"
-msgstr "Abrir com…"
-
-#: src/ui/dialogs.rs:???
-msgid "Search applications…"
-msgstr "Pesquisar aplicativos…"
-
-#: src/ui/dialogs.rs:???
-msgid "Default"
-msgstr "Padrão"
-
-#: src/ui/dialogs.rs:???
-msgid "Always use for this file type"
-msgstr "Sempre usar para este tipo de arquivo"
-
-#: src/ui/dialogs.rs:???
-msgid "Directory Inspector"
-msgstr "Inspetor de Diretório"
-
-#: src/ui/dialogs.rs:???
-msgid "Directory Overview"
-msgstr "Visão Geral do Diretório"
-
-#: src/ui/dialogs.rs:???
-msgid "Close"
-msgstr "Fechar"
-
-#: src/ui/dialogs.rs:???
-msgid "Scanning directory tree…"
-msgstr "Analisando estrutura de diretórios…"
-
-#: src/ui/dialogs.rs:???
-msgid "Storage Summary"
-msgstr "Resumo do Armazenamento"
-
-#: src/ui/dialogs.rs:???
-msgid "Total Size"
-msgstr "Tamanho Total"
-
-#: src/ui/dialogs.rs:???
-msgid "Items"
-msgstr "Itens"
-
-#: src/ui/dialogs.rs:???
-msgid "Filter by name, extension (.mp4), or size (>10M, <1G)..."
-msgstr "Filtrar por nome, extensão (.mp4) ou tamanho (>10M, <1G)..."
-
-#: src/ui/dialogs.rs:???
-msgid "Largest Files (Top 100)"
-msgstr "Maiores Arquivos (Top 100)"
-
-#: src/ui/dialogs.rs:???
-msgid "Open enclosing folder"
-msgstr "Abrir pasta recipiente"
-
-#: src/ui/dialogs.rs:???
-msgid "Move to trash"
-msgstr "Mover para a lixeira"
-
-#: src/ui/dialogs.rs:???
-msgid "Item moved to trash."
-msgstr "Item movido para a lixeira."
-
-#: src/ui/dialogs.rs:???
-msgid "Scanned in {} ms"
-msgstr "Analisado em {} ms"
-
-#: src/ui/dialogs.rs:???
-msgid "{} files, {} subfolders"
-msgstr "{} arquivos, {} subpastas"
-
-# ============================================================
-# src/ui/update.rs
-# ============================================================
-
-#: src/ui/update.rs:252
-msgid "Volume mounted."
-msgstr "Volume montado."
-
-#: src/ui/update.rs:1033
-msgid "New Folder"
-msgstr "Nova Pasta"
-
-#: src/ui/update.rs:1035
-msgid "Enter folder name(s), separated by commas for batch creation:"
-msgstr "Digite o(s) nome(s) da(s) pasta(s), separados por vírgula para criação em lote:"
-
-#: src/ui/update.rs:1038 src/ui/update.rs:1088
-msgid "Create"
-msgstr "Criar"
-
-#: src/ui/update.rs:1039
-msgid "Wrong Password"
-msgstr "Senha incorreta"
-
-#: src/ui/update.rs:1046
-msgid "The password you entered was incorrect. Please try again."
-msgstr "A senha digitada está incorreta. Tente novamente."
-
-#: src/ui/update.rs:1048
-msgid "This archive is encrypted. Enter the password to browse its contents."
-msgstr "Este arquivo está criptografado. Digite a senha para navegar pelo seu conteúdo."
-
-#: src/ui/update.rs:1053
-msgid "Unlock"
-msgstr "Desbloquear"
-
-#: src/ui/update.rs:1063 src/ui/update.rs:1069 src/ui/update.rs:1113 src/ui/update.rs:1123
-msgid "Directory or file already exists"
-msgstr "O diretório ou arquivo já existe"
-
-#: src/ui/update.rs:1083
-msgid "New File"
-msgstr "Novo Arquivo"
-
-#: src/ui/update.rs:1085
-msgid "Enter file name(s), separated by commas for batch creation:"
-msgstr "Digite o(s) nome(s) do(s) arquivo(s), separados por vírgula para criação em lote:"
-
-#: src/ui/update.rs:???
-msgid "Enter Location"
-msgstr "Digitar localização"
-
-#: src/ui/update.rs:???
-msgid "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):"
-msgstr "Digite um caminho local ou URI de rede (ex.: smb://servidor/compartilhamento, sftp://host, /home):"
-
-#: src/ui/update.rs:??? src/ui/network_dialogs.rs:???
-msgid "Connect"
-msgstr "Conectar"
-
-#: src/ui/update.rs:???
-msgid "Clear History"
-msgstr "Limpar histórico"
-
-# ============================================================
-# src/ui/menu_editor.rs
-# ============================================================
-
-msgid "Scope"
-msgstr "Escopo"
-
-msgid "Copies the selected files or folders to the clipboard."
-msgstr "Copia os arquivos ou pastas selecionados para a área de transferência."
-
-msgid "Cuts the selected files or folders to the clipboard."
-msgstr "Recorta os arquivos ou pastas selecionados para a área de transferência."
-
-msgid "Pastes items from the clipboard into the current directory."
-msgstr "Cola os itens da área de transferência no diretório atual."
-
-msgid "Triggers inline filename renaming on the selected item."
-msgstr "Inicia a renomeação em linha do item selecionado."
-
-msgid "Moves the selected files or folders to the system trash."
-msgstr "Move os arquivos ou pastas selecionados para a lixeira do sistema."
-
-msgid "Opens the new folder creation prompt."
-msgstr "Abre o diálogo de criação de nova pasta."
-
-msgid "Opens the new file creation prompt."
-msgstr "Abre o diálogo de criação de novo arquivo."
-
-msgid "Pins or unpins the target folder in the sidebar."
-msgstr "Fixa ou desafixa a pasta de destino na barra lateral."
-
-msgid "Adds the selected folder or current directory to the Quick List."
-msgstr "Adiciona a pasta selecionada ou o diretório atual à Lista Rápida."
-
-msgid "Opens a submenu to move or copy items directly to Quick List slots."
-msgstr "Abre um submenu para mover ou copiar itens diretamente para os slots da Lista Rápida."
-
-msgid "Opens the file tag editor popover."
-msgstr "Abre o editor de etiquetas do arquivo."
-
-msgid "Opens the Directory Inspector with disk usage and largest files."
-msgstr "Abre o Inspetor de Diretório com uso de disco e maiores arquivos."
-
-msgid "Populates a dynamic submenu of registered applications for the MIME type."
-msgstr "Preenche um submenu dinâmico com aplicativos registrados para o tipo MIME."
-
-msgid "Opens the full system application chooser dialog."
-msgstr "Abre o diálogo de seleção de aplicativos do sistema."
-
-msgid "Opens the folder icon picker to assign a theme icon."
-msgstr "Abre o seletor de ícones de pasta para atribuir um ícone do tema."
-
-msgid "Opens a file chooser to assign a custom image as file/folder icon."
-msgstr "Abre o seletor de arquivos para atribuir uma imagem personalizada como ícone."
-
-msgid "Restores the default icon for the selected file or folder."
-msgstr "Restaura o ícone padrão para o arquivo ou pasta selecionado."
-
-msgid "Sets a custom image icon for the target file's extension globally."
-msgstr "Define uma imagem como ícone global para a extensão do arquivo."
-
-msgid "Resets the custom icon for the target extension back to theme default."
-msgstr "Restaura o ícone da extensão para o padrão do tema."
-
-msgid "Sets the selected image as the main window background."
-msgstr "Define a imagem selecionada como fundo da janela principal."
-
-msgid "Sets the selected image as the left sidebar background."
-msgstr "Define a imagem selecionada como fundo da barra lateral esquerda."
-
-msgid "Sets the selected image as the right panel background."
-msgstr "Define a imagem selecionada como fundo do painel direito."
-
-msgid "Clears all custom background images and resets styling to default."
-msgstr "Limpa todas as imagens de fundo e restaura o estilo padrão."
-
-msgid "Pick Built-in"
-msgstr "Escolher Built-in"
-
-msgid "Select Built-in Action"
-msgstr "Selecionar Ação Integrada"
-
-msgid "Search built-ins…"
-msgstr "Pesquisar ações integradas…"
-
-msgid "Use"
-msgstr "Usar"
-
-msgid "Copy to clipboard"
-msgstr "Copiar para a área de transferência"
-
-#: src/ui/menu_editor.rs:112
-msgid "Flux Menu Editor"
-msgstr "Editor de menu do Flux"
-
-#: src/ui/menu_editor.rs:132
-msgid "Write to config file  (Ctrl+S)"
-msgstr "Salvar no arquivo de configuração  (Ctrl+S)"
-
-#: src/ui/menu_editor.rs:134
-msgid "Add new entry  (Ctrl+N)"
-msgstr "Adicionar nova entrada  (Ctrl+N)"
-
-#: src/ui/menu_editor.rs:137 src/ui/menu_editor.rs:535
-msgid "Save"
-msgstr "Salvar"
-
-#: src/ui/menu_editor.rs:138
-msgid "Write to ~/.config/flux/menu.rs  (Ctrl+S)"
-msgstr "Salvar em ~/.config/flux/menu.rs  (Ctrl+S)"
-
-#: src/ui/menu_editor.rs:144
-msgid "Search entries…"
-msgstr "Pesquisar entradas…"
-
-#: src/ui/menu_editor.rs:147
-msgid "Filter entries  (Ctrl+F)"
-msgstr "Filtrar entradas  (Ctrl+F)"
-
-#: src/ui/menu_editor.rs:150
-msgid "Select menu configuration file to edit"
-msgstr "Selecione o arquivo de configuração de menu para editar"
-
-#: src/ui/menu_editor.rs:222
-msgid "Create menu config"
-msgstr "Criar configuração de menu"
-
-#: src/ui/menu_editor.rs:300
-msgid "menu.rs saved"
-msgstr "menu.rs salvo"
-
-#: src/ui/menu_editor.rs:305
-msgid "Failed to save menu.rs"
-msgstr "Falha ao salvar menu.rs"
-
-#: src/ui/menu_editor.rs:352
-msgid "No entries yet"
-msgstr "Nenhuma entrada ainda"
-
-#: src/ui/menu_editor.rs:353
-msgid "Press + or Ctrl+N to add your first menu action"
-msgstr "Pressione + ou Ctrl+N para adicionar sua primeira ação de menu"
-
-#: src/ui/menu_editor.rs:362
-msgid "No results"
-msgstr "Nenhum resultado"
-
-#: src/ui/menu_editor.rs:363
-msgid "Try a different search term"
-msgstr "Tente um termo de pesquisa diferente"
-
-#: src/ui/menu_editor.rs:414
-msgid "Move up"
-msgstr "Mover para cima"
-
-#: src/ui/menu_editor.rs:415
-msgid "Move down"
-msgstr "Mover para baixo"
-
-#: src/ui/menu_editor.rs:416
-msgid "Edit"
-msgstr "Editar"
-
-#: src/ui/menu_editor.rs:446
-msgid "Edit Entry"
-msgstr "Editar entrada"
-
-#: src/ui/menu_editor.rs:448
-msgid "Add Entry"
-msgstr "Adicionar entrada"
-
-#: src/ui/menu_editor.rs:468
-msgid "Identity"
-msgstr "Identificação"
-
-#: src/ui/menu_editor.rs:471
-msgid "Action"
-msgstr "Ação"
-
-#: src/ui/menu_editor.rs:489
-msgid "Label"
-msgstr "Rótulo"
-
-#: src/ui/menu_editor.rs:491
-msgid "Submenu  (blank = top-level)"
-msgstr "Submenu  (vazio = nível superior)"
-
-#: src/ui/menu_editor.rs:494
-msgid "MIME Types"
-msgstr "Tipos MIME"
-
-#: src/ui/menu_editor.rs:500
-#, c-format
-msgid "Command  (%p = path · %d = dir · %f = filename · %l = line)"
-msgstr "Comando  (%p = caminho · %d = diretório · %f = nome do arquivo · %l = linha)"
-
-#: src/ui/menu_editor.rs:508
-msgid "Notification  (optional)"
-msgstr "Notificação  (opcional)"
-
-#: src/ui/menu_editor.rs:533
-msgid "Cancel"
-msgstr "Cancelar"
-
-#: src/ui/menu_editor.rs:537
-msgid "Add"
-msgstr "Adicionar"
-
-#: src/ui/menu_editor.rs:620
-msgid "Line Position in menu.rs"
-msgstr "Posição da linha em menu.rs"
-
-#: src/ui/menu_editor.rs:621
-msgid "Set exact line order (1-based)"
-msgstr "Definir ordem exata da linha (iniciando em 1)"
-
-#: src/ui/menu_editor.rs:650
-msgid "Create Menu"
-msgstr "Criar Menu"
-
-#: src/ui/menu_editor.rs:663
-msgid "Menu File Name"
-msgstr "Nome do Arquivo de Menu"
-
-#: src/ui/menu_editor.rs:664
-msgid "Enter a menu name (e.g. 'menu-application-all.rs' for 'application/all' MIME type)"
-msgstr "Digite o nome do menu (ex: 'menu-application-all.rs' para o tipo MIME 'application/all')"
-
-#: src/ui/menu_editor.rs:674
-msgid "Submenu (blank = top-level)"
-msgstr "Submenu (vazio = nível superior)"
-
-#: src/ui/menu_editor.rs:683
-#, c-format
-msgid "Command (%p = path · %d = dir · %f = filename · %l = line)"
-msgstr "Comando (%p = caminho · %d = diretório · %f = nome do arquivo · %l = linha)"
-
-#: src/ui/menu_editor.rs:692
-msgid "Notification (optional)"
-msgstr "Notificação (opcional)"
-
-#: src/ui/menu_editor.rs:703
-msgid "Suppress Transfer Dialog"
-msgstr "Ocultar Diálogo de Transferência"
-
-#: src/ui/menu_editor.rs:704
-msgid "Do not track execution progress or open transfer dialog"
-msgstr "Não acompanhar progresso de execução nem abrir diálogo de transferência"
-
-#: src/ui/menu_editor.rs:843
-msgid "Pick Icon"
-msgstr "Escolher Ícone"
-
-# ============================================================
-# src/ui/properties.rs
-# ============================================================
-
-#: src/ui/properties.rs:69
-msgid "Hash"
-msgstr "Hash"
-
-#: src/ui/properties.rs:71
-msgid "Subject"
-msgstr "Assunto"
-
-#: src/ui/properties.rs:121
-msgid "Arch"
-msgstr "Arquitetura"
-
-#: src/ui/properties.rs:122
-msgid "Endian"
-msgstr "Ordem de bytes"
-
-#: src/ui/properties.rs:141
-msgid "Line Count"
-msgstr "Número de linhas"
-
-#: src/ui/properties.rs:142
-msgid "Word Count"
-msgstr "Número de palavras"
-
-#: src/ui/properties.rs:143
-msgid "TODOs"
-msgstr "TODOs"
-
-#: src/ui/properties.rs:144
-msgid "Line Endings"
-msgstr "Terminação de linha"
-
-#: src/ui/properties.rs:322
-msgid "File Identity"
-msgstr "Identificação do arquivo"
-
-#: src/ui/properties.rs:324
-msgid "Filename"
-msgstr "Nome do arquivo"
-
-#: src/ui/properties.rs:326
-msgid "Extension"
-msgstr "Extensão"
-
-#: src/ui/properties.rs:329
-msgid "None"
-msgstr "Nenhuma"
-
-#: src/ui/properties.rs:331
-msgid "MIME Type"
-msgstr "Tipo MIME"
-
-#: src/ui/properties.rs:338
-msgid "Symlink Info"
-msgstr "Informações do link simbólico"
-
-#: src/ui/properties.rs:340
-msgid "Target"
-msgstr "Destino"
-
-#: src/ui/properties.rs:341
-msgid "Broken"
-msgstr "Quebrado"
-
-#: src/ui/properties.rs:343
-msgid "Canonical"
-msgstr "Canônico"
-
-#: src/ui/properties.rs:365
-msgid "Extended Attributes"
-msgstr "Atributos estendidos"
-
-#: src/ui/properties.rs:371
-msgid "Full Path"
-msgstr "Caminho completo"
-
-#: src/ui/properties.rs:376
-msgid "Disk Usage"
-msgstr "Uso em disco"
-
-#: src/ui/properties.rs:377
-msgid "Inode"
-msgstr "Inode"
-
-#: src/ui/properties.rs:378
-msgid "Device ID"
-msgstr "ID do dispositivo"
-
-#: src/ui/properties.rs:387
-msgid "Mount Source"
-msgstr "Origem da montagem"
-
-#: src/ui/properties.rs:388
-msgid "FS Type"
-msgstr "Tipo de sistema de arquivos"
-
-#: src/ui/properties.rs:391
-msgid "System & Disk"
-msgstr "Sistema e disco"
-
-#: src/ui/properties.rs:399
-msgid "Temporal"
-msgstr "Temporal"
-
-#: src/ui/properties.rs:402
-msgid "Created"
-msgstr "Criado"
-
-#: src/ui/properties.rs:406
-msgid "Modified"
-msgstr "Modificado"
-
-#: src/ui/properties.rs:410
-msgid "Accessed"
-msgstr "Acessado"
-
-#: src/ui/properties.rs:417
-msgid "Permissions"
-msgstr "Permissões"
-
-#: src/ui/properties.rs:418
-msgid "UID/GID"
-msgstr "UID/GID"
-
-#: src/ui/properties.rs:422
-msgid "Entropy"
-msgstr "Entropia"
-
-#: src/ui/properties.rs:430 src/ui/properties.rs:432
-msgid "Security"
-msgstr "Segurança"
-
-#: src/ui/properties.rs:430
-msgid "SHA256"
-msgstr "SHA256"
-
-#: src/ui/properties.rs:437
-msgid "Executable Analysis"
-msgstr "Análise do executável"
-
-#: src/ui/properties.rs:452
-msgid "Content Metrics"
-msgstr "Métricas do conteúdo"
-
-#: src/ui/properties.rs:459
-msgid "Visual Media"
-msgstr "Mídia visual"
-
-#: src/ui/properties.rs:461
-msgid "Dimensions"
-msgstr "Dimensões"
-
-#: src/ui/properties.rs:463
-msgid "Aspect Ratio"
-msgstr "Proporção de tela"
-
-#: src/ui/properties.rs:472
-msgid "Git History"
-msgstr "Histórico Git"
-
-#: src/ui/properties.rs:489
-msgid "System Handler"
-msgstr "Aplicativo padrão"
-
-#: src/ui/properties.rs:492
-msgid "Default application for"
-msgstr "Aplicativo padrão para"
-
-#: src/ui/properties.rs:526
-msgid "Open With"
-msgstr "Abrir com"
-
-#: src/ui/properties.rs:560
-msgid "Copied to clipboard"
-msgstr "Copiado para a área de transferência"
-
-# ============================================================
-# src/ui/command_dialog.rs
-# ============================================================
-
-#: src/ui/command_dialog.rs:148
-msgid "Command Output"
-msgstr "Saída do Comando"
-
-#: src/ui/command_dialog.rs:272
-msgid "Suppress dialog"
-msgstr "Ocultar diálogo"
-
-#: src/ui/command_dialog.rs:277
-msgid "When enabled, this command will not show the output dialog again. This setting is saved in your menu configuration."
-msgstr "Quando ativado, este comando não mostrará mais o diálogo de saída. Esta configuração é salva no seu arquivo de configuração de menu."
-
-#: src/ui/command_dialog.rs:280
-msgid "Toggle to suppress the dialog for this specific command."
-msgstr "Alternar para ocultar o diálogo para este comando específico."
-
-#: src/ui/command_dialog.rs:384
-msgid "Copy all info to clipboard"
-msgstr "Copiar todas as informações para a área de transferência"
-
-# --- Info panel labels ---
-
-#: src/ui/command_dialog.rs:???
-msgid "PID:"
-msgstr "PID:"
-
-#: src/ui/command_dialog.rs:???
-msgid "State:"
-msgstr "Estado:"
-
-#: src/ui/command_dialog.rs:???
-msgid "CPU time:"
-msgstr "Tempo de CPU:"
-
-#: src/ui/command_dialog.rs:???
-msgid "Memory (RSS/VMS):"
-msgstr "Memória (RSS/VMS):"
-
-#: src/ui/command_dialog.rs:???
-msgid "Threads:"
-msgstr "Threads:"
-
-#: src/ui/command_dialog.rs:???
-msgid "Open FDs:"
-msgstr "FDs abertos:"
-
-#: src/ui/command_dialog.rs:???
-msgid "CWD:"
-msgstr "Diretório atual:"
-
-#: src/ui/command_dialog.rs:???
-msgid "I/O:"
-msgstr "E/S:"
-
-#: src/ui/command_dialog.rs:???
-msgid "Command:"
-msgstr "Comando:"
-
-#: src/ui/command_dialog.rs:???
-msgid "State: Completed / Terminated"
-msgstr "Estado: Concluído / Finalizado"
-
-#: src/ui/command_dialog.rs:???
-msgid "State: (unavailable)"
-msgstr "Estado: (indisponível)"
-
-#: src/ui/command_dialog.rs:???
-msgid "I/O: (unavailable)"
-msgstr "E/S: (indisponível)"
-
-#: src/ui/command_dialog.rs:???
-msgid "N/A"
-msgstr "N/D"
-
-#: src/ui/command_dialog.rs:???
-msgid "Unknown"
-msgstr "Desconhecido"
-
-# --- Process states ---
-
-#: src/ui/command_dialog.rs:???
-msgid "Running"
-msgstr "Executando"
-
-#: src/ui/command_dialog.rs:???
-msgid "Sleeping"
-msgstr "Em espera"
-
-#: src/ui/command_dialog.rs:???
-msgid "Uninterruptible Sleep"
-msgstr "Sono ininterrupto"
-
-#: src/ui/command_dialog.rs:???
-msgid "Zombie"
-msgstr "Zumbi"
-
-#: src/ui/command_dialog.rs:???
-msgid "Stopped"
-msgstr "Parado"
-
-#: src/ui/command_dialog.rs:???
-msgid "Tracing Stop"
-msgstr "Parada por rastreamento"
-
-#: src/ui/command_dialog.rs:???
-msgid "Dead"
-msgstr "Morto"
-
-#: src/ui/command_dialog.rs:???
-msgid "PPID:"
-msgstr "PPID:"
-
-#: src/ui/command_dialog.rs:???
-msgid "user+sys"
-msgstr "usuário+sistema"
-
-# ============================================================
-# src/ui/conflict_dialog.rs
-# ============================================================
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Replace existing file?"
-msgstr "Substituir arquivo existente?"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Conflict"
-msgstr "Conflito"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "A file with this name already exists. Choose what to do with it."
-msgstr "Um arquivo com este nome já existe. Escolha o que fazer com ele."
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Skip"
-msgstr "Pular"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Auto-Rename"
-msgstr "Renomear automaticamente"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Replace"
-msgstr "Substituir"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Existing file"
-msgstr "Arquivo existente"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Auto-rename will save as"
-msgstr "Renomeação automática salvará como"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Apply to all remaining conflicts"
-msgstr "Aplicar a todos os conflitos restantes"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "copy"
-msgstr "copiar"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "move"
-msgstr "mover"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "just now"
-msgstr "agora mesmo"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "1 minute ago"
-msgstr "1 minuto atrás"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "minutes ago"
-msgstr "minutos atrás"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "1 hour ago"
-msgstr "1 hora atrás"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "hours ago"
-msgstr "horas atrás"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "Yesterday"
-msgstr "Ontem"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "days ago"
-msgstr "dias atrás"
-
-#: src/ui/conflict_dialog.rs:???
-msgid "A file with this name already exists in the destination. Choose what to do with it."
-msgstr "Um arquivo com este nome já existe no destino. Escolha o que fazer com ele."
-
-# ============================================================
-# src/ui/transfer_dialog.rs
-# ============================================================
-
-#: src/ui/transfer_dialog.rs:???
-msgid "File Transfer"
-msgstr "Transferência de Arquivos"
-
-#: src/ui/transfer_dialog.rs:???
-msgid "- {} remaining"
-msgstr "- {} restante"
-
-# ============================================================
-# src/ui/clipboard_paste.rs
-# ============================================================
-
-#: src/ui/clipboard_paste.rs:25
-msgid "No display available for clipboard operation"
-msgstr "Nenhum display disponível para a operação da área de transferência"
-
-#: src/ui/clipboard_paste.rs:59
-msgid "Nothing pasteable in clipboard"
-msgstr "Nenhum conteúdo colável na área de transferência"
-
-#: src/ui/clipboard_paste.rs:117
-msgid "Image pasted as file"
-msgstr "Imagem colada como arquivo"
-
-#: src/ui/clipboard_paste.rs:123
-msgid "Failed to save image"
-msgstr "Falha ao salvar a imagem"
-
-#: src/ui/clipboard_paste.rs:131
-msgid "Could not read image from clipboard"
-msgstr "Não foi possível ler a imagem da área de transferência"
-
-#: src/ui/clipboard_paste.rs:138 src/ui/clipboard_paste.rs:162 src/ui/clipboard_paste.rs:271
-msgid "Clipboard read error"
-msgstr "Erro ao ler a área de transferência"
-
-#: src/ui/clipboard_paste.rs:180
-msgid "Text pasted as file"
-msgstr "Texto colado como arquivo"
-
-#: src/ui/clipboard_paste.rs:186
-msgid "Failed to save text"
-msgstr "Falha ao salvar o texto"
-
-#: src/ui/clipboard_paste.rs:249
-msgid "Could not read HTML from clipboard"
-msgstr "Não foi possível ler o HTML da área de transferência"
-
-#: src/ui/clipboard_paste.rs:257
-msgid "HTML pasted as file"
-msgstr "HTML colado como arquivo"
-
-#: src/ui/clipboard_paste.rs:263
-msgid "Failed to save HTML"
-msgstr "Falha ao salvar o HTML"
-
-# ============================================================
-# src/ui/advanced_search.rs
-# ============================================================
-
-#: src/ui/advanced_search.rs:???
-msgid "Only search folders"
-msgstr "Pesquisar apenas pastas"
-
-#: src/ui/advanced_search.rs:???
-msgid "Match directory names only"
-msgstr "Corresponder apenas a nomes de pastas"
-
-#: src/ui/advanced_search.rs:???
-msgid "What to find"
-msgstr "O que encontrar"
-
-#: src/ui/advanced_search.rs:???
-msgid "File name"
-msgstr "Nome do arquivo"
-
-#: src/ui/advanced_search.rs:???
-msgid "Exact match"
-msgstr "Correspondência exata"
-
-#: src/ui/advanced_search.rs:???
-msgid "Match exact filename without wildcards"
-msgstr "Corresponder nome exato do arquivo sem curingas"
-
-#: src/ui/advanced_search.rs:???
-msgid "Regular expression"
-msgstr "Expressão regular"
-
-#: src/ui/advanced_search.rs:???
-msgid "Use regular expressions for file name matching"
-msgstr "Utilizar expressões regulares para a correspondência de nomes de ficheiro"
-
-#: src/ui/advanced_search.rs:???
-msgid "Invalid regex: {}"
-msgstr "Expressão regular inválida: {}"
-
-#: src/ui/advanced_search.rs:???
-msgid "Inside files"
-msgstr "Dentro dos arquivos"
-
-#: src/ui/advanced_search.rs:???
-msgid "Requires 3+ characters"
-msgstr "Requer 3+ caracteres"
-
-#: src/ui/advanced_search.rs:???
-msgid "Pattern / Extension"
-msgstr "Padrão / Extensão"
-
-#: src/ui/advanced_search.rs:???
-msgid "Where to look"
-msgstr "Onde procurar"
-
-#: src/ui/advanced_search.rs:???
-msgid "Search inside subfolders"
-msgstr "Pesquisar dentro das subpastas"
-
-#: src/ui/advanced_search.rs:???
-msgid "Include hidden files"
-msgstr "Incluir arquivos ocultos"
-
-#: src/ui/advanced_search.rs:???
-msgid "Files beginning with a dot"
-msgstr "Arquivos que começam com ponto"
-
-#: src/ui/advanced_search.rs:???
-msgid "Narrow results"
-msgstr "Restringir resultados"
-
-#: src/ui/advanced_search.rs:???
-msgid "invoice, draft*, photo"
-msgstr "fatura, rascunho*, foto"
-
-#: src/ui/advanced_search.rs:???
-msgid "Filter by date and file size"
-msgstr "Filtrar por data e tamanho de arquivo"
-
-#: src/ui/advanced_search.rs:???
-msgid "Any time"
-msgstr "Qualquer momento"
-
-#: src/ui/advanced_search.rs:???
-msgid "Last hour"
-msgstr "Última hora"
-
-#: src/ui/advanced_search.rs:???
-msgid "Today"
-msgstr "Hoje"
-
-#: src/ui/advanced_search.rs:???
-msgid "Last 7 days"
-msgstr "Últimos 7 dias"
-
-#: src/ui/advanced_search.rs:???
-msgid "Last 30 days"
-msgstr "Últimos 30 dias"
-
-#: src/ui/advanced_search.rs:???
-msgid "Last year"
-msgstr "Último ano"
-
-#: src/ui/advanced_search.rs:???
-msgid "File size"
-msgstr "Tamanho do arquivo"
-
-#: src/ui/advanced_search.rs:???
-msgid "Any size"
-msgstr "Qualquer tamanho"
-
-#: src/ui/advanced_search.rs:???
-msgid "Larger than"
-msgstr "Maior que"
-
-#: src/ui/advanced_search.rs:???
-msgid "Smaller than"
-msgstr "Menor que"
-
-#: src/ui/advanced_search.rs:???
-msgid "Amount"
-msgstr "Valor"
-
-# ============================================================
-# src/ui/tag_picker.rs
-# ============================================================
-
-#: src/ui/tag_picker.rs:81
-msgid "Search or type new tag…"
-msgstr "Pesquisar ou digitar nova etiqueta…"
-
-#: src/ui/tag_picker.rs:???
-msgid "Edit Tags"
-msgstr "Editar Etiquetas"
-
-#: src/ui/tag_picker.rs:???
-msgid "Delete tag everywhere"
-msgstr "Excluir etiqueta em todos os lugares"
-
-#: src/ui/tag_picker.rs:???
-msgid "Press Enter to create and assign this tag"
-msgstr "Pressione Enter para criar e atribuir esta etiqueta"
-
-#: src/ui/tag_picker.rs:???
-msgid "Apply"
-msgstr "Aplicar"
-
-# ============================================================
-# src/ui/network_dialogs.rs
-# ============================================================
-
-#: src/ui/network_dialogs.rs:???
-msgid "Show/hide connect to Server"
-msgstr "Mostrar/ocultar conectar ao servidor"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Authentication Required"
-msgstr "Autenticação necessária"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Incorrect credentials. Please try again."
-msgstr "Credenciais incorretas. Tente novamente."
-
-#: src/ui/network_dialogs.rs:???
-msgid "Connect anonymously"
-msgstr "Conectar anonimamente"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Username"
-msgstr "Nome de usuário"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Domain"
-msgstr "Domínio"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Password"
-msgstr "Senha"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Protocol"
-msgstr "Protocolo"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Server Address"
-msgstr "Endereço do servidor"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Port"
-msgstr "Porta"
-
-#: src/ui/network_dialogs.rs:???
-msgid "Share / Path"
-msgstr "Compartilhamento / Caminho"
-
-# ============================================================
-# src/ui/sidebar_network.rs
-# ============================================================
-
-#: src/ui/sidebar_network.rs:???
-msgid "Connected Servers"
-msgstr "Servidores conectados"
-
-# ============================================================
-# src/ui/icon_picker.rs
-# ============================================================
-
-#: src/ui/icon_picker.rs:188
-msgid "Select Nerd Font Icon"
-msgstr "Selecionar Ícone Nerd Font"
-
-#: src/ui/icon_picker.rs:271
-msgid "Search icons (copy, folder, file, rust)..."
-msgstr "Pesquisar ícones (copiar, pasta, arquivo, rust)..."
-
-# ============================================================
-# src/ui/config_handlers.rs
-# ============================================================
-
-#: src/ui/config_handlers.rs:??? src/ui/view.rs:???
-msgid "New Section"
-msgstr "Nova Seção"
-
-#: src/ui/config_handlers.rs:???
-msgid "Enter a title for the new section:"
-msgstr "Digite um título para a nova seção:"
-
-#: src/ui/config_handlers.rs:???
-msgid "Section title"
-msgstr "Título da seção"
-
-#: src/ui/config_handlers.rs:???
-msgid "Rename Section"
-msgstr "Renomear Seção"
-
-#: src/ui/config_handlers.rs:???
-msgid "Enter a new title for this section:"
-msgstr "Digite um novo título para esta seção:"
-
-# ============================================================
-# Novas entradas: Barra de status e atalhos
-# ============================================================
-
-#: src/ui/help.rs:??? src/ui/settings.rs:???
-msgid "Toggle status bar"
-msgstr "Mostrar/ocultar barra de status"
-
-#: src/ui/settings.rs:???
-msgid "Toggle Status Bar"
-msgstr "Alternar barra de status"
-
-#: src/ui/settings.rs:???
-msgid "Show or hide the bottom status bar"
-msgstr "Mostrar ou ocultar a barra de status inferior"
-
-#: src/ui/help.rs:???
-msgid "Toggle sidebar"
-msgstr "Mostrar/ocultar barra lateral"
-
-# ============================================================
-# src/ui/tag_navigator.rs
-# ============================================================
-
-#: src/ui/tag_navigator.rs:???
-msgid "Delete Tag"
-msgstr "Excluir Etiqueta"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Are you sure you want to delete this tag globally"
-msgstr "Tem certeza de que deseja excluir esta etiqueta globalmente"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Tags updated"
-msgstr "Etiquetas atualizadas"
-
-
-#: src/ui/tag_navigator.rs:???
-msgid "Tag options"
-msgstr "Opções da etiqueta"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Apply to selection"
-msgstr "Aplicar à seleção"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Remove from selection"
-msgstr "Remover da seleção"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Delete tag globally"
-msgstr "Excluir etiqueta globalmente"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Apply tag to selection"
-msgstr "Aplicar etiqueta à seleção"
-
-#: src/ui/tag_navigator.rs:???
-msgid "Remove tag from selection"
-msgstr "Remover etiqueta da seleção"
-
-#: src/services/app/update.rs:???
-msgid "Tag removed"
-msgstr "Etiqueta removida"
-
-# ============================================================
-# src/utils/deps.rs
-# ============================================================
-
-#: src/utils/deps.rs:???
-msgid "optional dependency '{}' not found in PATH"
-msgstr "dependência opcional '{}' não encontrada no PATH"
-
-#: src/utils/deps.rs:???
-msgid "optional dependency '{}' not found in PATH ({})"
-msgstr "dependência opcional '{}' não encontrada no PATH ({})"
-
-#: src/utils/deps.rs:???
-msgid "install raw-thumbnailer for RAW camera thumbnails"
-msgstr "instale raw-thumbnailer para miniaturas de câmeras RAW"
-
-#: src/utils/deps.rs:???
-msgid "install p7zip-full on Debian/Ubuntu, p7zip elsewhere (AppImage icons)"
-msgstr "instale p7zip-full no Debian/Ubuntu, p7zip em outros sistemas (ícones de AppImage)"
-
-#: src/utils/deps.rs:???
-msgid "install icoutils for .exe icon extraction"
-msgstr "instale icoutils para extração de ícones de .exe"
-
-
-# ============================================================
-# Peek Preview Panel (src/ui/panels/preview.rs)
-# ============================================================
-
-msgid "Pause"
-msgstr "Pausar"
-
-msgid "Back 10 seconds"
-msgstr "Voltar 10 segundos"
-
-msgid "Forward 10 seconds"
-msgstr "Avançar 10 segundos"
-
-msgid "Volume"
-msgstr "Volume"
-
-msgid "Install font"
-msgstr "Instalar fonte"
-
-#: src/ui/panels/preview.rs, src/services/fonts.rs
-msgid "Already installed"
-msgstr "Já instalada"
-
-#: src/services/fonts.rs
-msgid "Could not install the font"
-msgstr "Não foi possível instalar a fonte"
-
-#: src/services/fonts.rs
-msgid "failed"
-msgstr "falharam"
-
-#: src/services/fonts.rs
-msgid "Installed 1 font"
-msgid_plural "Installed {} fonts"
-msgstr[0] "1 fonte instalada"
-msgstr[1] "{} fontes instaladas"
-
-#: src/ui/panels/preview.rs:???
-msgid "No preview"
-msgstr "Sem pré-visualização"
-
-#: src/ui/panels/preview.rs:???
-msgid "Select an item to preview."
-msgstr "Selecione um item para pré-visualizar."
-
-#: src/ui/panels/preview.rs:???
-msgid "No preview available"
-msgstr "Pré-visualização não disponível"
-
-#: src/ui/panels/preview.rs:???
-msgid "Preview"
-msgstr "Pré-visualização"
-
-#: src/ui/panels/preview.rs:???
-msgid "Details"
-msgstr "Detalhes"
-
-#: src/ui/panels/preview.rs:???
-msgid "Play"
-msgstr "Reproduzir"
-
-#: src/ui/panels/preview.rs:???
-msgid "Stop"
-msgstr "Parar"
-
-#: src/ui/panels/preview.rs:???
-msgid "Ready."
-msgstr "Pronto."
-
-#: src/ui/panels/preview.rs:???
-msgid "Playing…"
-msgstr "Reproduzindo…"
-
-#: src/ui/panels/preview.rs:???
-msgid "Stopped."
-msgstr "Interrompido."
-
-#: src/ui/panels/preview.rs:???
-msgid "Finished."
-msgstr "Concluído."
-
-#: src/ui/panels/preview.rs:???
-msgid "mpv could not play this file"
-msgstr "o mpv não conseguiu reproduzir este arquivo"
-
-#: src/ui/panels/preview.rs:???
-msgid "Audio preview requires mpv. Install it with your package manager."
-msgstr "A pré-visualização de áudio requer o mpv. Instale-o com seu gerenciador de pacotes."
-
-#: src/ui/panels/preview.rs:???
-msgid "mpv is not installed. Install it to enable audio preview, or use Open."
-msgstr "O mpv não está instalado. Instale-o para habilitar a pré-visualização de áudio, ou use Abrir."
-
-#: src/ui/panels/preview.rs:???
-msgid "Previous page"
-msgstr "Página anterior"
-
-#: src/ui/panels/preview.rs:???
-msgid "Next page"
-msgstr "Próxima página"
-
-#: src/ui/panels/preview.rs:???
-msgid "Wrap lines"
-msgstr "Quebrar linhas"
-
-#: src/ui/panels/preview.rs:???
-msgid "Invert colors"
-msgstr "Inverter cores"
-
-#: src/ui/panels/preview.rs:???
-msgid "Toggle Markdown source"
-msgstr "Alternar fonte Markdown"
-
-#: src/ui/panels/preview.rs:???
-msgid "Zoom out"
-msgstr "Reduzir zoom"
-
-#: src/ui/panels/preview.rs:???
-msgid "Zoom in"
-msgstr "Aumentar zoom"
-
-#: src/ui/panels/preview.rs:???
-msgid "Reset zoom"
-msgstr "Redefinir zoom"
-
-#: src/ui/panels/preview.rs:???
-msgid "Show file details"
-msgstr "Mostrar detalhes do arquivo"
-
-#: src/ui/panels/preview.rs:???
-msgid "Binary file - showing the first bytes as hex."
-msgstr "Arquivo binário - mostrando os primeiros bytes em hexadecimal."
-
-#: src/ui/panels/preview.rs:???
-msgid "Preview truncated - showing the start of the file."
-msgstr "Pré-visualização truncada - mostrando o início do arquivo."
-
-#: src/ui/panels/preview.rs:???
-msgid "Language:"
-msgstr "Linguagem:"
-
-#: src/ui/panels/preview.rs:???
-msgid "Table truncated - showing the first rows/columns."
-msgstr "Tabela truncada - mostrando as primeiras linhas/colunas."
-
-#: src/ui/panels/preview.rs:???
-msgid "Empty"
-msgstr "Vazio"
-
-#: src/ui/panels/preview.rs:???
-msgid "Preview failed"
-msgstr "Falha na pré-visualização"
-
-#: src/ui/panels/preview.rs:???
-msgid "Could not render this page."
-msgstr "Não foi possível renderizar esta página."
-
-# ============================================================
-# Peek Preview Content (src/ui/ops/view/preview.rs)
-# ============================================================
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Select a file first."
-msgstr "Selecione um arquivo primeiro."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Preview failed."
-msgstr "Falha na pré-visualização."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Preview timed out. Use Open to view this file."
-msgstr "Tempo esgotado na pré-visualização. Use Abrir para ver este arquivo."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Preview failed. Use Open to view this file."
-msgstr "Falha na pré-visualização. Use Abrir para ver este arquivo."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "File no longer exists."
-msgstr "O arquivo não existe mais."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Note"
-msgstr "Observação"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Extracted from"
-msgstr "Extraído de"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Converted from"
-msgstr "Convertido de"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Pages"
-msgstr "Páginas"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Page size"
-msgstr "Tamanho da página"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Could not open this PDF (encrypted or damaged)."
-msgstr "Não foi possível abrir este PDF (criptografado ou danificado)."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Symlink to"
-msgstr "Link simbólico para"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Format"
-msgstr "Formato"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Rows"
-msgstr "Linhas"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Columns"
-msgstr "Colunas"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Delimiter"
-msgstr "Delimitador"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Encoding"
-msgstr "Codificação"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Line endings"
-msgstr "Fins de linha"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Lines"
-msgstr "Linhas"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Words"
-msgstr "Palavras"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Folders"
-msgstr "Pastas"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Files"
-msgstr "Arquivos"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Folder"
-msgstr "Pasta"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Top-level entries"
-msgstr "Entradas no nível superior"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Cannot read this folder."
-msgstr "Não foi possível ler esta pasta."
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Title"
-msgstr "Título"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Artist"
-msgstr "Artista"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Album"
-msgstr "Álbum"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Genre"
-msgstr "Gênero"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Year"
-msgstr "Ano"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Duration"
-msgstr "Duração"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Bitrate"
-msgstr "Taxa de bits"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Sample rate"
-msgstr "Taxa de amostragem"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Channels"
-msgstr "Canais"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Resolution"
-msgstr "Resolução"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Codec"
-msgstr "Codec"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Frame rate"
-msgstr "Taxa de quadros"
-
-#: src/ui/ops/view/preview.rs:???
-msgid "Toggle Preview Panel"
-msgstr "Mostrar/ocultar painel de pré-visualização"
-
-
-
-
-# ============================================================
-# Peek Preview: Binary inspection (src/ui/panels/preview_binary.rs)
-# ============================================================
-
-#: src/ui/panels/preview_binary.rs:???
-msgid "Description"
-msgstr "Descrição"
-
-#: src/ui/panels/preview_binary.rs:???
-msgid "Product"
-msgstr "Produto"
-
-#: src/ui/panels/preview_binary.rs:???
-msgid "Company"
-msgstr "Empresa"
-
-#: src/ui/panels/preview_binary.rs:???
-msgid "Version"
-msgstr "Versão"
-
-#: src/ui/panels/preview_binary.rs:???
-msgid "Copyright"
-msgstr "Direitos autorais"
-
-#: src/ui/panels/preview_binary.rs:???
-msgid "Categories"
-msgstr "Categorias"
-
-# ============================================================
-# src/ui/panels/actions.rs (Contextual Actions panel)
-# ============================================================
-
-#: src/ui/panels/actions.rs:46
-msgid "Contextual Actions"
-msgstr "Ações Contextuais"
-
-#: src/ui/panels/actions.rs:54
-msgid "Filter actions…"
-msgstr "Filtrar ações…"
-
-#: src/ui/panels/actions.rs:88
-msgid "No contextual actions"
-msgstr "Nenhuma ação contextual"
-
-#: src/ui/panels/actions.rs:81
-msgid "Create ~/.config/flux/menus/menu-<category>-<subtype>.rs to add actions for this file type."
-msgstr "Crie ~/.config/flux/menus/menu-<categoria>-<subtipo>.rs para adicionar ações para este tipo de arquivo."
-
-#: src/ui/panels/actions.rs:192
-msgid "Run"
-msgstr "Executar"
-
-#: src/ui/help/page/application.rs:26
-msgid "Toggle contextual actions panel"
-msgstr "Alternar painel de ações contextuais"
-
-# ============================================================
-# sem referência mapeada
-# ============================================================
-
-msgid "Browse by Tag"
-msgstr "Navegar por Etiqueta"
-
-msgid "Tag Navigator"
-msgstr "Navegador de Etiquetas"
-
-msgid "Type tag name…"
-msgstr "Digite o nome da etiqueta…"
-
-msgid "No Tags Found"
-msgstr "Nenhuma Etiqueta Encontrada"
-
-msgid "No matching tags in database"
-msgstr "Nenhuma etiqueta correspondente no banco de dados"
-
-msgid "Open tag navigator"
-msgstr "Abrir navegador de etiquetas"
-
-msgid "Edit tags for selection"
-msgstr "Editar etiquetas da seleção"
-
-msgid "free"
-msgstr "livre"
-
-msgid "Name"
-msgstr "Nome"
-
-msgid "No Results Found"
-msgstr "Nenhum Resultado Encontrado"
-
-msgid "No matching files found in this location."
-msgstr "Nenhum arquivo correspondente encontrado neste local."
-
-msgid "Open Line in Nvim"
-msgstr "Abrir Linha no Nvim"
-
-msgid "Opens the selected folder or current location in a new tab."
-msgstr "Abre a pasta selecionada ou local atual em uma nova aba."
-
-msgid "Video preview throttled: too many quick selections, waiting {}s"
-msgstr "Pré-visualização de vídeo limitada: muitas seleções rápidas, aguardando {}s"
-
-msgid "New Action"
-msgstr "Nova ação"
-
-msgid "Save to"
-msgstr "Salvar em"
-
-msgid "A type-specific file replaces broader templates for that type"
-msgstr "Um arquivo específico do tipo substitui os modelos mais amplos para esse tipo"
-
-msgid "Command (%p = path · %d = dir · %f = filename)"
-msgstr "Comando (%p = caminho · %d = pasta · %f = nome do arquivo)"
-
-msgid "Action saved to"
-msgstr "Ação salva em"
-
-msgid "Could not save action"
-msgstr "Não foi possível salvar a ação"
-
-msgid "The label cannot be empty"
-msgstr "O rótulo não pode ficar vazio"
-
-msgid "The MIME types cannot be empty"
-msgstr "Os tipos MIME não podem ficar vazios"
-
-msgid "The command cannot be empty"
-msgstr "O comando não pode ficar vazio"
-
-msgid "The label cannot contain \"=>\""
-msgstr "O rótulo não pode conter \"=>\""
-
-msgid "quotes and line breaks are not allowed"
-msgstr "aspas e quebras de linha não são permitidas"
-
-msgid "Add Actions"
-msgstr "Adicionar Ações"
-
-msgid "Add Search"
-msgstr "Adicionar Pesquisa"
-
-msgid "Add Tags"
-msgstr "Adicionar Etiquetas"
-
-msgid "Already in sidebar"
-msgstr "Já está na barra lateral"
-
-msgid "Actions"
-msgstr "Ações"
-
-msgid "Installs the selected font files into ~/.local/share/fonts."
-msgstr "Instala os arquivos de fonte selecionados em ~/.local/share/fonts."
-
-msgid "Quick Filters"
-msgstr "Filtros Rápidos"
-
-msgid "Show only files matching the selected item's MIME type"
-msgstr "Mostrar apenas arquivos do mesmo tipo MIME do item selecionado"
-
-msgid "Clear the active MIME filter"
-msgstr "Limpar o filtro MIME ativo"
-
-msgid "Select a file or folder, then Ctrl+M to hide everything else in the current folder"
-msgstr "Selecione um arquivo ou pasta e pressione Ctrl+M para ocultar o restante da pasta atual"
-
+#: src/utils/helpers/format.rs:28
 msgid "mime"
 msgstr "mime"
 
-msgid "Show only files of this type (Ctrl+M)"
-msgstr "Mostrar apenas arquivos deste tipo (Ctrl+M)"
+#: src/utils/helpers/format.rs:50
+msgid "free"
+msgstr "livre"
+
+# ============================================================
+# src/utils/helpers/sidebar.rs
+# ============================================================
+
+#: src/utils/helpers/sidebar.rs:16
+msgid "Recents"
+msgstr "Recentes"
+
+# ============================================================
+# Pending: hardcoded in the code, NOT wrapped in tr() yet
+# These translations are ready, but only take effect once the call site uses tr("...").
+# ============================================================
+
+#: src/ui/dialog/icon.rs:15
+msgid "Select Folder Icon"
+msgstr "Selecionar ícone da pasta"
+
+#: src/ui/dialog/icon.rs:207
+msgid "Select Extension Icon"
+msgstr "Selecionar ícone da extensão"
+
+#: src/ui/panels/search.rs:401
+msgid "Invalid regex: {}"
+msgstr "Expressão regular inválida: {}"
+
+#: src/ui/ops/file/command.rs:354
+msgid "Command failed"
+msgstr "Falha no comando"
+
+#: src/ui/ops/git.rs:102
+msgid "Failed to query git status"
+msgstr "Falha ao consultar o status do Git"
+
+# ============================================================
+# Dynamic strings (built with format!() at runtime)
+# The msgid only matches when the menu file name is exactly "menu.rs",
+# other menu files (menu-image-png.rs, ...) will fall back to English.
+# ============================================================
+
+#: src/ui/menu/editor/mod.rs:346
+msgid "menu.rs saved"
+msgstr "menu.rs salvo"
+
+#: src/ui/menu/editor/mod.rs:347
+msgid "Failed to save menu.rs"
+msgstr "Falha ao salvar menu.rs"
+
+#: src/ui/menu/editor/entry_dialog.rs:98
+msgid "Line Position in menu.rs"
+msgstr "Posição da linha em menu.rs"
