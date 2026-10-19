@@ -54,9 +54,17 @@ jobs:
 
           tar -czvf "${DIR_NAME}.tar.gz" "${DIR_NAME}"
 
-      - name: Upload Release Asset
+      - name: Install AppImage Dependencies
+        run: sudo apt-get install -y librsvg2-bin libfuse2 imagemagick
+
+      - name: Build AppImage
+        run: ./packaging/appimg/build_appimage.sh
+
+      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: flux-*-x86_64.tar.gz
+          files: |
+            flux-*-x86_64.tar.gz
+            packaging/appimg/Flux-x86_64.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -17,6 +17,9 @@ pub fn run() {
     crate::i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
 
+    // Embed and set the default window icon so it works in AppImages/Flatpaks
+    gtk::Window::set_default_icon_name("io.github.killown.flux");
+
     let args: Vec<String> = std::env::args().collect();
     let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
 

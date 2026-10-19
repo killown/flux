@@ -23,3 +23,7 @@ Thumbs.db
 # --- Project Specific (flux) ---
 # If your Makefile or assets sync generates temporary logs or lockfiles
 *.log
+
+AppDir/
+*.AppImage
+linuxdeploy-plugin-gtk.sh

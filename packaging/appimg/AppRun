@@ -1,0 +1,7 @@
+#!/bin/sh
+HOST_THEME=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")
+if [ -n "$HOST_THEME" ]; then
+  export GTK_ICON_THEME="$HOST_THEME"
+fi
+export XDG_DATA_DIRS="$HOME/.local/share:/usr/local/share:/usr/share:$HOME/.icons:$APPDIR/usr/share"
+exec "$APPDIR/usr/bin/flux-fm" "$@"
