@@ -49,13 +49,24 @@ Cold start on a Ryzen 5 5600X, mean of 10 runs:
 
 Flux needs GTK 4 and libadwaita 1.5 or newer, so Debian 12 and Ubuntu 22.04 are too old.
 
-Arch (AUR):
+### Flatpak (FlatPark)
+
+Flux is available on [FlatPark](https://flatpark.org/apps/io.github.killown.flux/), a community-maintained Flatpak remote. This version runs with full host system access so Flux can manage your files natively.
+
+```bash
+flatpak remote-add --if-not-exists flatpark https://dl.flatpark.org/flatpark.flatpakrepo
+flatpak install flatpark io.github.killown.flux
+```
+
+### Arch (AUR)
 
 ```bash
 yay -S flux-filemanager-git
 ```
 
-From source, install the dependencies first.
+### From source
+
+Install the dependencies first.
 
 Debian / Ubuntu:
 
