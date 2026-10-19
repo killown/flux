@@ -11,7 +11,15 @@ permissions:
 
 jobs:
   build-tarball:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +47,7 @@ jobs:
       - name: Package Tarball
         run: |
           TAG_NAME="${GITHUB_REF_NAME:-dev}"
-          DIR_NAME="flux-${TAG_NAME}-x86_64"
+          DIR_NAME="flux-${TAG_NAME}-${{ matrix.arch }}"
 
           mkdir -p "${DIR_NAME}"
 
@@ -55,16 +63,18 @@ jobs:
           tar -czvf "${DIR_NAME}.tar.gz" "${DIR_NAME}"
 
       - name: Install AppImage Dependencies
+        if: matrix.arch == 'x86_64'
         run: sudo apt-get install -y librsvg2-bin libfuse2 imagemagick
 
       - name: Build AppImage
+        if: matrix.arch == 'x86_64'
         run: ./packaging/appimg/build_appimage.sh
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            flux-*-x86_64.tar.gz
-            packaging/appimg/Flux-x86_64.AppImage
+            flux-*-${{ matrix.arch }}.tar.gz
+            ${{ matrix.arch == 'x86_64' && 'packaging/appimg/Flux-x86_64.AppImage' || '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
