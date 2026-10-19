@@ -793,7 +793,12 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     let gutter = LineNumberGutter::new(&text_view, &text_scroller);
     text_row.append(&gutter.area);
     text_row.append(&text_scroller);
-    stack.add_named(&text_row, Some("text"));
+    let text_clamp = adw::Clamp::builder()
+        .maximum_size(1200)
+        .tightening_threshold(800)
+        .child(&text_row)
+        .build();
+    stack.add_named(&text_clamp, Some("text"));
 
     let pdf_picture = gtk::Picture::builder()
         .can_shrink(true)
@@ -809,21 +814,32 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .halign(gtk::Align::Fill)
         .build();
     pdf_box.append(&pdf_picture);
+
     let pdf_scroller = gtk::ScrolledWindow::builder()
         .child(&pdf_box)
         .vexpand(true)
+        .hexpand(true)
         .build();
+
     stack.add_named(&pdf_scroller, Some("pdf"));
 
     let table_view = gtk::ColumnView::builder()
         .show_row_separators(true)
         .show_column_separators(false)
         .build();
-    let table_scroller = gtk::ScrolledWindow::builder()
+
+    let table_clamp = adw::Clamp::builder()
+        .maximum_size(1400)
+        .tightening_threshold(1000)
         .child(&table_view)
+        .build();
+
+    let table_scroller = gtk::ScrolledWindow::builder()
+        .child(&table_clamp)
         .vexpand(true)
         .hexpand(true)
         .build();
+
     stack.add_named(&table_scroller, Some("table"));
 
     let meta_list = gtk::ListBox::builder()
@@ -1799,11 +1815,16 @@ impl PreviewPanelHandle {
     }
 
     fn desired_pdf_logical_w(&self) -> i32 {
-        let vw = self.stack.width() - PDF_GUTTER;
-        if vw <= 8 {
+        let vw = self.stack.width();
+        if vw <= 5 {
             return 0;
         }
-        ((vw as f64) * self.state.zoom.get()).round().max(32.0) as i32
+        // Render at 50% of the available width so there is breathing room
+        // for the navigation arrows, but leave it to the zoom multiplier to
+        // scale up if the user wants it larger.
+        ((vw as f64) * 0.5 * self.state.zoom.get())
+            .round()
+            .max(32.0) as i32
     }
 
     fn render_pdf(&self) {
