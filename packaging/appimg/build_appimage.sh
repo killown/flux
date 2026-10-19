@@ -18,7 +18,14 @@ cp "$APPIMG_DIR/AppRun" "$APPDIR/AppRun"
 chmod +x "$APPDIR/AppRun"
 
 rsvg-convert -h 512 flux.svg -o "$APPDIR/io.github.killown.flux.png"
-magick "$APPDIR/io.github.killown.flux.png" -background none -gravity center -extent 512x512 "$APPDIR/io.github.killown.flux.png"
+
+if command -v magick >/dev/null 2>&1; then
+  IM_CMD=magick
+else
+  IM_CMD=convert
+fi
+"$IM_CMD" "$APPDIR/io.github.killown.flux.png" -background none -gravity center -extent 512x512 "$APPDIR/io.github.killown.flux.png"
+
 cp "$APPDIR/io.github.killown.flux.png" "$APPDIR/usr/share/icons/hicolor/512x512/apps/"
 
 cd "$APPIMG_DIR"
