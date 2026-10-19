@@ -2878,6 +2878,18 @@ msgstr "instale icoutils para extração de ícones de .exe"
 # Peek Preview Panel (src/ui/panels/preview.rs)
 # ============================================================
 
+msgid "Pause"
+msgstr "Pausar"
+
+msgid "Back 10 seconds"
+msgstr "Voltar 10 segundos"
+
+msgid "Forward 10 seconds"
+msgstr "Avançar 10 segundos"
+
+msgid "Volume"
+msgstr "Volume"
+
 msgid "Install font"
 msgstr "Instalar fonte"
 

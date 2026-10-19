@@ -23,10 +23,13 @@ use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Write};
 use std::ops::Range;
+use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::Mutex;
 use std::time::Duration;
 
 // ─── Content model ────────────────────────────────────────────────────────────
@@ -116,8 +119,136 @@ fn body_font_family() -> String {
 // ─── Audio via mpv ───────────────────────────────────────────────────────────
 
 static AUDIO_MPV_PID: AtomicU64 = AtomicU64::new(0);
+/// Monotonic counter that gives every mpv spawn its own sequence number.
+static AUDIO_SEQ: AtomicU64 = AtomicU64::new(0);
+/// Sequence number of the mpv instance the panel is bound to, 0 when none.
+static AUDIO_ACTIVE: AtomicU64 = AtomicU64::new(0);
+/// Writer half of the active mpv IPC socket.
+static AUDIO_IPC: Mutex<Option<UnixStream>> = Mutex::new(None);
+/// Monotonic time (µs) until which `time-pos` updates must not move the seek bar.
+static AUDIO_SEEK_HOLD: AtomicI64 = AtomicI64::new(0);
+
+/// Scalar value of an mpv `property-change` event.
+#[derive(Clone, Copy, PartialEq)]
+enum MpvValue {
+    Num(f64),
+    Bool(bool),
+    Null,
+}
+
+/// Sends one JSON command line to the active mpv instance, ignoring failures.
+fn ipc_send(cmd: &str) {
+    let mut guard = AUDIO_IPC.lock().unwrap_or_else(|e| e.into_inner());
+    if let Some(stream) = guard.as_mut() {
+        let _ = stream.write_all(cmd.as_bytes());
+        let _ = stream.write_all(b"\n");
+    }
+}
+
+/// Returns the raw scalar or unquoted string following `"key":` in a flat JSON line.
+fn json_field<'a>(line: &'a str, key: &str) -> Option<&'a str> {
+    let pat = format!("\"{key}\":");
+    let start = line.find(&pat)? + pat.len();
+    let rest = line[start..].trim_start();
+    if let Some(quoted) = rest.strip_prefix('"') {
+        let end = quoted.find('"')?;
+        Some(&quoted[..end])
+    } else {
+        let end = rest.find([',', '}']).unwrap_or(rest.len());
+        Some(rest[..end].trim())
+    }
+}
+
+/// Parses an mpv `property-change` event line into `(property, value)`.
+fn parse_property_event(line: &str) -> Option<(String, MpvValue)> {
+    if json_field(line, "event")? != "property-change" {
+        return None;
+    }
+    let name = json_field(line, "name")?.to_string();
+    let value = match json_field(line, "data") {
+        Some("true") => MpvValue::Bool(true),
+        Some("false") => MpvValue::Bool(false),
+        Some(raw) => raw.parse().map(MpvValue::Num).unwrap_or(MpvValue::Null),
+        None => MpvValue::Null,
+    };
+    Some((name, value))
+}
+
+/// Formats seconds as `m:ss`, or `h:mm:ss` from one hour up.
+fn fmt_time(secs: f64) -> String {
+    let s = secs.max(0.0) as u64;
+    if s >= 3600 {
+        format!("{}:{:02}:{:02}", s / 3600, (s / 60) % 60, s % 60)
+    } else {
+        format!("{}:{:02}", s / 60, s % 60)
+    }
+}
+
+/// Connects to mpv's IPC socket, observes playback properties and forwards them to the panel.
+fn spawn_ipc_thread(sock: PathBuf, seq: u64) {
+    std::thread::spawn(move || {
+        let mut connected = None;
+        for _ in 0..80 {
+            if AUDIO_ACTIVE.load(Ordering::SeqCst) != seq {
+                return;
+            }
+            if let Ok(stream) = UnixStream::connect(&sock) {
+                connected = Some(stream);
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+        let Some(stream) = connected else { return };
+        let Ok(reader) = stream.try_clone() else {
+            return;
+        };
+        let _ = stream.set_write_timeout(Some(Duration::from_millis(200)));
+        if AUDIO_ACTIVE.load(Ordering::SeqCst) != seq {
+            return;
+        }
+        *AUDIO_IPC.lock().unwrap_or_else(|e| e.into_inner()) = Some(stream);
+
+        for (id, prop) in ["time-pos", "duration", "pause", "volume"]
+            .iter()
+            .enumerate()
+        {
+            ipc_send(&format!(
+                r#"{{"command":["observe_property",{},"{prop}"]}}"#,
+                id + 1
+            ));
+        }
+        glib::idle_add_once(move || {
+            if AUDIO_ACTIVE.load(Ordering::SeqCst) == seq {
+                preview_registry::with(|h| h.audio_set_interactive(true));
+            }
+        });
+
+        let mut last_pos = f64::NEG_INFINITY;
+        for line in BufReader::new(reader).lines().map_while(Result::ok) {
+            if AUDIO_ACTIVE.load(Ordering::SeqCst) != seq {
+                break;
+            }
+            let Some((name, value)) = parse_property_event(&line) else {
+                continue;
+            };
+            if let (MpvValue::Num(pos), "time-pos") = (value, name.as_str()) {
+                if (pos - last_pos).abs() < 0.25 {
+                    continue;
+                }
+                last_pos = pos;
+            }
+            glib::idle_add_once(move || {
+                if AUDIO_ACTIVE.load(Ordering::SeqCst) == seq {
+                    preview_registry::with(|h| h.audio_on_property(&name, value));
+                }
+            });
+        }
+    });
+}
 
 fn stop_audio_mpv() {
+    AUDIO_ACTIVE.store(0, Ordering::SeqCst);
+    *AUDIO_IPC.lock().unwrap_or_else(|e| e.into_inner()) = None;
     let pid = AUDIO_MPV_PID.swap(0, Ordering::SeqCst);
     if pid == 0 {
         return;
@@ -136,6 +267,9 @@ fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
         "mpv not installed - audio preview requires the `mpv` binary on PATH".to_string()
     })?;
 
+    let seq = AUDIO_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
+    let sock = glib::user_runtime_dir().join(format!("flux-mpv-{}-{seq}.sock", std::process::id()));
+
     let mut cmd = Command::new(mpv);
     cmd.args([
         "--no-video",
@@ -144,8 +278,10 @@ fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
         "--audio-device=auto",
         "--ao=pipewire,pulse,alsa",
         "--msg-level=all=warn",
-        "--",
+        "--keep-open=yes",
     ])
+    .arg(format!("--input-ipc-server={}", sock.display()))
+    .arg("--")
     .arg(path)
     .stdin(Stdio::null())
     .stdout(Stdio::null())
@@ -162,8 +298,11 @@ fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
     match cmd.spawn() {
         Ok(mut child) => {
             let pid = child.id() as u64;
+            AUDIO_ACTIVE.store(seq, Ordering::SeqCst);
+            let sock_wait = sock.clone();
             std::thread::spawn(move || {
                 let status = child.wait();
+                let _ = std::fs::remove_file(&sock_wait);
                 if AUDIO_MPV_PID
                     .compare_exchange(pid, 0, Ordering::SeqCst, Ordering::SeqCst)
                     .is_ok()
@@ -175,7 +314,7 @@ fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
                     };
                     glib::idle_add_once(move || {
                         preview_registry::with(|h| {
-                            h.audio_btn.set_label(&tr("Play"));
+                            h.audio_reset_controls();
                             h.audio_status.set_label(&match failed {
                                 None => tr("Finished."),
                                 Some(code) => {
@@ -186,6 +325,7 @@ fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
                     });
                 }
             });
+            spawn_ipc_thread(sock, seq);
             Ok(pid)
         }
         Err(e) => Err(format!("Failed to spawn mpv: {e}")),
@@ -266,6 +406,12 @@ pub struct PreviewPanelHandle {
     pub(crate) audio_art_stack: gtk::Stack,
     pub(crate) audio_status: gtk::Label,
     pub(crate) audio_btn: gtk::Button,
+    pub(crate) audio_back: gtk::Button,
+    pub(crate) audio_fwd: gtk::Button,
+    pub(crate) audio_seek: gtk::Scale,
+    pub(crate) audio_vol: gtk::Scale,
+    pub(crate) audio_time: gtk::Label,
+    pub(crate) audio_dur: gtk::Label,
     pub(crate) state: Rc<State>,
 }
 
@@ -522,12 +668,53 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     let audio_btn = gtk::Button::builder()
         .label(tr("Play"))
-        .halign(gtk::Align::Center)
-        .margin_start(16)
-        .margin_end(16)
-        .margin_bottom(16)
         .css_classes(["pill", "suggested-action"])
         .build();
+    let audio_back = flat_icon_button("media-seek-backward-symbolic", &tr("Back 10 seconds"));
+    let audio_fwd = flat_icon_button("media-seek-forward-symbolic", &tr("Forward 10 seconds"));
+    let audio_time = gtk::Label::builder()
+        .label("0:00")
+        .css_classes(["dim-label", "numeric"])
+        .build();
+    let audio_dur = gtk::Label::builder()
+        .label("0:00")
+        .css_classes(["dim-label", "numeric"])
+        .build();
+    let audio_seek = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 1.0, 1.0);
+    audio_seek.set_draw_value(false);
+    audio_seek.set_hexpand(true);
+    let audio_vol = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 100.0, 1.0);
+    audio_vol.set_draw_value(false);
+    audio_vol.set_width_request(96);
+    audio_vol.set_tooltip_text(Some(&tr("Volume")));
+
+    let audio_seek_row = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .margin_start(16)
+        .margin_end(16)
+        .build();
+    audio_seek_row.append(&audio_time);
+    audio_seek_row.append(&audio_seek);
+    audio_seek_row.append(&audio_dur);
+
+    let audio_buttons_row = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .halign(gtk::Align::Center)
+        .build();
+    audio_buttons_row.append(&audio_back);
+    audio_buttons_row.append(&audio_btn);
+    audio_buttons_row.append(&audio_fwd);
+
+    let audio_vol_row = gtk::Box::builder()
+        .orientation(gtk::Orientation::Horizontal)
+        .spacing(8)
+        .halign(gtk::Align::Center)
+        .margin_bottom(16)
+        .build();
+    audio_vol_row.append(&gtk::Image::from_icon_name("audio-volume-high-symbolic"));
+    audio_vol_row.append(&audio_vol);
 
     let audio_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
@@ -535,7 +722,9 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .build();
     audio_box.append(&audio_art_stack);
     audio_box.append(&audio_status);
-    audio_box.append(&audio_btn);
+    audio_box.append(&audio_seek_row);
+    audio_box.append(&audio_buttons_row);
+    audio_box.append(&audio_vol_row);
     stack.add_named(&audio_box, Some("media-audio"));
 
     let image = gtk::Picture::builder()
@@ -819,6 +1008,12 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         audio_art_stack,
         audio_status,
         audio_btn: audio_btn.clone(),
+        audio_back: audio_back.clone(),
+        audio_fwd: audio_fwd.clone(),
+        audio_seek: audio_seek.clone(),
+        audio_vol: audio_vol.clone(),
+        audio_time: audio_time.clone(),
+        audio_dur: audio_dur.clone(),
         state: Rc::new(State {
             mode: Cell::new(Mode::None),
             token: Cell::new(0),
@@ -858,36 +1053,25 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         });
     }
 
-    audio_btn.connect_clicked(|btn| {
-        let is_playing = AUDIO_MPV_PID.load(Ordering::SeqCst) != 0;
-        if is_playing {
-            stop_audio_mpv();
-            btn.set_label(&tr("Play"));
-            preview_registry::with(|h| {
-                h.audio_status.set_label(&tr("Stopped."));
-            });
-            return;
-        }
-        let path = preview_registry::with(|h| h.state.path.borrow().clone()).flatten();
-        let Some(path) = path else { return };
-        match spawn_audio_mpv(&path) {
-            Ok(pid) => {
-                AUDIO_MPV_PID.store(pid, Ordering::SeqCst);
-                btn.set_label(&tr("Stop"));
-                preview_registry::with(|h| {
-                    h.audio_status.set_label(&tr("Playing…"));
-                });
-            }
-            Err(msg) => {
-                eprintln!("[flux][preview] audio: {msg}");
-                preview_registry::with(|h| {
-                    h.audio_status.set_label(&tr(
-                        "Audio preview requires mpv. Install it with your package manager.",
-                    ));
-                });
-                btn.set_sensitive(false);
-            }
-        }
+    audio_btn.connect_clicked(|_| {
+        preview_registry::with(|h| h.audio_toggle());
+    });
+    audio_back.connect_clicked(|_| ipc_send(r#"{"command":["seek",-10,"relative"]}"#));
+    audio_fwd.connect_clicked(|_| ipc_send(r#"{"command":["seek",10,"relative"]}"#));
+    audio_seek.connect_change_value(|_, _, value| {
+        AUDIO_SEEK_HOLD.store(glib::monotonic_time() + 500_000, Ordering::SeqCst);
+        ipc_send(&format!(
+            r#"{{"command":["seek",{:.3},"absolute"]}}"#,
+            value.max(0.0)
+        ));
+        glib::Propagation::Proceed
+    });
+    audio_vol.connect_change_value(|_, _, value| {
+        ipc_send(&format!(
+            r#"{{"command":["set_property","volume",{:.0}]}}"#,
+            value.clamp(0.0, 100.0)
+        ));
+        glib::Propagation::Proceed
     });
 
     prev_btn.connect_clicked(|_| {
@@ -1220,6 +1404,7 @@ impl PreviewPanelHandle {
                     if AUDIO_MPV_PID.load(Ordering::SeqCst) != 0 {
                         stop_audio_mpv();
                     }
+                    self.audio_reset_controls();
                     self.audio_art_stack
                         .set_visible_child_name(if cover.is_some() { "cover" } else { "icon" });
                     if let Some(tex) = cover {
@@ -1328,6 +1513,62 @@ impl PreviewPanelHandle {
         }
     }
 
+    /// Enables or disables every audio control except the play button.
+    fn audio_set_interactive(&self, on: bool) {
+        self.audio_seek.set_sensitive(on);
+        self.audio_vol.set_sensitive(on);
+        self.audio_back.set_sensitive(on);
+        self.audio_fwd.set_sensitive(on);
+    }
+
+    /// Returns the audio controls to their idle state.
+    fn audio_reset_controls(&self) {
+        self.audio_set_interactive(false);
+        self.audio_seek.set_range(0.0, 1.0);
+        self.audio_seek.set_value(0.0);
+        self.audio_time.set_label("0:00");
+        self.audio_dur.set_label("0:00");
+        self.audio_btn.set_label(&tr("Play"));
+    }
+
+    /// Applies one observed mpv property to the controls.
+    fn audio_on_property(&self, name: &str, value: MpvValue) {
+        match (name, value) {
+            ("time-pos", MpvValue::Num(t)) => {
+                if glib::monotonic_time() >= AUDIO_SEEK_HOLD.load(Ordering::SeqCst) {
+                    self.audio_seek.set_value(t);
+                }
+                self.audio_time.set_label(&fmt_time(t));
+            }
+            ("duration", MpvValue::Num(d)) if d > 0.0 => {
+                self.audio_seek.set_range(0.0, d);
+                self.audio_dur.set_label(&fmt_time(d));
+            }
+            ("pause", MpvValue::Bool(paused)) => {
+                self.audio_btn
+                    .set_label(&if paused { tr("Play") } else { tr("Pause") });
+            }
+            ("volume", MpvValue::Num(v)) => self.audio_vol.set_value(v),
+            _ => {}
+        }
+    }
+
+    /// Play/pause toggle that restarts playback when mpv is gone or sitting at the end.
+    fn audio_toggle(&self) {
+        if AUDIO_MPV_PID.load(Ordering::SeqCst) == 0 {
+            self.audio_status.set_label("");
+            self.start_audio();
+            return;
+        }
+        let upper = self.audio_seek.adjustment().upper();
+        if upper > 1.0 && self.audio_seek.value() >= upper - 0.25 {
+            ipc_send(r#"{"command":["seek",0,"absolute"]}"#);
+            ipc_send(r#"{"command":["set_property","pause",false]}"#);
+        } else {
+            ipc_send(r#"{"command":["cycle","pause"]}"#);
+        }
+    }
+
     fn start_audio(&self) {
         if AUDIO_MPV_PID.load(Ordering::SeqCst) != 0 {
             return;
@@ -1338,8 +1579,8 @@ impl PreviewPanelHandle {
         match spawn_audio_mpv(&path) {
             Ok(pid) => {
                 AUDIO_MPV_PID.store(pid, Ordering::SeqCst);
-                self.audio_btn.set_label(&tr("Stop"));
-                self.audio_status.set_label(&tr("Playing…"));
+                self.audio_btn.set_label(&tr("Pause"));
+                self.audio_status.set_label("");
             }
             Err(msg) => {
                 eprintln!("[flux][preview] audio: {msg}");
@@ -1365,7 +1606,7 @@ impl PreviewPanelHandle {
 
         if AUDIO_MPV_PID.load(Ordering::SeqCst) != 0 {
             stop_audio_mpv();
-            self.audio_btn.set_label(&tr("Play"));
+            self.audio_reset_controls();
             self.audio_status.set_label(&tr("Stopped."));
         }
     }
