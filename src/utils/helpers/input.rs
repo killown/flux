@@ -185,6 +185,7 @@ impl FluxApp {
             }
             gdk::Key::Escape => {
                 sender.input(AppMsg::UpdateFilter(String::new()));
+                sender.input(AppMsg::ClearMimeFilter);
                 sender.input(AppMsg::SwitchHeader("path".to_string()));
                 glib::Propagation::Stop
             }
@@ -237,6 +238,7 @@ impl FluxApp {
             ("Delete", AppMsg::Delete),
             ("<Control>l", AppMsg::ToggleLocationPanel),
             ("<Control><Shift>l", AppMsg::ToggleConnectPanel),
+            ("<Control>m", AppMsg::FilterBySelectedMime),
         ];
 
         for (trigger_str, msg) in shortcuts {

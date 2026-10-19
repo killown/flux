@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Thiago Lucio
 # This file is distributed under the same license as the flux package.
 # neo <thiago.dev.lucio@gmail.com>, 2026.
-#
+# FIXME: the file needs some organization because some sections are not in the correct order
 msgid ""
 msgstr ""
 "Project-Id-Version: flux\n"
@@ -3350,3 +3350,21 @@ msgstr "Ações"
 
 msgid "Installs the selected font files into ~/.local/share/fonts."
 msgstr "Instala os arquivos de fonte selecionados em ~/.local/share/fonts."
+
+msgid "Quick Filters"
+msgstr "Filtros Rápidos"
+
+msgid "Show only files matching the selected item's MIME type"
+msgstr "Mostrar apenas arquivos do mesmo tipo MIME do item selecionado"
+
+msgid "Clear the active MIME filter"
+msgstr "Limpar o filtro MIME ativo"
+
+msgid "Select a file or folder, then Ctrl+M to hide everything else in the current folder"
+msgstr "Selecione um arquivo ou pasta e pressione Ctrl+M para ocultar o restante da pasta atual"
+
+msgid "mime"
+msgstr "mime"
+
+msgid "Show only files of this type (Ctrl+M)"
+msgstr "Mostrar apenas arquivos deste tipo (Ctrl+M)"

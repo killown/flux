@@ -105,6 +105,7 @@ impl FluxApp {
         };
 
         let mut model = FluxApp {
+            mime_filter: None,
             preview_cache: std::sync::Arc::new(
                 crate::ui::ops::view::prefetch::PreviewCache::default(),
             ),

@@ -921,6 +921,16 @@ impl SimpleAsyncComponent for FluxApp {
                                 &model.current_path,
                                 model.extension_filter.as_deref(),
                                 model.filter_mode,
+                                model.mime_filter.as_deref().map(|m| {
+                                    (
+                                        m,
+                                        model
+                                            .tabs
+                                            .get(model.active_tab_index)
+                                            .map(|t| t.files.len() as usize)
+                                            .unwrap_or(0),
+                                    )
+                                }),
                             ),
                             add_css_class: "caption",
                             add_css_class: "dim-label",

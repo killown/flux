@@ -249,6 +249,7 @@ impl FluxApp {
                 .starts_with(crate::services::archive::ARCHIVE_URI)
             && self.filter.is_empty()
             && self.extension_globset.is_none()
+            && self.mime_filter.is_none()
             && !is_cached
             && cache_cap > 0
         {

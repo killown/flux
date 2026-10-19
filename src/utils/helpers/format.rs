@@ -11,6 +11,7 @@ pub fn format_right_status(
     current_path: &Path,
     extension_filter: Option<&[String]>,
     filter_mode: crate::model::FilterMode,
+    mime_filter: Option<(&str, usize)>,
 ) -> String {
     let mut parts = Vec::new();
 
@@ -19,6 +20,16 @@ pub fn format_right_status(
         crate::model::FilterMode::OnlyFolders => parts.push(tr("[Folders Only]")),
         crate::model::FilterMode::OnlyFiles => parts.push(tr("[Files Only]")),
         crate::model::FilterMode::All => {}
+    }
+
+    if let Some((mime, count)) = mime_filter {
+        parts.push(format!(
+            "[{}: {} ({} {})]",
+            tr("mime"),
+            mime,
+            count,
+            tr("items")
+        ));
     }
 
     if let Some(patterns) = extension_filter {

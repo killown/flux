@@ -201,6 +201,7 @@ impl FluxApp {
             // the UI so offenders are visible instead of guessed at.
             let t = std::time::Instant::now();
             handle.apply(&content);
+            handle.set_mime_filter_active(self.mime_filter.is_some());
             let ms = t.elapsed().as_millis();
             if ms > 30 {
                 eprintln!(

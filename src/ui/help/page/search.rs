@@ -13,6 +13,20 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
         )],
     );
 
+    let filter_group = group(
+        &tr("Quick Filters"),
+        vec![
+            row(
+                &tr("Show only files matching the selected item's MIME type"),
+                "Ctrl + M",
+            ),
+            row(&tr("Clear the active MIME filter"), "Esc / Ctrl + M"),
+        ],
+    );
+    filter_group.set_description(Some(&tr(
+        "Select a file or folder, then Ctrl+M to hide everything else in the current folder",
+    )));
+
     let content_group = group(
         &tr("Content Search"),
         vec![
@@ -35,6 +49,6 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
     page(
         &tr("Search"),
         "search-symbolic",
-        vec![search_group, content_group],
+        vec![search_group, filter_group, content_group],
     )
 }

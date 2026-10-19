@@ -7,6 +7,10 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Toggles an ephemeral filter showing only files sharing the selected item's MIME type.
+    FilterBySelectedMime,
+    /// Removes the ephemeral MIME filter and restores the full listing.
+    ClearMimeFilter,
     /// Moves the grid selection by `delta` (`-1` = previous, `+1` = next)
     /// along the currently visible (filtered) order, so the preview panel
     /// follows with the next item. Clamps at the ends instead of wrapping.

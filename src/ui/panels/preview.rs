@@ -371,6 +371,9 @@ pub(crate) struct State {
     /// Cached rendered markdown so the source toggle can flip back without
     /// re-parsing.
     md_cache: RefCell<Option<(String, Vec<StyledRange>)>>,
+    /// Guards `mime_filter_btn` against re-entrant `connect_toggled` while
+    /// its active state is being pushed from `FluxApp`.
+    mime_filter_suppress: Cell<bool>,
 }
 
 #[derive(Clone)]
@@ -385,6 +388,7 @@ pub struct PreviewPanelHandle {
     pub(crate) invert_btn: gtk::ToggleButton,
     pub(crate) md_source_btn: gtk::ToggleButton,
     pub(crate) wide_btn: gtk::ToggleButton,
+    pub(crate) mime_filter_btn: gtk::ToggleButton,
     pub(crate) install_font_btn: gtk::Button,
     pub(crate) zoom_btn: gtk::Button,
     pub(crate) banner: adw::Banner,
@@ -587,6 +591,12 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .tooltip_text(tr("Always open preview wide (F11)"))
         .css_classes(["flat"])
         .active(crate::utils::load_config().ui.wide_preview)
+        .build();
+
+    let mime_filter_btn = gtk::ToggleButton::builder()
+        .icon_name("system-search-symbolic")
+        .tooltip_text(tr("Show only files of this type (Ctrl+M)"))
+        .css_classes(["flat"])
         .build();
 
     let spacer = gtk::Box::builder().hexpand(true).build();
@@ -894,6 +904,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         zoom_btn.clone().upcast(),
         zoom_in.clone().upcast(),
         wide_btn.clone().upcast(),
+        mime_filter_btn.clone().upcast(),
         menu_btn.clone().upcast(),
         actions_btn.clone().upcast(),
     ];
@@ -910,6 +921,19 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     {
         let s = sender.clone();
         wide_btn.connect_toggled(move |b| s.input(AppMsg::SetWidePreviewDefault(b.is_active())));
+    }
+    {
+        let s = sender.clone();
+        mime_filter_btn.connect_toggled(move |_b| {
+            // Skip the message when the active state was pushed by
+            // `set_mime_filter_active` from `FluxApp`.
+            let suppress =
+                preview_registry::with(|h| h.state.mime_filter_suppress.get()).unwrap_or(true);
+            if suppress {
+                return;
+            }
+            s.input(AppMsg::FilterBySelectedMime);
+        });
     }
     {
         let s = sender.clone();
@@ -987,6 +1011,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         invert_btn: invert_btn.clone(),
         md_source_btn: md_source_btn.clone(),
         wide_btn: wide_btn.clone(),
+        mime_filter_btn: mime_filter_btn.clone(),
         install_font_btn: install_font_btn.clone(),
         zoom_btn: zoom_btn.clone(),
         banner,
@@ -1031,6 +1056,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             media: RefCell::new(None),
             syntax_tags: RefCell::new(Vec::new()),
             md_cache: RefCell::new(None),
+            mime_filter_suppress: Cell::new(false),
         }),
     };
     preview_registry::set_current(handle);
@@ -1166,6 +1192,17 @@ impl PreviewPanelHandle {
         if self.wide_btn.is_active() != on {
             self.wide_btn.set_active(on);
         }
+    }
+
+    /// Reflects the ephemeral MIME filter state on the header button without
+    /// echoing `FilterBySelectedMime` back into `FluxApp`.
+    pub fn set_mime_filter_active(&self, on: bool) {
+        if self.mime_filter_btn.is_active() == on {
+            return;
+        }
+        self.state.mime_filter_suppress.set(true);
+        self.mime_filter_btn.set_active(on);
+        self.state.mime_filter_suppress.set(false);
     }
 
     pub fn apply(&self, content: &PreviewContent) {
@@ -2042,7 +2079,6 @@ fn push_row(l: &gtk::ListBox, key: &str, value: &str) {
     let row = adw::ActionRow::builder()
         .title(glib::markup_escape_text(key))
         .subtitle(glib::markup_escape_text(value))
-        .subtitle_selectable(true)
         .css_classes(["property"])
         .build();
     l.append(&row);

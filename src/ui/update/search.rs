@@ -15,6 +15,8 @@ pub(super) fn handle(
         AppMsg::SearchBackspace => app.handle_search_backspace(sender),
         AppMsg::CloseSearchSync => app.search_just_opened = false,
         AppMsg::SetExtensionFilter(patterns) => app.handle_set_extension_filter(patterns, sender),
+        AppMsg::FilterBySelectedMime => app.handle_filter_by_selected_mime(sender),
+        AppMsg::ClearMimeFilter => app.handle_clear_mime_filter(sender),
         AppMsg::ClearExtensionFilter => app.handle_clear_extension_filter(sender),
         AppMsg::StartAdvancedSearch(params) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();

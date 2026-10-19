@@ -20,3 +20,7 @@ pub(crate) fn get_view_switcher() -> Option<adw::ViewSwitcher> {
 pub(crate) fn get_view_stack() -> Option<adw::ViewStack> {
     with(|h| h.view_stack.clone())
 }
+
+pub(crate) fn set_mime_filter_active(on: bool) {
+    with(|h| h.set_mime_filter_active(on));
+}

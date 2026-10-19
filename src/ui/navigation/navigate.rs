@@ -13,6 +13,7 @@ impl FluxApp {
     // instead of the directory currently displayed to the user.
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         let path_str = path.to_string_lossy();
+        self.mime_filter = None;
 
         // Intercept panel toggles before touching any current state or running resets
         if path_str == "tags://" || path_str == "tags:///" {
@@ -317,6 +318,7 @@ impl FluxApp {
         archive_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        self.mime_filter = None;
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
         let old_path = std::mem::replace(

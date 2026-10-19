@@ -178,6 +178,7 @@ impl FluxApp {
         let extension_globset = self.extension_globset.clone();
         let expand_labels = self.config.ui.expand_labels;
         let filter = self.filter.clone();
+        let mime_filter = self.mime_filter.clone();
         let path_clone = path.clone();
         let sender_clone = sender.clone();
 
@@ -187,6 +188,7 @@ impl FluxApp {
             && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
             && filter.is_empty()
             && extension_globset.is_none()
+            && mime_filter.is_none()
         {
             if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
                 self.is_loading = false;
@@ -383,6 +385,19 @@ impl FluxApp {
                         } else {
                             path_clone.join(&name)
                         };
+
+                        if let Some(ref want) = mime_filter {
+                            let is_dir_filter = want == crate::ui::constants::MIME_DIR;
+                            if is_dir_filter {
+                                if !is_dir {
+                                    return None;
+                                }
+                            } else if is_dir
+                                || crate::utils::media::get_mime_type(&target_path) != *want
+                            {
+                                return None;
+                            }
+                        }
 
                         let mut thumbnail_path = None;
                         if !is_dir && !is_inside_thumb_cache {

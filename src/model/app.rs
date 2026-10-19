@@ -19,6 +19,8 @@ pub enum FilterMode {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Ephemeral MIME filter: only entries whose MIME type equals this are shown.
+    pub mime_filter: Option<String>,
     /// Session-scoped folder/file filter applied to every directory load, persists across navigation.
     pub filter_mode: FilterMode,
     /// The preview panel's `adw::ViewStack`, read out of the panel registry at build time,
