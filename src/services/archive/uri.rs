@@ -163,16 +163,45 @@ pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
     Some((decode_archive_host(host), inner.to_owned()))
 }
 
-/// Extracts an archive entry to a temporary path and generates its thumbnail.
+/// Returns an archive entry's thumbnail. Zips check the in-zip cache first
+/// and queue the generated PNG for later. Other formats just generate.
 pub fn get_archive_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
     let path_str = path.to_string_lossy();
     let (archive_path, inner_path) = parse_archive_uri(&path_str)?;
+    let is_zip = archive_path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("zip"))
+        && crate::utils::load_config().ui.archive_thumbnail_cache;
+
+    if is_zip {
+        if let Some(tex) =
+            crate::services::archive::read_cached_thumbnail(&archive_path, &inner_path, None)
+        {
+            return Some(tex);
+        }
+    }
+
     // Persistent cache: `font_thumbnail` registers this path with fontconfig
     // and Cairo reads it lazily when glyphs are rasterized. A temp file that
     // `get_archive_thumbnail` deletes on return would poison fontconfig and
     // render tofu on the next preview.
     let extracted_path = extract_archive_entry_for_playback(&archive_path, &inner_path)?;
-    crate::utils::media::generate_thumbnail_sync(&extracted_path)
+    let tex = crate::utils::media::generate_thumbnail_sync(&extracted_path)?;
+
+    if is_zip {
+        use gtk::gdk::prelude::TextureExt;
+        let png = tex.save_to_png_bytes();
+        if !png.is_empty() {
+            crate::services::archive::thumb_cache::enqueue(
+                archive_path,
+                inner_path,
+                png.to_vec(),
+                None,
+            );
+        }
+    }
+
+    Some(tex)
 }
 
 /// Constructs an `archive://` URI `PathBuf` for a given archive file and inner path.

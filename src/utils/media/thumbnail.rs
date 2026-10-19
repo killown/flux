@@ -91,12 +91,29 @@ fn thumbnail_is_valid(cache_meta: &fs::Metadata, png: &[u8], source_meta: &fs::M
     }
 }
 
+fn is_ephemeral_source(path: &Path) -> bool {
+    if path.starts_with(crate::services::archive::flux_scratch_dir()) {
+        return true;
+    }
+    if let Some(cache_dir) = dirs::cache_dir() {
+        if path.starts_with(cache_dir.join("flux/previews")) {
+            return true;
+        }
+    }
+    false
+}
+
 pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
     let path_str = path.to_string_lossy();
     if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
         return crate::services::archive::get_archive_thumbnail(path);
     }
 
+    let ephemeral = is_ephemeral_source(path);
+    generate_thumbnail_inner(path, ephemeral)
+}
+
+fn generate_thumbnail_inner(path: &std::path::Path, ephemeral: bool) -> Option<gtk::gdk::Texture> {
     let (show_thumbnails, target_size, thumb_types, _ffmpeg_threads, _auto_rotate, _seek_secs) =
         crate::utils::config::get_thumb_config();
 
@@ -160,6 +177,38 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
         return None;
     }
 
+    if ephemeral {
+        if is_img {
+            // Decode without writing to disk: the caller already owns persistence.
+            return crate::utils::media::decode_image_thumbnail_ephemeral(path, target_size);
+        }
+        let throwaway_dir = crate::services::archive::flux_scratch_dir().join("ephemeral-thumbs");
+        let _ = std::fs::create_dir_all(&throwaway_dir);
+        let throwaway_path = throwaway_dir.join(format!(
+            "ephemeral-{}-{}.png",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+        let result = dispatch(
+            path,
+            &throwaway_path,
+            &throwaway_dir,
+            target_size,
+            is_img,
+            is_vid,
+            is_pdf_file,
+            is_font_file,
+            is_audio,
+            is_exe_file,
+            is_raw_file,
+        );
+        let _ = std::fs::remove_file(&throwaway_path);
+        return result;
+    }
+
     let (cache_dir, cache_path, hash) = thumbnail_cache_path(path, target_size)?;
 
     let source_meta = std::fs::metadata(path).ok();
@@ -190,6 +239,35 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
 
     let _ = std::fs::create_dir_all(&cache_dir);
 
+    dispatch(
+        path,
+        &cache_path,
+        &cache_dir,
+        target_size,
+        is_img,
+        is_vid,
+        is_pdf_file,
+        is_font_file,
+        is_audio,
+        is_exe_file,
+        is_raw_file,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn dispatch(
+    path: &Path,
+    cache_path: &Path,
+    cache_dir: &Path,
+    target_size: i32,
+    is_img: bool,
+    is_vid: bool,
+    is_pdf_file: bool,
+    is_font_file: bool,
+    is_audio: bool,
+    is_exe_file: bool,
+    is_raw_file: bool,
+) -> Option<gtk::gdk::Texture> {
     if is_raw_file {
         // `raw-thumbnailer` writes PNG directly, no temp-file dance needed
         // on the caller side. If the binary is missing, fall through to None
@@ -197,36 +275,31 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
         if !crate::utils::media::raw_thumbnailer_available() {
             return None;
         }
-        return crate::utils::media::raw_thumbnail(path, &cache_path, &cache_dir, target_size);
+        return crate::utils::media::raw_thumbnail(path, cache_path, cache_dir, target_size);
     }
 
     if is_img {
-        return crate::utils::media::decode_image_thumbnail(path, &cache_path, target_size);
+        return crate::utils::media::decode_image_thumbnail(path, cache_path, target_size);
     }
 
     if is_vid {
-        return crate::utils::media::extract_video_frame(
-            path,
-            &cache_path,
-            &cache_dir,
-            target_size,
-        );
+        return crate::utils::media::extract_video_frame(path, cache_path, cache_dir, target_size);
     }
 
     if is_pdf_file {
-        return pdf_thumbnail(path, &cache_path, target_size);
+        return pdf_thumbnail(path, cache_path, target_size);
     }
 
     if is_font_file {
-        return crate::utils::media::font_thumbnail(path, &cache_path, target_size);
+        return crate::utils::media::font_thumbnail(path, cache_path, target_size);
     }
 
     if is_audio {
-        return crate::utils::media::audio_thumbnail(path, &cache_path, target_size);
+        return crate::utils::media::audio_thumbnail(path, cache_path, target_size);
     }
 
     if is_exe_file {
-        return crate::utils::media::extract_exe_icon(path, &cache_path, target_size);
+        return crate::utils::media::extract_exe_icon(path, cache_path, target_size);
     }
 
     None

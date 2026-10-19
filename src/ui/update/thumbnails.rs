@@ -16,6 +16,7 @@ pub(super) fn handle(
         AppMsg::SetThumbnailSize(val) => app.handle_set_thumbnail_size(val, sender),
         AppMsg::SetShowThumbnails(val) => app.handle_set_show_thumbnails(val, sender),
         AppMsg::SetLazyThumbnails(val) => app.handle_set_lazy_thumbnails(val),
+        AppMsg::SetArchiveThumbnailCache(val) => app.handle_set_archive_thumbnail_cache(val),
         AppMsg::SetThumbnailThreads(val) => app.handle_set_thumbnail_threads(val),
         AppMsg::SetThumbnailType { type_name, enabled } => {
             app.handle_set_thumbnail_type(type_name, enabled, sender)

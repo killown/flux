@@ -58,6 +58,11 @@ impl FluxApp {
             } else {
                 s_init.input(AppMsg::Refresh);
             }
+
+            glib::timeout_add_seconds_local(5, || {
+                crate::services::archive::thumb_cache::flush_all();
+                glib::ControlFlow::Continue
+            });
         });
     }
 }

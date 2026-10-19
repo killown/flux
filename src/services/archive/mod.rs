@@ -29,10 +29,13 @@ mod entry;
 mod error;
 mod format;
 mod temp;
+pub mod thumb_cache;
 mod uri;
 mod util;
 
 pub use backend::{get_backend, ArchiveBackend};
+#[allow(unused_imports)]
+pub use backends::{read_cached_thumbnail, write_thumbnails_to_archive};
 pub use entry::{entries_to_load_contexts, ArchiveEntry};
 pub use error::ArchiveError;
 #[allow(unused_imports)]

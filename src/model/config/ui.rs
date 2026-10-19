@@ -223,6 +223,10 @@ pub struct UIConfig {
     /// When true, the peek-preview panel opens in wide mode (sidebar hidden, panel fills the rest).
     #[serde(default)]
     pub wide_preview: bool,
+    /// When true, thumbnails of files inside zip archives are stored in a hidden
+    /// `.flux-cache/` folder in the zip itself and read back on later visits.
+    #[serde(default)]
+    pub archive_thumbnail_cache: bool,
 }
 
 impl Default for UIConfig {
@@ -296,6 +300,7 @@ impl Default for UIConfig {
             diff_editor: default_diff_editor(),
             preview_syntax_highlighting: true,
             wide_preview: false,
+            archive_thumbnail_cache: false,
         }
     }
 }

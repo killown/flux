@@ -1,11 +1,52 @@
 //! ZIP backend.
+//!
+//! Zips may carry a Flux-owned `.flux-cache/` folder, see
+//! [`crate::services::archive::thumb_cache`] for the on-disk layout.
+//! A `.flux-cache/` without the sentinel is treated as foreign and left alone.
 
 use crate::services::archive::entry::collect_entry;
 use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at};
 use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// Reserved top-level folder that holds Flux-owned data inside a zip.
+pub(in crate::services::archive) const FLUX_CACHE_DIR: &str = ".flux-cache";
+/// Sentinel entry proving `.flux-cache/` was created by Flux.
+pub(in crate::services::archive) const FLUX_CACHE_SENTINEL: &str = ".flux-cache/.flux";
+/// Metadata entry describing the cache (format version, generator, timestamp).
+pub(in crate::services::archive) const FLUX_CACHE_METADATA: &str = ".flux-cache/metadata.json";
+/// Folder holding one cached PNG per thumbnail.
+pub(in crate::services::archive) const FLUX_CACHE_THUMBS_DIR: &str = ".flux-cache/thumbnails";
+
+/// Contents of the sentinel entry.
+const FLUX_CACHE_SENTINEL_BODY: &[u8] = b"flux-magic v1";
+
+/// Ensures the "encrypted archive, thumbnail write skipped" notice is logged once.
+static ENCRYPTED_WRITE_LOGGED: AtomicBool = AtomicBool::new(false);
+
+/// Returns true for `.flux-cache` itself and anything below it.
+#[inline]
+fn is_internal_path(name: &str) -> bool {
+    name.strip_prefix(FLUX_CACHE_DIR)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
+
+/// Returns the lowercase-hex md5 used as the cached thumbnail's file stem.
+fn thumbnail_key(inner_path: &str) -> String {
+    format!("{:x}", md5::compute(inner_path.as_bytes()))
+}
+
+/// Returns the full in-zip entry name of the cached thumbnail for `inner_path`.
+fn thumbnail_entry_name(inner_path: &str) -> String {
+    format!(
+        "{}/{}.png",
+        FLUX_CACHE_THUMBS_DIR,
+        thumbnail_key(inner_path.trim_start_matches('/'))
+    )
+}
 
 pub(in crate::services::archive) struct ZipBackend;
 
@@ -319,7 +360,9 @@ fn list_zip(
         }
     }
 
-    // 2. We either have a password or the archive is unencrypted: process entries
+    // 2. We either have a password or the archive is unencrypted: process entries.
+    // `.flux-cache/` is hidden only when Flux created it (sentinel present).
+    let has_sentinel = zip.index_for_name(FLUX_CACHE_SENTINEL).is_some();
     let mut seen: HashMap<String, ArchiveEntry> = HashMap::new();
 
     for i in 0..zip.len() {
@@ -351,6 +394,10 @@ fn list_zip(
                 Err(e) => return Err(ArchiveError::Other(format!("ZIP idx {i}: {e}"))),
             },
         };
+
+        if has_sentinel && is_internal_path(&raw_name) {
+            continue;
+        }
 
         collect_entry(&mut seen, &raw_name, is_dir, size, mtime, prefix, false);
     }
@@ -409,6 +456,10 @@ pub(in crate::services::archive) fn extract_dir_zip_at(
             },
         };
 
+        if is_internal_path(&name) {
+            continue;
+        }
+
         if !name.starts_with(&prefix) {
             continue;
         }
@@ -458,6 +509,11 @@ fn extract_zip(
         .index_for_name(inner_path)
         .ok_or_else(|| ArchiveError::Other(format!("not found: {inner_path}")))?;
 
+    // The cache is not extractable through the public API.
+    if is_internal_path(inner_path) {
+        return Err(ArchiveError::Other(format!("not found: {inner_path}")));
+    }
+
     if let Some(pwd) = password {
         // Password supplied: try decrypting
         match zip.by_index_decrypt(idx, pwd.as_bytes()) {
@@ -504,4 +560,187 @@ fn zip_mtime<R: Read + Seek>(entry: &zip::read::ZipFile<'_, R>) -> i64 {
                 .map(|ndt| ndt.and_utc().timestamp())
         })
         .unwrap_or(0)
+}
+
+// ─── In-archive thumbnail cache ──────────────────────────────────────────────
+
+/// Reads the raw bytes of one entry, bypassing the `.flux-cache/` guard of [`extract_zip`].
+fn read_entry_bytes(archive_path: &Path, name: &str, password: Option<&str>) -> Option<Vec<u8>> {
+    let file = std::fs::File::open(archive_path).ok()?;
+    let mut zip = zip::ZipArchive::new(file).ok()?;
+    let idx = zip.index_for_name(name)?;
+    let mut buf = Vec::new();
+    match password {
+        Some(pwd) => {
+            let mut entry = zip.by_index_decrypt(idx, pwd.as_bytes()).ok()?;
+            entry.read_to_end(&mut buf).ok()?;
+        }
+        None => {
+            let mut entry = zip.by_index(idx).ok()?;
+            if entry.encrypted() {
+                return None;
+            }
+            entry.read_to_end(&mut buf).ok()?;
+        }
+    }
+    Some(buf)
+}
+
+/// Returns the thumbnail cached inside `archive_path` for `inner_path`, if any.
+pub fn read_cached_thumbnail(
+    archive_path: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+) -> Option<gtk::gdk::Texture> {
+    // Only trust a cache that Flux itself created.
+    {
+        let file = std::fs::File::open(archive_path).ok()?;
+        let zip = zip::ZipArchive::new(file).ok()?;
+        zip.index_for_name(FLUX_CACHE_SENTINEL)?;
+    }
+    let bytes = read_entry_bytes(archive_path, &thumbnail_entry_name(inner_path), password)?;
+    if bytes.is_empty() {
+        return None;
+    }
+    gtk::gdk::Texture::from_bytes(&gtk::glib::Bytes::from_owned(bytes)).ok()
+}
+
+/// Rewrites the archive to add `thumbs` under `.flux-cache/`, preserving
+/// existing entries' compression. Returns the number written. Skipped (returns
+/// `Ok(0)`) for encrypted archives and for a foreign `.flux-cache/`.
+pub fn write_thumbnails_to_archive(
+    archive_path: &Path,
+    thumbs: &[(String, Vec<u8>)],
+    password: Option<&str>,
+) -> Result<usize, ArchiveError> {
+    let src_file = std::fs::File::open(archive_path)
+        .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+    let src_meta = src_file
+        .metadata()
+        .map_err(|e| ArchiveError::Other(format!("stat archive: {e}")))?;
+    let mut zip_in = zip::ZipArchive::new(src_file)
+        .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+    // Last write wins when the same inner path was queued twice.
+    let mut wanted: Vec<(String, &[u8])> = Vec::with_capacity(thumbs.len());
+    for (inner, png) in thumbs {
+        let name = thumbnail_entry_name(inner);
+        match wanted.iter_mut().find(|(n, _)| *n == name) {
+            Some(slot) => slot.1 = png.as_slice(),
+            None => wanted.push((name, png.as_slice())),
+        }
+    }
+    if wanted.is_empty() {
+        return Ok(0);
+    }
+
+    let has_sentinel = zip_in.index_for_name(FLUX_CACHE_SENTINEL).is_some();
+    if !has_sentinel && zip_in.index_for_name(FLUX_CACHE_METADATA).is_some() {
+        return Ok(0);
+    }
+
+    let mut any_encrypted = password.is_some();
+    for i in 0..zip_in.len() {
+        if let Ok(raw) = zip_in.by_index_raw(i) {
+            if raw.encrypted() {
+                any_encrypted = true;
+                break;
+            }
+        }
+    }
+    if any_encrypted {
+        if !ENCRYPTED_WRITE_LOGGED.swap(true, Ordering::Relaxed) {
+            eprintln!("[thumb-cache] encrypted zip: in-archive thumbnails are read-only");
+        }
+        return Ok(0);
+    }
+
+    let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
+    let mut tmp = tempfile::Builder::new()
+        .prefix(".flux-thumbs-")
+        .suffix(".tmp")
+        .tempfile_in(parent_dir)
+        .map_err(|e| ArchiveError::Other(format!("create tempfile: {e}")))?;
+
+    let replaced: HashSet<&str> = wanted.iter().map(|(n, _)| n.as_str()).collect();
+    let options =
+        zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+
+    {
+        let mut zip_out = zip::ZipWriter::new(&mut tmp);
+
+        for i in 0..zip_in.len() {
+            let raw_entry = zip_in
+                .by_index_raw(i)
+                .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
+            let name = raw_entry.name().replace('\\', "/");
+
+            // Rebuilt below / superseded.
+            if name == FLUX_CACHE_METADATA
+                || name == FLUX_CACHE_SENTINEL
+                || replaced.contains(name.as_str())
+            {
+                continue;
+            }
+
+            zip_out
+                .raw_copy_file(raw_entry)
+                .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+        }
+
+        for (name, png) in &wanted {
+            zip_out
+                .start_file(name.as_str(), options)
+                .map_err(|e| ArchiveError::Other(format!("start thumbnail {name}: {e}")))?;
+            zip_out
+                .write_all(png)
+                .map_err(|e| ArchiveError::Other(format!("write thumbnail {name}: {e}")))?;
+        }
+
+        let generated_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let metadata = serde_json::to_vec(&serde_json::json!({
+            "version": 1,
+            "generated_by": env!("CARGO_PKG_VERSION"),
+            "generated_at": generated_at,
+        }))
+        .map_err(|e| ArchiveError::Other(format!("encode metadata: {e}")))?;
+        zip_out
+            .start_file(FLUX_CACHE_METADATA, options)
+            .map_err(|e| ArchiveError::Other(format!("start metadata: {e}")))?;
+        zip_out
+            .write_all(&metadata)
+            .map_err(|e| ArchiveError::Other(format!("write metadata: {e}")))?;
+
+        zip_out
+            .start_file(FLUX_CACHE_SENTINEL, options)
+            .map_err(|e| ArchiveError::Other(format!("start sentinel: {e}")))?;
+        zip_out
+            .write_all(FLUX_CACHE_SENTINEL_BODY)
+            .map_err(|e| ArchiveError::Other(format!("write sentinel: {e}")))?;
+
+        zip_out
+            .finish()
+            .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
+    }
+
+    let now_meta = std::fs::metadata(archive_path)
+        .map_err(|e| ArchiveError::Other(format!("re-stat archive: {e}")))?;
+    if now_meta.len() != src_meta.len() || now_meta.modified().ok() != src_meta.modified().ok() {
+        return Err(ArchiveError::Other(
+            "archive changed while writing thumbnails".into(),
+        ));
+    }
+
+    let _ = std::fs::set_permissions(tmp.path(), src_meta.permissions());
+    if let Ok(mtime) = src_meta.modified() {
+        let _ = tmp.as_file().set_modified(mtime);
+    }
+
+    tmp.persist(archive_path)
+        .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
+
+    Ok(wanted.len())
 }

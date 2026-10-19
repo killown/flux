@@ -843,6 +843,7 @@ dependencies = [
  "relm4",
  "rusqlite",
  "serde",
+ "serde_json",
  "sevenz-rust2",
  "sha2",
  "syntect",

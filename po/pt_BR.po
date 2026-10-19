@@ -761,6 +761,14 @@ msgstr "Mostrar/ocultar barra de cabeçalho"
 # src/ui/settings.rs
 # ============================================================
 
+#: src/ui/settings/page/thumbnails.rs
+msgid "Cache Thumbnails in Zip Files"
+msgstr "Armazenar miniaturas em arquivos ZIP"
+
+#: src/ui/settings/page/thumbnails.rs
+msgid "Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"
+msgstr "Guardar miniaturas em uma pasta oculta .flux-cache dentro de cada ZIP que você navegar, para abrir mais rápido na próxima vez. Isso modifica o arquivo ZIP"
+
 msgid "Tabs"
 msgstr "Abas"
 

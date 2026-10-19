@@ -228,6 +228,8 @@ pub enum AppMsg {
     SetDisableDragAndDrop(bool),
     /// Toggles the lazy thumbnail generation setting.
     SetLazyThumbnails(bool),
+    /// Toggles storing thumbnails inside zip archives.
+    SetArchiveThumbnailCache(bool),
     /// Check for visible thumbnails in the current viewport and request generation for any missing ones
     CheckVisibleThumbnails,
     /// Delivers background-enumerated system and network mounts to update the sidebar.

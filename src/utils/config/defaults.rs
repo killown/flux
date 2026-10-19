@@ -188,6 +188,7 @@ path = "actions://"
                 ui: crate::model::UIConfig {
                     preview_syntax_highlighting: true,
                     wide_preview: false,
+                    archive_thumbnail_cache: false,
                     preview_panel_width: 400,
                     diff_editor: "nvim".to_string(),
                     ui_scale: 1.0,

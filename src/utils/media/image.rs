@@ -23,23 +23,50 @@ pub(crate) fn decode_image_thumbnail(
         .ok()?;
 
     let thumb = img.thumbnail(target_size as u32, target_size as u32);
-
     let rgba = thumb.to_rgba8();
     let (width, height) = rgba.dimensions();
 
     let pixbuf = gdk_pixbuf::Pixbuf::from_mut_slice(
         rgba.into_raw(),
         gdk_pixbuf::Colorspace::Rgb,
-        true, // has_alpha
-        8,    // bits_per_sample
+        true,
+        8,
         width as i32,
         height as i32,
-        (width * 4) as i32, // rowstride (4 bytes per pixel)
+        (width * 4) as i32,
     );
 
     if let Ok(buf) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
         store_thumbnail(&buf, path, cache_path);
     }
+
+    Some(gdk::Texture::for_pixbuf(&pixbuf))
+}
+
+pub(crate) fn decode_image_thumbnail_ephemeral(
+    path: &Path,
+    target_size: i32,
+) -> Option<gdk::Texture> {
+    let img = image::ImageReader::open(path)
+        .ok()?
+        .with_guessed_format()
+        .ok()?
+        .decode()
+        .ok()?;
+
+    let thumb = img.thumbnail(target_size as u32, target_size as u32);
+    let rgba = thumb.to_rgba8();
+    let (width, height) = rgba.dimensions();
+
+    let pixbuf = gdk_pixbuf::Pixbuf::from_mut_slice(
+        rgba.into_raw(),
+        gdk_pixbuf::Colorspace::Rgb,
+        true,
+        8,
+        width as i32,
+        height as i32,
+        (width * 4) as i32,
+    );
 
     Some(gdk::Texture::for_pixbuf(&pixbuf))
 }

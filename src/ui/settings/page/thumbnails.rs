@@ -70,6 +70,20 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
+                    set_title: &tr("Cache Thumbnails in Zip Files"),
+                    set_subtitle: &tr("Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"),
+                    set_sensitive: config.ui.show_thumbnails,
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.archive_thumbnail_cache,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetArchiveThumbnailCache(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
                     set_title: &tr("Autoplay Video Previews"),
                     set_subtitle: &tr("Play a muted preview when a single video card is selected"),
                     set_sensitive: config.ui.show_thumbnails,

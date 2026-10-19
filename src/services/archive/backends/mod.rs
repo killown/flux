@@ -19,3 +19,5 @@ pub(in crate::services::archive) use self::single::SingleFileBackend;
 pub(in crate::services::archive) use self::tar::{extract_dir_tar_at, TarBackend};
 pub(in crate::services::archive) use self::unsupported::UnsupportedBackend;
 pub(in crate::services::archive) use self::zip::{extract_dir_zip_at, ZipBackend};
+#[allow(unused_imports)]
+pub use self::zip::{read_cached_thumbnail, write_thumbnails_to_archive};

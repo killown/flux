@@ -18,6 +18,7 @@ pub use exe::extract_exe_icon;
 pub use font::{font_specimen, font_thumbnail};
 pub use format::{aspect_ratio_label, format_duration};
 pub use image::probe_image_dimensions;
+pub(crate) use image::{decode_image_thumbnail, decode_image_thumbnail_ephemeral};
 pub use mime::{
     container_mime_masks_extension, get_mime_type, guess_mime_from_extension, icon_gen_params,
     is_appimage, is_audio_file, is_raw_image_ext, is_visual_media,
@@ -33,6 +34,5 @@ pub use video::probe_media_duration;
 
 // Crate-internal API surface (preserves original `pub(crate)` items).
 pub use audio::audio_thumbnail;
-pub(crate) use image::decode_image_thumbnail;
 pub(crate) use thumbnail::generate_thumbnail_sync;
 pub(crate) use video::extract_video_frame;
