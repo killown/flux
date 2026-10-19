@@ -1,0 +1,62 @@
+name: Release Binary
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-tarball:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libsqlite3-dev \
+            libssl-dev \
+            libfontconfig-dev \
+            libarchive-dev \
+            libpoppler-glib-dev \
+            libgdk-pixbuf-2.0-dev \
+            pkg-config \
+            build-essential
+
+      - name: Build Release Binary
+        run: cargo build --release
+
+      - name: Package Tarball
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME:-dev}"
+          DIR_NAME="flux-${TAG_NAME}-x86_64"
+
+          mkdir -p "${DIR_NAME}"
+
+          cp target/release/flux "${DIR_NAME}/"
+
+          if [ -d "data" ]; then
+            cp -r data/* "${DIR_NAME}/"
+          fi
+
+          cp LICENSE "${DIR_NAME}/" 2>/dev/null || true
+          cp README.md "${DIR_NAME}/" 2>/dev/null || true
+
+          tar -czvf "${DIR_NAME}.tar.gz" "${DIR_NAME}"
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: flux-*-x86_64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
