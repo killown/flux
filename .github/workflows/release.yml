@@ -43,7 +43,7 @@ jobs:
 
           mkdir -p "${DIR_NAME}"
 
-          cp target/release/flux "${DIR_NAME}/"
+          cp target/release/flux-fm "${DIR_NAME}/"
 
           if [ -d "data" ]; then
             cp -r data/* "${DIR_NAME}/"
