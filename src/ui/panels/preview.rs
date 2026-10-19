@@ -99,6 +99,7 @@ const ZOOM_STEP: f64 = 1.25;
 const MAX_PDF_PX: i32 = 4096;
 const MAX_PDF_PX_H: i32 = 16384;
 const PDF_GUTTER: i32 = 24;
+const INFO_MAX_WIDTH: i32 = 720;
 
 #[cfg(target_endian = "little")]
 const CAIRO_ARGB32: gtk::gdk::MemoryFormat = gtk::gdk::MemoryFormat::B8g8r8a8Premultiplied;
@@ -825,7 +826,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .valign(gtk::Align::Start)
         .build();
     let meta_scroller = gtk::ScrolledWindow::builder()
-        .child(&meta_list)
+        .child(&info_clamp(&meta_list))
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vexpand(true)
         .build();
@@ -847,7 +848,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .valign(gtk::Align::Start)
         .build();
     let details_scroller = gtk::ScrolledWindow::builder()
-        .child(&details_list)
+        .child(&info_clamp(&details_list))
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vexpand(true)
         .build();
@@ -1924,6 +1925,15 @@ fn flat_icon_button(icon: &str, tip: &str) -> gtk::Button {
         .icon_name(icon)
         .tooltip_text(tip)
         .css_classes(["flat"])
+        .build()
+}
+
+/// Caps an info list's width and centres it so wide panels keep it clear of the nav arrows.
+fn info_clamp(list: &gtk::ListBox) -> adw::Clamp {
+    adw::Clamp::builder()
+        .maximum_size(INFO_MAX_WIDTH)
+        .tightening_threshold(INFO_MAX_WIDTH)
+        .child(list)
         .build()
 }
 
