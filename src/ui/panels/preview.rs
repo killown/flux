@@ -900,15 +900,19 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     let meta_list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)
-        .css_classes(["boxed-list"])
+        .valign(gtk::Align::Start)
+        .build();
+
+    let meta_group = adw::PreferencesGroup::builder()
         .margin_top(16)
         .margin_bottom(16)
         .margin_start(16)
         .margin_end(16)
-        .valign(gtk::Align::Start)
         .build();
+    meta_group.add(&meta_list);
+
     let meta_scroller = gtk::ScrolledWindow::builder()
-        .child(&info_clamp(&meta_list))
+        .child(&info_clamp(&meta_group))
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vexpand(true)
         .build();
@@ -933,15 +937,19 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     let details_list = gtk::ListBox::builder()
         .selection_mode(gtk::SelectionMode::None)
-        .css_classes(["boxed-list"])
+        .valign(gtk::Align::Start)
+        .build();
+
+    let details_group = adw::PreferencesGroup::builder()
         .margin_start(12)
         .margin_end(12)
         .margin_top(6)
         .margin_bottom(12)
-        .valign(gtk::Align::Start)
         .build();
+    details_group.add(&details_list);
+
     let details_scroller = gtk::ScrolledWindow::builder()
-        .child(&info_clamp(&details_list))
+        .child(&info_clamp(&details_group))
         .hscrollbar_policy(gtk::PolicyType::Never)
         .vexpand(true)
         .build();
@@ -2481,11 +2489,11 @@ fn build_folder_grid(
 }
 
 /// Caps an info list's width and centres it so wide panels keep it clear of the nav arrows.
-fn info_clamp(list: &gtk::ListBox) -> adw::Clamp {
+fn info_clamp(child: &impl IsA<gtk::Widget>) -> adw::Clamp {
     adw::Clamp::builder()
         .maximum_size(INFO_MAX_WIDTH)
         .tightening_threshold(INFO_MAX_WIDTH)
-        .child(list)
+        .child(child)
         .build()
 }
 
@@ -2594,7 +2602,6 @@ fn push_row(l: &gtk::ListBox, key: &str, value: &str) {
     let row = adw::ActionRow::builder()
         .title(glib::markup_escape_text(key))
         .subtitle(glib::markup_escape_text(value))
-        .css_classes(["property"])
         .build();
     l.append(&row);
 }
