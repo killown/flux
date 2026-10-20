@@ -1070,6 +1070,15 @@ window:backdrop .selection-status button.destructive-action {
   box-shadow: none;
 }
 
+.flat:hover {
+  background-color: alpha(currentColor, 0.08);
+}
+
+.flat:active,
+.flat:checked {
+  background-color: alpha(currentColor, 0.15);
+}
+
 .circular {
   border-radius: 9999px;
   padding: 0.35em;
@@ -1744,4 +1753,24 @@ dropdown image {
 
 .preview-nav-btn image {
   -gtk-icon-size: 2em;
+}
+
+.flux-action-run-btn {
+  min-width: 2em;
+  min-height: 2em;
+  padding: 0.25em;
+  border-radius: 0.45em;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.flux-action-run-btn:hover {
+  background-color: alpha(@accent_color, 0.22);
+  color: @accent_color;
+}
+
+.flux-action-run-btn:active {
+  background-color: alpha(@accent_color, 0.38);
+  color: @accent_fg_color;
 }

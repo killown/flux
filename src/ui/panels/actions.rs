@@ -215,7 +215,7 @@ fn build_row(action: &CustomAction, sender: &AsyncComponentSender<FluxApp>) -> a
 
     let run_btn = gtk::Button::builder()
         .icon_name("system-run-symbolic")
-        .css_classes(["flat"])
+        .css_classes(["flux-action-run-btn"])
         .valign(gtk::Align::Center)
         .tooltip_text(tr("Run"))
         .build();
