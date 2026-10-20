@@ -67,6 +67,7 @@ pub fn is_recursive_paste(src: &Path, dest_dir: &Path) -> bool {
 /// If `name`'s extension is in `hidden_extensions` (case-insensitive, optional leading dot),
 /// or if `hidden_extensions` contains `*`, returns the stem only. Otherwise returns `name`.
 pub fn format_display_label(name: &str, is_dir: bool, hidden_extensions: &[String]) -> String {
+    crate::hit!("format_display_label");
     if is_dir || hidden_extensions.is_empty() {
         return name.to_string();
     }

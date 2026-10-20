@@ -5,6 +5,7 @@ use std::process::Command;
 /// Resolves a device-mapper node (`/dev/dm-N` or `/dev/mapper/...`) to the
 /// file stem of its backing loop file, when it's a LUKS image.
 fn resolve_luks_loop_name(dev_node: &str) -> Option<String> {
+    crate::hit!("mounts::resolve_luks_loop_name");
     let dev_path = Path::new(dev_node);
     let dev_name = dev_path.file_name()?.to_str()?;
     if !dev_name.starts_with("dm-") && !dev_name.starts_with("mapper/") {
@@ -32,6 +33,7 @@ fn resolve_luks_loop_name(dev_node: &str) -> Option<String> {
 
 /// Queries the filesystem label of a device with `lsblk`.
 fn get_fs_label(dev_node: &str) -> Option<String> {
+    crate::hit!("mounts::get_fs_label");
     let output = Command::new("lsblk")
         .args(["-no", "LABEL", dev_node])
         .output()

@@ -7,6 +7,7 @@ use std::path::PathBuf;
 /// entries, FUSE mounts inside the user's home, and any active network
 /// mounts reported by [`crate::services::network`].
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
+    crate::hit!("mounts::get_system_mounts");
     let mut mounts = Vec::new();
     let home_dir = dirs::home_dir().unwrap_or_default();
 

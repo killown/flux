@@ -8,6 +8,7 @@ pub const XDG_TAGS_ATTR: &str = "user.xdg.tags";
 /// Tags in `user.xdg.tags` are conventionally stored as comma-separated or
 /// newline-separated UTF-8 strings.
 pub fn read_tags<P: AsRef<Path>>(path: P) -> Vec<String> {
+    crate::hit!("xattr::read_tags");
     let raw_bytes = match xattr::get(path.as_ref(), XDG_TAGS_ATTR) {
         Ok(Some(data)) => data,
         _ => return Vec::new(),

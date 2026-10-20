@@ -178,6 +178,7 @@ pub fn get_icon_for_path_with_override(
     // Extensionless files plant a shared fallback that would then
     // short-circuit every .txt / .conf / .log past generation, killing
     // generated icons for the rest of the session.
+    crate::hit!("get_icon_for_path:themed_cache");
     THEMED_ICON_CACHE.with(|cache| {
         let mut map = cache.borrow_mut();
 

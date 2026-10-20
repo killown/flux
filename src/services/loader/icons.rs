@@ -53,6 +53,7 @@ fn get_template_and_config_mtime() -> Option<SystemTime> {
 
 /// Returns the path to a user-customized extension icon from `icons/extensions/custom/`.
 pub fn get_custom_extension_icon_path(ext: &str) -> Option<PathBuf> {
+    crate::hit!("get_custom_extension_icon_path");
     if ext.is_empty() {
         return None;
     }

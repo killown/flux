@@ -86,6 +86,7 @@ impl FluxApp {
                         let name_ok =
                             rest_clean.is_empty() || item.name.to_lowercase().contains(&rest_clean);
                         if name_ok {
+                            crate::hit!("handle_selection_changed:xattr_read");
                             let file_tags = crate::utils::xattr::read_tags(&item.path);
                             let file_tags_lc: Vec<String> =
                                 file_tags.into_iter().map(|t| t.to_lowercase()).collect();

@@ -73,6 +73,7 @@ impl FluxApp {
         mime: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("context_menu::build_and_show");
         let resolved_path = path
             .clone()
             .or_else(|| self.get_selected_path())

@@ -58,6 +58,7 @@ impl FluxApp {
         let target_path_bg = self.active_item_path.clone();
 
         relm4::spawn_blocking(move || {
+            crate::hit!("secondary_menu::parse_template");
             let mime = target_path_bg
                 .as_ref()
                 .map(|p| utils::media::get_mime_type(p))
@@ -87,6 +88,7 @@ impl FluxApp {
         actions: Vec<CustomAction>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("secondary_menu::build_and_show");
         if actions.is_empty() {
             sender.input(AppMsg::ShowToast(crate::i18n::tr(
                 "No contextual actions for this type",

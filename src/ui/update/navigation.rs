@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("update::navigation");
     match msg {
         AppMsg::Navigate(path) => {
             app.stop_video_preview();

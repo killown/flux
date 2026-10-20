@@ -240,6 +240,7 @@ impl FileLoadContext {
     /// and `search/content.rs` for the priming sites.
     #[inline]
     pub fn labels(&self) -> &CellLabels {
+        crate::hit!("FileLoadContext::labels");
         self.labels.get_or_init(|| {
             let now = now_unix();
             self.compute_labels(now)

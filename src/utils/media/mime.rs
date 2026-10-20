@@ -89,6 +89,7 @@ pub fn icon_gen_params() -> (bool, String, String, String, f64) {
 }
 
 pub fn get_mime_type(path: &Path) -> String {
+    crate::hit!("media::get_mime_type");
     let path_str = path.to_string_lossy();
 
     if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {

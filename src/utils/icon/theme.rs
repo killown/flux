@@ -8,6 +8,7 @@ pub fn resolve_folder_icon_with_fallbacks(
     theme: &gtk::IconTheme,
     base_name: &str,
 ) -> Option<gio::Icon> {
+    crate::hit!("resolve_folder_icon_with_fallbacks");
     let variants: &[&str] = match base_name {
         "folder-download" => &[
             "folder-download",

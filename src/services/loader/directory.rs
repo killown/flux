@@ -191,6 +191,7 @@ impl FluxApp {
             && mime_filter.is_none()
         {
             if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
+                crate::hit!("load_path:cache_hit");
                 self.is_loading = false;
                 cached
                     .items
@@ -203,6 +204,7 @@ impl FluxApp {
 
                 // Keep cached items sorted to the currently active sort configuration
                 loader_pool().install(|| {
+                    crate::hit!("load_path:cache_hit:after_sort");
                     cached_items.par_sort_unstable_by(move |a, b| {
                         if a.is_dir != b.is_dir {
                             return if folders_first {

@@ -173,6 +173,7 @@ impl FluxApp {
     }
 
     fn find_file_index_by_name(&self, name: &str) -> Option<u32> {
+        crate::hit!("watcher::find_file_index_by_name");
         (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
             self.tabs[self.active_tab_index]
                 .files
