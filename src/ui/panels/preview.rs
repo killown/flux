@@ -87,11 +87,6 @@ pub enum PreviewContent {
         data: TableData,
         info: FileInfo,
     },
-    Listing {
-        rows: Vec<(String, String)>,
-        more: usize,
-        info: FileInfo,
-    },
     Folder {
         entries: Vec<FolderEntry>,
         more: usize,
@@ -1704,22 +1699,6 @@ impl PreviewPanelHandle {
                 self.stack.set_visible_child_name("table");
             }
 
-            PreviewContent::Listing { rows, more, info } => {
-                self.show_info(info);
-                self.set_mode(Mode::None);
-                clear_list(&self.meta_list);
-                if rows.is_empty() {
-                    push_row(&self.meta_list, &tr("Empty"), "");
-                }
-                for (k, v) in rows {
-                    push_row(&self.meta_list, k, v);
-                }
-                if *more > 0 {
-                    push_row(&self.meta_list, "…", &format!("+{more}"));
-                }
-                self.stack.set_visible_child_name("meta");
-            }
-
             PreviewContent::Folder {
                 entries,
                 more,
@@ -2443,6 +2422,7 @@ fn build_folder_grid(
     view.set_vexpand(true);
 
     // Enter or click: folders open in the main grid, files open with the default app.
+    // Files inside an archive go through `ActivateItems` so they are extracted first.
     {
         let weak = Rc::downgrade(&grid);
         let s = sender.clone();
@@ -2456,6 +2436,13 @@ fn build_folder_grid(
             });
             match target {
                 Some((path, true)) => s.input(AppMsg::Navigate(path)),
+                Some((path, false))
+                    if path
+                        .to_string_lossy()
+                        .starts_with(crate::services::archive::ARCHIVE_URI) =>
+                {
+                    s.input(AppMsg::ActivateItems(vec![(path, false)]))
+                }
                 Some((path, false)) => FluxApp::open_file(path),
                 None => {}
             }

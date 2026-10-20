@@ -40,6 +40,7 @@ pub(super) fn handle(
         AppMsg::NewTab(target_path) => app.handle_new_tab(target_path, sender),
         AppMsg::OpenTabs(targets) => app.handle_open_tabs(targets, sender),
         AppMsg::Open { position, tab_id } => app.handle_open(position, tab_id, sender),
+        AppMsg::ActivateItems(items) => app.activate_items(items, sender),
         AppMsg::SwitchTab(index) => app.handle_switch_tab(index, sender),
         AppMsg::TabReordered {
             moved_id,

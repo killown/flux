@@ -408,7 +408,6 @@ const TEXT_HEAD_BYTES: usize = 64 * 1024;
 const TEXT_HEAD_LINES: usize = 500;
 const HEX_BYTES: usize = 512;
 const IMAGE_MAX_DIM: i32 = 2560;
-const LISTING_MAX_ROWS: usize = 150;
 const LISTING_SCAN_CAP: usize = 20_000;
 /// Most entries the folder grid in the preview panel shows.
 const FOLDER_GRID_MAX_ITEMS: usize = 2000;
@@ -1063,24 +1062,23 @@ fn archive_listing(path: &Path, info: &mut FileInfo) -> Option<PreviewContent> {
     info.extra
         .push((tr("Top-level entries"), entries.len().to_string()));
 
-    let more = entries.len().saturating_sub(LISTING_MAX_ROWS);
-    let rows = entries
+    // Archives reuse the folder grid: each entry becomes a cell addressed by its
+    // `archive://` URI, so thumbnails and activation take the same paths as a folder.
+    let more = entries.len().saturating_sub(FOLDER_GRID_MAX_ITEMS);
+    let entries = entries
         .into_iter()
-        .take(LISTING_MAX_ROWS)
-        .map(|e| {
-            if e.is_dir {
-                (
-                    format!("{}/", e.name),
-                    format!("{} {}", e.child_count, tr("items")),
-                )
-            } else {
-                (e.name, glib::format_size(e.size).to_string())
-            }
+        .take(FOLDER_GRID_MAX_ITEMS)
+        .map(|e| FolderEntry {
+            path: crate::services::archive::build_archive_uri(path, &e.inner_path),
+            size: if e.is_dir { e.child_count } else { e.size },
+            name: e.name,
+            is_dir: e.is_dir,
+            mtime: e.mtime,
         })
         .collect();
 
-    Some(PreviewContent::Listing {
-        rows,
+    Some(PreviewContent::Folder {
+        entries,
         more,
         info: info.clone(),
     })

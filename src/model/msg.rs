@@ -790,6 +790,9 @@ pub enum AppMsg {
         position: Option<u32>,
         tab_id: Option<u64>,
     },
+    /// Activate explicit `(path, is_dir)` items, independent of the main grid's
+    /// selection. Used by the preview folder grid for entries inside archives.
+    ActivateItems(Vec<(PathBuf, bool)>),
     /// Delete all files within the system trash location.
     EmptyTrash,
     #[allow(dead_code)]
