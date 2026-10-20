@@ -78,7 +78,7 @@ fn mime_db() -> &'static std::collections::HashMap<String, Vec<String>> {
                     // globs:  "mime/type:*.ext"
                     let cols: Vec<&str> = line.split(':').collect();
                     let (mime, glob) = if cols.len() >= 3 {
-                        (cols[cols.len() - 2].to_string(), cols[cols.len() - 1])
+                        (cols[1].to_string(), cols[2])
                     } else if cols.len() == 2 {
                         (cols[0].to_string(), cols[1])
                     } else {

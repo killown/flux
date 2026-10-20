@@ -248,7 +248,14 @@ fn start_walk(
         let mut index_hit = false;
         let indexer_ready = crate::services::search::indexer::is_ready();
 
-        if is_simple_name_search && indexer_ready {
+        // The index only does fuzzy name lookups, so extension and MIME patterns
+        // (`*.rs`, `image/*`) and multi-pattern searches always go through the walk.
+        let index_eligible = glob_patterns.len() == 1
+            && glob_patterns
+                .first()
+                .is_some_and(|p| !p.contains('/') && !p.trim_start_matches('*').starts_with('.'));
+
+        if is_simple_name_search && indexer_ready && index_eligible {
             if let Some(first_pattern) = glob_patterns.first() {
                 let clean: String = first_pattern
                     .replace(['*', '?'], " ")
@@ -322,6 +329,18 @@ fn start_walk(
                                     .query_fuzzy(&clean, Some(&current_dir), query_limit)
                                     .unwrap_or_default()
                             };
+
+                            // Fuzzy hits must still satisfy the glob, `*.rs` must not match `x.rst`.
+                            let paths: Vec<std::path::PathBuf> = paths
+                                .into_iter()
+                                .filter(|p| {
+                                    let name = p
+                                        .file_name()
+                                        .map(|n| n.to_string_lossy().to_lowercase())
+                                        .unwrap_or_default();
+                                    globset.as_ref().is_none_or(|gs| gs.is_match(&name))
+                                })
+                                .collect();
 
                             if !paths.is_empty() {
                                 search_debug!(

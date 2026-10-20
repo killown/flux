@@ -373,6 +373,15 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             if !pat_text.is_empty() {
                 for p in pat_text.split(',').map(str::trim).filter(|p| !p.is_empty()) {
                     let mut pat = p.to_lowercase();
+                    // MIME types become their extension globs here so they also combine with a file name.
+                    if pat.contains('/') {
+                        filter_globs.extend(
+                            crate::utils::glob::expand_mime_category(&pat)
+                                .into_iter()
+                                .map(|g| g.to_lowercase()),
+                        );
+                        continue;
+                    }
                     if !pat.contains('*') && !pat.contains('?') && !pat.contains('/') {
                         pat = format!("*.{}", pat.trim_start_matches('.'));
                     }
