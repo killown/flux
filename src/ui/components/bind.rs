@@ -523,8 +523,13 @@ impl FileItem {
             //     every bind.
             //   * The cache key must include `mtime`. Without it, editing a custom
             //     icon file has no visible effect until the app restarts.
-            //   * The decode must stay bounded (`from_file_at_scale(…, 256, 256,
-            //     true)`). `from_filename` decodes at source resolution.
+            //   * Raster decode goes through `decode_to_pixbuf` (image crate,
+            //     progressive downscale). Do not inline `from_file_at_scale` - it
+            //     decodes at source resolution (~20ms for a 4K PNG) and is what the
+            //     256px bound was papering over.
+            //   * The decode must be throttled through the thumbnail semaphore. A
+            //     folder with hundreds of >1MB custom icons will otherwise starve
+            //     thumbnails and file-ops on the shared blocking pool.
             //   * The handler must force a rebind (remove + insert). `queue_draw()`
             //     re-runs draw, not bind, so the fallback icon stays on screen.
             //
@@ -541,10 +546,20 @@ impl FileItem {
                     // Slow path: not cached. Paint the theme fallback immediately so
                     // the cell is never blank, then dispatch the decode to a worker.
                     //
-                    // WARNING: `from_file_at_scale` bounds the decode to 256px.
-                    // Do not replace it with `gdk::Texture::from_filename`, which
-                    // decodes at the source resolution and is what caused the
-                    // ~40ms main-thread stalls this path is fixing.
+                    // WARNING: the decode is throttled through the thumbnail
+                    // semaphore so a folder full of custom icons (often >1MB
+                    // photos) cannot starve thumbnails/file-ops on the shared
+                    // blocking pool. Do not remove the `acquire_blocking`, it is
+                    // what keeps `spawn_blocking` from being flooded by N parallel
+                    // decodes.
+                    //
+                    // WARNING: the decode goes through `decode_to_pixbuf`, which
+                    // uses `image::thumbnail` for raster formats (progressive
+                    // downscale during decode, ~3-5x faster than
+                    // `from_file_at_scale` on large sources) and GdkPixbuf for
+                    // SVG. Do not inline a `from_file_at_scale` call here, it
+                    // decodes at source resolution and is what caused the
+                    // original ~40ms stall.
                     let display = root.display();
                     let icon_theme = gtk::IconTheme::for_display(&display);
                     let scale = root.scale_factor().max(1);
@@ -559,9 +574,16 @@ impl FileItem {
 
                     if let Some(sender) = crate::model::SENDER.get().cloned() {
                         let path_clone = path.clone();
+                        let thumbnail_manager = self.thumbnail_manager.clone();
+                        let max_threads = self.thumbnail_threads;
                         relm4::spawn_blocking(move || {
-                            if let Ok(pixbuf) =
-                                gdk_pixbuf::Pixbuf::from_file_at_scale(&path_clone, 256, 256, true)
+                            crate::hit!("decode_custom_file_icon");
+                            let Some(_permit) = thumbnail_manager.acquire_blocking(max_threads)
+                            else {
+                                return;
+                            };
+                            if let Some(pixbuf) =
+                                crate::utils::media::decode_to_pixbuf(&path_clone, 256)
                             {
                                 let _ = sender.send(crate::model::AppMsg::FileIconTextureReady {
                                     path: path_clone,

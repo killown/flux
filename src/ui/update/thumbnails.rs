@@ -8,11 +8,13 @@ pub(super) fn handle(
 ) -> Result<(), AppMsg> {
     match msg {
         AppMsg::FileIconTextureReady { path, texture } => {
+            crate::hit!("handle_file_icon_texture_ready");
             crate::utils::icon::insert_cached_file_icon_texture(&path, texture);
             let files = &mut app.tabs[app.active_tab_index].files;
             for i in 0..files.len() {
                 if files.get(i).is_some_and(|w| w.borrow().path == path) {
                     if let Some(w) = files.get(i) {
+                        crate::hit!("rebind_grid_item");
                         let item = w.borrow().clone();
                         files.remove(i);
                         files.insert(i, item);

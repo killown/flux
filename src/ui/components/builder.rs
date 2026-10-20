@@ -38,6 +38,10 @@ impl FileItem {
             show_empty_dir_emblem: false,
             disable_drag_and_drop: false,
             thumb_hook: None,
+            thumbnail_manager: std::sync::Arc::new(
+                crate::services::thumbnails::ThumbnailTaskManager::default(),
+            ),
+            thumbnail_threads: 4,
         }
     }
 }
@@ -74,6 +78,8 @@ pub struct FileItemBuilder {
     show_empty_dir_emblem: bool,
     disable_drag_and_drop: bool,
     thumb_hook: Option<ThumbHook>,
+    thumbnail_manager: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+    thumbnail_threads: usize,
 }
 
 #[allow(dead_code, clippy::wrong_self_convention)]
@@ -213,6 +219,19 @@ impl FileItemBuilder {
         self
     }
 
+    pub fn thumbnail_manager(
+        mut self,
+        v: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+    ) -> Self {
+        self.thumbnail_manager = v;
+        self
+    }
+
+    pub fn thumbnail_threads(mut self, v: usize) -> Self {
+        self.thumbnail_threads = v;
+        self
+    }
+
     pub fn build(self) -> FileItem {
         FileItem {
             name: self.name,
@@ -247,6 +266,8 @@ impl FileItemBuilder {
             show_empty_dir_emblem: self.show_empty_dir_emblem,
             disable_drag_and_drop: self.disable_drag_and_drop,
             thumb_hook: self.thumb_hook,
+            thumbnail_manager: self.thumbnail_manager,
+            thumbnail_threads: self.thumbnail_threads,
         }
     }
 }

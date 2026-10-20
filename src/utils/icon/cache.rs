@@ -23,6 +23,7 @@ pub fn invalidate_themed_icon_cache() {
 
 /// Returns a cached texture if present, without decoding.
 pub fn peek_cached_file_icon_texture(path: &Path) -> Option<gtk::gdk::Texture> {
+    crate::hit!("peek_cached_file_icon_texture");
     let mtime = std::fs::metadata(path)
         .ok()?
         .modified()

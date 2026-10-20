@@ -91,4 +91,6 @@ pub struct FileItem {
     pub disable_drag_and_drop: bool,
     /// Lazy-thumbnail callback, see [`ThumbHook`].
     pub thumb_hook: Option<ThumbHook>,
+    pub thumbnail_manager: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+    pub thumbnail_threads: usize,
 }

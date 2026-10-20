@@ -27,7 +27,7 @@ fn decode_svg_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf
 }
 
 /// Decodes any supported image into an RGBA pixbuf scaled to fit `target_size`.
-fn decode_to_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf> {
+pub(crate) fn decode_to_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf> {
     if is_svg(path) {
         return decode_svg_pixbuf(path, target_size);
     }

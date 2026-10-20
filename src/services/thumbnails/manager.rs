@@ -21,6 +21,18 @@ impl ThumbnailTaskManager {
             .clone()
     }
 
+    /// Blocking acquire for use from `spawn_blocking` closures.
+    /// Returns `None` if the semaphore is closed (shutdown).
+    pub fn acquire_blocking(
+        &self,
+        max_threads: usize,
+    ) -> Option<tokio::sync::OwnedSemaphorePermit> {
+        let sem = self.get_semaphore(max_threads);
+        tokio::runtime::Handle::try_current()
+            .ok()
+            .and_then(|h| h.block_on(sem.acquire_owned()).ok())
+    }
+
     /// Cancels tasks for grid indices that are no longer within the visible viewport bounds.
     /// Returns the list of cancelled indices so caller can evict them from pending tracking.
     pub fn cancel_out_of_viewport(&self, visible_start: u32, visible_end: u32) -> Vec<u32> {
