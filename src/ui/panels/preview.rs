@@ -394,8 +394,12 @@ pub(crate) struct State {
     /// Guards `mime_filter_btn` against re-entrant `connect_toggled` while
     /// its active state is being pushed from `FluxApp`.
     mime_filter_suppress: Cell<bool>,
-    /// Lazy image thumbnails of the folder grid.
+    /// Lazy image and video thumbnails of the folder grid.
     folder_thumbs: FolderThumbs,
+    /// Current icon size of the folder grid cells (Ctrl+scroll changes it).
+    folder_icon_size: Cell<i32>,
+    /// Entries of the folder shown, kept so a zoom can refill the grid.
+    folder_entries: RefCell<Vec<FolderEntry>>,
     /// Bumped whenever the folder grid is refilled or released, a chunked fill
     /// still in progress stops when it no longer matches.
     fill_gen: Cell<u64>,
@@ -922,6 +926,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .vexpand(true)
         .hexpand(true)
         .build();
+    attach_folder_zoom_scroll(&folder_scroller);
     stack.add_named(&folder_scroller, Some("folder"));
 
     stack.set_visible_child_name("empty");
@@ -1202,6 +1207,8 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             md_cache: RefCell::new(None),
             mime_filter_suppress: Cell::new(false),
             folder_thumbs,
+            folder_icon_size: Cell::new(FOLDER_GRID_ICON_SIZE),
+            folder_entries: RefCell::new(Vec::new()),
             fill_gen: Cell::new(0),
             playlist: Cell::new(false),
             playlist_skip_until: Cell::new(0),
@@ -1385,7 +1392,9 @@ impl PreviewPanelHandle {
         // Image thumbnails load lazily as cells bind, `None` when switched off.
         let hook = st.folder_thumbs.begin(&cfg);
 
+        *st.folder_entries.borrow_mut() = entries.to_vec();
         let fill = Rc::new(FolderFill {
+            icon_size: st.folder_icon_size.get(),
             entries: entries.to_vec(),
             cfg,
             hook,
@@ -1435,7 +1444,7 @@ impl PreviewPanelHandle {
                     .is_dir(e.is_dir)
                     .size(e.size)
                     .mtime(e.mtime)
-                    .icon_size(FOLDER_GRID_ICON_SIZE)
+                    .icon_size(fill.icon_size)
                     .grid_idx(idx)
                     .max_width_chars(cfg.ui.max_width_chars)
                     .grid_spacing(cfg.ui.grid_spacing)
@@ -1448,6 +1457,48 @@ impl PreviewPanelHandle {
             );
         }
         fill.next.set(end);
+    }
+
+    /// Steps the folder grid icon size up or down and refills the grid, keeping the scroll position.
+    fn zoom_folder_grid(&self, bigger: bool) {
+        let st = &self.state;
+        let old = st.folder_icon_size.get();
+        let sizes: Vec<i32> = crate::ui::constants::CRISP_ICON_SIZES
+            .iter()
+            .copied()
+            .filter(|s| (FOLDER_GRID_MIN_ICON..=FOLDER_GRID_MAX_ICON).contains(s))
+            .collect();
+        let idx = sizes
+            .iter()
+            .position(|&s| s >= old)
+            .unwrap_or(sizes.len() - 1);
+        let new = if bigger {
+            sizes[(idx + 1).min(sizes.len() - 1)]
+        } else {
+            sizes[idx.saturating_sub(1)]
+        };
+        if new == old || st.folder_entries.borrow().is_empty() {
+            return;
+        }
+        st.folder_icon_size.set(new);
+
+        let scroller = self
+            .stack
+            .child_by_name("folder")
+            .and_then(|w| w.downcast::<gtk::ScrolledWindow>().ok());
+        let adj = scroller.map(|sw| sw.vadjustment());
+        let scaled = adj
+            .as_ref()
+            .map(|a| a.value() * f64::from(new) / f64::from(old));
+
+        let entries = st.folder_entries.borrow().clone();
+        self.fill_folder_grid(&entries);
+
+        if let (Some(adj), Some(value)) = (adj, scaled) {
+            gtk::glib::timeout_add_local_once(Duration::from_millis(60), move || {
+                adj.set_value(value.min((adj.upper() - adj.page_size()).max(0.0)));
+            });
+        }
     }
 
     /// Focuses the folder grid and selects its first item when nothing is selected.
@@ -2390,8 +2441,11 @@ fn double_click_reserved(widget: &gtk::Widget) -> bool {
     false
 }
 
-/// Icon size of the folder grid cells.
-const FOLDER_GRID_ICON_SIZE: i32 = 64;
+/// Default icon size of the folder grid cells.
+const FOLDER_GRID_ICON_SIZE: i32 = 96;
+/// Smallest and largest icon size Ctrl+scroll can reach in the folder grid.
+const FOLDER_GRID_MIN_ICON: i32 = 32;
+const FOLDER_GRID_MAX_ICON: i32 = 256;
 /// Time spent creating cells synchronously when a folder is shown (fills the viewport).
 const FOLDER_FIRST_BUDGET: Duration = Duration::from_millis(16);
 /// Time spent creating cells per idle callback afterwards, well under one frame.
@@ -2399,6 +2453,7 @@ const FOLDER_CHUNK_BUDGET: Duration = Duration::from_millis(6);
 
 /// A folder grid fill in progress, see `fill_folder_grid`.
 struct FolderFill {
+    icon_size: i32,
     entries: Vec<FolderEntry>,
     cfg: crate::model::Config,
     hook: Option<crate::ui::ThumbHook>,
@@ -2552,6 +2607,22 @@ fn attach_zoom_scroll(sw: &gtk::ScrolledWindow) {
             return glib::Propagation::Proceed;
         }
         preview_registry::with(|h| h.zoom_by(if dy < 0.0 { ZOOM_STEP } else { 1.0 / ZOOM_STEP }));
+        glib::Propagation::Stop
+    });
+    sw.add_controller(ctl);
+}
+
+fn attach_folder_zoom_scroll(sw: &gtk::ScrolledWindow) {
+    let ctl = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
+    ctl.set_propagation_phase(gtk::PropagationPhase::Capture);
+    ctl.connect_scroll(|c, _dx, dy| {
+        if !c
+            .current_event_state()
+            .contains(gtk::gdk::ModifierType::CONTROL_MASK)
+        {
+            return glib::Propagation::Proceed;
+        }
+        preview_registry::with(|h| h.zoom_folder_grid(dy < 0.0));
         glib::Propagation::Stop
     });
     sw.add_controller(ctl);

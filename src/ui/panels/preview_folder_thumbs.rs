@@ -10,12 +10,12 @@
 //! * **Cancellation**: each request gets its own cancel flag (set when the cell
 //!   scrolls away) plus a generation token (bumped whenever the grid is refilled or
 //!   released). Stale workers just drop their result and never touch the UI.
-//! * **Images only**: no video, audio, PDF or font thumbnails here (those need ffmpeg
-//!   and friends).
+//! * **Images and videos**: video frames come from ffmpeg, for plain folders and
+//!   `archive://` entries alike. No audio, PDF or font thumbnails here.
 //! * **Disk cache**: loads go through `utils::media::get_or_create_thumbnail`, the same
 //!   XDG cache the main grid uses, so revisiting a folder is a cache hit.
 //! * **Switch**: `ui.folder_grid_thumbnails` (on by default), also gated by the global
-//!   `show_thumbnails` and `thumbnail_types.images`.
+//!   `show_thumbnails` and `thumbnail_types.images` / `thumbnail_types.videos`.
 
 use crate::model::Config;
 use crate::ui::{FileItem, ThumbEvent, ThumbHook};
@@ -51,6 +51,10 @@ struct Inner {
     grid: Weak<RefCell<TypedGridView<FileItem, gtk::MultiSelection>>>,
     /// False while the grid is empty/released or the feature is switched off.
     enabled: Cell<bool>,
+    /// Whether image cells get thumbnails (`thumbnail_types.images`).
+    images: Cell<bool>,
+    /// Whether video cells get thumbnails (`thumbnail_types.videos`).
+    videos: Cell<bool>,
     /// Bumped on every refill and release, workers check against it.
     generation: Arc<AtomicU64>,
     /// Bound cells we haven't handed to a worker yet.
@@ -78,6 +82,8 @@ impl FolderThumbs {
         let inner = Rc::new(Inner {
             grid: Rc::downgrade(grid),
             enabled: Cell::new(false),
+            images: Cell::new(false),
+            videos: Cell::new(false),
             generation: Arc::new(AtomicU64::new(0)),
             waiting: RefCell::new(HashMap::new()),
             requested: RefCell::new(HashSet::new()),
@@ -111,13 +117,16 @@ impl FolderThumbs {
     pub(crate) fn begin(&self, cfg: &Config) -> Option<ThumbHook> {
         self.0.cancel_all();
 
+        let types = &cfg.ui.thumbnail_types;
         let on = cfg.ui.folder_grid_thumbnails
             && cfg.ui.show_thumbnails
-            && cfg.ui.thumbnail_types.images;
+            && (types.images || types.videos);
         if !on {
             return None;
         }
 
+        self.0.images.set(types.images);
+        self.0.videos.set(types.videos);
         self.0.enabled.set(true);
         *self.0.permits.borrow_mut() = Arc::new(Semaphore::new(
             cfg.ui.thumbnail_threads.clamp(1, MAX_PARALLEL),
@@ -132,9 +141,10 @@ impl FolderThumbs {
     }
 }
 
-/// Only plain images for now, ffmpeg-backed kinds (video, audio) can come later.
-fn wants_thumbnail(path: &Path) -> bool {
-    crate::utils::media::is_visual_media(path).0
+/// Images and videos, each gated by its own `thumbnail_types` switch.
+fn wants_thumbnail(path: &Path, images: bool, videos: bool) -> bool {
+    let (is_img, is_vid) = crate::utils::media::is_visual_media(path);
+    (is_img && images) || (is_vid && videos)
 }
 
 impl Inner {
@@ -159,7 +169,7 @@ impl Inner {
                 if self.requested.borrow().contains(&idx) {
                     return;
                 }
-                if !wants_thumbnail(&path) {
+                if !wants_thumbnail(&path, self.images.get(), self.videos.get()) {
                     // Remember the verdict so recycled cells skip the check.
                     self.requested.borrow_mut().insert(idx);
                     return;
