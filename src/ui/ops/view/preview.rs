@@ -76,6 +76,7 @@ impl FluxApp {
         }
 
         self.stop_preview_media();
+        let _ = preview_registry::with(|h| h.reset_mute());
         let _ = preview_registry::with(|h| h.release_folder_grid());
         self.exit_wide_preview();
         self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);

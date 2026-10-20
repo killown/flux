@@ -31,7 +31,7 @@ use std::ops::Range;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, Ordering};
 use std::sync::Mutex;
 use std::time::Duration;
 
@@ -148,6 +148,8 @@ static AUDIO_ACTIVE: AtomicU64 = AtomicU64::new(0);
 static AUDIO_IPC: Mutex<Option<UnixStream>> = Mutex::new(None);
 /// Monotonic time (µs) until which `time-pos` updates must not move the seek bar.
 static AUDIO_SEEK_HOLD: AtomicI64 = AtomicI64::new(0);
+/// Mute toggle of the header button, applies to video and audio, reset when the panel closes.
+static PREVIEW_MUTED: AtomicBool = AtomicBool::new(false);
 
 /// Scalar value of an mpv `property-change` event.
 #[derive(Clone, Copy, PartialEq)]
@@ -295,12 +297,16 @@ fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
     cmd.args([
         "--no-video",
         "--no-terminal",
-        "--no-mute",
         "--audio-device=auto",
         "--ao=pipewire,pulse,alsa",
         "--msg-level=all=warn",
         "--keep-open=yes",
     ])
+    .arg(if PREVIEW_MUTED.load(Ordering::SeqCst) {
+        "--mute=yes"
+    } else {
+        "--no-mute"
+    })
     .arg(format!("--input-ipc-server={}", sock.display()))
     .arg("--")
     .arg(path)
@@ -422,6 +428,7 @@ pub struct PreviewPanelHandle {
     pub(crate) md_source_btn: gtk::ToggleButton,
     pub(crate) wide_btn: gtk::ToggleButton,
     pub(crate) fullscreen_btn: gtk::Button,
+    pub(crate) mute_btn: gtk::ToggleButton,
     pub(crate) header: gtk::Box,
     pub(crate) folder_grid: Rc<RefCell<TypedGridView<FileItem, gtk::MultiSelection>>>,
     pub(crate) mime_filter_btn: gtk::ToggleButton,
@@ -634,6 +641,14 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         &first_available_icon(&["view-fullscreen-symbolic", "zoom-fit-best-symbolic"]),
         &tr("Full screen"),
     );
+
+    // Only shown while a video or audio file is previewed (see `apply`).
+    let mute_btn = gtk::ToggleButton::builder()
+        .icon_name("audio-volume-high-symbolic")
+        .tooltip_text(tr("Mute media (until the preview is closed)"))
+        .css_classes(["flat"])
+        .visible(false)
+        .build();
 
     let mime_filter_btn = gtk::ToggleButton::builder()
         .icon_name("system-search-symbolic")
@@ -995,6 +1010,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         zoom_btn.clone().upcast(),
         zoom_in.clone().upcast(),
         playlist_btn.clone().upcast(),
+        mute_btn.clone().upcast(),
         wide_btn.clone().upcast(),
         fullscreen_btn.clone().upcast(),
         mime_filter_btn.clone().upcast(),
@@ -1033,6 +1049,15 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             s.input(AppMsg::FilterBySelectedMime);
         });
     }
+    mute_btn.connect_toggled(|b| {
+        PREVIEW_MUTED.store(b.is_active(), Ordering::SeqCst);
+        b.set_icon_name(if b.is_active() {
+            "audio-volume-muted-symbolic"
+        } else {
+            "audio-volume-high-symbolic"
+        });
+        preview_registry::with(|h| h.apply_mute());
+    });
     playlist_btn.connect_toggled(move |b| {
         b.set_icon_name(if b.is_active() {
             &playlist_icon_on
@@ -1157,6 +1182,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         md_source_btn: md_source_btn.clone(),
         wide_btn: wide_btn.clone(),
         fullscreen_btn: fullscreen_btn.clone(),
+        mute_btn: mute_btn.clone(),
         header,
         folder_grid,
         mime_filter_btn: mime_filter_btn.clone(),
@@ -1585,11 +1611,13 @@ impl PreviewPanelHandle {
         match content {
             PreviewContent::Media { .. } => {
                 self.playlist_btn.set_visible(true);
+                self.mute_btn.set_visible(true);
                 st.playlist_skip_until.set(0);
             }
             PreviewContent::Loading => {}
             _ => {
                 self.playlist_btn.set_visible(false);
+                self.mute_btn.set_visible(false);
                 // Reached by a playlist auto-advance: not playable, move on to the next item.
                 if st.playlist.get() && glib::monotonic_time() < st.playlist_skip_until.get() {
                     self.playlist_advance();
@@ -1785,6 +1813,7 @@ impl PreviewPanelHandle {
                         m.set_muted(false);
                         m.set_volume(0.99);
                         m.set_volume(1.0);
+                        m.set_muted(PREVIEW_MUTED.load(Ordering::SeqCst));
                     }
                     mf.connect_prepared_notify(|m| {
                         if m.is_prepared() {
@@ -2088,6 +2117,22 @@ impl PreviewPanelHandle {
             stop_audio_mpv();
             self.audio_reset_controls();
             self.audio_status.set_label(&tr("Stopped."));
+        }
+    }
+
+    /// Pushes the mute state to the playing video and the mpv instance.
+    fn apply_mute(&self) {
+        let muted = PREVIEW_MUTED.load(Ordering::SeqCst);
+        if let Some(mf) = self.state.media.borrow().as_ref() {
+            mf.set_muted(muted);
+        }
+        ipc_send(&format!(r#"{{"command":["set_property","mute",{muted}]}}"#));
+    }
+
+    /// Unmutes, called when the preview panel closes.
+    pub fn reset_mute(&self) {
+        if self.mute_btn.is_active() {
+            self.mute_btn.set_active(false);
         }
     }
 
