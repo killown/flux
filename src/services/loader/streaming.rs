@@ -163,6 +163,7 @@ impl FluxApp {
                 &self.config.ui.hidden_extensions,
             );
 
+            let labels = item.labels().clone();
             let file_item = FileItem::builder(item.display_name, item.target_path, icon)
                 .display_label(display_label)
                 .is_dir(item.is_dir)
@@ -190,6 +191,7 @@ impl FluxApp {
                 .default_icon_size(self.config.ui.default_icon_size)
                 .show_empty_dir_emblem(self.config.ui.show_empty_dir_emblem)
                 .disable_drag_and_drop(self.config.ui.disable_drag_and_drop)
+                .labels(labels)
                 .build();
 
             self.tabs[self.active_tab_index].files.append(file_item);
