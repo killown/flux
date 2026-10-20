@@ -284,32 +284,43 @@ impl FluxApp {
         };
 
         if self.config.ui.auto_show_diff && self.is_in_git_repo {
-            let mut diff_triggered = false;
+            // Don't auto-show the diff panel if the user already has a different
+            // right panel open.
+            let other_panel_open = self.preview_panel_visible
+                || self.tag_panel_visible
+                || self.search_panel_visible
+                || self.location_panel_visible
+                || self.connect_panel_visible
+                || self.actions_panel_visible;
 
-            if let Some(item) = single_item.as_ref() {
-                if !item.is_dir {
-                    let target_path = &item.path;
-                    let has_diff = self
-                        .git_status_map
-                        .get(target_path)
-                        .or_else(|| {
-                            let canon = target_path.canonicalize().ok()?;
-                            self.git_status_map.get(&canon)
-                        })
-                        .is_some_and(|&s| {
-                            s != crate::services::git::GitFileStatus::None
-                                && s != crate::services::git::GitFileStatus::Ignored
-                        });
+            if !other_panel_open {
+                let mut diff_triggered = false;
 
-                    if has_diff {
-                        diff_triggered = true;
-                        sender.input(AppMsg::ShowFileDiff(target_path.clone()));
+                if let Some(item) = single_item.as_ref() {
+                    if !item.is_dir {
+                        let target_path = &item.path;
+                        let has_diff = self
+                            .git_status_map
+                            .get(target_path)
+                            .or_else(|| {
+                                let canon = target_path.canonicalize().ok()?;
+                                self.git_status_map.get(&canon)
+                            })
+                            .is_some_and(|&s| {
+                                s != crate::services::git::GitFileStatus::None
+                                    && s != crate::services::git::GitFileStatus::Ignored
+                            });
+
+                        if has_diff {
+                            diff_triggered = true;
+                            sender.input(AppMsg::ShowFileDiff(target_path.clone()));
+                        }
                     }
                 }
-            }
 
-            if !diff_triggered && self.diff_panel_visible {
-                self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+                if !diff_triggered && self.diff_panel_visible {
+                    self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+                }
             }
         }
 
