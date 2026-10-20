@@ -49,12 +49,20 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         {
             let s = sender.clone();
             edit_btn.connect_clicked(move |btn| {
-                let Some(path) = actions_registry::template_path() else {
-                    s.input(AppMsg::ShowToast(
-                        tr("No template for this type").to_string(),
-                    ));
-                    return;
-                };
+                let mime = actions_registry::mime();
+                // Mirror append_secondary_action's target selection.
+                let base_dir = dirs::config_dir()
+                    .unwrap_or_else(|| PathBuf::from("~/.config"))
+                    .join("flux");
+                let menus_dir = base_dir.join("menus");
+                let filename =
+                    crate::ui::menu::secondary::secondary_template_filename(&mime, false);
+                let path = [&menus_dir, &base_dir]
+                    .into_iter()
+                    .map(|d| d.join(&filename))
+                    .find(|p| p.is_file())
+                    .unwrap_or_else(|| menus_dir.join(&filename));
+
                 let parent = btn.root().and_downcast::<gtk::Window>();
                 crate::ui::dialog::template_editor::show_template_editor(
                     parent.as_ref(),

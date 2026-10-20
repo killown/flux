@@ -48,8 +48,3 @@ pub(crate) fn mime() -> String {
 pub(crate) fn set_template_path(path: Option<PathBuf>) {
     TEMPLATE_PATH.with(|p| *p.borrow_mut() = path);
 }
-
-/// The template file the panel is currently showing actions from, if any.
-pub(crate) fn template_path() -> Option<PathBuf> {
-    TEMPLATE_PATH.with(|p| p.borrow().clone())
-}
