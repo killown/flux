@@ -9,5 +9,5 @@ mod setup;
 mod sidebar;
 mod widgets;
 
-pub use file_item::FileItem;
+pub use file_item::{FileItem, ThumbEvent, ThumbHook};
 pub use sidebar::{SidebarMsg, SidebarPlace};

@@ -892,6 +892,8 @@ pub enum AppMsg {
     TogglePreviewFullscreen,
     /// Leaves full-screen preview if it is active (sent on Esc), no-op otherwise.
     ExitPreviewFullscreen,
+    /// Moves keyboard focus between the main grid and the folder grid in the preview panel.
+    TogglePreviewGridFocus,
     /// Toggles the global thumbnail generation setting.
     ///
     /// When disabled, no thumbnails are generated for any file type, improving

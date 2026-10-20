@@ -134,6 +134,7 @@ pub fn setup_capture(
                     return glib::Propagation::Proceed;
                 }
                 sender.input(AppMsg::NextExclusive);
+                sender.input(AppMsg::TogglePreviewGridFocus);
                 glib::Propagation::Stop
             }
             gdk::Key::z if is_ctrl => {

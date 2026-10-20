@@ -189,6 +189,7 @@ path = "actions://"
                     preview_syntax_highlighting: true,
                     wide_preview: false,
                     archive_thumbnail_cache: false,
+                    folder_grid_thumbnails: true,
                     preview_panel_width: 400,
                     diff_editor: "nvim".to_string(),
                     ui_scale: 1.0,

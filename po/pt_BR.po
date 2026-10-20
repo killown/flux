@@ -1827,6 +1827,10 @@ msgstr "Tela cheia"
 msgid "Exit full screen (Esc)"
 msgstr "Sair da tela cheia (Esc)"
 
+#: src/ui/panels/preview.rs
+msgid "Folder truncated - showing the first items only."
+msgstr "Pasta truncada - mostrando só os primeiros itens."
+
 #: src/ui/panels/preview.rs:614
 msgid "No preview"
 msgstr "Sem pré-visualização"

@@ -1,4 +1,4 @@
-use super::file_item::FileItem;
+use super::file_item::{FileItem, ThumbHook};
 use crate::services::git::GitFileStatus;
 use adw::gdk;
 use std::cell::RefCell;
@@ -37,6 +37,7 @@ impl FileItem {
             default_icon_size: 96,
             show_empty_dir_emblem: false,
             disable_drag_and_drop: false,
+            thumb_hook: None,
         }
     }
 }
@@ -72,6 +73,7 @@ pub struct FileItemBuilder {
     default_icon_size: i32,
     show_empty_dir_emblem: bool,
     disable_drag_and_drop: bool,
+    thumb_hook: Option<ThumbHook>,
 }
 
 #[allow(dead_code, clippy::wrong_self_convention)]
@@ -206,6 +208,11 @@ impl FileItemBuilder {
         self
     }
 
+    pub fn thumb_hook(mut self, v: Option<ThumbHook>) -> Self {
+        self.thumb_hook = v;
+        self
+    }
+
     pub fn build(self) -> FileItem {
         FileItem {
             name: self.name,
@@ -239,6 +246,7 @@ impl FileItemBuilder {
             default_icon_size: self.default_icon_size,
             show_empty_dir_emblem: self.show_empty_dir_emblem,
             disable_drag_and_drop: self.disable_drag_and_drop,
+            thumb_hook: self.thumb_hook,
         }
     }
 }

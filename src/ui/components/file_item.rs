@@ -4,6 +4,33 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+/// What a grid cell reports to a [`ThumbHook`].
+#[derive(Debug)]
+pub enum ThumbEvent {
+    /// A cell bound this item and it has no thumbnail yet.
+    Bound {
+        idx: u32,
+        path: PathBuf,
+        /// The cell's image, so a finished thumbnail can be painted in place.
+        icon: gtk::Image,
+    },
+    /// The cell that showed this item was released or recycled.
+    Unbound { idx: u32 },
+}
+
+/// Optional callback a grid owner installs to load thumbnails lazily, as cells bind.
+///
+/// Only the folder grid in the peek-preview panel sets one. The main grid has its own
+/// scroll-driven pipeline and leaves this `None`.
+#[derive(Clone)]
+pub struct ThumbHook(pub Rc<dyn Fn(ThumbEvent)>);
+
+impl std::fmt::Debug for ThumbHook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ThumbHook")
+    }
+}
+
 /// Data model representing a file or directory entry in the application grid.
 #[derive(Debug, Clone)]
 pub struct FileItem {
@@ -62,4 +89,6 @@ pub struct FileItem {
     pub default_icon_size: i32,
     pub show_empty_dir_emblem: bool,
     pub disable_drag_and_drop: bool,
+    /// Lazy-thumbnail callback, see [`ThumbHook`].
+    pub thumb_hook: Option<ThumbHook>,
 }

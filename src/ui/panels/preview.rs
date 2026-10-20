@@ -10,6 +10,7 @@
 //! process on mislabeled containers, while mpv routes through FFmpeg.
 
 use super::header::panel_header;
+use super::preview_folder_thumbs::FolderThumbs;
 use super::preview_gutter::LineNumberGutter;
 use super::preview_markdown::{MdStyle, StyledRange};
 use super::preview_registry;
@@ -19,7 +20,9 @@ use super::resize::resizable_panel;
 use super::spec::PanelSpec;
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
+use crate::ui::FileItem;
 use adw::prelude::*;
+use relm4::typed_view::grid::TypedGridView;
 use relm4::AsyncComponentSender;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -42,6 +45,16 @@ pub struct FileInfo {
     pub size: u64,
     pub mtime: i64,
     pub extra: Vec<(String, String)>,
+}
+
+/// One entry of the folder grid shown for a directory.
+#[derive(Debug, Clone)]
+pub struct FolderEntry {
+    pub name: String,
+    pub path: PathBuf,
+    pub is_dir: bool,
+    pub size: u64,
+    pub mtime: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -76,6 +89,11 @@ pub enum PreviewContent {
     },
     Listing {
         rows: Vec<(String, String)>,
+        more: usize,
+        info: FileInfo,
+    },
+    Folder {
+        entries: Vec<FolderEntry>,
         more: usize,
         info: FileInfo,
     },
@@ -381,6 +399,11 @@ pub(crate) struct State {
     /// Guards `mime_filter_btn` against re-entrant `connect_toggled` while
     /// its active state is being pushed from `FluxApp`.
     mime_filter_suppress: Cell<bool>,
+    /// Lazy image thumbnails of the folder grid.
+    folder_thumbs: FolderThumbs,
+    /// Bumped whenever the folder grid is refilled or released, a chunked fill
+    /// still in progress stops when it no longer matches.
+    fill_gen: Cell<u64>,
     /// Playlist mode: when the playing video/audio ends, step to the next item.
     playlist: Cell<bool>,
     /// Monotonic time (µs) until which non-media items are skipped after an auto-advance.
@@ -401,6 +424,7 @@ pub struct PreviewPanelHandle {
     pub(crate) wide_btn: gtk::ToggleButton,
     pub(crate) fullscreen_btn: gtk::Button,
     pub(crate) header: gtk::Box,
+    pub(crate) folder_grid: Rc<RefCell<TypedGridView<FileItem, gtk::MultiSelection>>>,
     pub(crate) mime_filter_btn: gtk::ToggleButton,
     pub(crate) playlist_btn: gtk::ToggleButton,
     pub(crate) install_font_btn: gtk::Button,
@@ -890,6 +914,17 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .build();
     stack.add_named(&meta_scroller, Some("meta"));
 
+    let folder_grid = build_folder_grid(&sender);
+    let folder_thumbs = FolderThumbs::new(&folder_grid);
+    let folder_view = folder_grid.borrow().view.clone();
+    let folder_scroller = gtk::ScrolledWindow::builder()
+        .child(&folder_view)
+        .hscrollbar_policy(gtk::PolicyType::Never)
+        .vexpand(true)
+        .hexpand(true)
+        .build();
+    stack.add_named(&folder_scroller, Some("folder"));
+
     stack.set_visible_child_name("empty");
 
     // Placeholder, never inserted anywhere, so calls to `footer.set_visible`
@@ -1115,6 +1150,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         wide_btn: wide_btn.clone(),
         fullscreen_btn: fullscreen_btn.clone(),
         header,
+        folder_grid,
         mime_filter_btn: mime_filter_btn.clone(),
         playlist_btn: playlist_btn.clone(),
         install_font_btn: install_font_btn.clone(),
@@ -1162,6 +1198,8 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             syntax_tags: RefCell::new(Vec::new()),
             md_cache: RefCell::new(None),
             mime_filter_suppress: Cell::new(false),
+            folder_thumbs,
+            fill_gen: Cell::new(0),
             playlist: Cell::new(false),
             playlist_skip_until: Cell::new(0),
         }),
@@ -1318,6 +1356,123 @@ impl PreviewPanelHandle {
         }));
     }
 
+    /// Empties the folder grid and cancels its thumbnail loads, so nothing of a folder
+    /// the preview has left stays in memory or keeps a worker busy.
+    pub(crate) fn release_folder_grid(&self) {
+        self.state.fill_gen.set(self.state.fill_gen.get() + 1);
+        self.state.folder_thumbs.stop();
+        let mut grid = self.folder_grid.borrow_mut();
+        if !grid.is_empty() {
+            grid.clear();
+        }
+    }
+
+    /// Replaces the folder grid contents with `entries`.
+    ///
+    /// Building a cell costs an icon lookup, so thousands of them in one go would freeze
+    /// the panel. The first chunk fills the viewport right away, the rest is added between
+    /// frames and abandoned as soon as the preview moves on to something else.
+    fn fill_folder_grid(&self, entries: &[FolderEntry]) {
+        let cfg = crate::utils::load_config();
+        let st = &self.state;
+        let fill_gen = st.fill_gen.get() + 1;
+        st.fill_gen.set(fill_gen);
+        st.folder_thumbs.stop();
+        self.folder_grid.borrow_mut().clear();
+        // Image thumbnails load lazily as cells bind, `None` when switched off.
+        let hook = st.folder_thumbs.begin(&cfg);
+
+        let fill = Rc::new(FolderFill {
+            entries: entries.to_vec(),
+            cfg,
+            hook,
+            next: Cell::new(0),
+        });
+        self.append_folder_chunk(&fill, FOLDER_FIRST_BUDGET);
+        if fill.next.get() >= fill.entries.len() {
+            return;
+        }
+
+        let h = self.clone();
+        gtk::glib::idle_add_local(move || {
+            if h.state.fill_gen.get() != fill_gen {
+                return gtk::glib::ControlFlow::Break;
+            }
+            h.append_folder_chunk(&fill, FOLDER_CHUNK_BUDGET);
+            if fill.next.get() >= fill.entries.len() {
+                gtk::glib::ControlFlow::Break
+            } else {
+                gtk::glib::ControlFlow::Continue
+            }
+        });
+    }
+
+    /// Appends entries of `fill` to the folder grid until `budget` is used up
+    /// (at least one), so a chunk never holds the main loop for a whole frame.
+    fn append_folder_chunk(&self, fill: &FolderFill, budget: Duration) {
+        let began = std::time::Instant::now();
+        let start = fill.next.get();
+        let cfg = &fill.cfg;
+        let mut grid = self.folder_grid.borrow_mut();
+        let mut end = start;
+        for (idx, e) in (start as u32..).zip(&fill.entries[start..]) {
+            if end > start && began.elapsed() >= budget {
+                break;
+            }
+            end += 1;
+            let icon = crate::utils::icon::get_icon_for_path(&e.path, e.is_dir);
+            let label = crate::utils::helpers::format_display_label(
+                &e.name,
+                e.is_dir,
+                &cfg.ui.hidden_extensions,
+            );
+            grid.append(
+                FileItem::builder(e.name.clone(), e.path.clone(), icon)
+                    .display_label(label)
+                    .is_dir(e.is_dir)
+                    .size(e.size)
+                    .mtime(e.mtime)
+                    .icon_size(FOLDER_GRID_ICON_SIZE)
+                    .grid_idx(idx)
+                    .max_width_chars(cfg.ui.max_width_chars)
+                    .grid_spacing(cfg.ui.grid_spacing)
+                    .show_symlink_emblem(cfg.ui.show_symlink_emblem)
+                    .scale_font_with_icons(cfg.ui.scale_font_with_icons)
+                    .default_icon_size(cfg.ui.default_icon_size)
+                    .disable_drag_and_drop(true)
+                    .thumb_hook(fill.hook.clone())
+                    .build(),
+            );
+        }
+        fill.next.set(end);
+    }
+
+    /// Focuses the folder grid and selects its first item when nothing is selected.
+    pub fn focus_folder_grid(&self) -> bool {
+        if self.stack.visible_child_name().as_deref() != Some("folder") {
+            return false;
+        }
+        let view = self.folder_grid.borrow().view.clone();
+        if let Some(model) = view
+            .model()
+            .and_then(|m| m.downcast::<gtk::MultiSelection>().ok())
+        {
+            if model.n_items() > 0 && model.selection().is_empty() {
+                model.select_item(0, true);
+            }
+        }
+        view.grab_focus();
+        view.has_focus()
+    }
+
+    /// True when keyboard focus is inside the folder grid.
+    pub fn folder_grid_has_focus(&self) -> bool {
+        let view = self.folder_grid.borrow().view.clone();
+        view.root()
+            .and_then(|r| r.focus())
+            .is_some_and(|f| f == *view.upcast_ref::<gtk::Widget>() || f.is_ancestor(&view))
+    }
+
     /// Reflects the ephemeral MIME filter state on the header button without
     /// echoing `FilterBySelectedMime` back into `FluxApp`.
     pub fn set_mime_filter_active(&self, on: bool) {
@@ -1364,6 +1519,12 @@ impl PreviewPanelHandle {
         st.token.set(st.token.get() + 1);
         self.stop_media();
         self.banner.set_revealed(false);
+
+        // Leaving a folder (another file, `Loading` while arrowing, an error): free its
+        // grid and drop its thumbnail loads. A new folder refills the grid below.
+        if !matches!(content, PreviewContent::Folder { .. }) {
+            self.release_folder_grid();
+        }
 
         // The playlist toggle only makes sense for playable media. `Loading` keeps the
         // current state so the header does not flicker between consecutive tracks.
@@ -1549,6 +1710,22 @@ impl PreviewPanelHandle {
                     push_row(&self.meta_list, "…", &format!("+{more}"));
                 }
                 self.stack.set_visible_child_name("meta");
+            }
+
+            PreviewContent::Folder {
+                entries,
+                more,
+                info,
+            } => {
+                self.show_info(info);
+                self.set_mode(Mode::None);
+                self.fill_folder_grid(entries);
+                if *more > 0 {
+                    self.banner
+                        .set_title(&tr("Folder truncated - showing the first items only."));
+                    self.banner.set_revealed(true);
+                }
+                self.stack.set_visible_child_name("folder");
             }
 
             PreviewContent::Media {
@@ -2217,12 +2394,90 @@ fn double_click_reserved(widget: &gtk::Widget) -> bool {
             || w.is::<gtk::Range>()
             || w.is::<gtk::Scrollbar>()
             || w.is::<gtk::Editable>()
+            || w.is::<gtk::GridView>()
         {
             return true;
         }
         cur = w.parent();
     }
     false
+}
+
+/// Icon size of the folder grid cells.
+const FOLDER_GRID_ICON_SIZE: i32 = 64;
+/// Time spent creating cells synchronously when a folder is shown (fills the viewport).
+const FOLDER_FIRST_BUDGET: Duration = Duration::from_millis(16);
+/// Time spent creating cells per idle callback afterwards, well under one frame.
+const FOLDER_CHUNK_BUDGET: Duration = Duration::from_millis(6);
+
+/// A folder grid fill in progress, see `fill_folder_grid`.
+struct FolderFill {
+    entries: Vec<FolderEntry>,
+    cfg: crate::model::Config,
+    hook: Option<crate::ui::ThumbHook>,
+    next: Cell<usize>,
+}
+
+/// Builds the interactive grid shown when the selected item is a directory.
+fn build_folder_grid(
+    sender: &AsyncComponentSender<FluxApp>,
+) -> Rc<RefCell<TypedGridView<FileItem, gtk::MultiSelection>>> {
+    let single_click = crate::utils::load_config().ui.single_click;
+    let grid = Rc::new(RefCell::new(
+        TypedGridView::<FileItem, gtk::MultiSelection>::new(),
+    ));
+    let view = grid.borrow().view.clone();
+    view.set_enable_rubberband(true);
+    view.set_single_click_activate(single_click);
+    view.set_min_columns(1);
+    view.set_max_columns(20);
+    view.set_hexpand(true);
+    view.set_vexpand(true);
+
+    // Enter or click: folders open in the main grid, files open with the default app.
+    {
+        let weak = Rc::downgrade(&grid);
+        let s = sender.clone();
+        view.connect_activate(move |_, position| {
+            let Some(grid) = weak.upgrade() else {
+                return;
+            };
+            let target = grid.borrow().get(position).map(|w| {
+                let item = w.borrow();
+                (item.path.clone(), item.is_dir)
+            });
+            match target {
+                Some((path, true)) => s.input(AppMsg::Navigate(path)),
+                Some((path, false)) => FluxApp::open_file(path),
+                None => {}
+            }
+        });
+    }
+
+    // Esc hands the keyboard back to the main grid.
+    {
+        let s = sender.clone();
+        let keys = gtk::EventControllerKey::new();
+        keys.connect_key_pressed(move |_, key, _, _| {
+            if key == gtk::gdk::Key::Escape || key == gtk::gdk::Key::Tab {
+                s.input(AppMsg::TogglePreviewGridFocus);
+                return gtk::glib::Propagation::Stop;
+            }
+            glib::Propagation::Proceed
+        });
+        view.add_controller(keys);
+    }
+
+    // Read-only for now: the cell context menu acts on the main tab, so claim right-click here.
+    let block_menu = gtk::GestureClick::new();
+    block_menu.set_button(gtk::gdk::BUTTON_SECONDARY);
+    block_menu.set_propagation_phase(gtk::PropagationPhase::Capture);
+    block_menu.connect_pressed(|g, _, _, _| {
+        g.set_state(gtk::EventSequenceState::Claimed);
+    });
+    view.add_controller(block_menu);
+
+    grid
 }
 
 /// Caps an info list's width and centres it so wide panels keep it clear of the nav arrows.

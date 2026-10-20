@@ -223,6 +223,12 @@ pub struct UIConfig {
     /// When true, the peek-preview panel opens in wide mode (sidebar hidden, panel fills the rest).
     #[serde(default)]
     pub wide_preview: bool,
+    /// Show image thumbnails in the folder grid of the peek-preview panel.
+    ///
+    /// Loaded lazily for the visible cells only and cached on disk like the main grid.
+    /// Set to `false` on slow disks. Also needs `show_thumbnails` and `thumbnail_types.images`.
+    #[serde(default = "default_true")]
+    pub folder_grid_thumbnails: bool,
     /// When true, thumbnails of files inside zip archives are stored in a hidden
     /// `.flux-cache/` folder in the zip itself and read back on later visits.
     #[serde(default)]
@@ -301,6 +307,7 @@ impl Default for UIConfig {
             preview_syntax_highlighting: true,
             wide_preview: false,
             archive_thumbnail_cache: false,
+            folder_grid_thumbnails: true,
         }
     }
 }

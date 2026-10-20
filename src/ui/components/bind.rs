@@ -485,6 +485,11 @@ impl FileItem {
 
         if let Some(ref texture) = self.thumbnail {
             crate::hit!("bind_thumbnail_paint");
+            if self.thumb_hook.is_some() {
+                // A freshly created cell has no pixel size yet, and a thumbnail would
+                // paint at its natural size (up to 256px) instead of the grid's icon size.
+                widgets.icon_widget.set_pixel_size(self.icon_size);
+            }
             widgets.icon_widget.set_paintable(Some(texture));
         } else {
             crate::hit!("bind_icon_paint");
@@ -533,6 +538,17 @@ impl FileItem {
             }
         }
 
+        // Lazy thumbnails (folder grid): report cells that are showing a plain icon.
+        if let Some(hook) = &self.thumb_hook {
+            if self.thumbnail.is_none() && !self.is_dir {
+                (hook.0)(super::file_item::ThumbEvent::Bound {
+                    idx: self.grid_idx,
+                    path: self.path.clone(),
+                    icon: widgets.icon_widget.clone(),
+                });
+            }
+        }
+
         if self.disable_drag_and_drop {
             crate::hit!("bind_dnd_disabled");
             widgets
@@ -573,6 +589,9 @@ impl FileItem {
     /// recycled widget cell can request its own thumbnail without being suppressed.
     pub(super) fn unbind_widgets(&mut self, widgets: &mut FileWidgets, root: &mut gtk::Overlay) {
         crate::hit!("unbind");
+        if let Some(hook) = &self.thumb_hook {
+            (hook.0)(super::file_item::ThumbEvent::Unbound { idx: self.grid_idx });
+        }
         if let Some(stream) = widgets.video_widget.media_stream() {
             stream.pause();
 

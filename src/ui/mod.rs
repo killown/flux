@@ -34,7 +34,7 @@ mod properties;
 
 // --- 3. Public Re-exports ---
 // This allows main.rs to call `ui::FluxApp`
-pub use components::{FileItem, SidebarPlace};
+pub use components::{FileItem, SidebarPlace, ThumbEvent, ThumbHook};
 pub use help::HelpWindow;
 pub use properties::FileProperties;
 

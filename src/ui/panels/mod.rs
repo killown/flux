@@ -10,6 +10,7 @@ pub mod diff;
 pub mod header;
 pub mod preview;
 pub mod preview_binary;
+pub(crate) mod preview_folder_thumbs;
 pub mod preview_gutter;
 pub mod preview_markdown;
 pub mod preview_office;

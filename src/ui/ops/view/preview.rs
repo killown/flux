@@ -7,7 +7,7 @@
 //! drawer.
 
 use crate::model::{AppMsg, FluxApp, RightPanelType};
-use crate::ui::panels::preview::{FileInfo, PreviewContent};
+use crate::ui::panels::preview::{FileInfo, FolderEntry, PreviewContent};
 use crate::ui::panels::preview_binary;
 use crate::ui::panels::preview_markdown;
 use crate::ui::panels::preview_office;
@@ -76,6 +76,7 @@ impl FluxApp {
         }
 
         self.stop_preview_media();
+        let _ = preview_registry::with(|h| h.release_folder_grid());
         self.exit_wide_preview();
         self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
     }
@@ -261,6 +262,26 @@ impl FluxApp {
         self.leave_preview_fullscreen(true);
     }
 
+    /// Moves keyboard focus between the main grid and the folder grid in the preview panel.
+    pub fn handle_toggle_preview_grid_focus(&mut self) {
+        let in_folder_grid = preview_registry::with(|h| h.folder_grid_has_focus()).unwrap_or(false);
+
+        if in_folder_grid {
+            // Return to the main grid.
+            if let Some(tab) = self.tabs.get(self.active_tab_index) {
+                tab.files.view.grab_focus();
+            }
+            return;
+        }
+
+        // Not in the folder grid: try to enter it if possible, otherwise stay on the grid.
+        if !self.exclusive_list.is_empty() || !self.preview_panel_visible {
+            return;
+        }
+        let entered = preview_registry::with(|h| h.focus_folder_grid()).unwrap_or(false);
+        let _ = entered; // focus_folder_grid should return bool
+    }
+
     /// Restores the main column and the window state, no-op when full-screen preview is off.
     ///
     /// `restore_wide` also drops the wide layout if full-screen had to turn it on, callers that
@@ -389,6 +410,8 @@ const HEX_BYTES: usize = 512;
 const IMAGE_MAX_DIM: i32 = 2560;
 const LISTING_MAX_ROWS: usize = 150;
 const LISTING_SCAN_CAP: usize = 20_000;
+/// Most entries the folder grid in the preview panel shows.
+const FOLDER_GRID_MAX_ITEMS: usize = 2000;
 /// Longest line handed to the text view. GTK/Pango lay out huge single
 /// lines very slowly, so anything longer is cut with an ellipsis.
 const MAX_LINE_CHARS: usize = 2000;
@@ -961,17 +984,20 @@ fn dir_listing(path: &Path, mut info: FileInfo) -> PreviewContent {
         return PreviewContent::Error(tr("Cannot read this folder."));
     };
 
+    let show_hidden = crate::utils::load_config().ui.show_hidden_by_default;
     let mut entries: Vec<(String, bool, PathBuf)> = Vec::new();
     let mut scanned = 0usize;
     for e in rd.flatten() {
+        let name = e.file_name().to_string_lossy().into_owned();
+        if !show_hidden && name.starts_with('.') {
+            continue;
+        }
         scanned += 1;
         if entries.len() < LISTING_SCAN_CAP {
-            let is_dir = e.file_type().map(|t| t.is_dir()).unwrap_or(false);
-            entries.push((
-                e.file_name().to_string_lossy().into_owned(),
-                is_dir,
-                e.path(),
-            ));
+            let is_dir = e
+                .file_type()
+                .is_ok_and(|t| t.is_dir() || (t.is_symlink() && e.path().is_dir()));
+            entries.push((name, is_dir, e.path()));
         }
     }
     let dirs = entries.iter().filter(|e| e.1).count();
@@ -989,26 +1015,39 @@ fn dir_listing(path: &Path, mut info: FileInfo) -> PreviewContent {
     info.extra
         .push((tr("Files"), (entries.len() - dirs).to_string()));
 
-    entries.sort_by(|a, b| {
-        b.1.cmp(&a.1)
-            .then_with(|| a.0.to_lowercase().cmp(&b.0.to_lowercase()))
-    });
+    // Folders first, then by name. The lowercase key is built once per entry, not per comparison.
+    entries.sort_by_cached_key(|e| (!e.1, e.0.to_lowercase()));
 
-    let more = entries.len().saturating_sub(LISTING_MAX_ROWS);
-    let rows = entries
+    let more = entries.len().saturating_sub(FOLDER_GRID_MAX_ITEMS);
+    let entries = entries
         .into_iter()
-        .take(LISTING_MAX_ROWS)
-        .map(|(name, is_dir, p)| {
-            if is_dir {
-                (format!("{name}/"), tr("Folder"))
+        .take(FOLDER_GRID_MAX_ITEMS)
+        .map(|(name, is_dir, path)| {
+            let meta = std::fs::metadata(&path).ok();
+            let size = if is_dir {
+                0
             } else {
-                let size = std::fs::metadata(&p).map(|m| m.len()).unwrap_or(0);
-                (name, glib::format_size(size).to_string())
+                meta.as_ref().map_or(0, |m| m.len())
+            };
+            let mtime = meta
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map_or(0, |d| d.as_secs() as i64);
+            FolderEntry {
+                name,
+                path,
+                is_dir,
+                size,
+                mtime,
             }
         })
         .collect();
 
-    PreviewContent::Listing { rows, more, info }
+    PreviewContent::Folder {
+        entries,
+        more,
+        info,
+    }
 }
 
 fn archive_listing(path: &Path, info: &mut FileInfo) -> Option<PreviewContent> {
