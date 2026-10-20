@@ -1815,6 +1815,10 @@ msgstr "Abrir pré-visualização ampla sempre (F11)"
 msgid "Show only files of this type (Ctrl+M)"
 msgstr "Mostrar apenas arquivos deste tipo (Ctrl+M)"
 
+#: src/ui/panels/preview.rs:605
+msgid "Playlist mode: play the next item when playback ends"
+msgstr "Modo playlist: tocar o próximo item quando a reprodução terminar"
+
 #: src/ui/panels/preview.rs:614
 msgid "No preview"
 msgstr "Sem pré-visualização"

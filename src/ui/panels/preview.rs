@@ -100,6 +100,13 @@ const MAX_PDF_PX: i32 = 4096;
 const MAX_PDF_PX_H: i32 = 16384;
 const PDF_GUTTER: i32 = 24;
 const INFO_MAX_WIDTH: i32 = 720;
+/// After a playlist auto-advance, non-media items stay skippable for this long (µs).
+/// Bounded so a manual selection later (e.g. after the last track) is never skipped.
+const PLAYLIST_SKIP_WINDOW_US: i64 = 3_000_000;
+/// A video counts as finished once its position is this close to its duration (µs).
+const PLAYLIST_END_SLACK_US: i64 = 300_000;
+/// A backwards jump from this close to the end is a loop wrap-around, not a user seek (µs).
+const PLAYLIST_WRAP_ZONE_US: i64 = 1_500_000;
 
 #[cfg(target_endian = "little")]
 const CAIRO_ARGB32: gtk::gdk::MemoryFormat = gtk::gdk::MemoryFormat::B8g8r8a8Premultiplied;
@@ -209,7 +216,7 @@ fn spawn_ipc_thread(sock: PathBuf, seq: u64) {
         }
         *AUDIO_IPC.lock().unwrap_or_else(|e| e.into_inner()) = Some(stream);
 
-        for (id, prop) in ["time-pos", "duration", "pause", "volume"]
+        for (id, prop) in ["time-pos", "duration", "pause", "volume", "eof-reached"]
             .iter()
             .enumerate()
         {
@@ -374,6 +381,10 @@ pub(crate) struct State {
     /// Guards `mime_filter_btn` against re-entrant `connect_toggled` while
     /// its active state is being pushed from `FluxApp`.
     mime_filter_suppress: Cell<bool>,
+    /// Playlist mode: when the playing video/audio ends, step to the next item.
+    playlist: Cell<bool>,
+    /// Monotonic time (µs) until which non-media items are skipped after an auto-advance.
+    playlist_skip_until: Cell<i64>,
 }
 
 #[derive(Clone)]
@@ -389,6 +400,7 @@ pub struct PreviewPanelHandle {
     pub(crate) md_source_btn: gtk::ToggleButton,
     pub(crate) wide_btn: gtk::ToggleButton,
     pub(crate) mime_filter_btn: gtk::ToggleButton,
+    pub(crate) playlist_btn: gtk::ToggleButton,
     pub(crate) install_font_btn: gtk::Button,
     pub(crate) zoom_btn: gtk::Button,
     pub(crate) banner: adw::Banner,
@@ -597,6 +609,19 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .icon_name("system-search-symbolic")
         .tooltip_text(tr("Show only files of this type (Ctrl+M)"))
         .css_classes(["flat"])
+        .build();
+
+    // Only shown while a video or audio file is previewed (see `apply`).
+    // Off shows "repeat" (media loops by default), on shows "play in sequence".
+    let playlist_icon_off =
+        first_available_icon(&["media-playlist-repeat-symbolic", "view-refresh-symbolic"]);
+    let playlist_icon_on =
+        first_available_icon(&["media-playlist-consecutive-symbolic", "view-list-symbolic"]);
+    let playlist_btn = gtk::ToggleButton::builder()
+        .icon_name(playlist_icon_off.as_str())
+        .tooltip_text(tr("Playlist mode: play the next item when playback ends"))
+        .css_classes(["flat"])
+        .visible(false)
         .build();
 
     let spacer = gtk::Box::builder().hexpand(true).build();
@@ -919,6 +944,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         zoom_out.clone().upcast(),
         zoom_btn.clone().upcast(),
         zoom_in.clone().upcast(),
+        playlist_btn.clone().upcast(),
         wide_btn.clone().upcast(),
         mime_filter_btn.clone().upcast(),
         menu_btn.clone().upcast(),
@@ -951,6 +977,14 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             s.input(AppMsg::FilterBySelectedMime);
         });
     }
+    playlist_btn.connect_toggled(move |b| {
+        b.set_icon_name(if b.is_active() {
+            &playlist_icon_on
+        } else {
+            &playlist_icon_off
+        });
+        preview_registry::with(|h| h.set_playlist(b.is_active()));
+    });
     {
         let s = sender.clone();
         install_font_btn.connect_clicked(move |_| {
@@ -1028,6 +1062,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         md_source_btn: md_source_btn.clone(),
         wide_btn: wide_btn.clone(),
         mime_filter_btn: mime_filter_btn.clone(),
+        playlist_btn: playlist_btn.clone(),
         install_font_btn: install_font_btn.clone(),
         zoom_btn: zoom_btn.clone(),
         banner,
@@ -1073,6 +1108,8 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             syntax_tags: RefCell::new(Vec::new()),
             md_cache: RefCell::new(None),
             mime_filter_suppress: Cell::new(false),
+            playlist: Cell::new(false),
+            playlist_skip_until: Cell::new(0),
         }),
     };
     preview_registry::set_current(handle);
@@ -1221,11 +1258,58 @@ impl PreviewPanelHandle {
         self.state.mime_filter_suppress.set(false);
     }
 
+    /// Turns playlist mode on or off. A playing video stops looping so it can end.
+    fn set_playlist(&self, on: bool) {
+        self.state.playlist.set(on);
+        self.state.playlist_skip_until.set(0);
+        // `gtk::Video` is built with `loop_(true)` and pushes that onto its stream,
+        // so the widget property is what has to change for the video to end.
+        self.media_video.set_loop(!on);
+        if on {
+            if let Some(mf) = self.state.media.borrow().as_ref() {
+                mf.set_loop(false);
+            }
+        }
+    }
+
+    /// Called when the current video/audio reached its end: selects the next item.
+    ///
+    /// Non-media items that follow (covers, logs, folders) are skipped, see `apply`.
+    /// Stepping clamps at the last item, so the playlist simply stops there.
+    fn playlist_advance(&self) {
+        if !self.state.playlist.get() {
+            return;
+        }
+        self.state
+            .playlist_skip_until
+            .set(glib::monotonic_time() + PLAYLIST_SKIP_WINDOW_US);
+        if let Some(s) = crate::model::SENDER.get() {
+            let _ = s.send(AppMsg::SelectionStep(1));
+        }
+    }
+
     pub fn apply(&self, content: &PreviewContent) {
         let st = &self.state;
         st.token.set(st.token.get() + 1);
         self.stop_media();
         self.banner.set_revealed(false);
+
+        // The playlist toggle only makes sense for playable media. `Loading` keeps the
+        // current state so the header does not flicker between consecutive tracks.
+        match content {
+            PreviewContent::Media { .. } => {
+                self.playlist_btn.set_visible(true);
+                st.playlist_skip_until.set(0);
+            }
+            PreviewContent::Loading => {}
+            _ => {
+                self.playlist_btn.set_visible(false);
+                // Reached by a playlist auto-advance: not playable, move on to the next item.
+                if st.playlist.get() && glib::monotonic_time() < st.playlist_skip_until.get() {
+                    self.playlist_advance();
+                }
+            }
+        }
 
         match content {
             PreviewContent::Loading => {
@@ -1450,8 +1534,62 @@ impl PreviewPanelHandle {
                             preview_registry::with(|h| h.apply(&PreviewContent::Error(msg)));
                         }
                     });
+                    // `gtk::Video` loops by default and a looping stream never reports `ended`,
+                    // so also watch the playback position: reaching the end, or wrapping around
+                    // from it, means the file finished.
+                    let last_ts = Rc::new(Cell::new(0_i64));
+                    let fired = Rc::new(Cell::new(false));
+                    mf.connect_timestamp_notify(move |m| {
+                        let ts = m.timestamp();
+                        let prev = last_ts.replace(ts);
+                        let dur = m.duration();
+                        if dur <= 0 || fired.get() {
+                            return;
+                        }
+                        let near_end = ts >= dur - PLAYLIST_END_SLACK_US;
+                        let wrapped = prev >= dur - PLAYLIST_WRAP_ZONE_US && ts + 1_000_000 < prev;
+                        if !(near_end || wrapped) {
+                            return;
+                        }
+                        let still_current = preview_registry::with(|h| {
+                            h.state.playlist.get()
+                                && h.state
+                                    .media
+                                    .borrow()
+                                    .as_ref()
+                                    .map(|cur| cur == m)
+                                    .unwrap_or(false)
+                        })
+                        .unwrap_or(false);
+                        if still_current {
+                            fired.set(true);
+                            preview_registry::with(|h| h.playlist_advance());
+                        }
+                    });
+                    mf.connect_ended_notify(|m| {
+                        if !m.is_ended() {
+                            return;
+                        }
+                        let current = preview_registry::with(|h| {
+                            h.state
+                                .media
+                                .borrow()
+                                .as_ref()
+                                .map(|cur| cur == m)
+                                .unwrap_or(false)
+                        })
+                        .unwrap_or(false);
+                        if current {
+                            preview_registry::with(|h| h.playlist_advance());
+                        }
+                    });
                     mf.set_file(Some(&gtk::gio::File::for_path(path)));
+                    // Set the widget's loop before attaching, it applies it to the stream.
+                    self.media_video.set_loop(!st.playlist.get());
                     self.media_video.set_media_stream(Some(&mf));
+                    if st.playlist.get() {
+                        mf.set_loop(false);
+                    }
                     *self.state.media.borrow_mut() = Some(mf);
                     self.stack.set_visible_child_name("media-video");
                 } else {
@@ -1603,6 +1741,8 @@ impl PreviewPanelHandle {
                     .set_label(&if paused { tr("Play") } else { tr("Pause") });
             }
             ("volume", MpvValue::Num(v)) => self.audio_vol.set_value(v),
+            // `--keep-open=yes` parks mpv at the end instead of exiting.
+            ("eof-reached", MpvValue::Bool(true)) => self.playlist_advance(),
             _ => {}
         }
     }
@@ -1976,6 +2116,17 @@ fn install_css() {
         &provider,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
+}
+
+/// First icon of `names` that the current theme has, so a missing glyph never leaves a blank button.
+fn first_available_icon(names: &[&str]) -> String {
+    let theme = gtk::gdk::Display::default().map(|d| gtk::IconTheme::for_display(&d));
+    names
+        .iter()
+        .find(|n| theme.as_ref().is_some_and(|t| t.has_icon(n)))
+        .or(names.last())
+        .map(|n| n.to_string())
+        .unwrap_or_default()
 }
 
 fn flat_icon_button(icon: &str, tip: &str) -> gtk::Button {
