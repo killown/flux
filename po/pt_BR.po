@@ -1675,10 +1675,6 @@ msgstr "Pré-visualização de vídeo limitada: muitas seleções rápidas, agua
 # src/ui/panels/actions.rs
 # ============================================================
 
-#: src/ui/dialog/inspector.rs:51 src/ui/panels/header.rs:38
-msgid "Close"
-msgstr "Fechar"
-
 #: src/ui/panels/actions.rs
 msgid "Edit actions template for this type"
 msgstr "Editar modelo de ações para este tipo"
