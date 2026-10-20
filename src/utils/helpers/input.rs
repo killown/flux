@@ -236,6 +236,14 @@ impl FluxApp {
     }
 
     /// Registers application-wide keyboard shortcuts with a ShortcutController.
+    ///
+    /// Chords that must work regardless of which widget currently has focus
+    /// (e.g. `Ctrl+Shift+A`, `Ctrl+Shift+L`, `Ctrl+M`) are handled at capture
+    /// phase in `src/ui/inputs/capture.rs`, not here. A window-level
+    /// `ShortcutController` at Global scope is pre-empted by any focused
+    /// widget that installs its own key controller, which is exactly what
+    /// used to break panel-toggle chords once the user clicked inside a
+    /// panel.
     pub fn setup_shortcuts(
         controller: &gtk::ShortcutController,
         sender: &AsyncComponentSender<Self>,
@@ -251,8 +259,6 @@ impl FluxApp {
             ("<Control>v", AppMsg::Paste),
             ("Delete", AppMsg::Delete),
             ("<Control>l", AppMsg::ToggleLocationPanel),
-            ("<Control><Shift>l", AppMsg::ToggleConnectPanel),
-            ("<Control>m", AppMsg::FilterBySelectedMime),
         ];
 
         for (trigger_str, msg) in shortcuts {

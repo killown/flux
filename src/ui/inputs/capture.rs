@@ -7,7 +7,14 @@ use std::path::PathBuf;
 
 /// Capture-phase key controller. Handles shortcuts that must win over
 /// focused children (Tab cycling, Ctrl+Z/Y, Insert/End/PageUp/PageDown,
-/// F-keys, Ctrl+Shift+T tags). Yields to editable widgets and the terminal.
+/// F-keys, Ctrl+Shift+T/A/L, Ctrl+Alt+<letter> cycle). Yields to editable
+/// widgets and the terminal.
+///
+/// Rule of thumb: if a chord must work no matter which widget currently
+/// has focus (including widgets inside right-side panels), it belongs
+/// here, not in a window-level `ShortcutController`. Capture-phase
+/// `EventControllerKey` runs before any focused child can pre-empt the
+/// event, bubble-phase shortcuts do not.
 pub fn setup_capture(
     window: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
@@ -50,10 +57,8 @@ pub fn setup_capture(
 
         // Ctrl+Alt+<letter> folder cycle. Consumed at capture phase so the
         // ShortcutController (Ctrl+W = close tab, etc.) never sees the chord.
-        // `intlbackslash` covers non-US layouts where the physical \ key
-        // resolves to that keyval instead of `backslash`.
         if is_ctrl && is_alt && !is_shift && !is_editable && !terminal_focused {
-            if keyval == gdk::Key::backslash || keyval == gdk::Key::intlbackslash {
+            if keyval == gdk::Key::backslash {
                 sender.input(AppMsg::CycleByLetterCancel);
                 return glib::Propagation::Stop;
             }
@@ -84,6 +89,33 @@ pub fn setup_capture(
                     return glib::Propagation::Proceed;
                 }
                 sender.input(AppMsg::CycleFilterMode);
+                glib::Propagation::Stop
+            }
+            // Ctrl+Shift+A: toggle contextual-actions panel. Capture phase
+            // so a focused widget inside the panel cannot pre-empt the chord.
+            gdk::Key::a | gdk::Key::A if is_ctrl && is_shift && !is_alt => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleActionsPanel);
+                glib::Propagation::Stop
+            }
+            // Ctrl+Shift+L: toggle connect-to-server panel.
+            gdk::Key::l | gdk::Key::L if is_ctrl && is_shift && !is_alt => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleConnectPanel);
+                glib::Propagation::Stop
+            }
+            // Ctrl+M: toggle ephemeral MIME filter on the selection. Moved
+            // here for the same reason as Ctrl+Shift+A: it must work while
+            // the peek-preview panel (or any other focused panel) is open.
+            gdk::Key::m | gdk::Key::M if is_ctrl && !is_shift && !is_alt => {
+                if terminal_focused || is_editable {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::FilterBySelectedMime);
                 glib::Propagation::Stop
             }
             gdk::Key::End if is_ctrl => {
