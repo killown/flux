@@ -82,10 +82,6 @@ pub mod constants {
     // Widget Specifics
     pub const STATUS_ICON_SIZE: i32 = 16;
 
-    // Visual Polish
-    pub const OPACITY_ICON: f64 = 0.6;
-    pub const OPACITY_LABEL: f64 = 0.8;
-
     // MIME Types
     pub const MIME_DIR: &str = "inode/directory";
     pub const MIME_TEXT: &str = "text/plain";

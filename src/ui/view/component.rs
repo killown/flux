@@ -605,11 +605,11 @@ impl SimpleAsyncComponent for FluxApp {
                             gtk::Image {
                                 set_icon_name: Some(constants::ICON_SORT_INDICATOR),
                                 set_pixel_size: constants::STATUS_ICON_SIZE,
-                                set_opacity: constants::OPACITY_ICON,
+                                add_css_class: "dimmed"
                             },
                             gtk::Label {
                                 add_css_class: constants::SORT_LABEL_CLASS,
-                                set_opacity: constants::OPACITY_LABEL,
+                                add_css_class: "dimmed",
                                 #[watch]
                                 set_label: &model.sort_status(),
                             }
