@@ -49,16 +49,11 @@ pub fn show_template_editor(
         .build();
     header.set_title_widget(Some(&title_widget));
 
-    let close_btn = gtk::Button::builder()
-        .icon_name("window-close-symbolic")
-        .tooltip_text(tr("Close").as_str())
-        .build();
     let cancel_btn = gtk::Button::builder().label(tr("Cancel").as_str()).build();
     let save_btn = gtk::Button::builder()
         .label(tr("Save").as_str())
         .css_classes(["suggested-action"])
         .build();
-    header.pack_start(&close_btn);
     header.pack_start(&cancel_btn);
     header.pack_end(&save_btn);
     outer.append(&header);
@@ -96,10 +91,6 @@ pub fn show_template_editor(
 
     dialog.set_content(Some(&outer));
 
-    {
-        let d = dialog.clone();
-        close_btn.connect_clicked(move |_| d.close());
-    }
     {
         let d = dialog.clone();
         cancel_btn.connect_clicked(move |_| d.close());
