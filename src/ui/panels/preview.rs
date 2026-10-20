@@ -935,6 +935,9 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     let folder_grid = build_folder_grid(&sender);
     let folder_thumbs = FolderThumbs::new(&folder_grid);
     let folder_view = folder_grid.borrow().view.clone();
+    // Keep the cells clear of the overlaid nav arrows so none ends up under one.
+    folder_view.set_margin_start(FOLDER_GRID_NAV_GUTTER);
+    folder_view.set_margin_end(FOLDER_GRID_NAV_GUTTER);
     let folder_scroller = gtk::ScrolledWindow::builder()
         .child(&folder_view)
         .hscrollbar_policy(gtk::PolicyType::Never)
@@ -2488,6 +2491,8 @@ fn double_click_reserved(widget: &gtk::Widget) -> bool {
 
 /// Default icon size of the folder grid cells.
 const FOLDER_GRID_ICON_SIZE: i32 = 96;
+/// Side room the folder grid leaves for the nav arrows (8px margin + button width).
+const FOLDER_GRID_NAV_GUTTER: i32 = 88;
 /// Smallest and largest icon size Ctrl+scroll can reach in the folder grid.
 const FOLDER_GRID_MIN_ICON: i32 = 32;
 const FOLDER_GRID_MAX_ICON: i32 = 256;
