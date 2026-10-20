@@ -15,7 +15,7 @@ pub use config::{
     Config, CustomAction, CustomPlace, DeviceRename, MenuEntry, ShortcutsConfig, TerminalConfig,
     ThumbnailTypes, UIConfig,
 };
-pub use file_load::FileLoadContext;
+pub use file_load::{set_now_unix, CellLabels, FileLoadContext};
 pub use msg::AppMsg;
 #[allow(unused_imports)]
 pub use types::ConflictResolver;

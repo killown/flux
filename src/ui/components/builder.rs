@@ -1,4 +1,5 @@
 use super::file_item::{FileItem, ThumbHook};
+use crate::model::CellLabels;
 use crate::services::git::GitFileStatus;
 use adw::gdk;
 use std::cell::RefCell;
@@ -42,6 +43,7 @@ impl FileItem {
                 crate::services::thumbnails::ThumbnailTaskManager::default(),
             ),
             thumbnail_threads: 4,
+            labels: CellLabels::default(),
         }
     }
 }
@@ -80,6 +82,7 @@ pub struct FileItemBuilder {
     thumb_hook: Option<ThumbHook>,
     thumbnail_manager: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
     thumbnail_threads: usize,
+    labels: CellLabels,
 }
 
 #[allow(dead_code, clippy::wrong_self_convention)]
@@ -232,6 +235,11 @@ impl FileItemBuilder {
         self
     }
 
+    pub fn labels(mut self, v: CellLabels) -> Self {
+        self.labels = v;
+        self
+    }
+
     pub fn build(self) -> FileItem {
         FileItem {
             name: self.name,
@@ -268,6 +276,7 @@ impl FileItemBuilder {
             thumb_hook: self.thumb_hook,
             thumbnail_manager: self.thumbnail_manager,
             thumbnail_threads: self.thumbnail_threads,
+            labels: self.labels,
         }
     }
 }

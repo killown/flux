@@ -266,6 +266,17 @@ impl FluxApp {
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
+            // Resolve "now" once per load batch. `FileLoadContext::labels()`
+            // reads this instead of calling `glib::DateTime::now_local()`
+            // per item, which would be O(N) `localtime_r` syscalls on large
+            // directories.
+            crate::model::set_now_unix(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs() as i64)
+                    .unwrap_or(0),
+            );
+
             // Fast directory reading without individual stat() calls per file
             let raw_entries: Vec<(String, bool, bool)> = if is_trash {
                 let root_bg = gio::File::for_uri(&path_clone.to_string_lossy());
@@ -464,27 +475,28 @@ impl FluxApp {
                             is_broken_symlink,
                         );
 
-                        // WARNING: do not remove these three lines.
+                        // WARNING: do not remove these four lines.
                         //
                         // These getters are lazy: the first call fills a OnceLock
-                        // by asking the filesystem. If we let them stay empty until
-                        // the item reaches the UI, the syscalls happen later, on
-                        // the GTK main thread, one item at a time.
+                        // by asking the filesystem (or, for `labels()`, by doing
+                        // locale formatting). If we let them stay empty until the
+                        // item reaches the UI, the work happens later, on the GTK
+                        // main thread, one item at a time.
                         //
                         // Concretely:
                         //   size()             -> read_dir().count() for directories
                         //   mtime()            -> stat()
                         //   is_foreign_owner() -> stat()
+                        //   labels()           -> localtime_r + formatting
                         //
-                        // With a batch of ~90 items that's roughly 180 syscalls
-                        // serialized inside the event loop. Before this fix each
-                        // FolderLoadedChunk spent ~40ms on that, which made folder
-                        // loads noticeably heavier. We call them here, inside the
-                        // Rayon pool, so the syscalls run in parallel on worker
-                        // threads instead.
+                        // With a batch of ~90 items that's roughly 270 syscalls
+                        // plus 90 date-formatting passes serialized inside the
+                        // event loop. We call them here, inside the Rayon pool,
+                        // so the work runs in parallel on worker threads instead.
                         let _ = item.size();
                         let _ = item.mtime();
                         let _ = item.is_foreign_owner(uid);
+                        let _ = item.labels();
 
                         Some(item)
                     })

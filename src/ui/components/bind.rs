@@ -1,6 +1,5 @@
 use super::file_item::FileItem;
 use super::widgets::FileWidgets;
-use crate::i18n::tr;
 use crate::ui::constants;
 use adw::gdk;
 use adw::prelude::*;
@@ -20,23 +19,29 @@ fn remove_style_provider(widget: &impl IsA<gtk::Widget>, provider: &gtk::CssProv
     widget.style_context().remove_provider(provider);
 }
 
-/// Formats a byte count into a human-readable string (B / KB / MB / GB).
-fn format_size(bytes: u64) -> String {
-    const KB: u64 = 1_024;
-    const MB: u64 = 1_024 * KB;
-    const GB: u64 = 1_024 * MB;
-    match bytes {
-        b if b >= GB => format!("{:.1} GB", b as f64 / GB as f64),
-        b if b >= MB => format!("{:.1} MB", b as f64 / MB as f64),
-        b if b >= KB => format!("{:.0} KB", b as f64 / KB as f64),
-        b => format!("{b} B"),
-    }
-}
-
 impl FileItem {
     /// Updates the item's widgets with current data from the [FileItem] model.
     ///
     /// Synchronizes labels, icons, thumbnails, and visibility states (e.g., rename entry).
+    ///
+    /// # Contract
+    ///
+    /// `bind_widgets` runs on the GTK main thread, once per visible cell, on
+    /// every scroll tick. It **MUST NOT**:
+    ///
+    /// - perform syscalls (`stat`, `read_dir`, `localtime_r`)
+    /// - allocate strings from filesystem data (`format_size`, `%x` format)
+    /// - construct new GObjects (`ContentProvider`, `Paintable`, `IconTheme`)
+    ///
+    /// All of that is done in the Rayon pool at load time:
+    ///
+    /// - `FileLoadContext::labels()`   - size / date strings, tooltip
+    /// - `FileItem::resolved_icon`     - cached `Paintable`
+    /// - `FileItem::content_provider`  - cached DnD `ContentProvider`
+    ///
+    /// Reviewers: if you add code that violates this contract, wrap it in
+    /// `crate::hit!()` and confirm with `FLUX_HWGA_OUT=1 flux-fm <dir>` that
+    /// `bind::*` totals stay sub-µs.
     pub(super) fn bind_widgets(&mut self, widgets: &mut FileWidgets, root: &mut gtk::Overlay) {
         crate::hit!("bind");
         widgets.label.set_label(&self.display_label);
@@ -153,85 +158,42 @@ impl FileItem {
             widgets.label_scroller.queue_resize();
             root.queue_resize();
 
-            // Populate the info label with item count, size, or left-aligned content search snippet.
-            {
-                crate::hit!("bind_info_label");
-                let mut info_parts: Vec<String> = Vec::new();
+            // ── Info label: pre-formatted, zero alloc, zero syscall ───────────
+            //
+            // `self.labels` was computed once by `FileLoadContext::compute_labels`
+            // in the Rayon pool. Nothing here formats a date, formats a size, or
+            // calls `glib::DateTime::now_local()`.
+            crate::hit!("bind_info_label");
+            widgets.info_label.set_halign(gtk::Align::End);
+            widgets.info_label.set_xalign(1.0);
+            widgets.info_label.set_hexpand(false);
 
-                if let Some(ref snippet) = self.search_snippet {
-                    widgets.info_label.set_halign(gtk::Align::End);
-                    widgets.info_label.set_xalign(1.0);
-                    widgets.info_label.set_hexpand(false);
-                    if self.line_number > 0 {
-                        info_parts.push(format!("L:{}  {}", self.line_number, snippet));
-                    } else {
-                        info_parts.push(snippet.clone());
-                    }
+            if let Some(ref snippet) = self.search_snippet {
+                // Search snippet is per-item and can't be pre-formatted
+                // (content depends on the match offset), so it stays here.
+                // `format!` here is cheap and rare (only content-search results).
+                if self.line_number > 0 {
+                    widgets
+                        .info_label
+                        .set_label(&format!("L:{}  {}", self.line_number, snippet));
                 } else {
-                    widgets.info_label.set_halign(gtk::Align::End);
-                    widgets.info_label.set_xalign(1.0);
-                    widgets.info_label.set_hexpand(false);
-
-                    if self.is_dir {
-                        let count_str = if self.size == 1 {
-                            "1 item".to_string()
-                        } else {
-                            format!("{} {}", self.size, tr("items"))
-                        };
-                        info_parts.push(count_str);
-                    } else if self.size > 0 {
-                        info_parts.push(format_size(self.size));
-                    }
-
-                    if self.mtime > 0 {
-                        if let (Ok(file_dt), Ok(now_dt)) = (
-                            glib::DateTime::from_unix_local(self.mtime),
-                            glib::DateTime::now_local(),
-                        ) {
-                            let (f_y, f_m, f_d) =
-                                (file_dt.year(), file_dt.month(), file_dt.day_of_month());
-                            let (n_y, n_m, n_d) =
-                                (now_dt.year(), now_dt.month(), now_dt.day_of_month());
-
-                            let time_str = file_dt
-                                .format("%H:%M")
-                                .map(|g| g.to_string())
-                                .unwrap_or_default();
-
-                            if let Ok(exact) = file_dt.format("%x %X") {
-                                widgets.info_label.set_tooltip_text(Some(exact.as_str()));
-                            }
-
-                            if f_y == n_y && f_m == n_m && f_d == n_d {
-                                info_parts.push(format!("{}, {}", tr("Today"), time_str));
-                            } else {
-                                let is_yesterday = now_dt
-                                    .add_days(-1)
-                                    .map(|y_dt| {
-                                        y_dt.year() == f_y
-                                            && y_dt.month() == f_m
-                                            && y_dt.day_of_month() == f_d
-                                    })
-                                    .unwrap_or(false);
-
-                                if is_yesterday {
-                                    info_parts.push(format!("{}, {}", tr("Yesterday"), time_str));
-                                } else if let Ok(formatted) = file_dt.format("%x %H:%M") {
-                                    info_parts.push(formatted.to_string());
-                                }
-                            }
-                        }
-                    } else {
-                        widgets.info_label.set_tooltip_text(None::<&str>);
-                    }
+                    widgets.info_label.set_label(snippet);
                 }
-
-                if !info_parts.is_empty() {
-                    widgets.info_label.set_label(&info_parts.join(" · "));
-                    widgets.info_label.set_visible(true);
+                widgets.info_label.set_visible(true);
+                widgets.info_label.set_tooltip_text(None::<&str>);
+            } else if self.labels.has_info() {
+                widgets.info_label.set_label(&self.labels.info_combined);
+                if !self.labels.mtime_tooltip.is_empty() {
+                    widgets
+                        .info_label
+                        .set_tooltip_text(Some(&self.labels.mtime_tooltip));
                 } else {
-                    widgets.info_label.set_visible(false);
+                    widgets.info_label.set_tooltip_text(None::<&str>);
                 }
+                widgets.info_label.set_visible(true);
+            } else {
+                widgets.info_label.set_tooltip_text(None::<&str>);
+                widgets.info_label.set_visible(false);
             }
         } else {
             crate::hit!("bind_layout_grid");
