@@ -40,6 +40,30 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     panel.add_css_class("sidebar");
 
     {
+        let edit_btn = gtk::Button::builder()
+            .icon_name("document-edit-symbolic")
+            .css_classes(["flat", "circular"])
+            .valign(gtk::Align::Center)
+            .tooltip_text(tr("Edit actions template for this type"))
+            .build();
+        {
+            let s = sender.clone();
+            edit_btn.connect_clicked(move |btn| {
+                let Some(path) = actions_registry::template_path() else {
+                    s.input(AppMsg::ShowToast(
+                        tr("No template for this type").to_string(),
+                    ));
+                    return;
+                };
+                let parent = btn.root().and_downcast::<gtk::Window>();
+                crate::ui::dialog::template_editor::show_template_editor(
+                    parent.as_ref(),
+                    path,
+                    s.clone(),
+                );
+            });
+        }
+
         let add_btn = gtk::Button::builder()
             .icon_name("list-add-symbolic")
             .css_classes(["flat", "circular"])
@@ -57,7 +81,7 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         let header = panel_header(
             Some("system-run-symbolic"),
             &tr("Contextual Actions"),
-            &[add_btn.upcast()],
+            &[edit_btn.upcast(), add_btn.upcast()],
             move || s.input(AppMsg::ToggleActionsPanel),
         );
         panel.append(&header);
@@ -263,6 +287,9 @@ impl FluxApp {
     /// Invalidates in-flight loads and empties the panel, called whenever it is hidden.
     ///
     /// The widget tree is reused on the next open, so the registry handles stay in place.
+    /// The cached template path is dropped too: the Edit button in the panel header
+    /// would otherwise still open the previous selection's file when the panel is
+    /// reopened on a different MIME type before the first async load lands.
     pub(crate) fn reset_actions_panel(&self) {
         self.actions_panel_session.fetch_add(1, Ordering::SeqCst);
         if let Some((list, _search, stack)) = actions_registry::with(Clone::clone) {
@@ -271,6 +298,7 @@ impl FluxApp {
             }
             stack.set_visible_child_name("empty");
         }
+        actions_registry::set_template_path(None);
     }
 
     /// Resolves the selection's MIME type and template off the main thread.
@@ -334,7 +362,7 @@ impl FluxApp {
         session: u64,
         mime: String,
         actions: Vec<CustomAction>,
-        _template_path: Option<PathBuf>,
+        template_path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
         if session != self.actions_panel_session.load(Ordering::SeqCst) {
@@ -346,8 +374,11 @@ impl FluxApp {
         let Some((list, search, stack)) = actions_registry::with(Clone::clone) else {
             return;
         };
-        // The "+" buttons read this back to pre-fill the dialog.
+        // The "+" buttons read this back to pre-fill the dialog, the Edit
+        // button reads the template path to open the exact file the current
+        // list came from. Both survive until the next load or panel reset.
         actions_registry::set_mime(&mime);
+        actions_registry::set_template_path(template_path);
 
         while let Some(child) = list.first_child() {
             list.remove(&child);
@@ -366,6 +397,20 @@ impl FluxApp {
         // A filter typed before this refresh still applies to the new rows.
         apply_filter(&list, &search.text());
         stack.set_visible_child_name("list");
+    }
+
+    /// Reloads the panel after its template was edited and saved on disk.
+    ///
+    /// Reuses the regular refresh path so the new rows show up without the
+    /// user having to touch the selection.
+    pub fn handle_reload_actions_template(
+        &self,
+        _path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if self.actions_panel_visible {
+            self.request_actions_panel_load(sender);
+        }
     }
 
     /// Appends the new action to its template file on a blocking worker.

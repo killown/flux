@@ -1675,6 +1675,26 @@ msgstr "Pré-visualização de vídeo limitada: muitas seleções rápidas, agua
 # src/ui/panels/actions.rs
 # ============================================================
 
+#: src/ui/dialog/inspector.rs:51 src/ui/panels/header.rs:38
+msgid "Close"
+msgstr "Fechar"
+
+#: src/ui/panels/actions.rs
+msgid "Edit actions template for this type"
+msgstr "Editar modelo de ações para este tipo"
+
+#: src/ui/panels/actions.rs
+msgid "No template for this type"
+msgstr "Nenhum modelo para este tipo"
+
+#: src/ui/dialog/template_editor.rs
+msgid "Edit Actions Template"
+msgstr "Editar Modelo de Ações"
+
+#: src/ui/dialog/template_editor.rs
+msgid "Could not save"
+msgstr "Não foi possível salvar"
+
 #: src/ui/dialog/new_action.rs:119 src/ui/panels/actions.rs:47 src/ui/panels/actions.rs:107
 msgid "New Action"
 msgstr "Nova ação"

@@ -72,6 +72,7 @@ pub(super) fn handle(
                 no_command_dialog,
             },
         ),
+        AppMsg::ReloadActionsTemplate { path } => app.handle_reload_actions_template(path, sender),
         AppMsg::ContextualActionSaved(result) => app.handle_contextual_action_saved(result, sender),
         AppMsg::ActionsPanelLoad { session } => app.handle_actions_panel_refresh(session),
         AppMsg::ActionsPanelReady {
