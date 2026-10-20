@@ -2128,6 +2128,11 @@ impl PreviewPanelHandle {
         let muted = PREVIEW_MUTED.load(Ordering::SeqCst);
         if let Some(mf) = self.state.media.borrow().as_ref() {
             mf.set_muted(muted);
+            if !muted {
+                // GStreamer's sink can stay silent after unmuting until the volume changes.
+                mf.set_volume(0.99);
+                mf.set_volume(1.0);
+            }
         }
         ipc_send(&format!(r#"{{"command":["set_property","mute",{muted}]}}"#));
     }
