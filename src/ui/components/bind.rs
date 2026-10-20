@@ -506,11 +506,45 @@ impl FileItem {
                 .downcast_ref::<gtk::gio::FileIcon>()
                 .and_then(|fi| fi.file().path());
 
+            // ── Custom file-icon painting: keep the decode OFF the main thread ────────
+            //
+            // NOTE: History: this used to be the single worst main-thread stall in folder
+            // loading. Back then we called `gdk::Texture::from_filename(&path)` right
+            // here, inside `bind`, once per grid cell. That decodes the icon at its
+            // full source resolution on the GTK thread. `hwga` flagged it at ~42ms
+            // total, with a 40.7ms single-call max and 1/22 calls blowing the 16ms
+            // frame budget, all inside `append_context_batch` while populating a
+            // folder. A single 4K PNG custom icon was enough to drop frames.
+            //
+            // What the shape of this block is protecting:
+            //
+            //   * `peek_cached_file_icon_texture` must return `None` on a miss. It
+            //     must NOT decode. Decoding on a miss puts the 40ms stall back into
+            //     every bind.
+            //   * The cache key must include `mtime`. Without it, editing a custom
+            //     icon file has no visible effect until the app restarts.
+            //   * The decode must stay bounded (`from_file_at_scale(…, 256, 256,
+            //     true)`). `from_filename` decodes at source resolution.
+            //   * The handler must force a rebind (remove + insert). `queue_draw()`
+            //     re-runs draw, not bind, so the fallback icon stays on screen.
+            //
+            // If you touch this block, verify with:
+            //   FLUX_HWGA_OUT=1 flux-fm <dir-with-custom-icons>
+            // and check `bind::bind_icon_paint` - total sub-millisecond, `Main>16ms`
+            // reads `0/N`.
             if let Some(path) = custom_path {
-                if let Ok(texture) = gdk::Texture::from_filename(&path) {
+                // Fast path: texture already decoded and cached on the main thread.
+                // No I/O, no decode, just a HashMap lookup and a refcount bump.
+                if let Some(texture) = crate::utils::icon::peek_cached_file_icon_texture(&path) {
                     widgets.icon_widget.set_paintable(Some(&texture));
                 } else {
-                    // fall through to theme lookup
+                    // Slow path: not cached. Paint the theme fallback immediately so
+                    // the cell is never blank, then dispatch the decode to a worker.
+                    //
+                    // WARNING: `from_file_at_scale` bounds the decode to 256px.
+                    // Do not replace it with `gdk::Texture::from_filename`, which
+                    // decodes at the source resolution and is what caused the
+                    // ~40ms main-thread stalls this path is fixing.
                     let display = root.display();
                     let icon_theme = gtk::IconTheme::for_display(&display);
                     let scale = root.scale_factor().max(1);
@@ -522,6 +556,20 @@ impl FileItem {
                         gtk::IconLookupFlags::empty(),
                     );
                     widgets.icon_widget.set_paintable(Some(&paintable));
+
+                    if let Some(sender) = crate::model::SENDER.get().cloned() {
+                        let path_clone = path.clone();
+                        relm4::spawn_blocking(move || {
+                            if let Ok(pixbuf) =
+                                gdk_pixbuf::Pixbuf::from_file_at_scale(&path_clone, 256, 256, true)
+                            {
+                                let _ = sender.send(crate::model::AppMsg::FileIconTextureReady {
+                                    path: path_clone,
+                                    texture: gdk::Texture::for_pixbuf(&pixbuf),
+                                });
+                            }
+                        });
+                    }
                 }
             } else {
                 let display = root.display();

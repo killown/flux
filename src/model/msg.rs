@@ -699,6 +699,11 @@ pub enum AppMsg {
         line_number: usize,
         session: u64,
     },
+    /// A custom file-icon image was decoded on a worker thread.
+    FileIconTextureReady {
+        path: PathBuf,
+        texture: gtk::gdk::Texture,
+    },
     /// The content search walk finished (or was cancelled). Used to clear the
     /// loading indicator and select the first result.
     ContentSearchDone { session: u64 },

@@ -7,6 +7,20 @@ pub(super) fn handle(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
     match msg {
+        AppMsg::FileIconTextureReady { path, texture } => {
+            crate::utils::icon::insert_cached_file_icon_texture(&path, texture);
+            let files = &mut app.tabs[app.active_tab_index].files;
+            for i in 0..files.len() {
+                if files.get(i).is_some_and(|w| w.borrow().path == path) {
+                    if let Some(w) = files.get(i) {
+                        let item = w.borrow().clone();
+                        files.remove(i);
+                        files.insert(i, item);
+                    }
+                    break;
+                }
+            }
+        }
         AppMsg::UpdateVisibleThumbnailsViewport {
             progress_top,
             progress_bottom,

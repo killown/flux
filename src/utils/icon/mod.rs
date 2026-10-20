@@ -3,7 +3,9 @@ mod resolve;
 mod theme;
 mod xdg;
 
-pub use cache::invalidate_themed_icon_cache;
+pub use cache::{
+    insert_cached_file_icon_texture, invalidate_themed_icon_cache, peek_cached_file_icon_texture,
+};
 pub use resolve::get_icon_for_path;
 
 #[allow(unused_imports)]
