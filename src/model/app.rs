@@ -16,9 +16,27 @@ pub enum FilterMode {
     OnlyFiles,
 }
 
+/// State for the `Ctrl+Alt+<letter>` folder cycle.
+#[derive(Debug, Clone)]
+pub struct AltCycle {
+    /// Directory whose children are being cycled.
+    pub anchor: PathBuf,
+    /// Lowercased letter prefix being cycled.
+    pub letter: char,
+    /// Candidates captured on the first press, in the loader's sort order.
+    pub candidates: Vec<PathBuf>,
+    /// Index of the candidate currently entered / last chosen.
+    pub index: usize,
+}
+
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// Cycle state for `Ctrl+Alt+<letter>`: the anchor directory whose
+    /// children are being cycled, the letter, the ordered candidate paths
+    /// captured on the first press, and the index of the one we are on
+    /// (or about to enter).
+    pub alt_cycle: Option<AltCycle>,
     /// One-shot: open the preview panel in wide mode after the first folder load (CLI `--preview`).
     pub startup_preview: bool,
     /// True when the current `mime_filter` was applied by the `Space` shortcut,

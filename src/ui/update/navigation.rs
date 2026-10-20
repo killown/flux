@@ -20,6 +20,9 @@ pub(super) fn handle(
             app.handle_go_forward(sender);
             sender.input(AppMsg::Refresh);
         }
+        AppMsg::CycleByLetter(c) => app.handle_cycle_by_letter(c, sender),
+        AppMsg::CycleByLetterCancel => app.handle_cycle_by_letter_cancel(sender),
+        AppMsg::CycleByLetterReanchor => app.handle_cycle_by_letter_reanchor(sender),
         AppMsg::SyncPathEntry => {}
         AppMsg::ToggleLocationPanel => {
             app.toggle_sidebar_right_panel(crate::model::RightPanelType::Location, sender)

@@ -1,3 +1,4 @@
+use crate::model::AltCycle;
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use gtk::glib;
@@ -376,5 +377,100 @@ impl FluxApp {
         glib::idle_add_local_once(move || {
             view.grab_focus();
         });
+    }
+
+    /// Jump to the next sibling folder whose name starts with `letter`.
+    ///
+    /// Repeated presses of the same chord cycle through the matching
+    /// folders in the current sort order. If there is no current cycle
+    /// for this `(directory, letter)`, starts at the first match.
+    /// Does nothing when no folder matches.
+    pub fn handle_cycle_by_letter(&mut self, letter: char, sender: &AsyncComponentSender<Self>) {
+        let prefix = letter.to_ascii_lowercase();
+        let current = self.current_path.clone();
+
+        // Is `current` inside an active cycle for this letter?
+        // Either we are exactly at the anchor, or we are inside one of
+        // the recorded candidates (anchor/<candidate>).
+        let existing = self.alt_cycle.take().and_then(|c| {
+            if c.letter != prefix {
+                return None;
+            }
+            let inside_candidate = c
+                .candidates
+                .iter()
+                .any(|p| current == *p || current.starts_with(p));
+            if current == c.anchor || inside_candidate {
+                Some(c)
+            } else {
+                None
+            }
+        });
+
+        let cycle = match existing {
+            Some(mut c) => {
+                c.index = (c.index + 1) % c.candidates.len();
+                c
+            }
+            None => {
+                // First press: build the candidate list from the current
+                // directory's loaded FileItems.
+                let candidates: Vec<PathBuf> = {
+                    let files = &self.tabs[self.active_tab_index].files;
+                    (0..files.len())
+                        .filter_map(|i| files.get(i))
+                        .filter_map(|w| {
+                            let it = w.borrow();
+                            if it.is_dir
+                                && it.name.to_lowercase().starts_with(prefix)
+                                && it.path.parent() == Some(current.as_path())
+                            {
+                                Some(it.path.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                };
+                if candidates.is_empty() {
+                    return;
+                }
+                AltCycle {
+                    anchor: current,
+                    letter: prefix,
+                    candidates,
+                    index: 0,
+                }
+            }
+        };
+
+        let target = cycle.candidates[cycle.index].clone();
+        self.alt_cycle = Some(cycle);
+        sender.input(AppMsg::Navigate(target));
+    }
+
+    /// Cancel the cycle. If we descended into a candidate, go back to the
+    /// anchor so the next letter press starts from scratch.
+    pub fn handle_cycle_by_letter_cancel(&mut self, sender: &AsyncComponentSender<Self>) {
+        let Some(cycle) = self.alt_cycle.take() else {
+            return;
+        };
+        let inside_candidate = cycle
+            .candidates
+            .iter()
+            .any(|p| self.current_path == *p || self.current_path.starts_with(p));
+        if inside_candidate {
+            sender.input(AppMsg::Navigate(cycle.anchor));
+        }
+        sender.input(AppMsg::ShowToast(crate::i18n::tr("Cycle cancelled")));
+    }
+
+    /// Forget the cycle without navigating. The next letter press builds
+    /// candidates from `current_path`.
+    pub fn handle_cycle_by_letter_reanchor(&mut self, sender: &AsyncComponentSender<Self>) {
+        self.alt_cycle = None;
+        sender.input(AppMsg::ShowToast(crate::i18n::tr(
+            "Cycle anchored to current folder",
+        )));
     }
 }

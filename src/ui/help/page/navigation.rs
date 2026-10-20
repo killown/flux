@@ -34,6 +34,18 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 "Ctrl + Space / Space",
             ),
             row(&tr("Open tag navigator"), "Ctrl + Shift + T"),
+            row(
+                &tr("Cycle through folders starting with a letter"),
+                "Ctrl + Alt + <letter>",
+            ),
+            row(
+                &tr("Re-anchor the folder cycle at the current directory"),
+                "Ctrl + Alt + /",
+            ),
+            row(
+                &tr("Cancel the folder cycle and return to its anchor"),
+                "Ctrl + Alt + \\",
+            ),
         ],
     );
 

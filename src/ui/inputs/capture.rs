@@ -48,6 +48,28 @@ pub fn setup_capture(
             }
         }
 
+        // Ctrl+Alt+<letter> folder cycle. Consumed at capture phase so the
+        // ShortcutController (Ctrl+W = close tab, etc.) never sees the chord.
+        // `intlbackslash` covers non-US layouts where the physical \ key
+        // resolves to that keyval instead of `backslash`.
+        if is_ctrl && is_alt && !is_shift && !is_editable && !terminal_focused {
+            if keyval == gdk::Key::backslash || keyval == gdk::Key::intlbackslash {
+                sender.input(AppMsg::CycleByLetterCancel);
+                return glib::Propagation::Stop;
+            }
+            if keyval == gdk::Key::slash {
+                sender.input(AppMsg::CycleByLetterReanchor);
+                return glib::Propagation::Stop;
+            }
+            if let Some(c) = keyval.to_unicode() {
+                let c = c.to_ascii_lowercase();
+                if c.is_ascii_lowercase() {
+                    sender.input(AppMsg::CycleByLetter(c));
+                    return glib::Propagation::Stop;
+                }
+            }
+        }
+
         match keyval {
             gdk::Key::Insert if is_ctrl => {
                 sender.input(AppMsg::AddToSidebarPermanent);
@@ -118,6 +140,11 @@ pub fn setup_capture(
             }
             gdk::Key::Tab if is_ctrl => {
                 if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                // Leave Ctrl+Alt+Tab alone: it belongs to other features
+                // (e.g. CycleByLetter's modifier family) and to the WM.
+                if is_alt {
                     return glib::Propagation::Proceed;
                 }
                 if is_shift {

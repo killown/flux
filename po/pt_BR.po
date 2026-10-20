@@ -838,6 +838,18 @@ msgstr "Aplicativo"
 # src/ui/help/page/navigation.rs
 # ============================================================
 
+#: src/ui/help/page/navigation.rs:38
+msgid "Cycle through folders starting with a letter"
+msgstr "Alternar entre pastas começando com uma letra"
+
+#: src/ui/help/page/navigation.rs:42
+msgid "Re-anchor the folder cycle at the current directory"
+msgstr "Reancorar o ciclo de pastas no diretório atual"
+
+#: src/ui/help/page/navigation.rs:46
+msgid "Cancel the folder cycle and return to its anchor"
+msgstr "Cancelar o ciclo de pastas e voltar à sua âncora"
+
 #: src/ui/help/page/navigation.rs:8
 msgid "Navigation Shortcuts"
 msgstr "Atalhos de navegação"
@@ -1382,6 +1394,14 @@ msgstr "O rótulo não pode conter \"=>\""
 #: src/ui/navigation/navigate.rs:238
 msgid "Path not found"
 msgstr "Caminho não encontrado"
+
+#: src/ui/navigation/navigate.rs
+msgid "Cycle cancelled"
+msgstr "Ciclo cancelado"
+
+#: src/ui/navigation/navigate.rs
+msgid "Cycle anchored to current folder"
+msgstr "Ciclo ancorado na pasta atual"
 
 # ============================================================
 # src/ui/navigation/quick_list.rs

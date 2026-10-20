@@ -487,6 +487,15 @@ pub enum AppMsg {
         /// Visual-media paths collected for thumbnail dispatch.
         media_tasks: Vec<(u32, PathBuf)>,
     },
+    /// Cycle through sibling folders of the current directory whose name
+    /// starts with `letter` (case-insensitive), navigating to each in turn.
+    CycleByLetter(char),
+    /// Cancel the cycle and, if we descended into a candidate, return to
+    /// the anchor directory.
+    CycleByLetterCancel,
+    /// Re-anchor the cycle at the current directory. The next
+    /// `CycleByLetter` builds a fresh candidate list from here.
+    CycleByLetterReanchor,
     /// Navigate to the `network:///` GIO location that lists visible network neighbours.
     NavigateNetwork,
 

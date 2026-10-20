@@ -156,6 +156,7 @@ impl FluxApp {
             breadcrumbs,
             current_path: start_path.clone(),
             current_icon_size: initial_icon_size,
+            alt_cycle: None,
             history: Vec::new(),
             forward_stack: Vec::new(),
             load_id: Arc::new(AtomicU64::new(0)),
