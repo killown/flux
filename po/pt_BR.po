@@ -1819,6 +1819,14 @@ msgstr "Mostrar apenas arquivos deste tipo (Ctrl+M)"
 msgid "Playlist mode: play the next item when playback ends"
 msgstr "Modo playlist: tocar o próximo item quando a reprodução terminar"
 
+#: src/ui/panels/preview.rs:604 src/ui/panels/preview.rs:1273
+msgid "Full screen"
+msgstr "Tela cheia"
+
+#: src/ui/panels/preview.rs:1272
+msgid "Exit full screen (Esc)"
+msgstr "Sair da tela cheia (Esc)"
+
 #: src/ui/panels/preview.rs:614
 msgid "No preview"
 msgstr "Sem pré-visualização"

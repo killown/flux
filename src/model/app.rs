@@ -46,6 +46,9 @@ pub struct FluxApp {
     pub preview_panel_initialized: bool,
     /// `Some(sidebar was visible)` while wide-preview mode is active, `None` otherwise.
     pub wide_preview_sidebar: Option<bool>,
+    /// `Some((wide mode was already on, window was already full screen))` while full-screen
+    /// preview is active, `None` otherwise.
+    pub preview_fullscreen: Option<(bool, bool)>,
     /// Revealer widget wrapping the right connect-to-server panel.
     pub connect_panel_revealer: Option<gtk::Revealer>,
     /// Whether the right connect-to-server panel is currently visible.

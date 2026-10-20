@@ -38,6 +38,8 @@ pub(super) fn handle(
             app.handle_toggle_preview_and_filter_by_selected_mime(sender)
         }
         AppMsg::StartupPreview => app.handle_startup_preview(sender),
+        AppMsg::TogglePreviewFullscreen => app.handle_toggle_preview_fullscreen(),
+        AppMsg::ExitPreviewFullscreen => app.handle_exit_preview_fullscreen(),
         AppMsg::SetPreviewPanelWidth(val) => app.handle_set_preview_panel_width(val),
         AppMsg::PreviewPrefetch { path, session } => {
             app.handle_preview_prefetch(path, session, sender)

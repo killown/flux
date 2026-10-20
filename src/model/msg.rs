@@ -887,6 +887,11 @@ pub enum AppMsg {
     ToggleWidePreview,
     /// Sets whether the preview panel always opens in wide mode (header button), saved to config.
     SetWidePreviewDefault(bool),
+    /// Toggles full-screen preview: the grid, header bar and status bar are hidden, the window
+    /// goes full screen and the preview fills it. Esc or the preview header button leave it.
+    TogglePreviewFullscreen,
+    /// Leaves full-screen preview if it is active (sent on Esc), no-op otherwise.
+    ExitPreviewFullscreen,
     /// Toggles the global thumbnail generation setting.
     ///
     /// When disabled, no thumbnails are generated for any file type, improving

@@ -227,6 +227,64 @@ impl FluxApp {
         );
     }
 
+    /// Toggles full-screen preview: the main column (header bar, tab bar, file grid, status bar)
+    /// is hidden, the window goes full screen and the preview panel fills it.
+    pub fn handle_toggle_preview_fullscreen(&mut self) {
+        use gtk::prelude::*;
+
+        if self.preview_fullscreen.is_some() {
+            self.leave_preview_fullscreen(true);
+            return;
+        }
+        if !self.preview_panel_visible {
+            return;
+        }
+        let Some(revealer) = self.preview_panel_revealer.clone() else {
+            return;
+        };
+
+        let was_wide = self.wide_preview_sidebar.is_some();
+        self.enter_wide_preview();
+
+        let window = revealer.root().and_downcast::<gtk::Window>();
+        let window_was_fullscreen = window.as_ref().is_some_and(|w| w.is_fullscreen());
+        set_main_column_visible(&revealer, false);
+        if let Some(w) = window.as_ref() {
+            w.fullscreen();
+        }
+        self.preview_fullscreen = Some((was_wide, window_was_fullscreen));
+        let _ = preview_registry::with(|h| h.set_fullscreen_active(true));
+    }
+
+    /// Esc: leaves full-screen preview when active.
+    pub fn handle_exit_preview_fullscreen(&mut self) {
+        self.leave_preview_fullscreen(true);
+    }
+
+    /// Restores the main column and the window state, no-op when full-screen preview is off.
+    ///
+    /// `restore_wide` also drops the wide layout if full-screen had to turn it on, callers that
+    /// are leaving wide mode themselves pass `false`.
+    pub(crate) fn leave_preview_fullscreen(&mut self, restore_wide: bool) {
+        use gtk::prelude::*;
+
+        let Some((was_wide, window_was_fullscreen)) = self.preview_fullscreen.take() else {
+            return;
+        };
+        if let Some(revealer) = self.preview_panel_revealer.as_ref() {
+            set_main_column_visible(revealer, true);
+            if !window_was_fullscreen {
+                if let Some(w) = revealer.root().and_downcast::<gtk::Window>() {
+                    w.unfullscreen();
+                }
+            }
+        }
+        let _ = preview_registry::with(|h| h.set_fullscreen_active(false));
+        if restore_wide && !was_wide {
+            self.exit_wide_preview();
+        }
+    }
+
     /// Re-applies the wide-preview split after a view-mode change.
     pub fn refresh_wide_preview_layout(&self) {
         if self.wide_preview_sidebar.is_none() {
@@ -244,6 +302,8 @@ impl FluxApp {
 
     /// Leaves wide-preview mode, restoring the sidebar and the normal panel layout, no-op when inactive.
     pub fn exit_wide_preview(&mut self) {
+        // Leaving wide mode also ends full-screen preview, otherwise the grid would stay hidden.
+        self.leave_preview_fullscreen(false);
         let Some(sidebar_was_visible) = self.wide_preview_sidebar.take() else {
             return;
         };
@@ -1094,6 +1154,19 @@ fn monitor_width(widget: &impl IsA<gtk::Widget>) -> i32 {
     gtk::gdk::Display::default()
         .and_then(|d| d.monitor_at_surface(&surface))
         .map_or(0, |m| m.geometry().width())
+}
+
+/// Shows or hides the main column (header bar, tab bar, file grid, status bar) next to the preview.
+fn set_main_column_visible(revealer: &gtk::Revealer, visible: bool) {
+    use gtk::prelude::*;
+
+    let mut sibling = revealer.parent().and_then(|row| row.first_child());
+    while let Some(widget) = sibling {
+        if widget.is::<adw::ToolbarView>() {
+            widget.set_visible(visible);
+        }
+        sibling = widget.next_sibling();
+    }
 }
 
 /// Switches the preview between its capped fixed width and filling the space the list leaves.

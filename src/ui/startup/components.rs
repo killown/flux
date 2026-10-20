@@ -117,6 +117,7 @@ impl FluxApp {
             preview_panel_visible: false,
             preview_panel_initialized: false,
             wide_preview_sidebar: None,
+            preview_fullscreen: None,
             preview_session: Arc::new(AtomicU64::new(0)),
             connect_panel_revealer: None,
             connect_panel_visible: false,

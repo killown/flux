@@ -155,6 +155,12 @@ pub fn setup_capture(
                 sender.input(AppMsg::Redo);
                 glib::Propagation::Stop
             }
+            // Full-screen preview: Esc leaves it. The handler is a no-op otherwise and the key
+            // is not consumed, so every other Esc behaviour keeps working.
+            gdk::Key::Escape if !is_ctrl && !is_shift && !is_alt && !terminal_focused => {
+                sender.input(AppMsg::ExitPreviewFullscreen);
+                glib::Propagation::Proceed
+            }
             _ => glib::Propagation::Proceed,
         }
     });

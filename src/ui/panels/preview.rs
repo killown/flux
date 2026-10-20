@@ -399,6 +399,8 @@ pub struct PreviewPanelHandle {
     pub(crate) invert_btn: gtk::ToggleButton,
     pub(crate) md_source_btn: gtk::ToggleButton,
     pub(crate) wide_btn: gtk::ToggleButton,
+    pub(crate) fullscreen_btn: gtk::Button,
+    pub(crate) header: gtk::Box,
     pub(crate) mime_filter_btn: gtk::ToggleButton,
     pub(crate) playlist_btn: gtk::ToggleButton,
     pub(crate) install_font_btn: gtk::Button,
@@ -604,6 +606,11 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         .css_classes(["flat"])
         .active(crate::utils::load_config().ui.wide_preview)
         .build();
+
+    let fullscreen_btn = flat_icon_button(
+        &first_available_icon(&["view-fullscreen-symbolic", "zoom-fit-best-symbolic"]),
+        &tr("Full screen"),
+    );
 
     let mime_filter_btn = gtk::ToggleButton::builder()
         .icon_name("system-search-symbolic")
@@ -946,11 +953,12 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         zoom_in.clone().upcast(),
         playlist_btn.clone().upcast(),
         wide_btn.clone().upcast(),
+        fullscreen_btn.clone().upcast(),
         mime_filter_btn.clone().upcast(),
         menu_btn.clone().upcast(),
         actions_btn.clone().upcast(),
     ];
-    {
+    let header = {
         let s = sender.clone();
         let header = panel_header(
             Some("view-compact-symbolic"),
@@ -959,10 +967,15 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             move || s.input(AppMsg::TogglePreview),
         );
         panel.append(&header);
-    }
+        header
+    };
     {
         let s = sender.clone();
         wide_btn.connect_toggled(move |b| s.input(AppMsg::SetWidePreviewDefault(b.is_active())));
+    }
+    {
+        let s = sender.clone();
+        fullscreen_btn.connect_clicked(move |_| s.input(AppMsg::TogglePreviewFullscreen));
     }
     {
         let s = sender.clone();
@@ -1065,6 +1078,30 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     panel.append(&view_overlay);
 
+    // Double-click on the preview content toggles full-screen preview.
+    let dbl_click = gtk::GestureClick::new();
+    dbl_click.set_button(gtk::gdk::BUTTON_PRIMARY);
+    dbl_click.set_propagation_phase(gtk::PropagationPhase::Capture);
+    {
+        let s = sender.clone();
+        dbl_click.connect_pressed(move |g, n_press, x, y| {
+            if n_press != 2 {
+                return;
+            }
+            let Some(root) = g.widget() else {
+                return;
+            };
+            if root
+                .pick(x, y, gtk::PickFlags::DEFAULT)
+                .is_some_and(|w| double_click_reserved(&w))
+            {
+                return;
+            }
+            s.input(AppMsg::TogglePreviewFullscreen);
+        });
+    }
+    view_overlay.add_controller(dbl_click);
+
     let handle = PreviewPanelHandle {
         stack,
         nav_box,
@@ -1076,6 +1113,8 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         invert_btn: invert_btn.clone(),
         md_source_btn: md_source_btn.clone(),
         wide_btn: wide_btn.clone(),
+        fullscreen_btn: fullscreen_btn.clone(),
+        header,
         mime_filter_btn: mime_filter_btn.clone(),
         playlist_btn: playlist_btn.clone(),
         install_font_btn: install_font_btn.clone(),
@@ -1260,6 +1299,23 @@ impl PreviewPanelHandle {
         if self.wide_btn.is_active() != on {
             self.wide_btn.set_active(on);
         }
+    }
+
+    /// Reflects full-screen preview on the header button (icon and tooltip).
+    pub fn set_fullscreen_active(&self, on: bool) {
+        // Full screen shows only the content, Esc or double-click bring the strip back.
+        self.header.set_visible(!on);
+        let icon = if on {
+            first_available_icon(&["view-restore-symbolic", "view-fullscreen-symbolic"])
+        } else {
+            first_available_icon(&["view-fullscreen-symbolic", "zoom-fit-best-symbolic"])
+        };
+        self.fullscreen_btn.set_icon_name(&icon);
+        self.fullscreen_btn.set_tooltip_text(Some(&if on {
+            tr("Exit full screen (Esc)")
+        } else {
+            tr("Full screen")
+        }));
     }
 
     /// Reflects the ephemeral MIME filter state on the header button without
@@ -2150,6 +2206,23 @@ fn flat_icon_button(icon: &str, tip: &str) -> gtk::Button {
         .tooltip_text(tip)
         .css_classes(["flat"])
         .build()
+}
+
+/// True when the widget (or an ancestor) handles double-click itself: text, buttons, sliders, entries.
+fn double_click_reserved(widget: &gtk::Widget) -> bool {
+    let mut cur = Some(widget.clone());
+    while let Some(w) = cur {
+        if w.is::<gtk::TextView>()
+            || w.is::<gtk::Button>()
+            || w.is::<gtk::Range>()
+            || w.is::<gtk::Scrollbar>()
+            || w.is::<gtk::Editable>()
+        {
+            return true;
+        }
+        cur = w.parent();
+    }
+    false
 }
 
 /// Caps an info list's width and centres it so wide panels keep it clear of the nav arrows.
