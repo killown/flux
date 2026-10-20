@@ -1,8 +1,6 @@
 /* ── CSS variables (must come before any usage) ── */
 :root {
   --border-color: alpha(@theme_fg_color, 0.1);
-  --border-opacity: 0.1;
-  --dim-opacity: 0.55;
   --disabled-opacity: 0.4;
   --shadow: alpha(black, 0.25);
   --shadow-hover: alpha(black, 0.35);
@@ -274,7 +272,7 @@ windowcontrols button.maximize:hover {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
   background: transparent;
   border: none;
   box-shadow: none;
@@ -315,7 +313,7 @@ button.eject-button {
   min-height: 0;
   min-width: 0;
   border-radius: 0.45em;
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
   opacity: 0.7;
   transition:
     opacity 150ms ease,
@@ -497,7 +495,7 @@ gridview child {
   margin: 0.45em;
   border: none;
   box-shadow:
-    0 0 0 1px alpha(currentColor, var(--border-opacity)),
+    0 0 0 1px alpha(currentColor, 0.1),
     0 2px 8px var(--shadow);
   transition:
     background-color 200ms ease,
@@ -551,10 +549,10 @@ gridview child:selected .flux-label {
   letter-spacing: -0.01em;
   padding: 0.2em 0.8em;
   min-width: 12em;
-  background-color: alpha(currentColor, var(--border-opacity));
+  background-color: alpha(currentColor, 0.1);
   border: 1px solid var(--border-color);
   border-radius: 999px;
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
   transition:
     background-color 150ms ease,
     border-color 150ms ease,
@@ -584,11 +582,11 @@ entry.flux-rename-entry {
 }
 
 .flux-card.flux-card--empty {
-  border-left: 2.5px solid alpha(currentColor, var(--dim-opacity));
+  border-left: 2.5px solid alpha(currentColor, 0.55);
 }
 
 .flux-card.flux-card--empty .flux-label {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 .flux-card.flux-card--symlink {
@@ -616,7 +614,7 @@ entry.flux-rename-entry {
 }
 
 .flux-card.flux-card--cut .flux-label {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
   font-style: italic;
 }
 
@@ -696,7 +694,7 @@ popover.menu modelbutton label {
 popover.menu modelbutton label:disabled,
 popover.menu modelbutton accelerator,
 popover.menu modelbutton .accelerator {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 popover.menu modelbutton image,
@@ -723,7 +721,7 @@ popover.menu modelbutton:hover arrow.left {
 }
 
 popover.menu > contents separator {
-  background-color: alpha(currentColor, var(--border-opacity));
+  background-color: alpha(currentColor, 0.1);
   min-height: 1px;
   margin: 0.3em 0.6em;
 }
@@ -741,14 +739,14 @@ passwordentry text {
   padding: 0.3em 0.9em;
   color: @theme_fg_color;
   caret-color: @theme_fg_color;
-  box-shadow: inset 0 0 0 1px alpha(currentColor, var(--border-opacity));
+  box-shadow: inset 0 0 0 1px alpha(currentColor, 0.1);
   letter-spacing: 0px;
 }
 
 entry placeholder,
 searchentry placeholder,
 passwordentry placeholder {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 entry:focus,
@@ -856,14 +854,14 @@ textview text {
 }
 
 .selection-status label.caption {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
   font-family: var(--font-mono);
   font-size: 0.85em;
   letter-spacing: -0.01em;
 }
 
 .selection-status label.dim-label {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 .selection-status progressbar {
@@ -873,8 +871,8 @@ textview text {
 }
 
 .selection-status progressbar trough {
-  background-color: alpha(currentColor, var(--border-opacity));
-  border: 1px solid alpha(currentColor, var(--border-opacity));
+  background-color: alpha(currentColor, 0.1);
+  border: 1px solid alpha(currentColor, 0.1);
   border-radius: 999px;
   min-height: 0.45em;
   box-shadow: inset 0 1px 2px alpha(black, 0.35);
@@ -948,11 +946,11 @@ textview text {
 
 window:backdrop .selection-status {
   background-color: alpha(@headerbar_bg_color, 0.95);
-  border-top-color: alpha(currentColor, var(--border-opacity));
+  border-top-color: alpha(currentColor, 0.1);
 }
 
 window:backdrop .selection-status label {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 window:backdrop .selection-status button.flat,
@@ -1270,12 +1268,12 @@ scrollbar {
 }
 
 scrollbar slider {
-  background-color: alpha(currentColor, var(--border-opacity));
+  background-color: alpha(currentColor, 0.1);
   border-radius: 0.75em;
 }
 
 scrollbar slider:hover {
-  background-color: alpha(currentColor, calc(var(--border-opacity) * 2));
+  background-color: alpha(currentColor, 0.2);
 }
 
 /* ── cards lists and frames ── */
@@ -1378,7 +1376,7 @@ adwpreferencesrow label.subtitle,
 adwpreferencesgroup .description,
 adwpreferencesgroup label.description,
 .subtitle {
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 /* ── general typography and labels ── */
@@ -1407,7 +1405,7 @@ tooltip.background {
 .numeric {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 .accent {
@@ -1484,7 +1482,7 @@ tabbar tab {
   margin: 0 0.15em;
   border-radius: 0.6em;
   background-color: alpha(@theme_fg_color, 0.04);
-  border: 1px solid alpha(currentColor, var(--border-opacity));
+  border: 1px solid alpha(currentColor, 0.1);
   box-shadow: none;
   transition:
     background-color 120ms ease,
@@ -1527,7 +1525,7 @@ tabbar tab label {
   font-family: var(--font-main);
   font-size: 0.9em;
   font-weight: 500;
-  color: alpha(currentColor, var(--dim-opacity));
+  color: alpha(currentColor, 0.55);
 }
 
 tabbar tab:hover label {
