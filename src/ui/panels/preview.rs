@@ -1048,6 +1048,21 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     view_overlay.add_overlay(&nav_prev);
     view_overlay.add_overlay(&nav_next);
 
+    // The arrows are only shown while the pointer is over the preview panel, so
+    // they do not sit on top of the content when it is not being interacted with.
+    nav_prev.set_visible(false);
+    nav_next.set_visible(false);
+    let hover = gtk::EventControllerMotion::new();
+    {
+        let (prev, next) = (nav_prev.clone(), nav_next.clone());
+        hover.connect_contains_pointer_notify(move |c| {
+            let inside = c.contains_pointer();
+            prev.set_visible(inside);
+            next.set_visible(inside);
+        });
+    }
+    panel.add_controller(hover);
+
     panel.append(&view_overlay);
 
     let handle = PreviewPanelHandle {
