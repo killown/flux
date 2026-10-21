@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 /// Handles both in-tree `.git` directories and the `.git` file that worktrees
 /// and submodules use (which contains a `gitdir:` pointer).
 pub fn find_git_repo_root(start: &Path) -> Option<PathBuf> {
+    crate::hit!("find_git_repo_root");
     let mut curr = start.to_path_buf();
     loop {
         let dot_git = curr.join(".git");

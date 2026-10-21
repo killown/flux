@@ -49,6 +49,7 @@ pub struct ConflictContext {
 /// Given `/dest/file.txt` returns `/dest/file (1).txt`, `/dest/file (2).txt`, …
 /// until a free slot is found.  Works for both files and directories.
 pub fn auto_rename_dest(dest: &Path) -> PathBuf {
+    crate::hit!("auto_rename_dest");
     let stem = dest
         .file_stem()
         .unwrap_or_default()

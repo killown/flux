@@ -7,12 +7,14 @@ use std::path::PathBuf;
 
 impl FluxApp {
     pub fn handle_undo(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_undo");
         if let Some(op) = self.file_op_history.pop_undo() {
             self.execute_undo_op(op, sender);
         }
     }
 
     pub fn handle_redo(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_redo");
         if let Some(op) = self.file_op_history.pop_redo() {
             self.execute_redo_op(op, sender);
         }
@@ -24,6 +26,7 @@ impl FluxApp {
         dest_dir: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_undo_move_complete");
         self.file_op_history.push_redo(FileOp::Move {
             items: redo_items,
             dest_dir,
@@ -40,6 +43,7 @@ impl FluxApp {
         paths: Vec<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_undo_trash_complete");
         self.file_op_history.push_redo(FileOp::Trash { paths });
         sender.input(AppMsg::Refresh);
     }
@@ -54,6 +58,7 @@ impl FluxApp {
         dest_dir: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_redo_move_complete");
         self.file_op_history
             .push_undo(FileOp::Move { items, dest_dir });
         sender.input(AppMsg::Refresh);
@@ -68,6 +73,7 @@ impl FluxApp {
         paths: Vec<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_redo_trash_complete");
         self.file_op_history.push_undo(FileOp::Trash { paths });
         sender.input(AppMsg::Refresh);
     }
@@ -77,6 +83,7 @@ impl FluxApp {
     }
 
     fn execute_undo_op(&mut self, op: FileOp, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("execute_undo_op");
         match op {
             FileOp::Rename {
                 old_path,
@@ -194,6 +201,7 @@ impl FluxApp {
     }
 
     fn execute_redo_op(&mut self, op: FileOp, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("execute_redo_op");
         match op {
             FileOp::Rename {
                 old_path,

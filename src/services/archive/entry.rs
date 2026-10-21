@@ -82,6 +82,7 @@ pub(super) fn collect_entry(
     prefix: &str,
     is_encrypted: bool,
 ) {
+    crate::hit!("collect_entry");
     let relative = if prefix.is_empty() {
         raw_name.to_owned()
     } else {

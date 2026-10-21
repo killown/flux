@@ -22,6 +22,7 @@ fn read_stream_chunk(
     dest_dir: std::path::PathBuf,
     sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("read_stream_chunk");
     let stream_for_closure = stream.clone();
     stream.read_bytes_async(
         8192,

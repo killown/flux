@@ -12,6 +12,7 @@ use object::NerdIconObject;
 pub const MENU_ICON_PADDING: &str = "      ";
 
 pub fn show_menu_icon_picker(parent: Option<&gtk::Window>, on_select: impl Fn(&str) + 'static) {
+    crate::hit!("show_menu_icon_picker");
     let dialog = adw::Window::builder()
         .title(tr("Select Nerd Font Icon").as_str())
         .modal(true)

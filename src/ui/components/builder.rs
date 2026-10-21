@@ -241,6 +241,7 @@ impl FileItemBuilder {
     }
 
     pub fn build(self) -> FileItem {
+        crate::hit!("build");
         FileItem {
             name: self.name,
             icon: self.icon,

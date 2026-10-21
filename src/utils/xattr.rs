@@ -30,6 +30,7 @@ pub fn read_tags<P: AsRef<Path>>(path: P) -> Vec<String> {
 ///
 /// If `tags` is empty, the `user.xdg.tags` attribute is removed from the file.
 pub fn write_tags<P: AsRef<Path>>(path: P, tags: &[String]) -> Result<(), std::io::Error> {
+    crate::hit!("write_tags");
     let p = path.as_ref();
 
     let clean_tags: Vec<&str> = tags

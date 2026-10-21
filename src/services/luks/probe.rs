@@ -9,6 +9,7 @@ use std::process::Command;
 
 /// Returns `true` if the magic bytes of `path` identify it as a LUKS container.
 pub fn is_luks_image(path: &Path) -> bool {
+    crate::hit!("is_luks_image");
     Command::new("file")
         .args(["-b", &path.to_string_lossy()])
         .output()
@@ -19,6 +20,7 @@ pub fn is_luks_image(path: &Path) -> bool {
 /// Reads `/proc/mounts` to find the current mount point of a dm-crypt device
 /// by name (i.e. `/dev/mapper/<name>`).
 pub fn find_mount_point(device_name: &str) -> Option<PathBuf> {
+    crate::hit!("find_mount_point");
     let mounts = std::fs::read_to_string("/proc/mounts").ok()?;
     mounts.lines().find_map(|line| {
         let mut parts = line.split_whitespace();
@@ -38,6 +40,7 @@ pub fn find_mount_point(device_name: &str) -> Option<PathBuf> {
 /// `dm_dev` is empty when the loop is attached but the LUKS layer hasn't been
 /// unlocked yet.
 pub(super) fn find_existing_luks_setup(image_path: &Path) -> Option<(String, String)> {
+    crate::hit!("find_existing_luks_setup");
     let canonical = image_path.canonicalize().ok()?;
     let entries = std::fs::read_dir("/sys/block").ok()?;
 
@@ -71,6 +74,7 @@ pub(super) fn find_existing_luks_setup(image_path: &Path) -> Option<(String, Str
 
 /// Checks `/proc/mounts` to see if a `/dev/dm-X` device node is already mounted.
 pub(super) fn get_mount_point_for_dm(dm_dev: &str) -> Option<PathBuf> {
+    crate::hit!("get_mount_point_for_dm");
     let mounts = std::fs::read_to_string("/proc/mounts").ok()?;
     for line in mounts.lines() {
         let mut parts = line.split_whitespace();

@@ -21,6 +21,7 @@ pub(super) fn build_sections(
     mime_type: &str,
     file_content: &[u8],
 ) -> Vec<SectionData> {
+    crate::hit!("build_sections");
     let filename = path
         .file_name()
         .unwrap_or_default()

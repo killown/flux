@@ -8,6 +8,7 @@ use std::rc::Rc;
 impl FluxApp {
     /// Displays a grid-based icon picker dialog to set custom folder icons.
     pub fn show_icon_picker(&self, target_path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("show_icon_picker");
         let toplevels = gtk::Window::list_toplevels();
         let parent = toplevels
             .first()
@@ -193,6 +194,7 @@ impl FluxApp {
         toast: Option<String>,
         sender: relm4::AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_extension_icon_file_chooser");
         let filter = gtk::FileFilter::new();
         filter.set_name(Some("Image Files"));
         filter.add_mime_type("image/png");

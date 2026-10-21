@@ -4,6 +4,7 @@ use relm4::prelude::*;
 
 impl FluxApp {
     pub fn handle_set_asc(&mut self, asc: bool, sender: &relm4::AsyncComponentSender<Self>) {
+        crate::hit!("handle_set_asc");
         self.sort_ascending = asc;
         let sort_col = match self.sort_by {
             SortBy::Name => "Name",
@@ -22,6 +23,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_show_hidden(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_set_show_hidden");
         self.show_hidden = val;
         self.config.ui.show_hidden_by_default = val;
         utils::save_config(&self.config);
@@ -91,6 +93,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_default_sort(&mut self, sort: SortBy, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_set_default_sort");
         self.config.ui.default_sort = sort;
         self.sort_by = sort;
         utils::save_config(&self.config);
@@ -119,6 +122,7 @@ impl FluxApp {
         &mut self,
         sender: &relm4::AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_toggle_current_folders_first");
         let key = self.current_path.to_string_lossy().to_string();
         let current_val = self
             .config

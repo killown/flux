@@ -5,6 +5,7 @@ use relm4::prelude::*;
 impl FluxApp {
     /// Handles clipboard Copy and Cut actions by populating standard GTK Clipboard providers.
     pub fn handle_copy_or_cut(&mut self, is_cut: bool, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_copy_or_cut");
         self.handle_clipboard_action(is_cut);
 
         let selection = self.get_selection();
@@ -44,6 +45,7 @@ impl FluxApp {
     /// Copies the absolute paths of selected items to the clipboard.
     /// Resolves symlinks to their canonical target path when available.
     pub fn handle_copy_path(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_copy_path");
         let selection = self.get_selection();
         if selection.is_empty() {
             sender.input(AppMsg::ShowToast(crate::i18n::tr("No items selected.")));

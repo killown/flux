@@ -5,6 +5,7 @@ use gtk::prelude::*;
 use relm4::Sender;
 
 pub fn build_network_section(bookmarks: &[NetworkBookmark], sender: Sender<AppMsg>) -> gtk::Box {
+    crate::hit!("build_network_section");
     let container = gtk::Box::new(gtk::Orientation::Vertical, 2);
     container.set_hexpand(false);
     container.set_halign(gtk::Align::Start);

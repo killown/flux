@@ -31,6 +31,7 @@ impl FluxApp {
         semaphore: Arc<Semaphore>,
         sender: AsyncComponentSender<Self>,
     ) {
+        crate::hit!("spawn_single_thumbnail");
         let session_arc = self.load_id.clone();
         let manager = self.thumbnail_manager.clone();
 

@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::ShowLoadingSpinner(session) => app.handle_show_loading_spinner(session),
         AppMsg::FolderLoadedChunk {

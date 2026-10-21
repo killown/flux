@@ -40,6 +40,7 @@ fn save_extension_icon(
     font_color: &str,
     base_font_size: f64,
 ) -> std::io::Result<PathBuf> {
+    crate::hit!("save_extension_icon");
     let clean_ext = extension.trim_start_matches('.').to_ascii_lowercase();
     let base_dir = dirs::data_local_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))

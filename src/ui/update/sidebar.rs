@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::RefreshSidebar => app.handle_refresh_sidebar(),
         AppMsg::RemoveFromSidebar(path) => app.handle_remove_from_sidebar(path),

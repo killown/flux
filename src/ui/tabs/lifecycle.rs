@@ -10,6 +10,7 @@ impl FluxApp {
         target_path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_new_tab");
         let path = target_path.unwrap_or_else(|| self.current_path.clone());
         self.next_tab_id += 1;
         let tab_id = self.next_tab_id;
@@ -44,6 +45,7 @@ impl FluxApp {
     }
 
     pub fn handle_open_tabs(&mut self, targets: Vec<PathBuf>, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_open_tabs");
         if targets.is_empty() {
             return;
         }
@@ -85,6 +87,7 @@ impl FluxApp {
     }
 
     pub fn handle_switch_tab(&mut self, index: usize, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_switch_tab");
         if index >= self.tabs.len() || index == self.active_tab_index {
             return;
         }
@@ -160,6 +163,7 @@ impl FluxApp {
         index_opt: Option<usize>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_close_tab");
         match index_opt {
             None => {
                 if self.tabs.len() <= 1 {
@@ -233,6 +237,7 @@ impl FluxApp {
     /// tab to a new position. `new_position` is the visual position emitted by
     /// `AdwTabView::page-reordered`.
     pub fn handle_tab_reordered(&mut self, moved_id: u64, new_position: usize) {
+        crate::hit!("handle_tab_reordered");
         let Some(old_position) = self.tabs.iter().position(|t| t.id == moved_id) else {
             return;
         };

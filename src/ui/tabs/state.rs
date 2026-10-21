@@ -35,6 +35,7 @@ pub struct TabState {
 
 impl TabState {
     pub fn new(id: u64, initial_path: PathBuf, is_list_mode: bool, sort_by: SortBy) -> Self {
+        crate::hit!("new");
         let title = initial_path
             .file_name()
             .map(|n| n.to_string_lossy().to_string())

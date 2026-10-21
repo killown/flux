@@ -63,6 +63,7 @@ impl ConnectToServerParams {
 }
 
 pub fn describe_network_location(uri: &str) -> (String, String) {
+    crate::hit!("describe_network_location");
     net_debug!("[network] describe_network_location uri = {uri:?}");
     if uri.is_empty() || uri.contains('\0') {
         return (String::new(), "folder-remote-symbolic".to_owned());

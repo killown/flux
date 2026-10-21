@@ -33,6 +33,7 @@ fn is_flux_generated(path: &std::path::Path) -> bool {
 /// Idempotent: once `<path>.bak` exists, later calls do nothing, so a user
 /// who disables and re-enables the feature keeps their original file.
 fn backup_if_foreign(path: &std::path::Path) {
+    crate::hit!("backup_if_foreign");
     if !path.is_file() || is_flux_generated(path) {
         return;
     }
@@ -45,6 +46,7 @@ fn backup_if_foreign(path: &std::path::Path) {
 
 /// Renders the snippet body. `pub(crate)` so it can be unit-tested.
 pub(crate) fn render_snippet(env: &ThemeEnv) -> String {
+    crate::hit!("render_snippet");
     let strip = |s: &str| s.trim_start_matches('#').to_string();
 
     let fg = strip(&env.fg);
@@ -159,6 +161,7 @@ fn blend_hex(a: &str, b: &str, t: f64) -> String {
 /// atomically, on a background thread. All errors are ignored: fish may not
 /// be installed, and the user may not want the snippet.
 pub fn write_fish_theme_snippet(env: &ThemeEnv) {
+    crate::hit!("write_fish_theme_snippet");
     // Respect the user's choice. When off, do not rewrite the file (so a
     // user who disabled the feature keeps whatever state they had) and do
     // not create it.

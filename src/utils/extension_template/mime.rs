@@ -6,6 +6,7 @@ static EXT_MIME_CACHE: OnceLock<HashMap<String, String>> = OnceLock::new();
 /// Returns the system-registered MIME type for any extension using the
 /// Freedesktop shared-mime-info database.
 pub fn lookup_system_extension_mime(ext: &str) -> Option<String> {
+    crate::hit!("lookup_system_extension_mime");
     if ext.is_empty() {
         return None;
     }

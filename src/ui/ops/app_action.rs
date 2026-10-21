@@ -50,6 +50,7 @@ impl FluxApp {
         tab_id: Option<u64>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_open");
         self.stop_preview_media();
 
         let modifiers = gdk::Display::default()
@@ -178,6 +179,7 @@ impl FluxApp {
 
     /// Handles explicit primary item activation (e.g. Return / Double-click).
     pub fn handle_activate(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_activate");
         self.stop_preview_media();
 
         let modifiers = gdk::Display::default()
@@ -202,6 +204,7 @@ impl FluxApp {
 
     /// Launches selection using a Desktop Entry ID.
     pub fn handle_launch_with_app(&self, app_id: String) {
+        crate::hit!("handle_launch_with_app");
         if let Some(app_info) = gio_unix::DesktopAppInfo::new(&app_id) {
             let selection = self.get_selection();
             if selection.is_empty() {
@@ -220,6 +223,7 @@ impl FluxApp {
 
     /// Clears selected or all entries from GTK recents.
     pub fn handle_clear_recents(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_clear_recents");
         let selection = self.get_selection();
         let result = if selection.is_empty() {
             Self::remove_recents(None)
@@ -246,6 +250,7 @@ impl FluxApp {
         path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_prepare_context_menu");
         let resolved_path = path.or_else(|| self.get_selected_path());
 
         let sender_ctx = sender.clone();

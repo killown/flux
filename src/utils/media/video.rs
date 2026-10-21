@@ -11,6 +11,7 @@ use super::png::store_thumbnail;
 /// is not installed, or if the output cannot be parsed.
 #[allow(dead_code)]
 pub async fn probe_media_duration(path: &Path) -> Option<Duration> {
+    crate::hit!("probe_media_duration");
     let output = tokio::process::Command::new("ffprobe")
         .args([
             "-v",
@@ -50,6 +51,7 @@ pub(crate) fn extract_video_frame(
     cache_dir: &std::path::Path,
     target_size: i32,
 ) -> Option<gtk::gdk::Texture> {
+    crate::hit!("extract_video_frame");
     let config = crate::utils::load_config();
     let seek_secs = config.ui.ffmpeg_seek_seconds;
     let threads_str = config.ui.ffmpeg_threads.to_string();

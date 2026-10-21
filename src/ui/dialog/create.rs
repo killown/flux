@@ -6,6 +6,7 @@ use std::path::PathBuf;
 impl FluxApp {
     /// Displays a modal dialog prompting for single or batch folder creation.
     pub fn show_prompt_new_folder(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("show_prompt_new_folder");
         let window = gtk::Application::default().active_window();
         let current_path = self.current_path.clone();
         let s = sender.clone();
@@ -171,6 +172,7 @@ impl FluxApp {
 
     /// Displays a modal dialog prompting for single or batch file creation.
     pub fn show_prompt_new_file(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("show_prompt_new_file");
         let window = gtk::Application::default().active_window();
         let current_path = self.current_path.clone();
         let s = sender.clone();

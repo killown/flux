@@ -4,6 +4,7 @@ use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_extract_archive(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_extract_archive");
         let uri = self.current_path.to_string_lossy().to_string();
         let Some((archive_path, _)) = crate::services::archive::parse_archive_uri(&uri) else {
             return;

@@ -7,6 +7,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::SetUiScale(scale) => app.handle_set_ui_scale(scale),
         AppMsg::SetBackgroundAlpha { slot, alpha } => app.handle_set_background_alpha(slot, alpha),

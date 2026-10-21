@@ -24,6 +24,7 @@ pub(super) fn pdf_thumbnail(
     cache_path: &Path,
     target_size: i32,
 ) -> Option<gdk::Texture> {
+    crate::hit!("pdf_thumbnail");
     let doc = poppler::PopplerDocument::new_from_file(path, None).ok()?;
     let page = doc.get_page(0)?;
     let (page_w, page_h) = page.get_size();

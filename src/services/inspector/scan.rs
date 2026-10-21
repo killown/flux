@@ -11,6 +11,7 @@ use std::time::Instant;
 ///
 /// Blocking, call from a `relm4::spawn_blocking` closure.
 pub fn scan_directory_native(target: &Path) -> DirStats {
+    crate::hit!("scan_directory_native");
     let target = target
         .canonicalize()
         .unwrap_or_else(|_| target.to_path_buf());

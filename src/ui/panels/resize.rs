@@ -45,6 +45,7 @@ pub fn resizable_panel(
     panel: &gtk::Box,
     on_resize_end: impl Fn(i32) + 'static,
 ) -> gtk::Box {
+    crate::hit!("resizable_panel");
     let resize_handle = gtk::Separator::builder()
         .orientation(gtk::Orientation::Vertical)
         .css_classes(["sidebar-resize-handle"])

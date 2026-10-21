@@ -24,6 +24,7 @@ use std::time::Duration;
 
 impl FluxApp {
     pub fn handle_toggle_preview(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_toggle_preview");
         if !self.preview_panel_visible {
             // Stop grid autoplay before the panel is shown. A live gtk::Video in
             // the grid reports its intrinsic size as natural width, and while the
@@ -90,6 +91,7 @@ impl FluxApp {
         &mut self,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_toggle_preview_and_filter_by_selected_mime");
         if !self.preview_panel_visible {
             self.handle_toggle_preview(sender);
         }
@@ -125,6 +127,7 @@ impl FluxApp {
     /// Toggles wide-preview mode (sidebar hidden, panel fills the remaining width).
     /// Also persists `config.ui.wide_preview` so the next open matches.
     pub fn handle_toggle_wide_preview(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_toggle_wide_preview");
         if self.wide_preview_sidebar.is_some() {
             self.set_wide_preview_default(false);
             self.exit_wide_preview();
@@ -144,6 +147,7 @@ impl FluxApp {
     /// `startup_preview` stays set until the first item exists and can be selected
     /// (see [`Self::schedule_startup_preview_selection`]).
     pub fn handle_startup_preview(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_startup_preview");
         if !self.preview_panel_visible {
             self.handle_toggle_preview(sender);
         }
@@ -190,6 +194,7 @@ impl FluxApp {
 
     /// Header-button handler: stores the permanent wide setting and applies it right away.
     pub fn handle_set_wide_preview_default(&mut self, on: bool) {
+        crate::hit!("handle_set_wide_preview_default");
         if self.config.ui.wide_preview == on {
             return;
         }
@@ -232,6 +237,7 @@ impl FluxApp {
     /// Toggles full-screen preview: the main column (header bar, tab bar, file grid, status bar)
     /// is hidden, the window goes full screen and the preview panel fills it.
     pub fn handle_toggle_preview_fullscreen(&mut self) {
+        crate::hit!("handle_toggle_preview_fullscreen");
         use gtk::prelude::*;
 
         if self.preview_fullscreen.is_some() {
@@ -265,6 +271,7 @@ impl FluxApp {
 
     /// Moves keyboard focus between the main grid and the folder grid in the preview panel.
     pub fn handle_toggle_preview_grid_focus(&mut self) {
+        crate::hit!("handle_toggle_preview_grid_focus");
         let in_folder_grid = preview_registry::with(|h| h.folder_grid_has_focus()).unwrap_or(false);
 
         if in_folder_grid {
@@ -345,6 +352,7 @@ impl FluxApp {
     }
 
     pub fn handle_preview_load(&self, path: PathBuf, session: u64) {
+        crate::hit!("handle_preview_load");
         if session != self.preview_session.load(Ordering::SeqCst) {
             return;
         }
@@ -374,6 +382,7 @@ impl FluxApp {
     }
 
     pub fn handle_preview_ready(&self, path: PathBuf, session: u64, content: PreviewContent) {
+        crate::hit!("handle_preview_ready");
         if session != self.preview_session.load(Ordering::SeqCst) {
             return;
         }
@@ -397,6 +406,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_preview_panel_width(&mut self, val: i32) {
+        crate::hit!("handle_set_preview_panel_width");
         let clamped = val.clamp(300, 2400);
         self.config.ui.preview_panel_width = clamped;
         crate::utils::save_config(&self.config);
@@ -437,6 +447,7 @@ const MARKDOWN_EXTS: &[&str] = &["md", "markdown", "mdown", "mkd", "mkdn"];
 /// than `PREVIEW_DEADLINE` and turns worker panics into a visible card, so
 /// the panel always gets something to show instead of spinning forever.
 pub(crate) fn compute_preview_guarded(path: &Path) -> PreviewContent {
+    crate::hit!("compute_preview_guarded");
     use crate::i18n::tr;
 
     let (tx, rx) = std::sync::mpsc::channel();
@@ -487,6 +498,7 @@ fn degraded(path: &Path, note: String) -> PreviewContent {
 }
 
 pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
+    crate::hit!("compute_preview");
     use crate::i18n::tr;
 
     let virtual_path = path
@@ -774,6 +786,7 @@ fn pdf_preview(path: &Path, mut info: FileInfo) -> PreviewContent {
 // ─── Info ─────────────────────────────────────────────────────────────────────
 
 fn build_info(path: &Path, virtual_path: bool) -> FileInfo {
+    crate::hit!("build_info");
     use crate::i18n::tr;
 
     let name = path
@@ -836,6 +849,7 @@ fn mode_string(mode: u32) -> String {
 // ─── PDF ──────────────────────────────────────────────────────────────────────
 
 fn pdf_summary(path: &Path) -> Option<(usize, f64, f64)> {
+    crate::hit!("pdf_summary");
     let doc = poppler::PopplerDocument::new_from_file(path, None).ok()?;
     let pages = doc.get_n_pages();
     if pages == 0 {
@@ -848,6 +862,7 @@ fn pdf_summary(path: &Path) -> Option<(usize, f64, f64)> {
 // ─── Images ───────────────────────────────────────────────────────────────────
 
 fn load_image_full(path: &Path) -> Option<(gtk::gdk::Texture, Vec<(String, String)>)> {
+    crate::hit!("load_image_full");
     use crate::i18n::tr;
 
     let (format, w, h) = gdk_pixbuf::Pixbuf::file_info(path)?;
@@ -871,6 +886,7 @@ fn load_image_full(path: &Path) -> Option<(gtk::gdk::Texture, Vec<(String, Strin
 // ─── Audio / video ────────────────────────────────────────────────────────────
 
 fn audio_info(path: &Path) -> Vec<(String, String)> {
+    crate::hit!("audio_info");
     use crate::i18n::tr;
     use lofty::prelude::*;
     use lofty::probe::Probe;
@@ -916,6 +932,7 @@ fn audio_info(path: &Path) -> Vec<(String, String)> {
 }
 
 fn video_info(path: &Path) -> Vec<(String, String)> {
+    crate::hit!("video_info");
     use crate::i18n::tr;
     use std::collections::HashMap;
 
@@ -978,6 +995,7 @@ fn fmt_secs(secs: f64) -> String {
 // ─── Folders / archives ───────────────────────────────────────────────────────
 
 fn dir_listing(path: &Path, mut info: FileInfo) -> PreviewContent {
+    crate::hit!("dir_listing");
     use crate::i18n::tr;
 
     let Ok(rd) = std::fs::read_dir(path) else {
@@ -1051,6 +1069,7 @@ fn dir_listing(path: &Path, mut info: FileInfo) -> PreviewContent {
 }
 
 fn archive_listing(path: &Path, info: &mut FileInfo) -> Option<PreviewContent> {
+    crate::hit!("archive_listing");
     use crate::i18n::tr;
 
     let mut entries = crate::services::archive::list_archive_entries(path, "", None).ok()?;
@@ -1123,6 +1142,7 @@ fn decode_head(bytes: &[u8], hit_cap: bool, texty_mime: bool) -> Option<(String,
 }
 
 fn hex_dump(bytes: &[u8]) -> String {
+    crate::hit!("hex_dump");
     use std::fmt::Write;
 
     let mut out = String::with_capacity(bytes.len() * 4);
@@ -1153,6 +1173,7 @@ fn hex_dump(bytes: &[u8]) -> String {
 }
 
 fn read_head(path: &Path, cap: usize) -> std::io::Result<Vec<u8>> {
+    crate::hit!("read_head");
     use std::io::Read;
     let mut f = std::fs::File::open(path)?;
     let mut buf = vec![0u8; cap];
@@ -1196,6 +1217,7 @@ fn monitor_width(widget: &impl IsA<gtk::Widget>) -> i32 {
 
 /// Shows or hides the main column (header bar, tab bar, file grid, status bar) next to the preview.
 fn set_main_column_visible(revealer: &gtk::Revealer, visible: bool) {
+    crate::hit!("set_main_column_visible");
     use gtk::prelude::*;
 
     let mut sibling = revealer.parent().and_then(|row| row.first_child());
@@ -1214,6 +1236,7 @@ fn set_wide_preview_layout(
     list_mode: bool,
     saved_width: i32,
 ) {
+    crate::hit!("set_wide_preview_layout");
     use gtk::prelude::*;
 
     let row = revealer.parent();

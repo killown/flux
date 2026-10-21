@@ -17,6 +17,7 @@ impl FluxApp {
     /// layout renegotiation passes on the main loop. In list mode, where items
     /// use expanded horizontal layouts, this causes severe UI hangs on large folders.
     pub fn reset_from_content_search(&mut self) {
+        crate::hit!("reset_from_content_search");
         if let Some(cancellable) = self.content_search_cancellable.take() {
             cancellable.cancel();
         }
@@ -50,6 +51,7 @@ impl FluxApp {
         line_number: usize,
         session: u64,
     ) {
+        crate::hit!("handle_content_search_result");
         if self.load_id.load(Ordering::SeqCst) != session {
             return;
         }
@@ -104,6 +106,7 @@ impl FluxApp {
 
     /// Concludes the content search walk and selects the top item.
     pub fn handle_content_search_done(&mut self, session: u64) {
+        crate::hit!("handle_content_search_done");
         if self.load_id.load(Ordering::SeqCst) != session {
             return;
         }

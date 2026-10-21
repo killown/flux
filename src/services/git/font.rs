@@ -4,6 +4,7 @@ static HAS_NERD_FONT: OnceLock<bool> = OnceLock::new();
 
 /// Returns whether a Nerd Font is available on the system using Fontconfig.
 pub fn is_nerd_font_available() -> bool {
+    crate::hit!("is_nerd_font_available");
     *HAS_NERD_FONT.get_or_init(|| {
         #[link(name = "fontconfig")]
         extern "C" {

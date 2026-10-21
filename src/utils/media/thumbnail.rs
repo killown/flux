@@ -62,6 +62,7 @@ pub async fn get_or_create_thumbnail(path: &std::path::Path) -> Option<gtk::gdk:
 /// and `cache_path` is the full `.png` destination. Returns `None` if
 /// `dirs::cache_dir()` is unavailable or `path` contains non-UTF-8 bytes.
 fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathBuf, String)> {
+    crate::hit!("thumbnail_cache_path");
     let cache_dir = dirs::cache_dir()?
         .join("thumbnails")
         .join(tier_for_size(target_size));
@@ -104,6 +105,7 @@ fn is_ephemeral_source(path: &Path) -> bool {
 }
 
 pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
+    crate::hit!("generate_thumbnail_sync");
     let path_str = path.to_string_lossy();
     if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
         return crate::services::archive::get_archive_thumbnail(path);
@@ -114,6 +116,7 @@ pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk
 }
 
 fn generate_thumbnail_inner(path: &std::path::Path, ephemeral: bool) -> Option<gtk::gdk::Texture> {
+    crate::hit!("generate_thumbnail_inner");
     let (show_thumbnails, target_size, thumb_types, _ffmpeg_threads, _auto_rotate, _seek_secs) =
         crate::utils::config::get_thumb_config();
 
@@ -268,6 +271,7 @@ fn dispatch(
     is_exe_file: bool,
     is_raw_file: bool,
 ) -> Option<gtk::gdk::Texture> {
+    crate::hit!("dispatch");
     if is_raw_file {
         // `raw-thumbnailer` writes PNG directly, no temp-file dance needed
         // on the caller side. If the binary is missing, fall through to None

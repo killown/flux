@@ -11,6 +11,7 @@ use std::sync::atomic::Ordering;
 
 impl FluxApp {
     pub fn handle_show_loading_spinner(&mut self, session: u64) {
+        crate::hit!("handle_show_loading_spinner");
         if self.load_id.load(Ordering::SeqCst) == session {
             self.is_loading = true;
         }
@@ -30,6 +31,7 @@ impl FluxApp {
     }
 
     pub fn handle_folder_loaded_finish(&mut self, load_id: u64) {
+        crate::hit!("handle_folder_loaded_finish");
         if self.load_id.load(Ordering::SeqCst) == load_id {
             self.is_loading = false;
         }
@@ -43,6 +45,7 @@ impl FluxApp {
         media_tasks: Vec<(u32, PathBuf)>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_folder_loaded_begin");
         self.active_video_preview = None;
         self.handle_folder_loaded(path, load_id, items, media_tasks, sender);
     }
@@ -52,6 +55,7 @@ impl FluxApp {
         path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_invalidate_cache_and_navigate");
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(&self.cache_key(parent));
         }

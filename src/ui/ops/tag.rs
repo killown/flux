@@ -7,6 +7,7 @@ impl FluxApp {
         tags: Vec<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_apply_tags_to_selection");
         let selection = self.get_selection();
         for path in selection {
             let _ = self
@@ -22,6 +23,7 @@ impl FluxApp {
         tag: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_remove_tag_from_selection");
         let target_tag = tag.trim_start_matches('#').to_lowercase();
         let selection = self.get_selection();
         for path in selection {
@@ -41,6 +43,7 @@ impl FluxApp {
     }
 
     pub fn handle_open_tag_picker(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_open_tag_picker");
         let selection = self.get_selection();
         let paths = if selection.is_empty() {
             vec![self.current_path.clone()]
@@ -72,6 +75,7 @@ impl FluxApp {
         available_tags: Vec<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_tags_ready");
         let parent_widget = self.files.view.clone();
         crate::ui::dialog::tag_picker::show_tag_picker(
             &parent_widget,
@@ -88,6 +92,7 @@ impl FluxApp {
         tags: Vec<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_set_file_tags");
         let state_db = self.state_db.clone();
         let path_clone = path.clone();
         let tags_clone = tags.clone();
@@ -108,6 +113,7 @@ impl FluxApp {
     }
 
     pub fn handle_delete_tag_globally(&self, tag: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_delete_tag_globally");
         let state_db = self.state_db.clone();
         let sender_refresh = sender.clone();
         std::thread::spawn(move || {
@@ -117,6 +123,7 @@ impl FluxApp {
     }
 
     pub fn handle_navigate_tag(&mut self, tag: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_navigate_tag");
         let filter_str = format!(":tag:{}", tag);
         self.search_just_opened = false;
         self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();

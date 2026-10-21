@@ -35,6 +35,7 @@ pub fn find_cached_thumbnail(
     hash: &str,
     target_size: i32,
 ) -> Option<(PathBuf, fs::Metadata)> {
+    crate::hit!("find_cached_thumbnail");
     thumbnail_lookup_tiers(target_size)
         .into_iter()
         .find_map(|tier| {

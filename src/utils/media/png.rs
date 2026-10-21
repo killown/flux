@@ -16,6 +16,7 @@ type OptimizeJob = (PathBuf, Vec<u8>);
 
 /// Optimizes raw PNG bytes with oxipng, keeping `tEXt` chunks such as `Thumb::MTime`.
 pub fn optimize_png_bytes(bytes: &[u8]) -> Vec<u8> {
+    crate::hit!("optimize_png_bytes");
     let mut keep = IndexSet::default();
     keep.insert(*b"tEXt");
 
@@ -40,6 +41,7 @@ pub fn read_thumb_mtime(png: &[u8]) -> Option<u64> {
 }
 
 fn read_text_chunk(png: &[u8], key: &str) -> Option<String> {
+    crate::hit!("read_text_chunk");
     if png.len() < 8 || png[..8] != PNG_SIGNATURE {
         return None;
     }
@@ -87,6 +89,7 @@ fn text_chunk(key: &str, value: &str) -> Vec<u8> {
 
 /// Inserts `tEXt` chunks right after IHDR, returning the input unchanged if it is not a PNG.
 pub fn inject_text_chunks(png: &[u8], entries: &[(&str, &str)]) -> Vec<u8> {
+    crate::hit!("inject_text_chunks");
     if png.len() < IHDR_END || png[..8] != PNG_SIGNATURE || &png[12..16] != b"IHDR" {
         return png.to_vec();
     }
@@ -102,6 +105,7 @@ pub fn inject_text_chunks(png: &[u8], entries: &[(&str, &str)]) -> Vec<u8> {
 static TMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 fn write_atomic(dest: &Path, bytes: &[u8]) -> bool {
+    crate::hit!("write_atomic");
     let Some(dir) = dest.parent() else {
         return false;
     };
@@ -120,6 +124,7 @@ fn write_atomic(dest: &Path, bytes: &[u8]) -> bool {
 
 /// Writes a thumbnail PNG with `Thumb::URI`/`Thumb::MTime` and queues a background oxipng pass.
 pub fn store_thumbnail(png: &[u8], source: &Path, cache_path: &Path) {
+    crate::hit!("store_thumbnail");
     let uri = gio::File::for_path(source).uri().to_string();
     let mtime = fs::metadata(source)
         .ok()
@@ -138,6 +143,7 @@ pub fn store_thumbnail(png: &[u8], source: &Path, cache_path: &Path) {
 }
 
 fn queue_optimize(path: PathBuf, bytes: Vec<u8>) {
+    crate::hit!("queue_optimize");
     static QUEUE: OnceLock<Option<SyncSender<OptimizeJob>>> = OnceLock::new();
     let tx = QUEUE.get_or_init(|| {
         let (tx, rx) = sync_channel::<OptimizeJob>(OPTIMIZE_QUEUE_LEN);

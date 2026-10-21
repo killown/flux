@@ -16,6 +16,7 @@ impl FluxApp {
     }
 
     pub fn open_file(path: PathBuf) {
+        crate::hit!("open_file");
         let path_str = path.to_string_lossy();
 
         // Determine if this is a network URI
@@ -47,6 +48,7 @@ impl FluxApp {
     /// # Errors
     /// Returns an I/O error if the XBEL file cannot be read or written.
     pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
+        crate::hit!("remove_recents");
         let xbel_path = dirs::data_local_dir()
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No data local dir"))?
             .join("recently-used.xbel");

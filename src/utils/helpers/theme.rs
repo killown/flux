@@ -18,6 +18,7 @@ fn swap_css_provider(
     css: Option<&str>,
     priority: u32,
 ) {
+    crate::hit!("swap_css_provider");
     slot.with(|cell| {
         let mut guard = cell.borrow_mut();
 
@@ -35,6 +36,7 @@ fn swap_css_provider(
 
 /// Applies runtime font DPI scaling to the default GTK settings.
 pub fn apply_ui_scale(scale: f64) {
+    crate::hit!("apply_ui_scale");
     let clamped = scale.clamp(0.75, 3.0);
 
     if let Some(settings) = gtk::Settings::default() {
@@ -116,6 +118,7 @@ pub fn load_custom_css() {
 }
 
 pub fn list_available_themes() -> std::collections::BTreeSet<String> {
+    crate::hit!("list_available_themes");
     let mut theme_names = std::collections::BTreeSet::new();
 
     let mut search_dirs = vec![

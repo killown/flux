@@ -21,6 +21,7 @@ pub fn with_directory_rollup(
     target_dir: &Path,
     mut statuses: HashMap<PathBuf, GitFileStatus>,
 ) -> HashMap<PathBuf, GitFileStatus> {
+    crate::hit!("with_directory_rollup");
     let mut rollup: HashMap<PathBuf, GitFileStatus> = HashMap::new();
 
     for (path, status) in &statuses {

@@ -69,6 +69,7 @@ impl FluxApp {
         header_view: &str,
         terminal_focused: bool,
     ) -> glib::Propagation {
+        crate::hit!("handle_key_event");
         let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
         // System Keys

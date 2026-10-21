@@ -236,6 +236,7 @@ impl FluxApp {
         path: std::path::PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_request_thumbnail");
         let current_session = self.load_id.load(std::sync::atomic::Ordering::SeqCst);
 
         if !self.pending_thumbnails.insert(grid_idx) {

@@ -34,6 +34,7 @@ impl FluxApp {
     /// Must be called after toggling list mode so `bind()` re-renders each item
     /// with the correct orientation and icon size.
     pub fn sync_list_mode(&mut self) {
+        crate::hit!("sync_list_mode");
         let mode = self.is_list_mode;
         let size = if mode {
             self.current_list_icon_size
@@ -56,6 +57,7 @@ impl FluxApp {
 
     /// Updates the collection of path segments for breadcrumb navigation display.
     pub fn update_breadcrumbs(&mut self) {
+        crate::hit!("update_breadcrumbs");
         // Publish the directory for `flux_cwd` / `$FCWD` / `flux_goto`.
         crate::services::terminal::write_cwd_cache(&self.current_path);
 
@@ -179,6 +181,7 @@ impl FluxApp {
         results: Vec<crate::services::search::ExtensionMatch>,
         session: u64,
     ) {
+        crate::hit!("handle_extension_search_batch");
         if self.load_id.load(Ordering::SeqCst) != session {
             return;
         }

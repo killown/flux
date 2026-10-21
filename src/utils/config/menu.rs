@@ -107,6 +107,7 @@ pub fn ensure_config_file() -> PathBuf {
 
 /// Parses the right-hand side of a menu config line into (mime, command, optional_toast).
 pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)> {
+    crate::hit!("split_mime_cmd");
     let input = input.trim();
 
     let remainder = input.strip_prefix('"')?;
@@ -303,6 +304,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
 /// Writes the current menu actions to `~/.config/flux/menu.rs`
 /// in the same DSL format expected by `load_menu_config`.
 pub fn save_menu_config(actions: &[CustomAction]) -> std::io::Result<()> {
+    crate::hit!("save_menu_config");
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");

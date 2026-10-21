@@ -30,6 +30,7 @@ pub const GRID_OVERLAY_NAME: &str = "flux-grid-overlay";
 
 /// Depth-first lookup of a descendant (or `root` itself) by widget name.
 pub fn find_widget_by_name(root: &gtk::Widget, name: &str) -> Option<gtk::Widget> {
+    crate::hit!("find_widget_by_name");
     use gtk::prelude::*;
     if root.widget_name() == name {
         return Some(root.clone());

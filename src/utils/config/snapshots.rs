@@ -9,6 +9,7 @@ pub(super) type ThumbConfigSnapshot = (bool, i32, ThumbnailTypes, usize, bool, f
 pub(super) static THUMB_CONFIG: OnceLock<RwLock<ThumbConfigSnapshot>> = OnceLock::new();
 
 pub(super) fn extract_thumb_config(config: &crate::model::Config) -> ThumbConfigSnapshot {
+    crate::hit!("extract_thumb_config");
     (
         config.ui.show_thumbnails,
         config.ui.thumbnail_size.clamp(16, 768),

@@ -40,6 +40,7 @@ impl ArchiveBackend for DebBackend {
 
 // ─── .deb helpers ─────────────────────────────────────────────────────────────
 fn extract_deb_data(deb_path: &Path) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
+    crate::hit!("extract_deb_data");
     let tmp = tempfile::tempdir().map_err(|e| ArchiveError::Other(format!("tempdir: {e}")))?;
 
     // Extract all members, we care about data.tar.*
@@ -82,6 +83,7 @@ fn extract_deb(
     inner_path: &str,
     tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_deb");
     let (_dir, data_tar) = extract_deb_data(archive_path)?;
     // Deb data tarballs store entries as "./usr/bin/foo" - prepend "./" if absent.
     let inner_p = Path::new(inner_path);

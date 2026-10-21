@@ -2,6 +2,7 @@ use std::path::Path;
 
 /// Returns `true` when `path` must never be deleted by the UI.
 pub fn is_protected_target(path: &Path) -> bool {
+    crate::hit!("is_protected_target");
     let path_str = path.to_string_lossy();
 
     // Check raw URI root targets.

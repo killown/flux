@@ -46,6 +46,7 @@ pub fn set_enabled(on: bool) {
 
 /// Queues a PNG thumbnail for `inner_path` to be stored inside `archive`.
 pub fn enqueue(archive: PathBuf, inner_path: String, png_bytes: Vec<u8>, password: Option<String>) {
+    crate::hit!("enqueue");
     if !ENABLED.load(Ordering::SeqCst) {
         return;
     }
@@ -78,6 +79,7 @@ pub fn enqueue(archive: PathBuf, inner_path: String, png_bytes: Vec<u8>, passwor
 /// Returns immediately: the queue is drained under the lock and each archive is
 /// written on its own thread. Cheap when the queue is empty.
 pub fn flush_all() {
+    crate::hit!("flush_all");
     let drained: Vec<(PathBuf, PendingArchive)> = {
         let mut map = pending().lock();
         if map.is_empty() {
@@ -102,6 +104,7 @@ pub fn flush_archive(archive: &Path) {
 
 /// Writes one archive's batch, logging (never panicking on) failures.
 fn write_batch(archive: &Path, batch: PendingArchive) {
+    crate::hit!("write_batch");
     if batch.thumbs.is_empty() || !ENABLED.load(Ordering::SeqCst) {
         return;
     }

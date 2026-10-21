@@ -21,6 +21,7 @@ impl FluxApp {
         sender: AsyncComponentSender<Self>,
         initial_policy: ConflictPolicy,
     ) {
+        crate::hit!("run_paste_batch");
         let total_files = resolved_files.len();
         if total_files == 0 {
             return;

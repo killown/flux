@@ -25,6 +25,7 @@ impl Terminal {
     ) where
         F: Fn() + 'static + Send,
     {
+        crate::hit!("spawn_async");
         // Ensure `theme_env` is populated before the child is forked, so the
         // `FLUX_THEME_*` exports below reach the shell via `execve`.
         //

@@ -61,6 +61,7 @@ impl PreviewCache {
     }
 
     pub fn insert(&self, path: PathBuf, mtime: i64, content: PreviewContent) {
+        crate::hit!("insert");
         let mut inner = self.inner.lock();
         let key = (path, mtime);
         let tick = inner.clock.wrapping_add(1);
@@ -92,6 +93,7 @@ impl PreviewCache {
 
 /// Stat mtime for the LRU key. `0` when unavailable, still a valid key.
 fn mtime_of(path: &Path) -> i64 {
+    crate::hit!("mtime_of");
     std::fs::metadata(path)
         .and_then(|m| m.modified())
         .ok()
@@ -107,6 +109,7 @@ impl FluxApp {
         session: u64,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_preview_prefetch");
         if !self.preview_panel_visible {
             return;
         }
@@ -142,6 +145,7 @@ impl FluxApp {
     /// Returns up to `2 * PREFETCH_RADIUS` neighbour paths around `path`
     /// inside the active tab's file list.
     fn preview_neighbour_paths(&self, path: &PathBuf) -> Vec<PathBuf> {
+        crate::hit!("preview_neighbour_paths");
         let Some(tab) = self.tabs.get(self.active_tab_index) else {
             return Vec::new();
         };

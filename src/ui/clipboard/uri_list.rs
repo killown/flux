@@ -10,6 +10,7 @@ impl FluxApp {
         clipboard: gdk::Clipboard,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("paste_uri_list");
         let s = sender.clone();
         let paste_toast = self
             .menu_actions

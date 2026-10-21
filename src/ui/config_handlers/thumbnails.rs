@@ -21,6 +21,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_autoplay_video_previews(&mut self, val: bool) {
+        crate::hit!("handle_set_autoplay_video_previews");
         self.config.ui.autoplay_video_previews = val;
         utils::save_config(&self.config);
         if !val {
@@ -42,6 +43,7 @@ impl FluxApp {
         enabled: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_set_thumbnail_type");
         match type_name.as_str() {
             "images" => self.config.ui.thumbnail_types.images = enabled,
             "videos" => self.config.ui.thumbnail_types.videos = enabled,
@@ -75,6 +77,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_fish_theme(&mut self, val: bool) {
+        crate::hit!("handle_set_fish_theme");
         self.config.ui.fish_theme = val;
         crate::utils::save_config(&self.config);
 

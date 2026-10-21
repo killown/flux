@@ -23,6 +23,7 @@ const MAX_ROWS: usize = 10_000;
 const MAX_COLS: usize = 256;
 
 pub fn parse(path: &Path, ext: &str) -> Option<TableData> {
+    crate::hit!("parse");
     let delimiter = match ext {
         "tsv" | "tab" => b'\t',
         _ => b',',
@@ -113,6 +114,7 @@ pub fn build_store(data: &TableData) -> gio::ListStore {
 }
 
 pub fn build_columns(view: &gtk::ColumnView, data: &TableData) {
+    crate::hit!("build_columns");
     while let Some(col) = view
         .columns()
         .item(0)

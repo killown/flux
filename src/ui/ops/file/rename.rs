@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 impl FluxApp {
     pub fn rename_path(old_path: &Path, new_name: &str) -> std::io::Result<PathBuf> {
+        crate::hit!("rename_path");
         // Reject any name containing a path separator to prevent directory traversal
         if new_name.contains(std::path::MAIN_SEPARATOR) || new_name.contains('/') {
             return Err(std::io::Error::new(
@@ -35,6 +36,7 @@ impl FluxApp {
         new_name: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_perform_rename");
         match Self::rename_path(&old_path, &new_name) {
             Ok(new_path) => {
                 let _ = self.state_db.rename_path(&old_path, &new_path);

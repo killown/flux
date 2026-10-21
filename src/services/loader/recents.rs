@@ -20,6 +20,7 @@ impl FluxApp {
     /// # Arguments
     /// * `sender` - Component handle used to dispatch lifecycle updates.
     pub fn load_recents(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("load_recents");
         self.is_loading = true;
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();

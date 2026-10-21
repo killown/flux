@@ -10,6 +10,7 @@ impl FluxApp {
         image_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_set_file_icon");
         let path_str = path.to_string_lossy().to_string();
         self.config
             .ui
@@ -40,6 +41,7 @@ impl FluxApp {
     }
 
     pub fn handle_reset_file_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_reset_file_icon");
         let path_str = path.to_string_lossy().to_string();
         self.config.ui.file_icons.remove(&path_str);
         utils::save_config(&self.config);
@@ -126,6 +128,7 @@ impl FluxApp {
         ext: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_reset_extension_icon");
         let clean_ext = ext.trim_start_matches('.').to_ascii_lowercase();
         if let Some(custom_dir) =
             dirs::data_local_dir().map(|d| d.join("flux/icons/extensions/custom"))
@@ -143,6 +146,7 @@ impl FluxApp {
     }
 
     pub fn handle_trigger_reset_icon(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_trigger_reset_icon");
         let target = self
             .get_selected_path()
             .unwrap_or_else(|| self.current_path.clone());
@@ -168,6 +172,7 @@ impl FluxApp {
         icons: std::collections::HashMap<String, String>,
         session: u64,
     ) {
+        crate::hit!("handle_folder_icons_ready");
         if session != self.load_id.load(std::sync::atomic::Ordering::SeqCst) {
             return;
         }
@@ -201,6 +206,7 @@ impl FluxApp {
         icon_name: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_set_folder_icon");
         let path_str = path.to_string_lossy().to_string();
         if let Err(e) = self.state_db.set_folder_icon(&path_str, &icon_name) {
             eprintln!("[flux] Failed to save folder icon: {e}");

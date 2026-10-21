@@ -11,6 +11,7 @@ impl FluxApp {
         config: &Config,
         sender: &AsyncComponentSender<Self>,
     ) -> (adw::TabView, adw::TabBar, crate::ui::TabState) {
+        crate::hit!("build_tabs");
         let tab_view = adw::TabView::new();
         let tab_bar = adw::TabBar::builder()
             .view(&tab_view)

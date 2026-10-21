@@ -7,6 +7,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::CopyPath => app.handle_copy_path(sender),
         AppMsg::CreateSymlink => app.handle_create_link(false, sender),

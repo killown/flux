@@ -4,6 +4,7 @@ use relm4::prelude::*;
 
 impl FluxApp {
     pub fn handle_show_toast(&mut self, msg: String) {
+        crate::hit!("handle_show_toast");
         if let Some(prev) = self.last_toast.take() {
             prev.dismiss();
         }

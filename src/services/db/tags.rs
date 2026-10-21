@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 impl StateManager {
     pub fn delete_tag_globally(&self, tag: &str) -> Result<()> {
+        crate::hit!("delete_tag_globally");
         let clean = tag.trim().trim_start_matches('#');
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM file_tags WHERE tag = ?1", params![clean])?;
@@ -11,6 +12,7 @@ impl StateManager {
     }
 
     pub fn set_tags(&self, path: &Path, tags: &[String], mtime: i64) -> Result<()> {
+        crate::hit!("set_tags");
         let path_str = path.to_string_lossy();
         let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
         let tx = conn.transaction()?;
@@ -52,6 +54,7 @@ impl StateManager {
     }
 
     pub fn get_paths_for_tag(&self, tag: &str) -> Result<Vec<PathBuf>> {
+        crate::hit!("get_paths_for_tag");
         let clean = tag.trim().trim_start_matches('#');
         let conn = self.conn.lock().unwrap();
         let mut stmt =
@@ -66,6 +69,7 @@ impl StateManager {
     }
 
     pub fn list_all_tags(&self) -> Result<Vec<String>> {
+        crate::hit!("list_all_tags");
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT DISTINCT tag FROM file_tags ORDER BY tag ASC")?;
         let rows = stmt.query_map([], |row| row.get(0))?;

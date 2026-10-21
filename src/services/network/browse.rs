@@ -12,6 +12,7 @@ pub async fn list_network_entries(
     uri: &str,
     credentials: Option<&NetworkCredentials>,
 ) -> Result<Vec<NetworkEntry>, NetworkError> {
+    crate::hit!("list_network_entries");
     net_debug!("[network] ────────────────────────────────────────────────");
     net_debug!("[network] list_network_entries ENTER uri = {uri:?}");
     net_debug!(

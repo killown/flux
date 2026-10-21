@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 /// Returns the theme icon base name for a standard XDG folder, or `None` if
 /// `path` is not one of them.
 pub fn get_default_xdg_folder_icon(path: &Path) -> Option<&'static str> {
+    crate::hit!("get_default_xdg_folder_icon");
     let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     let home = dirs::home_dir();
 

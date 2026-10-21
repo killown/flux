@@ -115,6 +115,7 @@ impl FluxApp {
         mime: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_prompt_new_contextual_action");
         let dialog = adw::Window::new();
         dialog.set_title(Some(tr("New Action").as_str()));
         dialog.set_modal(true);

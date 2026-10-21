@@ -11,6 +11,7 @@ impl FluxApp {
         is_cut: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_perform_quick_transfer");
         let sources = self.resolve_command_targets();
         if sources.is_empty() || !dest.is_dir() {
             return;
@@ -64,6 +65,7 @@ impl FluxApp {
         explicit_path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_add_exclusive");
         let mut paths_to_add = Vec::new();
 
         if let Some(path) = explicit_path {
@@ -96,6 +98,7 @@ impl FluxApp {
 
     /// Clears all entries from the temporary quick panel list.
     pub fn handle_clear_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_clear_exclusive");
         self.exclusive_list.clear();
         self.exclusive_index = None;
         sender.input(AppMsg::RebuildQuickPanel);
@@ -103,6 +106,7 @@ impl FluxApp {
 
     /// Removes a specific path from the quick panel list.
     pub fn handle_remove_quick_item(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_remove_quick_item");
         if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
             self.exclusive_list.remove(pos);
             self.exclusive_index = if self.exclusive_list.is_empty() {
@@ -116,6 +120,7 @@ impl FluxApp {
 
     /// Reconstructs the quick panel button bar widget layout.
     pub fn handle_rebuild_quick_panel(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_rebuild_quick_panel");
         let panel = &self.quick_panel_box;
         while let Some(child) = panel.first_child() {
             panel.remove(&child);
@@ -250,6 +255,7 @@ impl FluxApp {
 
     /// Switches to the next item in the quick panel list.
     pub fn handle_next_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_next_exclusive");
         if !self.exclusive_list.is_empty() {
             let new_idx = match self.exclusive_index {
                 Some(i) => (i + 1) % self.exclusive_list.len(),
@@ -264,6 +270,7 @@ impl FluxApp {
 
     /// Switches to the previous item in the quick panel list.
     pub fn handle_prev_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_prev_exclusive");
         if !self.exclusive_list.is_empty() {
             let new_idx = match self.exclusive_index {
                 Some(i) if i > 0 => i - 1,

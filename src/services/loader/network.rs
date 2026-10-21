@@ -8,6 +8,7 @@ impl FluxApp {
         credentials: Option<crate::services::network::NetworkCredentials>,
         sender: relm4::AsyncComponentSender<Self>,
     ) {
+        crate::hit!("load_network");
         let uri_str = uri.to_string();
         let expand_labels = self.config.ui.expand_labels;
 

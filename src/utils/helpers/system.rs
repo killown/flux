@@ -12,6 +12,7 @@ use std::path::Path;
 /// Returns `false` if the path is not a directory or the exe path cannot be
 /// resolved, `true` if the child process was spawned successfully.
 pub fn open_new_instance(path: &std::path::Path) -> bool {
+    crate::hit!("open_new_instance");
     if !path.is_dir() {
         return false;
     }
@@ -28,6 +29,7 @@ pub fn launch_editor_at_line(
     line: usize,
     query: Option<&str>,
 ) -> std::io::Result<()> {
+    crate::hit!("launch_editor_at_line");
     let editor = if editor_cfg.trim().is_empty() {
         "nvim"
     } else {

@@ -58,6 +58,7 @@ fn get_fs_label(dev_node: &str) -> Option<String> {
 ///   4. the device basename,
 ///   5. the literal string `"Mount"`.
 pub(super) fn resolve_mount_name(path: &Path, dev_node: Option<&str>) -> String {
+    crate::hit!("resolve_mount_name");
     let user_name = std::env::var("USER").unwrap_or_default();
 
     if let Some(dev) = dev_node {

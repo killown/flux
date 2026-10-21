@@ -58,6 +58,7 @@ pub fn container_mime_masks_extension(ext: &str, content_type: &str) -> bool {
 }
 
 pub fn is_appimage(path: &Path) -> bool {
+    crate::hit!("is_appimage");
     let has_ext = path
         .extension()
         .and_then(|e| e.to_str())

@@ -7,6 +7,7 @@ impl Terminal {
     /// Kills the shell process and cleans up the PTY.
     /// Safe to call multiple times, does nothing if no shell is running.
     pub fn kill_shell(&self) {
+        crate::hit!("kill_shell");
         let mut state = match self.state.lock() {
             Ok(s) => s,
             Err(_) => return,
@@ -47,6 +48,7 @@ impl Terminal {
     /// navigation settles, only the last directory wins, so rapid folder
     /// traversal never queues multiple respawns.
     pub fn respawn(&self, working_dir: &str) {
+        crate::hit!("respawn");
         *self.pending_dir.lock().unwrap() = Some(working_dir.to_owned());
 
         let pending = self.pending_dir.clone();

@@ -9,6 +9,7 @@ impl FluxApp {
         fg: Option<String>,
         bg: Option<String>,
     ) {
+        crate::hit!("handle_set_terminal_config");
         if let Some(h) = height {
             self.config.ui.terminal.height = h;
         }

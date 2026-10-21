@@ -4,6 +4,7 @@ use adw::prelude::*;
 
 impl FluxApp {
     pub fn handle_set_maximized(&mut self, max: bool) {
+        crate::hit!("handle_set_maximized");
         self.config.ui.start_maximized = max;
         utils::save_config(&self.config);
 
@@ -18,6 +19,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_window_size(&mut self, width: Option<i32>, height: Option<i32>) {
+        crate::hit!("handle_set_window_size");
         if let Some(w) = width {
             self.config.ui.startup_window_width = w;
         }

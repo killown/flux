@@ -58,6 +58,7 @@ pub fn create_command_dialog(
     queue: Arc<TaskQueue>,
     sender: relm4::Sender<AppMsg>,
 ) -> CommandDialogHandle {
+    crate::hit!("create_command_dialog");
     let window = gtk::Application::default().active_window();
 
     let dialog = adw::Window::builder()

@@ -13,6 +13,7 @@ pub fn format_right_status(
     filter_mode: crate::model::FilterMode,
     mime_filter: Option<(&str, usize)>,
 ) -> String {
+    crate::hit!("format_right_status");
     let mut parts = Vec::new();
 
     // Add filter mode indicator

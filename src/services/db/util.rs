@@ -3,6 +3,7 @@ pub fn rekey_path_prefix<V>(
     old: &str,
     new: &str,
 ) -> bool {
+    crate::hit!("rekey_path_prefix");
     let old = old.trim_end_matches('/');
     let new = new.trim_end_matches('/');
     if old.is_empty() || new.is_empty() || old == new {

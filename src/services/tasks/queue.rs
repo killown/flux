@@ -28,6 +28,7 @@ impl TaskQueue {
         total_items: usize,
         cancellable: gio::Cancellable,
     ) {
+        crate::hit!("update");
         if let Ok(mut map) = self.inner.lock() {
             let task = map.entry(id).or_insert_with(|| Task {
                 label: label.clone(),
@@ -69,6 +70,7 @@ impl TaskQueue {
         full_command: Option<String>,
         action_name: Option<String>,
     ) {
+        crate::hit!("insert_command");
         if let Ok(mut map) = self.inner.lock() {
             map.entry(id).or_insert_with(|| Task {
                 label: label.clone(),
@@ -106,6 +108,7 @@ impl TaskQueue {
 
     /// Cancels every in-flight task and clears the queue.
     pub fn cancel_all(&self) {
+        crate::hit!("cancel_all");
         let tasks: Vec<(gio::Cancellable, Option<u32>)> = match self.inner.lock() {
             Ok(mut map) => {
                 let collected = map
@@ -138,6 +141,7 @@ impl TaskQueue {
     /// Progress is the mean of all individual task fractions. Returns `None`
     /// when the queue is empty.
     pub fn summary(&self) -> Option<(usize, usize, f64)> {
+        crate::hit!("summary");
         let map = self.inner.lock().ok()?;
         if map.is_empty() {
             return None;

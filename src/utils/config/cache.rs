@@ -14,6 +14,7 @@ fn config_cache() -> &'static RwLock<Option<crate::model::Config>> {
 }
 
 pub fn save_config(config: &crate::model::Config) {
+    crate::hit!("save_config");
     // Skip the whole write when the incoming config is byte-identical to the
     // one already cached. Every settings toggle, watcher event and handler
     // funnels through here, and most of them fire on every keystroke or scroll

@@ -8,6 +8,7 @@ impl FluxApp {
     /// Creates symlinks or hardlinks in the current directory from clipboard paths.
     /// `hard` = true for hardlink, false for symlink.
     pub fn handle_create_link(&self, hard: bool, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_create_link");
         let Some(display) = gtk::gdk::Display::default() else {
             sender.input(AppMsg::ShowToast(crate::i18n::tr(
                 "No clipboard available.",

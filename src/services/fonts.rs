@@ -74,6 +74,7 @@ fn same_content(a: &Path, b: &Path) -> bool {
 
 /// Picks `name`, or `stem-N.ext` when `name` is already taken in `dir`.
 fn unique_path(dir: &Path, name: &str) -> PathBuf {
+    crate::hit!("unique_path");
     let first = dir.join(name);
     if !first.exists() {
         return first;
@@ -95,6 +96,7 @@ fn unique_path(dir: &Path, name: &str) -> PathBuf {
 
 /// Copies one font into `dir`, `Ok(true)` when installed, `Ok(false)` when an identical file exists.
 fn install_one(path: &Path, dir: &Path) -> io::Result<bool> {
+    crate::hit!("install_one");
     let (src, name) = resolve_source(path)
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "font source unavailable"))?;
 
@@ -110,6 +112,7 @@ fn install_one(path: &Path, dir: &Path) -> io::Result<bool> {
 
 /// Refreshes the fontconfig cache for `dir`, ignoring a missing `fc-cache`.
 fn refresh_font_cache(dir: &Path) {
+    crate::hit!("refresh_font_cache");
     let _ = std::process::Command::new("fc-cache")
         .arg(dir)
         .stdout(std::process::Stdio::null())
@@ -119,6 +122,7 @@ fn refresh_font_cache(dir: &Path) {
 
 /// Installs `paths` into the user font directory and refreshes the font cache, blocking.
 pub fn install_fonts(paths: &[PathBuf]) -> InstallReport {
+    crate::hit!("install_fonts");
     let mut report = InstallReport::default();
 
     let dir = match user_font_dir() {
@@ -145,6 +149,7 @@ pub fn install_fonts(paths: &[PathBuf]) -> InstallReport {
 
 /// Cheap check (name and size only) for whether a local font is already in the user font dir.
 pub fn is_installed(path: &Path) -> bool {
+    crate::hit!("is_installed");
     if path
         .to_string_lossy()
         .starts_with(crate::services::archive::ARCHIVE_URI)

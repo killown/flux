@@ -3,6 +3,7 @@ use relm4::prelude::*;
 
 impl FluxApp {
     pub fn handle_toggle_no_command_dialog(&mut self, action_name: String) {
+        crate::hit!("handle_toggle_no_command_dialog");
         if let Some(action) = self
             .menu_actions
             .iter_mut()
@@ -17,6 +18,7 @@ impl FluxApp {
     }
 
     pub fn handle_refresh_command_dialog(&self, action_name: String) {
+        crate::hit!("handle_refresh_command_dialog");
         if let Some(dialog) = &self.command_dialog {
             if let Some(action) = self
                 .menu_actions
@@ -29,6 +31,7 @@ impl FluxApp {
     }
 
     pub fn handle_command_output(&self, id: u64, line: String, is_stderr: bool) {
+        crate::hit!("handle_command_output");
         self.task_queue.append_output(id, line.clone());
         let prefix = if is_stderr { "stderr" } else { "stdout" };
         eprintln!("[task {}] {}: {}", id, prefix, line);
@@ -47,6 +50,7 @@ impl FluxApp {
         exit_code: Option<i32>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_command_finished");
         if success {
             self.folder_cache
                 .remove(&self.cache_key(&self.current_path));

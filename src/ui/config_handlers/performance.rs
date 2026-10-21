@@ -8,6 +8,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_folder_cache_capacity(&mut self, val: usize) {
+        crate::hit!("handle_set_folder_cache_capacity");
         self.config.ui.folder_cache_capacity = val;
         while self.folder_cache.len() > val && val > 0 {
             if let Some(oldest) = self

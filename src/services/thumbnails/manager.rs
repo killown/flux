@@ -36,6 +36,7 @@ impl ThumbnailTaskManager {
     /// Cancels tasks for grid indices that are no longer within the visible viewport bounds.
     /// Returns the list of cancelled indices so caller can evict them from pending tracking.
     pub fn cancel_out_of_viewport(&self, visible_start: u32, visible_end: u32) -> Vec<u32> {
+        crate::hit!("cancel_out_of_viewport");
         let mut cancelled = Vec::new();
         let mut tokens = self.active_tokens.lock().unwrap();
         tokens.retain(|&idx, cancel_flag| {

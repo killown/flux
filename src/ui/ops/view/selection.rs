@@ -330,6 +330,7 @@ impl FluxApp {
 
     /// Appends audio/video duration strings to the status bar.
     pub fn handle_media_duration_ready(&mut self, maybe_duration: Option<std::time::Duration>) {
+        crate::hit!("handle_media_duration_ready");
         if self.task_queue.summary().is_none()
             && !self.selection_status.starts_with('[')
             && !self.selection_status.is_empty()
@@ -345,6 +346,7 @@ impl FluxApp {
 
     /// Appends image dimensions and MIME type labels to the status bar.
     pub fn handle_file_meta_ready(&mut self, mime: String, dimensions: Option<(u32, u32)>) {
+        crate::hit!("handle_file_meta_ready");
         if self.task_queue.summary().is_some() || self.selection_status.is_empty() {
             return;
         }
@@ -383,6 +385,7 @@ impl FluxApp {
     /// first item and `-1` selects the last, which matches how Left/Right
     /// behave from an empty grid.
     pub fn handle_selection_step(&mut self, delta: i32, _sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_selection_step");
         if delta == 0 {
             return;
         }

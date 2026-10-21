@@ -27,6 +27,7 @@ impl FluxApp {
         uri: String,
         contexts: Vec<crate::model::FileLoadContext>,
     ) {
+        crate::hit!("handle_network_loaded");
         net_debug!(
             "[network] handle_network_loaded uri={uri:?} current_path={:?} contexts={}",
             self.current_path,
@@ -112,12 +113,14 @@ impl FluxApp {
         credentials: Option<crate::services::network::NetworkCredentials>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_connect_to_server");
         self.history.push(self.current_path.clone());
         self.forward_stack.clear();
         self.load_network(&uri, credentials, sender.clone());
     }
 
     pub fn handle_unmount_network(&self, uri: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_unmount_network");
         let sender_clone = sender.clone();
         relm4::spawn_local(async move {
             if let Err(e) = crate::services::network::unmount_network_location(&uri).await {
@@ -134,6 +137,7 @@ impl FluxApp {
         uri: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_add_network_bookmark");
         let bookmark = crate::services::network::NetworkBookmark::new(name, uri);
         if !self
             .config
@@ -152,12 +156,14 @@ impl FluxApp {
         uri: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_remove_network_bookmark");
         self.config.network_bookmarks.retain(|b| b.uri != uri);
         crate::utils::save_config(&self.config);
         sender.input(AppMsg::RefreshSidebar);
     }
 
     pub fn handle_refresh_network_sidebar(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_refresh_network_sidebar");
         sender.input(AppMsg::RefreshSidebar);
 
         while let Some(child) = self.network_section.first_child() {
@@ -176,6 +182,7 @@ impl FluxApp {
     }
 
     pub fn handle_navigate_network(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_navigate_network");
         self.history.push(self.current_path.clone());
         self.forward_stack.clear();
         self.load_network(

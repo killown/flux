@@ -4,6 +4,7 @@ use rusqlite::{params, Result};
 
 impl StateManager {
     pub fn scrub_orphans(&self) -> Result<()> {
+        crate::hit!("scrub_orphans");
         let (paths, tag_paths, icon_paths): (Vec<String>, Vec<String>, Vec<String>) = {
             let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
             let mut stmt = conn.prepare("SELECT path FROM folder_settings")?;

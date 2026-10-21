@@ -13,6 +13,7 @@ impl FluxApp {
         clipboard: gdk::Clipboard,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("paste_image");
         let dest_dir = self.current_path.clone();
         let s = sender.clone();
 

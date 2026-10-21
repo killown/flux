@@ -10,6 +10,7 @@ use std::path::PathBuf;
 impl FluxApp {
     /// Reloads sidebar places from config and appends active mounts.
     pub fn handle_refresh_sidebar(&mut self) {
+        crate::hit!("handle_refresh_sidebar");
         self.config = utils::load_config();
         self.sidebar.guard().clear();
         for place in &self.config.sidebar {
@@ -37,6 +38,7 @@ impl FluxApp {
     /// for the folder load to complete. This prevents the hover animation from
     /// staying active during slow directory loads (e.g. 500 wallpapers).
     pub fn sync_sidebar_selection(&self) {
+        crate::hit!("sync_sidebar_selection");
         let listbox = match self.sidebar.widget().downcast_ref::<gtk::ListBox>() {
             Some(lb) => lb.clone(),
             None => return,
@@ -76,6 +78,7 @@ impl FluxApp {
     }
 
     pub fn handle_system_mounts_ready(&mut self, mounts: Vec<(String, std::path::PathBuf)>) {
+        crate::hit!("handle_system_mounts_ready");
         let mut guard = self.sidebar.guard();
 
         // Remove existing mount items from the back to maintain index stability
@@ -141,6 +144,7 @@ impl FluxApp {
 
     /// Removes a custom location from the sidebar configuration.
     pub fn handle_remove_from_sidebar(&mut self, path: PathBuf) {
+        crate::hit!("handle_remove_from_sidebar");
         let path_str = path.to_string_lossy();
         let home = dirs::home_dir().unwrap_or_default();
         self.config.sidebar.retain(|entry| {
@@ -157,6 +161,7 @@ impl FluxApp {
 
     /// Toggles permanent pinning of the currently selected or active directory.
     pub fn handle_add_to_sidebar_permanent(&mut self) {
+        crate::hit!("handle_add_to_sidebar_permanent");
         let path = self
             .get_selected_path()
             .unwrap_or_else(|| self.current_path.clone());
@@ -191,6 +196,7 @@ impl FluxApp {
 
     /// Reorders custom entries in the sidebar bookmark list.
     pub fn handle_reorder_sidebar(&mut self, from: PathBuf, to: PathBuf) {
+        crate::hit!("handle_reorder_sidebar");
         let home = dirs::home_dir().unwrap_or_default();
         let home_str = home.to_string_lossy().to_string();
 
@@ -236,6 +242,7 @@ impl FluxApp {
         before: PathBuf,
         label_name: Option<String>,
     ) {
+        crate::hit!("handle_pin_folder_at");
         let home = dirs::home_dir().unwrap_or_default();
         let home_str = home.to_string_lossy();
         let path_str = path.to_string_lossy().to_string();
@@ -302,6 +309,7 @@ impl FluxApp {
         dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_sidebar_drop_move");
         let sender_clone = sender.clone();
 
         relm4::spawn_blocking(move || {
@@ -348,6 +356,7 @@ impl FluxApp {
     }
 
     pub fn handle_toggle_sidebar(&mut self) {
+        crate::hit!("handle_toggle_sidebar");
         if self.terminal_panel_visible {
             // F8 while the terminal panel is open: close the panel and
             // restore the sidebar, rather than trying to toggle a sidebar
@@ -372,6 +381,7 @@ impl FluxApp {
 
     /// Unmounts a mounted storage volume or external drive.
     pub fn handle_unmount_device(&self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_unmount_device");
         let sender = sender.clone();
         let file = gio::File::for_path(&path);
 
@@ -394,6 +404,7 @@ impl FluxApp {
         current_name: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_prompt_sidebar_rename");
         let path_str = path.to_string_lossy();
         if let Some(section_name) = path_str.strip_prefix("__section__:") {
             // Rename a section label rather than a pinned path.
@@ -404,6 +415,7 @@ impl FluxApp {
     }
 
     pub fn handle_rename_sidebar_section(&mut self, old_name: String, new_name: String) {
+        crate::hit!("handle_rename_sidebar_section");
         let mut modified = false;
         for place in &mut self.config.sidebar {
             if place.kind.as_deref() == Some("label") && place.name == old_name {

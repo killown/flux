@@ -43,6 +43,7 @@ fn theme() -> &'static Theme {
 /// could not match the extension - the caller should not install tags in
 /// that case and can still display the raw text.
 pub fn highlight(text: &str, ext: &str) -> (Vec<HighlightedRange>, Option<String>) {
+    crate::hit!("highlight");
     let ss = syntax_set();
     let Some(syntax) = ss.find_syntax_by_extension(ext) else {
         return (Vec::new(), None);

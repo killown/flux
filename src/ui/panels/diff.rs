@@ -8,6 +8,7 @@ use relm4::AsyncComponentSender;
 
 /// Highlights git diff lines with color tags inside the buffer.
 pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
+    crate::hit!("apply_diff_markup");
     buffer.set_text("");
     let tag_table = buffer.tag_table();
 
@@ -68,6 +69,7 @@ fn parse_hunk_target_line(line: &str) -> Option<usize> {
 }
 
 fn sanitize_diff_query(raw_text: &str) -> Option<String> {
+    crate::hit!("sanitize_diff_query");
     let without_diff_marker = raw_text.strip_prefix('+').unwrap_or(raw_text).trim();
 
     let stripped = without_diff_marker
@@ -103,6 +105,7 @@ fn sanitize_diff_query(raw_text: &str) -> Option<String> {
 }
 
 fn find_hunk_info_from_iter(iter: &gtk::TextIter) -> Option<(usize, Option<String>)> {
+    crate::hit!("find_hunk_info_from_iter");
     let mut current = *iter;
 
     loop {
@@ -154,6 +157,7 @@ pub fn build_diff_panel(
     text_buffer: gtk::TextBuffer,
     sender: AsyncComponentSender<FluxApp>,
 ) -> gtk::Box {
+    crate::hit!("build_diff_panel");
     let spec = PanelSpec::diff().with_initial(initial_width);
 
     let panel = gtk::Box::builder()

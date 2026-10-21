@@ -184,6 +184,7 @@ impl FluxApp {
 
     /// Builds the "Pin to Sidebar" drop zone and its drop targets.
     pub(super) fn setup_pin_zone(widgets: &FluxAppWidgets, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("setup_pin_zone");
         let pin_zone = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
             .spacing(10)

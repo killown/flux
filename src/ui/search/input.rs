@@ -5,6 +5,7 @@ use relm4::prelude::*;
 impl FluxApp {
     /// Handles single character keystroke capture for type-to-search.
     pub fn handle_search_input(&mut self, c: char) {
+        crate::hit!("handle_search_input");
         self.search_just_opened = true;
         self.filter.push(c);
         self.header_view = constants::VIEW_SEARCH.to_string();
@@ -12,6 +13,7 @@ impl FluxApp {
 
     /// Handles backspace press in search entry mode.
     pub fn handle_search_backspace(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_search_backspace");
         if !self.filter.is_empty() {
             self.filter.pop();
             let query = self.filter.clone();
@@ -21,6 +23,7 @@ impl FluxApp {
 
     /// Handles header view stack switches (e.g. search <-> entry <-> path).
     pub fn handle_switch_header(&mut self, view_name: String) {
+        crate::hit!("handle_switch_header");
         if self.header_view == constants::VIEW_SEARCH
             && view_name != constants::VIEW_SEARCH
             && self.is_content_searching

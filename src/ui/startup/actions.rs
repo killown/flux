@@ -28,6 +28,7 @@ impl FluxApp {
 
     /// Registers app-level actions and icon theme change listeners.
     pub(super) fn register_app_actions(model: &FluxApp, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("register_app_actions");
         let app = relm4::main_adw_application();
         let sender_reload = sender.clone();
         let reload_action = gio::SimpleAction::new("reload-sidebar", None);

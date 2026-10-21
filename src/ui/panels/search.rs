@@ -35,6 +35,7 @@ fn apply_flat_filters(
 
 /// Builds and returns the lazy-initialized right search sidebar panel widget tree.
 pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
+    crate::hit!("build_search_panel");
     let spec = PanelSpec::search().with_initial(initial_width);
 
     let panel = gtk::Box::builder()

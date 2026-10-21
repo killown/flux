@@ -209,6 +209,7 @@ fn fmt_time(secs: f64) -> String {
 
 /// Connects to mpv's IPC socket, observes playback properties and forwards them to the panel.
 fn spawn_ipc_thread(sock: PathBuf, seq: u64) {
+    crate::hit!("spawn_ipc_thread");
     std::thread::spawn(move || {
         let mut connected = None;
         for _ in 0..80 {
@@ -283,6 +284,7 @@ fn stop_audio_mpv() {
 }
 
 fn spawn_audio_mpv(path: &Path) -> Result<u64, String> {
+    crate::hit!("spawn_audio_mpv");
     use std::os::unix::process::CommandExt;
     use std::process::{Command, Stdio};
 
@@ -466,6 +468,7 @@ pub struct PreviewPanelHandle {
 
 impl PreviewPanelHandle {
     fn rebuild_syntax_tags(&self, ranges: &[HighlightedRange]) -> Vec<(String, Range<usize>)> {
+        crate::hit!("rebuild_syntax_tags");
         let table = self.text_view.buffer().tag_table();
         for name in self.state.syntax_tags.borrow_mut().drain(..) {
             if let Some(tag) = table.lookup(&name) {
@@ -514,6 +517,7 @@ impl PreviewPanelHandle {
     /// text matches the rest of the application, code spans and blocks
     /// opt back into monospace.
     fn rebuild_markdown_tags(&self, styles: &[StyledRange]) -> Vec<(String, Range<usize>)> {
+        crate::hit!("rebuild_markdown_tags");
         let table = self.text_view.buffer().tag_table();
         for name in self.state.syntax_tags.borrow_mut().drain(..) {
             if let Some(tag) = table.lookup(&name) {
@@ -565,6 +569,7 @@ impl PreviewPanelHandle {
 // ─── Construction ─────────────────────────────────────────────────────────────
 
 pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
+    crate::hit!("build_preview_panel");
     install_css();
     let spec = PanelSpec::preview().with_initial(initial_width);
 
@@ -1412,6 +1417,7 @@ impl PreviewPanelHandle {
     /// the panel. The first chunk fills the viewport right away, the rest is added between
     /// frames and abandoned as soon as the preview moves on to something else.
     fn fill_folder_grid(&self, entries: &[FolderEntry]) {
+        crate::hit!("fill_folder_grid");
         let cfg = crate::utils::load_config();
         let st = &self.state;
         let fill_gen = st.fill_gen.get() + 1;
@@ -1451,6 +1457,7 @@ impl PreviewPanelHandle {
     /// Appends entries of `fill` to the folder grid until `budget` is used up
     /// (at least one), so a chunk never holds the main loop for a whole frame.
     fn append_folder_chunk(&self, fill: &FolderFill, budget: Duration) {
+        crate::hit!("append_folder_chunk");
         let began = std::time::Instant::now();
         let start = fill.next.get();
         let cfg = &fill.cfg;
@@ -1598,6 +1605,7 @@ impl PreviewPanelHandle {
     }
 
     pub fn apply(&self, content: &PreviewContent) {
+        crate::hit!("apply");
         let st = &self.state;
         st.token.set(st.token.get() + 1);
         self.stop_media();
@@ -1978,6 +1986,7 @@ impl PreviewPanelHandle {
     }
 
     fn apply_markdown_view(&self) {
+        crate::hit!("apply_markdown_view");
         let show_source = self.md_source_btn.is_active();
         let source: Option<String> = unsafe {
             self.text_view
@@ -2155,6 +2164,7 @@ impl PreviewPanelHandle {
     }
 
     fn show_info(&self, info: &FileInfo) {
+        crate::hit!("show_info");
         clear_list(&self.details_list);
         push_row(&self.details_list, &tr("Name"), &info.name);
         push_row(&self.details_list, &tr("Type"), &info.mime);
@@ -2313,6 +2323,7 @@ impl PreviewPanelHandle {
     }
 
     fn render_pdf_inner(&self, token: u64, attempt: u32) {
+        crate::hit!("render_pdf_inner");
         if self.state.token.get() != token {
             return;
         }
@@ -2379,6 +2390,7 @@ struct RawPage {
 }
 
 fn render_pdf_raw(path: &Path, page_index: usize, target_w: i32) -> Option<RawPage> {
+    crate::hit!("render_pdf_raw");
     let doc = poppler::PopplerDocument::new_from_file(path, None).ok()?;
     let page = doc.get_page(page_index)?;
     let (pw, ph) = page.get_size();
@@ -2478,6 +2490,7 @@ fn flat_icon_button(icon: &str, tip: &str) -> gtk::Button {
 
 /// True when the widget (or an ancestor) handles double-click itself: text, buttons, sliders, entries.
 fn double_click_reserved(widget: &gtk::Widget) -> bool {
+    crate::hit!("double_click_reserved");
     let mut cur = Some(widget.clone());
     while let Some(w) = cur {
         if w.is::<gtk::TextView>()
@@ -2519,6 +2532,7 @@ struct FolderFill {
 fn build_folder_grid(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Rc<RefCell<TypedGridView<FileItem, gtk::MultiSelection>>> {
+    crate::hit!("build_folder_grid");
     let single_click = crate::utils::load_config().ui.single_click;
     let grid = Rc::new(RefCell::new(
         TypedGridView::<FileItem, gtk::MultiSelection>::new(),
@@ -2722,6 +2736,7 @@ fn push_row(l: &gtk::ListBox, key: &str, value: &str) {
 /// Byte offsets to char offsets. `GtkTextBuffer::iter_at_offset` counts
 /// chars, but `syntect` and `pulldown-cmark` hand back byte ranges.
 fn byte_to_char_map(text: &str) -> Vec<i32> {
+    crate::hit!("byte_to_char_map");
     let mut map = vec![0i32; text.len() + 1];
     let mut chars = 0i32;
     for (i, c) in text.char_indices() {

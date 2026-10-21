@@ -6,6 +6,7 @@ use relm4::prelude::*;
 impl FluxApp {
     /// Inspects the GDK clipboard and dispatches the appropriate paste variant.
     pub fn handle_paste_from_clipboard(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_paste_from_clipboard");
         let Some(display) = gdk::Display::default() else {
             sender.input(AppMsg::ShowToast(crate::i18n::tr(
                 "No display available for clipboard operation",

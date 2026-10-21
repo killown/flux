@@ -85,6 +85,7 @@ fn single_file_listing(
     archive_path: &Path,
     inner_name: &str,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("single_file_listing");
     if inner_name.is_empty() {
         return Ok(vec![]);
     }

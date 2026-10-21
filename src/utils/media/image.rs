@@ -19,6 +19,7 @@ fn is_svg(path: &Path) -> bool {
 /// fails to decode and the grid falls back to the generic theme icon.
 /// Size is capped and aspect ratio preserved, vectors scale up cleanly.
 fn decode_svg_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf> {
+    crate::hit!("decode_svg_pixbuf");
     let len = std::fs::metadata(path).ok()?.len();
     if len == 0 || len > MAX_SVG_BYTES {
         return None;
@@ -28,6 +29,7 @@ fn decode_svg_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf
 
 /// Decodes any supported image into an RGBA pixbuf scaled to fit `target_size`.
 pub(crate) fn decode_to_pixbuf(path: &Path, target_size: i32) -> Option<gdk_pixbuf::Pixbuf> {
+    crate::hit!("decode_to_pixbuf");
     if is_svg(path) {
         return decode_svg_pixbuf(path, target_size);
     }
@@ -68,6 +70,7 @@ pub(crate) fn decode_image_thumbnail(
     cache_path: &Path,
     target_size: i32,
 ) -> Option<gdk::Texture> {
+    crate::hit!("decode_image_thumbnail");
     let pixbuf = decode_to_pixbuf(path, target_size)?;
 
     if let Ok(buf) = pixbuf.save_to_bufferv("png", &[("compression", "1")]) {
@@ -134,6 +137,7 @@ fn magic_matches(ext: &str, magic: &[u8; 16], len: usize) -> bool {
 /// `Some((width, height))` in pixels on success, `None` otherwise.
 #[allow(dead_code)]
 pub fn probe_image_dimensions(path: &Path) -> Option<(u32, u32)> {
+    crate::hit!("probe_image_dimensions");
     let ext_owned = path
         .extension()
         .and_then(|e| e.to_str())?

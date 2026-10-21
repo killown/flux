@@ -4,6 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)> {
+    crate::hit!("split_mime_cmd");
     let input = input.trim();
 
     let remainder = input.strip_prefix('"')?;
@@ -44,6 +45,7 @@ fn flux_base_dir() -> PathBuf {
 }
 
 pub(super) fn get_available_menus() -> Vec<String> {
+    crate::hit!("get_available_menus");
     let mut menus = vec!["menu.rs".to_string()];
     let base = flux_base_dir();
 
@@ -84,6 +86,7 @@ pub(super) fn get_available_menus() -> Vec<String> {
 }
 
 pub(super) fn config_path_for(menu_name: &str) -> PathBuf {
+    crate::hit!("config_path_for");
     let base = flux_base_dir();
     let sub_path = base.join("menus").join(menu_name);
     if sub_path.exists() {
@@ -99,6 +102,7 @@ pub(super) fn config_path_for(menu_name: &str) -> PathBuf {
 }
 
 pub(super) fn load_from_disk(menu_name: &str) -> Vec<MenuEntry> {
+    crate::hit!("load_from_disk");
     let content = fs::read_to_string(config_path_for(menu_name)).unwrap_or_default();
     let mut entries = Vec::new();
 
@@ -131,6 +135,7 @@ pub(super) fn load_from_disk(menu_name: &str) -> Vec<MenuEntry> {
 }
 
 pub(super) fn write_to_disk(menu_name: &str, entries: &[MenuEntry]) -> std::io::Result<()> {
+    crate::hit!("write_to_disk");
     let path = config_path_for(menu_name);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;

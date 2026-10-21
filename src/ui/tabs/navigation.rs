@@ -5,6 +5,7 @@ use relm4::prelude::*;
 
 impl FluxApp {
     pub fn handle_next_tab(&mut self) {
+        crate::hit!("handle_next_tab");
         if self.tabs.len() > 1 {
             let next = (self.active_tab_index + 1) % self.tabs.len();
             if (next as i32) < self.tab_view.n_pages() {
@@ -15,6 +16,7 @@ impl FluxApp {
     }
 
     pub fn handle_prev_tab(&mut self) {
+        crate::hit!("handle_prev_tab");
         if self.tabs.len() > 1 {
             let prev = if self.active_tab_index == 0 {
                 self.tabs.len() - 1

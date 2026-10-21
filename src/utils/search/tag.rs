@@ -14,6 +14,7 @@ pub const TAG_PREFIXES: &[&str] = &[":tag:", ":t:", "#"];
 ///
 /// Returns `Some((tags, remaining_query))` or `None`.
 pub fn parse_tag_filter(query: &str) -> Option<(Vec<String>, String)> {
+    crate::hit!("parse_tag_filter");
     let query_trim = query.trim();
     if query_trim.is_empty() {
         return None;

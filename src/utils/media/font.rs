@@ -107,6 +107,7 @@ fn font_family_available(pango_cx: &gtk::pango::Context, family: &str) -> bool {
 /// file cannot be read or the table is malformed, the caller falls back to the
 /// filename stem in that case.
 fn read_font_family(path: &Path) -> Option<String> {
+    crate::hit!("read_font_family");
     let data = fs::read(path).ok()?;
 
     // Offset table: 12 bytes header + 16 bytes per table record.
@@ -193,6 +194,7 @@ fn read_font_family(path: &Path) -> Option<String> {
 }
 
 pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
+    crate::hit!("font_thumbnail");
     // Private config under a mutex: never mutate the global fontconfig from worker threads.
     let private = PrivateFontMap::new(path);
 
@@ -301,6 +303,7 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
 /// file's `name` table, so the user can tell what the file claims to be
 /// without seeing a screen of tofu.
 pub fn font_specimen(path: &Path, target_size: i32) -> Option<gdk::Texture> {
+    crate::hit!("font_specimen");
     let private = PrivateFontMap::new(path);
     let registered = private.registered;
 

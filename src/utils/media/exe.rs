@@ -9,6 +9,7 @@ pub fn extract_exe_icon(
     cache_path: &Path,
     target_size: i32,
 ) -> Option<gdk::Texture> {
+    crate::hit!("extract_exe_icon");
     let temp_dir = tempfile::Builder::new()
         .prefix("flux-exe-icon-")
         .tempdir()

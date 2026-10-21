@@ -16,6 +16,7 @@ impl FluxApp {
         forced: bool,
         sender: AsyncComponentSender<Self>,
     ) {
+        crate::hit!("perform_paste_inner");
         let current_str = self.current_path.to_string_lossy();
 
         // ── Archive Paste Intercept ──────────────────────────────────────────
@@ -195,6 +196,7 @@ impl FluxApp {
         target_dir: PathBuf,
         sender: AsyncComponentSender<Self>,
     ) {
+        crate::hit!("dispatch_paste_ops");
         let resolved_files = resolve_gio_files(files);
         let mut dir_conflicts = Vec::new();
 

@@ -115,6 +115,7 @@ impl FolderThumbs {
     /// Starts a new generation for a freshly filled grid and returns the hook the
     /// new items should carry, or `None` if thumbnails are off for this grid.
     pub(crate) fn begin(&self, cfg: &Config) -> Option<ThumbHook> {
+        crate::hit!("begin");
         self.0.cancel_all();
 
         let types = &cfg.ui.thumbnail_types;
@@ -149,6 +150,7 @@ fn wants_thumbnail(path: &Path, images: bool, videos: bool) -> bool {
 
 impl Inner {
     fn cancel_all(&self) {
+        crate::hit!("cancel_all");
         self.enabled.set(false);
         self.generation.fetch_add(1, Ordering::AcqRel);
         for (_, flag) in self.tokens.borrow_mut().drain() {
@@ -161,6 +163,7 @@ impl Inner {
     }
 
     fn on_event(&self, this: &Rc<Inner>, ev: ThumbEvent) {
+        crate::hit!("on_event");
         if !self.enabled.get() {
             return;
         }
@@ -213,6 +216,7 @@ impl Inner {
 
     /// Hands every still-bound cell to a worker, top-left first.
     fn flush(&self, generation: u64) {
+        crate::hit!("flush");
         let mut batch: Vec<(u32, PathBuf)> = self.waiting.borrow_mut().drain().collect();
         batch.sort_by_key(|(idx, _)| *idx);
 
@@ -260,6 +264,7 @@ impl Inner {
     /// shows it. We update the cell in place, replacing the item (`remove` + `insert`)
     /// would recreate the widget and restart its CSS hover transition on every result.
     fn apply(&self, done: Done) {
+        crate::hit!("apply");
         if done.generation != self.generation.load(Ordering::Acquire) {
             return;
         }

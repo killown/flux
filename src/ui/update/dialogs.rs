@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::ShowOpenWithDialog(path) => app.show_open_with_dialog(path, sender),
         AppMsg::FileConflictDetected { context, resolver } => {

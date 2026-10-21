@@ -9,6 +9,7 @@ use tokio::time::timeout;
 
 /// Queries the working-tree and staged diff for a single file asynchronously.
 pub async fn query_file_diff(repo_root: &Path, target_file: &Path) -> Result<String, String> {
+    crate::hit!("query_file_diff");
     let rel_target = target_file.strip_prefix(repo_root).unwrap_or(target_file);
 
     let output = Command::new("git")
@@ -50,6 +51,7 @@ pub async fn query_git_status(
     repo_root: &Path,
     target_dir: &Path,
 ) -> Result<HashMap<PathBuf, GitFileStatus>, String> {
+    crate::hit!("query_git_status");
     let rel_target = target_dir.strip_prefix(repo_root).unwrap_or(Path::new(""));
 
     let mut cmd = Command::new("git");

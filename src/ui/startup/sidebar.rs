@@ -16,6 +16,7 @@ impl FluxApp {
         gtk::Box,
         gtk::Box,
     ) {
+        crate::hit!("build_sidebar");
         let listbox = gtk::ListBox::default();
         let sidebar = FactoryVecDeque::builder().launch(listbox.clone()).forward(
             sender.input_sender(),

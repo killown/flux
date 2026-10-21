@@ -119,6 +119,7 @@ impl ArchiveBackend for TarBackend {
 // ─── TAR (all compression flavours) ──────────────────────────────────────────
 
 fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_tar");
     let mut archive = tar::Archive::new(reader);
     let mut seen: HashMap<String, ArchiveEntry> = HashMap::new();
 
@@ -151,6 +152,7 @@ pub(super) fn extract_tar<R: Read>(
     inner_path: &str,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_tar");
     let mut archive = tar::Archive::new(reader);
     for entry in archive
         .entries()
@@ -185,6 +187,7 @@ pub(in crate::services::archive) fn extract_dir_tar_at<R: Read>(
     inner_dir: &str,
     override_dest: Option<&Path>,
 ) -> Result<PathBuf, ArchiveError> {
+    crate::hit!("extract_dir_tar_at");
     let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
 
     let prefix = if inner_dir.is_empty() {

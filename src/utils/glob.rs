@@ -10,6 +10,7 @@ use globset::{Glob, GlobSet, GlobSetBuilder};
 /// (e.g. multiple consecutive `*` wildcards) without exponential backtracking.
 #[allow(dead_code)]
 pub fn glob_match(pattern: &str, name: &str) -> bool {
+    crate::hit!("glob_match");
     let p: Vec<char> = pattern.chars().collect();
     let n: Vec<char> = name.chars().collect();
     let (pl, nl) = (p.len(), n.len());
@@ -43,6 +44,7 @@ pub fn glob_match(pattern: &str, name: &str) -> bool {
 /// same set of patterns. Returns `None` if no valid patterns are provided.
 #[allow(dead_code)]
 pub fn compile_patterns(patterns: &[String]) -> Option<GlobSet> {
+    crate::hit!("compile_patterns");
     if patterns.is_empty() {
         return None;
     }
@@ -61,6 +63,7 @@ pub fn compile_patterns(patterns: &[String]) -> Option<GlobSet> {
 /// Keys are lowercase MIME types (`"application/zip"`), values are the
 /// glob patterns registered for that type (`["*.zip", "*.zipx"]`).
 fn mime_db() -> &'static std::collections::HashMap<String, Vec<String>> {
+    crate::hit!("mime_db");
     static DB: std::sync::OnceLock<std::collections::HashMap<String, Vec<String>>> =
         std::sync::OnceLock::new();
 

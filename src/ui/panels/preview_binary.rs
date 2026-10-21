@@ -9,6 +9,7 @@ use std::process::Command;
 /// `None` = not a kind we handle. `Some(icon)` = handled, rows were added
 /// to `info.extra` and `icon` is the best icon found, if any.
 pub fn inspect(path: &Path, ext: &str, info: &mut FileInfo) -> Option<Option<gtk::gdk::Texture>> {
+    crate::hit!("inspect");
     let is_pe = matches!(ext, "exe" | "dll");
     let is_appimage = ext == "appimage";
     if !is_pe && !is_appimage {
@@ -31,6 +32,7 @@ pub fn inspect(path: &Path, ext: &str, info: &mut FileInfo) -> Option<Option<gtk
 }
 
 fn file_summary(path: &Path) -> Option<String> {
+    crate::hit!("file_summary");
     let out = Command::new("file").arg("-b").arg(path).output().ok()?;
     let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
     (out.status.success() && !s.is_empty()).then_some(s)
@@ -39,6 +41,7 @@ fn file_summary(path: &Path) -> Option<String> {
 /// Reads the VS_VERSION_INFO resource (type 16) and pulls the common string
 /// fields out of its UTF-16 payload.
 fn pe_version_rows(path: &Path, info: &mut FileInfo) {
+    crate::hit!("pe_version_rows");
     let Ok(out) = Command::new("wrestool")
         .args(["-x", "--raw", "-t16"])
         .arg(path)
@@ -88,6 +91,7 @@ fn pe_version_rows(path: &Path, info: &mut FileInfo) {
 
 /// Reads the top-level `.desktop` file inside the AppImage with 7z.
 fn appimage_rows(path: &Path, info: &mut FileInfo) {
+    crate::hit!("appimage_rows");
     if !crate::utils::media::seven_zip_available() {
         return;
     }

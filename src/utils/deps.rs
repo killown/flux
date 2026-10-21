@@ -5,6 +5,7 @@ use std::process::Command;
 
 /// Logs a warning for each optional external binary not found in `$PATH`.
 fn probe_bin(name: &str, hint: Option<&str>) {
+    crate::hit!("probe_bin");
     if Command::new("which")
         .arg(name)
         .output()
@@ -29,6 +30,7 @@ fn probe_bin(name: &str, hint: Option<&str>) {
 }
 
 pub fn check_optional_deps() {
+    crate::hit!("check_optional_deps");
     probe_bin("ffmpeg", None);
     probe_bin("ffprobe", None);
     probe_bin("magick", None);
@@ -61,6 +63,7 @@ pub fn check_optional_deps() {
 }
 
 fn check_binary_exists(bin: &str) -> bool {
+    crate::hit!("check_binary_exists");
     if Command::new("which")
         .arg(bin)
         .output()
@@ -89,6 +92,7 @@ fn check_binary_exists(bin: &str) -> bool {
 /// functional. The check is advisory: Flux reports the deficiency as a toast
 /// at the point of use rather than blocking startup.
 fn check_gvfs_deps() {
+    crate::hit!("check_gvfs_deps");
     if !check_binary_exists("gvfsd") {
         eprintln!(
             "[flux] GVFS daemon ('gvfsd') not found - network browsing will be unavailable. \

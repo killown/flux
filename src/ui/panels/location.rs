@@ -60,6 +60,7 @@ pub fn build_location_panel(
     state_db: Arc<StateManager>,
     sender: AsyncComponentSender<FluxApp>,
 ) -> (gtk::Box, gtk::Entry) {
+    crate::hit!("build_location_panel");
     let spec = PanelSpec::location();
 
     let panel = gtk::Box::builder()

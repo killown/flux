@@ -78,6 +78,7 @@ pub fn extract_archive_to_dir(
     dest_dir: &Path,
     password: Option<&str>,
 ) -> Result<(), ArchiveError> {
+    crate::hit!("extract_archive_to_dir");
     let name_lc = lc_name(archive_path);
 
     if name_lc.ends_with(".zip") {

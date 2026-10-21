@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::OpenActiveDiffLine { line, query } => {
             if let Some(ref path) = app.active_diff_target {

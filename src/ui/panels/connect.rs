@@ -95,6 +95,7 @@ fn stacked_entry(
 
 /// Builds the connect-to-server panel.
 pub fn build_connect_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
+    crate::hit!("build_connect_panel");
     let spec = PanelSpec::connect();
 
     let panel = gtk::Box::builder()

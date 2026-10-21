@@ -68,6 +68,7 @@ pub fn extract_archive_entry_for_playback(
     archive_path: &std::path::Path,
     inner_path: &str,
 ) -> Option<std::path::PathBuf> {
+    crate::hit!("extract_archive_entry_for_playback");
     let cache_dir = dirs::cache_dir()?.join("flux/previews");
     std::fs::create_dir_all(&cache_dir).ok()?;
 
@@ -166,6 +167,7 @@ pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
 /// Returns an archive entry's thumbnail. Zips check the in-zip cache first
 /// and queue the generated PNG for later. Other formats just generate.
 pub fn get_archive_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
+    crate::hit!("get_archive_thumbnail");
     let path_str = path.to_string_lossy();
     let (archive_path, inner_path) = parse_archive_uri(&path_str)?;
     let is_zip = archive_path

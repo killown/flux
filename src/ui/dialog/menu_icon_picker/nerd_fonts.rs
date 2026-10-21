@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use super::object::NerdIconObject;
 
 fn resolve_nerd_fonts_file() -> Option<PathBuf> {
+    crate::hit!("resolve_nerd_fonts_file");
     if let Some(user_data) = dirs::data_dir().map(|d| d.join("flux/nerd_fonts.json")) {
         if user_data.exists() {
             return Some(user_data);
@@ -44,6 +45,7 @@ fn resolve_nerd_fonts_file() -> Option<PathBuf> {
 }
 
 fn extract_json_strings(content: &str) -> Vec<String> {
+    crate::hit!("extract_json_strings");
     let mut tokens = Vec::new();
     let mut in_string = false;
     let mut escaped = false;
@@ -85,6 +87,7 @@ fn extract_json_strings(content: &str) -> Vec<String> {
 }
 
 pub(super) fn load_installed_json_entries() -> Vec<NerdIconObject> {
+    crate::hit!("load_installed_json_entries");
     let Some(path) = resolve_nerd_fonts_file() else {
         eprintln!("[flux] nerd_fonts.json not found in ~/.local/share/flux/, /usr/share/flux/, or ./assets/");
         return Vec::new();

@@ -5,6 +5,7 @@ use std::path::Path;
 use super::png::store_thumbnail;
 
 pub fn audio_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
+    crate::hit!("audio_thumbnail");
     use lofty::prelude::*;
     use lofty::probe::Probe;
 

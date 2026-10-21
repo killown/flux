@@ -76,6 +76,7 @@ fn is_download_temp(path: &Path) -> bool {
 /// Matching is done on the file stem: `DSC_4207.NEF` matches
 /// `DSC_4207.L8Koxwkl.NEF.part` because both start with `DSC_4207`.
 fn has_active_download_sibling(path: &Path) -> bool {
+    crate::hit!("has_active_download_sibling");
     let Some(parent) = path.parent() else {
         return false;
     };
@@ -118,6 +119,7 @@ fn has_active_download_sibling(path: &Path) -> bool {
 
 impl FluxApp {
     pub fn handle_file_deleted(&mut self, path: PathBuf) {
+        crate::hit!("FluxApp::handle_file_deleted");
         crate::services::search::indexer::notify_deleted(&path);
 
         if let Some(parent) = path.parent() {
@@ -303,6 +305,7 @@ impl FluxApp {
     }
 
     pub fn handle_start_rename(&mut self, path: PathBuf) {
+        crate::hit!("handle_start_rename");
         self.active_item_path = Some(path.clone());
 
         let target_idx = (0..self.tabs[self.active_tab_index].files.len()).find(|&i| {
@@ -326,6 +329,7 @@ impl FluxApp {
     }
 
     pub fn handle_trigger_rename_selection(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_trigger_rename_selection");
         if let Some(path) = self.get_selected_path() {
             sender.input(AppMsg::StartRename(path));
         }
@@ -345,6 +349,7 @@ impl FluxApp {
         path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_file_changed_dispatch");
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(&self.cache_key(parent));
         }
@@ -357,6 +362,7 @@ impl FluxApp {
         new_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_item_moved");
         crate::services::search::indexer::notify_moved(&old_path, &new_path);
 
         if let Some(p) = old_path.parent() {

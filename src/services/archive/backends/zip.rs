@@ -41,6 +41,7 @@ fn thumbnail_key(inner_path: &str) -> String {
 
 /// Returns the full in-zip entry name of the cached thumbnail for `inner_path`.
 fn thumbnail_entry_name(inner_path: &str) -> String {
+    crate::hit!("thumbnail_entry_name");
     format!(
         "{}/{}.png",
         FLUX_CACHE_THUMBS_DIR,
@@ -342,6 +343,7 @@ fn list_zip(
     prefix: &str,
     password: Option<&str>,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_zip");
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
     let mut zip =
@@ -419,6 +421,7 @@ pub(in crate::services::archive) fn extract_dir_zip_at(
     password: Option<&str>,
     override_dest: Option<&Path>,
 ) -> Result<PathBuf, ArchiveError> {
+    crate::hit!("extract_dir_zip_at");
     let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
 
     let prefix = if inner_dir.is_empty() {
@@ -499,6 +502,7 @@ fn extract_zip(
     password: Option<&str>,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_zip");
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 
@@ -566,6 +570,7 @@ fn zip_mtime<R: Read + Seek>(entry: &zip::read::ZipFile<'_, R>) -> i64 {
 
 /// Reads the raw bytes of one entry, bypassing the `.flux-cache/` guard of [`extract_zip`].
 fn read_entry_bytes(archive_path: &Path, name: &str, password: Option<&str>) -> Option<Vec<u8>> {
+    crate::hit!("read_entry_bytes");
     let file = std::fs::File::open(archive_path).ok()?;
     let mut zip = zip::ZipArchive::new(file).ok()?;
     let idx = zip.index_for_name(name)?;
@@ -592,6 +597,7 @@ pub fn read_cached_thumbnail(
     inner_path: &str,
     password: Option<&str>,
 ) -> Option<gtk::gdk::Texture> {
+    crate::hit!("read_cached_thumbnail");
     // Only trust a cache that Flux itself created.
     {
         let file = std::fs::File::open(archive_path).ok()?;
@@ -613,6 +619,7 @@ pub fn write_thumbnails_to_archive(
     thumbs: &[(String, Vec<u8>)],
     password: Option<&str>,
 ) -> Result<usize, ArchiveError> {
+    crate::hit!("write_thumbnails_to_archive");
     let src_file = std::fs::File::open(archive_path)
         .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
     let src_meta = src_file

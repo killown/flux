@@ -7,6 +7,7 @@ use std::process::Command;
 /// Runs blocking - must be called from `relm4::spawn_blocking`.
 #[allow(dead_code)]
 pub fn unmount_and_lock(device_name: &str) -> Result<(), String> {
+    crate::hit!("unmount_and_lock");
     let dm_dev = format!("/dev/mapper/{device_name}");
 
     let unmount_out = Command::new("udisksctl")

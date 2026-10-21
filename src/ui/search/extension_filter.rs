@@ -8,6 +8,7 @@ impl FluxApp {
         patterns: Vec<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_set_extension_filter");
         let expanded: Vec<String> = patterns
             .iter()
             .flat_map(|p| crate::utils::glob::expand_mime_category(p))
@@ -23,6 +24,7 @@ impl FluxApp {
 
     #[allow(dead_code)]
     pub fn handle_clear_extension_filter(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_clear_extension_filter");
         self.extension_filter = None;
         self.extension_globset = None;
         sender.input(AppMsg::Refresh);

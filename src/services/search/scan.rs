@@ -23,6 +23,7 @@ fn count_newlines(bytes: &[u8]) -> usize {
 }
 
 fn read_full<R: Read>(reader: &mut R, buf: &mut [u8]) -> io::Result<usize> {
+    crate::hit!("read_full");
     let mut total = 0;
     while total < buf.len() {
         match reader.read(&mut buf[total..]) {
@@ -38,6 +39,7 @@ fn read_full<R: Read>(reader: &mut R, buf: &mut [u8]) -> io::Result<usize> {
 /// Reads a window around the match and returns the surrounding line.
 /// Long lines get clipped to a fixed window centred on the match.
 fn snippet(file: &File, m_start: u64, m_end: u64) -> Option<String> {
+    crate::hit!("snippet");
     let win_start = m_start.saturating_sub(SNIPPET_MAX as u64);
     let want = (m_end - win_start) as usize + SNIPPET_MAX;
     let mut win = vec![0u8; want];
@@ -100,6 +102,7 @@ pub fn scan_file(
     max_bytes: u64,
     should_stop: &dyn Fn() -> bool,
 ) -> io::Result<Option<Hit>> {
+    crate::hit!("scan_file");
     let cap = if max_bytes == 0 { u64::MAX } else { max_bytes };
 
     let overlap = matcher.max_pattern_len().saturating_sub(1);

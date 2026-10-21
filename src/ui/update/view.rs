@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::SelectionChanged { tab_id } => {
             app.handle_selection_changed(tab_id, sender);

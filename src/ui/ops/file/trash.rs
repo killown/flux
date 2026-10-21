@@ -9,6 +9,7 @@ use std::path::PathBuf;
 impl FluxApp {
     /// Deletes all files currently residing in the virtual system trash directory.
     pub fn handle_empty_trash(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_empty_trash");
         let root = gio::File::for_uri(constants::TRASH_URI);
         if let Ok(enumerator) = root.enumerate_children(
             "standard::name",
@@ -38,6 +39,7 @@ impl FluxApp {
     /// Drops every folder-cache entry whose key is a parent of one of `paths`
     /// and the cache key for the current directory.
     fn evict_caches_for_paths(&mut self, paths: &[PathBuf]) {
+        crate::hit!("evict_caches_for_paths");
         let mut parents: Vec<PathBuf> = Vec::with_capacity(paths.len() + 1);
         for p in paths {
             if let Some(parent) = p.parent() {
@@ -61,6 +63,7 @@ impl FluxApp {
     /// [`FileItem`]s pointing at nonexistent paths, and `Refresh` deliberately
     /// no-ops for `#tag` filters (see [`Self::handle_refresh_path`]).
     pub fn purge_paths_from_all_tabs(&mut self, paths: &[PathBuf]) {
+        crate::hit!("purge_paths_from_all_tabs");
         for tab in &mut self.tabs {
             let mut i = 0;
             while i < tab.files.len() {

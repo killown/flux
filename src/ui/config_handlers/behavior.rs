@@ -17,6 +17,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_shortcut(&mut self, key: String, val: Option<String>) {
+        crate::hit!("handle_set_shortcut");
         match key.as_str() {
             "back" => self.config.shortcuts.back = val,
             "forward" => self.config.shortcuts.forward = val,

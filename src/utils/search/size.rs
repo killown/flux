@@ -22,6 +22,7 @@ pub const SIZE_UNIT_SUFFIXES: &[&str] = &["ib", "b"];
 /// Parse size filter from query.
 /// Returns (SizeOp, remaining_query) or None.
 pub fn parse_size_filter(query: &str) -> Option<(SizeOp, String)> {
+    crate::hit!("parse_size_filter");
     let query_lc = query.to_lowercase();
     let parts: Vec<&str> = query_lc.split_whitespace().collect();
 

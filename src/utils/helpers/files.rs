@@ -58,6 +58,7 @@ impl FluxApp {
     /// The chmod is owner-only (`0o100`), never touches group/other bits,
     /// setuid, setgid, or ACLs, and is trivially reversible with `chmod -x`.
     fn launch_appimage(path: &Path) -> std::io::Result<()> {
+        crate::hit!("launch_appimage");
         use std::os::unix::fs::PermissionsExt;
 
         // Ensure the owner-execute bit is set. AppImages downloaded via a browser
@@ -97,6 +98,7 @@ impl FluxApp {
         items: Vec<(PathBuf, bool)>,
         sender: &relm4::AsyncComponentSender<Self>,
     ) {
+        crate::hit!("activate_items");
         #[allow(clippy::never_loop)]
         for (path, is_dir) in items {
             let path_str = path.to_string_lossy();
@@ -222,6 +224,7 @@ impl FluxApp {
         destination: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_move_files_to_target");
         let mut moved_any = false;
         for src in sources {
             if src == destination {
@@ -246,6 +249,7 @@ impl FluxApp {
     /// Args:
     ///     is_cut: If true, prefixes the text metadata with "cut" to signal a move operation.
     pub fn handle_clipboard_action(&self, is_cut: bool) {
+        crate::hit!("handle_clipboard_action");
         let selection = self.get_selection_with_meta();
         if selection.is_empty() {
             return;

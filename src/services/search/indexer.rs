@@ -29,6 +29,7 @@ fn should_index(name: &str) -> bool {
 }
 
 fn is_indexable(root: &Path, path: &Path) -> bool {
+    crate::hit!("is_indexable");
     if path.starts_with("/run/user") {
         return false;
     }
@@ -53,6 +54,7 @@ fn is_indexable(root: &Path, path: &Path) -> bool {
 /// handles the common case, but a user can override `WINEPREFIX` to any
 /// directory, so the well-known roots are checked explicitly too.
 fn is_under_wine_root(path: &Path) -> bool {
+    crate::hit!("is_under_wine_root");
     let Some(home) = dirs::home_dir() else {
         return false;
     };
@@ -158,6 +160,7 @@ impl SearchIndex {
     }
 
     pub fn open_at(db_path: &Path) -> Result<Self> {
+        crate::hit!("open_at");
         if let Some(dir) = db_path.parent() {
             std::fs::create_dir_all(dir)?;
         }
@@ -180,6 +183,7 @@ impl SearchIndex {
     }
 
     fn migrate(conn: &mut Connection) -> Result<()> {
+        crate::hit!("migrate");
         let version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version == SCHEMA_VERSION {
             return Ok(());
@@ -196,6 +200,7 @@ impl SearchIndex {
     }
 
     fn meta(&self, key: &str) -> Option<String> {
+        crate::hit!("meta");
         self.conn
             .query_row("SELECT value FROM meta WHERE key = ?1", [key], |r| r.get(0))
             .ok()
@@ -208,6 +213,7 @@ impl SearchIndex {
 
     #[allow(dead_code)]
     pub fn len(&self) -> usize {
+        crate::hit!("len");
         self.conn
             .query_row("SELECT count(*) FROM entries", [], |r| r.get::<_, i64>(0))
             .unwrap_or(0) as usize
@@ -230,6 +236,7 @@ impl SearchIndex {
         scope: Option<&Path>,
         limit: usize,
     ) -> Result<Vec<PathBuf>> {
+        crate::hit!("query_in");
         let fts_query = format!("\"{}\"", pattern.replace('"', "\"\""));
         let (lo, hi) = match scope.and_then(path_str) {
             Some(s) => {
@@ -257,6 +264,7 @@ impl SearchIndex {
         scope: Option<&Path>,
         limit: usize,
     ) -> Result<Vec<PathBuf>> {
+        crate::hit!("query_fuzzy");
         use nucleo::pattern::{CaseMatching, Normalization, Pattern};
         use nucleo::Utf32Str;
 
@@ -295,6 +303,7 @@ impl SearchIndex {
 
     #[allow(dead_code)]
     pub fn delete_paths(&mut self, paths: &[String]) -> Result<()> {
+        crate::hit!("delete_paths");
         let tx = self.conn.transaction()?;
         for p in paths {
             remove_tree(&tx, p)?;
@@ -306,6 +315,7 @@ impl SearchIndex {
 
 /// Range query deletes the directory and all children without SQL `LIKE` wildcard ambiguities.
 pub fn remove_tree(conn: &Connection, path: &str) -> Result<()> {
+    crate::hit!("remove_tree");
     let p = path.trim_end_matches('/');
     if p.is_empty() {
         return Ok(());
@@ -316,6 +326,7 @@ pub fn remove_tree(conn: &Connection, path: &str) -> Result<()> {
 }
 
 fn upsert(conn: &Connection, parent: &str, name: &str, is_dir: bool, mtime: i64) -> Result<()> {
+    crate::hit!("upsert");
     conn.prepare_cached(UPSERT)?.execute(params![
         join(parent, name),
         parent,
@@ -327,6 +338,7 @@ fn upsert(conn: &Connection, parent: &str, name: &str, is_dir: bool, mtime: i64)
 }
 
 fn set_dir_mtime(conn: &Connection, dir: &str, mtime: i64) -> Result<()> {
+    crate::hit!("set_dir_mtime");
     let stored = if now_ns() - mtime < RACY_WINDOW_NS {
         0
     } else {
@@ -338,6 +350,7 @@ fn set_dir_mtime(conn: &Connection, dir: &str, mtime: i64) -> Result<()> {
 }
 
 fn read_listing(dir: &Path) -> io::Result<(i64, Vec<(String, bool)>)> {
+    crate::hit!("read_listing");
     let mtime = mtime_ns(&std::fs::metadata(dir)?);
     let mut out = Vec::new();
     for entry in std::fs::read_dir(dir)?.flatten() {
@@ -360,6 +373,7 @@ fn read_listing(dir: &Path) -> io::Result<(i64, Vec<(String, bool)>)> {
 }
 
 fn collect_index_roots() -> Vec<PathBuf> {
+    crate::hit!("collect_index_roots");
     let home = dirs::home_dir();
     let mut roots: Vec<PathBuf> = Vec::new();
 
@@ -403,6 +417,7 @@ fn index_subtree(
     should_stop: &dyn Fn() -> bool,
     tick: &mut dyn FnMut(&Connection),
 ) -> Result<()> {
+    crate::hit!("index_subtree");
     let mut visited: std::collections::HashSet<(u64, u64)> = std::collections::HashSet::new();
     let mut stack = vec![root.to_path_buf()];
     while let Some(dir) = stack.pop() {
@@ -433,6 +448,7 @@ fn index_subtree(
 }
 
 fn sync_dir(conn: &Connection, dir: &Path, should_stop: &dyn Fn() -> bool) -> Result<()> {
+    crate::hit!("sync_dir");
     let Some(dir_s) = path_str(dir).map(str::to_owned) else {
         return Ok(());
     };
@@ -482,6 +498,7 @@ pub fn full_scan(
     roots: &[PathBuf],
     should_stop: &dyn Fn() -> bool,
 ) -> Result<bool> {
+    crate::hit!("full_scan");
     const COMMIT_EVERY: usize = 20_000;
     let conn = &idx.conn;
     conn.execute_batch("BEGIN IMMEDIATE")?;
@@ -519,6 +536,7 @@ pub fn delta_scan(
     roots: &[PathBuf],
     should_stop: &dyn Fn() -> bool,
 ) -> Result<()> {
+    crate::hit!("delta_scan");
     let conn = &idx.conn;
     let dirs: Vec<(String, i64)> = {
         let mut stmt = conn.prepare("SELECT path, mtime FROM entries WHERE is_dir = 1")?;
@@ -595,6 +613,7 @@ pub fn apply_event(
     job: &Job,
     stop: &dyn Fn() -> bool,
 ) -> Result<()> {
+    crate::hit!("apply_event");
     match job {
         Job::Created(p) => {
             if !roots.iter().any(|r| is_indexable(r, p)) {
@@ -636,6 +655,7 @@ pub fn apply_event(
 }
 
 pub fn worker_loop(rx: mpsc::Receiver<Job>, db_path: PathBuf, roots: Vec<PathBuf>) {
+    crate::hit!("worker_loop");
     let Ok(mut idx) = SearchIndex::open_at(&db_path) else {
         return;
     };
@@ -725,6 +745,7 @@ pub fn worker_loop(rx: mpsc::Receiver<Job>, db_path: PathBuf, roots: Vec<PathBuf
 }
 
 fn ensure_worker() -> Option<&'static Sender<Job>> {
+    crate::hit!("ensure_worker");
     if let Some(tx) = WORKER.get() {
         return Some(tx);
     }

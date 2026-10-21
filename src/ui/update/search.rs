@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::SetTagPanelWidth(val) => app.handle_set_tag_panel_width(val),
         AppMsg::SetSearchPanelWidth(val) => app.handle_set_search_panel_width(val),

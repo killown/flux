@@ -13,6 +13,7 @@ impl FluxApp {
         total_items: usize,
         cancellable: gio::Cancellable,
     ) {
+        crate::hit!("handle_task_progress");
         self.task_queue
             .update(id, label, current, total, total_items, cancellable);
 
@@ -22,6 +23,7 @@ impl FluxApp {
     }
 
     pub fn handle_cancel_task(&mut self, id: u64, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cancel_task");
         let pid = self
             .task_queue
             .snapshot()
@@ -44,6 +46,7 @@ impl FluxApp {
     }
 
     pub fn handle_task_completed(&mut self, id: u64) {
+        crate::hit!("handle_task_completed");
         self.task_queue.remove(id);
 
         if let Some(dialog) = &mut self.transfer_dialog {
@@ -52,6 +55,7 @@ impl FluxApp {
     }
 
     pub fn handle_cancel_all_tasks(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cancel_all_tasks");
         for (_, task) in self.task_queue.snapshot() {
             if let Some(pid) = task.pid.filter(|&p| p != 0) {
                 unsafe {
@@ -64,6 +68,7 @@ impl FluxApp {
     }
 
     pub fn handle_task_queue_tick(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_task_queue_tick");
         match self.task_queue.summary() {
             Some((1, 1, pct)) => {
                 self.selection_status = format!("[Copying 1 file | {:.0}%]", pct * 100.0);
@@ -85,6 +90,7 @@ impl FluxApp {
     }
 
     pub fn handle_show_transfer_dialog(&mut self) {
+        crate::hit!("handle_show_transfer_dialog");
         if self.transfer_dialog.is_some() {
             return;
         }
@@ -111,6 +117,7 @@ impl FluxApp {
     }
 
     pub fn handle_show_transfer_dialog_if_active(&mut self, id: u64) {
+        crate::hit!("handle_show_transfer_dialog_if_active");
         if self.transfer_dialog.is_some() {
             return;
         }
@@ -130,6 +137,7 @@ impl FluxApp {
     }
 
     pub fn handle_show_command_dialog(&mut self, id: u64) {
+        crate::hit!("handle_show_command_dialog");
         if self.command_dialog.is_some() {
             return;
         }
@@ -146,6 +154,7 @@ impl FluxApp {
     }
 
     pub fn handle_show_command_dialog_if_active(&mut self, id: u64) {
+        crate::hit!("handle_show_command_dialog_if_active");
         if self.command_dialog.is_some() {
             return;
         }
@@ -166,6 +175,7 @@ impl FluxApp {
     }
 
     pub fn handle_transfer_dialog_closed(&mut self) {
+        crate::hit!("handle_transfer_dialog_closed");
         if let Some(mut dialog) = self.transfer_dialog.take() {
             dialog.close();
         }

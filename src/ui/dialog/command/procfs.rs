@@ -28,6 +28,7 @@ pub struct ProcStat {
 }
 
 pub(super) fn parse_stat(pid: u32) -> Option<ProcStat> {
+    crate::hit!("parse_stat");
     let path = format!("/proc/{}/stat", pid);
     let content = fs::read_to_string(&path).ok()?;
     let _open_paren = content.find('(')?;
@@ -61,6 +62,7 @@ pub(super) fn parse_stat(pid: u32) -> Option<ProcStat> {
 }
 
 pub(super) fn parse_statm(pid: u32) -> Option<u64> {
+    crate::hit!("parse_statm");
     let path = format!("/proc/{}/statm", pid);
     let content = fs::read_to_string(&path).ok()?;
     let mut parts = content.split_whitespace();
@@ -70,6 +72,7 @@ pub(super) fn parse_statm(pid: u32) -> Option<u64> {
 }
 
 pub(super) fn get_cmdline(pid: u32) -> Option<String> {
+    crate::hit!("get_cmdline");
     let path = format!("/proc/{}/cmdline", pid);
     fs::read_to_string(&path).ok().and_then(|s| {
         let parts: Vec<&str> = s.split('\0').filter(|p| !p.is_empty()).collect();
@@ -133,6 +136,7 @@ pub(super) fn format_bytes(bytes: u64) -> String {
 }
 
 pub(super) fn get_io_stats(pid: u32) -> Option<String> {
+    crate::hit!("get_io_stats");
     let path = format!("/proc/{}/io", pid);
     let content = fs::read_to_string(&path).ok()?;
     let mut stats = Vec::new();

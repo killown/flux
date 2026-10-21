@@ -194,6 +194,7 @@ impl TerminalState {
     }
 
     pub fn resize(&mut self, cols: usize, rows: usize) {
+        crate::hit!("resize");
         if cols == self.cols && rows == self.rows {
             return;
         }
@@ -283,6 +284,7 @@ impl TerminalState {
     }
 
     pub fn clear(&mut self) {
+        crate::hit!("clear");
         for row in self.grid.iter_mut() {
             for cell in row.iter_mut() {
                 *cell = Cell::blank();
@@ -324,6 +326,7 @@ impl TerminalState {
     }
 
     pub fn get_selected_text(&self) -> String {
+        crate::hit!("get_selected_text");
         let (start, end) = match (self.selection_start, self.selection_end) {
             (Some(s), Some(e)) => (s, e),
             _ => return String::new(),

@@ -18,6 +18,7 @@ pub fn delete_items(
     active_item_path: Option<PathBuf>,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("delete_items");
     let mut selection = selection;
     if selection.is_empty() {
         if let Some(active) = active_item_path {

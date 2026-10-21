@@ -18,6 +18,7 @@ pub(super) fn format_size(size: u64) -> String {
 
 /// Shannon entropy of `data`, in bits per byte, rounded to four decimals.
 pub(super) fn get_shannon_entropy(data: &[u8]) -> f64 {
+    crate::hit!("get_shannon_entropy");
     if data.is_empty() {
         return 0.0;
     }
@@ -38,6 +39,7 @@ pub(super) fn get_shannon_entropy(data: &[u8]) -> f64 {
 
 /// Runs `git log -1` for `path` and returns `(label, value)` rows.
 pub(super) fn get_git_info(path: &Path) -> Option<Vec<(String, String)>> {
+    crate::hit!("get_git_info");
     let output = Command::new("git")
         .args([
             "log",
@@ -68,6 +70,7 @@ pub(super) fn get_git_info(path: &Path) -> Option<Vec<(String, String)>> {
 
 /// Reads the first 20 bytes of `path` and decodes the ELF header if present.
 pub(super) fn get_elf_info(path: &Path) -> Option<Vec<(String, String)>> {
+    crate::hit!("get_elf_info");
     let mut f = fs::File::open(path).ok()?;
     let mut buffer = [0u8; 20];
     if f.read_exact(&mut buffer).is_err() {

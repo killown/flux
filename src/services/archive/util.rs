@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
 pub(super) fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    crate::hit!("copy_dir_recursive");
     std::fs::create_dir_all(dst)?;
     for entry in std::fs::read_dir(src)?.flatten() {
         let d = dst.join(entry.file_name());
@@ -40,6 +41,7 @@ where
         tempfile::NamedTempFile,
     ) -> Result<tempfile::NamedTempFile, ArchiveError>,
 {
+    crate::hit!("extract_bytes_via_tempfile");
     let suffix = Path::new(inner_path)
         .file_name()
         .and_then(|n| n.to_str())
@@ -63,6 +65,7 @@ where
 
 /// Walks `dir` recursively to find the first file whose name matches `file_name`.
 pub(super) fn find_file_recursive(dir: &Path, file_name: &str) -> Result<PathBuf, ArchiveError> {
+    crate::hit!("find_file_recursive");
     for entry in std::fs::read_dir(dir).map_err(|e| ArchiveError::Other(format!("readdir: {e}")))? {
         let entry = entry.map_err(|e| ArchiveError::Other(format!("entry: {e}")))?;
         let path = entry.path();
@@ -87,6 +90,7 @@ pub(super) fn make_dest_dir_at(
     inner_dir: &str,
     override_dest: Option<&Path>,
 ) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
+    crate::hit!("make_dest_dir_at");
     if let Some(dest) = override_dest {
         std::fs::create_dir_all(dest)
             .map_err(|e| ArchiveError::Other(format!("create_dir_all failed: {e}")))?;

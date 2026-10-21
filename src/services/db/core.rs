@@ -6,6 +6,7 @@ use std::sync::Mutex;
 impl StateManager {
     #[allow(dead_code)]
     pub fn new_with_path(db_path: &Path) -> Result<Self> {
+        crate::hit!("new_with_path");
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent)
                 .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
@@ -55,6 +56,7 @@ impl StateManager {
     }
 
     pub fn new() -> Result<Self> {
+        crate::hit!("new");
         let data_dir = dirs::data_dir()
             .unwrap_or_else(|| PathBuf::from("."))
             .join("flux");

@@ -20,6 +20,7 @@ pub const OFFICE_EXTS: &[&str] = &[
 /// Returns the first `soffice` / `libreoffice` binary on PATH, or `None`.
 /// Probed once per process.
 pub fn soffice_binary() -> Option<&'static str> {
+    crate::hit!("soffice_binary");
     use std::sync::OnceLock;
     static BIN: OnceLock<Option<&'static str>> = OnceLock::new();
     *BIN.get_or_init(|| {
@@ -36,6 +37,7 @@ pub fn soffice_binary() -> Option<&'static str> {
 /// Converts `src` to PDF, returns the cached PDF path. `None` on any
 /// failure (binary missing, conversion error, unreadable output).
 pub fn convert_to_pdf(src: &Path) -> Option<PathBuf> {
+    crate::hit!("convert_to_pdf");
     let bin = soffice_binary()?;
 
     let cache_dir = dirs::cache_dir()?.join("flux").join("office-previews");

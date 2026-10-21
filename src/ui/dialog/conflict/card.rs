@@ -10,6 +10,7 @@ pub(super) fn build_extra_child(
     file_name: &str,
     op_word: &str,
 ) -> (gtk::Box, Option<gtk::CheckButton>) {
+    crate::hit!("build_extra_child");
     let root = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(0)
@@ -112,6 +113,7 @@ fn build_file_side(
     role_label: &str,
     is_existing: bool,
 ) -> gtk::Box {
+    crate::hit!("build_file_side");
     let side = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(4)

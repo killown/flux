@@ -38,6 +38,7 @@ fn process_alive(pid: u32) -> bool {
 
 /// Removes sockets left behind by windows that no longer exist.
 fn remove_stale_sockets(dir: &Path) {
+    crate::hit!("remove_stale_sockets");
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
     };
@@ -59,6 +60,7 @@ fn remove_stale_sockets(dir: &Path) {
 /// The selection lives in GTK objects that only the main thread may touch, so
 /// the request is forwarded to the update loop and awaited with a timeout.
 fn serve(mut stream: UnixStream) {
+    crate::hit!("serve");
     let Some(sender) = crate::model::SENDER.get() else {
         return;
     };
@@ -82,6 +84,7 @@ fn serve(mut stream: UnixStream) {
 /// a convenience and must never disturb the UI.
 #[allow(dead_code)]
 pub(crate) fn setup_selection_server() {
+    crate::hit!("setup_selection_server");
     let Some(dir) = socket_dir() else { return };
     let _ = std::fs::create_dir_all(&dir);
     // Closes the window between `bind` and the socket's own chmod below.
@@ -115,6 +118,7 @@ pub(crate) fn setup_selection_server() {
 /// terminal) while it is alive, otherwise the window that navigated last.
 #[allow(dead_code)]
 pub(crate) fn print_selection(null: bool) -> i32 {
+    crate::hit!("print_selection");
     let (Some(cache), Some(dir)) = (cache_dir(), socket_dir()) else {
         return 1;
     };

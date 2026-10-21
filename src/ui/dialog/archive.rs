@@ -71,6 +71,7 @@ impl FluxApp {
         inner_path: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_archive_deletion_warning");
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 

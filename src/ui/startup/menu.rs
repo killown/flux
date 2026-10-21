@@ -9,6 +9,7 @@ impl FluxApp {
     /// Uses GIO menu sections for visual grouping. Each `detailed_action` string
     /// references an `app.*` action registered in `main.rs::setup_shortcuts`.
     pub(crate) fn build_main_menu() -> gtk::gio::Menu {
+        crate::hit!("build_main_menu");
         let menu = gtk::gio::Menu::new();
 
         // ── Sort ─────────────────────────────────────────────────────────────

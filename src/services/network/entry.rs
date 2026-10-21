@@ -34,6 +34,7 @@ pub fn entries_to_load_contexts(
     entries: &[NetworkEntry],
     expand_labels: bool,
 ) -> Vec<FileLoadContext> {
+    crate::hit!("entries_to_load_contexts");
     net_debug!(
         "[network] entries_to_load_contexts: {} entries",
         entries.len()

@@ -86,6 +86,7 @@ fn start_walk(
     params: AdvancedSearchParams,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("start_walk");
     if params.patterns.is_empty() {
         return;
     }

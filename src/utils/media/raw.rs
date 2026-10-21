@@ -8,6 +8,7 @@ use super::png::store_thumbnail;
 
 /// Returns `true` if `exiftool` is present on `$PATH`.
 fn exiftool_available() -> bool {
+    crate::hit!("exiftool_available");
     static AVAILABLE: OnceLock<bool> = OnceLock::new();
     *AVAILABLE.get_or_init(|| {
         Command::new("which")
@@ -20,6 +21,7 @@ fn exiftool_available() -> bool {
 
 /// Returns the name of the first available native RAW thumbnailer.
 fn find_raw_thumbnailer() -> Option<&'static str> {
+    crate::hit!("find_raw_thumbnailer");
     static TOOL: OnceLock<Option<&'static str>> = OnceLock::new();
     *TOOL.get_or_init(|| {
         ["miniaturo", "raw-thumbnailer"].into_iter().find(|tool| {
@@ -43,6 +45,7 @@ pub(crate) fn raw_thumbnail(
     cache_dir: &Path,
     target_size: i32,
 ) -> Option<gdk::Texture> {
+    crate::hit!("raw_thumbnail");
     // Primary: exiftool. Correct on every modern camera.
     if exiftool_available() {
         if let Some(bytes) = exiftool_preview(path, target_size) {
@@ -76,6 +79,7 @@ fn try_raw_thumbnailer(
     cache_dir: &Path,
     target_size: i32,
 ) -> Option<std::path::PathBuf> {
+    crate::hit!("try_raw_thumbnailer");
     let tmp_path = cache_dir.join(format!(
         ".tmp.{}.{}.png",
         std::process::id(),
@@ -107,6 +111,7 @@ fn try_raw_thumbnailer(
 /// mis-parses a modern camera format. A real photographic thumbnail at any
 /// usable size is well over 4 KB.
 fn png_looks_real(bytes: &[u8]) -> bool {
+    crate::hit!("png_looks_real");
     if bytes.len() < 4096 {
         return false;
     }
@@ -124,6 +129,7 @@ fn png_looks_real(bytes: &[u8]) -> bool {
 /// `ThumbnailImage` (tiny, 5-20 KB). The first tag that returns at least
 /// 4 KB of valid image data wins.
 fn exiftool_preview(path: &Path, target_size: i32) -> Option<Vec<u8>> {
+    crate::hit!("exiftool_preview");
     for tag in ["-JpgFromRaw", "-PreviewImage", "-ThumbnailImage"] {
         let output = Command::new("exiftool")
             .args(["-b", tag])

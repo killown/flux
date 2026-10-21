@@ -10,6 +10,7 @@ thread_local! {
 
 /// Finds an image in `base_dir` matching the slot prefix (e.g. `window.png` or `window_<timestamp>.png`).
 fn find_slot_image(base_dir: &std::path::Path, prefix: &str) -> Option<std::path::PathBuf> {
+    crate::hit!("find_slot_image");
     if let Ok(entries) = std::fs::read_dir(base_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
@@ -25,6 +26,7 @@ fn find_slot_image(base_dir: &std::path::Path, prefix: &str) -> Option<std::path
 
 /// Injects dynamic background image styles if the image files exist on disk.
 pub fn load_custom_background_images() {
+    crate::hit!("load_custom_background_images");
     let Some(data_dir) = dirs::data_dir() else {
         return;
     };
@@ -138,6 +140,7 @@ window.csd {{
 
 /// Deletes all background images from disk and clears the CSS provider.
 pub fn clear_custom_background_images() {
+    crate::hit!("clear_custom_background_images");
     if let Some(data_dir) = dirs::data_dir() {
         let base_img_dir = data_dir.join("flux/data/resources/images");
         if let Ok(entries) = std::fs::read_dir(&base_img_dir) {

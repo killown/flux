@@ -12,6 +12,7 @@ impl FluxApp {
         dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_drop_items");
         let dest_str = dest_path.to_string_lossy();
 
         // ── Archive Drop Intercept ───────────────────────────────────────────
@@ -125,6 +126,7 @@ impl FluxApp {
         _dest_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_external_drop_items");
         // FORCE the destination to always be the directory currently viewed in Flux,
         // preventing window-level drop targets from accidentally dumping files into /home/neo.
         let dest_path = self.current_path.clone();

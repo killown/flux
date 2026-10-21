@@ -35,6 +35,7 @@ pub fn peek_cached_file_icon_texture(path: &Path) -> Option<gtk::gdk::Texture> {
 }
 
 pub fn insert_cached_file_icon_texture(path: &Path, texture: gtk::gdk::Texture) {
+    crate::hit!("insert_cached_file_icon_texture");
     let mtime = std::fs::metadata(path)
         .and_then(|m| m.modified())
         .ok()

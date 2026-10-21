@@ -17,6 +17,7 @@ impl FileItem {
     /// Sets up drag-and-drop functionality and mouse gesture listeners for
     /// context menu interaction.
     pub(super) fn build_widgets(_item: &gtk::ListItem) -> (gtk::Overlay, FileWidgets) {
+        crate::hit!("build_widgets");
         let config = utils::load_config();
         let drag_source = gtk::DragSource::builder()
             .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)

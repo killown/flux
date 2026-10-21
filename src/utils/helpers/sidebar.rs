@@ -21,6 +21,7 @@ fn terminal_default_width(anchor: &gtk::Revealer) -> i32 {
 impl FluxApp {
     /// Rebuilds the sidebar navigation list from XDG directories, mounts, and configuration.
     pub fn refresh_sidebar(&mut self) {
+        crate::hit!("refresh_sidebar");
         let mut guard = self.sidebar.guard();
         guard.clear();
 
@@ -154,6 +155,7 @@ impl FluxApp {
 
     /// Hides every right-side panel except `keep`, so only one is open at a time.
     fn hide_other_right_panels(&mut self, keep: RightPanelType) {
+        crate::hit!("hide_other_right_panels");
         if keep != RightPanelType::Tag && self.tag_panel_visible {
             if let Some(ref r) = self.tag_panel_revealer {
                 r.set_reveal_child(false);
@@ -231,6 +233,7 @@ impl FluxApp {
         panel_type: RightPanelType,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("toggle_sidebar_right_panel");
         // Ensure mutually exclusive right-side panels
         self.hide_other_right_panels(panel_type);
 

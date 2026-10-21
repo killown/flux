@@ -7,6 +7,7 @@ const MIN_REAL_ICON_BYTES: u64 = 512;
 /// Probed once per process, the result (positive or negative) is cached so
 /// callers on the icon hot path pay a single atomic load after the first call.
 pub fn seven_zip_available() -> bool {
+    crate::hit!("seven_zip_available");
     static AVAILABLE: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *AVAILABLE.get_or_init(|| {
         std::process::Command::new("7z")
@@ -24,6 +25,7 @@ pub fn seven_zip_available() -> bool {
 /// miss runs 7z twice at most (once to list, once to extract the chosen
 /// entry).
 pub fn extract_appimage_icon(appimage: &Path) -> Option<PathBuf> {
+    crate::hit!("extract_appimage_icon");
     if !seven_zip_available() {
         return None;
     }
@@ -92,6 +94,7 @@ pub fn extract_appimage_icon(appimage: &Path) -> Option<PathBuf> {
 
 /// Runs `7z l -ba` and picks the best real icon entry.
 fn find_icon_entry(appimage: &Path) -> Option<String> {
+    crate::hit!("find_icon_entry");
     let output = std::process::Command::new("7z")
         .args(["l", "-ba", "-bso0", "-bse0", "-bsp0"])
         .arg(appimage)

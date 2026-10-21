@@ -143,6 +143,7 @@ impl FluxApp {
         target_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_sidebar_icon_picker");
         let toplevels = gtk::Window::list_toplevels();
         let parent = toplevels
             .first()

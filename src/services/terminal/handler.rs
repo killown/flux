@@ -530,6 +530,7 @@ impl Perform for TerminalHandler {
 
 /// Decodes percent-encoded URI path components (e.g. `%20` → space).
 fn percent_decode(s: &str) -> String {
+    crate::hit!("percent_decode");
     let mut out = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();
     while let Some(c) = chars.next() {

@@ -34,6 +34,7 @@ fn scan_generated_extension_icons() -> HashSet<String> {
 
 /// Returns the newest modification time between template.svg and config.toml.
 fn get_template_and_config_mtime() -> Option<SystemTime> {
+    crate::hit!("get_template_and_config_mtime");
     let template_mtime = dirs::data_dir()
         .map(|d| d.join("flux/icons/template.svg"))
         .and_then(|p| std::fs::metadata(p).ok())
@@ -87,6 +88,7 @@ pub fn get_custom_extension_icon_path(ext: &str) -> Option<PathBuf> {
 
 /// Returns the path to an auto-generated extension icon from `icons/extensions/generated/`.
 pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
+    crate::hit!("get_generated_extension_icon_path");
     if ext.is_empty() {
         return None;
     }
@@ -144,6 +146,7 @@ pub fn get_generated_extension_icon_path(ext: &str) -> Option<PathBuf> {
 /// Returns the effective icon path for an extension, prioritizing `custom/` over `generated/`,
 /// and generating into `generated/` on demand if absent.
 pub fn get_extension_icon_path(ext: &str) -> Option<PathBuf> {
+    crate::hit!("get_extension_icon_path");
     if ext.is_empty() {
         return None;
     }

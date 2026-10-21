@@ -3,6 +3,7 @@ use rusqlite::{params, Result};
 
 impl StateManager {
     pub fn load_folder_icons(&self) -> std::collections::HashMap<String, String> {
+        crate::hit!("load_folder_icons");
         let conn = self.conn.lock().unwrap();
         let mut stmt = match conn.prepare("SELECT path, icon FROM folder_icons") {
             Ok(s) => s,
@@ -18,6 +19,7 @@ impl StateManager {
     }
 
     pub fn set_folder_icon(&self, path: &str, icon: &str) -> Result<()> {
+        crate::hit!("set_folder_icon");
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "INSERT INTO folder_icons (path, icon) VALUES (?1, ?2)
@@ -28,6 +30,7 @@ impl StateManager {
     }
 
     pub fn remove_folder_icon(&self, path: &str) -> Result<()> {
+        crate::hit!("remove_folder_icon");
         let clean = path.trim_end_matches('/');
         let with_slash = format!("{}/", clean);
         let conn = self.conn.lock().unwrap();
@@ -40,6 +43,7 @@ impl StateManager {
 
     #[allow(dead_code)]
     pub fn rename_folder_icon(&self, old_path: &str, new_path: &str) -> Result<()> {
+        crate::hit!("rename_folder_icon");
         let conn = self.conn.lock().unwrap();
         conn.execute(
             "UPDATE folder_icons SET path = ?1 WHERE path = ?2",

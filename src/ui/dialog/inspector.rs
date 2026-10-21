@@ -10,6 +10,7 @@ impl FluxApp {
         target_dir: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_dir_inspector_dialog");
         let window = gtk::Application::default().active_window();
         let s = sender.clone();
 

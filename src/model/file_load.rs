@@ -256,6 +256,7 @@ impl FileLoadContext {
     /// Runs exactly once per item, do not call directly on the GTK thread -
     /// call `labels()` instead, which primes this in the loader.
     fn compute_labels(&self, now_unix: i64) -> CellLabels {
+        crate::hit!("compute_labels");
         use crate::i18n::tr;
 
         let size = self.size();

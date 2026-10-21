@@ -16,6 +16,7 @@ use std::process::Command;
 /// If the volume is already mounted, returns the existing mount point immediately.
 /// Runs blocking - must be called from `relm4::spawn_blocking`.
 pub fn unlock_and_mount(image: &LuksImage, passphrase: &str) -> Result<PathBuf, String> {
+    crate::hit!("unlock_and_mount");
     let device_name = image
         .path
         .file_stem()

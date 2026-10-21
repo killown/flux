@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 impl FluxApp {
     pub fn handle_set_sidebar_width(&mut self, val: i32) {
+        crate::hit!("handle_set_sidebar_width");
         let clamped = val.clamp(160, 500);
         self.config.ui.sidebar_width = clamped;
         utils::save_config(&self.config);
@@ -32,6 +33,7 @@ impl FluxApp {
         new_name: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_rename_sidebar_place");
         let mut modified = false;
 
         for place in &mut self.config.sidebar {
@@ -83,6 +85,7 @@ impl FluxApp {
 
     /// Appends a new `kind = "label"` section entry to the bottom of config.sidebar.
     pub fn handle_add_sidebar_section(&mut self, title: String) {
+        crate::hit!("handle_add_sidebar_section");
         let title = title.trim().to_string();
         if title.is_empty() {
             return;
@@ -110,6 +113,7 @@ impl FluxApp {
     }
 
     pub fn handle_add_tag_to_sidebar(&mut self, tag: String) {
+        crate::hit!("handle_add_tag_to_sidebar");
         let uri = format!("tags://{}", tag.trim_start_matches('#'));
         self.config.sidebar.push(crate::model::CustomPlace {
             name: format!("# {}", tag.trim_start_matches('#')),
@@ -130,6 +134,7 @@ impl FluxApp {
         icon: String,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_add_panel_sidebar_entry");
         if self.config.sidebar.iter().any(|p| p.path == path) {
             sender.input(AppMsg::ShowToast(crate::i18n::tr("Already in sidebar")));
             return;

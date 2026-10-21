@@ -6,6 +6,7 @@ use relm4::prelude::*;
 impl FluxApp {
     /// Toggles between grid card layout and compact list view.
     pub fn handle_toggle_list_mode(&mut self) {
+        crate::hit!("handle_toggle_list_mode");
         self.is_list_mode = !self.is_list_mode;
         self.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
@@ -47,6 +48,7 @@ impl FluxApp {
 
     /// Toggles between ascending and descending sort order.
     pub fn handle_toggle_sort_order(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_toggle_sort_order");
         self.sort_ascending = !self.sort_ascending;
         let _ = self.state_db.save_view(
             &self.current_path,
@@ -60,6 +62,7 @@ impl FluxApp {
 
     /// Cycles through available sorting criteria (Name -> Date -> Size -> Type).
     pub fn handle_cycle_sort(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cycle_sort");
         self.sort_by = match self.sort_by {
             SortBy::Name => SortBy::Date,
             SortBy::Date => SortBy::Size,
@@ -78,6 +81,7 @@ impl FluxApp {
 
     /// Toggles "Folders First" sorting priority for the current directory view.
     pub fn handle_cycle_folder_priority(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cycle_folder_priority");
         let path = self.current_path.clone();
         let current_state = if let Ok(Some((_, _, _, ff))) = self.state_db.get_view(&path) {
             ff

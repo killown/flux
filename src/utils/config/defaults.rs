@@ -35,6 +35,7 @@ fn migrate_legacy_terminal_position(config: &mut crate::model::Config, raw: &str
 }
 
 pub(super) fn load_config_from_disk() -> crate::model::Config {
+    crate::hit!("load_config_from_disk");
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");

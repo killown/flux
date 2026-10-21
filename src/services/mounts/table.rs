@@ -30,6 +30,7 @@ impl MountTable {
 
     /// Reads `/proc/self/mountinfo` and `/etc/fstab`.
     pub fn load() -> Self {
+        crate::hit!("load");
         let mounted = std::fs::read_to_string("/proc/self/mountinfo")
             .map(|c| parse_mountinfo(&c))
             .unwrap_or_default();
@@ -55,6 +56,7 @@ impl MountTable {
     /// current mount table - a missing directory under such a path is
     /// considered "possibly just unmounted" rather than "deleted".
     pub fn is_inconclusive(&self, path: &Path) -> bool {
+        crate::hit!("is_inconclusive");
         for root in ALWAYS_INCONCLUSIVE_ROOTS {
             if path.starts_with(root) {
                 return true;
@@ -82,6 +84,7 @@ impl MountTable {
 /// us enough information to conclude it was actually deleted (rather than
 /// hidden behind an unmounted filesystem).
 pub fn is_confirmed_missing(path: &Path, mounts: &MountTable) -> bool {
+    crate::hit!("is_confirmed_missing");
     match path.symlink_metadata() {
         Ok(_) => false,
         Err(e) => {

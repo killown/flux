@@ -57,6 +57,7 @@ impl LineNumberGutter {
 }
 
 fn paint(cr: &Context, tv: &gtk::TextView, _sc: &gtk::ScrolledWindow, w: i32, h: i32) {
+    crate::hit!("paint");
     let buf = tv.buffer();
     let line_count = buf.line_count();
     if line_count == 0 {

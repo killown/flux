@@ -13,6 +13,7 @@ impl FluxApp {
     // may resolve relative paths incorrectly, moving files to previous locations
     // instead of the directory currently displayed to the user.
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_navigate");
         let path_str = path.to_string_lossy();
         self.mime_filter = None;
         self.mime_filter_from_space = false;
@@ -305,6 +306,7 @@ impl FluxApp {
         archive_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_enter_archive");
         self.mime_filter = None;
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
@@ -366,6 +368,7 @@ impl FluxApp {
     /// for this `(directory, letter)`, starts at the first match.
     /// Does nothing when no folder matches.
     pub fn handle_cycle_by_letter(&mut self, letter: char, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cycle_by_letter");
         let prefix = letter.to_ascii_lowercase();
         let current = self.current_path.clone();
 
@@ -432,6 +435,7 @@ impl FluxApp {
     /// Cancel the cycle. If we descended into a candidate, go back to the
     /// anchor so the next letter press starts from scratch.
     pub fn handle_cycle_by_letter_cancel(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cycle_by_letter_cancel");
         let Some(cycle) = self.alt_cycle.take() else {
             return;
         };
@@ -448,6 +452,7 @@ impl FluxApp {
     /// Forget the cycle without navigating. The next letter press builds
     /// candidates from `current_path`.
     pub fn handle_cycle_by_letter_reanchor(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_cycle_by_letter_reanchor");
         self.alt_cycle = None;
         sender.input(AppMsg::ShowToast(crate::i18n::tr(
             "Cycle anchored to current folder",

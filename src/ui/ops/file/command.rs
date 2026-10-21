@@ -24,6 +24,7 @@ pub fn build_execution_command(
     current_path: &Path,
     line_number: usize,
 ) -> (String, String) {
+    crate::hit!("build_execution_command");
     if targets.len() == 1 {
         let path = &targets[0];
         let path_str = path.to_string_lossy();
@@ -114,6 +115,7 @@ pub fn should_track_in_transfer_dialog(cmd_template: &str) -> bool {
 impl FluxApp {
     /// Extracts target paths from selection or active item context.
     pub fn resolve_command_targets(&self) -> Vec<PathBuf> {
+        crate::hit!("resolve_command_targets");
         let mut targets = Vec::new();
         let active_files = match self.tabs.get(self.active_tab_index) {
             Some(tab) => &tab.files,
@@ -164,6 +166,7 @@ impl FluxApp {
         no_command_dialog_override: Option<bool>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_execute_command_with");
         let final_targets = self.resolve_command_targets();
 
         if cmd_template == "builtin::open_with" {

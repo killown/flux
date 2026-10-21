@@ -9,6 +9,7 @@ pub(super) fn timestamped_name(stem: &str, ext: &str) -> String {
 /// Returns a path that does not exist yet by appending `_2`, `_3`, … before
 /// the extension.
 pub(super) fn unique_path(dir: &Path, name: &str) -> PathBuf {
+    crate::hit!("unique_path");
     let candidate = dir.join(name);
     if !candidate.exists() {
         return candidate;

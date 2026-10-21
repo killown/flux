@@ -4,6 +4,7 @@ use relm4::prelude::*;
 impl FluxApp {
     /// Toggles the ephemeral MIME filter based on the selected item.
     pub fn handle_filter_by_selected_mime(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_filter_by_selected_mime");
         if self.mime_filter.is_some() {
             sender.input(AppMsg::ClearMimeFilter);
             return;
@@ -33,6 +34,7 @@ impl FluxApp {
 
     /// Drops the ephemeral MIME filter and reloads the current directory.
     pub fn handle_clear_mime_filter(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_clear_mime_filter");
         self.mime_filter_from_space = false;
         if self.mime_filter.take().is_some() {
             crate::ui::panels::preview_registry::set_mime_filter_active(false);

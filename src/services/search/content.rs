@@ -22,6 +22,7 @@ pub fn start_content_search(
     ext_filter: Option<String>,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("start_content_search");
     if term.trim().is_empty() {
         return;
     }

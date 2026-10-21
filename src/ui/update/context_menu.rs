@@ -7,6 +7,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::PrepareContextMenu(x, y, path) => {
             app.handle_prepare_context_menu(x, y, path, sender)

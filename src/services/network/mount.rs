@@ -54,12 +54,14 @@ async fn unmount_with_operation(
     mount: &gio::Mount,
     mount_op: &gio::MountOperation,
 ) -> Result<(), glib::Error> {
+    crate::hit!("unmount_with_operation");
     mount
         .unmount_with_operation_future(gio::MountUnmountFlags::NONE, Some(mount_op))
         .await
 }
 
 pub async fn unmount_network_location(uri: &str) -> Result<(), NetworkError> {
+    crate::hit!("unmount_network_location");
     net_debug!("[network] unmount_network_location uri = {uri:?}");
     let file = gio::File::for_uri(uri);
     let mount = file
@@ -81,6 +83,7 @@ pub async fn unmount_network_location(uri: &str) -> Result<(), NetworkError> {
 }
 
 pub fn active_mounts() -> Vec<(String, String, String)> {
+    crate::hit!("active_mounts");
     let result: Vec<(String, String, String)> = gio::VolumeMonitor::get()
         .mounts()
         .into_iter()
@@ -111,6 +114,7 @@ pub fn active_mounts() -> Vec<(String, String, String)> {
 }
 
 pub fn check_gvfs_deps() -> HashMap<&'static str, bool> {
+    crate::hit!("check_gvfs_deps");
     let mut results = HashMap::new();
     for binary in ["gvfsd", "gvfsd-smb", "gvfsd-sftp", "gvfsd-ftp", "gvfsd-nfs"] {
         let found = std::process::Command::new("which")

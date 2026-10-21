@@ -3,6 +3,7 @@ use rusqlite::{params, Result};
 
 impl StateManager {
     pub fn add_location(&self, uri: &str) -> Result<()> {
+        crate::hit!("add_location");
         let conn = self.conn.lock().unwrap();
         let now = chrono::Utc::now().timestamp_micros();
 
@@ -23,12 +24,14 @@ impl StateManager {
     }
 
     pub fn remove_location(&self, uri: &str) -> Result<()> {
+        crate::hit!("remove_location");
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM location_history WHERE uri = ?1", params![uri])?;
         Ok(())
     }
 
     pub fn get_location_history(&self) -> Result<Vec<String>> {
+        crate::hit!("get_location_history");
         let conn = self.conn.lock().unwrap();
         let mut stmt =
             conn.prepare("SELECT uri FROM location_history ORDER BY timestamp DESC, id DESC")?;
@@ -42,6 +45,7 @@ impl StateManager {
     }
 
     pub fn clear_location_history(&self) -> Result<()> {
+        crate::hit!("clear_location_history");
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM location_history", [])?;
         Ok(())

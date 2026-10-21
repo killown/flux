@@ -86,6 +86,7 @@ impl Terminal {
     // replacement for named theme colors (`@window_bg_color`, `@accent_bg_color`, ...).
     #[allow(deprecated)]
     pub fn apply_theme(&self, config: &TerminalConfig) {
+        crate::hit!("apply_theme");
         let widget = self.drawing_area.upcast_ref::<gtk::Widget>();
 
         // --- colors -------------------------------------------------------

@@ -4,6 +4,7 @@ use adw::prelude::*;
 use relm4::prelude::*;
 
 pub fn build(config: &Config) -> adw::PreferencesPage {
+    crate::hit!("build");
     relm4::view! {
         page = adw::PreferencesPage {
             set_title: &tr("Terminal"),

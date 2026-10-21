@@ -16,6 +16,7 @@ pub fn build_tag_panel(
     initial_width: i32,
     sender: AsyncComponentSender<FluxApp>,
 ) -> gtk::Box {
+    crate::hit!("build_tag_panel");
     let spec = PanelSpec::tag().with_initial(initial_width);
 
     let panel = gtk::Box::builder()

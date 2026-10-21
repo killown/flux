@@ -41,6 +41,7 @@ pub(super) const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3
 /// Reads `~/.local/share/flux/icons/template.svg`, auto-creating it with the
 /// embedded default when absent.
 pub(super) fn get_or_create_template() -> String {
+    crate::hit!("get_or_create_template");
     let template_path = dirs::data_dir()
         .map(|d| d.join("flux/icons/template.svg"))
         .unwrap_or_else(|| PathBuf::from("template.svg"));

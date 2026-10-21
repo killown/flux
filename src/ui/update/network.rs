@@ -6,6 +6,7 @@ pub(super) fn handle(
     msg: AppMsg,
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
+    crate::hit!("handle");
     match msg {
         AppMsg::NetworkLoaded { uri, contexts } => app.handle_network_loaded(uri, contexts),
         AppMsg::ConnectToServer { uri, credentials } => {

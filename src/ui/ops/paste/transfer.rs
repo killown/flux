@@ -3,6 +3,7 @@ use gtk::gio;
 use std::path::{Path, PathBuf};
 
 pub(super) fn resolve_gio_files(files: Vec<gio::File>) -> Vec<(PathBuf, String, bool)> {
+    crate::hit!("resolve_gio_files");
     files
         .into_iter()
         .filter_map(|file| {
@@ -36,6 +37,7 @@ pub fn perform_file_op_with_progress(
     cancellable: &gio::Cancellable,
     mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
 ) -> Result<(), String> {
+    crate::hit!("perform_file_op_with_progress");
     if !src.exists() {
         return Err(format!("Source '{}' does not exist", src.display()));
     }
@@ -127,6 +129,7 @@ pub fn perform_file_op_with_progress(
 
 /// Canonicalises `p`, falling back to parent + filename when it does not exist.
 pub(super) fn resolve_for_compare(p: &Path) -> PathBuf {
+    crate::hit!("resolve_for_compare");
     if let Ok(c) = p.canonicalize() {
         return c;
     }
@@ -149,6 +152,7 @@ pub(super) fn is_strictly_inside(src: &Path, dest: &Path) -> bool {
 /// Removes `created` in reverse. Dirs use `remove_dir`, so a non-empty dir
 /// added by someone else is left alone.
 pub(super) fn rollback_created(created: &[PathBuf]) {
+    crate::hit!("rollback_created");
     for p in created.iter().rev() {
         match p.symlink_metadata() {
             Ok(m) if m.is_dir() => {
@@ -170,6 +174,7 @@ pub(super) fn copy_dir_recursive(
     created: &mut Vec<PathBuf>,
     done: &mut i64,
 ) -> std::io::Result<()> {
+    crate::hit!("copy_dir_recursive");
     if src == dest {
         return Ok(());
     }
@@ -238,6 +243,7 @@ pub(super) fn copy_dir_recursive(
 }
 
 pub(super) fn scan_total_bytes(path: &Path) -> u64 {
+    crate::hit!("scan_total_bytes");
     fn walk_dir(dir: &Path) -> u64 {
         let mut total = 0u64;
         if let Ok(entries) = std::fs::read_dir(dir) {

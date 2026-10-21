@@ -18,6 +18,7 @@ pub fn show_template_editor(
     template_path: PathBuf,
     sender: AsyncComponentSender<crate::model::FluxApp>,
 ) {
+    crate::hit!("show_template_editor");
     let dialog = adw::Window::builder()
         .title(tr("Edit Actions Template").as_str())
         .modal(true)

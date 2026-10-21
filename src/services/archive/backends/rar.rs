@@ -109,6 +109,7 @@ impl ArchiveBackend for RarBackend {
 
 /// Returns the first RAR CLI tool found on PATH, or `None` if neither is available.
 fn rar_tool() -> Option<&'static str> {
+    crate::hit!("rar_tool");
     ["unar", "unrar"]
         .iter()
         .find(|&&tool| {
@@ -125,6 +126,7 @@ fn list_rar(
     prefix: &str,
     password: Option<&str>,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_rar");
     let tool = rar_tool().ok_or_else(|| {
         ArchiveError::Other(crate::i18n::tr(
             "RAR support requires 'unar' or 'unrar' (install via your package manager)",
@@ -184,6 +186,7 @@ fn list_rar(
 
 /// Parses `unar -list` tab-separated output, name is the last tab-delimited field.
 fn parse_unar_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, ArchiveEntry>) {
+    crate::hit!("parse_unar_list");
     for line in stdout.lines() {
         let line = line.trim();
         if line.is_empty()
@@ -213,6 +216,7 @@ fn parse_unar_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, Archiv
 
 /// Parses `unrar l` fixed-width output, listing is delimited by `---` separator lines.
 fn parse_unrar_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, ArchiveEntry>) {
+    crate::hit!("parse_unrar_list");
     let mut in_listing = false;
     for line in stdout.lines() {
         let trimmed = line.trim();
@@ -251,6 +255,7 @@ fn extract_rar(
     password: Option<&str>,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_rar");
     let tool = rar_tool().ok_or_else(|| {
         ArchiveError::Other(
             "RAR support requires 'unar' or 'unrar' (install via your package manager)".to_owned(),

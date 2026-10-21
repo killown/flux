@@ -66,6 +66,7 @@ pub fn create_transfer_dialog(
     queue: Arc<TaskQueue>,
     sender: relm4::Sender<AppMsg>,
 ) -> TransferDialogHandle {
+    crate::hit!("create_transfer_dialog");
     let window = adw::Window::builder()
         .title(crate::i18n::tr("File Transfer"))
         .default_width(480)
@@ -148,6 +149,7 @@ fn rebuild_tabs(
     queue: &Arc<TaskQueue>,
     sender: &relm4::Sender<AppMsg>,
 ) {
+    crate::hit!("rebuild_tabs");
     while notebook.n_pages() > 0 {
         notebook.remove_page(Some(0));
     }
@@ -169,6 +171,7 @@ fn build_task_tab(
     _queue: &Arc<TaskQueue>,
     sender: &relm4::Sender<AppMsg>,
 ) -> gtk::Widget {
+    crate::hit!("build_task_tab");
     let container = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(12)

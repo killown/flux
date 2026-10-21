@@ -12,6 +12,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_background_alpha(&mut self, slot: crate::model::BackgroundSlot, val: f64) {
+        crate::hit!("handle_set_background_alpha");
         let clamped = val.clamp(0.0, 1.0);
         match slot {
             crate::model::BackgroundSlot::Window => self.config.ui.bg_alpha_window = clamped,
@@ -31,6 +32,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_flux_background(&mut self, target: PathBuf, slot: BackgroundSlot) {
+        crate::hit!("handle_set_flux_background");
         if let Some(data_dir) = dirs::data_dir() {
             let img_dir = data_dir.join("flux/data/resources/images");
             let _ = std::fs::create_dir_all(&img_dir);
@@ -76,6 +78,7 @@ impl FluxApp {
     }
 
     pub fn handle_toggle_header_bar(&mut self) {
+        crate::hit!("handle_toggle_header_bar");
         self.header_visible = !self.header_visible;
         self.config.ui.header_visible = self.header_visible;
         utils::save_config(&self.config);
@@ -96,6 +99,7 @@ impl FluxApp {
     }
 
     pub fn handle_set_theme(&mut self, theme: Option<String>) {
+        crate::hit!("handle_set_theme");
         self.config.ui.theme = theme;
         utils::save_config(&self.config);
         crate::utils::helpers::load_custom_css();

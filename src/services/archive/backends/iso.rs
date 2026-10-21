@@ -76,6 +76,7 @@ fn iso_has_udf(file: &mut std::fs::File) -> bool {
 /// Parses `7z l -slt` machine-readable output into [`ArchiveEntry`] items,
 /// filtering to immediate children of `prefix`.
 fn parse_7z_iso_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, ArchiveEntry>) {
+    crate::hit!("parse_7z_iso_list");
     let pfx = if prefix.is_empty() {
         String::new()
     } else {
@@ -158,6 +159,7 @@ fn parse_7z_iso_list(stdout: &str, prefix: &str, seen: &mut HashMap<String, Arch
 }
 
 fn list_iso(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_iso");
     let mut file = std::fs::File::open(archive_path)
         .map_err(|e| ArchiveError::Other(format!("open iso: {e}")))?;
 
@@ -225,6 +227,7 @@ fn list_iso(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, Arch
 
 /// Lists a UDF ISO by shelling out to `7z l -slt`, mirroring the RAR strategy.
 fn list_iso_udf(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_iso_udf");
     let output = std::process::Command::new("7z")
         .args(["l", "-slt", "-so"])
         .arg(archive_path)
@@ -252,6 +255,7 @@ fn extract_iso(
     inner_path: &str,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_iso");
     let mut file = std::fs::File::open(archive_path)
         .map_err(|e| ArchiveError::Other(format!("open iso: {e}")))?;
 
@@ -333,6 +337,7 @@ fn extract_iso_udf(
     inner_path: &str,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_iso_udf");
     let tmp_dir = tempfile::tempdir().map_err(|e| ArchiveError::Other(format!("tempdir: {e}")))?;
 
     let file_name = Path::new(inner_path)

@@ -6,6 +6,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 pub fn resolve_secondary_menu_template(mime: &str) -> Option<PathBuf> {
+    crate::hit!("resolve_secondary_menu_template");
     let base_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("~/.config"))
         .join("flux");
@@ -46,6 +47,7 @@ pub fn resolve_secondary_menu_template(mime: &str) -> Option<PathBuf> {
 }
 
 pub fn parse_secondary_template(path: &Path) -> Vec<CustomAction> {
+    crate::hit!("parse_secondary_template");
     let src = match std::fs::read_to_string(path) {
         Ok(s) => s,
         Err(e) => {
@@ -229,6 +231,7 @@ pub fn append_secondary_action(
     category_scope: bool,
     action: &NewSecondaryAction,
 ) -> Result<PathBuf, String> {
+    crate::hit!("append_secondary_action");
     let line = format_secondary_line(action)?;
 
     let base_dir = dirs::config_dir()

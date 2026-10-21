@@ -29,6 +29,7 @@ const SEARCH_META_KEY: &str = "actions-search-meta";
 
 /// Builds the contextual-actions panel and registers its widgets in [`actions_registry`].
 pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
+    crate::hit!("build_actions_panel");
     let spec = PanelSpec::actions().with_initial(initial_width);
 
     let panel = gtk::Box::builder()
@@ -177,6 +178,7 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 /// row's label, submenu, MIME types or command, so `convert mp4` finds
 /// `Media Convert > To MP4`.
 fn apply_filter(list: &gtk::ListBox, query: &str) {
+    crate::hit!("apply_filter");
     let query = query.trim();
     let pattern = (!query.is_empty())
         .then(|| Pattern::parse(query, CaseMatching::Ignore, Normalization::Smart));
@@ -211,6 +213,7 @@ fn split_glyph(label: &str) -> (&str, &str) {
 
 /// Builds one `adw::ActionRow` for `action`, its run button dispatches `ExecuteSecondaryAction`.
 fn build_row(action: &CustomAction, sender: &AsyncComponentSender<FluxApp>) -> adw::ActionRow {
+    crate::hit!("build_row");
     let (glyph, text) = split_glyph(&action.label);
 
     // Commands contain `<`, `&` and `%p`, none of which may be read as Pango markup.
@@ -314,6 +317,7 @@ impl FluxApp {
     /// Also points `active_item_path` at the selection, because `ExecuteCommand`
     /// resolves its targets from it and a stale right-click target would otherwise win.
     pub fn handle_actions_panel_refresh(&mut self, session: u64) {
+        crate::hit!("handle_actions_panel_refresh");
         if session != self.actions_panel_session.load(Ordering::SeqCst) {
             return;
         }
@@ -373,6 +377,7 @@ impl FluxApp {
         template_path: Option<PathBuf>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_actions_panel_ready");
         if session != self.actions_panel_session.load(Ordering::SeqCst) {
             return;
         }
@@ -416,6 +421,7 @@ impl FluxApp {
         _path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_reload_actions_template");
         if self.actions_panel_visible {
             self.request_actions_panel_load(sender);
         }
@@ -430,6 +436,7 @@ impl FluxApp {
         category_scope: bool,
         action: crate::ui::menu::secondary::NewSecondaryAction,
     ) {
+        crate::hit!("handle_save_contextual_action");
         let sender = crate::model::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             let result =
@@ -446,6 +453,7 @@ impl FluxApp {
         result: Result<PathBuf, String>,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_contextual_action_saved");
         match result {
             Ok(path) => {
                 let name = path

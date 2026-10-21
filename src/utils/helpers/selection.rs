@@ -17,6 +17,7 @@ impl FluxApp {
     /// Same as [`get_selection`], but resolves against an explicit tab index
     /// instead of `self.active_tab_index`.
     pub(crate) fn get_selection_for_tab(&self, tab_index: usize) -> Vec<PathBuf> {
+        crate::hit!("get_selection_for_tab");
         let active_files = match self.tabs.get(tab_index) {
             Some(tab) => &tab.files,
             None => return Vec::new(),
@@ -104,6 +105,7 @@ impl FluxApp {
     /// Same as [`get_selection_with_meta`], but resolves against an explicit tab
     /// index instead of `self.active_tab_index`.
     pub(crate) fn get_selection_with_meta_for_tab(&self, tab_index: usize) -> Vec<(PathBuf, bool)> {
+        crate::hit!("get_selection_with_meta_for_tab");
         let active_files = match self.tabs.get(tab_index) {
             Some(tab) => &tab.files,
             None => return Vec::new(),
@@ -190,6 +192,7 @@ impl FluxApp {
     /// subdirectories. Remove all grid entries for the selected paths immediately
     /// before handing off to the trash service.
     pub fn remove_search_results_for_paths(&mut self, paths: &[PathBuf]) {
+        crate::hit!("remove_search_results_for_paths");
         let mut i = 0;
         while i < self.files.len() {
             if self

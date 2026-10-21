@@ -3,6 +3,7 @@
 /// Decodes octal escapes (`\040` etc.) that the kernel and fstab use to
 /// encode spaces and other special characters in path fields.
 pub fn unescape_mount_field(field: &str) -> String {
+    crate::hit!("unescape_mount_field");
     let bytes = field.as_bytes();
     let mut out: Vec<u8> = Vec::with_capacity(bytes.len());
     let mut i = 0;

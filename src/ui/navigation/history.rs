@@ -6,6 +6,7 @@ use relm4::prelude::*;
 impl FluxApp {
     /// Handles backward navigation in the directory history stack.
     pub fn handle_go_back(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_go_back");
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
         if self.diff_panel_visible {
@@ -49,6 +50,7 @@ impl FluxApp {
 
     /// Handles forward navigation in the directory history stack.
     pub fn handle_go_forward(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_go_forward");
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
         if self.diff_panel_visible {

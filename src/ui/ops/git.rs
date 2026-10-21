@@ -9,6 +9,7 @@ use std::sync::atomic::Ordering;
 impl FluxApp {
     /// Opens the right-side diff panel and loads changes for the target file in the background.
     pub fn handle_show_file_diff(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_show_file_diff");
         if self.active_diff_target.as_ref() == Some(&path) && self.diff_panel_visible {
             return;
         }
@@ -42,6 +43,7 @@ impl FluxApp {
         _load_id: u64,
         updates: HashMap<PathBuf, GitFileStatus>,
     ) {
+        crate::hit!("handle_git_status_ready");
         if self.current_path != path {
             return;
         }
@@ -88,6 +90,7 @@ impl FluxApp {
 
     /// Loads only the changed, untracked, and staged git files into the view in deterministic order.
     pub fn handle_show_git_status_view(&mut self, sender: AsyncComponentSender<Self>) {
+        crate::hit!("handle_show_git_status_view");
         let target_dir = self.current_path.clone();
         let Some(repo_root) = find_git_repo_root(&target_dir) else {
             return;

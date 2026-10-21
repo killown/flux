@@ -48,6 +48,7 @@ fn list_7z(
     prefix: &str,
     password: Option<&str>,
 ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_7z");
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 
@@ -118,6 +119,7 @@ fn extract_7z(
     password: Option<&str>,
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_7z");
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 
@@ -221,6 +223,7 @@ pub(in crate::services::archive) fn extract_dir_7z_at(
     password: Option<&str>,
     override_dest: Option<&Path>,
 ) -> Result<PathBuf, ArchiveError> {
+    crate::hit!("extract_dir_7z_at");
     let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
 
     let prefix = if inner_dir.is_empty() {

@@ -47,6 +47,7 @@ impl StateManager {
     }
 
     pub fn rename_path(&self, old_path: &Path, new_path: &Path) -> Result<()> {
+        crate::hit!("rename_path");
         let old_lossy = old_path.to_string_lossy();
         let new_lossy = new_path.to_string_lossy();
         let old_str = old_lossy.trim_end_matches('/');

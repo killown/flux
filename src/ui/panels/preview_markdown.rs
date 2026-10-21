@@ -40,6 +40,7 @@ pub struct MarkdownRender {
 
 /// Renders `source` as plain text with style ranges.
 pub fn render(source: &str) -> MarkdownRender {
+    crate::hit!("render");
     let mut opts = Options::empty();
     opts.insert(Options::ENABLE_STRIKETHROUGH);
     opts.insert(Options::ENABLE_TABLES);

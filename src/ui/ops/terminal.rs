@@ -11,6 +11,7 @@ impl FluxApp {
         path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_terminal_cwd_changed");
         let path_str = self.current_path.to_string_lossy();
 
         let is_virtual = path_str.starts_with(crate::services::archive::ARCHIVE_URI)
@@ -32,6 +33,7 @@ impl FluxApp {
     }
 
     pub fn handle_toggle_terminal(&mut self) {
+        crate::hit!("handle_toggle_terminal");
         self.terminal_visible = !self.terminal_visible;
 
         let path_str = self.current_path.to_string_lossy();
@@ -149,6 +151,7 @@ impl FluxApp {
     /// compile survives F4 out and F4 in. It is only killed on window close or
     /// application shutdown (see `register_terminal_shutdown`).
     pub fn handle_toggle_terminal_fullscreen(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_toggle_terminal_fullscreen");
         let Some(stack) = self.main_stack.clone() else {
             return;
         };
@@ -273,6 +276,7 @@ impl FluxApp {
         pos: TerminalPosition,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_set_terminal_position");
         if pos == self.config.ui.terminal.position {
             return;
         }

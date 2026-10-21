@@ -16,6 +16,7 @@ pub fn show_tag_picker(
     available_tags: Vec<String>,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("show_tag_picker");
     if paths.is_empty() {
         return;
     }

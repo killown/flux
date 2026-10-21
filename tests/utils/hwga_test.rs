@@ -265,7 +265,10 @@ fn reset_clears_active_snapshots() {
     assert!(!CallMonitor::snapshot().is_empty());
 
     CallMonitor::reset();
-    assert!(CallMonitor::snapshot().is_empty());
+    // Scoped to this module: other tests in the binary hit real instrumented code in parallel.
+    assert!(CallMonitor::snapshot()
+        .iter()
+        .all(|(name, _)| !name.starts_with(module_path!())));
 }
 
 #[test]

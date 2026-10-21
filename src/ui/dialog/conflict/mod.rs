@@ -23,6 +23,7 @@ pub fn show_conflict_dialog(
     tx: oneshot::Sender<(ConflictChoice, bool)>,
     sender: AsyncComponentSender<crate::model::FluxApp>,
 ) {
+    crate::hit!("show_conflict_dialog");
     let window = gtk::Application::default().active_window();
 
     let file_name = ctx

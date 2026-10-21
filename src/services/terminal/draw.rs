@@ -12,6 +12,7 @@ pub(super) fn draw_terminal(
     width: i32,
     height: i32,
 ) {
+    crate::hit!("draw_terminal");
     cr.set_source_rgba(
         state.bg_color.red() as f64,
         state.bg_color.green() as f64,

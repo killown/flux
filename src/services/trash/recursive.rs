@@ -6,6 +6,7 @@ use gtk::{gio, glib};
 /// entry - the recursion is only there so a non-empty directory doesn't fail
 /// with `ENOTEMPTY`.
 pub(super) fn delete_recursive(f: &gio::File) -> Result<(), glib::Error> {
+    crate::hit!("delete_recursive");
     let uri = f.uri().to_string();
     eprintln!("[delete_recursive] entering uri={:?}", uri);
 

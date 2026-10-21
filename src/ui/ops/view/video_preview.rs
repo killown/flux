@@ -22,6 +22,7 @@ impl FluxApp {
     /// never sets the widget name (see the warning in `components.rs`), so a name
     /// lookup always returns `None` and video previews silently do nothing.
     pub fn find_widget_by_path(&self, path: &std::path::Path) -> Option<gtk::Widget> {
+        crate::hit!("find_widget_by_path");
         fn search(widget: &gtk::Widget, target: &std::path::Path) -> Option<gtk::Widget> {
             let hit = unsafe {
                 widget

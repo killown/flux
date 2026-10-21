@@ -31,6 +31,7 @@ fn write_atomic(path: &Path, data: &str) {
 /// `recent:///`, archives, network URIs) are skipped: a shell cannot `cd`
 /// into them, so the last real directory stays published.
 pub(crate) fn write_cwd_cache(path: &Path) {
+    crate::hit!("write_cwd_cache");
     let text = path.to_string_lossy();
     if !path.is_absolute() || text.contains("://") {
         return;
@@ -45,6 +46,7 @@ pub(crate) fn write_cwd_cache(path: &Path) {
 /// directory to it. Idempotent for the lifetime of the process.
 #[allow(dead_code)]
 pub(crate) fn setup_goto_watcher() {
+    crate::hit!("setup_goto_watcher");
     let Some(dir) = cache_dir() else { return };
     let _ = std::fs::create_dir_all(&dir);
 
@@ -74,6 +76,7 @@ pub(crate) fn setup_goto_watcher() {
 }
 
 fn handle_goto(dir: &Path) {
+    crate::hit!("handle_goto");
     let goto = dir.join("goto");
     let Ok(text) = std::fs::read_to_string(&goto) else {
         return;
