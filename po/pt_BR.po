@@ -2343,6 +2343,18 @@ msgstr "Preferências"
 # src/ui/settings/page/appearance.rs
 # ============================================================
 
+#: src/ui/settings/page/appearance.rs:336
+msgid "Fish Shell Integration"
+msgstr "Integração com o Fish Shell"
+
+#: src/ui/settings/page/appearance.rs:337
+msgid ""
+"Generate ~/.config/fish/conf.d/flux-theme.fish so the embedded fish shell's "
+"colors and prompt follow the Flux theme"
+msgstr ""
+"Gera ~/.config/fish/conf.d/flux-theme.fish para que as cores e o prompt do "
+"fish shell embutido sigam o tema do Flux"
+
 #: src/ui/settings/page/appearance.rs:47
 msgid "Terminal Location"
 msgstr "Localização do Terminal"

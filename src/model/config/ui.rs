@@ -236,6 +236,12 @@ pub struct UIConfig {
     /// `.flux-cache/` folder in the zip itself and read back on later visits.
     #[serde(default)]
     pub archive_thumbnail_cache: bool,
+    /// When true, Flux generates `~/.config/fish/conf.d/flux-theme.fish`
+    /// from the active GTK theme so the embedded fish shell's prompt and
+    /// colors follow Flux. Off by default: the file is regenerated on every
+    /// theme change, so it is strictly opt-in.
+    #[serde(default)]
+    pub fish_theme: bool,
 }
 
 impl Default for UIConfig {
@@ -312,6 +318,7 @@ impl Default for UIConfig {
             wide_preview: false,
             archive_thumbnail_cache: false,
             folder_grid_thumbnails: true,
+            fish_theme: false,
         }
     }
 }

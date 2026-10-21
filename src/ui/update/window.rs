@@ -21,6 +21,7 @@ pub(super) fn handle(
         AppMsg::SetWindowHeight(val) => app.handle_set_window_size(None, Some(val)),
         AppMsg::SetShowRecents(val) => app.handle_set_show_recents(val, sender),
         AppMsg::SetRecentsRow(val) => app.handle_set_recents_row(val, sender),
+        AppMsg::SetFishTheme(val) => app.handle_set_fish_theme(val),
         AppMsg::SetMaxHistory(val) => app.handle_set_max_history(val),
         AppMsg::ShowAbout => FluxApp::show_about_window(),
         AppMsg::ShowHelp => {

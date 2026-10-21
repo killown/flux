@@ -6,6 +6,29 @@ use crate::model::TerminalConfig;
 use adw;
 use gtk::prelude::*;
 
+/// Resolved theme colours, as `#rrggbb` strings, safe to hand to child
+/// processes (`FLUX_THEME_*` env vars) and to write into a fish `conf.d`
+/// snippet. `palette` has 16 entries in xterm order (0-7 normal, 8-15 bright).
+#[derive(Debug, Clone)]
+pub(crate) struct ThemeEnv {
+    pub fg: String,
+    pub bg: String,
+    pub accent: String,
+    pub palette: [String; 16],
+    /// `"dark"` or `"light"`.
+    pub mode: String,
+}
+
+/// Formats a `gdk::RGBA` as `#rrggbb`, dropping alpha. Alpha is not
+/// meaningful for child-process colour env vars.
+#[inline]
+fn rgba_hex(c: &gtk::gdk::RGBA) -> String {
+    let r = (c.red() * 255.0).round().clamp(0.0, 255.0) as u8;
+    let g = (c.green() * 255.0).round().clamp(0.0, 255.0) as u8;
+    let b = (c.blue() * 255.0).round().clamp(0.0, 255.0) as u8;
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
+
 impl Terminal {
     pub fn set_color_foreground(&self, color: &gtk::gdk::RGBA) {
         let mut state = self.state.lock().unwrap_or_else(|e| e.into_inner());
@@ -178,6 +201,30 @@ impl Terminal {
         };
 
         self.set_font(Some(&pango::FontDescription::from_string(&font_str)));
+
+        // --- publish env + fish snippet -----------------------------------
+        // Snapshot the resolved colours so `spawn_async` can export them as
+        // `FLUX_THEME_*`, and regenerate the fish `conf.d` snippet.
+        //
+        // This runs after every field has been resolved above, so `ThemeEnv`
+        // always matches what the terminal widget is actually rendering.
+        let accent_rgba = accent.unwrap_or_else(|| gtk::gdk::RGBA::new(0.071, 0.451, 0.698, 1.0));
+        let palette_hex: [String; 16] = palette.map(|c| rgba_hex(&c));
+        let env = ThemeEnv {
+            fg: rgba_hex(&fg),
+            bg: rgba_hex(&bg),
+            accent: rgba_hex(&accent_rgba),
+            palette: palette_hex,
+            mode: if adw::StyleManager::default().is_dark() {
+                "dark".into()
+            } else {
+                "light".into()
+            },
+        };
+        if let Ok(mut slot) = self.theme_env.lock() {
+            *slot = Some(env.clone());
+        }
+        super::fish_theme::write_fish_theme_snippet(&env);
     }
 
     /// Connects to `adw::StyleManager::dark` property changes so the terminal

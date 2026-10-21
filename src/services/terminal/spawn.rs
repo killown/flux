@@ -25,6 +25,22 @@ impl Terminal {
     ) where
         F: Fn() + 'static + Send,
     {
+        // Ensure `theme_env` is populated before the child is forked, so the
+        // `FLUX_THEME_*` exports below reach the shell via `execve`.
+        //
+        // The bottom terminal has a `connect_map` -> `apply_theme` hook (see
+        // `ui/startup/terminal.rs`), so on its first spawn `theme_env` may
+        // already be set and this is a no-op. The sidebar terminal is built
+        // by `panels/terminal.rs` without that hook, so without this guard
+        // its `theme_env` would stay `None` forever and the fish snippet
+        // would never activate. `apply_theme` is idempotent and cheap (a
+        // handful of `lookup_color` calls plus palette derivation), and
+        // `write_fish_theme_snippet` spawns its own writer thread, so this
+        // does not block the spawn path.
+        if self.theme_env.lock().map(|g| g.is_none()).unwrap_or(true) {
+            self.apply_theme(&self.config);
+        }
+
         let working_dir = working_dir.map(str::to_owned);
 
         let (width, height) = (self.drawing_area.width(), self.drawing_area.height());
@@ -126,6 +142,36 @@ impl Terminal {
         command.env("TERM", "xterm-256color");
         command.env_remove("LD_LIBRARY_PATH");
         command.env_remove("LD_PRELOAD");
+
+        // Export the resolved GTK theme colours so the fish `conf.d` snippet
+        // (written by `fish_theme::write_fish_theme_snippet`) can map them to
+        // `fish_color_*` language variables.
+        //
+        // `spawn_async` guarantees above that `theme_env` is `Some` at this
+        // point: `apply_theme` is called at the top of this function if the
+        // slot was empty, so the child inherits the exports at `execve`
+        // time. No respawn or PTY injection is needed.
+        //
+        // Gated on `ui.fish_theme` so the setting actually does what it says:
+        // with it off, no `FLUX_THEME_*` reaches the child, and the snippet's
+        // own `if set -q FLUX_THEME_FG` guard keeps any stale file on disk
+        // inert. Without this check, disabling the setting would still leave
+        // old shells themed because the file's guard would pass.
+        if crate::utils::load_config().ui.fish_theme {
+            if let Ok(guard) = self.theme_env.lock() {
+                if let Some(ref env) = *guard {
+                    command.env("FLUX_THEME_FG", &env.fg);
+                    command.env("FLUX_THEME_BG", &env.bg);
+                    command.env("FLUX_THEME_ACCENT", &env.accent);
+                    command.env("FLUX_THEME_MODE", &env.mode);
+                    // Palette as a single `,`-separated list of 16 `#rrggbb`
+                    // values, indexed 0..15 in xterm order. Keeps the env
+                    // small and easy to consume from fish with `string split`.
+                    let joined = env.palette.join(";");
+                    command.env("FLUX_THEME_PALETTE", joined);
+                }
+            }
+        }
 
         if let Some(dir) = &working_dir {
             if !dir.is_empty() && std::path::Path::new(dir).is_dir() {

@@ -99,7 +99,10 @@ impl FluxApp {
         self.config.ui.theme = theme;
         utils::save_config(&self.config);
         crate::utils::helpers::load_custom_css();
-        self.terminal.apply_theme(&self.config.ui.terminal);
+        let terminal = self.terminal.clone();
+        let config = self.config.ui.terminal.clone();
+        // Deferred so GTK re-resolves named colors after the provider swap.
+        gtk::glib::idle_add_local_once(move || terminal.apply_theme(&config));
     }
 
     pub fn handle_set_diff_panel_width(&mut self, val: i32) {

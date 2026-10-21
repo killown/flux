@@ -1,4 +1,5 @@
 mod draw;
+mod fish_theme;
 mod handler;
 mod palette;
 mod spawn;
@@ -12,6 +13,7 @@ pub(crate) use draw::SCROLLBAR_WIDTH;
 pub use handler::TerminalHandler;
 #[allow(unused_imports)]
 pub use state::{Cell, CursorStyle, TerminalState};
+pub(crate) use theme::ThemeEnv;
 
 use crate::model::TerminalConfig;
 use gtk::DrawingArea;
@@ -29,6 +31,8 @@ pub struct Terminal {
     needs_redraw: Arc<AtomicBool>,
     /// Last directory queued for respawn, only the most recent survives rapid navigation.
     pending_dir: Arc<Mutex<Option<String>>>,
+    /// Resolved theme colours, populated by `apply_theme` after first map.
+    pub(crate) theme_env: Arc<Mutex<Option<ThemeEnv>>>,
 }
 
 impl std::fmt::Debug for Terminal {
@@ -42,6 +46,7 @@ impl std::fmt::Debug for Terminal {
 impl Clone for Terminal {
     fn clone(&self) -> Self {
         Self {
+            theme_env: self.theme_env.clone(),
             drawing_area: self.drawing_area.clone(),
             state: self.state.clone(),
             config: self.config.clone(),

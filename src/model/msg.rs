@@ -933,6 +933,9 @@ pub enum AppMsg {
     SetThumbnailType { type_name: String, enabled: bool },
     /// Toggles the "Recents" virtual entry in the sidebar.
     SetShowRecents(bool),
+    /// Toggles generation of `~/.config/fish/conf.d/flux-theme.fish`.
+    /// Off by default, the file is inert and can be deleted when off.
+    SetFishTheme(bool),
     /// Remove a single path from the quick-list panel by exact match.
     RemoveQuickItem(PathBuf),
     /// Tear down and reconstruct all tab buttons in the quick-list panel.

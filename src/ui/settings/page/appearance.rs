@@ -334,6 +334,21 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
+                    set_title: &tr("Fish Shell Integration"),
+                    set_subtitle: &tr(
+                        "Generate ~/.config/fish/conf.d/flux-theme.fish so the embedded fish shell's colors and prompt follow the Flux theme"
+                    ),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.fish_theme,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetFishTheme(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
                     set_title: &tr("Show Recents"),
                     set_subtitle: &tr("Show recently visited files in the sidebar"),
                     add_suffix = &gtk::Switch {

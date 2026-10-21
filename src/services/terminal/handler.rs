@@ -42,10 +42,15 @@ impl Perform for TerminalHandler {
             } else {
                 Some(state.current_bg)
             };
+            let explicit_fg = if state.current_fg == state.fg_color {
+                None
+            } else {
+                Some(state.current_fg)
+            };
             let (fg, bg) = if state.reverse {
                 (explicit_bg, Some(state.current_fg))
             } else {
-                (Some(state.current_fg), explicit_bg)
+                (explicit_fg, explicit_bg)
             };
             state.grid[y][x] = Cell {
                 ch: c,

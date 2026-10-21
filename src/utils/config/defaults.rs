@@ -186,6 +186,7 @@ path = "actions://"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    fish_theme: false,
                     terminal: TerminalConfig::default(),
                     terminal_in_sidebar: false,
                     preview_syntax_highlighting: true,

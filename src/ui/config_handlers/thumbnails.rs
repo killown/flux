@@ -73,4 +73,22 @@ impl FluxApp {
         self.config.ui.thumbnail_threads = val;
         utils::save_config(&self.config);
     }
+
+    pub fn handle_set_fish_theme(&mut self, val: bool) {
+        self.config.ui.fish_theme = val;
+        crate::utils::save_config(&self.config);
+
+        if val {
+            // Immediately regenerate the snippet with the current theme.
+            // `apply_theme` is idempotent and cheap.
+            self.terminal.apply_theme(&self.config.ui.terminal);
+            if let Some(ref sidebar_term) = self.sidebar_terminal {
+                sidebar_term.apply_theme(&self.config.ui.terminal);
+            }
+        }
+        // Turning it off does not delete the file: the snippet is guarded by
+        // `set -q FLUX_THEME_FG` and by the check in `write_fish_theme_snippet`,
+        // so leaving it on disk is harmless and lets the user flip it back on
+        // without a surprise "where did my file go".
+    }
 }

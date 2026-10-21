@@ -185,7 +185,10 @@ pub(super) fn draw_terminal(
             };
 
             if block_selected {
-                cr.set_source_rgba(0.3, 0.5, 0.9, 0.5);
+                let (sr, sg, sb) = state.accent_color.map_or((0.3, 0.5, 0.9), |a| {
+                    (a.red() as f64, a.green() as f64, a.blue() as f64)
+                });
+                cr.set_source_rgba(sr, sg, sb, 0.5);
                 cr.rectangle(x_pos, y_pos, run_width, char_height);
                 cr.fill().unwrap();
                 cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);

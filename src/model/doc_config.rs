@@ -36,6 +36,7 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.ffmpeg_seek_seconds", "Seek position in seconds when grabbing a video thumbnail frame."),
     ("ui.ffmpeg_threads", "Threads per FFmpeg process when extracting video frames."),
     ("ui.file_icons", "Per-file custom icon image, keyed by absolute path. Managed by `--set-icon`."),
+    ("ui.fish_theme", "Generate a fish `conf.d` snippet so the embedded shell's colors and prompt follow the GTK theme. Off by default."),
     ("ui.folder_cache_capacity", "Number of recently visited directory snapshots kept in memory."),
     ("ui.folder_grid_thumbnails", "Show image thumbnails in the folder grid of the preview panel."),
     ("ui.folder_icon_size", "Per-folder icon size override, keyed by absolute path."),

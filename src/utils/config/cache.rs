@@ -14,6 +14,22 @@ fn config_cache() -> &'static RwLock<Option<crate::model::Config>> {
 }
 
 pub fn save_config(config: &crate::model::Config) {
+    // Skip the whole write when the incoming config is byte-identical to the
+    // one already cached. Every settings toggle, watcher event and handler
+    // funnels through here, and most of them fire on every keystroke or scroll
+    // tick. Writing `config.toml` on each of those would bump its mtime and
+    // wake every downstream watcher (config file monitor, fish shell respawn)
+    // for no reason.
+    //
+    // `Config` derives `PartialEq`, so this is a shallow structural compare.
+    // It is cheap relative to `toml::to_string_pretty` + atomic rename.
+    {
+        let cache = config_cache().read();
+        if cache.as_ref() == Some(config) {
+            return;
+        }
+    }
+
     if let Some(lock) = THUMB_CONFIG.get() {
         *lock.write() = extract_thumb_config(config);
     }

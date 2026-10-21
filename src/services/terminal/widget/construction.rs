@@ -42,6 +42,7 @@ impl Terminal {
             _pty_reader: None,
             needs_redraw,
             pending_dir: Arc::new(Mutex::new(None)),
+            theme_env: Arc::new(Mutex::new(None)),
         }
     }
 

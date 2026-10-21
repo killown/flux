@@ -78,6 +78,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `ffmpeg_seek_seconds` | `5.0` | Seek position in seconds when grabbing a video thumbnail frame. |
 | `ffmpeg_threads` | `1` | Threads per FFmpeg process when extracting video frames. |
 | `file_icons` | `{}` | Per-file custom icon image, keyed by absolute path. Managed by `--set-icon`. |
+| `fish_theme` | `false` | Generate a fish `conf.d` snippet so the embedded shell's colors and prompt follow the GTK theme. Off by default. |
 | `folder_cache_capacity` | `3` | Number of recently visited directory snapshots kept in memory. |
 | `folder_grid_thumbnails` | `true` | Show image thumbnails in the folder grid of the preview panel. |
 | `folder_icon_size` | `{}` | Per-folder icon size override, keyed by absolute path. |
@@ -243,6 +244,7 @@ preview_syntax_highlighting = true
 wide_preview = false
 folder_grid_thumbnails = true
 archive_thumbnail_cache = false
+fish_theme = false
 
 [ui.file_icons]
 
