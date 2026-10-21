@@ -185,7 +185,17 @@ impl FluxApp {
             term.drawing_area.add_css_class("flux-terminal-area");
             term.drawing_area.set_hexpand(true);
             term.drawing_area.set_vexpand(true);
-            host.append(&term.drawing_area);
+
+            // Wrap in a padded box so the prompt is not flush against the window
+            // border or clipped by the rounded top corners in fullscreen mode.
+            // The DrawingArea is measured by `spawn_async` for the PTY cols/rows,
+            // so it must be sized to the inset rect, not the raw Stack page.
+            let term_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+            term_box.set_margin_top(8);
+            term_box.set_margin_start(8);
+            term_box.set_margin_end(8);
+            term_box.append(&term.drawing_area);
+            host.append(&term_box);
 
             {
                 let s = sender.clone();
