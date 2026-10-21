@@ -264,7 +264,9 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::F4 => {
-                    pty_write(fd, b"\x1bOS");
+                    if let Some(s) = crate::model::SENDER.get() {
+                        let _ = s.send(crate::model::AppMsg::ToggleTerminal);
+                    }
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::F5 => {

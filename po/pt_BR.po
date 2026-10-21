@@ -2343,6 +2343,14 @@ msgstr "Preferências"
 # src/ui/settings/page/appearance.rs
 # ============================================================
 
+#: src/ui/settings/page/appearance.rs:47
+msgid "Terminal Location"
+msgstr "Localização do Terminal"
+
+#: src/ui/settings/page/appearance.rs:48
+msgid "Open the embedded terminal in the right sidebar instead of the bottom pane"
+msgstr "Abrir o terminal integrado na barra lateral direita em vez do painel inferior"
+
 #: src/ui/settings/page/appearance.rs:10
 msgid "Appearance"
 msgstr "Aparência"

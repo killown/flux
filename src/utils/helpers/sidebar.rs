@@ -6,6 +6,18 @@ use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
+fn terminal_default_width(anchor: &gtk::Revealer) -> i32 {
+    let monitor_w = anchor
+        .native()
+        .and_then(|n| n.surface())
+        .and_then(|s| gtk::gdk::Display::default().and_then(|d| d.monitor_at_surface(&s)))
+        .map(|m| m.geometry().width())
+        .unwrap_or(1920);
+
+    let scale = (monitor_w as f64 / 1920.0).clamp(1.0, 2.0);
+    (800.0 * scale) as i32
+}
+
 impl FluxApp {
     /// Rebuilds the sidebar navigation list from XDG directories, mounts, and configuration.
     pub fn refresh_sidebar(&mut self) {
@@ -196,6 +208,22 @@ impl FluxApp {
             self.actions_panel_visible = false;
             self.reset_actions_panel();
         }
+        if keep != RightPanelType::Terminal && self.terminal_panel_visible {
+            if let Some(ref r) = self.terminal_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.terminal_panel_visible = false;
+            if let Some(was_visible) = self.terminal_sidebar_stashed.take() {
+                self.sidebar_visible = was_visible;
+                if let Some(ref w) = self.sidebar_widget {
+                    w.set_visible(was_visible);
+                }
+            }
+            if let Some(ref term) = self.sidebar_terminal {
+                term.kill_shell();
+            }
+        }
     }
 
     pub fn toggle_sidebar_right_panel(
@@ -255,6 +283,15 @@ impl FluxApp {
                 &mut self.actions_panel_visible,
                 false,
             ),
+            // ── SIDEBAR TERMINAL ─────────────────────────────────────────
+            // Not a search panel. Lives alongside the bottom terminal pane
+            // and hosts its own independent `Terminal` instance.
+            RightPanelType::Terminal => (
+                self.terminal_panel_revealer.clone(),
+                &mut self.terminal_panel_initialized,
+                &mut self.terminal_panel_visible,
+                false,
+            ),
         };
 
         let Some(revealer) = revealer else {
@@ -312,6 +349,22 @@ impl FluxApp {
                     self.config.ui.actions_panel_width,
                     sender.clone(),
                 ),
+                // ── SIDEBAR TERMINAL ─────────────────────────────────────
+                // Build the widget tree and stash the `Terminal` on
+                // `FluxApp`. The shell is *not* spawned here: it is spawned
+                // by the visibility-change block below, every time the panel
+                // is opened, so that closing and reopening the panel always
+                // yields a live PTY instead of a dead one.
+                RightPanelType::Terminal => {
+                    let default_width = terminal_default_width(&revealer);
+                    let (root, term) = crate::ui::panels::build_terminal_panel(
+                        &self.config.ui.terminal,
+                        default_width,
+                        sender.clone(),
+                    );
+                    self.sidebar_terminal = Some(term);
+                    root
+                }
             };
             revealer.set_child(Some(&panel));
             *initialized = true;
@@ -333,6 +386,78 @@ impl FluxApp {
         revealer.set_visible(*visible);
         revealer.set_reveal_child(*visible);
 
+        // ── SIDEBAR TERMINAL lifecycle ───────────────────────────────────
+        // Spawn the shell on every reveal, kill it on every hide. This is
+        // what makes `F4` (toggle) behave correctly: the shell is not
+        // reused across opens, so its PTY fd is never stale.
+        if panel_type == RightPanelType::Terminal {
+            if now_visible {
+                // Stash and hide the left sidebar so the terminal has room.
+                if self.terminal_sidebar_stashed.is_none() {
+                    self.terminal_sidebar_stashed = Some(self.sidebar_visible);
+                }
+                if self.sidebar_visible {
+                    self.sidebar_visible = false;
+                    if let Some(ref w) = self.sidebar_widget {
+                        w.set_visible(false);
+                    }
+                }
+
+                if let Some(ref term) = self.sidebar_terminal {
+                    term.kill_shell();
+                    let path_str = self.current_path.to_string_lossy();
+                    let working_dir = if path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+                    {
+                        crate::services::archive::parse_archive_uri(&path_str)
+                            .map(|(archive_path, _)| {
+                                archive_path
+                                    .parent()
+                                    .map(|p| p.to_string_lossy().to_string())
+                                    .unwrap_or_else(|| "/".to_string())
+                            })
+                            .unwrap_or_else(|| "/".to_string())
+                    } else if crate::services::network::is_network_uri(&self.current_path) {
+                        std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
+                    } else {
+                        path_str.to_string()
+                    };
+                    let mut term_spawn = term.clone();
+                    term_spawn.spawn_async(
+                        0,
+                        Some(&working_dir),
+                        &[],
+                        &[],
+                        0,
+                        || {},
+                        -1,
+                        None,
+                        |result| {
+                            if let Err(e) = result {
+                                eprintln!("[flux] sidebar terminal spawn: {e}");
+                            }
+                        },
+                    );
+                    let da = term.drawing_area.clone();
+                    gtk::glib::idle_add_local_once(move || {
+                        da.grab_focus();
+                    });
+                }
+            } else {
+                // Restore the sidebar the user had when the panel opened.
+                if let Some(was_visible) = self.terminal_sidebar_stashed.take() {
+                    self.sidebar_visible = was_visible;
+                    if let Some(ref w) = self.sidebar_widget {
+                        w.set_visible(was_visible);
+                    }
+                }
+                if let Some(ref term) = self.sidebar_terminal {
+                    term.kill_shell();
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+
         // ── PEEK PREVIEW ─────────────────────────────────────────────────
         // The preview panel has no entry and must not steal focus from the
         // grid: grabbing focus here would break arrow-key scrubbing while
@@ -340,9 +465,14 @@ impl FluxApp {
         //
         // The contextual-actions panel also follows grid selection, so it must not
         // steal focus, arrow keys need to keep working while it is open.
+        //
+        // The sidebar terminal must also skip focus: the user usually wants
+        // to keep navigating the grid while the shell runs on the side. If
+        // they want to type into it, they click the terminal once (or the
+        // idle focus call above puts them there).
         let skip_focus = matches!(
             panel_type,
-            RightPanelType::Preview | RightPanelType::Actions
+            RightPanelType::Preview | RightPanelType::Actions | RightPanelType::Terminal
         );
 
         if now_visible && !skip_focus {

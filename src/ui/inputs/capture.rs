@@ -15,30 +15,28 @@ use std::path::PathBuf;
 /// here, not in a window-level `ShortcutController`. Capture-phase
 /// `EventControllerKey` runs before any focused child can pre-empt the
 /// event, bubble-phase shortcuts do not.
-pub fn setup_capture(
-    window: &impl IsA<gtk::Widget>,
-    sender: relm4::AsyncComponentSender<FluxApp>,
-    terminal_area: &gtk::DrawingArea,
-) {
+pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncComponentSender<FluxApp>) {
     let capture = gtk::EventControllerKey::new();
     capture.set_propagation_phase(gtk::PropagationPhase::Capture);
-
-    let terminal_area = terminal_area.clone();
 
     capture.connect_key_pressed(move |ctrl, keyval, _keycode, state| {
         let is_ctrl = state.contains(gdk::ModifierType::CONTROL_MASK);
         let is_shift = state.contains(gdk::ModifierType::SHIFT_MASK);
         let is_alt = state.contains(gdk::ModifierType::ALT_MASK);
 
-        // Check if an editable text input is currently focused
-        let is_editable = ctrl
-            .widget()
-            .and_then(|w| w.root())
-            .and_then(|r| r.focus())
+        // Both terminals (bottom pane and right sidebar panel) carry this
+        // class on their `DrawingArea`, so checking the focused widget's
+        // class catches either one regardless of which pane is active.
+        let focused_widget = ctrl.widget().and_then(|w| w.root()).and_then(|r| r.focus());
+
+        let is_editable = focused_widget
+            .as_ref()
             .map(|f| f.type_().is_a(gtk::Editable::static_type()))
             .unwrap_or(false);
 
-        let terminal_focused = terminal_area.has_focus();
+        let terminal_focused = focused_widget
+            .as_ref()
+            .is_some_and(|f| f.has_css_class("flux-terminal-area"));
 
         // Non-modifier / navigation shortcuts (ignored when typing or when the terminal has focus)
         if !is_editable && !terminal_focused && is_shift && !is_ctrl && !is_alt {
@@ -154,6 +152,16 @@ pub fn setup_capture(
                 sender.input(AppMsg::ToggleSidebar);
                 glib::Propagation::Stop
             }
+            // F4 toggles the terminal panel. When either terminal has focus,
+            // the terminal's own key controller fires first and handles this
+            // key, so we yield there to avoid a double fire.
+            gdk::Key::F4 => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleTerminal);
+                glib::Propagation::Stop
+            }
             // Wide preview: F11 is left to the shell when the terminal has focus.
             gdk::Key::F11 if !is_ctrl && !is_shift && !is_alt => {
                 if terminal_focused {
@@ -187,7 +195,7 @@ pub fn setup_capture(
                 glib::Propagation::Stop
             }
             gdk::Key::Tab => {
-                // When the terminal DrawingArea holds focus, let Tab pass through
+                // When either terminal holds focus, let Tab pass through
                 // to its own EventControllerKey so the shell sees \t for completion.
                 if terminal_focused {
                     return glib::Propagation::Proceed;

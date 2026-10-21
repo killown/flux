@@ -7,6 +7,12 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Persists the terminal location preference and closes the bottom
+    /// terminal pane if it was open when moving to the sidebar.
+    SetTerminalSidebar(bool),
+    /// Toggles the visibility of the right-side terminal panel when
+    /// `config.ui.terminal_in_sidebar` is set.
+    ToggleTerminalPanel,
     /// Reload the contextual-actions panel after its template file was
     /// edited from the in-panel editor.
     ReloadActionsTemplate { path: PathBuf },

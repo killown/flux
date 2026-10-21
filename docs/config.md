@@ -113,6 +113,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `startup_window_height` | `0` | Initial window height in pixels. |
 | `startup_window_width` | `0` | Initial window width in pixels. |
 | `tag_panel_width` | `350` | Width in pixels of the right-side tag panel. |
+| `terminal_in_sidebar` | `false` |  |
 | `theme` | `unset` | Name of the theme to apply, such as `default`, `os-dark` or `os-light`. |
 | `thumbnail_size` | `256` | Target size in pixels of generated thumbnails. |
 | `thumbnail_threads` | `4` | Maximum concurrent thumbnail workers. |
@@ -180,6 +181,7 @@ network_bookmarks = []
 default_list_mode = false
 
 [ui]
+terminal_in_sidebar = false
 diff_editor = "nvim"
 preview_panel_width = 400
 diff_panel_width = 420

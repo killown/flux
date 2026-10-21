@@ -377,6 +377,7 @@ impl FluxApp {
         model.location_panel_revealer = Some(widgets.location_panel_revealer.clone());
         model.connect_panel_revealer = Some(widgets.connect_panel_revealer.clone());
         model.actions_panel_revealer = Some(widgets.actions_panel_revealer.clone());
+        model.terminal_panel_revealer = Some(widgets.terminal_panel_revealer.clone());
 
         if let Some(paned) = &model.terminal_paned {
             let sender_clone = sender.clone();
@@ -463,9 +464,20 @@ impl FluxApp {
         });
 
         let terminal_widget = model.terminal.drawing_area.clone();
+        terminal_widget.add_css_class("flux-terminal-area");
         let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         terminal_box.append(&terminal_widget);
         widgets.terminal_revealer.set_child(Some(&terminal_box));
+
+        // Sidebar terminal cleanup: the bottom terminal's shutdown is wired
+        // in `build_terminal`, this is the equivalent for the panel.
+        let sidebar_terminal = model.sidebar_terminal.clone();
+        root.connect_close_request(move |_| {
+            if let Some(ref term) = sidebar_terminal {
+                term.kill_shell();
+            }
+            glib::Propagation::Proceed
+        });
     }
 
     pub(super) fn schedule_startup_tasks(

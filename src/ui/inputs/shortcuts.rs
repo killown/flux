@@ -14,7 +14,7 @@ pub fn setup_global_shortcuts(
     keymap: &KeyMap,
 ) {
     let sc = gtk::ShortcutController::new();
-    sc.set_scope(gtk::ShortcutScope::Global);
+    sc.set_scope(gtk::ShortcutScope::Managed);
 
     // Helper to cut the boilerplate: register a trigger → AppMsg.
     macro_rules! bind_msg {
@@ -108,6 +108,7 @@ pub fn setup_global_shortcuts(
 pub fn setup_settings_shortcut(window: &impl IsA<gtk::Widget>, keymap: &KeyMap) {
     let parent_window = window.root().and_downcast::<gtk::Window>();
     let sc = gtk::ShortcutController::new();
+    sc.set_scope(gtk::ShortcutScope::Managed);
     let trigger = keymap.settings.clone();
 
     sc.add_shortcut(gtk::Shortcut::new(

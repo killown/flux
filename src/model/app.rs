@@ -32,6 +32,18 @@ pub struct AltCycle {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
+    /// `Some(sidebar_was_visible)` while the sidebar terminal is open, `None` otherwise.
+    /// Used to restore the sidebar when the panel is closed.
+    pub terminal_sidebar_stashed: Option<bool>,
+    /// The sidebar terminal's `Terminal` instance, kept alive so its PTY
+    /// survives panel toggles.
+    pub sidebar_terminal: Option<crate::services::terminal::Terminal>,
+    /// Revealer widget wrapping the right-side terminal panel.
+    pub terminal_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the right-side terminal panel is currently visible.
+    pub terminal_panel_visible: bool,
+    /// Whether the right-side terminal panel widgets have been instantiated.
+    pub terminal_panel_initialized: bool,
     /// Cycle state for `Ctrl+Alt+<letter>`: the anchor directory whose
     /// children are being cycled, the letter, the ordered candidate paths
     /// captured on the first press, and the index of the one we are on

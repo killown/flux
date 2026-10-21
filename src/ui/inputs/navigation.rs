@@ -17,6 +17,16 @@ pub fn setup_navigation(
     let terminal_area = terminal_area.clone();
 
     controller.connect_key_pressed(move |ctrl, keyval, _, state| {
+        // If a terminal (bottom pane or sidebar panel) has focus, do not
+        // route the key through `handle_key_event`. Otherwise type-to-search
+        // would steal characters, and the embedded shell could not be typed
+        // into.
+        if let Some(focus) = ctrl.widget().and_then(|w| w.root()).and_then(|r| r.focus()) {
+            if focus.has_css_class("flux-terminal-area") {
+                return glib::Propagation::Proceed;
+            }
+        }
+
         let page_name = header_stack.visible_child_name().unwrap_or_default();
         FluxApp::handle_key_event(
             ctrl,

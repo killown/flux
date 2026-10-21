@@ -186,6 +186,8 @@ path = "actions://"
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
             crate::model::Config {
                 ui: crate::model::UIConfig {
+                    terminal: TerminalConfig::default(),
+                    terminal_in_sidebar: false,
                     preview_syntax_highlighting: true,
                     wide_preview: false,
                     archive_thumbnail_cache: false,
@@ -234,7 +236,6 @@ path = "actions://"
                     expand_labels: false,
                     folder_icons: std::collections::HashMap::new(),
                     file_icons: std::collections::HashMap::new(),
-                    terminal: TerminalConfig::default(),
                     sidebar_visible: true,
                     show_recents: true,
                     recents_row: 0,

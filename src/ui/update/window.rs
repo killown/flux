@@ -27,6 +27,27 @@ pub(super) fn handle(
             let help_win = crate::ui::HelpWindow::builder().launch(()).detach();
             help_win.widget().present();
         }
+        AppMsg::SetTerminalSidebar(val) => {
+            app.config.ui.terminal_in_sidebar = val;
+            crate::utils::save_config(&app.config);
+
+            if !val {
+                // Disabling the setting: if the sidebar panel is open, close it.
+                // If the bottom pane is open, leave it alone (it's now the active one).
+                if app.terminal_panel_visible {
+                    app.toggle_sidebar_right_panel(crate::model::RightPanelType::Terminal, sender);
+                }
+            } else {
+                // Enabling the setting: close the bottom terminal if it was open.
+                if app.terminal_visible {
+                    app.handle_toggle_terminal();
+                }
+                // Open the sidebar terminal panel.
+                if !app.terminal_panel_visible {
+                    app.toggle_sidebar_right_panel(crate::model::RightPanelType::Terminal, sender);
+                }
+            }
+        }
         AppMsg::OpenDebugWindow => crate::ui::debug::show_debug_window(app),
         AppMsg::ShowToast(msg) => app.handle_show_toast(msg),
         other => return Err(other),

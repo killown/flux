@@ -20,6 +20,7 @@ pub mod resize;
 pub mod search;
 pub mod spec;
 pub mod tag;
+pub mod terminal;
 
 #[allow(unused_imports)]
 pub use header::panel_header;
@@ -27,6 +28,7 @@ pub use header::panel_header;
 pub use resize::resizable_panel;
 #[allow(unused_imports)]
 pub use spec::PanelSpec;
+pub use terminal::build_terminal_panel;
 pub(crate) mod actions_registry;
 pub(crate) mod preview_registry;
 

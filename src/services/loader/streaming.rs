@@ -397,6 +397,50 @@ impl FluxApp {
         {
             selection_model.unselect_all();
         }
+
+        // Keep whichever embedded terminal is currently visible in sync with
+        // navigation. The bottom pane and the sidebar panel are mutually
+        // exclusive: only one is spawned at a time, so only one needs to be
+        // respawned here.
+        let active_terminal: Option<crate::services::terminal::Terminal> =
+            if self.config.ui.terminal_in_sidebar && self.terminal_panel_visible {
+                self.sidebar_terminal.clone()
+            } else if self.terminal_visible {
+                Some(self.terminal.clone())
+            } else {
+                None
+            };
+
+        if let Some(term) = active_terminal {
+            let path_str = self.current_path.to_string_lossy();
+            let effective_path = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+                crate::services::archive::parse_archive_uri(&path_str)
+                    .map(|(archive_path, _)| {
+                        archive_path
+                            .parent()
+                            .map(|p| p.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "/".to_string())
+                    })
+                    .unwrap_or_else(|| "/".to_string())
+            } else if crate::services::network::is_network_uri(&self.current_path) {
+                std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
+            } else {
+                path_str.to_string()
+            };
+
+            // Only respawn if the terminal is idle and we actually changed
+            // directories. This prevents killing the shell when the user
+            // just typed `cd` inside the terminal itself.
+            if term
+                .state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .is_idle()
+            {
+                term.respawn(&effective_path);
+            }
+        }
+
         self.selection_status.clear();
 
         // CLI `--preview`: the panel is already open, fill it as soon as the first batch is in.

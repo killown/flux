@@ -29,7 +29,13 @@ pub(super) fn handle(
             app.config.ui.terminal.shell = shell;
             crate::utils::save_config(&app.config);
         }
-        AppMsg::ToggleTerminal => app.handle_toggle_terminal(),
+        AppMsg::ToggleTerminal => {
+            if app.config.ui.terminal_in_sidebar {
+                app.toggle_sidebar_right_panel(crate::model::RightPanelType::Terminal, sender);
+            } else {
+                app.handle_toggle_terminal();
+            }
+        }
         AppMsg::SetTerminalHeight(h) => app.handle_set_terminal_config(Some(h), None, None, None),
         AppMsg::SetTerminalFont(f) => app.handle_set_terminal_config(None, Some(f), None, None),
         AppMsg::SetTerminalFgColor(c) => app.handle_set_terminal_config(None, None, Some(c), None),

@@ -43,6 +43,19 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
+                set_title: &tr("Terminal Location"),
+                set_subtitle: &tr("Open the embedded terminal in the right sidebar instead of the bottom pane"),
+                add_suffix = &gtk::Switch {
+                    set_active: config.ui.terminal_in_sidebar,
+                    set_valign: gtk::Align::Center,
+                    connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetTerminalSidebar(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
                     set_title: &tr("Default Icon Size"),
                     set_subtitle: &tr("Base size of icons in the grid view"),
                     add_suffix = &gtk::SpinButton {
