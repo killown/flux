@@ -13,11 +13,18 @@ use std::rc::Rc;
 use storage::{config_path_for, get_available_menus, load_from_disk, write_to_disk};
 
 mod builtin_dialog;
-mod builtins;
+pub(crate) mod builtins;
 mod entry_dialog;
 mod new_menu_dialog;
 mod rows;
 mod storage;
+
+/// Re-exported so `src/bin/gen-docs.rs` can render `docs/actions.md`.
+/// Kept as a thin wrapper so `builtins` itself stays `pub(crate)` for tests.
+#[allow(dead_code)] // used by `src/bin/gen-docs.rs`, not linked by the `flux-fm` binary alone
+pub fn render_actions_markdown() -> String {
+    builtins::render_actions_markdown()
+}
 
 #[derive(Debug)]
 enum Msg {

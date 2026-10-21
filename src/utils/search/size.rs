@@ -5,6 +5,20 @@ pub enum SizeOp {
     Range(u64, u64),
 }
 
+/// Units accepted by [`parse_size`]. The multiplier is the byte count per
+/// unit. Kept as a `pub const` so `render_search_markdown` documents exactly
+/// the units the parser accepts.
+pub const ACCEPTED_SIZE_UNITS: &[(&str, u64)] = &[
+    ("k", 1024),
+    ("m", 1024 * 1024),
+    ("g", 1024 * 1024 * 1024),
+    ("t", 1024 * 1024 * 1024 * 1024),
+];
+
+/// Unit suffixes stripped from a size token before it is parsed as a number.
+/// `>10MB`, `>10MiB`, and `>10M` all resolve to the same threshold.
+pub const SIZE_UNIT_SUFFIXES: &[&str] = &["ib", "b"];
+
 /// Parse size filter from query.
 /// Returns (SizeOp, remaining_query) or None.
 pub fn parse_size_filter(query: &str) -> Option<(SizeOp, String)> {
@@ -52,15 +66,11 @@ fn parse_size(s: &str) -> Option<u64> {
     let num_end = s
         .find(|c: char| !c.is_numeric() && c != '.')
         .unwrap_or(s.len());
-
     if num_end == 0 {
         return None;
     }
 
     let (num_part, unit_part) = s.split_at(num_end);
-
-    // Reject fractional byte counts: `>1.5MB` is ambiguous and the test
-    // suite requires `None` for it. Only whole numbers are accepted.
     if num_part.contains('.') {
         return None;
     }
@@ -68,25 +78,18 @@ fn parse_size(s: &str) -> Option<u64> {
     let n: u64 = num_part.parse().ok()?;
 
     let unit_clean = unit_part.trim().to_lowercase();
-    let unit = unit_clean
-        .strip_suffix("ib")
-        .or_else(|| unit_clean.strip_suffix('b'))
+    let unit = SIZE_UNIT_SUFFIXES
+        .iter()
+        .find_map(|suffix| unit_clean.strip_suffix(suffix))
         .unwrap_or(&unit_clean);
 
-    // A size filter must specify a real unit. Bare numbers (`>10`) and
-    // explicit byte units (`>100B`) are rejected because they match
-    // essentially everything and can lock up the UI on large trees.
     if unit.is_empty() {
         return None;
     }
 
-    let multiplier: u64 = match unit {
-        "k" => 1024,
-        "m" => 1024 * 1024,
-        "g" => 1024 * 1024 * 1024,
-        "t" => 1024 * 1024 * 1024 * 1024,
-        _ => return None,
-    };
+    let multiplier = ACCEPTED_SIZE_UNITS
+        .iter()
+        .find_map(|(name, mult)| (*name == unit).then_some(*mult))?;
 
     n.checked_mul(multiplier)
 }

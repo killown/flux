@@ -1,3 +1,11 @@
+/// Prefixes accepted by [`parse_tag_filter`] before the comma-separated tag
+/// list. `:tag:`, `:t:`, and `#` are equivalent.
+///
+/// Also read by [`crate::utils::search::doc::render_search_markdown`], so
+/// adding a prefix here updates `docs/search.md` after
+/// `cargo run --bin gen-docs`.
+pub const TAG_PREFIXES: &[&str] = &[":tag:", ":t:", "#"];
+
 /// Parses a tag query from the search input.
 ///
 /// Syntax:
@@ -14,10 +22,9 @@ pub fn parse_tag_filter(query: &str) -> Option<(Vec<String>, String)> {
     let parts: Vec<&str> = query_trim.split_whitespace().collect();
 
     for (i, part) in parts.iter().enumerate() {
-        let raw_tags = part
-            .strip_prefix(":tag:")
-            .or_else(|| part.strip_prefix(":t:"))
-            .or_else(|| part.strip_prefix('#'));
+        let raw_tags = TAG_PREFIXES
+            .iter()
+            .find_map(|prefix| part.strip_prefix(prefix));
 
         if let Some(tag_str) = raw_tags {
             let tags: Vec<String> = tag_str

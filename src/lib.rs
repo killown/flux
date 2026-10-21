@@ -7,9 +7,30 @@
 #![allow(clippy::result_large_err)]
 
 pub mod args;
+mod doc_cli;
 pub use crate::utils::hwga;
 pub mod i18n;
 pub mod model;
 pub mod services;
 pub mod ui;
 pub mod utils;
+
+/// Re-exports used only by `src/bin/gen-docs.rs`.
+#[doc(hidden)]
+pub mod _doc_gen {
+    pub mod cli {
+        pub use crate::doc_cli::render_cli_markdown;
+    }
+    pub mod config {
+        pub use crate::model::render_config_markdown;
+    }
+    pub mod css_variables {
+        pub use crate::ui::render_css_variables_markdown;
+    }
+    pub mod actions {
+        pub use crate::ui::menu::editor::render_actions_markdown;
+    }
+    pub mod search {
+        pub use crate::utils::search::render_search_markdown;
+    }
+}

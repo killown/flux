@@ -1,3 +1,11 @@
+pub const CONTENT_QUERY_SYNTAXES: &[(&str, &str)] = &[
+    (":TERM", "Search all files for TERM"),
+    (
+        ":.EXT:TERM",
+        "Search only files with extension EXT for TERM",
+    ),
+];
+
 /// Parses a content‑search query string.
 ///
 /// Syntax:
@@ -12,7 +20,6 @@ pub fn parse_content_search_query(query: &str) -> Option<(String, Option<String>
     }
     let rest = &query_lc[1..];
 
-    // Prevent collision with `:tag:` / `:t:` prefix
     if rest.starts_with("tag:") || rest.starts_with("t:") {
         return None;
     }

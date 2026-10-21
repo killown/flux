@@ -29,12 +29,16 @@ pub use tabs::TabState;
 
 // --- 2. Existing Submodules ---
 mod components;
+mod doc_css_variables;
 mod help;
 mod properties;
 
 // --- 3. Public Re-exports ---
 // This allows main.rs to call `ui::FluxApp`
 pub use components::{FileItem, SidebarPlace, ThumbEvent, ThumbHook};
+#[allow(unused_imports)]
+// used by `src/lib.rs` for `gen-docs`, not linked by the `flux-fm` binary alone
+pub use doc_css_variables::render_css_variables_markdown;
 pub use help::HelpWindow;
 pub use properties::FileProperties;
 

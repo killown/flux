@@ -43,28 +43,9 @@ pub fn run() {
             println!("  [PATH]  Directory or archive file to open on startup");
             println!();
             println!("Options:");
-            println!("  -h, --help                  Print this help message");
-            println!("  -v, --version               Print version information");
-            println!("      --no-sidebar            Disable sidebar for this session");
-            println!("      --no-header             Disable header bar for this session");
-            println!("      --no-statusbar          Disable statusbar for this session");
-            println!("      --file-properties PATH  Open the file properties window for PATH");
-            println!("      --set-icon TARGET IMAGE Set a custom icon/image for TARGET");
-            println!(
-                "      --set-icons-stdin       Read TARGET<TAB>IMAGE pairs from standard input"
-            );
-            println!("      --reset-icon TARGET     Reset custom icon for TARGET back to default");
-            println!(
-                "      --reset-icons-stdin     Read TARGET paths from standard input to reset"
-            );
-            println!(
-                "      --quick-list PATH...    Open with quick-panel pre-populated with PATHs"
-            );
-            println!(
-                "      --quick-list-stdin      Open with quick-panel populated from standard input"
-            );
-            println!("      --preview PATH          Open folder PATH with the preview panel in wide mode");
-            println!("      --menu-editor           To manage menu.rs");
+            for (flags, description) in flux::args::CLI_OPTIONS {
+                println!("  {flags:<28}{description}");
+            }
         }
 
         StartupAction::FileProperties(path) => {

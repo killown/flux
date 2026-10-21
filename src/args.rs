@@ -1,6 +1,48 @@
 use std::io::BufRead;
 use std::path::PathBuf;
 
+/// Every command-line option as `(flags, description)`, shared by `--help` and `docs/cli.md`.
+pub const CLI_OPTIONS: &[(&str, &str)] = &[
+    ("-h, --help", "Print this help message"),
+    ("-v, --version", "Print version information"),
+    ("    --no-sidebar", "Disable sidebar for this session"),
+    ("    --no-header", "Disable header bar for this session"),
+    ("    --no-statusbar", "Disable statusbar for this session"),
+    (
+        "    --file-properties PATH",
+        "Open the file properties window for PATH",
+    ),
+    (
+        "    --set-icon TARGET IMAGE",
+        "Set a custom icon/image for TARGET",
+    ),
+    (
+        "    --set-icons-stdin",
+        "Read TARGET<TAB>IMAGE pairs from standard input",
+    ),
+    (
+        "    --reset-icon TARGET",
+        "Reset custom icon for TARGET back to default",
+    ),
+    (
+        "    --reset-icons-stdin",
+        "Read TARGET paths from standard input to reset",
+    ),
+    (
+        "    --quick-list PATH...",
+        "Open with quick-panel pre-populated with PATHs",
+    ),
+    (
+        "    --quick-list-stdin",
+        "Open with quick-panel populated from standard input",
+    ),
+    (
+        "    --preview PATH",
+        "Open folder PATH with the preview panel in wide mode",
+    ),
+    ("    --menu-editor", "To manage menu.rs"),
+];
+
 fn uri_to_path(s: &str) -> PathBuf {
     if let Some(stripped) = s.strip_prefix("file://") {
         PathBuf::from(stripped)

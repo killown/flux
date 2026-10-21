@@ -131,3 +131,92 @@ pub(super) const BUILTINS: &[BuiltinDef] = &[
         desc: "Clears all custom background images and resets styling to default.",
     },
 ];
+
+// ── Documentation generator ─────────────────────────────────────────────────
+
+/// Renders the `builtin::*` reference that ships as `docs/actions.md`.
+///
+/// Kept next to `BUILTINS` so the table can never drift from the source:
+/// `doc_is_in_sync` fails if the two disagree.
+pub fn render_actions_markdown() -> String {
+    use std::fmt::Write as _;
+
+    let mut out = String::new();
+
+    out.push_str("# Actions\n\n");
+    out.push_str(
+        "Flux's context menus are defined by `menu.rs` (and `menus/menu-*.rs`) \
+         files in `~/.config/flux/`. Each line is:\n\n\
+         ```text\n\
+         \"Label\" => \"mime_types\", \"command\"[, \"toast\"][, \"no_command_dialog\"]\n\
+         ```\n\n\
+         `command` is either a shell command or one of the `builtin::*` actions \
+         listed below.\n\n",
+    );
+
+    out.push_str("## Placeholders\n\n");
+    out.push_str(
+        "Shell commands may contain the following placeholders. Each is \
+         substituted by `build_execution_command` before the command is run, \
+         and the substituted value is shell-quoted:\n\n",
+    );
+    out.push_str("| Placeholder | Meaning |\n");
+    out.push_str("|---|---|\n");
+    out.push_str("| `%p` | Absolute path of the selected item |\n");
+    out.push_str("| `%d` | Parent directory of the selected item |\n");
+    out.push_str("| `%f` | Filename of the selected item |\n");
+    out.push_str("| `%l` | Line number of the current content-search hit (0 otherwise) |\n");
+    out.push_str("| `%cwd` | Current working directory |\n");
+    out.push('\n');
+
+    out.push_str("## Builtin actions\n\n");
+    out.push_str(
+        "The following actions are recognised when `command` starts with \
+         `builtin::`. They are handled directly by the application and never \
+         spawn a shell.\n\n",
+    );
+    out.push_str("| Action | Scope | Description |\n");
+    out.push_str("|---|---|---|\n");
+
+    for b in BUILTINS {
+        let desc = b.desc.replace('|', "\\|");
+        let _ = writeln!(out, "| `{}` | `{}` | {} |", b.name, b.scope, desc);
+    }
+    out.push('\n');
+
+    out.push_str("## Worked examples\n\n");
+    out.push_str(
+        "Flat action - an entry that appears in the top-level context menu:\n\n\
+         ```text\n\
+         \"Open in Terminal\" => \"directory\", \"alacritty --working-directory=%p\", \"no_command_dialog\"\n\
+         ```\n\n\
+         Submenu - the part before `>` becomes a submenu group:\n\n\
+         ```text\n\
+         \"Image Convert > To PNG\" => \"image/webp\", \"magick %p %p.png\"\n\
+         ```\n\n\
+         Placeholder plus toast - `%f` is substituted, then the toast is \
+         shown after the command exits:\n\n\
+         ```text\n\
+         \"Optimise Image\" => \"image/png\", \"oxipng %p\", \"Image optimised\"\n\
+         ```\n",
+    );
+
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn doc_is_in_sync() {
+        let generated = render_actions_markdown();
+        let committed = std::fs::read_to_string("docs/actions.md")
+            .expect("docs/actions.md is missing; create it from render_actions_markdown()");
+        assert_eq!(
+            generated, committed,
+            "\ndocs/actions.md is stale.\n\
+             Run `cargo run --bin gen-docs` to regenerate it."
+        );
+    }
+}
