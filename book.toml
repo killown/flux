@@ -1,0 +1,10 @@
+[book]
+title = "Flux Documentation"
+authors = ["killown"]
+language = "en"
+src = "docs"
+
+[output.html]
+site-url = "/flux/"
+git-repository-url = "https://github.com/killown/flux"
+edit-url-template = "https://github.com/killown/flux/edit/main/docs/{path}"
