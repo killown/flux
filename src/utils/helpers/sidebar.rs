@@ -554,5 +554,18 @@ impl FluxApp {
                 self.reset_actions_panel();
             }
         }
+
+        // ── FOCUS ────────────────────────────────────────────────────────
+        // When a right panel closes, its input widget is hidden/destroyed,
+        // causing GTK's focus chain to jump to the first available focusable
+        // widget (the sidebar), which paints an ugly focus outline square.
+        //
+        // If the panel was just closed (!now_visible), we pull focus back to
+        // the main file grid.
+        if !now_visible {
+            if let Some(tab) = self.tabs.get(self.active_tab_index) {
+                tab.files.view.grab_focus();
+            }
+        }
     }
 }
