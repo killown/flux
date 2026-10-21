@@ -23,7 +23,25 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 <!-- BEGIN GENERATED: custom-properties -->
 | Variable | Default | Declared in | Uses | Purpose |
 |---|---|---|---|---|
-| `--border-color` | `alpha(@theme_fg_color, 0.1)` | `:root` | 17 | Hairline borders on the sidebar, list rows, inputs, tooltips and toasts. |
+| `--border-color` | `alpha(var(--color-fg), 0.1)` | `:root` | 17 | Hairline borders on the sidebar, list rows, inputs, tooltips and toasts. |
+| `--color-accent` | `@accent_bg_color` | `:root` | 25 | Primary accent background for selected and active elements. |
+| `--color-accent-fg` | `@accent_fg_color` | `:root` | 36 | Text and icons drawn on top of `--color-accent`. |
+| `--color-accent-text` | `@accent_color` | `:root` | 47 | Accent color for text, icons and borders on a plain background. |
+| `--color-card-bg` | `@card_bg_color` | `:root` | 1 | Background color of file cards in the grid view. |
+| `--color-danger` | `@red_3` | `:root` | 22 | Errors and destructive actions. |
+| `--color-fg` | `@theme_fg_color` | `:root` | 63 | Default foreground color used across the UI. |
+| `--color-git-mod` | `@blue_3` | `:root` | 2 | Git modified and mixed file states. |
+| `--color-git-staged` | `@purple_3` | `:root` | 2 | Git staged file states. |
+| `--color-git-untracked` | `@dark_2` | `:root` | 2 | Git untracked file states. |
+| `--color-headerbar-bg` | `@headerbar_bg_color` | `:root` | 2 | Background color of the header bar and status bar. |
+| `--color-headerbar-fg` | `@headerbar_fg_color` | `:root` | 9 | Foreground text and icons in the header bar. |
+| `--color-popover-bg` | `@popover_bg_color` | `:root` | 1 | Background color of popovers and context menus. |
+| `--color-popover-fg` | `@popover_fg_color` | `:root` | 12 | Foreground text and icons in popovers. |
+| `--color-sidebar-bg` | `@sidebar_bg_color` | `:root` | 1 | Background color of the left sidebar. |
+| `--color-success` | `@green_4` | `:root` | 4 | Success states and git additions. |
+| `--color-warn` | `@orange_3` | `:root` | 9 | Warnings, restricted items and git conflicts. |
+| `--color-window-bg` | `@window_bg_color` | `:root` | 6 | Main window background color. |
+| `--color-window-fg` | `@window_fg_color` | `:root` | 13 | Main window foreground text and icons. |
 | `--disabled-opacity` | `0.4` | `:root` | 4 | Opacity of disabled controls and of items being dragged. |
 | `--font-main` | `inherit` | `:root` | 8 | Font family for interface text; `inherit` follows the system font. |
 | `--font-mono` | `"JetBrains Mono", monospace` | `:root` | 9 | Monospace font family for list info, key caps, git badges and status text. |
@@ -40,16 +58,16 @@ These follow the system light or dark preference and accent color, so prefer the
 <!-- BEGIN GENERATED: gtk-colors -->
 | Color | Role | Uses |
 |---|---|---|
-| `@accent_bg_color` | Accent background for selected and active elements. | 25 |
-| `@accent_fg_color` | Text and icons drawn on top of `@accent_bg_color`. | 37 |
-| `@accent_color` | Accent for text, icons and borders on a plain background. | 47 |
-| `@window_bg_color` | Window background. | 6 |
-| `@window_fg_color` | Window text and icons. | 13 |
-| `@theme_fg_color` | Default foreground; also the base for translucent text, borders and hover tints. | 61 |
-| `@headerbar_bg_color` | Header bar background. | 2 |
-| `@headerbar_fg_color` | Header bar text and icons. | 9 |
+| `@accent_bg_color` | Accent background for selected and active elements. | 1 |
+| `@accent_fg_color` | Text and icons drawn on top of `@accent_bg_color`. | 1 |
+| `@accent_color` | Accent for text, icons and borders on a plain background. | 1 |
+| `@window_bg_color` | Window background. | 1 |
+| `@window_fg_color` | Window text and icons. | 1 |
+| `@theme_fg_color` | Default foreground; also the base for translucent text, borders and hover tints. | 1 |
+| `@headerbar_bg_color` | Header bar background. | 1 |
+| `@headerbar_fg_color` | Header bar text and icons. | 1 |
 | `@popover_bg_color` | Popover background; the quick panel uses it. | 1 |
-| `@popover_fg_color` | Popover text; also the base for translucent tints on popovers. | 12 |
+| `@popover_fg_color` | Popover text; also the base for translucent tints on popovers. | 1 |
 | `@sidebar_bg_color` | Sidebar background. | 1 |
 | `@card_bg_color` | Background of file cards. | 1 |
 <!-- END GENERATED: gtk-colors -->
@@ -61,10 +79,10 @@ Fixed GNOME palette colors. Unlike the named colors above, they do not change wi
 <!-- BEGIN GENERATED: palette-colors -->
 | Color | Role | Uses |
 |---|---|---|
-| `@red_3` | Errors and destructive actions: broken symlinks, delete buttons, window close. | 22 |
-| `@orange_3` | Warnings and restricted items: locked files, cut items, git conflicts. | 9 |
-| `@green_4` | Success: full level bars and git added. | 4 |
-| `@blue_3` | Git modified and mixed. | 2 |
-| `@purple_3` | Git staged. | 2 |
-| `@dark_2` | Git untracked. | 2 |
+| `@red_3` | Errors and destructive actions: broken symlinks, delete buttons, window close. | 1 |
+| `@orange_3` | Warnings and restricted items: locked files, cut items, git conflicts. | 1 |
+| `@green_4` | Success: full level bars and git added. | 1 |
+| `@blue_3` | Git modified and mixed. | 1 |
+| `@purple_3` | Git staged. | 1 |
+| `@dark_2` | Git untracked. | 1 |
 <!-- END GENERATED: palette-colors -->

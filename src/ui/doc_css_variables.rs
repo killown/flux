@@ -30,6 +30,57 @@ const CUSTOM_PROPERTY_NOTES: &[(&str, &str)] = &[
         "Drop-shadow color of cards, popover menus and the selected sidebar row.",
     ),
     ("--shadow-hover", "Drop-shadow color of a hovered card."),
+    ("--color-fg", "Default foreground color used across the UI."),
+    ("--color-window-bg", "Main window background color."),
+    (
+        "--color-window-fg",
+        "Main window foreground text and icons.",
+    ),
+    (
+        "--color-card-bg",
+        "Background color of file cards in the grid view.",
+    ),
+    (
+        "--color-sidebar-bg",
+        "Background color of the left sidebar.",
+    ),
+    (
+        "--color-popover-bg",
+        "Background color of popovers and context menus.",
+    ),
+    (
+        "--color-popover-fg",
+        "Foreground text and icons in popovers.",
+    ),
+    (
+        "--color-headerbar-bg",
+        "Background color of the header bar and status bar.",
+    ),
+    (
+        "--color-headerbar-fg",
+        "Foreground text and icons in the header bar.",
+    ),
+    (
+        "--color-accent",
+        "Primary accent background for selected and active elements.",
+    ),
+    (
+        "--color-accent-fg",
+        "Text and icons drawn on top of `--color-accent`.",
+    ),
+    (
+        "--color-accent-text",
+        "Accent color for text, icons and borders on a plain background.",
+    ),
+    ("--color-danger", "Errors and destructive actions."),
+    (
+        "--color-warn",
+        "Warnings, restricted items and git conflicts.",
+    ),
+    ("--color-success", "Success states and git additions."),
+    ("--color-git-mod", "Git modified and mixed file states."),
+    ("--color-git-staged", "Git staged file states."),
+    ("--color-git-untracked", "Git untracked file states."),
 ];
 
 /// GTK and libadwaita named colors Flux reads, with the role each plays.
@@ -140,7 +191,7 @@ fn push_declaration(buf: &str, selector: &str, props: &mut Vec<CustomProperty>) 
     });
 }
 
-/// Returns every `--name: value;` declaration in `css`, sorted by name.
+/// Returns every `--name: value,` declaration in `css`, sorted by name.
 fn extract_custom_properties(css: &str) -> Vec<CustomProperty> {
     let css = strip_comments(css);
     let mut props = Vec::new();
@@ -400,6 +451,10 @@ mod tests {
     fn every_custom_property_has_a_note() {
         let props = extract_custom_properties(STYLE_CSS);
         for prop in &props {
+            // Skip variables that just alias a GTK color, they are documented in the color tables.
+            if prop.value.starts_with('@') {
+                continue;
+            }
             assert!(
                 CUSTOM_PROPERTY_NOTES.iter().any(|(n, _)| *n == prop.name),
                 "{} is declared in style.css but has no entry in CUSTOM_PROPERTY_NOTES",

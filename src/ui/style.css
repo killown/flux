@@ -1,19 +1,37 @@
-/* ── CSS variables (must come before any usage) ── */
 :root {
-  --border-color: alpha(@theme_fg_color, 0.1);
+  --border-color: alpha(var(--color-fg), 0.1);
   --disabled-opacity: 0.4;
   --shadow: alpha(black, 0.25);
   --shadow-hover: alpha(black, 0.35);
   --font-main: inherit;
   --font-mono: "JetBrains Mono", monospace;
+
+  --color-fg: @theme_fg_color;
+  --color-window-bg: @window_bg_color;
+  --color-window-fg: @window_fg_color;
+  --color-card-bg: @card_bg_color;
+  --color-sidebar-bg: @sidebar_bg_color;
+  --color-popover-bg: @popover_bg_color;
+  --color-popover-fg: @popover_fg_color;
+  --color-headerbar-bg: @headerbar_bg_color;
+  --color-headerbar-fg: @headerbar_fg_color;
+
+  --color-accent: @accent_bg_color;
+  --color-accent-fg: @accent_fg_color;
+  --color-accent-text: @accent_color;
+
+  --color-danger: @red_3;
+  --color-warn: @orange_3;
+  --color-success: @green_4;
+  --color-git-mod: @blue_3;
+  --color-git-staged: @purple_3;
+  --color-git-untracked: @dark_2;
 }
 
-/* ── toolbarview integration ── */
 toolbarview {
   background-color: transparent;
 }
 
-/* ── headerbar and navigation ── */
 headerbar {
   font-size: 1em;
   background-color: transparent;
@@ -26,13 +44,13 @@ headerbar {
 }
 
 headerbar > windowtitle label.title {
-  color: @headerbar_fg_color;
+  color: var(--color-headerbar-fg);
   font-weight: 700;
   letter-spacing: 0px;
 }
 
 headerbar label {
-  color: @headerbar_fg_color;
+  color: var(--color-headerbar-fg);
   letter-spacing: 0px;
 }
 
@@ -40,7 +58,7 @@ headerbar button,
 headerbar togglebutton,
 headerbar menubutton {
   background-color: transparent;
-  color: @headerbar_fg_color;
+  color: var(--color-headerbar-fg);
   border: none;
   box-shadow: none;
   border-radius: 0.45em;
@@ -52,7 +70,7 @@ headerbar menubutton {
 headerbar button:hover,
 headerbar togglebutton:hover,
 headerbar menubutton:hover {
-  background-color: alpha(@headerbar_fg_color, 0.08);
+  background-color: alpha(var(--color-headerbar-fg), 0.08);
 }
 
 headerbar button image,
@@ -69,8 +87,8 @@ headerbar menubutton > image {
 
 headerbar togglebutton:checked,
 headerbar togglebutton:active {
-  background-color: alpha(@accent_color, 0.2);
-  color: @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.2);
+  color: var(--color-accent-text);
 }
 
 headerbar .suggested-action {
@@ -78,7 +96,7 @@ headerbar .suggested-action {
 }
 
 .sort-container image {
-  color: @headerbar_fg_color;
+  color: var(--color-headerbar-fg);
 }
 
 .dimmed {
@@ -86,10 +104,10 @@ headerbar .suggested-action {
 }
 
 .sort-label {
-  background-color: alpha(@window_fg_color, 0.05);
-  border-top: 1px solid alpha(@window_fg_color, 0.15);
-  border-left: 1px solid alpha(@window_fg_color, 0.1);
-  border-right: 1px solid alpha(@window_fg_color, 0.05);
+  background-color: alpha(var(--color-window-fg), 0.05);
+  border-top: 1px solid alpha(var(--color-window-fg), 0.15);
+  border-left: 1px solid alpha(var(--color-window-fg), 0.1);
+  border-right: 1px solid alpha(var(--color-window-fg), 0.05);
   border-bottom: 1px solid alpha(black, 0.4);
   border-radius: 0.35em;
   padding: 0.3em 0.8em;
@@ -98,14 +116,14 @@ headerbar .suggested-action {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: alpha(@window_fg_color, 0.5);
+  color: alpha(var(--color-window-fg), 0.5);
   box-shadow: 0 0.15em 0 alpha(black, 0.3);
   transition: all 150ms ease-out;
 }
 
 .sort-label:hover {
-  background-color: alpha(@accent_color, 0.1);
-  color: @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.1);
+  color: var(--color-accent-text);
   transform: translateY(-0.1em);
   box-shadow: 0 0.2em 0 alpha(black, 0.4);
 }
@@ -113,8 +131,8 @@ headerbar .suggested-action {
 .sort-label:active {
   transform: translateY(0.15em);
   box-shadow: 0 0 0 transparent;
-  background-color: @accent_color;
-  color: @accent_fg_color;
+  background-color: var(--color-accent-text);
+  color: var(--color-accent-fg);
 }
 
 .thumbnail {
@@ -124,7 +142,6 @@ headerbar .suggested-action {
   transition: transform 300ms ease;
 }
 
-/* ── window controls ── */
 windowcontrols {
   font-size: 1em;
 }
@@ -138,7 +155,7 @@ windowcontrols button {
   margin: 0 0.15em;
   min-width: 24px;
   min-height: 24px;
-  color: @headerbar_fg_color;
+  color: var(--color-headerbar-fg);
   transition:
     background-color 150ms ease,
     color 150ms ease;
@@ -155,32 +172,31 @@ windowcontrols button > * {
 }
 
 windowcontrols button:hover {
-  background-color: alpha(@headerbar_fg_color, 0.12);
+  background-color: alpha(var(--color-headerbar-fg), 0.12);
 }
 
 windowcontrols button:active {
-  background-color: alpha(@headerbar_fg_color, 0.2);
+  background-color: alpha(var(--color-headerbar-fg), 0.2);
 }
 
 windowcontrols button.close:hover {
-  background-color: alpha(@red_3, 0.25);
-  color: @red_3;
+  background-color: alpha(var(--color-danger), 0.25);
+  color: var(--color-danger);
 }
 
 windowcontrols button.close:active {
-  background-color: alpha(@red_3, 0.4);
-  color: @red_3;
+  background-color: alpha(var(--color-danger), 0.4);
+  color: var(--color-danger);
 }
 
 windowcontrols button.minimize:hover,
 windowcontrols button.maximize:hover {
-  background-color: alpha(@headerbar_fg_color, 0.15);
+  background-color: alpha(var(--color-headerbar-fg), 0.15);
 }
 
-/* ── sidebar ── */
 .sidebar {
   font-size: 1em;
-  background-color: @sidebar_bg_color;
+  background-color: var(--color-sidebar-bg);
   border-radius: 1.1em;
   border: 1px solid var(--border-color);
   box-shadow: 0 0.3em 1.5em alpha(black, 0.4);
@@ -224,29 +240,29 @@ windowcontrols button.maximize:hover {
   transition:
     background-color 200ms ease,
     transform 200ms cubic-bezier(0.1, 0.7, 0.1, 1);
-  color: alpha(@theme_fg_color, 0.85);
+  color: alpha(var(--color-fg), 0.85);
 }
 
 .sidebar-row:not(.sidebar-section) label {
-  color: alpha(@theme_fg_color, 0.85);
+  color: alpha(var(--color-fg), 0.85);
   font-family: var(--font-main);
   font-size: 0.95em;
   letter-spacing: 0px;
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
-  background-color: alpha(@theme_fg_color, 0.08);
+  background-color: alpha(var(--color-fg), 0.06);
   transform: translateX(0.3em);
 }
 
 .sidebar-row:not(.sidebar-section):selected {
-  background-color: @accent_bg_color;
+  background-color: var(--color-accent);
   box-shadow: 0 0.3em 0.9em var(--shadow);
   transform: translateX(0.45em);
 }
 
 .sidebar-row:not(.sidebar-section):selected label {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
   font-weight: bold;
 }
 
@@ -293,17 +309,17 @@ windowcontrols button.maximize:hover {
 }
 
 .connected-server {
-  background-color: alpha(@accent_color, 0.06);
-  border-left: 2px solid @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.06);
+  border-left: 2px solid var(--color-accent-text);
 }
 
 .connected-server:hover:not(:selected) {
-  background-color: alpha(@accent_color, 0.12);
+  background-color: alpha(var(--color-accent-text), 0.12);
 }
 
 .connected-server:selected {
-  background-color: @accent_color;
-  color: @accent_fg_color;
+  background-color: var(--color-accent-text);
+  color: var(--color-accent-fg);
 }
 
 button.eject-button {
@@ -330,43 +346,42 @@ button.eject-button image {
 }
 
 button.eject-button:hover {
-  background-color: alpha(@theme_fg_color, 0.08);
-  color: @theme_fg_color;
+  background-color: alpha(var(--color-fg), 0.08);
+  color: var(--color-fg);
   opacity: 1;
 }
 
 button.eject-button:active {
-  background-color: alpha(@theme_fg_color, 0.15);
-  color: @theme_fg_color;
+  background-color: alpha(var(--color-fg), 0.15);
+  color: var(--color-fg);
 }
 
 .sidebar-row:not(.sidebar-section):selected button.eject-button {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
   opacity: 0.9;
 }
 
 .sidebar-row:not(.sidebar-section):selected button.eject-button:hover {
-  background-color: alpha(@accent_fg_color, 0.2);
-  color: @accent_fg_color;
+  background-color: alpha(var(--color-accent-fg), 0.2);
+  color: var(--color-accent-fg);
   opacity: 1;
 }
 
-/* ── sidebar pin zone and drag drop ── */
 .sidebar-dragging {
   opacity: var(--disabled-opacity);
 }
 
 .sidebar-drop-hover {
-  background-color: alpha(@accent_color, 0.25);
-  box-shadow: inset 0 0 0 1px @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.25);
+  box-shadow: inset 0 0 0 1px var(--color-accent-text);
 }
 
 .sidebar-pin-zone {
   margin: 0.3em 0.6em 0.5em 0.6em;
   padding: 0.6em 0.8em;
   border-radius: 0.8em;
-  border: 1.5px dashed alpha(@accent_color, 0.5);
-  background-color: alpha(@accent_color, 0.05);
+  border: 1.5px dashed alpha(var(--color-accent-text), 0.5);
+  background-color: alpha(var(--color-accent-text), 0.05);
   transition: all 150ms ease;
   min-height: 2.6em;
 }
@@ -374,18 +389,18 @@ button.eject-button:active {
 .sidebar-pin-zone-label {
   font-size: 0.9em;
   font-weight: 600;
-  color: alpha(@accent_color, 0.85);
+  color: alpha(var(--color-accent-text), 0.85);
   margin-left: 0.6em;
 }
 
 .sidebar-pin-zone image {
-  color: alpha(@accent_color, 0.85);
+  color: alpha(var(--color-accent-text), 0.85);
   -gtk-icon-size: 1.15em;
 }
 
 .sidebar-pin-zone.sidebar-pin-zone-hover {
-  background-color: alpha(@accent_color, 0.18);
-  border-color: @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.18);
+  border-color: var(--color-accent-text);
   border-style: solid;
 }
 
@@ -395,29 +410,28 @@ button.eject-button:active {
 }
 
 .drop-hover {
-  background-color: alpha(@accent_color, 0.2);
-  border: 2px dashed @accent_color;
-  box-shadow: inset 0 0 0 1.5px @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.2);
+  border: 2px dashed var(--color-accent-text);
+  box-shadow: inset 0 0 0 1.5px var(--color-accent-text);
   transform: scale(1.05);
 }
 
 .sidebar-drop-target {
-  background-color: alpha(@accent_color, 0.15);
-  border-top: 2px solid @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.15);
+  border-top: 2px solid var(--color-accent-text);
 }
 
-/* ── breadcrumb navigation ── */
 button.breadcrumb-btn {
   background: linear-gradient(
     to bottom,
-    alpha(@theme_fg_color, 0.06),
-    alpha(@theme_fg_color, 0.02)
+    alpha(var(--color-fg), 0.06),
+    alpha(var(--color-fg), 0.02)
   );
   padding: 0.25em 0.8em;
   margin: 1px;
   font-weight: 500;
   transition: all 0.12s ease;
-  color: alpha(@theme_fg_color, 0.8);
+  color: alpha(var(--color-fg), 0.8);
   font-family: var(--font-main);
   font-size: 0.9em;
 }
@@ -433,37 +447,37 @@ button.breadcrumb-btn:last-child {
   border-top-right-radius: 1.2em;
   border-bottom-right-radius: 1.2em;
   border-right-width: 1px;
-  background: @accent_bg_color;
-  border-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-fg);
   box-shadow:
-    0 0.15em 0.6em alpha(@accent_color, 0.3),
-    inset 0 1px 0 alpha(@accent_fg_color, 0.2);
+    0 0.15em 0.6em alpha(var(--color-accent-text), 0.3),
+    inset 0 1px 0 alpha(var(--color-accent-fg), 0.2);
   font-weight: 600;
   padding: 0.25em 1em;
 }
 
 button.breadcrumb-btn:last-child label {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
   font-weight: 600;
 }
 
 button.breadcrumb-btn:last-child:hover {
-  background: color-mix(in srgb, @accent_bg_color, #000 10%);
-  box-shadow: 0 0.3em 0.9em alpha(@accent_color, 0.4);
+  background: color-mix(in srgb, var(--color-accent), #000 10%);
+  box-shadow: 0 0.3em 0.9em alpha(var(--color-accent-text), 0.4);
 }
 
 button.breadcrumb-btn:hover:not(:last-child) {
   background: linear-gradient(
     to bottom,
-    alpha(@theme_fg_color, 0.12),
-    alpha(@theme_fg_color, 0.06)
+    alpha(var(--color-fg), 0.12),
+    alpha(var(--color-fg), 0.06)
   );
   box-shadow:
-    inset 0 1px 0 alpha(@window_fg_color, 0.08),
+    inset 0 1px 0 alpha(var(--color-window-fg), 0.08),
     0 0.15em 0.3em alpha(black, 0.1);
   border-color: var(--border-color);
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 button.breadcrumb-btn:active:not(:last-child) {
@@ -477,10 +491,9 @@ button.breadcrumb-btn label {
   letter-spacing: 0px;
 }
 
-/* ── grid and list views ── */
 gridview,
 listview {
-  background-color: @window_bg_color;
+  background-color: var(--color-window-bg);
   padding: 0 1.8em 1.2em 1.8em;
 }
 
@@ -490,7 +503,7 @@ gridview child {
 }
 
 .flux-card {
-  background-color: @card_bg_color;
+  background-color: var(--color-card-bg);
   border-radius: 1.2em;
   padding: 0.9em;
   margin: 0.45em;
@@ -505,9 +518,9 @@ gridview child {
 }
 
 .flux-card:hover {
-  background-color: alpha(@theme_fg_color, 0.06);
+  background-color: alpha(var(--color-fg), 0.06);
   box-shadow:
-    0 0 0 1px alpha(@accent_color, 0.3),
+    0 0 0 1px alpha(var(--color-accent-text), 0.3),
     0 0.6em 1.2em var(--shadow-hover);
   transform: translateY(-0.3em);
 }
@@ -517,29 +530,31 @@ gridview child {
 }
 
 .flux-label {
-  color: @theme_fg_color;
+  color: var(--color-fg);
   font-family: var(--font-main);
   font-size: 1em;
   letter-spacing: 0px;
 }
 
 gridview child:selected .flux-card {
+  background-color: alpha(var(--color-fg), 0.04);
   box-shadow:
-    0 0 0 2px @accent_color,
-    0 0.45em 1.3em alpha(@accent_color, 0.35);
+    0 0 0 2px var(--color-accent-text),
+    0 0.45em 1.3em alpha(var(--color-accent-text), 0.35);
   transform: translateY(-0.15em);
 }
 
 gridview child:selected .flux-label {
-  color: @accent_fg_color;
+  color: var(--color-fg);
+  font-weight: bold;
 }
 
 .flux-card--restricted {
-  border-left: 2px solid @orange_3;
+  border-left: 2px solid var(--color-warn);
 }
 
 .flux-lock-badge {
-  color: @orange_3;
+  color: var(--color-warn);
   -gtk-icon-size: 1em;
 }
 
@@ -561,22 +576,26 @@ gridview child:selected .flux-label {
 }
 
 gridview child:hover .flux-list-info {
-  background-color: alpha(@theme_fg_color, 0.12);
+  background-color: alpha(var(--color-fg), 0.12);
   border-color: var(--border-color);
-  color: alpha(@theme_fg_color, 0.9);
+  color: alpha(var(--color-fg), 0.9);
 }
 
 gridview child:selected .flux-list-info {
-  background-color: alpha(@accent_fg_color, 0.22);
-  border-color: alpha(@accent_fg_color, 0.35);
-  color: @accent_fg_color;
+  background-color: alpha(var(--color-accent-fg), 0.22);
+  border-color: alpha(var(--color-accent-fg), 0.35);
+  color: var(--color-accent-fg);
   font-weight: 600;
 }
 
 entry.flux-rename-entry {
-  background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 10%);
-  border: 1px solid @accent_color;
-  box-shadow: 0 0 0 2px alpha(@accent_color, 0.35);
+  background-color: color-mix(
+    in srgb,
+    var(--color-window-bg),
+    var(--color-fg) 10%
+  );
+  border: 1px solid var(--color-accent-text);
+  box-shadow: 0 0 0 2px alpha(var(--color-accent-text), 0.35);
   padding: 0.2em 0.6em;
   font-size: 0.95em;
   min-height: 1.8em;
@@ -591,26 +610,26 @@ entry.flux-rename-entry {
 }
 
 .flux-card.flux-card--symlink {
-  border-right: 2.5px solid alpha(@accent_color, 0.75);
+  border-right: 2.5px solid alpha(var(--color-accent-text), 0.75);
 }
 
 .flux-card.flux-card--symlink .flux-label {
-  color: @theme_fg_color;
+  color: var(--color-fg);
   font-weight: 500;
 }
 
 .flux-card.flux-card--broken-symlink {
-  border-right: 2.5px solid @red_3;
+  border-right: 2.5px solid var(--color-danger);
 }
 
 .flux-card.flux-card--broken-symlink .flux-label {
-  color: @red_3;
+  color: var(--color-danger);
   text-decoration-line: line-through;
 }
 
 .flux-card.flux-card--cut {
-  background-color: alpha(@orange_3, 0.1);
-  box-shadow: inset 0 0 0 1.5px alpha(@orange_3, 0.45);
+  background-color: alpha(var(--color-warn), 0.1);
+  box-shadow: inset 0 0 0 1.5px alpha(var(--color-warn), 0.45);
   opacity: 0.6;
 }
 
@@ -623,16 +642,15 @@ entry.flux-rename-entry {
   opacity: 0.6;
 }
 
-/* ── filter bar ── */
 .flux-filter-bar {
-  background-color: alpha(@accent_bg_color, 0.08);
+  background-color: alpha(var(--color-accent), 0.08);
   border-bottom: 1px solid var(--border-color);
   min-height: 2.4em;
 }
 
 .flux-filter-chip {
-  background-color: alpha(@accent_bg_color, 0.18);
-  border: 1px solid alpha(@accent_color, 0.35);
+  background-color: alpha(var(--color-accent), 0.18);
+  border: 1px solid alpha(var(--color-accent-text), 0.35);
   border-radius: 999px;
   padding: 0.2em 0.4em 0.2em 0.6em;
   min-height: 1.8em;
@@ -640,7 +658,7 @@ entry.flux-rename-entry {
 
 .flux-filter-chip label {
   font-size: 0.85em;
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
 }
 
 .flux-filter-chip button {
@@ -654,7 +672,6 @@ entry.flux-rename-entry {
   opacity: 1;
 }
 
-/* ── search panel ── */
 .search-panel-icon {
   -gtk-icon-size: 1.25em;
   min-width: 1.25em;
@@ -665,7 +682,6 @@ entry.flux-rename-entry {
   -gtk-icon-size: 1.25em;
 }
 
-/* ── popovers and context menus ── */
 popover.menu {
   border: none;
   outline: none;
@@ -673,7 +689,7 @@ popover.menu {
 }
 
 popover.menu contents {
-  background-color: @window_bg_color;
+  background-color: var(--color-window-bg);
   border: none;
   outline: none;
   border-radius: 0.9em;
@@ -681,14 +697,14 @@ popover.menu contents {
 }
 
 popover.menu modelbutton {
-  color: @theme_fg_color;
+  color: var(--color-fg);
   min-height: 2.1em;
   padding: 0.3em 0.6em;
   border-radius: 0.45em;
 }
 
 popover.menu modelbutton label {
-  color: @theme_fg_color;
+  color: var(--color-fg);
   letter-spacing: 0px;
 }
 
@@ -702,12 +718,12 @@ popover.menu modelbutton image,
 popover.menu modelbutton arrow,
 popover.menu modelbutton arrow.right,
 popover.menu modelbutton arrow.left {
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 popover.menu modelbutton:hover {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: var(--color-accent);
+  color: var(--color-accent-fg);
 }
 
 popover.menu modelbutton:hover label,
@@ -718,7 +734,7 @@ popover.menu modelbutton:hover image,
 popover.menu modelbutton:hover arrow,
 popover.menu modelbutton:hover arrow.right,
 popover.menu modelbutton:hover arrow.left {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
 }
 
 popover.menu > contents separator {
@@ -727,19 +743,22 @@ popover.menu > contents separator {
   margin: 0.3em 0.6em;
 }
 
-/* ── text entries and inputs ── */
 entry,
 searchentry,
 passwordentry,
 entry text,
 searchentry text,
 passwordentry text {
-  background-color: color-mix(in srgb, @window_bg_color, @theme_fg_color 5%);
+  background-color: color-mix(
+    in srgb,
+    var(--color-window-bg),
+    var(--color-fg) 5%
+  );
   border: none;
   border-radius: 1.5em;
   padding: 0.3em 0.9em;
-  color: @theme_fg_color;
-  caret-color: @theme_fg_color;
+  color: var(--color-fg);
+  caret-color: var(--color-fg);
   box-shadow: inset 0 0 0 1px alpha(currentColor, 0.1);
   letter-spacing: 0px;
 }
@@ -756,7 +775,7 @@ passwordentry:focus,
 entry:focus-within,
 searchentry:focus-within,
 passwordentry:focus-within {
-  box-shadow: 0 0 0 3px alpha(@accent_color, 0.3);
+  box-shadow: 0 0 0 3px alpha(var(--color-accent-text), 0.3);
 }
 
 entry image,
@@ -783,7 +802,7 @@ passwordentry button,
 passwordentry button.image-button,
 passwordentry button.clear,
 passwordentry button.close {
-  color: @theme_fg_color;
+  color: var(--color-fg);
   background-color: transparent;
   box-shadow: none;
   border: none;
@@ -808,8 +827,8 @@ passwordentry button:hover,
 passwordentry button.image-button:hover,
 passwordentry button.clear:hover,
 passwordentry button.close:hover {
-  color: @theme_fg_color;
-  background-color: alpha(@theme_fg_color, 0.08);
+  color: var(--color-fg);
+  background-color: alpha(var(--color-fg), 0.08);
   opacity: 1;
 }
 
@@ -831,21 +850,20 @@ passwordentry button:active,
 passwordentry button.image-button:active,
 passwordentry button.clear:active,
 passwordentry button.close:active {
-  color: @accent_color;
+  color: var(--color-accent-text);
   opacity: 1;
 }
 
 textview,
 textview text {
   background-color: transparent;
-  color: @theme_fg_color;
-  caret-color: @theme_fg_color;
+  color: var(--color-fg);
+  caret-color: var(--color-fg);
 }
 
-/* ── status bar and transfers ── */
 .selection-status {
   font-size: 1em;
-  background-color: @headerbar_bg_color;
+  background-color: var(--color-headerbar-bg);
   border: 1px solid var(--border-color);
   border-radius: 0.9em;
   padding: 0.45em 1.2em;
@@ -880,20 +898,20 @@ textview text {
 }
 
 .selection-status progressbar progress {
-  background-color: @accent_bg_color;
+  background-color: var(--color-accent);
   background-image: linear-gradient(
     to bottom,
-    alpha(@accent_fg_color, 0.22) 0%,
+    alpha(var(--color-accent-fg), 0.22) 0%,
     alpha(black, 0.15) 100%
   );
   border-radius: 999px;
   min-height: 0.45em;
-  box-shadow: 0 0 0.45em alpha(@accent_color, 0.4);
+  box-shadow: 0 0 0.45em alpha(var(--color-accent-text), 0.4);
 }
 
 .selection-status button.flat {
-  background-color: alpha(@theme_fg_color, 0.05);
-  color: alpha(@theme_fg_color, 0.85);
+  background-color: alpha(var(--color-fg), 0.05);
+  color: alpha(var(--color-fg), 0.85);
   border: 1px solid var(--border-color);
   border-top-color: var(--border-color);
   border-radius: 0.45em;
@@ -909,21 +927,21 @@ textview text {
 }
 
 .selection-status button.flat:hover {
-  background-color: alpha(@accent_color, 0.18);
-  border-color: alpha(@accent_color, 0.4);
-  color: @accent_fg_color;
+  background-color: alpha(var(--color-accent-text), 0.18);
+  border-color: alpha(var(--color-accent-text), 0.4);
+  color: var(--color-accent-fg);
 }
 
 .selection-status button.flat:active {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: var(--color-accent);
+  color: var(--color-accent-fg);
 }
 
 .selection-status button.destructive-action {
-  background-color: alpha(@red_3, 0.14);
-  border: 1px solid alpha(@red_3, 0.25);
+  background-color: alpha(var(--color-danger), 0.14);
+  border: 1px solid alpha(var(--color-danger), 0.25);
   border-radius: 0.45em;
-  color: @red_3;
+  color: var(--color-danger);
   padding: 0.15em 0.5em;
   min-height: 1.6em;
   font-size: 0.8em;
@@ -935,18 +953,18 @@ textview text {
 }
 
 .selection-status button.destructive-action:hover {
-  background-color: alpha(@red_3, 0.25);
-  border-color: alpha(@red_3, 0.45);
-  color: @accent_fg_color;
+  background-color: alpha(var(--color-danger), 0.25);
+  border-color: alpha(var(--color-danger), 0.45);
+  color: var(--color-accent-fg);
 }
 
 .selection-status button.destructive-action:active {
-  background-color: @red_3;
-  color: @accent_fg_color;
+  background-color: var(--color-danger);
+  color: var(--color-accent-fg);
 }
 
 window:backdrop .selection-status {
-  background-color: alpha(@headerbar_bg_color, 0.95);
+  background-color: alpha(var(--color-headerbar-bg), 0.95);
   border-top-color: alpha(currentColor, 0.1);
 }
 
@@ -959,7 +977,6 @@ window:backdrop .selection-status button.destructive-action {
   opacity: var(--disabled-opacity);
 }
 
-/* ── quick panel ── */
 .quick-panel-scroll {
   background: none;
   border: none;
@@ -972,13 +989,13 @@ window:backdrop .selection-status button.destructive-action {
 }
 
 .quick-panel {
-  background: @popover_bg_color;
-  border: 1px solid alpha(@popover_fg_color, 0.14);
+  background: var(--color-popover-bg);
+  border: 1px solid alpha(var(--color-popover-fg), 0.14);
   border-radius: 0.9em;
   padding: 0.3em 0.5em;
   box-shadow:
     0 0.6em 1.8em alpha(black, 0.45),
-    inset 0 1px 0 alpha(@popover_fg_color, 0.16);
+    inset 0 1px 0 alpha(var(--color-popover-fg), 0.16);
 }
 
 .quick-panel button,
@@ -987,18 +1004,18 @@ window:backdrop .selection-status button.destructive-action {
   min-height: 2.1em;
   padding: 0.25em 1.1em;
   border-radius: 0.6em;
-  background-color: alpha(@popover_fg_color, 0.07);
+  background-color: alpha(var(--color-popover-fg), 0.07);
   background-image: linear-gradient(
     to bottom,
-    alpha(@popover_fg_color, 0.09) 0%,
-    alpha(@popover_fg_color, 0.02) 100%
+    alpha(var(--color-popover-fg), 0.09) 0%,
+    alpha(var(--color-popover-fg), 0.02) 100%
   );
-  border: 1px solid alpha(@popover_fg_color, 0.12);
-  border-top-color: alpha(@popover_fg_color, 0.22);
+  border: 1px solid alpha(var(--color-popover-fg), 0.12);
+  border-top-color: alpha(var(--color-popover-fg), 0.22);
   box-shadow:
     0 1px 3px alpha(black, 0.35),
-    inset 0 1px 0 alpha(@popover_fg_color, 0.1);
-  color: alpha(@theme_fg_color, 0.88);
+    inset 0 1px 0 alpha(var(--color-popover-fg), 0.1);
+  color: alpha(var(--color-fg), 0.88);
   transition:
     background-color 150ms ease,
     border-color 150ms ease,
@@ -1007,7 +1024,7 @@ window:backdrop .selection-status button.destructive-action {
 
 .quick-panel button label,
 .quick-panel-tab label {
-  color: alpha(@theme_fg_color, 0.88);
+  color: alpha(var(--color-fg), 0.88);
   font-family: var(--font-main);
   font-size: 0.95em;
   font-weight: 500;
@@ -1017,19 +1034,19 @@ window:backdrop .selection-status button.destructive-action {
 
 .quick-panel button:hover:not(:checked):not(:active):not(.suggested-action),
 .quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) {
-  background-color: alpha(@popover_fg_color, 0.14);
-  border-color: alpha(@popover_fg_color, 0.22);
-  border-top-color: alpha(@popover_fg_color, 0.35);
+  background-color: alpha(var(--color-popover-fg), 0.14);
+  border-color: alpha(var(--color-popover-fg), 0.22);
+  border-top-color: alpha(var(--color-popover-fg), 0.35);
   box-shadow:
     0 2px 6px alpha(black, 0.4),
-    inset 0 1px 0 alpha(@popover_fg_color, 0.2);
+    inset 0 1px 0 alpha(var(--color-popover-fg), 0.2);
 }
 
 .quick-panel
   button:hover:not(:checked):not(:active):not(.suggested-action)
   label,
 .quick-panel-tab:hover:not(:checked):not(:active):not(.suggested-action) label {
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 .quick-panel button:active,
@@ -1038,18 +1055,18 @@ window:backdrop .selection-status button.destructive-action {
 .quick-panel-tab:active,
 .quick-panel-tab:checked,
 .quick-panel-tab.suggested-action {
-  background-color: @accent_bg_color;
+  background-color: var(--color-accent);
   background-image: linear-gradient(
     to bottom,
-    alpha(@accent_fg_color, 0.22) 0%,
+    alpha(var(--color-accent-fg), 0.22) 0%,
     alpha(black, 0.1) 100%
   );
-  border: 1px solid alpha(@accent_color, 0.5);
-  border-top-color: alpha(@accent_fg_color, 0.4);
+  border: 1px solid alpha(var(--color-accent-text), 0.5);
+  border-top-color: alpha(var(--color-accent-fg), 0.4);
   box-shadow:
-    0 0.15em 0.6em alpha(@accent_color, 0.45),
-    inset 0 1px 0 alpha(@accent_fg_color, 0.3);
-  color: @accent_fg_color;
+    0 0.15em 0.6em alpha(var(--color-accent-text), 0.45),
+    inset 0 1px 0 alpha(var(--color-accent-fg), 0.3);
+  color: var(--color-accent-fg);
 }
 
 .quick-panel button:active label,
@@ -1058,12 +1075,11 @@ window:backdrop .selection-status button.destructive-action {
 .quick-panel-tab:active label,
 .quick-panel-tab:checked label,
 .quick-panel-tab.suggested-action label {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
   font-weight: 700;
   text-shadow: 0 1px 2px alpha(black, 0.5);
 }
 
-/* ── general buttons and actions ── */
 .flat {
   background-color: transparent;
   box-shadow: none;
@@ -1095,8 +1111,8 @@ window:backdrop .selection-status button.destructive-action {
 }
 
 .suggested-action {
-  background-color: @accent_bg_color;
-  color: @accent_fg_color;
+  background-color: var(--color-accent);
+  color: var(--color-accent-fg);
   border: none;
   border-radius: 0.6em;
   padding: 0.45em 1.3em;
@@ -1104,16 +1120,16 @@ window:backdrop .selection-status button.destructive-action {
 }
 
 .suggested-action label {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
 }
 
 .suggested-action:hover {
-  background-color: alpha(@accent_bg_color, 0.8);
+  background-color: alpha(var(--color-accent), 0.8);
 }
 
 .destructive-action {
-  background-color: alpha(@red_3, 0.1);
-  color: @red_3;
+  background-color: alpha(var(--color-danger), 0.1);
+  color: var(--color-danger);
   border-radius: 0.6em;
   padding: 0.5em 1.2em;
   font-weight: bold;
@@ -1121,11 +1137,11 @@ window:backdrop .selection-status button.destructive-action {
 }
 
 .destructive-action label {
-  color: @red_3;
+  color: var(--color-danger);
 }
 
 .destructive-action:hover {
-  background-color: alpha(@red_3, 0.2);
+  background-color: alpha(var(--color-danger), 0.2);
 }
 
 .linked > button {
@@ -1142,10 +1158,9 @@ window:backdrop .selection-status button.destructive-action {
   border-bottom-right-radius: 0.5em;
 }
 
-/* ── form controls and widgets ── */
 check,
 radio {
-  background-color: alpha(@theme_fg_color, 0.08);
+  background-color: alpha(var(--color-fg), 0.08);
   border: 1px solid var(--border-color);
   border-radius: 0.3em;
   min-height: 1.2em;
@@ -1154,13 +1169,13 @@ radio {
 
 check:checked,
 radio:checked {
-  background-color: @accent_bg_color;
-  border-color: @accent_bg_color;
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 check:hover,
 radio:hover {
-  border-color: @accent_bg_color;
+  border-color: var(--color-accent);
 }
 
 check:disabled,
@@ -1170,35 +1185,35 @@ radio:disabled {
 
 spinbutton,
 spinbutton text {
-  background-color: alpha(@theme_fg_color, 0.06);
+  background-color: alpha(var(--color-fg), 0.06);
   border: 1px solid var(--border-color);
   border-radius: 0.6em;
-  color: @theme_fg_color;
-  caret-color: @theme_fg_color;
+  color: var(--color-fg);
+  caret-color: var(--color-fg);
   padding: 0 0.3em;
   min-height: 2.1em;
 }
 
 spinbutton:focus-within {
-  border-color: @accent_bg_color;
+  border-color: var(--color-accent);
 }
 
 spinbutton > button {
   background: transparent;
   border: none;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 spinbutton > button:hover {
-  color: @accent_color;
+  color: var(--color-accent-text);
 }
 
 dropdown,
 combobox {
-  background-color: alpha(@theme_fg_color, 0.06);
+  background-color: alpha(var(--color-fg), 0.06);
   border: 1px solid var(--border-color);
   border-radius: 0.6em;
-  color: @theme_fg_color;
+  color: var(--color-fg);
   min-height: 2.1em;
 }
 
@@ -1206,12 +1221,12 @@ dropdown button,
 combobox button {
   background: transparent;
   border: none;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 dropdown:focus-within,
 combobox:focus-within {
-  border-color: @accent_bg_color;
+  border-color: var(--color-accent);
 }
 
 dropdown label {
@@ -1219,18 +1234,18 @@ dropdown label {
 }
 
 scale trough {
-  background: alpha(@theme_fg_color, 0.1);
+  background: alpha(var(--color-fg), 0.1);
   border-radius: 0.75em;
   min-height: 0.3em;
 }
 
 scale highlight {
-  background: @accent_bg_color;
+  background: var(--color-accent);
 }
 
 scale slider {
-  background: @theme_fg_color;
-  border: 2px solid @accent_bg_color;
+  background: var(--color-fg);
+  border: 2px solid var(--color-accent);
   border-radius: 50%;
   min-width: 1.2em;
   min-height: 1.2em;
@@ -1241,29 +1256,28 @@ levelbar block {
 }
 
 levelbar block.low {
-  background: @red_3;
+  background: var(--color-danger);
 }
 
 levelbar block.high {
-  background: @accent_bg_color;
+  background: var(--color-accent);
 }
 
 levelbar block.full {
-  background: @green_4;
+  background: var(--color-success);
 }
 
 progressbar {
-  background-color: alpha(@theme_fg_color, 0.05);
+  background-color: alpha(var(--color-fg), 0.05);
   border-radius: 0.3em;
 }
 
 progressbar progress {
-  background-color: @accent_bg_color;
+  background-color: var(--color-accent);
   border-radius: 0.3em;
   min-height: 0.3em;
 }
 
-/* ── scrollbars ── */
 scrollbar {
   background: transparent;
 }
@@ -1277,7 +1291,6 @@ scrollbar slider:hover {
   background-color: alpha(currentColor, 0.2);
 }
 
-/* ── cards lists and frames ── */
 .frame {
   border: 1px solid var(--border-color);
   border-radius: 0.6em;
@@ -1287,30 +1300,29 @@ scrollbar slider:hover {
 list,
 listview {
   background: transparent;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 row {
   background: transparent;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 row:selected {
-  background: alpha(@accent_bg_color, 0.08);
-  color: @accent_color;
+  background: alpha(var(--color-accent), 0.08);
+  color: var(--color-accent-text);
 }
 
 .view {
   background: transparent;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 .view:selected {
-  background: alpha(@accent_bg_color, 0.08);
-  color: @accent_color;
+  background: alpha(var(--color-accent), 0.08);
+  color: var(--color-accent-text);
 }
 
-/* ── settings and preferences ── */
 window.settings-window,
 adwpreferenceswindow,
 .settings-window {
@@ -1357,7 +1369,7 @@ adwpreferencesrow,
 adwpreferencesrow label,
 adwpreferencespage,
 adwpreferencespage label {
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 adwactionrow .title,
@@ -1366,7 +1378,7 @@ adwactionrow label.title,
 adwpreferencesrow label.title,
 adwpreferencesgroup .title,
 adwpreferencesgroup label.title {
-  color: @theme_fg_color;
+  color: var(--color-fg);
   font-weight: 600;
 }
 
@@ -1380,12 +1392,11 @@ adwpreferencesgroup label.description,
   color: alpha(currentColor, 0.55);
 }
 
-/* ── general typography and labels ── */
 tooltip.background {
-  background-color: alpha(@window_bg_color, 0.95);
+  background-color: alpha(var(--color-window-bg), 0.95);
   border: 1px solid var(--border-color);
   border-radius: 0.6em;
-  color: @theme_fg_color;
+  color: var(--color-fg);
   padding: 0.45em 0.9em;
 }
 
@@ -1410,24 +1421,23 @@ tooltip.background {
 }
 
 .accent {
-  color: @accent_color;
+  color: var(--color-accent-text);
   font-weight: 700;
 }
 
 .heading {
   font-weight: 700;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 .monospace {
   font-family: var(--font-mono), monospace;
 }
 
-/* ── status feedback indicators ── */
 .error {
-  border: 1px solid @red_3;
-  background: alpha(@red_3, 0.08);
-  color: @red_3;
+  border: 1px solid var(--color-danger);
+  background: alpha(var(--color-danger), 0.08);
+  color: var(--color-danger);
 }
 
 .error image {
@@ -1437,9 +1447,9 @@ tooltip.background {
 }
 
 .warning {
-  border: 1px solid @orange_3;
-  background: alpha(@orange_3, 0.08);
-  color: @orange_3;
+  border: 1px solid var(--color-warn);
+  background: alpha(var(--color-warn), 0.08);
+  color: var(--color-warn);
 }
 
 .warning image {
@@ -1449,10 +1459,9 @@ tooltip.background {
 }
 
 .success {
-  color: @green_4;
+  color: var(--color-success);
 }
 
-/* ── tabbar ── */
 tabbar,
 tabbar.inline {
   border: none;
@@ -1482,7 +1491,7 @@ tabbar tab {
   padding: 0.15em 0.8em;
   margin: 0 0.15em;
   border-radius: 0.6em;
-  background-color: alpha(@theme_fg_color, 0.04);
+  background-color: alpha(var(--color-fg), 0.04);
   border: 1px solid alpha(currentColor, 0.1);
   box-shadow: none;
   transition:
@@ -1491,33 +1500,33 @@ tabbar tab {
 }
 
 tabbar tab:hover {
-  background-color: alpha(@theme_fg_color, 0.12);
+  background-color: alpha(var(--color-fg), 0.12);
   border-color: var(--border-color);
 }
 
 tabbar tab:checked,
 tabbar tab:selected,
 tabbar tab.selected {
-  background-color: @accent_bg_color;
+  background-color: var(--color-accent);
   background-image: linear-gradient(
     to bottom,
-    alpha(@accent_fg_color, 0.22) 0%,
+    alpha(var(--color-accent-fg), 0.22) 0%,
     alpha(black, 0.1) 100%
   );
-  border: 1px solid alpha(@accent_color, 0.8);
-  border-top-color: alpha(@accent_fg_color, 0.4);
+  border: 1px solid alpha(var(--color-accent-text), 0.8);
+  border-top-color: alpha(var(--color-accent-fg), 0.4);
   box-shadow:
-    0 0.15em 0.6em alpha(@accent_color, 0.45),
-    inset 0 1px 0 alpha(@accent_fg_color, 0.3);
+    0 0.15em 0.6em alpha(var(--color-accent-text), 0.45),
+    inset 0 1px 0 alpha(var(--color-accent-fg), 0.3);
 }
 
 tabbar tab:checked:hover,
 tabbar tab:selected:hover,
 tabbar tab.selected:hover {
-  background-color: alpha(@accent_bg_color, 0.85);
+  background-color: alpha(var(--color-accent), 0.85);
   background-image: linear-gradient(
     to bottom,
-    alpha(@accent_fg_color, 0.32) 0%,
+    alpha(var(--color-accent-fg), 0.32) 0%,
     alpha(black, 0.05) 100%
   );
 }
@@ -1530,13 +1539,13 @@ tabbar tab label {
 }
 
 tabbar tab:hover label {
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 tabbar tab:checked label,
 tabbar tab:selected label,
 tabbar tab.selected label {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
   font-weight: 700;
   text-shadow: 0 1px 2px alpha(black, 0.5);
 }
@@ -1546,7 +1555,7 @@ tabbar tab button.flat {
   min-width: 1.2em;
   padding: 1px;
   border-radius: 50%;
-  color: alpha(@theme_fg_color, 0.6);
+  color: alpha(var(--color-fg), 0.6);
   opacity: 0.6;
   background: transparent;
   border: none;
@@ -1558,43 +1567,42 @@ tabbar tab button.flat {
 
 tabbar tab:hover button.flat {
   opacity: 1;
-  color: @theme_fg_color;
+  color: var(--color-fg);
 }
 
 tabbar tab:checked button.flat,
 tabbar tab:selected button.flat,
 tabbar tab.selected button.flat {
-  color: @accent_fg_color;
+  color: var(--color-accent-fg);
   opacity: 0.9;
 }
 
 tabbar tab button.flat:hover {
-  background-color: alpha(@theme_fg_color, 0.18);
-  color: @theme_fg_color;
+  background-color: alpha(var(--color-fg), 0.18);
+  color: var(--color-fg);
 }
 
 tabbar tab:checked button.flat:hover,
 tabbar tab:selected button.flat:hover,
 tabbar tab.selected button.flat:hover {
-  background-color: alpha(@accent_fg_color, 0.3);
-  color: @accent_fg_color;
+  background-color: alpha(var(--color-accent-fg), 0.3);
+  color: var(--color-accent-fg);
 }
 
-/* ── toast notifications ── */
 toastoverlay.quick-dock-active toast {
   margin-bottom: 4.5em;
 }
 
 toast {
   font-size: 1em;
-  background-color: alpha(@window_bg_color, 0.95);
+  background-color: alpha(var(--color-window-bg), 0.95);
   border: 1px solid var(--border-color);
   border-radius: 0.9em;
   box-shadow: 0 0.3em 1.2em alpha(black, 0.15);
 }
 
 toast label {
-  color: @window_fg_color;
+  color: var(--color-window-fg);
   letter-spacing: 0.4px;
 }
 
@@ -1603,7 +1611,7 @@ toast label.flux-toast-label {
 }
 
 toast button {
-  color: alpha(@window_fg_color, 0.75);
+  color: alpha(var(--color-window-fg), 0.75);
   background-color: transparent;
   border-radius: 0.45em;
   padding: 0.15em 0.45em;
@@ -1611,13 +1619,13 @@ toast button {
 }
 
 toast button:hover {
-  background-color: alpha(@window_fg_color, 0.12);
-  color: @window_fg_color;
+  background-color: alpha(var(--color-window-fg), 0.12);
+  color: var(--color-window-fg);
 }
 
 toast button:active {
-  background-color: alpha(@window_fg_color, 0.2);
-  color: @window_fg_color;
+  background-color: alpha(var(--color-window-fg), 0.2);
+  color: var(--color-window-fg);
 }
 
 toast button image {
@@ -1625,7 +1633,6 @@ toast button image {
   -gtk-icon-size: 1.15em;
 }
 
-/* ── contextual actions panel ── */
 .flux-action-glyph {
   font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);
   font-size: 1.1em;
@@ -1633,7 +1640,6 @@ toast button image {
   min-height: 1.2em;
 }
 
-/* ── git badges and headers ── */
 .flux-git-badge {
   font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);
   font-size: 0.8em;
@@ -1648,59 +1654,55 @@ toast button image {
 }
 
 .flux-git-untracked {
-  background-color: alpha(@dark_2, 0.25);
-  color: @dark_2;
+  background-color: alpha(var(--color-git-untracked), 0.25);
+  color: var(--color-git-untracked);
 }
 
 .flux-git-added {
-  background-color: alpha(@green_4, 0.25);
-  color: @green_4;
+  background-color: alpha(var(--color-success), 0.25);
+  color: var(--color-success);
 }
 
 .flux-git-modified,
 .flux-git-mixed {
-  background-color: alpha(@blue_3, 0.25);
-  color: @blue_3;
+  background-color: alpha(var(--color-git-mod), 0.25);
+  color: var(--color-git-mod);
 }
 
 .flux-git-staged {
-  background-color: alpha(@purple_3, 0.25);
-  color: @purple_3;
+  background-color: alpha(var(--color-git-staged), 0.25);
+  color: var(--color-git-staged);
 }
 
 .flux-git-deleted {
-  background-color: alpha(@red_3, 0.25);
-  color: @red_3;
+  background-color: alpha(var(--color-danger), 0.25);
+  color: var(--color-danger);
 }
 
 .flux-git-conflict {
-  background-color: alpha(@orange_3, 0.35);
-  color: @orange_3;
+  background-color: alpha(var(--color-warn), 0.35);
+  color: var(--color-warn);
 }
 
-/* ── diff panel ── */
 .diff-view {
   font-size: 0.85em;
   font-family: monospace;
 }
 
-/* ── keyboard shortcuts ── */
 .keycap {
   font-family: var(--font-mono), monospace;
   font-size: 0.8em;
-  background-color: alpha(@window_fg_color, 0.08);
+  background-color: alpha(var(--color-window-fg), 0.08);
   border: 1px solid var(--border-color);
   border-radius: 0.3em;
   padding: 0.1em 0.4em;
   box-shadow: 0 1px 0 alpha(black, 0.2);
 }
 
-/* ── background sync ── */
 .flux-bg-sync {
   transition: none;
 }
 
-/* ── advanced search selectors scaling ── */
 adw-combo-row,
 dropdown {
   font-size: 1em;
@@ -1721,7 +1723,6 @@ dropdown image {
   min-height: 1.15em;
 }
 
-/* ── sidebar panels and tag navigator icon scaling ── */
 .sidebar button,
 .sidebar menuitem,
 .sidebar popover modelbutton {
@@ -1741,7 +1742,6 @@ dropdown image {
   font-size: 1em;
 }
 
-/* ── tag navigator search entry icon scaling ── */
 .tag-search-entry image,
 .tag-search-entry text,
 .tag-search-entry image.search {
@@ -1765,11 +1765,11 @@ dropdown image {
 }
 
 .flux-action-run-btn:hover {
-  background-color: alpha(@accent_color, 0.22);
-  color: @accent_color;
+  background-color: alpha(var(--color-accent-text), 0.22);
+  color: var(--color-accent-text);
 }
 
 .flux-action-run-btn:active {
-  background-color: alpha(@accent_color, 0.38);
-  color: @accent_fg_color;
+  background-color: alpha(var(--color-accent-text), 0.38);
+  color: var(--color-accent-fg);
 }
