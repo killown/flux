@@ -14,6 +14,16 @@ use icons::{reset_icon_on_target, set_icon_on_target};
 
 /// The binary's real entry point. `main.rs` calls this.
 pub fn run() {
+    let args: Vec<String> = std::env::args().collect();
+    let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+    let action = resolve_startup_action(&args, home_dir.clone());
+
+    // Runs before GTK initialisation so it needs no display and stays cheap
+    // enough to be called from every `$F` expansion in a shell.
+    if let StartupAction::PrintSelection { null } = action {
+        std::process::exit(crate::services::terminal::print_selection(null));
+    }
+
     crate::i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
 
@@ -23,10 +33,7 @@ pub fn run() {
         gtk::Window::set_default_icon_name("io.github.killown.flux");
     });
 
-    let args: Vec<String> = std::env::args().collect();
-    let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-
-    match resolve_startup_action(&args, home_dir.clone()) {
+    match action {
         StartupAction::PrintVersion => {
             let commit = env!("FLUX_GIT_HASH");
             if commit.is_empty() {
@@ -57,6 +64,8 @@ pub fn run() {
         StartupAction::MenuEditor => {
             crate::ui::menu::editor::run();
         }
+
+        StartupAction::PrintSelection { .. } => unreachable!("handled before GTK initialisation"),
 
         StartupAction::UnknownFlag(flag) => {
             eprintln!("flux: unrecognized option '{flag}'");

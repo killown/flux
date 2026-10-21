@@ -8,10 +8,12 @@
 
 pub mod args;
 mod doc_cli;
+mod doc_fish;
 pub use crate::utils::hwga;
 pub mod i18n;
 pub mod model;
 pub mod services;
+pub mod shell_functions;
 pub mod ui;
 pub mod utils;
 
@@ -32,5 +34,8 @@ pub mod _doc_gen {
     }
     pub mod search {
         pub use crate::utils::search::render_search_markdown;
+    }
+    pub mod fish {
+        pub use crate::doc_fish::{render_completions, render_integration};
     }
 }

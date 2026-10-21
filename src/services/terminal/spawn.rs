@@ -140,17 +140,14 @@ impl Terminal {
         let mut command = Command::new(&target_shell);
         command.arg("-l");
         command.env("TERM", "xterm-256color");
+        command.env("FLUX_PID", std::process::id().to_string());
         command.env_remove("LD_LIBRARY_PATH");
         command.env_remove("LD_PRELOAD");
 
+        // ── Theme Injection ──────────────────────────────────────────────
         // Export the resolved GTK theme colours so the fish `conf.d` snippet
         // (written by `fish_theme::write_fish_theme_snippet`) can map them to
         // `fish_color_*` language variables.
-        //
-        // `spawn_async` guarantees above that `theme_env` is `Some` at this
-        // point: `apply_theme` is called at the top of this function if the
-        // slot was empty, so the child inherits the exports at `execve`
-        // time. No respawn or PTY injection is needed.
         //
         // Gated on `ui.fish_theme` so the setting actually does what it says:
         // with it off, no `FLUX_THEME_*` reaches the child, and the snippet's

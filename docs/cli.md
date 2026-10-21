@@ -33,6 +33,7 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--quick-list PATH...` | Open with quick-panel pre-populated with PATHs |
 | `--quick-list-stdin` | Open with quick-panel populated from standard input |
 | `--preview PATH` | Open folder PATH with the preview panel in wide mode |
+| `--selection` | Print the paths selected in the running window, one per line (-0: NUL-separated) |
 | `--menu-editor` | To manage menu.rs |
 <!-- END GENERATED: options -->
 
@@ -63,9 +64,19 @@ Every other option must be the first argument once the session flags are removed
 find . -name '*.log' | flux --quick-list-stdin
 ```
 
+## Selection
+
+`--selection` asks a running window for the paths selected in its active tab and prints them, one per line. It talks to the window named by `$FLUX_PID`, which Flux sets in its embedded terminal, and otherwise to the window that navigated last. It does not open a window.
+
+A path containing a newline is skipped with a warning; `--selection -0` terminates each path with NUL instead, which keeps every path intact for `xargs -0`.
+
+```text
+flux-fm --selection | xargs -d '\n' ls -l
+```
+
 ## Exit status
 
 | Status | Meaning |
 |---|---|
 | `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon` and `--quick-list` print the help text and also exit with `0`. |
-| `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, or a skipped line in `--set-icons-stdin`. |
+| `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, or `--selection` finding no running window. |

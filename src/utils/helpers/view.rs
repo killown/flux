@@ -56,6 +56,9 @@ impl FluxApp {
 
     /// Updates the collection of path segments for breadcrumb navigation display.
     pub fn update_breadcrumbs(&mut self) {
+        // Publish the directory for `flux_cwd` / `$FCWD` / `flux_goto`.
+        crate::services::terminal::write_cwd_cache(&self.current_path);
+
         let mut guard = self.breadcrumbs.guard();
         guard.clear();
 

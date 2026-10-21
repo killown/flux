@@ -24,11 +24,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "docs/search.md",
         flux::_doc_gen::search::render_search_markdown(),
     )?;
+    std::fs::create_dir_all("completions")?;
+    std::fs::write(
+        "completions/flux-fm.fish",
+        flux::_doc_gen::fish::render_completions(),
+    )?;
+    std::fs::create_dir_all("data/fish")?;
+    std::fs::write(
+        "data/fish/flux-integration.fish",
+        flux::_doc_gen::fish::render_integration(),
+    )?;
 
     println!("regenerated docs/cli.md");
     println!("regenerated docs/config.md");
     println!("regenerated docs/css-variables.md");
     println!("regenerated docs/actions.md");
     println!("regenerated docs/search.md");
+    println!("regenerated completions/flux-fm.fish");
+    println!("regenerated data/fish/flux-integration.fish");
     Ok(())
 }

@@ -12,6 +12,7 @@ mod cli;
 mod i18n;
 mod model;
 mod services;
+mod shell_functions;
 mod ui;
 mod utils;
 

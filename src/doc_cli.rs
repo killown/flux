@@ -82,12 +82,26 @@ pub fn render_cli_markdown() -> String {
          ```\n\n",
     );
 
+    out.push_str("## Selection\n\n");
+    out.push_str(
+        "`--selection` asks a running window for the paths selected in its active \
+         tab and prints them, one per line. It talks to the window named by \
+         `$FLUX_PID`, which Flux sets in its embedded terminal, and otherwise to \
+         the window that navigated last. It does not open a window.\n\n\
+         A path containing a newline is skipped with a warning; `--selection -0` \
+         terminates each path with NUL instead, which keeps every path intact \
+         for `xargs -0`.\n\n\
+         ```text\n\
+         flux-fm --selection | xargs -d '\\n' ls -l\n\
+         ```\n\n",
+    );
+
     out.push_str("## Exit status\n\n");
     out.push_str(
         "| Status | Meaning |\n\
          |---|---|\n\
          | `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon` and `--quick-list` print the help text and also exit with `0`. |\n\
-         | `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, or a skipped line in `--set-icons-stdin`. |\n",
+         | `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, or `--selection` finding no running window. |\n",
     );
 
     out

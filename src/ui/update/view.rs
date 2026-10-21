@@ -14,6 +14,9 @@ pub(super) fn handle(
                 app.request_actions_panel_load(sender);
             }
         }
+        AppMsg::QuerySelection { reply } => {
+            let _ = reply.send(app.get_selection());
+        }
         AppMsg::ToggleListMode => app.handle_toggle_list_mode(),
         AppMsg::ToggleSortOrder => app.handle_toggle_sort_order(sender),
         AppMsg::CycleSort => app.handle_cycle_sort(sender),

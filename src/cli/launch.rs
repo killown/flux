@@ -22,6 +22,8 @@ pub(super) fn launch_main_app(
         crate::utils::helpers::load_custom_css();
         crate::utils::helpers::load_custom_background_images();
         setup_config_watcher();
+        crate::services::terminal::setup_goto_watcher();
+        crate::services::terminal::setup_selection_server();
         std::thread::spawn(crate::utils::deps::check_optional_deps);
         glib::ControlFlow::Break
     });

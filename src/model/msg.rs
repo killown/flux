@@ -569,6 +569,13 @@ pub enum AppMsg {
     /// `tab_id` is `Some` when emitted by a specific tab's selection model,
     /// and `None` when emitted programmatically with no tab context.
     SelectionChanged { tab_id: Option<u64> },
+    /// Requests the paths selected in the active tab.
+    ///
+    /// Sent by the selection socket server; the update loop answers through
+    /// `reply`.
+    QuerySelection {
+        reply: std::sync::mpsc::Sender<Vec<PathBuf>>,
+    },
     /// Updates the single-click activation setting.
     SetSingleClick(bool),
     /// Updates the global hidden files visibility.

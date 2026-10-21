@@ -40,6 +40,10 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
         "    --preview PATH",
         "Open folder PATH with the preview panel in wide mode",
     ),
+    (
+        "    --selection",
+        "Print the paths selected in the running window, one per line (-0: NUL-separated)",
+    ),
     ("    --menu-editor", "To manage menu.rs"),
 ];
 
@@ -183,6 +187,11 @@ pub enum StartupAction {
     ResetIconsStdin,
     /// Open the context-menu editor utility.
     MenuEditor,
+    /// Print the paths selected in the running window and exit.
+    PrintSelection {
+        /// Terminate each path with NUL instead of a newline.
+        null: bool,
+    },
     /// Print the version string and exit.
     PrintVersion,
     /// Print the help text and exit.
@@ -233,6 +242,9 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         Some("--version" | "-v") => StartupAction::PrintVersion,
         Some("--help" | "-h") => StartupAction::PrintHelp,
         Some("--menu-editor") => StartupAction::MenuEditor,
+        Some("--selection") => StartupAction::PrintSelection {
+            null: filtered_args.get(1) == Some(&"-0"),
+        },
         Some("--file-properties") => match filtered_args.get(1) {
             Some(path) => StartupAction::FileProperties(uri_to_path(path)),
             None => StartupAction::PrintHelp,

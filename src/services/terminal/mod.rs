@@ -1,7 +1,9 @@
+mod cwd;
 mod draw;
 mod fish_theme;
 mod handler;
 mod palette;
+mod selection;
 mod spawn;
 mod state;
 mod theme;
@@ -14,6 +16,10 @@ pub use handler::TerminalHandler;
 #[allow(unused_imports)]
 pub use state::{Cell, CursorStyle, TerminalState};
 pub(crate) use theme::ThemeEnv;
+#[allow(unused_imports)]
+pub(crate) use cwd::{setup_goto_watcher, write_cwd_cache};
+#[allow(unused_imports)]
+pub(crate) use selection::{print_selection, setup_selection_server};
 
 use crate::model::TerminalConfig;
 use gtk::DrawingArea;

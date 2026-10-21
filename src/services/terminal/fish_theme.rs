@@ -113,6 +113,19 @@ pub(crate) fn render_snippet(env: &ThemeEnv) -> String {
     out.push_str("        set_color normal\n");
     out.push_str("    end\n");
 
+    // ── Dynamic Selection ────────────────────────────────────────────────
+    // `flux_selection`, `flux_cwd`, `flux_goto`, the `fish_preexec` sync and
+    // the `$F` abbreviations. The same source is written to
+    // data/fish/flux-integration.fish for terminals outside Flux.
+    out.push_str("\n");
+    for line in crate::shell_functions::render_functions().lines() {
+        if !line.is_empty() {
+            out.push_str("    ");
+            out.push_str(line);
+        }
+        out.push('\n');
+    }
+
     out.push_str("end\n");
     out
 }
@@ -221,6 +234,14 @@ mod tests {
         let guard = body.find("if set -q FLUX_THEME_FG").unwrap();
         let prompt = body.find("function fish_prompt").unwrap();
         assert!(prompt > guard, "fish_prompt must be inside the guard");
+    }
+
+    #[test]
+    fn snippet_defines_dynamic_selection() {
+        let body = render_snippet(&sample_env());
+        assert!(body.contains("function flux_selection"));
+        assert!(body.contains("fish_preexec"));
+        assert!(body.contains("abbr --add --position anywhere '$F'"));
     }
 
     #[test]
