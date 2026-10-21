@@ -1,85 +1,89 @@
 # Development
 
-## Building from source
+## Building from Source
 
-Flux links against GTK4, Libadwaita, and several C libraries. The build will fail on `pkg-config` errors if these are missing.
+Flux links against GTK4, Libadwaita, and several C libraries. The build will fail with `pkg-config` errors if these dependencies are missing.
 
 ### Arch Linux
 
-︙bash
+```bash
 sudo pacman -S base-devel git pkgconf rust \
- gtk4 libadwaita glib2 \
- poppler-glib fontconfig pango cairo gdk-pixbuf2 \
- vte4
-︙
+  gtk4 libadwaita glib2 \
+  poppler-glib fontconfig pango cairo gdk-pixbuf2 \
+  vte4
+```
 
 ### Debian / Ubuntu
 
-︙bash
+```bash
 sudo apt install build-essential pkg-config git curl \
- libgtk-4-dev libadwaita-1-dev libglib2.0-dev libglib2.0-dev-bin \
- libpoppler-glib-dev libfontconfig1-dev \
- libpango1.0-dev libcairo2-dev \
- libgdk-pixbuf-2.0-dev \
- libvte-2.91-gtk4-dev
-︙
+  libgtk-4-dev libadwaita-1-dev libglib2.0-dev libglib2.0-dev-bin \
+  libpoppler-glib-dev libfontconfig1-dev \
+  libpango1.0-dev libcairo2-dev \
+  libgdk-pixbuf-2.0-dev \
+  libvte-2.91-gtk4-dev
+```
 
 ### Fedora
 
-︙bash
+```bash
 sudo dnf install gcc gcc-c++ make pkgconf-pkg-config git \
- gtk4-devel libadwaita-devel glib2-devel \
- poppler-glib-devel fontconfig-devel pango-devel cairo-devel \
- gdk-pixbuf2-devel \
- vte291-gtk4-devel
-︙
+  gtk4-devel libadwaita-devel glib2-devel \
+  poppler-glib-devel fontconfig-devel pango-devel cairo-devel \
+  gdk-pixbuf2-devel \
+  vte291-gtk4-devel
+```
 
 ### Build
 
-︙bash
-git clone <https://github.com/killown/flux>
+```bash
+git clone https://github.com/killown/flux.git
 cd flux
 cargo build --release
-︙
+```
 
-The binary is at `target/release/flux-fm`.
+The compiled binary is located at `target/release/flux-fm`.
 
-## Regenerating documentation
+## Regenerating Documentation
 
-The files under `docs/` (except `index.md`, `SUMMARY.md`, and `development.md`) are generated from source. If you change CLI options, config fields, built-in actions, search syntax, or CSS variables, regenerate them:
+The files under `docs/` are generated from source, except for `index.md`, `SUMMARY.md`, and `development.md`.
 
-︙bash
+If you change CLI options, configuration fields, built-in actions, search syntax, or CSS variables, regenerate the documentation:
+
+```bash
 cargo run --bin gen-docs
-︙
+```
 
-CI runs `cargo run --bin gen-docs` and fails if `git diff --exit-code docs/` shows drift. This keeps the docs, the `--help` output, and the code in sync.
+CI runs `cargo run --bin gen-docs` and fails if `git diff --exit-code docs/` detects changes. This keeps the documentation, `--help` output, and source code in sync.
 
-## Optional dependencies
+## Optional Dependencies
 
-These are not needed to build, but extend what Flux can preview or open. Missing tools are logged to stderr at startup.
+These tools are not required to build Flux, but they extend its preview and file-opening capabilities. Missing tools are logged to stderr at startup.
 
-| Tool                            | Enables                             |
-| ------------------------------- | ----------------------------------- |
-| `ffmpeg`, `ffprobe`             | Video thumbnails, media duration    |
-| `7z` (`p7zip-full` / `p7zip`)   | AppImage icons, UDF ISO support     |
-| `unar` or `unrar`               | RAR archive browsing                |
-| `exiftool`                      | RAW camera thumbnails (primary)     |
-| `raw-thumbnailer` / `miniaturo` | RAW camera thumbnails (fallback)    |
-| `wrestool`, `icotool`           | `.exe` icon extraction              |
-| `mpv`                           | Audio playback in the preview panel |
-| `soffice` / `libreoffice`       | Office document previews            |
-| `fc-cache`                      | Font install refresh                |
+| Tool                            | Enables                                           |
+| ------------------------------- | ------------------------------------------------- |
+| `ffmpeg`, `ffprobe`             | Video thumbnails and media duration               |
+| `7z` (`p7zip-full` / `p7zip`)   | AppImage icons and UDF ISO support                |
+| `unar` or `unrar`               | RAR archive browsing                              |
+| `exiftool`                      | Primary RAW camera thumbnail support              |
+| `raw-thumbnailer` / `miniaturo` | Fallback RAW camera thumbnail support             |
+| `wrestool`, `icotool`           | `.exe` icon extraction                            |
+| `mpv`                           | Audio playback in the preview panel               |
+| `soffice` / `libreoffice`       | Office document previews                          |
+| `fc-cache`                      | Refreshing the font cache after font installation |
 
-## Development profile
+## Development Profile
 
-The `local` profile (`Cargo.toml`) inherits from `dev` but builds at `opt-level = 2`:
+The `local` profile in `Cargo.toml` inherits from `dev` but uses `opt-level = 2` for optimized builds.
 
-︙bash
+Build using this profile:
+
+```bash
 cargo build --profile local
-︙
+```
 
-A helper script at `tools/local-build.sh` does this, then regenerates docs and installs:
+The helper script `tools/local-build.sh` builds with this profile, regenerates the documentation, and installs Flux:
 
-︙bash
+```bash
 ./tools/local-build.sh
-︙
+```
