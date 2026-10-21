@@ -86,84 +86,25 @@ pub fn run() {
                 Some(archive_path),
                 None,
                 None,
-                false,
-                false,
-                false,
-                false,
+                flux::args::WindowOptions::default(),
             );
         }
 
-        StartupAction::Launch {
-            path,
-            no_sidebar,
-            no_header,
-            no_statusbar,
-        } => {
-            launch::launch_main_app(
-                path,
-                None,
-                None,
-                None,
-                no_sidebar,
-                no_header,
-                no_statusbar,
-                false,
-            );
+        StartupAction::Launch { path, opts } => {
+            launch::launch_main_app(path, None, None, None, opts);
         }
 
-        StartupAction::Preview {
-            path,
-            no_sidebar,
-            no_header,
-            no_statusbar,
-        } => {
-            launch::launch_main_app(
-                path,
-                None,
-                None,
-                None,
-                no_sidebar,
-                no_header,
-                no_statusbar,
-                true,
-            );
+        StartupAction::Preview { path, opts } => {
+            launch::launch_main_app(path, None, None, None, opts);
         }
 
-        StartupAction::TagSearch {
-            tag,
-            no_sidebar,
-            no_header,
-            no_statusbar,
-        } => {
-            launch::launch_main_app(
-                home_dir,
-                None,
-                None,
-                Some(tag),
-                no_sidebar,
-                no_header,
-                no_statusbar,
-                false,
-            );
+        StartupAction::TagSearch { tag, opts } => {
+            launch::launch_main_app(home_dir, None, None, Some(tag), opts);
         }
 
-        StartupAction::QuickList {
-            paths,
-            no_sidebar,
-            no_header,
-            no_statusbar,
-        } => {
+        StartupAction::QuickList { paths, opts } => {
             let first = paths.first().cloned().unwrap_or_else(|| home_dir.clone());
-            launch::launch_main_app(
-                first,
-                None,
-                Some(paths),
-                None,
-                no_sidebar,
-                no_header,
-                no_statusbar,
-                false,
-            );
+            launch::launch_main_app(first, None, Some(paths), None, opts);
         }
 
         StartupAction::SetIcon { target, image } => {

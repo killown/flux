@@ -32,10 +32,27 @@ pub enum BackgroundSlot {
     SidebarRight,
 }
 
-/// Startup parameters passed from the argument parser to the Relm4 component initializer.
-pub struct AppInit {
+/// Per-session window switches parsed from the command line.
+///
+/// Lives here rather than in `args.rs` because `AppInit` is compiled into both the
+/// `flux` library and the `flux-fm` binary, and only `model` exists in both.
+/// `flux::args` re-exports it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct WindowOptions {
+    /// Temporary CLI override to hide the sidebar without persisting to config.
+    pub no_sidebar: bool,
+    /// Temporary CLI override to hide the top header bar without persisting to config.
+    pub no_header: bool,
+    /// Temporary CLI override to hide the bottom status bar without persisting to config.
+    pub no_statusbar: bool,
+    /// Open the terminal in the configured position once the window exists.
+    pub terminal: bool,
     /// Open the preview panel in wide mode once the first folder has loaded.
     pub preview: bool,
+}
+
+/// Startup parameters passed from the argument parser to the Relm4 component initializer.
+pub struct AppInit {
     /// The dir the file manager should open on startup.
     pub start_path: PathBuf,
     /// If the user started flux with an archive file, open it right after init.
@@ -45,12 +62,8 @@ pub struct AppInit {
     /// Optional tag search filter (e.g. `"#games"`) to seed into the search entry
     /// and activate on initial application startup.
     pub tag_search: Option<String>,
-    /// Temporary CLI override to hide the sidebar without persisting to config.
-    pub no_sidebar: bool,
-    /// Temporary CLI override to hide the top header bar without persisting to config.
-    pub no_header: bool,
-    /// Temporary CLI override to hide the bottom status bar without persisting to config.
-    pub no_statusbar: bool,
+    /// Per-session window switches (`--no-sidebar`, `--terminal`, `--preview`, ...).
+    pub opts: WindowOptions,
 }
 
 /// Represents a single component of a filesystem path for breadcrumb navigation.

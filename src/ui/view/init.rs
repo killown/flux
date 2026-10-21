@@ -378,6 +378,8 @@ impl FluxApp {
         model.connect_panel_revealer = Some(widgets.connect_panel_revealer.clone());
         model.actions_panel_revealer = Some(widgets.actions_panel_revealer.clone());
         model.terminal_panel_revealer = Some(widgets.terminal_panel_revealer.clone());
+        model.main_stack = Some(widgets.main_stack.clone());
+        model.fullscreen_terminal_box = Some(widgets.fullscreen_terminal_box.clone());
 
         if let Some(paned) = &model.terminal_paned {
             let sender_clone = sender.clone();

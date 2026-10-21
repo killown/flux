@@ -13,6 +13,33 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 set_title: &tr("Appearance & Execution"),
                 set_description: Some(&tr("Customize the embedded terminal look, feel, and executable")),
                 add = &adw::ActionRow {
+                    set_title: &tr("Terminal Position"),
+                    set_subtitle: &tr("Where the terminal opens when toggled with F4"),
+                    add_suffix = &gtk::DropDown::from_strings(&[
+                        tr("Bottom").as_str(),
+                        tr("Sidebar").as_str(),
+                        tr("Fullscreen").as_str(),
+                    ]) {
+                        set_valign: gtk::Align::Center,
+                        set_selected: match config.ui.terminal.position {
+                            crate::model::TerminalPosition::Bottom => 0,
+                            crate::model::TerminalPosition::Sidebar => 1,
+                            crate::model::TerminalPosition::Fullscreen => 2,
+                        },
+                        connect_selected_notify => move |drop| {
+                            let pos = match drop.selected() {
+                                0 => crate::model::TerminalPosition::Bottom,
+                                1 => crate::model::TerminalPosition::Sidebar,
+                                2 => crate::model::TerminalPosition::Fullscreen,
+                                _ => return,
+                            };
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetTerminalPosition(pos));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
                     set_title: &tr("Shell Executable"),
                     set_subtitle: &tr("Custom shell path (e.g., '/bin/zsh'). Leave blank for default"),
                     add_suffix = &gtk::Entry {

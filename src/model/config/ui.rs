@@ -15,9 +15,6 @@ use std::collections::HashMap;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(default)]
 pub struct UIConfig {
-    /// Open the terminal in the right sidebar instead of the bottom pane.
-    #[serde(default)]
-    pub terminal_in_sidebar: bool,
     /// Editor binary or command used when opening diff hunk locations.
     #[serde(default = "default_diff_editor")]
     pub diff_editor: String,
@@ -248,7 +245,6 @@ impl Default for UIConfig {
     fn default() -> Self {
         Self {
             terminal: TerminalConfig::default(),
-            terminal_in_sidebar: false,
             preview_panel_width: default_preview_panel_width(),
             bg_alpha_window: 0.65,
             bg_alpha_sidebar_left: 0.65,

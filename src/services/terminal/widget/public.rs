@@ -24,11 +24,6 @@ impl Terminal {
         self.drawing_area.grab_focus();
     }
 
-    /// Returns `true` if the terminal's drawing area currently holds keyboard focus.
-    pub fn has_focus(&self) -> bool {
-        self.drawing_area.has_focus()
-    }
-
     /// Sends `SIGWINCH` to the shell process so it re-reads `$LINES`/`$COLUMNS`
     /// from `TIOCGWINSZ`. Call this after the pane has settled at its final size.
     pub fn send_sigwinch(&self) {

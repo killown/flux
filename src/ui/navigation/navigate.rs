@@ -217,11 +217,6 @@ impl FluxApp {
                         page.set_title(&title);
                     }
                 }
-
-                let view = self.tabs[self.active_tab_index].files.view.clone();
-                glib::idle_add_local_once(move || {
-                    view.grab_focus();
-                });
             }
             return;
         }
@@ -301,16 +296,6 @@ impl FluxApp {
                     page.set_title(&title);
                 }
             }
-
-            let view = self.tabs[self.active_tab_index].files.view.clone();
-            let terminal = self.terminal.clone();
-            let terminal_visible = self.terminal_visible;
-            glib::idle_add_local_once(move || {
-                let terminal_has_focus = terminal_visible && terminal.has_focus();
-                if !terminal_has_focus {
-                    view.grab_focus();
-                }
-            });
         }
     }
 
@@ -372,11 +357,6 @@ impl FluxApp {
             entry.set_text(&self.current_path.to_string_lossy());
             entry.set_position(entry.text_length() as i32);
         }
-
-        let view = self.tabs[self.active_tab_index].files.view.clone();
-        glib::idle_add_local_once(move || {
-            view.grab_focus();
-        });
     }
 
     /// Jump to the next sibling folder whose name starts with `letter`.

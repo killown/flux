@@ -29,13 +29,18 @@ pub(super) fn handle(
             app.config.ui.terminal.shell = shell;
             crate::utils::save_config(&app.config);
         }
-        AppMsg::ToggleTerminal => {
-            if app.config.ui.terminal_in_sidebar {
+        // The single place that decides what F4 means: it follows the configured position.
+        AppMsg::ToggleTerminal => match app.config.ui.terminal.position {
+            crate::model::TerminalPosition::Bottom => app.handle_toggle_terminal(),
+            crate::model::TerminalPosition::Sidebar => {
                 app.toggle_sidebar_right_panel(crate::model::RightPanelType::Terminal, sender);
-            } else {
-                app.handle_toggle_terminal();
             }
-        }
+            crate::model::TerminalPosition::Fullscreen => {
+                app.handle_toggle_terminal_fullscreen(sender);
+            }
+        },
+        AppMsg::ToggleTerminalFullscreen => app.handle_toggle_terminal_fullscreen(sender),
+        AppMsg::SetTerminalPosition(pos) => app.handle_set_terminal_position(pos, sender),
         AppMsg::SetTerminalHeight(h) => app.handle_set_terminal_config(Some(h), None, None, None),
         AppMsg::SetTerminalFont(f) => app.handle_set_terminal_config(None, Some(f), None, None),
         AppMsg::SetTerminalFgColor(c) => app.handle_set_terminal_config(None, None, Some(c), None),

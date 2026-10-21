@@ -10,7 +10,7 @@ mod ui;
 pub use actions::{ContextAction, CustomAction, MenuEntry};
 pub use places::{CustomPlace, DeviceRename};
 pub use shortcuts::ShortcutsConfig;
-pub use terminal::TerminalConfig;
+pub use terminal::{TerminalConfig, TerminalPosition};
 pub use thumbnails::ThumbnailTypes;
 pub use ui::UIConfig;
 

@@ -202,6 +202,19 @@ pub struct FluxApp {
     pub terminal_spawned: bool,
     /// Whether the terminal panel is currently visible.
     pub terminal_visible: bool,
+    /// True while the full-window terminal mode is active. Only meaningful
+    /// when `config.ui.terminal.position == TerminalPosition::Fullscreen`.
+    pub terminal_fullscreen: bool,
+    /// Handle to the root `main_stack` (set in `view/init.rs`).
+    pub main_stack: Option<gtk::Stack>,
+    /// Dedicated terminal instance for full-window mode. Lazily created on first
+    /// entry; never reparented into the paned or sidebar. Killed on window close.
+    pub fullscreen_terminal: Option<crate::services::terminal::Terminal>,
+    /// Handle to the container inside the `"terminal"` Stack page.
+    pub fullscreen_terminal_box: Option<gtk::Box>,
+    /// True once the fullscreen terminal has spawned its shell at least once.
+    /// Independent from `terminal_spawned` (bottom pane) and the sidebar panel.
+    pub terminal_spawned_fullscreen: bool,
     /// Indicates whether a background file system operation or directory reload is currently in progress.
     pub is_loading: bool,
     /// Persistent SQLite-backed manager for application state and metadata.

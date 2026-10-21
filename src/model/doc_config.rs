@@ -76,6 +76,7 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.terminal.fg_color", "Terminal foreground color."),
     ("ui.terminal.font", "Terminal font as a Pango font description."),
     ("ui.terminal.height", "Terminal pane height."),
+    ("ui.terminal.position", "Where F4 opens the terminal: `bottom` pane, right `sidebar` panel, or `fullscreen` window."),
     ("ui.thumbnail_size", "Target size in pixels of generated thumbnails."),
     ("ui.thumbnail_threads", "Maximum concurrent thumbnail workers."),
     ("ui.thumbnail_types.audio", "Thumbnails and embedded artwork for audio files."),
@@ -158,7 +159,12 @@ struct Migration {
 }
 
 /// Renamed and removed keys, oldest first.
-const MIGRATIONS: &[Migration] = &[];
+const MIGRATIONS: &[Migration] = &[Migration {
+    old: "ui.terminal_in_sidebar",
+    new: "ui.terminal.position",
+    since: "0.6.0",
+    note: "Replaced by the three-way `position` enum. `true` loads as `\"sidebar\"`, `false` or missing as `\"bottom\"`.",
+}];
 
 /// Collects `(dotted key, default value text)` for every leaf of `value`.
 fn collect_leaves(prefix: &str, value: &toml::Value, out: &mut Vec<(String, String)>) {

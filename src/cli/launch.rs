@@ -1,21 +1,17 @@
 use super::shortcuts::setup_shortcuts;
 use super::watcher::setup_config_watcher;
-use crate::model::{AppInit, AppMsg, FluxApp};
+use crate::model::{AppInit, AppMsg, FluxApp, WindowOptions};
 use adw::prelude::*;
 use adw::{gio, glib};
 use relm4::prelude::*;
 use std::path::PathBuf;
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn launch_main_app(
     start_path: PathBuf,
     open_archive: Option<PathBuf>,
     quick_list: Option<Vec<PathBuf>>,
     tag_search: Option<String>,
-    no_sidebar: bool,
-    no_header: bool,
-    no_statusbar: bool,
-    preview: bool,
+    opts: flux::args::WindowOptions,
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms.
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
@@ -60,9 +56,14 @@ pub(super) fn launch_main_app(
         open_archive,
         quick_list,
         tag_search,
-        no_sidebar,
-        no_header,
-        no_statusbar,
-        preview,
+        // `flux::args::WindowOptions` is the library crate's type; this binary compiles
+        // its own copy of `model`, so the options are carried over field by field.
+        opts: WindowOptions {
+            no_sidebar: opts.no_sidebar,
+            no_header: opts.no_header,
+            no_statusbar: opts.no_statusbar,
+            terminal: opts.terminal,
+            preview: opts.preview,
+        },
     });
 }

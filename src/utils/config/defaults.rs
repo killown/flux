@@ -1,9 +1,38 @@
 use crate::i18n::tr;
-use crate::model::TerminalConfig;
+use crate::model::{TerminalConfig, TerminalPosition};
 use std::fs;
 use std::path::PathBuf;
 
-use super::cache::save_config;
+use super::cache::{invalidate_config_cache, save_config};
+
+/// Reads the legacy `ui.terminal_in_sidebar` bool out of the raw config text.
+///
+/// Deliberately parses the raw TOML rather than a `UIConfig` field: the key is
+/// written only by pre-0.6 Flux and must never be serialized again. Returns `None`
+/// when the key is absent, not a bool, or the text is not valid TOML.
+fn legacy_terminal_in_sidebar(raw: &str) -> Option<bool> {
+    toml::from_str::<toml::Value>(raw)
+        .ok()?
+        .get("ui")?
+        .get("terminal_in_sidebar")?
+        .as_bool()
+}
+
+/// One-shot: migrates the legacy `ui.terminal_in_sidebar` bool into
+/// `ui.terminal.position`. `true` becomes `Sidebar` unless the user has already
+/// picked a position; `false` leaves the default `Bottom`.
+///
+/// Returns `true` when the key was present, i.e. `config.toml` must be rewritten.
+/// The rewrite drops the key, because `Config` no longer has a field for it.
+fn migrate_legacy_terminal_position(config: &mut crate::model::Config, raw: &str) -> bool {
+    let Some(legacy) = legacy_terminal_in_sidebar(raw) else {
+        return false;
+    };
+    if legacy && config.ui.terminal.position == TerminalPosition::Bottom {
+        config.ui.terminal.position = TerminalPosition::Sidebar;
+    }
+    true
+}
 
 pub(super) fn load_config_from_disk() -> crate::model::Config {
     let config_dir = dirs::config_dir()
@@ -39,6 +68,7 @@ height = 50
 fg_color = ""
 bg_color = ""
 font = "JetBrains Mono 11"
+position = "bottom"
 
 [ui.thumbnail_types]
 images = true
@@ -188,7 +218,6 @@ path = "actions://"
                 ui: crate::model::UIConfig {
                     fish_theme: false,
                     terminal: TerminalConfig::default(),
-                    terminal_in_sidebar: false,
                     preview_syntax_highlighting: true,
                     wide_preview: false,
                     archive_thumbnail_cache: false,
@@ -268,6 +297,16 @@ path = "actions://"
         }
     };
 
+    // One-shot: migrate the legacy `ui.terminal_in_sidebar` bool into
+    // `ui.terminal.position`. Runs before the sidebar names are translated, so
+    // the rewritten file keeps the untranslated names.
+    if migrate_legacy_terminal_position(&mut config, &config_content) {
+        save_config(&config); // rewrites config.toml without the old key
+        // `save_config` primed the cache with this pre-translation copy. Drop it so
+        // `load_config` caches the final config below instead.
+        invalidate_config_cache();
+    }
+
     // Translate standard sidebar headers and items dynamically
     for item in &mut config.sidebar {
         item.name = match item.name.as_str() {
@@ -318,4 +357,74 @@ path = "actions://"
     }
 
     config
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Config;
+
+    /// Parses `raw` like `load_config_from_disk`, migrates, and returns the config.
+    fn load(raw: &str) -> (Config, bool) {
+        let mut config: Config = toml::from_str(raw).unwrap();
+        let rewrite = migrate_legacy_terminal_position(&mut config, raw);
+        (config, rewrite)
+    }
+
+    #[test]
+    fn legacy_terminal_in_sidebar_true_migrates_to_sidebar_and_drops_the_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.toml");
+        std::fs::write(&path, "[ui]\nterminal_in_sidebar = true\n").unwrap();
+
+        let raw = std::fs::read_to_string(&path).unwrap();
+        let (config, rewrite) = load(&raw);
+        assert!(rewrite);
+        assert_eq!(config.ui.terminal.position, TerminalPosition::Sidebar);
+
+        // `save_config` writes exactly `toml::to_string_pretty(&config)`.
+        std::fs::write(&path, toml::to_string_pretty(&config).unwrap()).unwrap();
+        let rewritten = std::fs::read_to_string(&path).unwrap();
+        assert!(
+            !rewritten.contains("terminal_in_sidebar"),
+            "legacy key survived the rewrite:\n{rewritten}"
+        );
+        assert!(rewritten.contains("position = \"sidebar\""));
+
+        // One-shot: the rewritten file has nothing left to migrate.
+        let (reloaded, rewrite_again) = load(&rewritten);
+        assert!(!rewrite_again);
+        assert_eq!(reloaded.ui.terminal.position, TerminalPosition::Sidebar);
+    }
+
+    #[test]
+    fn legacy_terminal_in_sidebar_false_stays_bottom_but_still_drops_the_key() {
+        let (config, rewrite) = load("[ui]\nterminal_in_sidebar = false\n");
+        assert!(rewrite);
+        assert_eq!(config.ui.terminal.position, TerminalPosition::Bottom);
+        assert!(!toml::to_string_pretty(&config)
+            .unwrap()
+            .contains("terminal_in_sidebar"));
+    }
+
+    #[test]
+    fn missing_legacy_key_needs_no_rewrite() {
+        let (config, rewrite) = load("[ui]\n");
+        assert!(!rewrite);
+        assert_eq!(config.ui.terminal.position, TerminalPosition::Bottom);
+    }
+
+    #[test]
+    fn an_explicit_position_wins_over_the_legacy_key() {
+        let (config, rewrite) = load(
+            "[ui]\nterminal_in_sidebar = true\n\n[ui.terminal]\nposition = \"fullscreen\"\n",
+        );
+        assert!(rewrite);
+        assert_eq!(config.ui.terminal.position, TerminalPosition::Fullscreen);
+    }
+
+    #[test]
+    fn invalid_toml_is_not_migrated() {
+        assert_eq!(legacy_terminal_in_sidebar("[ui\nterminal_in_sidebar = true"), None);
+    }
 }

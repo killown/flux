@@ -401,9 +401,10 @@ impl FluxApp {
         // Keep whichever embedded terminal is currently visible in sync with
         // navigation. The bottom pane and the sidebar panel are mutually
         // exclusive: only one is spawned at a time, so only one needs to be
-        // respawned here.
+        // respawned here. The full-window terminal is deliberately absent: its
+        // shell keeps running (and keeps its own cwd) across navigation.
         let active_terminal: Option<crate::services::terminal::Terminal> =
-            if self.config.ui.terminal_in_sidebar && self.terminal_panel_visible {
+            if self.terminal_panel_visible {
                 self.sidebar_terminal.clone()
             } else if self.terminal_visible {
                 Some(self.terminal.clone())

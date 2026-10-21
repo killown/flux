@@ -1,6 +1,8 @@
 use std::io::BufRead;
 use std::path::PathBuf;
 
+pub use crate::model::WindowOptions;
+
 /// Every command-line option as `(flags, description)`, shared by `--help` and `docs/cli.md`.
 pub const CLI_OPTIONS: &[(&str, &str)] = &[
     ("-h, --help", "Print this help message"),
@@ -8,6 +10,10 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
     ("    --no-sidebar", "Disable sidebar for this session"),
     ("    --no-header", "Disable header bar for this session"),
     ("    --no-statusbar", "Disable statusbar for this session"),
+    (
+        "    --terminal",
+        "Start with the terminal open in the configured position",
+    ),
     (
         "    --file-properties PATH",
         "Open the file properties window for PATH",
@@ -146,32 +152,15 @@ pub fn parse_icon_pair(line: &str) -> Result<(PathBuf, PathBuf), String> {
 #[derive(Debug, PartialEq)]
 pub enum StartupAction {
     /// Launch the main file-manager window starting at the given path.
-    Launch {
-        path: PathBuf,
-        no_sidebar: bool,
-        no_header: bool,
-        no_statusbar: bool,
-    },
+    Launch { path: PathBuf, opts: WindowOptions },
     /// Launch the main window at the given path with the preview panel open in wide mode.
-    Preview {
-        path: PathBuf,
-        no_sidebar: bool,
-        no_header: bool,
-        no_statusbar: bool,
-    },
+    Preview { path: PathBuf, opts: WindowOptions },
     /// Launch the main window with an active tag search filter applied.
-    TagSearch {
-        tag: String,
-        no_sidebar: bool,
-        no_header: bool,
-        no_statusbar: bool,
-    },
+    TagSearch { tag: String, opts: WindowOptions },
     /// Launch the main window with pre-seeded quick-panel triage items.
     QuickList {
         paths: Vec<PathBuf>,
-        no_sidebar: bool,
-        no_header: bool,
-        no_statusbar: bool,
+        opts: WindowOptions,
     },
     /// Open the archive-explorer window for the given path.
     OpenArchive(PathBuf),
@@ -214,9 +203,7 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
     home_dir: PathBuf,
     reader: R,
 ) -> StartupAction {
-    let mut no_sidebar = false;
-    let mut no_header = false;
-    let mut no_statusbar = false;
+    let mut opts = WindowOptions::default();
     let mut filtered_args = Vec::new();
 
     for (i, arg) in args.iter().enumerate() {
@@ -224,9 +211,10 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             continue;
         }
         match arg.as_str() {
-            "--no-sidebar" => no_sidebar = true,
-            "--no-header" => no_header = true,
-            "--no-statusbar" => no_statusbar = true,
+            "--no-sidebar" => opts.no_sidebar = true,
+            "--no-header" => opts.no_header = true,
+            "--no-statusbar" => opts.no_statusbar = true,
+            "--terminal" => opts.terminal = true,
             _ => filtered_args.push(arg.as_str()),
         }
     }
@@ -235,9 +223,7 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
     match positional {
         None => StartupAction::Launch {
             path: home_dir,
-            no_sidebar,
-            no_header,
-            no_statusbar,
+            opts,
         },
         Some("--version" | "-v") => StartupAction::PrintVersion,
         Some("--help" | "-h") => StartupAction::PrintHelp,
@@ -269,9 +255,10 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
                 if path.is_dir() {
                     StartupAction::Preview {
                         path,
-                        no_sidebar,
-                        no_header,
-                        no_statusbar,
+                        opts: WindowOptions {
+                            preview: true,
+                            ..opts
+                        },
                     }
                 } else {
                     StartupAction::InvalidArgument(format!(
@@ -290,12 +277,7 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             if list.is_empty() {
                 StartupAction::PrintHelp
             } else {
-                StartupAction::QuickList {
-                    paths: list,
-                    no_sidebar,
-                    no_header,
-                    no_statusbar,
-                }
+                StartupAction::QuickList { paths: list, opts }
             }
         }
         Some("--quick-list-stdin") => {
@@ -309,17 +291,10 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             if list.is_empty() {
                 StartupAction::Launch {
                     path: home_dir,
-                    no_sidebar,
-                    no_header,
-                    no_statusbar,
+                    opts,
                 }
             } else {
-                StartupAction::QuickList {
-                    paths: list,
-                    no_sidebar,
-                    no_header,
-                    no_statusbar,
-                }
+                StartupAction::QuickList { paths: list, opts }
             }
         }
         Some(arg) if arg.starts_with('-') => StartupAction::UnknownFlag(arg.to_string()),
@@ -336,21 +311,14 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
                     .trim_start_matches('#');
                 StartupAction::TagSearch {
                     tag: format!("#{clean}"),
-                    no_sidebar,
-                    no_header,
-                    no_statusbar,
+                    opts,
                 }
             } else {
                 let p = uri_to_path(path);
                 if p.is_file() && crate::services::archive::is_supported_archive(&p) {
                     StartupAction::OpenArchive(p)
                 } else {
-                    StartupAction::Launch {
-                        path: p,
-                        no_sidebar,
-                        no_header,
-                        no_statusbar,
-                    }
+                    StartupAction::Launch { path: p, opts }
                 }
             }
         }

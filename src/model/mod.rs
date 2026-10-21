@@ -13,7 +13,7 @@ pub use app::{AltCycle, FilterMode, FluxApp};
 pub use config::ContextAction;
 pub use config::{
     Config, CustomAction, CustomPlace, DeviceRename, MenuEntry, ShortcutsConfig, TerminalConfig,
-    ThumbnailTypes, UIConfig,
+    TerminalPosition, ThumbnailTypes, UIConfig,
 };
 #[allow(unused_imports)]
 // used by `src/lib.rs` for `gen-docs`, not linked by the `flux-fm` binary alone
@@ -23,5 +23,6 @@ pub use msg::AppMsg;
 #[allow(unused_imports)]
 pub use types::ConflictResolver;
 pub use types::{
-    AppInit, BackgroundSlot, CachedFolder, PathSegment, RightPanelType, SortBy, SENDER,
+    AppInit, BackgroundSlot, CachedFolder, PathSegment, RightPanelType, SortBy, WindowOptions,
+    SENDER,
 };

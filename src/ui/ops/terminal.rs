@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::model::{AppMsg, FluxApp, RightPanelType, TerminalPosition};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;
@@ -120,5 +120,164 @@ impl FluxApp {
                 term.send_sigwinch();
             });
         }
+    }
+
+    /// Working directory for a freshly spawned terminal: the archive's parent
+    /// directory, `$HOME` on network locations, otherwise the current path.
+    fn terminal_working_dir(&self) -> String {
+        let path_str = self.current_path.to_string_lossy();
+        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            crate::services::archive::parse_archive_uri(&path_str)
+                .map(|(archive_path, _)| {
+                    archive_path
+                        .parent()
+                        .map(|p| p.to_string_lossy().to_string())
+                        .unwrap_or_else(|| "/".to_string())
+                })
+                .unwrap_or_else(|| "/".to_string())
+        } else if crate::services::network::is_network_uri(&self.current_path) {
+            env::var("HOME").unwrap_or_else(|_| "/".to_string())
+        } else {
+            self.current_path.to_str().unwrap_or("/").to_string()
+        }
+    }
+
+    /// Enters or leaves the full-window terminal. The file-manager page of
+    /// `main_stack` is swapped out, never destroyed, so leaving restores it as it was.
+    ///
+    /// The shell is never killed or respawned on leave: a running vim, htop or
+    /// compile survives F4 out and F4 in. It is only killed on window close or
+    /// application shutdown (see `register_terminal_shutdown`).
+    pub fn handle_toggle_terminal_fullscreen(&mut self, sender: &AsyncComponentSender<Self>) {
+        let Some(stack) = self.main_stack.clone() else {
+            return;
+        };
+
+        if self.terminal_fullscreen {
+            self.terminal_fullscreen = false;
+            stack.set_visible_child_name("fm");
+
+            if let Some(term) = &self.fullscreen_terminal {
+                term.send_sigwinch();
+            }
+            // Mirror `toggle_sidebar_right_panel`'s close-focus: hand focus back to the grid.
+            if let Some(tab) = self.tabs.get(self.active_tab_index) {
+                tab.files.view.grab_focus();
+            }
+            return;
+        }
+
+        // Entering: nothing of the file manager stays visible, so stop its media.
+        self.stop_video_preview();
+        if self.preview_panel_visible {
+            crate::ui::panels::preview_registry::with(|h| h.stop_media());
+        }
+
+        if self.fullscreen_terminal.is_none() {
+            let Some(host) = self.fullscreen_terminal_box.clone() else {
+                return;
+            };
+
+            let term = crate::services::terminal::Terminal::new(&self.config.ui.terminal);
+            crate::ui::startup::wire_terminal_theme(&term, &self.config.ui.terminal);
+
+            // `capture.rs` and `navigation.rs` yield to any focused widget with this class.
+            term.drawing_area.add_css_class("flux-terminal-area");
+            term.drawing_area.set_hexpand(true);
+            term.drawing_area.set_vexpand(true);
+            host.append(&term.drawing_area);
+
+            {
+                let s = sender.clone();
+                term.set_cwd_callback(move |path| {
+                    s.input(AppMsg::TerminalCwdChanged(path));
+                });
+            }
+
+            // Unlike the bottom pane (see `build_terminal`), F4 here must dispatch
+            // `ToggleTerminalFullscreen` directly: we are already in the full-window
+            // terminal, where F4 means "leave". The position cannot change while this
+            // terminal is shown, because `SetTerminalPosition` closes it first.
+            crate::ui::startup::attach_terminal_key_controller(
+                &term,
+                sender,
+                AppMsg::ToggleTerminalFullscreen,
+            );
+            crate::ui::startup::attach_terminal_mouse_controllers(&term);
+            crate::ui::startup::register_terminal_shutdown(&term, &stack);
+
+            self.fullscreen_terminal = Some(term);
+        }
+
+        self.terminal_fullscreen = true;
+        stack.set_visible_child_name("terminal");
+
+        let Some(term) = self.fullscreen_terminal.clone() else {
+            return;
+        };
+
+        if !self.terminal_spawned_fullscreen {
+            // The spawn callback is `Send + 'static` and cannot touch `self`, so the
+            // flag is set here, like `handle_toggle_terminal` does for the bottom pane.
+            self.terminal_spawned_fullscreen = true;
+            let working_dir = self.terminal_working_dir();
+
+            // Spawn from an idle so the Stack page is already visible when the PTY is
+            // sized. If it still has no allocation, `spawn_async` flags the PTY for an
+            // initial SIGWINCH.
+            glib::idle_add_local_once(move || {
+                let mut term_spawn = term.clone();
+                term_spawn.spawn_async(
+                    0,
+                    Some(&working_dir),
+                    &[],
+                    &[],
+                    0,
+                    || {},
+                    -1,
+                    None,
+                    |result| {
+                        if let Err(e) = result {
+                            eprintln!("[flux] fullscreen terminal spawn: {e}");
+                        }
+                    },
+                );
+                glib::idle_add_local_once(move || {
+                    term.grab_focus();
+                    term.send_sigwinch();
+                });
+            });
+        } else {
+            term.send_sigwinch();
+            glib::idle_add_local_once(move || {
+                term.grab_focus();
+            });
+        }
+    }
+
+    /// Persists the terminal position. An open terminal is closed first, in whatever
+    /// position it is in. The new position is never opened automatically: changing a
+    /// preference is not a request for a terminal, that is F4 or `--terminal`.
+    pub fn handle_set_terminal_position(
+        &mut self,
+        pos: TerminalPosition,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        if pos == self.config.ui.terminal.position {
+            return;
+        }
+
+        if self.terminal_fullscreen && pos != TerminalPosition::Fullscreen {
+            self.handle_toggle_terminal_fullscreen(sender);
+        }
+        if self.terminal_panel_visible && pos != TerminalPosition::Sidebar {
+            self.toggle_sidebar_right_panel(RightPanelType::Terminal, sender);
+        }
+        if self.terminal_visible && pos != TerminalPosition::Bottom {
+            self.handle_toggle_terminal();
+        }
+
+        self.config.ui.terminal.position = pos;
+        crate::utils::save_config(&self.config);
     }
 }

@@ -15,7 +15,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 &tr("Toggle folders first in current directory"),
                 &sc(config, |s| s.toggle_folders_first.clone(), "F3"),
             ),
-            row(&tr("Toggle embedded terminal"), "F4"),
+            row(
+                &tr("Toggle embedded terminal (bottom pane, sidebar, or full window — see Settings → Terminal)"),
+                "F4",
+            ),
             row(
                 &tr("Refresh current directory"),
                 &sc(config, |s| s.refresh.clone(), "F5"),

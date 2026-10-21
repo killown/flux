@@ -76,8 +76,20 @@ impl SimpleAsyncComponent for FluxApp {
             #[watch]
             set_decorated: model.config.ui.show_csd,
 
+            // Root stack: the file manager ("fm", first child, so visible by default)
+            // and the full-window terminal ("terminal"). A Stack rather than an
+            // Overlay, so the hidden page is unmapped and its controllers are inert.
+            // The "fm" subtree below is intentionally not re-indented, to keep the
+            // diff reviewable.
+            #[name = "main_stack"]
+            gtk::Stack {
+                set_hexpand: true,
+                set_vexpand: true,
+                set_transition_type: gtk::StackTransitionType::Crossfade,
+                set_transition_duration: 150,
+
             /// UI LAYOUT
-            gtk::Box {
+            add_child = &gtk::Box {
                 set_orientation: gtk::Orientation::Horizontal,
                 set_hexpand: true,
                 set_vexpand: true,
@@ -1018,6 +1030,16 @@ impl SimpleAsyncComponent for FluxApp {
                     set_reveal_child: false,
                     set_visible: false,
                 },
+            } -> { set_name: "fm" },
+
+            /// Host for the full-window terminal; empty until it is first used.
+            #[name = "fullscreen_terminal_box"]
+            add_child = &gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_spacing: 0,
+                set_hexpand: true,
+                set_vexpand: true,
+            } -> { set_name: "terminal" },
             }
         }
     }
@@ -1037,10 +1059,7 @@ impl SimpleAsyncComponent for FluxApp {
             open_archive,
             quick_list,
             tag_search,
-            no_sidebar,
-            no_header,
-            no_statusbar,
-            preview,
+            opts,
         } = init;
         crate::hit!("view::init");
 
@@ -1048,13 +1067,19 @@ impl SimpleAsyncComponent for FluxApp {
             start_path,
             quick_list,
             tag_search,
-            no_sidebar,
-            no_header,
-            no_statusbar,
+            opts.no_sidebar,
+            opts.no_header,
+            opts.no_statusbar,
             &root,
             sender.clone(),
         )
         .await;
+        // `--terminal` wins over `--preview` when the position is Fullscreen: the
+        // full-window terminal hides the preview panel, so it is not opened at all.
+        // Documented in docs/cli.md. For Bottom and Sidebar both open.
+        let preview = opts.preview
+            && !(opts.terminal
+                && model.config.ui.terminal.position == crate::model::TerminalPosition::Fullscreen);
         model.startup_preview = preview;
         let toast_overlay = &model.toast_overlay;
         let quick_panel_box = model.quick_panel_box.clone();
@@ -1076,6 +1101,16 @@ impl SimpleAsyncComponent for FluxApp {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
                 s.input(crate::model::AppMsg::StartupPreview);
+            });
+        }
+
+        // CLI `--terminal`: dispatch `ToggleTerminal`, not `ToggleTerminalFullscreen`,
+        // so the dispatcher in `update/network.rs` opens whichever position the config
+        // says (bottom pane, sidebar panel or full window).
+        if opts.terminal {
+            let s = sender.clone();
+            gtk::glib::idle_add_local_once(move || {
+                s.input(crate::model::AppMsg::ToggleTerminal);
             });
         }
 

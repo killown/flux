@@ -7,11 +7,14 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
-    /// Persists the terminal location preference and closes the bottom
-    /// terminal pane if it was open when moving to the sidebar.
-    SetTerminalSidebar(bool),
-    /// Toggles the visibility of the right-side terminal panel when
-    /// `config.ui.terminal_in_sidebar` is set.
+    /// Toggles the full-window terminal mode. F4 in Fullscreen position, the
+    /// `--terminal` startup flag (when position is Fullscreen), and the
+    /// `ToggleTerminal` dispatcher all funnel here when position is Fullscreen.
+    ToggleTerminalFullscreen,
+    /// Sets the terminal position (Bottom / Sidebar / Fullscreen) and persists it.
+    /// Emitted by the Settings dropdown.
+    SetTerminalPosition(crate::model::TerminalPosition),
+    /// Toggles the visibility of the right-side terminal panel.
     ToggleTerminalPanel,
     /// Reload the contextual-actions panel after its template file was
     /// edited from the in-panel editor.

@@ -362,6 +362,9 @@ impl FluxApp {
                         default_width,
                         sender.clone(),
                     );
+                    // The terminal is created lazily, long after `setup_window`, so
+                    // its shutdown hooks are registered here, once it exists.
+                    crate::ui::startup::register_terminal_shutdown(&term, &revealer);
                     self.sidebar_terminal = Some(term);
                     root
                 }
