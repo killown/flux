@@ -1,3 +1,6 @@
+/// Shortest content-search term accepted, counted in bytes, not characters.
+pub const MIN_CONTENT_TERM_LEN: usize = 3;
+
 pub const CONTENT_QUERY_SYNTAXES: &[(&str, &str)] = &[
     (":TERM", "Search all files for TERM"),
     (
@@ -28,7 +31,7 @@ pub fn parse_content_search_query(query: &str) -> Option<(String, Option<String>
         let ext_part = rest[..second_col_pos].trim();
         let term_part = rest[second_col_pos + 1..].trim();
 
-        if term_part.len() < 3 {
+        if term_part.len() < MIN_CONTENT_TERM_LEN {
             return None;
         }
         let ext_filter = if ext_part.starts_with('.') && ext_part.len() > 1 {
@@ -39,7 +42,7 @@ pub fn parse_content_search_query(query: &str) -> Option<(String, Option<String>
         Some((term_part.to_string(), ext_filter))
     } else {
         let term = rest.trim();
-        if term.starts_with('.') || term.len() < 3 {
+        if term.starts_with('.') || term.len() < MIN_CONTENT_TERM_LEN {
             return None;
         }
         Some((term.to_string(), None))

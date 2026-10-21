@@ -1,3 +1,6 @@
+use crate::services::constants::{
+    CONTENT_SEARCH_BINARY_SNIFF_BYTES as BINARY_SNIFF, CONTENT_SEARCH_CHUNK_BYTES as CHUNK,
+};
 use aho_corasick::AhoCorasick;
 use std::fs::File;
 use std::io::{self, Read};
@@ -6,9 +9,7 @@ use std::os::unix::fs::FileExt;
 #[allow(dead_code)]
 pub const DEFAULT_MAX_FILE_BYTES: u64 = 128 * 1024 * 1024;
 
-const CHUNK: usize = 256 * 1024;
 const SNIPPET_MAX: usize = 1024;
-const BINARY_SNIFF: usize = 1024;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Hit {

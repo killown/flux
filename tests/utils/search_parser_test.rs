@@ -267,3 +267,16 @@ fn parse_size_filter_tb_lowercase() {
 fn parse_size_filter_naive_range_rejected() {
     assert!(parse_size_filter("10MB-50MB").is_none());
 }
+
+#[test]
+fn min_term_len_is_counted_in_bytes() {
+    assert!(parse_content_search_query(":ab").is_none());
+    assert!(parse_content_search_query(":abc").is_some());
+    // One character, three bytes.
+    assert!(parse_content_search_query(":日").is_some());
+    // Two characters, two bytes.
+    assert!(parse_content_search_query(":éé").is_some());
+    assert!(parse_content_search_query(":é").is_none());
+    assert!(parse_content_search_query(":.rs:ab").is_none());
+    assert!(parse_content_search_query(":.rs:abc").is_some());
+}

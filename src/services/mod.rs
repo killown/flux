@@ -15,4 +15,12 @@ pub mod trash;
 
 pub mod constants {
     pub const MAX_CONTENT_SEARCH_RESULTS: usize = 100;
+    /// Recursive filename search flushes a batch to the UI at this many results.
+    pub const SEARCH_BATCH_SIZE: usize = 500;
+    /// Recursive filename search flushes a non-empty batch after this many milliseconds.
+    pub const SEARCH_FLUSH_INTERVAL_MS: u64 = 16;
+    /// Content search reads files in blocks of this many bytes.
+    pub const CONTENT_SEARCH_CHUNK_BYTES: usize = 256 * 1024;
+    /// Content search skips a file with a NUL byte in its first this-many bytes.
+    pub const CONTENT_SEARCH_BINARY_SNIFF_BYTES: usize = 1024;
 }

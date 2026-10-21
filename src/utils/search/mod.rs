@@ -6,7 +6,7 @@ mod fuzzy;
 mod size;
 mod tag;
 
-pub use content_query::parse_content_search_query;
+pub use content_query::{parse_content_search_query, MIN_CONTENT_TERM_LEN};
 #[allow(unused_imports)]
 // used by `src/lib.rs` for `gen-docs`, not linked by the `flux-fm` binary alone
 pub use doc::render_search_markdown;

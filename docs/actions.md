@@ -1,6 +1,6 @@
 # Actions
 
-Flux's context menus are defined by `menu.rs` (and `menus/menu-*.rs`) files in `~/.config/flux/`. Each line is:
+The right-click menu is defined by `~/.config/flux/menu.rs`. Ctrl+right-click and the contextual actions panel read a `menu-*.rs` template instead, chosen by the MIME type of the item: `menu-<category>-<subtype>.rs`, else `menu-<category>-all.rs`, else `menu-all.rs`. Templates are looked up in `~/.config/flux/menus/` first, then in `~/.config/flux/`. Every line of these files is:
 
 ```text
 "Label" => "mime_types", "command"[, "toast"][, "no_command_dialog"]
@@ -10,15 +10,20 @@ Flux's context menus are defined by `menu.rs` (and `menus/menu-*.rs`) files in `
 
 ## Placeholders
 
-Shell commands may contain the following placeholders. Each is substituted by `build_execution_command` before the command is run, and the substituted value is shell-quoted:
+Shell commands may contain the following placeholders. Which one is used depends on how many items the command targets: the selection, or the item the menu was opened on when it is not selected, or the current directory when there is neither.
 
-| Placeholder | Meaning |
-|---|---|
-| `%p` | Absolute path of the selected item |
-| `%d` | Parent directory of the selected item |
-| `%f` | Filename of the selected item |
-| `%l` | Line number of the current content-search hit (0 otherwise) |
-| `%cwd` | Current working directory |
+| Placeholder | One target | Several targets |
+|---|---|---|
+| `%p` | Absolute path of the item | All the paths, shell-quoted and separated by spaces |
+| `%d` | Parent directory of the item | The current directory |
+| `%f` | File name of the item | Not substituted |
+| `%l` | Line number of the content-search hit, `0` when the item is not a hit | `0` |
+
+Every substituted path is wrapped in single quotes, with any `'` inside it escaped. A `"%p"` or `'%p'` written in the command is replaced together with its quotes, so don't add your own. If a path contains a newline, a carriage return or a NUL byte, the command is not run and Flux shows a toast.
+
+A menu entry whose command contains `%l` is shown only for a content-search hit, and never in the contextual actions panel.
+
+The toast of a `menu.rs` shell command is shown after it exits, and a failed command without a toast shows `Command failed`. An entry from a `menu-*.rs` template shows its toast as soon as it is clicked.
 
 ## Builtin actions
 
@@ -66,7 +71,7 @@ Submenu - the part before `>` becomes a submenu group:
 "Image Convert > To PNG" => "image/webp", "magick %p %p.png"
 ```
 
-Placeholder plus toast - `%f` is substituted, then the toast is shown after the command exits:
+Placeholder plus toast - `%p` is substituted, then the toast is shown after the command exits:
 
 ```text
 "Optimise Image" => "image/png", "oxipng %p", "Image optimised"

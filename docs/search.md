@@ -1,10 +1,10 @@
 # Search
 
-Flux has four independent search surfaces, all sharing the same query language:
+Flux has four search surfaces:
 
-- **Live filter** - the search bar at the top of the window. Filters the current directory as you type. No disk walk.
-- **Recursive search** - triggered by `*` or a `.ext` in the search bar, or by the **Search inside subfolders** switch in the advanced panel. Walks the current directory tree.
-- **Content search** - triggered by `:term` or `:.ext:term` in the search bar. Reads file contents.
+- **Live filter** - the search bar at the top of the window. A fuzzy, case-insensitive match on the file names of the current directory, updated as you type. No disk walk.
+- **Recursive search** - starts from the search bar when the query contains `*` or `?` and is longer than one character, or from the advanced panel. Walks the current directory tree.
+- **Content search** - `:term` or `:.ext:term` in the search bar, started with Enter, or the **Inside files** field of the advanced panel. Reads file contents.
 - **Tag filter** - triggered by `#name`, `:tag:name`, or `:t:name`. Looks up files by extended-attribute tag.
 
 ## Size filters
@@ -22,13 +22,15 @@ Prepend `>` or `<` to a size token, or use a `..` range, to filter by file size.
 
 The `ib` and `b` suffixes are stripped before the unit is looked up, so `10MB`, `10MiB`, and `10M` all mean 10 MiB.
 
+In the live filter, the rest of the query is a case-insensitive substring match on the name, and folders always pass the size filter. A query containing `*` or `?` is read as one glob, so it cannot be combined with a size token.
+
 Examples:
 
 ```text
 >10MB
 <500KB
 10MB..50MB
-*.rs >10MB
+report >10MB
 ```
 
 ## Tag filters
@@ -53,7 +55,7 @@ Multiple tags are AND-ed. A free-text query after the tag list is also AND-ed:
 
 ## Content search
 
-Prefix the query with `:` to search inside file contents. The search walks the current directory recursively, reads each file in chunks, and returns the first matching line per file.
+Prefix the query with `:` to search inside file contents, then press Enter. Content search never starts while you type. It walks the current directory recursively and returns the first match of each file.
 
 <!-- BEGIN GENERATED: content-syntaxes -->
 | Syntax | Meaning |
@@ -62,7 +64,7 @@ Prefix the query with `:` to search inside file contents. The search walks the c
 | `:.EXT:TERM` | Search only files with extension EXT for TERM |
 <!-- END GENERATED: content-syntaxes -->
 
-The term must be at least 3 characters. Multiple extensions can be comma-separated:
+The term must be at least 3 bytes long, not 3 characters. Multiple extensions can be comma-separated:
 
 ```text
 :hello
@@ -70,31 +72,38 @@ The term must be at least 3 characters. Multiple extensions can be comma-separat
 :.rs,py:hello
 ```
 
+Details:
+
+- Matching ignores case for ASCII letters only.
+- Files are read in blocks of 256 KiB.
+- A file is skipped when a NUL byte appears in its first 1024 bytes.
+- A file larger than `ui.content_search_max_file_mb` is skipped. `0` removes the limit.
+- The walk honors `.gitignore`, `.ignore`, the git global and exclude files and the ignore files of parent directories. It follows symlinks and skips hidden files unless the session shows them.
+
 ## Recursive walk
 
-The search bar becomes a recursive walk when any of the following is true:
+The search bar starts a recursive walk when the query contains `*` or `?` and is longer than one character. The whole query is then one glob pattern. A bare `.ext` does not start a walk, it is a fuzzy name filter.
 
-- The query contains `*` or `?`.
-- The query contains `.` followed by at least one non-space character.
-- The advanced panel's **Search inside subfolders** switch is on.
-- The advanced panel's **Only search folders** switch is on.
+The advanced panel starts a walk when **Search inside subfolders**, **Only search folders** or **Regular expression** is on, or when **File name** contains `*` and **Exact match** is off.
 
-Recursive results are shown in list mode, one row per file, with a relative path. The walk is batched into chunks of 500 results and flushed every 16 ms so the GTK main loop is never saturated.
+The walk matches files only, never directories, unless **Only search folders** is on. It honors the same ignore files and symlink rules as content search, and it stops at `ui.max_search_results` results.
+
+Results are shown in list mode, one row per file, with a path relative to the current directory. They reach the window in batches: a batch is flushed when it holds 500 results or after 16 ms, whichever comes first, so the GTK main loop is never saturated. The batching applies to this walk, not to content search.
 
 ## Advanced panel
 
-The **Search** panel (right side, `Ctrl+f` or the toolbar magnifier) exposes the same query language through form fields. Fields map to the walker's parameters as follows:
+`Ctrl+F` (`shortcuts.search`) toggles the **Search** panel on the right and switches the header to the search bar. The panel also opens from the **Search** entry in the sidebar, a place with the path `search://` that the first-run config adds.
 
-| Field | Maps to |
+| Field | Behavior |
 |---|---|
-| File name | Glob pattern(s), `,`-separated |
-| Exact match | Glob pattern without wildcards |
-| Regular expression | `regex:`-prefixed pattern |
-| Inside files | Content search term |
-| Pattern / Extension | Glob pattern(s) or MIME type(s), `,`-separated |
-| Search inside subfolders | Recursive walk |
-| Only search folders | Recursive walk with `is_dir` filter |
-| Include hidden files | Overrides the session `show_hidden` flag |
-| Modified | `>date:<unix>` injected into the query |
-| File size | `size:<op><bytes>` injected into the query |
+| File name | `,`-separated terms. A plain term becomes `*term*`, and words separated by spaces become `*a*b*`. A term that starts or ends with `*` is used as typed. A `*` makes the search recursive unless Exact match or Regular expression is on. |
+| Exact match | The term, lowercased, with no wildcards added. |
+| Regular expression | A case-insensitive regex matched against the file name. Makes the search recursive. An invalid expression shows an error and nothing runs. |
+| Inside files | Content search term, at least 3 bytes. When it is filled, File name, Exact match, Regular expression, Search inside subfolders, Only search folders and Include hidden files are ignored. Pattern / Extension is passed as the extension filter of the content search, so it takes bare extensions such as `rs, py`. |
+| Pattern / Extension | `,`-separated. A bare word such as `rs` becomes `*.rs`, and an entry containing `/` is a MIME type expanded to its extension globs. When File name is also filled, the two are combined into one pattern. |
+| Search inside subfolders | On by default. When off, the search only sets an extension filter on the current folder. |
+| Only search folders | Makes the search recursive and matches directory names. |
+| Include hidden files | Adds hidden files to the walk. It cannot hide files that the session's hidden-files toggle shows. Content search ignores this switch and follows the session toggle. |
+| Modified | Any time, last hour, last 24 hours (`Today`), last 7, 30 or 365 days. Applied by the recursive walk. |
+| File size | Larger or smaller than a number of KB, MB or GB, in units of 1024. The comparison is strict. Applied by the recursive walk. |
 

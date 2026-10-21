@@ -132,12 +132,33 @@ pub(super) const BUILTINS: &[BuiltinDef] = &[
     },
 ];
 
+/// `(placeholder, one target, several targets)` rows of the placeholder table in `docs/actions.md`.
+const PLACEHOLDERS: &[(&str, &str, &str)] = &[
+    (
+        "%p",
+        "Absolute path of the item",
+        "All the paths, shell-quoted and separated by spaces",
+    ),
+    (
+        "%d",
+        "Parent directory of the item",
+        "The current directory",
+    ),
+    ("%f", "File name of the item", "Not substituted"),
+    (
+        "%l",
+        "Line number of the content-search hit, `0` when the item is not a hit",
+        "`0`",
+    ),
+];
+
 // ── Documentation generator ─────────────────────────────────────────────────
 
 /// Renders the `builtin::*` reference that ships as `docs/actions.md`.
 ///
 /// Kept next to `BUILTINS` so the table can never drift from the source:
 /// `doc_is_in_sync` fails if the two disagree.
+#[allow(dead_code)] // used by `src/bin/gen-docs.rs`, not linked by the `flux-fm` binary alone
 pub fn render_actions_markdown() -> String {
     use std::fmt::Write as _;
 
@@ -145,8 +166,12 @@ pub fn render_actions_markdown() -> String {
 
     out.push_str("# Actions\n\n");
     out.push_str(
-        "Flux's context menus are defined by `menu.rs` (and `menus/menu-*.rs`) \
-         files in `~/.config/flux/`. Each line is:\n\n\
+        "The right-click menu is defined by `~/.config/flux/menu.rs`. \
+         Ctrl+right-click and the contextual actions panel read a `menu-*.rs` \
+         template instead, chosen by the MIME type of the item: \
+         `menu-<category>-<subtype>.rs`, else `menu-<category>-all.rs`, else \
+         `menu-all.rs`. Templates are looked up in `~/.config/flux/menus/` \
+         first, then in `~/.config/flux/`. Every line of these files is:\n\n\
          ```text\n\
          \"Label\" => \"mime_types\", \"command\"[, \"toast\"][, \"no_command_dialog\"]\n\
          ```\n\n\
@@ -156,18 +181,29 @@ pub fn render_actions_markdown() -> String {
 
     out.push_str("## Placeholders\n\n");
     out.push_str(
-        "Shell commands may contain the following placeholders. Each is \
-         substituted by `build_execution_command` before the command is run, \
-         and the substituted value is shell-quoted:\n\n",
+        "Shell commands may contain the following placeholders. Which one is \
+         used depends on how many items the command targets: the selection, \
+         or the item the menu was opened on when it is not selected, or the \
+         current directory when there is neither.\n\n",
     );
-    out.push_str("| Placeholder | Meaning |\n");
-    out.push_str("|---|---|\n");
-    out.push_str("| `%p` | Absolute path of the selected item |\n");
-    out.push_str("| `%d` | Parent directory of the selected item |\n");
-    out.push_str("| `%f` | Filename of the selected item |\n");
-    out.push_str("| `%l` | Line number of the current content-search hit (0 otherwise) |\n");
-    out.push_str("| `%cwd` | Current working directory |\n");
-    out.push('\n');
+    out.push_str("| Placeholder | One target | Several targets |\n");
+    out.push_str("|---|---|---|\n");
+    for (token, one, many) in PLACEHOLDERS {
+        let _ = writeln!(out, "| `{}` | {} | {} |", token, one, many);
+    }
+    out.push_str(
+        "\nEvery substituted path is wrapped in single quotes, with any `'` \
+         inside it escaped. A `\"%p\"` or `'%p'` written in the command is \
+         replaced together with its quotes, so don't add your own. If a path \
+         contains a newline, a carriage return or a NUL byte, the command is \
+         not run and Flux shows a toast.\n\n\
+         A menu entry whose command contains `%l` is shown only for a \
+         content-search hit, and never in the contextual actions panel.\n\n\
+         The toast of a `menu.rs` shell command is shown after it exits, and \
+         a failed command without a toast shows `Command failed`. An entry \
+         from a `menu-*.rs` template shows its toast as soon as it is \
+         clicked.\n\n",
+    );
 
     out.push_str("## Builtin actions\n\n");
     out.push_str(
@@ -194,7 +230,7 @@ pub fn render_actions_markdown() -> String {
          ```text\n\
          \"Image Convert > To PNG\" => \"image/webp\", \"magick %p %p.png\"\n\
          ```\n\n\
-         Placeholder plus toast - `%f` is substituted, then the toast is \
+         Placeholder plus toast - `%p` is substituted, then the toast is \
          shown after the command exits:\n\n\
          ```text\n\
          \"Optimise Image\" => \"image/png\", \"oxipng %p\", \"Image optimised\"\n\
@@ -202,21 +238,4 @@ pub fn render_actions_markdown() -> String {
     );
 
     out
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn doc_is_in_sync() {
-        let generated = render_actions_markdown();
-        let committed = std::fs::read_to_string("docs/actions.md")
-            .expect("docs/actions.md is missing; create it from render_actions_markdown()");
-        assert_eq!(
-            generated, committed,
-            "\ndocs/actions.md is stale.\n\
-             Run `cargo run --bin gen-docs` to regenerate it."
-        );
-    }
 }

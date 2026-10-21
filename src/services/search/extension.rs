@@ -1,6 +1,9 @@
 use super::forbidden::forbidden_matcher;
 use super::types::{AdvancedSearchParams, ExtensionMatch};
 use crate::model::{AppMsg, FluxApp};
+use crate::services::constants::{
+    SEARCH_BATCH_SIZE as BATCH_SIZE, SEARCH_FLUSH_INTERVAL_MS as FLUSH_INTERVAL_MS,
+};
 use crate::ui::ops::paste::NEXT_TASK_ID;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
@@ -10,12 +13,6 @@ use std::collections::HashSet;
 use std::os::unix::fs::MetadataExt;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{mpsc, Arc, OnceLock};
-
-/// Results are flushed to the UI in batches of this size to avoid flooding
-/// the GTK main loop with individual messages (critical for patterns like
-/// `*.png` that can match tens of thousands of files).
-const BATCH_SIZE: usize = 500;
-const FLUSH_INTERVAL_MS: u64 = 16;
 
 /// Set `FLUX_DEBUG_SEARCH=1` to make the `search_debug!` macro print to
 /// stderr. Read once and cached, so we pay the env lookup at most once per

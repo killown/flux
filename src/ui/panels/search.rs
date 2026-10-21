@@ -354,7 +354,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 None
             };
 
-            if content_text.len() >= 3 {
+            if content_text.len() >= crate::utils::search::MIN_CONTENT_TERM_LEN {
                 let ext_filter = if pat_text.is_empty() {
                     None
                 } else {
