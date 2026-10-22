@@ -47,7 +47,12 @@ impl FluxApp {
         // ── View & Preferences ───────────────────────────────────────────────
         let view_section = gtk::gio::Menu::new();
         view_section.append(Some(&tr("Preferences")), Some("app.open-settings"));
-        view_section.append(Some(&tr("Keyboard Shortcuts")), Some("app.open-help"));
+
+        // Keyboard Shortcuts (help) - create item manually to set accelerator
+        let help_item =
+            gtk::gio::MenuItem::new(Some(&tr("Keyboard Shortcuts")), Some("app.open-help"));
+        help_item.set_attribute_value("accel", Some(&"F1".to_variant()));
+        view_section.append_item(&help_item);
 
         // Toggle Sidebar - create item manually to set accelerator
         let toggle_item =

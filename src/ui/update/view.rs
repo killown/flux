@@ -1,4 +1,5 @@
 use crate::model::{AppMsg, FluxApp};
+use crate::ui::constants;
 use relm4::prelude::*;
 
 pub(super) fn handle(
@@ -19,6 +20,14 @@ pub(super) fn handle(
             let _ = reply.send(app.get_selection());
         }
         AppMsg::ToggleListMode => app.handle_toggle_list_mode(),
+        AppMsg::ToggleFilterBar => {
+            if app.header_view == constants::VIEW_FILTER {
+                app.handle_clear_extension_filter(sender);
+                app.handle_switch_header(constants::VIEW_PATH.to_string());
+            } else {
+                app.handle_switch_header(constants::VIEW_FILTER.to_string());
+            }
+        }
         AppMsg::ToggleSortOrder => app.handle_toggle_sort_order(sender),
         AppMsg::CycleSort => app.handle_cycle_sort(sender),
         AppMsg::CycleFolderPriority => app.handle_cycle_folder_priority(sender),

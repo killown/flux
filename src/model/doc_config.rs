@@ -45,7 +45,7 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.folder_sort", "Per-folder sort field override, keyed by absolute path."),
     ("ui.folders_first", "Group directories above files."),
     ("ui.grid_spacing", "Pixel spacing between items in the file grid."),
-    ("ui.header_show_filter", "Show the filter button in the header bar."),
+    ("ui.header_show_filter", "Show the filter button in the header bar. `Ctrl+Shift+F` toggles the filter bar while it is hidden."),
     ("ui.header_show_preview", "Show the preview-panel toggle in the header bar."),
     ("ui.header_show_sort", "Show the sort indicator in the header bar."),
     ("ui.header_show_view", "Show the list/grid toggle in the header bar. `Ctrl+Shift+M` toggles the mode while it is hidden."),

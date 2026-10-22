@@ -106,6 +106,16 @@ pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncCompone
                 sender.input(AppMsg::ToggleConnectPanel);
                 glib::Propagation::Stop
             }
+            // Ctrl+Shift+F: toggle the glob-pattern filter bar. Capture phase so
+            // it fires even while the filter entry itself has focus, which is the
+            // one place a user is most likely to press it to dismiss the bar.
+            gdk::Key::f | gdk::Key::F if is_ctrl && is_shift && !is_alt => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleFilterBar);
+                glib::Propagation::Stop
+            }
             // Ctrl+M: toggle ephemeral MIME filter on the selection. Moved
             // here for the same reason as Ctrl+Shift+A: it must work while
             // the peek-preview panel (or any other focused panel) is open.

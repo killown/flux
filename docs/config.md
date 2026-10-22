@@ -87,7 +87,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `folder_sort` | `{}` | Per-folder sort field override, keyed by absolute path. |
 | `folders_first` | `true` | Group directories above files. |
 | `grid_spacing` | `10` | Pixel spacing between items in the file grid. |
-| `header_show_filter` | `true` | Show the filter button in the header bar. |
+| `header_show_filter` | `true` | Show the filter button in the header bar. `Ctrl+Shift+F` toggles the filter bar while it is hidden. |
 | `header_show_preview` | `true` | Show the preview-panel toggle in the header bar. |
 | `header_show_sort` | `true` | Show the sort indicator in the header bar. |
 | `header_show_view` | `true` | Show the list/grid toggle in the header bar. `Ctrl+Shift+M` toggles the mode while it is hidden. |

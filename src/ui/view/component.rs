@@ -581,14 +581,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 ]),
                             },
 
-                            connect_clicked[sender] => move |btn| {
-                                if btn.is_active() {
-                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_FILTER.to_string()));
-                                } else {
-                                    sender.input(AppMsg::ClearExtensionFilter);
-                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
-                                }
-                            },
+                            connect_clicked => AppMsg::ToggleFilterBar,
                         },
 
                         /// Toggle the peek-preview right-side panel.

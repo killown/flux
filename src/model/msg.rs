@@ -726,6 +726,13 @@ pub enum AppMsg {
     ToggleHidden,
     /// Switch between grid card layout and compact list layout.
     ToggleListMode,
+    /// Toggle the glob-pattern filter bar in the header.
+    ///
+    /// Opened by the header filter button and by `Ctrl+Shift+F` while the
+    /// button is hidden. Closing it clears any active extension filter and
+    /// returns the header to the path view. A single toggle message keeps the
+    /// button and the chord on one code path.
+    ToggleFilterBar,
     /// Rotate through available sorting methods.
     CycleSort,
     /// Toggle between "Folders First" and mixed sorting.

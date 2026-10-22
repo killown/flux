@@ -3809,3 +3809,11 @@ msgstr "Falha ao salvar menu.rs"
 #: src/ui/menu/editor/entry_dialog.rs:98
 msgid "Line Position in menu.rs"
 msgstr "Posição da linha em menu.rs"
+
+# ============================================================
+# src/ui/help/page/system_view.rs
+# ============================================================
+
+#: src/ui/help/page/system_view.rs:41
+msgid "Toggle filter bar"
+msgstr "Alternar barra de filtro"

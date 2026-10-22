@@ -38,6 +38,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 &sc(config, |s| s.toggle_hidden.clone(), "Ctrl + H"),
             ),
             row(&tr("Cycle folder/file filter"), "Ctrl + Shift + E"),
+            row(&tr("Toggle filter bar"), "Ctrl + Shift + F"),
             row(
                 &tr("Move selected items to trash"),
                 &sc(config, |s| s.delete.clone(), "Delete"),
