@@ -1,5 +1,6 @@
 //! Shell process spawning over a PTY.
 
+use super::draw::cell_size;
 use super::handler::TerminalHandler;
 use super::Terminal;
 use gtk::gio;
@@ -54,10 +55,7 @@ impl Terminal {
                 .unwrap_or_else(|e| e.into_inner())
                 .font_desc,
         ));
-        layout.set_text("W");
-        let extents = layout.pixel_extents();
-        let char_width = extents.1.width() as f64;
-        let char_height = extents.1.height() as f64;
+        let (char_width, char_height) = cell_size(&layout);
 
         let cols = if width > 0 {
             (width as f64 / char_width).floor() as usize

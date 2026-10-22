@@ -5,6 +5,14 @@ use gtk::cairo::Context;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 
+/// Returns the cell size in pixels, taking the width from the font's real advance so fractional metrics stay on the grid.
+pub(super) fn cell_size(layout: &pango::Layout) -> (f64, f64) {
+    layout.set_text("0");
+    let width = layout.extents().1.width() as f64 / pango::SCALE as f64;
+    let height = layout.pixel_extents().1.height() as f64;
+    (width, height)
+}
+
 pub(super) fn draw_terminal(
     area: &DrawingArea,
     cr: &Context,
@@ -25,10 +33,7 @@ pub(super) fn draw_terminal(
     let layout = area.create_pango_layout(None);
     layout.set_font_description(Some(&state.font_desc));
 
-    layout.set_text("W");
-    let extents = layout.pixel_extents();
-    let char_width = extents.1.width() as f64;
-    let char_height = extents.1.height() as f64;
+    let (char_width, char_height) = cell_size(&layout);
 
     let total_scrollback = state.scrollback.len();
     let scroll_offset = state.scroll_offset;
@@ -68,7 +73,6 @@ pub(super) fn draw_terminal(
                 false
             };
 
-        let mut x_pos = 0.0;
         let mut col = 0;
 
         while col < row.len() {
@@ -76,13 +80,14 @@ pub(super) fn draw_terminal(
 
             if cell.ch == ' ' && !cell.underline && cell.bg.is_none() {
                 col += 1;
-                x_pos += char_width;
                 continue;
             }
 
             // Collect a run of cells that share the same visual attributes so they
             // can be rendered as a single Pango layout call.
             let run_start_col = col;
+            // Anchor every run to its grid column so width errors never accumulate along the row.
+            let x_pos = run_start_col as f64 * char_width;
             let first_cell = cell.clone();
             let mut text = String::new();
 
@@ -141,9 +146,10 @@ pub(super) fn draw_terminal(
             }
             layout.set_attributes(Some(&attr_list));
 
-            let text_extents = layout.pixel_extents();
-            let text_width = text_extents.1.width() as f64;
             let run_width = (col - run_start_col) as f64 * char_width;
+            // Snap fills to whole pixels so neighbouring runs leave no seam.
+            let fill_x = x_pos.round();
+            let fill_w = (x_pos + run_width).round() - fill_x;
 
             // Draw background cell fill.
             let effective_bg = if first_cell.reverse {
@@ -158,7 +164,7 @@ pub(super) fn draw_terminal(
                     effective_bg.blue() as f64,
                     effective_bg.alpha() as f64,
                 );
-                cr.rectangle(x_pos, y_pos, run_width, char_height);
+                cr.rectangle(fill_x, y_pos, fill_w, char_height);
                 cr.fill().unwrap();
             }
 
@@ -190,7 +196,7 @@ pub(super) fn draw_terminal(
                     (a.red() as f64, a.green() as f64, a.blue() as f64)
                 });
                 cr.set_source_rgba(sr, sg, sb, 0.5);
-                cr.rectangle(x_pos, y_pos, run_width, char_height);
+                cr.rectangle(fill_x, y_pos, fill_w, char_height);
                 cr.fill().unwrap();
                 cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
             } else if !first_cell.dim {
@@ -208,7 +214,6 @@ pub(super) fn draw_terminal(
             }
 
             if text.trim().is_empty() && !first_cell.underline {
-                x_pos += run_width;
                 layout.set_font_description(Some(&state.font_desc));
                 layout.set_attributes(None);
                 continue;
@@ -216,7 +221,6 @@ pub(super) fn draw_terminal(
 
             cr.move_to(x_pos, y_pos);
             pangocairo::functions::show_layout(cr, &layout);
-            x_pos += text_width.max(run_width);
 
             layout.set_font_description(Some(&state.font_desc));
             layout.set_attributes(None);

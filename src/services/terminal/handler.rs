@@ -133,6 +133,7 @@ impl Perform for TerminalHandler {
         let has_question = intermediates.first().copied() == Some(b'?');
         let has_gt = intermediates.first().copied() == Some(b'>');
 
+        let was_pending_wrap = state.pending_wrap;
         state.pending_wrap = false;
 
         match command {
@@ -332,6 +333,39 @@ impl Perform for TerminalHandler {
                     if cx < row.len() {
                         row.insert(cx, Cell::blank());
                         row.truncate(cols);
+                    }
+                }
+            }
+            'X' => {
+                // ECH: erase Ps characters from the cursor without moving it.
+                let n = p.first().map(|&v| v as usize).unwrap_or(1).max(1);
+                let cx = state.cursor_x;
+                let cy = state.cursor_y;
+                if let Some(row) = state.grid.get_mut(cy) {
+                    let end = cx.saturating_add(n).min(row.len());
+                    if cx < end {
+                        row[cx..end].fill(Cell::blank());
+                    }
+                }
+            }
+            'b' => {
+                // REP: repeat the preceding graphic character Ps times.
+                let max = state.cols.saturating_mul(state.rows).max(1);
+                let n = (p.first().map(|&v| v as usize).unwrap_or(1).max(1)).min(max);
+                let prev_x = if was_pending_wrap {
+                    Some(state.cursor_x)
+                } else {
+                    state.cursor_x.checked_sub(1)
+                };
+                let ch = prev_x
+                    .and_then(|x| state.grid.get(state.cursor_y).and_then(|r| r.get(x)))
+                    .map(|c| c.ch);
+                if let Some(ch) = ch {
+                    state.pending_wrap = was_pending_wrap;
+                    // `print` takes the state lock itself, so release it first.
+                    drop(state);
+                    for _ in 0..n {
+                        self.print(ch);
                     }
                 }
             }

@@ -1,4 +1,4 @@
-use super::super::draw::draw_terminal;
+use super::super::draw::{cell_size, draw_terminal};
 use super::super::state::TerminalState;
 use super::super::Terminal;
 use crate::model::TerminalConfig;
@@ -174,10 +174,7 @@ impl Terminal {
             };
             let layout = area.create_pango_layout(None);
             layout.set_font_description(Some(&state.font_desc));
-            layout.set_text("W");
-            let extents = layout.pixel_extents();
-            let char_width = extents.1.width() as f64;
-            let char_height = extents.1.height() as f64;
+            let (char_width, char_height) = cell_size(&layout);
 
             let new_cols = (width as f64 / char_width).floor() as usize;
             let new_rows = (height as f64 / char_height).floor() as usize;

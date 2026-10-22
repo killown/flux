@@ -1,4 +1,4 @@
-use super::super::draw::SCROLLBAR_WIDTH;
+use super::super::draw::{cell_size, SCROLLBAR_WIDTH};
 use super::super::Terminal;
 use gtk::prelude::*;
 use std::cell::RefCell;
@@ -36,10 +36,7 @@ impl Terminal {
 
             let layout = drawing_area_for_drag.create_pango_layout(None);
             layout.set_font_description(Some(&state.font_desc));
-            layout.set_text("W");
-            let extents = layout.pixel_extents();
-            let char_width = extents.1.width() as f64;
-            let char_height = extents.1.height() as f64;
+            let (char_width, char_height) = cell_size(&layout);
 
             let col = (x / char_width) as usize;
             let total_rows = state.scrollback.len() + state.grid.len();
@@ -73,10 +70,7 @@ impl Terminal {
 
             let layout = drawing_area_for_drag_update.create_pango_layout(None);
             layout.set_font_description(Some(&state.font_desc));
-            layout.set_text("W");
-            let extents = layout.pixel_extents();
-            let char_width = extents.1.width() as f64;
-            let char_height = extents.1.height() as f64;
+            let (char_width, char_height) = cell_size(&layout);
 
             let col = (x / char_width) as usize;
             let total_rows = state.scrollback.len() + state.grid.len();
