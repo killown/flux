@@ -31,15 +31,17 @@ impl ShortcutPicker {
     /// # Returns
     ///
     /// The configured [`gtk::Button`], ready to be used as a row suffix.
-    // Factory for a ready-made `gtk::Button`; `ShortcutPicker` itself is only a
+    // Factory for a ready-made `gtk::Button`, `ShortcutPicker` itself is only a
     // namespace, so returning something other than `Self` is intentional.
     #[allow(clippy::new_ret_no_self)]
     pub fn new(
         accel: Option<String>,
+        default_accel: &str,
         on_changed: impl Fn(Option<String>) + 'static,
     ) -> gtk::Button {
         let current = Rc::new(RefCell::new(accel.filter(|a| !a.trim().is_empty())));
         let capturing = Rc::new(Cell::new(false));
+        let default_accel = default_accel.to_string();
 
         let button = gtk::Button::builder()
             .valign(gtk::Align::Center)
@@ -51,16 +53,38 @@ impl ShortcutPicker {
             let button = button.clone();
             let current = current.clone();
             let capturing = capturing.clone();
+            let default_accel = default_accel.clone();
             Rc::new(move || {
-                let label = if capturing.get() {
-                    tr("Press a key…")
-                } else {
-                    match current.borrow().as_deref() {
-                        Some(accel) => accel_to_label(accel),
-                        None => tr("Default"),
+                if capturing.get() {
+                    button.set_label(&tr("Press a key…"));
+                    button.set_tooltip_text(Some(&tr("Press Esc to cancel, or Delete to clear")));
+                    return;
+                }
+
+                match current.borrow().as_deref() {
+                    Some(accel) => {
+                        let label = accel_to_label(accel);
+                        button.set_label(&label);
+                        button.set_tooltip_text(Some(&format!(
+                            "{}\n{}: {}",
+                            tr("Click to change"),
+                            tr("Default"),
+                            accel_to_label(&default_accel),
+                        )));
                     }
-                };
-                button.set_label(&label);
+                    None => {
+                        // No user override: show the actual default keycap so the
+                        // user immediately sees what key is active.
+                        let default_label = accel_to_label(&default_accel);
+                        button.set_label(&default_label);
+                        button.set_tooltip_text(Some(&format!(
+                            "{}\n{}: {}",
+                            tr("Click to change"),
+                            tr("Default"),
+                            default_label,
+                        )));
+                    }
+                }
             })
         };
         refresh();
