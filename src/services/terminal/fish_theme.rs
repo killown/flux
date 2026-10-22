@@ -99,7 +99,7 @@ pub(crate) fn render_snippet(env: &ThemeEnv) -> String {
     //
     // `prompt_pwd` is a fish builtin: `~` for home, abbreviated path otherwise.
     // `$status` is captured first because `set -l` and `set_color` clobber it.
-    out.push_str("\n");
+    out.push('\n');
     out.push_str("    function fish_prompt\n");
     out.push_str("        set -l last_status $status\n");
     out.push_str("        set_color $fish_color_cwd\n");
@@ -119,7 +119,7 @@ pub(crate) fn render_snippet(env: &ThemeEnv) -> String {
     // `flux_selection`, `flux_cwd`, `flux_goto`, the `fish_preexec` sync and
     // the `$F` abbreviations. The same source is written to
     // data/fish/flux-integration.fish for terminals outside Flux.
-    out.push_str("\n");
+    out.push('\n');
     for line in crate::shell_functions::render_functions().lines() {
         if !line.is_empty() {
             out.push_str("    ");

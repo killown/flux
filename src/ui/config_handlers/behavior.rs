@@ -51,7 +51,7 @@ impl FluxApp {
             "close_tab" => self.config.shortcuts.close_tab = val,
             "next_tab" => self.config.shortcuts.next_tab = val,
             "prev_tab" => self.config.shortcuts.prev_tab = val,
-                        "toggle_statusbar" => self.config.shortcuts.toggle_statusbar = val,
+            "toggle_statusbar" => self.config.shortcuts.toggle_statusbar = val,
             "toggle_sidebar" => self.config.shortcuts.toggle_sidebar = val,
             "toggle_filter_bar" => self.config.shortcuts.toggle_filter_bar = val,
             "cycle_filter_mode" => self.config.shortcuts.cycle_filter_mode = val,

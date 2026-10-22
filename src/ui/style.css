@@ -707,7 +707,7 @@ popover.menu {
 popover.menu contents,
 popover.background contents {
   background-color: @popover_bg_color;
-  border: 1px solid alpha(@cp_surface0, 0.6);
+  border: 1px solid var(--border-color);
   outline: none;
   border-radius: 12px;
   box-shadow: 0 8px 24px var(--shadow);

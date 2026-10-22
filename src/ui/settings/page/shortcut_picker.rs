@@ -31,6 +31,9 @@ impl ShortcutPicker {
     /// # Returns
     ///
     /// The configured [`gtk::Button`], ready to be used as a row suffix.
+    // Factory for a ready-made `gtk::Button`; `ShortcutPicker` itself is only a
+    // namespace, so returning something other than `Self` is intentional.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(
         accel: Option<String>,
         on_changed: impl Fn(Option<String>) + 'static,

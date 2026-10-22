@@ -1,5 +1,6 @@
 use flux::args::{
     parse_icon_pair, resolve_startup_action, resolve_startup_action_with_reader, StartupAction,
+    WindowOptions,
 };
 use std::io::Cursor;
 use std::path::PathBuf;
@@ -17,18 +18,14 @@ fn home() -> PathBuf {
 fn launch_action(path: PathBuf) -> StartupAction {
     StartupAction::Launch {
         path,
-        no_sidebar: false,
-        no_header: false,
-        no_statusbar: false,
+        opts: WindowOptions::default(),
     }
 }
 
 fn quick_list_action(paths: Vec<PathBuf>) -> StartupAction {
     StartupAction::QuickList {
         paths,
-        no_sidebar: false,
-        no_header: false,
-        no_statusbar: false,
+        opts: WindowOptions::default(),
     }
 }
 
@@ -347,12 +344,9 @@ fn quick_list_stdin_action() {
 #[test]
 fn no_sidebar_flag_combined_with_path() {
     let action = resolve_startup_action(&args(&["flux-fm", "--no-sidebar", "/tmp"]), home());
-    if let StartupAction::Launch {
-        path, no_sidebar, ..
-    } = action
-    {
+    if let StartupAction::Launch { path, opts } = action {
         assert_eq!(path, PathBuf::from("/tmp"));
-        assert!(no_sidebar);
+        assert!(opts.no_sidebar);
     } else {
         panic!("expected Launch");
     }
@@ -364,14 +358,9 @@ fn no_header_no_statusbar_combined() {
         &args(&["flux-fm", "--no-header", "--no-statusbar", "/tmp"]),
         home(),
     );
-    if let StartupAction::Launch {
-        no_header,
-        no_statusbar,
-        ..
-    } = action
-    {
-        assert!(no_header);
-        assert!(no_statusbar);
+    if let StartupAction::Launch { opts, .. } = action {
+        assert!(opts.no_header);
+        assert!(opts.no_statusbar);
     } else {
         panic!("expected Launch");
     }

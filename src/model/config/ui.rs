@@ -1,12 +1,12 @@
 use crate::model::defaults::{
     default_accent_color, default_actions_panel_width, default_auto_list_threshold,
     default_auto_show_diff, default_bg_alpha, default_breadcrumb_count,
-    default_breadcrumb_max_chars, default_content_search_max_file_mb,
-    default_diff_editor, default_diff_panel_width, default_ffmpeg_seek_seconds,
-    default_ffmpeg_threads, default_folder_cache_capacity, default_loader_batch_size,
-    default_max_history, default_max_search_results, default_mime_font_size,
-    default_preview_panel_width, default_search_panel_width, default_tag_panel_width,
-    default_thumbnail_size, default_thumbnail_threads, default_true, default_ui_scale,
+    default_breadcrumb_max_chars, default_content_search_max_file_mb, default_diff_editor,
+    default_diff_panel_width, default_ffmpeg_seek_seconds, default_ffmpeg_threads,
+    default_folder_cache_capacity, default_loader_batch_size, default_max_history,
+    default_max_search_results, default_mime_font_size, default_preview_panel_width,
+    default_search_panel_width, default_tag_panel_width, default_thumbnail_size,
+    default_thumbnail_threads, default_true, default_ui_scale,
 };
 use crate::model::{DeviceRename, SortBy, TerminalConfig, ThumbnailTypes};
 use serde::{Deserialize, Serialize};

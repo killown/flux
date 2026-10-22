@@ -25,7 +25,9 @@ fn cache_dir() -> Option<PathBuf> {
 /// Directory holding the sockets: `$XDG_RUNTIME_DIR/flux` (private to the
 /// user and cleared on logout), falling back to the cache directory.
 fn socket_dir() -> Option<PathBuf> {
-    dirs::runtime_dir().map(|d| d.join("flux")).or_else(cache_dir)
+    dirs::runtime_dir()
+        .map(|d| d.join("flux"))
+        .or_else(cache_dir)
 }
 
 fn socket_path(dir: &Path, pid: u32) -> PathBuf {

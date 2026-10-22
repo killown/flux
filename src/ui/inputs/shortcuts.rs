@@ -61,11 +61,17 @@ pub fn setup_global_shortcuts(
     bind_msg!(keymap.undo.clone(), AppMsg::Undo);
     bind_msg!(keymap.redo.clone(), AppMsg::Redo);
     bind_msg!(keymap.toggle_tag_panel.clone(), AppMsg::ToggleTagPanel);
-    bind_msg!(keymap.toggle_actions_panel.clone(), AppMsg::ToggleActionsPanel);
+    bind_msg!(
+        keymap.toggle_actions_panel.clone(),
+        AppMsg::ToggleActionsPanel
+    );
     bind_msg!(keymap.copy.clone(), AppMsg::Copy);
     bind_msg!(keymap.cut.clone(), AppMsg::Cut);
     bind_msg!(keymap.paste.clone(), AppMsg::Paste);
-    bind_msg!(keymap.toggle_location_panel.clone(), AppMsg::ToggleLocationPanel);
+    bind_msg!(
+        keymap.toggle_location_panel.clone(),
+        AppMsg::ToggleLocationPanel
+    );
     bind_msg!(keymap.toggle_list_mode.clone(), AppMsg::ToggleListMode);
     bind_msg!(keymap.cycle_sort.clone(), AppMsg::CycleSort);
     bind_msg!(keymap.toggle_sort_order.clone(), AppMsg::ToggleSortOrder);

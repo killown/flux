@@ -10,16 +10,16 @@ mod theme;
 mod widget;
 
 #[allow(unused_imports)]
+pub(crate) use cwd::{setup_goto_watcher, write_cwd_cache};
+#[allow(unused_imports)]
 pub(crate) use draw::SCROLLBAR_WIDTH;
 #[allow(unused_imports)]
 pub use handler::TerminalHandler;
 #[allow(unused_imports)]
+pub(crate) use selection::{print_selection, setup_selection_server};
+#[allow(unused_imports)]
 pub use state::{Cell, CursorStyle, TerminalState};
 pub(crate) use theme::ThemeEnv;
-#[allow(unused_imports)]
-pub(crate) use cwd::{setup_goto_watcher, write_cwd_cache};
-#[allow(unused_imports)]
-pub(crate) use selection::{print_selection, setup_selection_server};
 
 use crate::model::TerminalConfig;
 use gtk::DrawingArea;

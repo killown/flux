@@ -1,5 +1,5 @@
-use crate::i18n::tr;
 use super::shortcut_picker::ShortcutPicker;
+use crate::i18n::tr;
 use crate::model::{AppMsg, Config};
 use adw::prelude::*;
 use relm4::prelude::*;

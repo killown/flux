@@ -251,7 +251,7 @@ pub fn send_cwd(path: &Path) -> ClientOutcome {
     if display.contains('\n') || display.contains('\r') {
         return ClientOutcome::Rejected;
     }
-    if write!(stream, "{CMD_PREFIX}{display}\n").is_err() {
+    if writeln!(stream, "{CMD_PREFIX}{display}").is_err() {
         return ClientOutcome::NotRunning;
     }
 

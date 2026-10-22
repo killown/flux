@@ -7,6 +7,7 @@ fn test_path_segment_initialization() {
     let segment = PathSegment {
         name: "Projects".to_string(),
         path: PathBuf::from("/home/user/Projects"),
+        max_chars: 20,
     };
 
     assert_eq!(segment.name, "Projects");
@@ -127,7 +128,7 @@ fn test_file_item_preserves_foreign_owner_flag() {
 }
 
 #[test]
-fn test_lock_icon_and_restricted_class_binding() {
+fn test_lock_icon_binding() {
     gtk::init().ok();
 
     use flux::ui::FileItem;
@@ -148,10 +149,12 @@ fn test_lock_icon_and_restricted_class_binding() {
     .is_foreign_owner(true)
     .build();
 
+    // Restricted items are marked by the lock badge only; `bind` no longer adds
+    // a `flux-card--restricted` class.
     item.bind(&mut widgets, &mut root_box);
     assert!(
-        root_box.has_css_class("flux-card--restricted"),
-        "Widget must have 'flux-card--restricted' CSS class when is_foreign_owner is true"
+        !root_box.has_css_class("flux-card--restricted"),
+        "Widget must not use a 'flux-card--restricted' CSS class, the lock badge marks it"
     );
     assert!(
         widgets.lock_icon.is_visible(),
@@ -160,10 +163,6 @@ fn test_lock_icon_and_restricted_class_binding() {
 
     item.is_foreign_owner = false;
     item.bind(&mut widgets, &mut root_box);
-    assert!(
-        !root_box.has_css_class("flux-card--restricted"),
-        "Widget must NOT have 'flux-card--restricted' CSS class when is_foreign_owner is false"
-    );
     assert!(
         !widgets.lock_icon.is_visible(),
         "lock_icon must NOT be visible when is_foreign_owner is false"

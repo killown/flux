@@ -377,8 +377,13 @@ fn test_csi_sgr_colors() {
         let cell = &s.grid[0][0];
         assert_eq!(cell.ch, 'R');
         assert_eq!(cell.fg.unwrap(), red);
-        let cell_norm = &s.grid[0][6];
-        assert_eq!(cell_norm.fg.unwrap(), s.fg_color);
+        // "Red" fills columns 0-2, so "Normal" starts at column 3.
+        let cell_norm = &s.grid[0][3];
+        // After `\x1b[0m` the cell uses the default foreground. The handler stores
+        // that as `None` so the cell follows the theme, and the renderer falls back
+        // to `state.fg_color`.
+        assert_eq!(cell_norm.ch, 'N');
+        assert!(cell_norm.fg.is_none());
     }
 }
 

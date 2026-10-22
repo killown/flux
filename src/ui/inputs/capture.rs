@@ -62,9 +62,21 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
             AppMsg::CycleByLetterReanchor,
             Yield::TerminalOrEditable,
         ),
-        bind(&keymap.focus_pane_left, AppMsg::FocusPaneLeft, Yield::Terminal),
-        bind(&keymap.focus_pane_right, AppMsg::FocusPaneRight, Yield::Terminal),
-        bind(&keymap.cycle_filter_mode, AppMsg::CycleFilterMode, Yield::Terminal),
+        bind(
+            &keymap.focus_pane_left,
+            AppMsg::FocusPaneLeft,
+            Yield::Terminal,
+        ),
+        bind(
+            &keymap.focus_pane_right,
+            AppMsg::FocusPaneRight,
+            Yield::Terminal,
+        ),
+        bind(
+            &keymap.cycle_filter_mode,
+            AppMsg::CycleFilterMode,
+            Yield::Terminal,
+        ),
         // Ctrl+Shift+A: toggle contextual-actions panel. Capture phase
         // so a focused widget inside the panel cannot pre-empt the chord.
         bind(
@@ -81,7 +93,11 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
         // Ctrl+Shift+F: toggle the glob-pattern filter bar. Capture phase so
         // it fires even while the filter entry itself has focus, which is the
         // one place a user is most likely to press it to dismiss the bar.
-        bind(&keymap.toggle_filter_bar, AppMsg::ToggleFilterBar, Yield::Terminal),
+        bind(
+            &keymap.toggle_filter_bar,
+            AppMsg::ToggleFilterBar,
+            Yield::Terminal,
+        ),
         // Ctrl+M: toggle ephemeral MIME filter on the selection. Moved
         // here for the same reason as Ctrl+Shift+A: it must work while
         // the peek-preview panel (or any other focused panel) is open.
@@ -96,12 +112,20 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
             AppMsg::ToggleCurrentFoldersFirst,
             Yield::Never,
         ),
-        bind(&keymap.toggle_statusbar, AppMsg::ToggleStatusBar, Yield::Never),
+        bind(
+            &keymap.toggle_statusbar,
+            AppMsg::ToggleStatusBar,
+            Yield::Never,
+        ),
         bind(&keymap.toggle_sidebar, AppMsg::ToggleSidebar, Yield::Never),
         // F4 toggles the terminal panel. When either terminal has focus,
         // the terminal's own key controller fires first and handles this
         // key, so we yield there to avoid a double fire.
-        bind(&keymap.toggle_terminal, AppMsg::ToggleTerminal, Yield::Terminal),
+        bind(
+            &keymap.toggle_terminal,
+            AppMsg::ToggleTerminal,
+            Yield::Terminal,
+        ),
         // Wide preview: F11 is left to the shell when the terminal has focus.
         bind(
             &keymap.toggle_wide_preview,
@@ -109,7 +133,11 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
             Yield::Terminal,
         ),
         // Tags: Ctrl + Shift + T
-        bind(&keymap.toggle_tag_panel, AppMsg::ToggleTagPanel, Yield::Terminal),
+        bind(
+            &keymap.toggle_tag_panel,
+            AppMsg::ToggleTagPanel,
+            Yield::Terminal,
+        ),
         // Let the terminal shell handle Ctrl+Z (job control) if it has focus.
         bind(&keymap.undo, AppMsg::Undo, Yield::Terminal),
         bind(&keymap.redo, AppMsg::Redo, Yield::Terminal),

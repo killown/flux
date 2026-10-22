@@ -76,8 +76,14 @@ mod tests {
             format_shortcut(Some("<Primary><Shift>f".into()), ""),
             "Ctrl + Shift + F"
         );
-        assert_eq!(format_shortcut(Some("<ctrl><alt>slash".into()), ""), "Ctrl + Alt + /");
-        assert_eq!(format_shortcut(Some("<Super>Return".into()), ""), "Super + Enter");
+        assert_eq!(
+            format_shortcut(Some("<ctrl><alt>slash".into()), ""),
+            "Ctrl + Alt + /"
+        );
+        assert_eq!(
+            format_shortcut(Some("<Super>Return".into()), ""),
+            "Super + Enter"
+        );
     }
 
     #[test]

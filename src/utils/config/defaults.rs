@@ -311,7 +311,8 @@ path = "actions://"
     // `ui.terminal.position`. Runs before the sidebar names are translated, so
     // the rewritten file keeps the untranslated names.
     if migrate_legacy_terminal_position(&mut config, &config_content) {
-        save_config(&config); // rewrites config.toml without the old key
+        // Rewrites config.toml without the old key.
+        save_config(&config);
         // `save_config` primed the cache with this pre-translation copy. Drop it so
         // `load_config` caches the final config below instead.
         invalidate_config_cache();
@@ -426,15 +427,17 @@ mod tests {
 
     #[test]
     fn an_explicit_position_wins_over_the_legacy_key() {
-        let (config, rewrite) = load(
-            "[ui]\nterminal_in_sidebar = true\n\n[ui.terminal]\nposition = \"fullscreen\"\n",
-        );
+        let (config, rewrite) =
+            load("[ui]\nterminal_in_sidebar = true\n\n[ui.terminal]\nposition = \"fullscreen\"\n");
         assert!(rewrite);
         assert_eq!(config.ui.terminal.position, TerminalPosition::Fullscreen);
     }
 
     #[test]
     fn invalid_toml_is_not_migrated() {
-        assert_eq!(legacy_terminal_in_sidebar("[ui\nterminal_in_sidebar = true"), None);
+        assert_eq!(
+            legacy_terminal_in_sidebar("[ui\nterminal_in_sidebar = true"),
+            None
+        );
     }
 }
