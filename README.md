@@ -53,14 +53,17 @@ The threshold is configured in **Settings → Behavior → Auto List Mode Thresh
 
 ### Reference numbers
 
-On a 3260-item folder (same hardware, same session):
+Same folder, same hardware, same session, 13,209 items (50 GB of images).
 
-| File manager     | Behavior                                                              |
-| ---------------- | --------------------------------------------------------------------- |
-| Flux (grid mode) | Loads, scrolls, hovers, hover latency grows with folder size          |
-| Flux (list mode) | Loads in microseconds, no lag                                         |
-| Nautilus         | Crashes: `VK_ERROR_OUT_OF_HOST_MEMORY` and file-descriptor exhaustion |
-| Thunar           | Loads, ~60% CPU on scrollbar drag alone                               |
+| File manager         | Behavior                                                                    |
+| -------------------- | --------------------------------------------------------------------------- |
+| Flux (grid mode)     | Scrollbar fine, ~50% of one core on drag, hover slightly slow               |
+| Flux (list mode)     | No lag; ~30% of one CPU core on scrollbar drag                              |
+| Nautilus (grid mode) | Crashes: `VK_ERROR_OUT_OF_HOST_MEMORY` and file-descriptor exhaustion       |
+| Nautilus (list mode) | Uses more than 3 CPU cores to drag the scrollbar                            |
+| Thunar (grid mode)   | Laggy scrollbar, ~60% CPU on drag alone, saturates all cores on a full drag |
+| Thunar (grid mode)   | Scrollbar thumb desyncs and stops tracking position at large item counts    |
+| Thunar (list mode)   | Laggy scrollbar, ~40% CPU on drag alone                                     |
 
 ## Install
 
