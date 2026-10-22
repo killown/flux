@@ -514,12 +514,7 @@ listview {
 
 gridview child {
   padding: 1px;
-  margin: 0;
-}
-
-gridview child {
-  padding: 1px;
-  margin: 0;
+  margin-top: 0.5em;
 }
 
 .flux-card {
