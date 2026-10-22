@@ -4,6 +4,7 @@ mod shortcuts;
 mod watcher;
 
 use crate::model::Config;
+use crate::services::window_control;
 use crate::ui::FileProperties;
 use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
 use relm4::prelude::*;
@@ -22,6 +23,14 @@ pub fn run() {
     // enough to be called from every `$F` expansion in a shell.
     if let StartupAction::PrintSelection { null } = action {
         std::process::exit(crate::services::terminal::print_selection(null));
+    }
+
+    // Talks to a running window over its socket, so it needs no display either.
+    match action {
+        StartupAction::Toggle if window_control::toggle_running() == 0 => std::process::exit(0),
+        StartupAction::Show if window_control::show_running() == 0 => std::process::exit(0),
+        StartupAction::Hide => std::process::exit(window_control::hide_running()),
+        _ => {}
     }
 
     crate::i18n::init();
@@ -66,6 +75,18 @@ pub fn run() {
         }
 
         StartupAction::PrintSelection { .. } => unreachable!("handled before GTK initialisation"),
+
+        StartupAction::Toggle | StartupAction::Show => {
+            launch::launch_main_app(
+                home_dir,
+                None,
+                None,
+                None,
+                flux::args::WindowOptions::default(),
+            );
+        }
+
+        StartupAction::Hide => unreachable!("handled before GTK initialisation"),
 
         StartupAction::UnknownFlag(flag) => {
             eprintln!("flux: unrecognized option '{flag}'");

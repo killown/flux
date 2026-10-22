@@ -32,6 +32,7 @@ Cold start on a Ryzen 5 5600X, mean of 10 runs:
 - **Search that's already there.** Type to filter the folder, press `Ctrl+F` for a search panel on the right, or start with `:` to search inside files. There is no index to build and no background service.
 - **Your servers and drives.** SMB, SFTP, FTP, WebDAV, NFS, MTP and Google Drive, plus encrypted LUKS volumes.
 - **A terminal that follows you.** Press `F4`, `cd` somewhere, and the file view goes with you.
+- Show and hide from a keybind. `flux-fm --toggle` shows or hides the running window, `--show` brings it to the front and `--hide` tucks it away. With no window running, `--toggle` and `--show` start Flux and `--hide` does nothing, so one compositor shortcut is enough.
 - **Tags.** Label files and find them again with `#tag` or `Ctrl+Shift+T`. Tags use the standard `user.xdg.tags` file attribute, so they stay with the file.
 - **A preview panel that keeps up.** Images, video, audio and PDFs show as you move through files. `F11` goes wide, and videos even play right in the grid. Code (with syntax highlighting), Markdown, CSV tables, Office documents and fonts preview too. Previews only show what's inside a file, editing is left to your preferred app.
 
@@ -58,7 +59,7 @@ Same folder, same hardware, same session, 13,209 items (50 GB of images).
 | File manager         | Behavior                                                                    |
 | -------------------- | --------------------------------------------------------------------------- |
 | Flux (grid mode)     | Scrollbar fine, ~50% of one core on drag, hover slightly slow               |
-| Flux (list mode)     | No lag; ~30% of one CPU core on scrollbar drag                              |
+| Flux (list mode)     | No lag, ~30% of one CPU core on scrollbar drag                              |
 | Nautilus (grid mode) | Crashes: `VK_ERROR_OUT_OF_HOST_MEMORY` and file-descriptor exhaustion       |
 | Nautilus (list mode) | Uses more than 3 CPU cores to drag the scrollbar                            |
 | Thunar (grid mode)   | Laggy scrollbar, ~60% CPU on drag alone, saturates all cores on a full drag |

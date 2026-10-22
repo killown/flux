@@ -35,6 +35,9 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--quick-list-stdin` | Open with quick-panel populated from standard input |
 | `--preview PATH` | Open folder PATH with the preview panel in wide mode |
 | `--selection` | Print the paths selected in the running window, one per line (-0: NUL-separated) |
+| `--toggle` | Show or hide the running window |
+| `--show` | Bring the running window to the front |
+| `--hide` | Hide the running window |
 | `--menu-editor` | To manage menu.rs |
 <!-- END GENERATED: options -->
 
@@ -75,6 +78,18 @@ A path containing a newline is skipped with a warning; `--selection -0` terminat
 
 ```text
 flux-fm --selection | xargs -d '\n' ls -l
+```
+
+## Window visibility
+
+`--toggle`, `--show` and `--hide` take no arguments and control a window that is already running. `--toggle` flips its visibility, `--show` makes it visible and brings it to the front, and `--hide` hides it. `--show` and `--hide` are idempotent.
+
+Each window listens on `$XDG_RUNTIME_DIR/flux/toggle-<pid>.sock`, or under `$XDG_CACHE_HOME/flux/` when there is no runtime directory. The command connects to the window with the highest PID, sends one line (`toggle`, `show` or `hide`) and reads one line back, `visible` or `hidden`, which is the state the window ended up in.
+
+When no window is running, `--toggle` and `--show` open the home directory as if no arguments were given, and `--hide` does nothing and exits with status `0`.
+
+```text
+flux-fm --toggle
 ```
 
 ## Exit status

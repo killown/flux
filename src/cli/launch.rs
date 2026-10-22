@@ -20,6 +20,7 @@ pub(super) fn launch_main_app(
         setup_config_watcher();
         crate::services::terminal::setup_goto_watcher();
         crate::services::terminal::setup_selection_server();
+        crate::services::window_control::setup_toggle_server();
         std::thread::spawn(crate::utils::deps::check_optional_deps);
         glib::ControlFlow::Break
     });

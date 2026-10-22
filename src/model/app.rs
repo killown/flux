@@ -207,6 +207,8 @@ pub struct FluxApp {
     pub terminal_fullscreen: bool,
     /// Handle to the root `main_stack` (set in `view/init.rs`).
     pub main_stack: Option<gtk::Stack>,
+    /// The main window, kept so the toggle socket can hide and show it while it is unmapped.
+    pub root_window: Option<adw::Window>,
     /// Dedicated terminal instance for full-window mode. Lazily created on first
     /// entry; never reparented into the paned or sidebar. Killed on window close.
     pub fullscreen_terminal: Option<crate::services::terminal::Terminal>,

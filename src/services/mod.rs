@@ -12,6 +12,7 @@ pub mod tasks;
 pub mod terminal;
 pub mod thumbnails;
 pub mod trash;
+pub mod window_control;
 
 pub mod constants {
     pub const MAX_CONTENT_SEARCH_RESULTS: usize = 100;

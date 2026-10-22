@@ -194,6 +194,7 @@ impl FluxApp {
             terminal_visible: false,
             terminal_fullscreen: false,
             main_stack: None,
+            root_window: Some(root.clone()),
             fullscreen_terminal: None,
             fullscreen_terminal_box: None,
             terminal_spawned_fullscreen: false,

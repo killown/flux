@@ -3,6 +3,21 @@ use crate::ui::conflict_policy::ConflictContext;
 use gtk::gdk;
 use std::path::PathBuf;
 
+/// What a toggle-socket client asks the running window to do.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ToggleVerb {
+    Toggle,
+    Show,
+    Hide,
+}
+
+/// Visibility of the main window after a [`ToggleVerb`] was applied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowVisibility {
+    Visible,
+    Hidden,
+}
+
 /// Enumeration of all messages handled by the application's update loop.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -581,6 +596,11 @@ pub enum AppMsg {
     /// `reply`.
     QuerySelection {
         reply: std::sync::mpsc::Sender<Vec<PathBuf>>,
+    },
+    /// Applies a visibility verb from the toggle socket and answers the resulting state.
+    ToggleWindowVisibility {
+        verb: ToggleVerb,
+        reply: std::sync::mpsc::Sender<WindowVisibility>,
     },
     /// Updates the single-click activation setting.
     SetSingleClick(bool),

@@ -50,6 +50,9 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
         "    --selection",
         "Print the paths selected in the running window, one per line (-0: NUL-separated)",
     ),
+    ("    --toggle", "Show or hide the running window"),
+    ("    --show", "Bring the running window to the front"),
+    ("    --hide", "Hide the running window"),
     ("    --menu-editor", "To manage menu.rs"),
 ];
 
@@ -181,6 +184,12 @@ pub enum StartupAction {
         /// Terminate each path with NUL instead of a newline.
         null: bool,
     },
+    /// Show or hide the running window, or launch one when none is running.
+    Toggle,
+    /// Bring the running window to the front, or launch one when none is running.
+    Show,
+    /// Hide the running window, doing nothing when none is running.
+    Hide,
     /// Print the version string and exit.
     PrintVersion,
     /// Print the help text and exit.
@@ -231,6 +240,9 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         Some("--selection") => StartupAction::PrintSelection {
             null: filtered_args.get(1) == Some(&"-0"),
         },
+        Some("--toggle") => StartupAction::Toggle,
+        Some("--show") => StartupAction::Show,
+        Some("--hide") => StartupAction::Hide,
         Some("--file-properties") => match filtered_args.get(1) {
             Some(path) => StartupAction::FileProperties(uri_to_path(path)),
             None => StartupAction::PrintHelp,

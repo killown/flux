@@ -19,7 +19,7 @@ pub use config::{
 // used by `src/lib.rs` for `gen-docs`, not linked by the `flux-fm` binary alone
 pub use doc_config::render_config_markdown;
 pub use file_load::{set_now_unix, CellLabels, FileLoadContext};
-pub use msg::AppMsg;
+pub use msg::{AppMsg, ToggleVerb, WindowVisibility};
 #[allow(unused_imports)]
 pub use types::ConflictResolver;
 pub use types::{

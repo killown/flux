@@ -17,6 +17,9 @@ complete -c flux-fm -l quick-list -r -F -d 'Open with quick-panel pre-populated 
 complete -c flux-fm -l quick-list-stdin -d 'Open with quick-panel populated from standard input'
 complete -c flux-fm -l preview -r -F -d 'Open folder PATH with the preview panel in wide mode'
 complete -c flux-fm -l selection -d 'Print the paths selected in the running window, one per line (-0: NUL-separated)'
+complete -c flux-fm -l toggle -d 'Show or hide the running window'
+complete -c flux-fm -l show -d 'Bring the running window to the front'
+complete -c flux-fm -l hide -d 'Hide the running window'
 complete -c flux-fm -l menu-editor -d 'To manage menu.rs'
 
 # The help text calls the binary `flux`.

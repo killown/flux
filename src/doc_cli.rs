@@ -101,6 +101,25 @@ pub fn render_cli_markdown() -> String {
          ```\n\n",
     );
 
+    out.push_str("## Window visibility\n\n");
+    out.push_str(
+        "`--toggle`, `--show` and `--hide` take no arguments and control a window \
+         that is already running. `--toggle` flips its visibility, `--show` makes it \
+         visible and brings it to the front, and `--hide` hides it. `--show` and \
+         `--hide` are idempotent.\n\n\
+         Each window listens on `$XDG_RUNTIME_DIR/flux/toggle-<pid>.sock`, or under \
+         `$XDG_CACHE_HOME/flux/` when there is no runtime directory. The command \
+         connects to the window with the highest PID, sends one line (`toggle`, \
+         `show` or `hide`) and reads one line back, `visible` or `hidden`, which \
+         is the state the window ended up in.\n\n\
+         When no window is running, `--toggle` and `--show` open the home directory \
+         as if no arguments were given, and `--hide` does nothing and exits with \
+         status `0`.\n\n\
+         ```text\n\
+         flux-fm --toggle\n\
+         ```\n\n",
+    );
+
     out.push_str("## Exit status\n\n");
     out.push_str(
         "| Status | Meaning |\n\

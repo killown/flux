@@ -1,6 +1,26 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::model::{AppMsg, FluxApp, ToggleVerb, WindowVisibility};
 use adw::prelude::*;
 use relm4::prelude::*;
+
+/// Applies `verb` to the main window and returns the visibility it ends up with.
+fn apply_visibility(verb: ToggleVerb, app: &FluxApp) -> WindowVisibility {
+    crate::hit!("apply_visibility");
+    let Some(window) = app.root_window.as_ref() else {
+        return WindowVisibility::Hidden;
+    };
+    let visible = match verb {
+        ToggleVerb::Toggle => !window.is_visible(),
+        ToggleVerb::Show => true,
+        ToggleVerb::Hide => false,
+    };
+    window.set_visible(visible);
+    if visible {
+        window.present();
+        WindowVisibility::Visible
+    } else {
+        WindowVisibility::Hidden
+    }
+}
 
 pub(super) fn handle(
     app: &mut FluxApp,
@@ -31,6 +51,9 @@ pub(super) fn handle(
         }
         AppMsg::OpenDebugWindow => crate::ui::debug::show_debug_window(app),
         AppMsg::ShowToast(msg) => app.handle_show_toast(msg),
+        AppMsg::ToggleWindowVisibility { verb, reply } => {
+            let _ = reply.send(apply_visibility(verb, app));
+        }
         other => return Err(other),
     }
     Ok(())
