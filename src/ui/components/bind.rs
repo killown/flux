@@ -282,15 +282,8 @@ impl FileItem {
         }
 
         crate::hit!("bind_emblem_classes");
-        if self.is_foreign_owner {
-            root.add_css_class("flux-card--restricted");
-            widgets.card_box.add_css_class("flux-card--restricted");
-            widgets.lock_icon.set_visible(true);
-        } else {
-            root.remove_css_class("flux-card--restricted");
-            widgets.card_box.remove_css_class("flux-card--restricted");
-            widgets.lock_icon.set_visible(false);
-        }
+        // Restricted items are marked by the lock badge only.
+        widgets.lock_icon.set_visible(self.is_foreign_owner);
 
         let show_indicator = self.show_symlink_emblem && self.is_symlink;
 
@@ -650,10 +643,8 @@ impl FileItem {
 
         root.remove_css_class("flux-card--cut");
         root.remove_css_class("flux-card--copy");
-        root.remove_css_class("flux-card--restricted");
         widgets.card_box.remove_css_class("flux-card--cut");
         widgets.card_box.remove_css_class("flux-card--copy");
-        widgets.card_box.remove_css_class("flux-card--restricted");
 
         widgets.preview_stack.set_visible_child_name("icon");
 

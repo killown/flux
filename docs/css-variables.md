@@ -39,7 +39,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | `--color-popover-fg` | `@popover_fg_color` | `:root` | 12 | Foreground text and icons in popovers. |
 | `--color-sidebar-bg` | `@sidebar_bg_color` | `:root` | 1 | Background color of the left sidebar. |
 | `--color-success` | `@green_4` | `:root` | 4 | Success states and git additions. |
-| `--color-warn` | `@orange_3` | `:root` | 9 | Warnings, restricted items and git conflicts. |
+| `--color-warn` | `@orange_3` | `:root` | 8 | Warnings, restricted items and git conflicts. |
 | `--color-window-bg` | `@window_bg_color` | `:root` | 6 | Main window background color. |
 | `--color-window-fg` | `@window_fg_color` | `:root` | 14 | Main window foreground text and icons. |
 | `--disabled-opacity` | `0.4` | `:root` | 4 | Opacity of disabled controls and of items being dragged. |
