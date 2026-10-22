@@ -98,6 +98,30 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         },
                     ),
                 },
+                add = &adw::ActionRow {
+                    set_title: &tr("Focus Pane Left"),
+                    set_subtitle: &tr("Move keyboard focus to the pane on the left"),
+                    add_suffix = &ShortcutPicker::new(
+                        config.shortcuts.focus_pane_left.clone(),
+                        move |val| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetShortcut("focus_pane_left".to_string(), val));
+                            }
+                        },
+                    ),
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("Focus Pane Right"),
+                    set_subtitle: &tr("Move keyboard focus to the pane on the right"),
+                    add_suffix = &ShortcutPicker::new(
+                        config.shortcuts.focus_pane_right.clone(),
+                        move |val| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetShortcut("focus_pane_right".to_string(), val));
+                            }
+                        },
+                    ),
+                },
             },
 
             add = &adw::PreferencesGroup {

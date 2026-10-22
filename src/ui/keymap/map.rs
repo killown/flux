@@ -52,6 +52,8 @@ pub struct KeyMap {
     pub toggle_sort_order: gtk::ShortcutTrigger,
     pub cycle_by_letter_reanchor: gtk::ShortcutTrigger,
     pub cycle_by_letter_cancel: gtk::ShortcutTrigger,
+    pub focus_pane_left: gtk::ShortcutTrigger,
+    pub focus_pane_right: gtk::ShortcutTrigger,
 }
 
 impl KeyMap {
@@ -106,6 +108,8 @@ impl KeyMap {
             toggle_sort_order: parse_trigger(&config.toggle_sort_order, constants::TOGGLE_SORT_ORDER),
             cycle_by_letter_reanchor: parse_trigger(&config.cycle_by_letter_reanchor, constants::CYCLE_BY_LETTER_REANCHOR),
             cycle_by_letter_cancel: parse_trigger(&config.cycle_by_letter_cancel, constants::CYCLE_BY_LETTER_CANCEL),
+            focus_pane_left: parse_trigger(&config.focus_pane_left, constants::FOCUS_PANE_LEFT),
+            focus_pane_right: parse_trigger(&config.focus_pane_right, constants::FOCUS_PANE_RIGHT),
         }
     }
 }

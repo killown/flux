@@ -290,6 +290,87 @@ impl FluxApp {
         let _ = entered; // focus_folder_grid should return bool
     }
 
+    /// Moves keyboard focus one pane left or right across the sidebar, the file grid
+    /// and the open right-side panels, in the order they appear in the window.
+    ///
+    /// Does nothing at either end. Hidden sidebar and collapsed panels are skipped, as
+    /// are panes that refuse focus.
+    ///
+    /// # Arguments
+    ///
+    /// * `step` - `-1` to move left, `1` to move right.
+    pub fn handle_focus_pane(&mut self, step: isize) {
+        crate::hit!("handle_focus_pane");
+        let Some(grid) = self
+            .tabs
+            .get(self.active_tab_index)
+            .map(|tab| tab.files.view.clone().upcast::<gtk::Widget>())
+        else {
+            return;
+        };
+
+        // (container used to locate focus, widget that receives focus)
+        let mut panes: Vec<(gtk::Widget, gtk::Widget)> = Vec::new();
+        if self.sidebar_visible {
+            if let Some(container) = self.sidebar_widget.clone() {
+                panes.push((container, self.sidebar.widget().clone().upcast()));
+            }
+        }
+        let grid_idx = panes.len();
+        panes.push((grid.clone(), grid.clone()));
+
+        let mut preview_idx = None;
+        let right_panels = [
+            (&self.search_panel_revealer, false),
+            (&self.tag_panel_revealer, false),
+            (&self.diff_panel_revealer, false),
+            (&self.location_panel_revealer, false),
+            (&self.connect_panel_revealer, false),
+            (&self.preview_panel_revealer, true),
+            (&self.actions_panel_revealer, false),
+            (&self.terminal_panel_revealer, false),
+        ];
+        for (revealer, is_preview) in right_panels {
+            let Some(revealer) = revealer.as_ref().filter(|r| r.reveals_child()) else {
+                continue;
+            };
+            let widget = revealer.clone().upcast::<gtk::Widget>();
+            panes.push((widget.clone(), widget));
+            if is_preview {
+                preview_idx = Some(panes.len() - 1);
+            }
+        }
+
+        let focused = grid.root().and_then(|root| root.focus());
+        let current = focused
+            .as_ref()
+            .and_then(|f| panes.iter().position(|(c, _)| f == c || f.is_ancestor(c)))
+            .unwrap_or(grid_idx);
+
+        let len = panes.len() as isize;
+        let mut idx = current as isize;
+        loop {
+            idx += step;
+            if idx < 0 || idx >= len {
+                return;
+            }
+            let i = idx as usize;
+            let (_, target) = &panes[i];
+            let focused_ok = if i == grid_idx {
+                target.grab_focus()
+            } else if Some(i) == preview_idx
+                && preview_registry::with(|h| h.focus_folder_grid()).unwrap_or(false)
+            {
+                true
+            } else {
+                target.child_focus(gtk::DirectionType::TabForward)
+            };
+            if focused_ok {
+                return;
+            }
+        }
+    }
+
     /// Restores the main column and the window state, no-op when full-screen preview is off.
     ///
     /// `restore_wide` also drops the wide layout if full-screen had to turn it on, callers that

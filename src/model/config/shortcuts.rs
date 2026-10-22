@@ -118,4 +118,10 @@ pub struct ShortcutsConfig {
     /// Key combination to cancel the cycle-by-letter folder jump.
     #[serde(default)]
     pub cycle_by_letter_cancel: Option<String>,
+    /// Key combination to move keyboard focus one pane to the left.
+    #[serde(default)]
+    pub focus_pane_left: Option<String>,
+    /// Key combination to move keyboard focus one pane to the right.
+    #[serde(default)]
+    pub focus_pane_right: Option<String>,
 }

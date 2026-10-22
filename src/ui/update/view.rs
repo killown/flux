@@ -56,6 +56,8 @@ pub(super) fn handle(
         AppMsg::TogglePreviewFullscreen => app.handle_toggle_preview_fullscreen(),
         AppMsg::ExitPreviewFullscreen => app.handle_exit_preview_fullscreen(),
         AppMsg::TogglePreviewGridFocus => app.handle_toggle_preview_grid_focus(),
+        AppMsg::FocusPaneLeft => app.handle_focus_pane(-1),
+        AppMsg::FocusPaneRight => app.handle_focus_pane(1),
         AppMsg::SetPreviewPanelWidth(val) => app.handle_set_preview_panel_width(val),
         AppMsg::PreviewPrefetch { path, session } => {
             app.handle_preview_prefetch(path, session, sender)

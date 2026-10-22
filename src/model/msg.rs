@@ -967,6 +967,12 @@ pub enum AppMsg {
     ExitPreviewFullscreen,
     /// Moves keyboard focus between the main grid and the folder grid in the preview panel.
     TogglePreviewGridFocus,
+    /// Moves keyboard focus one pane to the left: right-side panels, then the file grid,
+    /// then the left sidebar.
+    FocusPaneLeft,
+    /// Moves keyboard focus one pane to the right: left sidebar, then the file grid,
+    /// then the open right-side panels.
+    FocusPaneRight,
     /// Toggles the global thumbnail generation setting.
     ///
     /// When disabled, no thumbnails are generated for any file type, improving

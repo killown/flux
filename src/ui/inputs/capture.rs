@@ -62,6 +62,8 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
             AppMsg::CycleByLetterReanchor,
             Yield::TerminalOrEditable,
         ),
+        bind(&keymap.focus_pane_left, AppMsg::FocusPaneLeft, Yield::Terminal),
+        bind(&keymap.focus_pane_right, AppMsg::FocusPaneRight, Yield::Terminal),
         bind(&keymap.cycle_filter_mode, AppMsg::CycleFilterMode, Yield::Terminal),
         // Ctrl+Shift+A: toggle contextual-actions panel. Capture phase
         // so a focused widget inside the panel cannot pre-empt the chord.

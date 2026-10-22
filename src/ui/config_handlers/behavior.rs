@@ -70,6 +70,8 @@ impl FluxApp {
             "paste" => self.config.shortcuts.paste = val,
             "cycle_by_letter_reanchor" => self.config.shortcuts.cycle_by_letter_reanchor = val,
             "cycle_by_letter_cancel" => self.config.shortcuts.cycle_by_letter_cancel = val,
+            "focus_pane_left" => self.config.shortcuts.focus_pane_left = val,
+            "focus_pane_right" => self.config.shortcuts.focus_pane_right = val,
             "toggle_terminal" => self.config.shortcuts.toggle_terminal = val,
             _ => {}
         }

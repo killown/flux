@@ -46,3 +46,5 @@ pub const CYCLE_SORT: &str = "<ctrl>s";
 pub const TOGGLE_SORT_ORDER: &str = "<ctrl><shift>s";
 pub const CYCLE_BY_LETTER_REANCHOR: &str = "<ctrl><alt>slash";
 pub const CYCLE_BY_LETTER_CANCEL: &str = "<ctrl><alt>backslash";
+pub const FOCUS_PANE_LEFT: &str = "<ctrl><alt>Left";
+pub const FOCUS_PANE_RIGHT: &str = "<ctrl><alt>Right";
