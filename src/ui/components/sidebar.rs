@@ -112,6 +112,12 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
                 connect_pressed[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
+                    let ui_cfg = utils::load_config().ui;
+                    if (ui_cfg.sidebar_menu_requires_ctrl || ui_cfg.panel_menu_requires_ctrl)
+                        && !gesture.current_event_state().contains(gdk::ModifierType::CONTROL_MASK)
+                    {
+                        return;
+                    }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
 
                     let menu = gtk::PopoverMenu::builder()

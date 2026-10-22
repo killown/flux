@@ -283,6 +283,63 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             },
 
             add = &adw::PreferencesGroup {
+                set_title: &tr("Header Buttons"),
+                set_description: Some(&tr("Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+M.")),
+                add = &adw::ActionRow {
+                    set_title: &tr("Filter Button"),
+                    set_subtitle: &tr("Show the filter-by-pattern button"),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.header_show_filter,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetHeaderShowFilter(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("Sort Indicator"),
+                    set_subtitle: &tr("Show the current sort mode and its cycle control"),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.header_show_sort,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetHeaderShowSort(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("List/Grid Toggle"),
+                    set_subtitle: &tr("Show the button that switches between list and grid layout"),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.header_show_view,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetHeaderShowView(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("Preview Button"),
+                    set_subtitle: &tr("Show the button that toggles the preview panel"),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.header_show_preview,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetHeaderShowPreview(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+            },
+
+            add = &adw::PreferencesGroup {
                 set_title: &tr("Theme"),
                 set_description: Some(&tr("Customize the visual appearance with CSS themes")),
                 add = &adw::ActionRow {
@@ -372,6 +429,32 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         connect_active_notify => move |switch| {
                             if let Some(s) = crate::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetShowXdgDirs(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("Sidebar Menu Needs Ctrl"),
+                    set_subtitle: &tr("Open sidebar context menus only with Ctrl + right-click"),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.sidebar_menu_requires_ctrl,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetSidebarMenuRequiresCtrl(switch.is_active()));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("Panel Menu Needs Ctrl"),
+                    set_subtitle: &tr("Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"),
+                    add_suffix = &gtk::Switch {
+                        set_active: config.ui.panel_menu_requires_ctrl,
+                        set_valign: gtk::Align::Center,
+                        connect_active_notify => move |switch| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetPanelMenuRequiresCtrl(switch.is_active()));
                             }
                         }
                     }

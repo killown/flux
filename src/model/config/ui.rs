@@ -66,6 +66,24 @@ pub struct UIConfig {
     /// Persisted across sessions, whether the header bar is visible. Defaults to `true`.
     #[serde(default = "default_true")]
     pub header_visible: bool,
+    /// Show the filter button in the header bar.
+    #[serde(default = "default_true")]
+    pub header_show_filter: bool,
+    /// Show the sort indicator in the header bar.
+    #[serde(default = "default_true")]
+    pub header_show_sort: bool,
+    /// Show the list/grid toggle in the header bar.
+    #[serde(default = "default_true")]
+    pub header_show_view: bool,
+    /// Show the preview-panel toggle in the header bar.
+    #[serde(default = "default_true")]
+    pub header_show_preview: bool,
+    /// Sidebar context menus open only on Ctrl+right-click; a plain right-click does nothing.
+    #[serde(default)]
+    pub sidebar_menu_requires_ctrl: bool,
+    /// Left-sidebar, preview-panel and quick-list context menus open only on Ctrl+right-click.
+    #[serde(default)]
+    pub panel_menu_requires_ctrl: bool,
     /// Hex color code used for the base page body of auto-generated extension icons (e.g. `"#e4e4e4"`).
     pub auto_mime_body_color: String,
     /// Hex color code used for the extension text label inside auto-generated icons (e.g. `"#ffffff"`).
@@ -305,6 +323,12 @@ impl Default for UIConfig {
             auto_mime_body_color: "#e4e4e4".to_string(),
             auto_mime_font_color: "#ffffff".to_string(),
             header_visible: true,
+            header_show_filter: true,
+            header_show_sort: true,
+            header_show_view: true,
+            header_show_preview: true,
+            sidebar_menu_requires_ctrl: false,
+            panel_menu_requires_ctrl: false,
             search_panel_width: default_search_panel_width(),
             tag_panel_width: default_tag_panel_width(),
             actions_panel_width: default_actions_panel_width(),

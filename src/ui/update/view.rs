@@ -64,6 +64,30 @@ pub(super) fn handle(
         AppMsg::SetShowEmptyDirEmblem(val) => app.handle_set_show_empty_dir_emblem(val),
         AppMsg::SetShowSymlinkEmblem(val) => app.handle_set_show_symlink_emblem(val, sender),
         AppMsg::SetShowCsd(val) => app.handle_set_show_csd(val),
+        AppMsg::SetHeaderShowFilter(val) => {
+            app.config.ui.header_show_filter = val;
+            crate::utils::save_config(&app.config);
+        }
+        AppMsg::SetHeaderShowSort(val) => {
+            app.config.ui.header_show_sort = val;
+            crate::utils::save_config(&app.config);
+        }
+        AppMsg::SetHeaderShowView(val) => {
+            app.config.ui.header_show_view = val;
+            crate::utils::save_config(&app.config);
+        }
+        AppMsg::SetHeaderShowPreview(val) => {
+            app.config.ui.header_show_preview = val;
+            crate::utils::save_config(&app.config);
+        }
+        AppMsg::SetSidebarMenuRequiresCtrl(val) => {
+            app.config.ui.sidebar_menu_requires_ctrl = val;
+            crate::utils::save_config(&app.config);
+        }
+        AppMsg::SetPanelMenuRequiresCtrl(val) => {
+            app.config.ui.panel_menu_requires_ctrl = val;
+            crate::utils::save_config(&app.config);
+        }
         AppMsg::SetWindowControlsLeft(val) => app.handle_set_window_controls_left(val),
         AppMsg::SetShowXdgDirs(val) => app.handle_set_show_xdg_dirs(val, sender),
         AppMsg::SetShowHidden(val) => app.handle_set_show_hidden(val, sender),

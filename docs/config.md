@@ -87,6 +87,10 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `folder_sort` | `{}` | Per-folder sort field override, keyed by absolute path. |
 | `folders_first` | `true` | Group directories above files. |
 | `grid_spacing` | `10` | Pixel spacing between items in the file grid. |
+| `header_show_filter` | `true` | Show the filter button in the header bar. |
+| `header_show_preview` | `true` | Show the preview-panel toggle in the header bar. |
+| `header_show_sort` | `true` | Show the sort indicator in the header bar. |
+| `header_show_view` | `true` | Show the list/grid toggle in the header bar. `Ctrl+Shift+M` toggles the mode while it is hidden. |
 | `header_visible` | `true` | Show the header bar. Persisted across sessions. |
 | `hidden_extensions` | `[]` | Extensions to hide from grid labels, for example `["desktop", "AppImage"]`. |
 | `lazy_thumbnails` | `false` | Generate thumbnails only for items scrolled into view. |
@@ -96,6 +100,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `max_history` | `100` | Back and forward history entries kept. |
 | `max_search_results` | `100` | Maximum matches during recursive filename and extension search. |
 | `max_width_chars` | `20` | Characters shown in a file label before truncation. |
+| `panel_menu_requires_ctrl` | `false` | Open left-sidebar, preview-panel and quick-list context menus only on Ctrl+right-click; a plain right-click does nothing. |
 | `preview_panel_width` | `400` | Width in pixels of the right-side preview panel. |
 | `preview_syntax_highlighting` | `true` | Syntax-highlight source files in the preview panel. |
 | `recents_row` | `0` | Zero-based position of the Recents row among the `[[sidebar]]` entries. No effect when `show_recents` is `false`. |
@@ -108,6 +113,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `show_symlink_emblem` | `true` | Show a badge and target hint on symbolic links. |
 | `show_thumbnails` | `true` | Master switch for thumbnail generation; overrides `thumbnail_types`. |
 | `show_xdg_dirs` | `false` | Show the XDG user directories, such as Documents and Downloads, in the sidebar. |
+| `sidebar_menu_requires_ctrl` | `false` | Open sidebar context menus only on Ctrl+right-click; a plain right-click does nothing. |
 | `sidebar_visible` | `true` | Show the sidebar. Persisted across sessions. |
 | `sidebar_width` | `0` | Width in pixels of the left sidebar. |
 | `single_click` | `false` | Activate items with a single click. |
@@ -200,6 +206,12 @@ search_panel_width = 350
 actions_panel_width = 380
 show_symlink_emblem = true
 header_visible = true
+header_show_filter = true
+header_show_sort = true
+header_show_view = true
+header_show_preview = true
+sidebar_menu_requires_ctrl = false
+panel_menu_requires_ctrl = false
 auto_mime_body_color = "#e4e4e4"
 auto_mime_font_color = "#ffffff"
 auto_mime_font_size = 13.0

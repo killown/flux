@@ -163,6 +163,13 @@ impl FluxApp {
             let target_path = path.clone();
 
             right_click.connect_released(move |gesture, _, x, y| {
+                if crate::utils::load_config().ui.panel_menu_requires_ctrl
+                    && !gesture
+                        .current_event_state()
+                        .contains(gtk::gdk::ModifierType::CONTROL_MASK)
+                {
+                    return;
+                }
                 gesture.set_state(gtk::EventSequenceState::Claimed);
 
                 let popover = gtk::PopoverMenu::builder().has_arrow(true).build();

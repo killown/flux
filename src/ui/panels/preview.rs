@@ -2645,7 +2645,7 @@ fn attach_context_menu(
                 .contains(gtk::gdk::ModifierType::CONTROL_MASK)
         });
 
-        if ctrl {
+        if ctrl || crate::utils::load_config().ui.panel_menu_requires_ctrl {
             return;
         }
 

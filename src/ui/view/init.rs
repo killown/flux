@@ -285,6 +285,14 @@ impl FluxApp {
 
         let s_ns = sender.clone();
         new_section_rc.connect_pressed(move |gesture, _, x, y| {
+            let ui_cfg = crate::utils::load_config().ui;
+            if (ui_cfg.sidebar_menu_requires_ctrl || ui_cfg.panel_menu_requires_ctrl)
+                && !gesture
+                    .current_event_state()
+                    .contains(gdk::ModifierType::CONTROL_MASK)
+            {
+                return;
+            }
             if let Some(widget) = gesture.widget() {
                 if widget
                     .pick(x, y, gtk::PickFlags::DEFAULT)

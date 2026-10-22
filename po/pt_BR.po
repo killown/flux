@@ -2343,6 +2343,62 @@ msgstr "Preferências"
 # src/ui/settings/page/appearance.rs
 # ============================================================
 
+#: src/ui/settings/page/appearance.rs:286
+msgid "Header Buttons"
+msgstr "Botões do Cabeçalho"
+
+#: src/ui/settings/page/appearance.rs:287
+msgid "Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+M."
+msgstr "Escolha quais botões a barra de cabeçalho mostra. O menu principal fica sempre visível. Se o alternador lista/grade estiver oculto, pressione Ctrl+Shift+M."
+
+#: src/ui/settings/page/appearance.rs:289
+msgid "Filter Button"
+msgstr "Botão de Filtro"
+
+#: src/ui/settings/page/appearance.rs:290
+msgid "Show the filter-by-pattern button"
+msgstr "Mostrar o botão de filtrar por padrão"
+
+#: src/ui/settings/page/appearance.rs:302
+msgid "Sort Indicator"
+msgstr "Indicador de Ordenação"
+
+#: src/ui/settings/page/appearance.rs:303
+msgid "Show the current sort mode and its cycle control"
+msgstr "Mostrar o modo de ordenação atual e o controle para alterná-lo"
+
+#: src/ui/settings/page/appearance.rs:315
+msgid "List/Grid Toggle"
+msgstr "Alternador Lista/Grade"
+
+#: src/ui/settings/page/appearance.rs:316
+msgid "Show the button that switches between list and grid layout"
+msgstr "Mostrar o botão que alterna entre o layout de lista e de grade"
+
+#: src/ui/settings/page/appearance.rs:328
+msgid "Preview Button"
+msgstr "Botão de Pré-visualização"
+
+#: src/ui/settings/page/appearance.rs:329
+msgid "Show the button that toggles the preview panel"
+msgstr "Mostrar o botão que alterna o painel de pré-visualização"
+
+#: src/ui/settings/page/appearance.rs:437
+msgid "Sidebar Menu Needs Ctrl"
+msgstr "Menu da Barra Lateral Exige Ctrl"
+
+#: src/ui/settings/page/appearance.rs:438
+msgid "Open sidebar context menus only with Ctrl + right-click"
+msgstr "Abrir os menus de contexto da barra lateral apenas com Ctrl + clique direito"
+
+#: src/ui/settings/page/appearance.rs:450
+msgid "Panel Menu Needs Ctrl"
+msgstr "Menu dos Painéis Exige Ctrl"
+
+#: src/ui/settings/page/appearance.rs:451
+msgid "Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"
+msgstr "Abrir os menus de contexto da barra lateral esquerda, do painel de pré-visualização e da lista rápida apenas com Ctrl + clique direito"
+
 #: src/ui/settings/page/appearance.rs:336
 msgid "Fish Shell Integration"
 msgstr "Integração com o Fish Shell"

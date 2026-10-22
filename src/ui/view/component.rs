@@ -553,6 +553,8 @@ impl SimpleAsyncComponent for FluxApp {
                         pack_end = &gtk::ToggleButton {
                             #[watch]
                             set_active: model.is_list_mode,
+                            #[watch]
+                            set_visible: model.config.ui.header_show_view,
                             set_icon_name: "view-list-symbolic",
                             set_tooltip_text: Some(&tr("Toggle List Mode")),
                             add_css_class: "flat",
@@ -567,6 +569,8 @@ impl SimpleAsyncComponent for FluxApp {
                             add_css_class: "flat",
                             #[watch]
                             set_active: model.extension_filter.is_some(),
+                            #[watch]
+                            set_visible: model.config.ui.header_show_filter,
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
                             #[wrap(Some)]
@@ -591,6 +595,8 @@ impl SimpleAsyncComponent for FluxApp {
                         pack_end = &gtk::ToggleButton {
                             #[watch]
                             set_active: model.preview_panel_visible,
+                            #[watch]
+                            set_visible: model.config.ui.header_show_preview,
                             set_icon_name: "view-reveal-symbolic",
                             set_tooltip_text: Some(&tr("Toggle Preview Panel")),
                             add_css_class: "flat",
@@ -600,6 +606,8 @@ impl SimpleAsyncComponent for FluxApp {
 
                         /// Visual indicator of the current active sorting mode.
                         pack_end = &gtk::Box {
+                            #[watch]
+                            set_visible: model.config.ui.header_show_sort,
                             set_orientation: gtk::Orientation::Horizontal,
                             set_spacing: constants::STATUS_ICON_SPACING,
                             set_margin_end: constants::HEADER_MARGIN_END,

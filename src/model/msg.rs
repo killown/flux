@@ -972,6 +972,18 @@ pub enum AppMsg {
     /// Toggles generation of `~/.config/fish/conf.d/flux-theme.fish`.
     /// Off by default, the file is inert and can be deleted when off.
     SetFishTheme(bool),
+    /// Shows or hides the filter button in the header bar.
+    SetHeaderShowFilter(bool),
+    /// Shows or hides the sort indicator in the header bar.
+    SetHeaderShowSort(bool),
+    /// Shows or hides the list/grid toggle in the header bar.
+    SetHeaderShowView(bool),
+    /// Shows or hides the preview-panel toggle in the header bar.
+    SetHeaderShowPreview(bool),
+    /// Requires Ctrl to be held for sidebar context menus to open.
+    SetSidebarMenuRequiresCtrl(bool),
+    /// Requires Ctrl to be held for preview-panel and quick-list context menus to open.
+    SetPanelMenuRequiresCtrl(bool),
     /// Remove a single path from the quick-list panel by exact match.
     RemoveQuickItem(PathBuf),
     /// Tear down and reconstruct all tab buttons in the quick-list panel.
