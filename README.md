@@ -7,7 +7,7 @@
 Flux is a GTK4/Libadwaita file manager for Linux, written in Rust. I wanted something that opens instantly, looks at home on GNOME and Wayland, and can be driven from the keyboard. It does that, and it does it faster than the other GUI file managers I tried.
 
 <p align="center">
-  <a href="https://youtu.be/78IHL8aA8Jo">
+  <a href="https://youtu.be/dG7eZXcwW9c">
     <img src="https://github.com/killown/flux/raw/main/screenshots/flux.png" alt="Flux, a GTK4 Libadwaita file manager for Linux, with the preview panel and embedded terminal" width="100%">
   </a>
 </p>
