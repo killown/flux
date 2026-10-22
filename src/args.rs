@@ -23,6 +23,10 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
         "Set a custom icon/image for TARGET",
     ),
     (
+        "    --cwd PATH",
+        "Navigate the running window to PATH (starts a new window if none is running)",
+    ),
+    (
         "    --set-icons-stdin",
         "Read TARGET<TAB>IMAGE pairs from standard input",
     ),
@@ -183,6 +187,8 @@ pub enum StartupAction {
     ResetIconsStdin,
     /// Store a theme name in the config and exit.
     SetTheme(String),
+    /// Ask the running window to navigate to PATH, or launch a new window there.
+    Cwd(PathBuf),
     /// Open the context-menu editor utility.
     MenuEditor,
     /// Print the paths selected in the running window and exit.
@@ -249,6 +255,10 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         Some("--toggle") => StartupAction::Toggle,
         Some("--show") => StartupAction::Show,
         Some("--hide") => StartupAction::Hide,
+        Some("--cwd") => match filtered_args.get(1) {
+            Some(path) => StartupAction::Cwd(uri_to_path(path)),
+            None => StartupAction::InvalidArgument("--cwd requires a path".to_string()),
+        },
         Some("--file-properties") => match filtered_args.get(1) {
             Some(path) => StartupAction::FileProperties(uri_to_path(path)),
             None => StartupAction::PrintHelp,

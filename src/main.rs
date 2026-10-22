@@ -10,6 +10,7 @@
 
 mod cli;
 mod i18n;
+mod ipc;
 mod model;
 mod services;
 mod shell_functions;

@@ -5,6 +5,7 @@ use adw::prelude::*;
 use adw::{gio, glib};
 use relm4::prelude::*;
 use std::path::PathBuf;
+use std::sync::mpsc::Receiver;
 
 pub(super) fn launch_main_app(
     start_path: PathBuf,
@@ -12,6 +13,7 @@ pub(super) fn launch_main_app(
     quick_list: Option<Vec<PathBuf>>,
     tag_search: Option<String>,
     opts: flux::args::WindowOptions,
+    cwd_rx: Option<Receiver<PathBuf>>,
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms.
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
@@ -52,12 +54,18 @@ pub(super) fn launch_main_app(
 
     let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);
+
+    // Drain the `--cwd` IPC channel on the GTK thread.
+    if let Some(rx) = cwd_rx {
+        forward_ipc_to_app(rx);
+    }
+
     app.with_args(vec![]).run_async::<FluxApp>(AppInit {
         start_path,
         open_archive,
         quick_list,
         tag_search,
-        // `flux::args::WindowOptions` is the library crate's type; this binary compiles
+        // `flux::args::WindowOptions` is the library crate's type, this binary compiles
         // its own copy of `model`, so the options are carried over field by field.
         opts: WindowOptions {
             no_sidebar: opts.no_sidebar,
@@ -66,5 +74,17 @@ pub(super) fn launch_main_app(
             terminal: opts.terminal,
             preview: opts.preview,
         },
+    });
+}
+
+/// Drains IPC navigation requests into the app message loop on the GTK thread.
+fn forward_ipc_to_app(rx: Receiver<PathBuf>) {
+    glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
+        while let Ok(path) = rx.try_recv() {
+            if let Some(sender) = crate::model::SENDER.get() {
+                let _ = sender.send(AppMsg::Navigate(path));
+            }
+        }
+        glib::ControlFlow::Continue
     });
 }

@@ -33,6 +33,39 @@ pub fn run() {
         _ => {}
     }
 
+    // Bring the `--cwd` IPC server up before any client can connect. Every
+    // process that may create the main window runs this, including the one
+    // that receives `--cwd` and falls through to `launch_main_app` below,
+    // otherwise a `--cwd` racing with a cold start would open a second window.
+    let cwd_rx = crate::ipc::start_server();
+
+    // `--cwd`: talk to a running window. If `cwd_rx` is `None`, another Flux
+    // instance already owns the socket, so act as a client and exit. If it is
+    // `Some`, we are the first instance: fall through to launch a window at
+    // the requested directory. That window will serve subsequent CLI calls.
+    if let StartupAction::Cwd(ref path) = action {
+        let canonical = match path.canonicalize() {
+            Ok(p) if p.is_dir() => p,
+            _ => {
+                eprintln!("flux: --cwd: not a directory: {}", path.display());
+                std::process::exit(1);
+            }
+        };
+        if cwd_rx.is_none() {
+            match crate::ipc::send_cwd(&canonical) {
+                crate::ipc::ClientOutcome::Ok => std::process::exit(0),
+                crate::ipc::ClientOutcome::Rejected => {
+                    eprintln!("flux: --cwd: running window rejected the request");
+                    std::process::exit(1);
+                }
+                crate::ipc::ClientOutcome::NotRunning => {
+                    // Socket vanished between our bind attempt and connect,
+                    // fall through to launching rather than silently failing.
+                }
+            }
+        }
+    }
+
     crate::i18n::init();
     adw::init().expect("Failed to initialize Libadwaita");
 
@@ -83,6 +116,7 @@ pub fn run() {
                 None,
                 None,
                 flux::args::WindowOptions::default(),
+                cwd_rx,
             );
         }
 
@@ -108,24 +142,38 @@ pub fn run() {
                 None,
                 None,
                 flux::args::WindowOptions::default(),
+                cwd_rx,
             );
         }
 
         StartupAction::Launch { path, opts } => {
-            launch::launch_main_app(path, None, None, None, opts);
+            launch::launch_main_app(path, None, None, None, opts, cwd_rx);
+        }
+
+        // Reached when this is the first Flux instance (or no window answered
+        // the IPC): open a window at the requested directory.
+        StartupAction::Cwd(path) => {
+            launch::launch_main_app(
+                path,
+                None,
+                None,
+                None,
+                flux::args::WindowOptions::default(),
+                cwd_rx,
+            );
         }
 
         StartupAction::Preview { path, opts } => {
-            launch::launch_main_app(path, None, None, None, opts);
+            launch::launch_main_app(path, None, None, None, opts, cwd_rx);
         }
 
         StartupAction::TagSearch { tag, opts } => {
-            launch::launch_main_app(home_dir, None, None, Some(tag), opts);
+            launch::launch_main_app(home_dir, None, None, Some(tag), opts, cwd_rx);
         }
 
         StartupAction::QuickList { paths, opts } => {
             let first = paths.first().cloned().unwrap_or_else(|| home_dir.clone());
-            launch::launch_main_app(first, None, Some(paths), None, opts);
+            launch::launch_main_app(first, None, Some(paths), None, opts, cwd_rx);
         }
 
         StartupAction::SetIcon { target, image } => {

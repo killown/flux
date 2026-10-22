@@ -28,6 +28,7 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--terminal` | Start with the terminal open in the configured position |
 | `--file-properties PATH` | Open the file properties window for PATH |
 | `--set-icon TARGET IMAGE` | Set a custom icon/image for TARGET |
+| `--cwd PATH` | Navigate the running window to PATH (starts a new window if none is running) |
 | `--set-icons-stdin` | Read TARGET&lt;TAB&gt;IMAGE pairs from standard input |
 | `--reset-icon TARGET` | Reset custom icon for TARGET back to default |
 | `--reset-icons-stdin` | Read TARGET paths from standard input to reset |

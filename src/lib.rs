@@ -9,6 +9,7 @@
 pub mod args;
 mod doc_cli;
 mod doc_fish;
+pub mod ipc;
 pub use crate::utils::hwga;
 pub mod i18n;
 pub mod model;
