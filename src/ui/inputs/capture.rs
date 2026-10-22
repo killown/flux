@@ -1,9 +1,118 @@
 use crate::model::{AppMsg, FluxApp};
+use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
+
+/// When a capture-phase binding must stand aside and let the focused widget
+/// handle the key instead.
+#[derive(Clone, Copy)]
+enum Yield {
+    /// Always consume the chord.
+    Never,
+    /// Defer to the embedded terminal when it holds focus.
+    Terminal,
+    /// Defer to the embedded terminal and to any focused editable widget.
+    TerminalOrEditable,
+}
+
+/// A user-rebindable capture-phase chord resolved from the [`KeyMap`].
+struct CaptureBinding {
+    trigger: gtk::ShortcutTrigger,
+    msg: AppMsg,
+    yield_to: Yield,
+}
+
+/// Returns `true` when the key event currently dispatched by `ctrl` exactly
+/// matches `trigger`.
+///
+/// # Arguments
+///
+/// * `ctrl` - The capture-phase key controller handling the event.
+/// * `trigger` - The resolved shortcut trigger to test against.
+fn trigger_matches(ctrl: &gtk::EventControllerKey, trigger: &gtk::ShortcutTrigger) -> bool {
+    ctrl.current_event()
+        .is_some_and(|event| trigger.trigger(&event, false) == gdk::KeyMatch::Exact)
+}
+
+/// Builds the capture-phase bindings backed by the resolved [`KeyMap`].
+///
+/// # Arguments
+///
+/// * `keymap` - The resolved key map holding the user's (or default) triggers.
+fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
+    let bind = |trigger: &gtk::ShortcutTrigger, msg: AppMsg, yield_to: Yield| CaptureBinding {
+        trigger: trigger.clone(),
+        msg,
+        yield_to,
+    };
+
+    vec![
+        // Ctrl+Alt+/ and Ctrl+Alt+\ folder cycle. Consumed at capture phase so the
+        // ShortcutController (Ctrl+W = close tab, etc.) never sees the chord.
+        bind(
+            &keymap.cycle_by_letter_cancel,
+            AppMsg::CycleByLetterCancel,
+            Yield::TerminalOrEditable,
+        ),
+        bind(
+            &keymap.cycle_by_letter_reanchor,
+            AppMsg::CycleByLetterReanchor,
+            Yield::TerminalOrEditable,
+        ),
+        bind(&keymap.cycle_filter_mode, AppMsg::CycleFilterMode, Yield::Terminal),
+        // Ctrl+Shift+A: toggle contextual-actions panel. Capture phase
+        // so a focused widget inside the panel cannot pre-empt the chord.
+        bind(
+            &keymap.toggle_actions_panel,
+            AppMsg::ToggleActionsPanel,
+            Yield::Terminal,
+        ),
+        // Ctrl+Shift+L: toggle connect-to-server panel.
+        bind(
+            &keymap.toggle_connect_panel,
+            AppMsg::ToggleConnectPanel,
+            Yield::Terminal,
+        ),
+        // Ctrl+Shift+F: toggle the glob-pattern filter bar. Capture phase so
+        // it fires even while the filter entry itself has focus, which is the
+        // one place a user is most likely to press it to dismiss the bar.
+        bind(&keymap.toggle_filter_bar, AppMsg::ToggleFilterBar, Yield::Terminal),
+        // Ctrl+M: toggle ephemeral MIME filter on the selection. Moved
+        // here for the same reason as Ctrl+Shift+A: it must work while
+        // the peek-preview panel (or any other focused panel) is open.
+        bind(
+            &keymap.filter_by_mime,
+            AppMsg::FilterBySelectedMime,
+            Yield::TerminalOrEditable,
+        ),
+        bind(&keymap.toggle_header, AppMsg::ToggleHeaderBar, Yield::Never),
+        bind(
+            &keymap.toggle_folders_first,
+            AppMsg::ToggleCurrentFoldersFirst,
+            Yield::Never,
+        ),
+        bind(&keymap.toggle_statusbar, AppMsg::ToggleStatusBar, Yield::Never),
+        bind(&keymap.toggle_sidebar, AppMsg::ToggleSidebar, Yield::Never),
+        // F4 toggles the terminal panel. When either terminal has focus,
+        // the terminal's own key controller fires first and handles this
+        // key, so we yield there to avoid a double fire.
+        bind(&keymap.toggle_terminal, AppMsg::ToggleTerminal, Yield::Terminal),
+        // Wide preview: F11 is left to the shell when the terminal has focus.
+        bind(
+            &keymap.toggle_wide_preview,
+            AppMsg::ToggleWidePreview,
+            Yield::Terminal,
+        ),
+        // Tags: Ctrl + Shift + T
+        bind(&keymap.toggle_tag_panel, AppMsg::ToggleTagPanel, Yield::Terminal),
+        // Let the terminal shell handle Ctrl+Z (job control) if it has focus.
+        bind(&keymap.undo, AppMsg::Undo, Yield::Terminal),
+        bind(&keymap.redo, AppMsg::Redo, Yield::Terminal),
+    ]
+}
 
 /// Capture-phase key controller. Handles shortcuts that must win over
 /// focused children (Tab cycling, Ctrl+Z/Y, Insert/End/PageUp/PageDown,
@@ -15,7 +124,12 @@ use std::path::PathBuf;
 /// here, not in a window-level `ShortcutController`. Capture-phase
 /// `EventControllerKey` runs before any focused child can pre-empt the
 /// event, bubble-phase shortcuts do not.
-pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncComponentSender<FluxApp>) {
+pub fn setup_capture(
+    window: &impl IsA<gtk::Widget>,
+    sender: relm4::AsyncComponentSender<FluxApp>,
+    keymap: &KeyMap,
+) {
+    let bindings = capture_bindings(keymap);
     let capture = gtk::EventControllerKey::new();
     capture.set_propagation_phase(gtk::PropagationPhase::Capture);
 
@@ -53,17 +167,25 @@ pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncCompone
             }
         }
 
+        for binding in &bindings {
+            if !trigger_matches(ctrl, &binding.trigger) {
+                continue;
+            }
+            let yields = match binding.yield_to {
+                Yield::Never => false,
+                Yield::Terminal => terminal_focused,
+                Yield::TerminalOrEditable => terminal_focused || is_editable,
+            };
+            if yields {
+                return glib::Propagation::Proceed;
+            }
+            sender.input(binding.msg.clone());
+            return glib::Propagation::Stop;
+        }
+
         // Ctrl+Alt+<letter> folder cycle. Consumed at capture phase so the
         // ShortcutController (Ctrl+W = close tab, etc.) never sees the chord.
         if is_ctrl && is_alt && !is_shift && !is_editable && !terminal_focused {
-            if keyval == gdk::Key::backslash {
-                sender.input(AppMsg::CycleByLetterCancel);
-                return glib::Propagation::Stop;
-            }
-            if keyval == gdk::Key::slash {
-                sender.input(AppMsg::CycleByLetterReanchor);
-                return glib::Propagation::Stop;
-            }
             if let Some(c) = keyval.to_unicode() {
                 let c = c.to_ascii_lowercase();
                 if c.is_ascii_lowercase() {
@@ -80,50 +202,6 @@ pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncCompone
             }
             gdk::Key::Insert => {
                 sender.input(AppMsg::AddExclusive(None));
-                glib::Propagation::Stop
-            }
-            gdk::Key::e | gdk::Key::E if is_ctrl && is_shift && !is_alt => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::CycleFilterMode);
-                glib::Propagation::Stop
-            }
-            // Ctrl+Shift+A: toggle contextual-actions panel. Capture phase
-            // so a focused widget inside the panel cannot pre-empt the chord.
-            gdk::Key::a | gdk::Key::A if is_ctrl && is_shift && !is_alt => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::ToggleActionsPanel);
-                glib::Propagation::Stop
-            }
-            // Ctrl+Shift+L: toggle connect-to-server panel.
-            gdk::Key::l | gdk::Key::L if is_ctrl && is_shift && !is_alt => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::ToggleConnectPanel);
-                glib::Propagation::Stop
-            }
-            // Ctrl+Shift+F: toggle the glob-pattern filter bar. Capture phase so
-            // it fires even while the filter entry itself has focus, which is the
-            // one place a user is most likely to press it to dismiss the bar.
-            gdk::Key::f | gdk::Key::F if is_ctrl && is_shift && !is_alt => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::ToggleFilterBar);
-                glib::Propagation::Stop
-            }
-            // Ctrl+M: toggle ephemeral MIME filter on the selection. Moved
-            // here for the same reason as Ctrl+Shift+A: it must work while
-            // the peek-preview panel (or any other focused panel) is open.
-            gdk::Key::m | gdk::Key::M if is_ctrl && !is_shift && !is_alt => {
-                if terminal_focused || is_editable {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::FilterBySelectedMime);
                 glib::Propagation::Stop
             }
             gdk::Key::End if is_ctrl => {
@@ -144,48 +222,6 @@ pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncCompone
                 }
                 let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
                 sender.input(AppMsg::Navigate(home_dir));
-                glib::Propagation::Stop
-            }
-            gdk::Key::F6 => {
-                sender.input(AppMsg::ToggleHeaderBar);
-                glib::Propagation::Stop
-            }
-            gdk::Key::F3 => {
-                sender.input(AppMsg::ToggleCurrentFoldersFirst);
-                glib::Propagation::Stop
-            }
-            gdk::Key::F7 if !is_ctrl && !is_shift => {
-                sender.input(AppMsg::ToggleStatusBar);
-                glib::Propagation::Stop
-            }
-            gdk::Key::F8 => {
-                sender.input(AppMsg::ToggleSidebar);
-                glib::Propagation::Stop
-            }
-            // F4 toggles the terminal panel. When either terminal has focus,
-            // the terminal's own key controller fires first and handles this
-            // key, so we yield there to avoid a double fire.
-            gdk::Key::F4 => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::ToggleTerminal);
-                glib::Propagation::Stop
-            }
-            // Wide preview: F11 is left to the shell when the terminal has focus.
-            gdk::Key::F11 if !is_ctrl && !is_shift && !is_alt => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::ToggleWidePreview);
-                glib::Propagation::Stop
-            }
-            // Tags: Ctrl + Shift + T
-            gdk::Key::t | gdk::Key::T if is_ctrl && is_shift && !is_alt => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::ToggleTagPanel);
                 glib::Propagation::Stop
             }
             gdk::Key::Tab if is_ctrl => {
@@ -212,25 +248,6 @@ pub fn setup_capture(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncCompone
                 }
                 sender.input(AppMsg::NextExclusive);
                 sender.input(AppMsg::TogglePreviewGridFocus);
-                glib::Propagation::Stop
-            }
-            gdk::Key::z if is_ctrl => {
-                // Let the terminal shell handle Ctrl+Z (job control) if it has focus.
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                if is_shift {
-                    sender.input(AppMsg::Redo);
-                } else {
-                    sender.input(AppMsg::Undo);
-                }
-                glib::Propagation::Stop
-            }
-            gdk::Key::y if is_ctrl => {
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::Redo);
                 glib::Propagation::Stop
             }
             // Full-screen preview: Esc leaves it. The handler is a no-op otherwise and the key

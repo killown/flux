@@ -6,8 +6,7 @@ use gtk::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
-/// Every shortcut registered via the resolved [`KeyMap`] plus the handful of
-/// hardcoded ones (F-keys, debug window, tags fallback, undo/redo).
+/// Every shortcut registered via the resolved [`KeyMap`].
 pub fn setup_global_shortcuts(
     window: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
@@ -29,12 +28,6 @@ pub fn setup_global_shortcuts(
                 })),
             ));
         }};
-    }
-
-    macro_rules! bind_trigger {
-        ($lit:literal, $msg:expr) => {
-            bind_msg!(gtk::ShortcutTrigger::parse_string($lit).unwrap(), $msg)
-        };
     }
 
     // ── KeyMap-driven ─────────────────────────────────────────────────────
@@ -61,16 +54,21 @@ pub fn setup_global_shortcuts(
     bind_msg!(keymap.next_tab.clone(), AppMsg::NextTab);
     bind_msg!(keymap.prev_tab.clone(), AppMsg::PrevTab);
 
-    // ── Hardcoded F-keys / debug / tags ───────────────────────────────────
-    bind_trigger!("<Primary><Shift>F7", AppMsg::OpenDebugWindow);
-    bind_trigger!("F7", AppMsg::ToggleStatusBar);
-    bind_trigger!("F8", AppMsg::ToggleSidebar);
-    bind_trigger!("F4", AppMsg::ToggleTerminal);
-    bind_trigger!("<Primary>z", AppMsg::Undo);
-    bind_trigger!("<Primary><Shift>z", AppMsg::Redo);
-    bind_trigger!("<Primary>y", AppMsg::Redo);
-    bind_trigger!("<Primary><Shift>t", AppMsg::ToggleTagPanel);
-    bind_trigger!("<Primary><Shift>a", AppMsg::ToggleActionsPanel);
+    bind_msg!(keymap.open_debug_window.clone(), AppMsg::OpenDebugWindow);
+    bind_msg!(keymap.toggle_statusbar.clone(), AppMsg::ToggleStatusBar);
+    bind_msg!(keymap.toggle_sidebar.clone(), AppMsg::ToggleSidebar);
+    bind_msg!(keymap.toggle_terminal.clone(), AppMsg::ToggleTerminal);
+    bind_msg!(keymap.undo.clone(), AppMsg::Undo);
+    bind_msg!(keymap.redo.clone(), AppMsg::Redo);
+    bind_msg!(keymap.toggle_tag_panel.clone(), AppMsg::ToggleTagPanel);
+    bind_msg!(keymap.toggle_actions_panel.clone(), AppMsg::ToggleActionsPanel);
+    bind_msg!(keymap.copy.clone(), AppMsg::Copy);
+    bind_msg!(keymap.cut.clone(), AppMsg::Cut);
+    bind_msg!(keymap.paste.clone(), AppMsg::Paste);
+    bind_msg!(keymap.toggle_location_panel.clone(), AppMsg::ToggleLocationPanel);
+    bind_msg!(keymap.toggle_list_mode.clone(), AppMsg::ToggleListMode);
+    bind_msg!(keymap.cycle_sort.clone(), AppMsg::CycleSort);
+    bind_msg!(keymap.toggle_sort_order.clone(), AppMsg::ToggleSortOrder);
 
     window.add_controller(sc);
 

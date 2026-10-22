@@ -58,4 +58,64 @@ pub struct ShortcutsConfig {
     pub cycle_sort: Option<String>,
     /// Key combination to toggle between ascending and descending order.
     pub toggle_sort_order: Option<String>,
+    /// Key combination to toggle the visibility of the status bar.
+    #[serde(default)]
+    pub toggle_statusbar: Option<String>,
+    /// Key combination to toggle the visibility of the sidebar.
+    #[serde(default)]
+    pub toggle_sidebar: Option<String>,
+    /// Key combination to toggle the embedded terminal.
+    #[serde(default)]
+    pub toggle_terminal: Option<String>,
+    /// Key combination to toggle the glob-pattern filter bar.
+    #[serde(default)]
+    pub toggle_filter_bar: Option<String>,
+    /// Key combination to cycle through the filter modes.
+    #[serde(default)]
+    pub cycle_filter_mode: Option<String>,
+    /// Key combination to toggle the ephemeral MIME filter on the selection.
+    #[serde(default)]
+    pub filter_by_mime: Option<String>,
+    /// Key combination to toggle the wide preview layout.
+    #[serde(default)]
+    pub toggle_wide_preview: Option<String>,
+    /// Key combination to open the debug window.
+    #[serde(default)]
+    pub open_debug_window: Option<String>,
+    /// Key combination to undo the last file operation.
+    #[serde(default)]
+    pub undo: Option<String>,
+    /// Key combination to redo the last undone file operation.
+    #[serde(default)]
+    pub redo: Option<String>,
+    /// Key combination to toggle the tag panel.
+    #[serde(default)]
+    pub toggle_tag_panel: Option<String>,
+    /// Key combination to toggle the contextual-actions panel.
+    #[serde(default)]
+    pub toggle_actions_panel: Option<String>,
+    /// Key combination to toggle the connect-to-server panel.
+    #[serde(default)]
+    pub toggle_connect_panel: Option<String>,
+    /// Key combination to toggle the location panel.
+    #[serde(default)]
+    pub toggle_location_panel: Option<String>,
+    /// Key combination to toggle between grid and list view.
+    #[serde(default)]
+    pub toggle_list_mode: Option<String>,
+    /// Key combination to copy the selected items to the clipboard.
+    #[serde(default)]
+    pub copy: Option<String>,
+    /// Key combination to cut the selected items to the clipboard.
+    #[serde(default)]
+    pub cut: Option<String>,
+    /// Key combination to paste items from the clipboard.
+    #[serde(default)]
+    pub paste: Option<String>,
+    /// Key combination to re-anchor the cycle-by-letter folder jump.
+    #[serde(default)]
+    pub cycle_by_letter_reanchor: Option<String>,
+    /// Key combination to cancel the cycle-by-letter folder jump.
+    #[serde(default)]
+    pub cycle_by_letter_cancel: Option<String>,
 }

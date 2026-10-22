@@ -250,17 +250,9 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         let shortcuts = [
-            ("<Control>h", AppMsg::ToggleHidden),
             ("F1", AppMsg::ShowHelp),
-            ("<Control>s", AppMsg::CycleSort),
-            ("<Control><Shift>s", AppMsg::ToggleSortOrder),
             ("<Shift>s", AppMsg::CycleFolderPriority),
-            ("<Control>c", AppMsg::Copy),
-            ("<Control>x", AppMsg::Cut),
-            ("<Control>v", AppMsg::Paste),
             ("Delete", AppMsg::Delete),
-            ("<Control>l", AppMsg::ToggleLocationPanel),
-            ("<Control><Shift>m", AppMsg::ToggleListMode),
         ];
 
         for (trigger_str, msg) in shortcuts {

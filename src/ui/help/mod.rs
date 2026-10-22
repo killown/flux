@@ -1,4 +1,4 @@
-mod format;
+pub(crate) mod format;
 mod page;
 
 use crate::i18n::tr;
