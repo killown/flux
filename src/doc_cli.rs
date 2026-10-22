@@ -120,12 +120,24 @@ pub fn render_cli_markdown() -> String {
          ```\n\n",
     );
 
+    out.push_str("## Theme\n\n");
+    out.push_str(
+        "`--theme NAME` stores `NAME` as the theme in `config.toml` and exits without \
+         opening a window. Running windows apply it as soon as the file changes. \
+         `NAME` is the file name of an installed theme without `.css`, such as one \
+         in `~/.local/share/flux/themes`; `default` removes the theme. An unknown \
+         name lists the available themes on stderr and exits with status `1`.\n\n\
+         ```text\n\
+         flux-fm --theme default\n\
+         ```\n\n",
+    );
+
     out.push_str("## Exit status\n\n");
     out.push_str(
         "| Status | Meaning |\n\
          |---|---|\n\
-         | `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon` and `--quick-list` print the help text and also exit with `0`. |\n\
-         | `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, or `--selection` finding no running window. |\n",
+         | `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon`, `--theme` and `--quick-list` print the help text and also exit with `0`. |\n\
+         | `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, an unknown `--theme` name, or `--selection` finding no running window. |\n",
     );
 
     out

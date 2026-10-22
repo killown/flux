@@ -38,6 +38,7 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--toggle` | Show or hide the running window |
 | `--show` | Bring the running window to the front |
 | `--hide` | Hide the running window |
+| `--theme NAME` | Set the theme to NAME, or 'default' to remove it |
 | `--menu-editor` | To manage menu.rs |
 <!-- END GENERATED: options -->
 
@@ -92,9 +93,17 @@ When no window is running, `--toggle` and `--show` open the home directory as if
 flux-fm --toggle
 ```
 
+## Theme
+
+`--theme NAME` stores `NAME` as the theme in `config.toml` and exits without opening a window. Running windows apply it as soon as the file changes. `NAME` is the file name of an installed theme without `.css`, such as one in `~/.local/share/flux/themes`; `default` removes the theme. An unknown name lists the available themes on stderr and exits with status `1`.
+
+```text
+flux-fm --theme default
+```
+
 ## Exit status
 
 | Status | Meaning |
 |---|---|
-| `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon` and `--quick-list` print the help text and also exit with `0`. |
-| `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, or `--selection` finding no running window. |
+| `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon`, `--theme` and `--quick-list` print the help text and also exit with `0`. |
+| `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, an unknown `--theme` name, or `--selection` finding no running window. |

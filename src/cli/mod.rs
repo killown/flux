@@ -189,6 +189,21 @@ pub fn run() {
             }
         }
 
+        StartupAction::SetTheme(name) => {
+            let available = crate::utils::helpers::list_available_themes();
+            if name != "default" && !available.contains(&name) {
+                eprintln!("flux: unknown theme '{name}'");
+                let mut names = vec!["default"];
+                names.extend(available.iter().map(String::as_str));
+                eprintln!("Available: {}", names.join(", "));
+                std::process::exit(1);
+            }
+            let mut config = crate::utils::load_config();
+            config.ui.theme = (name != "default").then(|| name.clone());
+            crate::utils::save_config(&config);
+            println!("Theme set to {name}");
+        }
+
         StartupAction::ResetIcon(target) => {
             let target_canon = target.canonicalize().unwrap_or(target);
             let mut config = crate::utils::load_config();

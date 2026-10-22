@@ -53,6 +53,10 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
     ("    --toggle", "Show or hide the running window"),
     ("    --show", "Bring the running window to the front"),
     ("    --hide", "Hide the running window"),
+    (
+        "    --theme NAME",
+        "Set the theme to NAME, or 'default' to remove it",
+    ),
     ("    --menu-editor", "To manage menu.rs"),
 ];
 
@@ -177,6 +181,8 @@ pub enum StartupAction {
     ResetIcon(PathBuf),
     /// Read TARGET paths from standard input to reset custom icons.
     ResetIconsStdin,
+    /// Store a theme name in the config and exit.
+    SetTheme(String),
     /// Open the context-menu editor utility.
     MenuEditor,
     /// Print the paths selected in the running window and exit.
@@ -260,6 +266,10 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             None => StartupAction::PrintHelp,
         },
         Some("--reset-icons-stdin") => StartupAction::ResetIconsStdin,
+        Some("--theme") => match filtered_args.get(1) {
+            Some(name) => StartupAction::SetTheme(name.to_string()),
+            None => StartupAction::PrintHelp,
+        },
         Some("--preview") => match filtered_args.get(1) {
             None => StartupAction::InvalidArgument("--preview requires a folder path".to_string()),
             Some(arg) => {

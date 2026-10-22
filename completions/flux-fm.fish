@@ -20,6 +20,7 @@ complete -c flux-fm -l selection -d 'Print the paths selected in the running win
 complete -c flux-fm -l toggle -d 'Show or hide the running window'
 complete -c flux-fm -l show -d 'Bring the running window to the front'
 complete -c flux-fm -l hide -d 'Hide the running window'
+complete -c flux-fm -l theme -r -f -d 'Set the theme to NAME, or \'default\' to remove it'
 complete -c flux-fm -l menu-editor -d 'To manage menu.rs'
 
 # The help text calls the binary `flux`.

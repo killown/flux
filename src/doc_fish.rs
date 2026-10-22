@@ -11,6 +11,7 @@ struct Parsed<'a> {
     short: Option<char>,
     long: Option<&'a str>,
     takes_value: bool,
+    value_is_path: bool,
 }
 
 fn parse_flags(flags: &str) -> Parsed<'_> {
@@ -18,6 +19,7 @@ fn parse_flags(flags: &str) -> Parsed<'_> {
         short: None,
         long: None,
         takes_value: false,
+        value_is_path: false,
     };
     for word in flags.split_whitespace() {
         let word = word.trim_end_matches(',');
@@ -26,8 +28,9 @@ fn parse_flags(flags: &str) -> Parsed<'_> {
         } else if let Some(short) = word.strip_prefix('-') {
             parsed.short = short.chars().next();
         } else {
-            // A bare word after the flag (`PATH`, `TARGET`, `IMAGE`) is a value.
+            // A bare word after the flag is a value, and only `NAME` is not a path.
             parsed.takes_value = true;
+            parsed.value_is_path |= word != "NAME";
         }
     }
     parsed
@@ -53,8 +56,11 @@ pub fn render_completions() -> String {
             let _ = write!(line, " -l {long}");
         }
         if parsed.takes_value {
-            // Every valued option takes filesystem paths.
-            line.push_str(" -r -F");
+            line.push_str(if parsed.value_is_path {
+                " -r -F"
+            } else {
+                " -r -f"
+            });
         }
         let _ = write!(line, " -d {}", fish_quote(description));
         out.push_str(&line);
@@ -120,6 +126,8 @@ mod tests {
         assert!(line.contains(" -r -F "));
         let line = out.lines().find(|l| l.contains(" -l no-sidebar ")).unwrap();
         assert!(!line.contains(" -r "));
+        let line = out.lines().find(|l| l.contains(" -l theme ")).unwrap();
+        assert!(line.contains(" -r -f ") && !line.contains(" -F "));
     }
 
     #[test]

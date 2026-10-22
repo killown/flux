@@ -127,6 +127,29 @@ The menu editor uses Nerd Font icons. Arch gets the font from the package above.
 
 Network browsing needs `gvfs` plus a backend such as `gvfs-smb` or `gvfs-sftp`. LUKS needs `cryptsetup` and `udisks2`.
 
+## Themes
+
+Flux includes a built-in theme engine. You can switch the GTK UI, the embedded terminal colors, and the Papirus folder icons simultaneously.
+
+Available themes:
+
+- `blue` (Classic)
+- `frost` (Pastel Blue)
+- `forge` (Warm Orange)
+- `cyan` (Neon)
+- `obsidian` (Stealth Black)
+- `monolith` (High-Contrast Greyscale)
+- `crimson` (Deep Burgundy)
+- `smoke` (Industrial Grey)
+
+### Usage (Fish Shell)
+
+To use the Fish shell theme switcher, symlink or copy the script to your Fish functions folder:
+`cp scripts/flux-theme.fish ~/.config/fish/functions/`
+
+Then run:
+`flux-theme blue`
+
 ## Shortcuts
 
 | Key                      | Action                    |
