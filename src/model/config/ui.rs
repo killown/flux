@@ -1,6 +1,7 @@
 use crate::model::defaults::{
     default_accent_color, default_actions_panel_width, default_auto_list_threshold,
-    default_auto_show_diff, default_bg_alpha, default_content_search_max_file_mb,
+    default_auto_show_diff, default_bg_alpha, default_breadcrumb_count,
+    default_breadcrumb_max_chars, default_content_search_max_file_mb,
     default_diff_editor, default_diff_panel_width, default_ffmpeg_seek_seconds,
     default_ffmpeg_threads, default_folder_cache_capacity, default_loader_batch_size,
     default_max_history, default_max_search_results, default_mime_font_size,
@@ -133,6 +134,13 @@ pub struct UIConfig {
     /// Maximum history entries retained for back/forward navigation.
     #[serde(default = "default_max_history")]
     pub max_history: usize,
+    /// Maximum number of path segments shown as breadcrumbs in the header bar.
+    /// Only the last segments of the path are kept.
+    #[serde(default = "default_breadcrumb_count")]
+    pub breadcrumb_count: usize,
+    /// Maximum number of characters shown in a breadcrumb label before truncation.
+    #[serde(default = "default_breadcrumb_max_chars")]
+    pub breadcrumb_max_chars: i32,
     /// Maximum number of results returned by content search.
     /// Higher values may impact performance on large directories.
     #[serde(default)]
@@ -313,6 +321,8 @@ impl Default for UIConfig {
             thumbnail_size: 256,
             max_search_results: default_max_search_results(),
             max_history: default_max_history(),
+            breadcrumb_count: default_breadcrumb_count(),
+            breadcrumb_max_chars: default_breadcrumb_max_chars(),
             ffmpeg_threads: default_ffmpeg_threads(),
             ffmpeg_seek_seconds: default_ffmpeg_seek_seconds(),
             ffmpeg_auto_rotate: false,

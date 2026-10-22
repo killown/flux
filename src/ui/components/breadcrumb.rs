@@ -25,7 +25,7 @@ impl FactoryComponent for PathSegment {
                 #[watch]
                 set_label: &self.name,
                 set_ellipsize: gtk::pango::EllipsizeMode::End,
-                set_max_width_chars: constants::BREADCRUMB_MAX_WIDTH_CHARS as i32,
+                set_max_width_chars: self.max_chars,
                 set_wrap: false,
             },
 

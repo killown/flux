@@ -2343,6 +2343,22 @@ msgstr "Preferências"
 # src/ui/settings/page/appearance.rs
 # ============================================================
 
+#: src/ui/settings/page/appearance.rs:117
+msgid "Breadcrumbs Shown"
+msgstr "Trilhas Exibidas"
+
+#: src/ui/settings/page/appearance.rs:118
+msgid "Number of path segments shown in the header bar"
+msgstr "Número de segmentos do caminho exibidos na barra de cabeçalho"
+
+#: src/ui/settings/page/appearance.rs:131
+msgid "Breadcrumb Label Length"
+msgstr "Tamanho do Rótulo da Trilha"
+
+#: src/ui/settings/page/appearance.rs:132
+msgid "Characters before truncating breadcrumb names"
+msgstr "Caracteres antes de truncar os nomes da trilha"
+
 #: src/ui/settings/page/appearance.rs:286
 msgid "Header Buttons"
 msgstr "Botões do Cabeçalho"

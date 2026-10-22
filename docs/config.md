@@ -65,6 +65,8 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `bg_alpha_sidebar_left` | `0.65` | Tint opacity (0.0 to 1.0) over the left sidebar background image. |
 | `bg_alpha_sidebar_right` | `0.65` | Tint opacity (0.0 to 1.0) over the right panel background image. |
 | `bg_alpha_window` | `0.65` | Tint opacity (0.0 to 1.0) over the main window background image. |
+| `breadcrumb_count` | `3` | Maximum number of path segments shown as breadcrumbs in the header bar; only the last ones are kept. |
+| `breadcrumb_max_chars` | `20` | Characters shown in a breadcrumb label before truncation. |
 | `content_search_max_file_mb` | `128` | Skip files larger than this many MiB during content search. `0` means no cap. |
 | `current_folders_first` | `{}` | Per-folder override of `folders_first`, keyed by absolute path. |
 | `default_icon_size` | `0` | Default pixel size of file and folder icons. |
@@ -229,6 +231,8 @@ folder_cache_capacity = 3
 thumbnail_threads = 4
 max_search_results = 100
 max_history = 100
+breadcrumb_count = 3
+breadcrumb_max_chars = 20
 max_content_search_results = 0
 default_icon_size = 0
 list_icon_size = 24

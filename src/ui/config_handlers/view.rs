@@ -45,6 +45,22 @@ impl FluxApp {
         sender.input(AppMsg::Refresh);
     }
 
+    /// Persists how many path segments the header breadcrumbs show and rebuilds them.
+    pub fn handle_set_breadcrumb_count(&mut self, val: usize) {
+        crate::hit!("handle_set_breadcrumb_count");
+        self.config.ui.breadcrumb_count = val.clamp(1, 20);
+        utils::save_config(&self.config);
+        self.update_breadcrumbs();
+    }
+
+    /// Persists the breadcrumb label character limit and rebuilds the breadcrumbs.
+    pub fn handle_set_breadcrumb_max_chars(&mut self, val: i32) {
+        crate::hit!("handle_set_breadcrumb_max_chars");
+        self.config.ui.breadcrumb_max_chars = val.clamp(4, 64);
+        utils::save_config(&self.config);
+        self.update_breadcrumbs();
+    }
+
     pub fn handle_set_expand_labels(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.expand_labels = val;
         utils::save_config(&self.config);

@@ -23,6 +23,8 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.bg_alpha_sidebar_left", "Tint opacity (0.0 to 1.0) over the left sidebar background image."),
     ("ui.bg_alpha_sidebar_right", "Tint opacity (0.0 to 1.0) over the right panel background image."),
     ("ui.bg_alpha_window", "Tint opacity (0.0 to 1.0) over the main window background image."),
+    ("ui.breadcrumb_count", "Maximum number of path segments shown as breadcrumbs in the header bar; only the last ones are kept."),
+    ("ui.breadcrumb_max_chars", "Characters shown in a breadcrumb label before truncation."),
     ("ui.content_search_max_file_mb", "Skip files larger than this many MiB during content search. `0` means no cap."),
     ("ui.current_folders_first", "Per-folder override of `folders_first`, keyed by absolute path."),
     ("ui.default_icon_size", "Default pixel size of file and folder icons."),

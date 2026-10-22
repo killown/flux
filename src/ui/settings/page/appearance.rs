@@ -114,6 +114,34 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
+                    set_title: &tr("Breadcrumbs Shown"),
+                    set_subtitle: &tr("Number of path segments shown in the header bar"),
+                    add_suffix = &gtk::SpinButton {
+                        set_adjustment: &gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 1.0, 20.0, 1.0, 0.0, 0.0),
+                        set_numeric: true,
+                        set_valign: gtk::Align::Center,
+                        connect_value_changed => move |spin| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetBreadcrumbCount(spin.value() as usize));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
+                    set_title: &tr("Breadcrumb Label Length"),
+                    set_subtitle: &tr("Characters before truncating breadcrumb names"),
+                    add_suffix = &gtk::SpinButton {
+                        set_adjustment: &gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 4.0, 64.0, 1.0, 0.0, 0.0),
+                        set_numeric: true,
+                        set_valign: gtk::Align::Center,
+                        connect_value_changed => move |spin| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetBreadcrumbMaxChars(spin.value() as i32));
+                            }
+                        }
+                    }
+                },
+                add = &adw::ActionRow {
                     set_title: &tr("Expand Filenames"),
                     set_subtitle: &tr("Wrap filenames across multiple lines"),
                     add_suffix = &gtk::Switch {

@@ -926,6 +926,10 @@ pub enum AppMsg {
     SetGridSpacing(i32),
     /// Updates the character limit for file labels.
     SetMaxWidthChars(i32),
+    /// Updates how many path segments the header breadcrumbs show.
+    SetBreadcrumbCount(usize),
+    /// Updates the character limit for breadcrumb labels.
+    SetBreadcrumbMaxChars(i32),
     /// Toggles multi-line label wrapping in the grid.
     SetExpandLabels(bool),
     /// Toggles the directory listing between ascending and descending order.

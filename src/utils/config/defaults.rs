@@ -289,6 +289,8 @@ path = "actions://"
                     thumbnail_threads: 4,
                     max_search_results: 5000,
                     max_history: 100,
+                    breadcrumb_count: 3,
+                    breadcrumb_max_chars: 20,
                     ffmpeg_threads: 1,
                     ffmpeg_seek_seconds: 5.0,
                     ffmpeg_auto_rotate: false,

@@ -1,7 +1,6 @@
 //! Sort status, list mode sync, breadcrumbs and search result batches.
 
 use crate::model::{FluxApp, PathSegment, SortBy};
-use crate::ui::constants;
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -61,6 +60,7 @@ impl FluxApp {
         // Publish the directory for `flux_cwd` / `$FCWD` / `flux_goto`.
         crate::services::terminal::write_cwd_cache(&self.current_path);
 
+        let max_chars = self.config.ui.breadcrumb_max_chars;
         let mut guard = self.breadcrumbs.guard();
         guard.clear();
 
@@ -80,6 +80,7 @@ impl FluxApp {
                 guard.push_back(PathSegment {
                     name: archive_name,
                     path: root_uri,
+                    max_chars,
                 });
 
                 if !inner.is_empty() {
@@ -97,6 +98,7 @@ impl FluxApp {
                         guard.push_back(PathSegment {
                             name,
                             path: segment_uri,
+                            max_chars,
                         });
                     }
                 }
@@ -124,6 +126,7 @@ impl FluxApp {
                 guard.push_back(PathSegment {
                     name: authority.to_string(),
                     path: PathBuf::from(&root_uri),
+                    max_chars,
                 });
 
                 if let Some(path_part) = slash_pos.map(|p| &after_scheme[p + 1..]) {
@@ -134,6 +137,7 @@ impl FluxApp {
                         guard.push_back(PathSegment {
                             name: segment.to_string(),
                             path: PathBuf::from(&acc),
+                            max_chars,
                         });
                     }
                 }
@@ -159,10 +163,11 @@ impl FluxApp {
             segments.push(PathSegment {
                 name,
                 path: path_acc.clone(),
+                max_chars,
             });
         }
 
-        let max_visible = constants::MAX_BREADCRUMBS;
+        let max_visible = self.config.ui.breadcrumb_count.max(1);
         let skip = segments.len().saturating_sub(max_visible);
 
         for segment in segments.into_iter().skip(skip) {

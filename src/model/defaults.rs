@@ -26,6 +26,16 @@ pub(super) fn default_max_history() -> usize {
     100
 }
 
+/// Default number of path segments shown as breadcrumbs in the header.
+pub(super) fn default_breadcrumb_count() -> usize {
+    3
+}
+
+/// Default number of characters shown in a breadcrumb label before truncation.
+pub(super) fn default_breadcrumb_max_chars() -> i32 {
+    20
+}
+
 pub(super) fn default_ffmpeg_threads() -> usize {
     1
 }

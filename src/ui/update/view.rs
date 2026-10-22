@@ -36,6 +36,8 @@ pub(super) fn handle(
         AppMsg::SetFoldersFirst(val) => app.handle_set_folders_first(val, sender),
         AppMsg::SetGridSpacing(val) => app.handle_set_grid_spacing(val, sender),
         AppMsg::SetMaxWidthChars(val) => app.handle_set_max_width_chars(val, sender),
+        AppMsg::SetBreadcrumbCount(val) => app.handle_set_breadcrumb_count(val),
+        AppMsg::SetBreadcrumbMaxChars(val) => app.handle_set_breadcrumb_max_chars(val),
         AppMsg::SetExpandLabels(val) => app.handle_set_expand_labels(val, sender),
         AppMsg::Zoom(delta) => app.handle_zoom(delta),
         AppMsg::SwitchHeader(view_name) => app.handle_switch_header(view_name),

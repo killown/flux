@@ -73,6 +73,8 @@ pub struct PathSegment {
     pub name: String,
     /// The full absolute path representing this specific segment's location.
     pub path: PathBuf,
+    /// Characters shown in the breadcrumb label before it is ellipsized.
+    pub max_chars: i32,
 }
 
 /// Available sorting criteria for the file view.
