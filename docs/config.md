@@ -55,6 +55,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `archive_thumbnail_cache` | `false` | Store thumbnails of files inside zip archives in a hidden `.flux-cache/` folder in the zip itself. |
 | `ascending` | `true` | Sort listings in ascending order. |
 | `auto_generate_mime_icons` | `true` | Generate and cache an SVG document icon when the icon theme has none. |
+| `auto_list_threshold` | `300` | Folders with more items than this open in list mode. `0` disables the auto-switch. |
 | `auto_mime_accent_color` | `"#1273b2"` | Accent color of auto-generated document icons. |
 | `auto_mime_body_color` | `"#e4e4e4"` | Hex color of the page body of auto-generated document icons. |
 | `auto_mime_font_color` | `"#ffffff"` | Hex color of the extension label inside auto-generated document icons. |
@@ -244,6 +245,7 @@ wide_preview = false
 folder_grid_thumbnails = true
 archive_thumbnail_cache = false
 fish_theme = false
+auto_list_threshold = 300
 
 [ui.file_icons]
 

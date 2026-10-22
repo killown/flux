@@ -43,11 +43,12 @@ impl FluxApp {
         load_id: u64,
         items: Vec<FileLoadContext>,
         media_tasks: Vec<(u32, PathBuf)>,
+        list_mode: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_folder_loaded_begin");
         self.active_video_preview = None;
-        self.handle_folder_loaded(path, load_id, items, media_tasks, sender);
+        self.handle_folder_loaded(path, load_id, items, media_tasks, list_mode, sender);
     }
 
     pub fn handle_invalidate_cache_and_navigate(
@@ -223,11 +224,18 @@ impl FluxApp {
         load_id: u64,
         items: Vec<FileLoadContext>,
         media_tasks: Vec<(u32, PathBuf)>,
+        list_mode: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_folder_loaded");
         if load_id != self.load_id.load(Ordering::SeqCst) {
             return;
+        }
+
+        // Auto list mode: a folder with more items than the threshold opens
+        // in list mode regardless of the current session mode.
+        if list_mode != self.is_list_mode {
+            self.is_list_mode = list_mode;
         }
 
         // WARNING: changing this could cause some bugs:

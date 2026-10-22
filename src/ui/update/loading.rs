@@ -20,7 +20,8 @@ pub(super) fn handle(
             load_id,
             items,
             media_tasks,
-        } => app.handle_folder_loaded_begin(path, load_id, items, media_tasks, sender),
+            list_mode,
+        } => app.handle_folder_loaded_begin(path, load_id, items, media_tasks, list_mode, sender),
         AppMsg::InvalidateCacheAndNavigate(path) => {
             app.handle_invalidate_cache_and_navigate(path, sender)
         }

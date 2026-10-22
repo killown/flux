@@ -1,11 +1,11 @@
 use crate::model::defaults::{
-    default_accent_color, default_actions_panel_width, default_auto_show_diff, default_bg_alpha,
-    default_content_search_max_file_mb, default_diff_editor, default_diff_panel_width,
-    default_ffmpeg_seek_seconds, default_ffmpeg_threads, default_folder_cache_capacity,
-    default_loader_batch_size, default_max_history, default_max_search_results,
-    default_mime_font_size, default_preview_panel_width, default_search_panel_width,
-    default_tag_panel_width, default_thumbnail_size, default_thumbnail_threads, default_true,
-    default_ui_scale,
+    default_accent_color, default_actions_panel_width, default_auto_list_threshold,
+    default_auto_show_diff, default_bg_alpha, default_content_search_max_file_mb,
+    default_diff_editor, default_diff_panel_width, default_ffmpeg_seek_seconds,
+    default_ffmpeg_threads, default_folder_cache_capacity, default_loader_batch_size,
+    default_max_history, default_max_search_results, default_mime_font_size,
+    default_preview_panel_width, default_search_panel_width, default_tag_panel_width,
+    default_thumbnail_size, default_thumbnail_threads, default_true, default_ui_scale,
 };
 use crate::model::{DeviceRename, SortBy, TerminalConfig, ThumbnailTypes};
 use serde::{Deserialize, Serialize};
@@ -239,6 +239,10 @@ pub struct UIConfig {
     /// theme change, so it is strictly opt-in.
     #[serde(default)]
     pub fish_theme: bool,
+    /// Folders with more items than this open in list mode regardless of the
+    /// default mode. `0` disables the auto-switch.
+    #[serde(default = "default_auto_list_threshold")]
+    pub auto_list_threshold: usize,
 }
 
 impl Default for UIConfig {
@@ -315,6 +319,7 @@ impl Default for UIConfig {
             archive_thumbnail_cache: false,
             folder_grid_thumbnails: true,
             fish_theme: false,
+            auto_list_threshold: default_auto_list_threshold(),
         }
     }
 }

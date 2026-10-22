@@ -45,6 +45,23 @@ Cold start on a Ryzen 5 5600X, mean of 10 runs:
   <img src="https://github.com/killown/flux/raw/main/screenshots/covers.png" alt="Flux grid view with custom cover art set as folder icons for a game library" width="100%">
 </p>
 
+## Grid mode vs list mode
+
+Grid mode renders each item as a card. It is best for folders with a moderate number of items. Flux automatically switches to list mode for folders with more items than the **Auto List Mode Threshold** (default 300), which stays responsive with several thousand items.
+
+The threshold is configured in **Settings → Behavior → Auto List Mode Threshold**. Set it to `0` to disable the auto-switch and always use the mode chosen in the header.
+
+### Reference numbers
+
+On a 3260-item folder (same hardware, same session):
+
+| File manager     | Behavior                                                              |
+| ---------------- | --------------------------------------------------------------------- |
+| Flux (grid mode) | Loads, scrolls, hovers, hover latency grows with folder size          |
+| Flux (list mode) | Loads in microseconds, no lag                                         |
+| Nautilus         | Crashes: `VK_ERROR_OUT_OF_HOST_MEMORY` and file-descriptor exhaustion |
+| Thunar           | Loads, ~60% CPU on scrollbar drag alone                               |
+
 ## Install
 
 Flux needs GTK 4 and libadwaita 1.5 or newer, so Debian 12 and Ubuntu 22.04 are too old.

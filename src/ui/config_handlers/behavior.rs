@@ -8,6 +8,11 @@ impl FluxApp {
         utils::save_config(&self.config);
     }
 
+    pub fn handle_set_auto_list_threshold(&mut self, val: usize) {
+        self.config.ui.auto_list_threshold = val;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_toggle_single_click(&mut self) {
         self.config.ui.single_click = !self.config.ui.single_click;
         self.files

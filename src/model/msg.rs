@@ -498,6 +498,9 @@ pub enum AppMsg {
         items: Vec<FileLoadContext>,
         /// Visual-media paths collected for thumbnail dispatch.
         media_tasks: Vec<(u32, PathBuf)>,
+        /// Whether the folder opens in list mode. `true` when the item count
+        /// exceeds `auto_list_threshold`, otherwise the current session mode.
+        list_mode: bool,
     },
     /// Cycle through sibling folders of the current directory whose name
     /// starts with `letter` (case-insensitive), navigating to each in turn.
@@ -585,6 +588,9 @@ pub enum AppMsg {
     SetShowHidden(bool),
     /// Updates the folders-first sorting priority.
     SetFoldersFirst(bool),
+    /// Sets the item-count threshold above which folders open in list mode.
+    /// `0` disables the auto-switch. Persisted in the config file.
+    SetAutoListThreshold(usize),
     /// Updates the default icon size.
     SetIconSize(i32),
     /// Updates the default icon size for list mode view.

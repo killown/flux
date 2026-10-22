@@ -218,6 +218,7 @@ path = "actions://"
             crate::model::Config {
                 ui: crate::model::UIConfig {
                     fish_theme: false,
+                    auto_list_threshold: 300,
                     terminal: TerminalConfig::default(),
                     preview_syntax_highlighting: true,
                     wide_preview: false,

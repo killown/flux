@@ -99,6 +99,8 @@ impl FluxApp {
         let current_load_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.is_loading = true;
         let s_clone = sender.clone();
+        let auto_list_threshold = self.config.ui.auto_list_threshold;
+        let current_list_mode = self.is_list_mode;
 
         relm4::spawn(async move {
             let Ok(status_map) = query_git_status(&repo_root, &target_dir).await else {
@@ -153,11 +155,18 @@ impl FluxApp {
                 ));
             }
 
+            let list_mode = if auto_list_threshold > 0 && contexts.len() > auto_list_threshold {
+                true
+            } else {
+                current_list_mode
+            };
+
             s_clone.input(AppMsg::FolderLoaded {
                 path: target_dir.clone(),
                 load_id: current_load_id,
                 items: contexts,
                 media_tasks: Vec::new(),
+                list_mode,
             });
 
             s_clone.input(AppMsg::GitStatusReady {

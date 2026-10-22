@@ -2599,6 +2599,14 @@ msgstr "Escala base da fonte para os rótulos de extensão dentro dos emblemas g
 # src/ui/settings/page/behavior.rs
 # ============================================================
 
+#: src/ui/settings/page/behavior.rs:93
+msgid "Auto List Mode Threshold"
+msgstr "Limite para Modo Lista Automático"
+
+#: src/ui/settings/page/behavior.rs:94
+msgid "Folders with more items than this open in list mode. 0 disables."
+msgstr "Pastas com mais itens que isso abrem em modo lista. 0 desativa."
+
 #: src/ui/settings/page/behavior.rs:9
 msgid "Behavior"
 msgstr "Comportamento"

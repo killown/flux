@@ -13,6 +13,7 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.archive_thumbnail_cache", "Store thumbnails of files inside zip archives in a hidden `.flux-cache/` folder in the zip itself."),
     ("ui.ascending", "Sort listings in ascending order."),
     ("ui.auto_generate_mime_icons", "Generate and cache an SVG document icon when the icon theme has none."),
+    ("ui.auto_list_threshold", "Folders with more items than this open in list mode. `0` disables the auto-switch."),
     ("ui.auto_mime_accent_color", "Accent color of auto-generated document icons."),
     ("ui.auto_mime_body_color", "Hex color of the page body of auto-generated document icons."),
     ("ui.auto_mime_font_color", "Hex color of the extension label inside auto-generated document icons."),

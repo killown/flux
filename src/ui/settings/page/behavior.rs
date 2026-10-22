@@ -91,6 +91,27 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                     }
                 },
+                add = &adw::ActionRow {
+                    set_title: &tr("Auto List Mode Threshold"),
+                    set_subtitle: &tr("Folders with more items than this open in list mode. 0 disables."),
+                    add_suffix = &gtk::SpinButton {
+                        set_adjustment: &gtk::Adjustment::new(
+                            config.ui.auto_list_threshold as f64,
+                            0.0,
+                            100_000.0,
+                            100.0,
+                            1_000.0,
+                            0.0,
+                        ),
+                        set_numeric: true,
+                        set_valign: gtk::Align::Center,
+                        connect_value_changed => move |spin| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetAutoListThreshold(spin.value() as usize));
+                            }
+                        }
+                    }
+                },
             },
 
             add = &adw::PreferencesGroup {

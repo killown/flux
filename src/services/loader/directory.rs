@@ -181,6 +181,8 @@ impl FluxApp {
         let mime_filter = self.mime_filter.clone();
         let path_clone = path.clone();
         let sender_clone = sender.clone();
+        let auto_list_threshold = self.config.ui.auto_list_threshold;
+        let current_list_mode = self.is_list_mode;
 
         let cache_key = path.canonicalize().unwrap_or_else(|_| path.clone());
 
@@ -252,7 +254,21 @@ impl FluxApp {
                     })
                     .collect();
 
-                self.handle_folder_loaded(path, current_session, cached_items, media_tasks, sender);
+                let list_mode =
+                    if auto_list_threshold > 0 && cached_items.len() > auto_list_threshold {
+                        true
+                    } else {
+                        current_list_mode
+                    };
+
+                self.handle_folder_loaded(
+                    path,
+                    current_session,
+                    cached_items,
+                    media_tasks,
+                    list_mode,
+                    sender,
+                );
                 return;
             }
         }
@@ -557,11 +573,18 @@ impl FluxApp {
                 })
                 .collect();
 
+            let list_mode = if auto_list_threshold > 0 && items.len() > auto_list_threshold {
+                true
+            } else {
+                current_list_mode
+            };
+
             sender_clone.input(AppMsg::FolderLoaded {
                 path: path_clone,
                 load_id: current_session,
                 items,
                 media_tasks,
+                list_mode,
             });
         });
     }

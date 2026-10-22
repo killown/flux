@@ -14,6 +14,10 @@ pub(super) fn default_thumbnail_threads() -> usize {
     4
 }
 
+pub(super) fn default_auto_list_threshold() -> usize {
+    300
+}
+
 pub(super) fn default_max_search_results() -> usize {
     100
 }
