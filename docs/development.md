@@ -46,7 +46,7 @@ The compiled binary is located at `target/release/flux-fm`.
 
 ## Regenerating Documentation
 
-The files under `docs/` are generated from source, except for `index.md`, `SUMMARY.md`, and `development.md`.
+Five pages under `docs/` are generated from source: `cli.md`, `config.md`, `css-variables.md`, `actions.md` and `search.md`. The same command also writes `completions/flux-fm.fish` and `data/fish/flux-integration.fish`. Every other page is written by hand.
 
 If you change CLI options, configuration fields, built-in actions, search syntax, or CSS variables, regenerate the documentation:
 
@@ -87,3 +87,9 @@ The helper script `tools/local-build.sh` builds with this profile, regenerates t
 ```bash
 ./tools/local-build.sh
 ```
+
+## Where to go next
+
+- [Architecture](dev-architecture.md) explains the crates, the message flow and the source layout.
+- [Testing and CI](dev-testing.md) explains `tools/tests.sh` and the documentation checks.
+- The `Adding ...` guides walk through the common extension points.

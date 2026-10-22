@@ -19,6 +19,7 @@ Flux is designed as a highly responsive, native file manager. It avoids blocking
 - **[Configuration](config.md)** – Tweak `~/.config/flux/config.toml` to your liking.
 - **[Custom Actions](actions.md)** – Add your own right-click menu entries.
 - **[Search Syntax](search.md)** – Master the live filter, recursive search, and content search.
+- **[Shell Integration](shell-integration.md)** – Use the selection and current folder from your shell.
 - **[CSS Variables](css-variables.md)** – Theme Flux to match your desktop.
 
 ## Source Code
