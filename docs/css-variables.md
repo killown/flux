@@ -27,7 +27,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | `--color-accent` | `@accent_bg_color` | `:root` | 24 | Primary accent background for selected and active elements. |
 | `--color-accent-fg` | `@accent_fg_color` | `:root` | 34 | Text and icons drawn on top of `--color-accent`. |
 | `--color-accent-text` | `@accent_color` | `:root` | 47 | Accent color for text, icons and borders on a plain background. |
-| `--color-card-bg` | `@card_bg_color` | `:root` | 0 | Background color of file cards in the grid view. |
+| `--color-card-bg` | `@card_bg_color` | `:root` | 1 | Background color of file cards in the grid view. |
 | `--color-danger` | `@red_3` | `:root` | 22 | Errors and destructive actions. |
 | `--color-fg` | `@theme_fg_color` | `:root` | 60 | Default foreground color used across the UI. |
 | `--color-git-mod` | `@blue_3` | `:root` | 2 | Git modified and mixed file states. |
@@ -45,7 +45,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | `--disabled-opacity` | `0.4` | `:root` | 4 | Opacity of disabled controls and of items being dragged. |
 | `--font-main` | `inherit` | `:root` | 8 | Font family for interface text; `inherit` follows the system font. |
 | `--font-mono` | `"JetBrains Mono", monospace` | `:root` | 9 | Monospace font family for list info, key caps, git badges and status text. |
-| `--shadow` | `alpha(black, 0.25)` | `:root` | 2 | Drop-shadow color of cards, popover menus and the selected sidebar row. |
+| `--shadow` | `alpha(black, 0.25)` | `:root` | 3 | Drop-shadow color of cards, popover menus and the selected sidebar row. |
 | `--shadow-hover` | `alpha(black, 0.35)` | `:root` | 1 | Drop-shadow color of a hovered card. |
 <!-- END GENERATED: custom-properties -->
 
