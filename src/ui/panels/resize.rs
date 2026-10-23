@@ -181,13 +181,20 @@ pub fn resizable_panel(
         .child(panel)
         .build();
 
+    // The handle is overlaid on the panel's left edge, so it takes no layout
+    // space and leaves no gap between the panel and the file grid.
+    resize_handle.set_halign(gtk::Align::Start);
+    resize_handle.set_width_request(6);
+    let overlay = gtk::Overlay::new();
+    overlay.set_child(Some(&clamp));
+    overlay.add_overlay(&resize_handle);
+
     let root_container = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .spacing(0)
         .hexpand(false)
         .halign(gtk::Align::End)
         .build();
-    root_container.append(&resize_handle);
-    root_container.append(&clamp);
+    root_container.append(&overlay);
     root_container
 }
