@@ -1,12 +1,10 @@
 #![cfg(debug_assertions)]
 
+use super::ENV_LOCK;
 use flux::hwga::{self, CallMonitor};
-use std::sync::Mutex;
-
-static SERIAL: Mutex<()> = Mutex::new(());
 
 fn lock() -> std::sync::MutexGuard<'static, ()> {
-    SERIAL.lock().unwrap_or_else(|e| e.into_inner())
+    ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner())
 }
 
 fn label(name: &str) -> String {
@@ -265,7 +263,6 @@ fn reset_clears_active_snapshots() {
     assert!(!CallMonitor::snapshot().is_empty());
 
     CallMonitor::reset();
-    // Scoped to this module: other tests in the binary hit real instrumented code in parallel.
     assert!(CallMonitor::snapshot()
         .iter()
         .all(|(name, _)| !name.starts_with(module_path!())));

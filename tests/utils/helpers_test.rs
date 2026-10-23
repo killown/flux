@@ -1,12 +1,13 @@
+use super::ENV_LOCK;
 use flux::utils::path::PathExt;
 use std::env;
 use std::path::{Path, PathBuf};
 
 #[test]
 fn test_expand_tilde_config_path() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original_home = env::var_os("HOME");
-    let mock_home = "/home/developer";
-    env::set_var("HOME", mock_home);
+    env::set_var("HOME", "/home/developer");
 
     let path = PathBuf::from("~/.config/flux/config.toml");
     assert_eq!(
@@ -14,13 +15,15 @@ fn test_expand_tilde_config_path() {
         PathBuf::from("/home/developer/.config/flux/config.toml")
     );
 
-    if let Some(home) = original_home {
-        env::set_var("HOME", home);
+    match original_home {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 
 #[test]
 fn test_expand_tilde_real_user_fallback() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let real_home = env::var_os("HOME").map(PathBuf::from);
 
     if let Some(home_path) = real_home {
@@ -62,14 +65,16 @@ fn test_relative_path_integrity() {
 
 #[test]
 fn test_expand_tilde_lone_tilde() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original_home = env::var_os("HOME");
     env::set_var("HOME", "/home/developer");
 
     let path = PathBuf::from("~");
     assert_eq!(path.expand_tilde(), PathBuf::from("/home/developer"));
 
-    if let Some(home) = original_home {
-        env::set_var("HOME", home);
+    match original_home {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 
@@ -96,28 +101,33 @@ fn test_run_custom_command_placeholder_escaping() {
 
 #[test]
 fn expand_tilde_repeated_slash_safe() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original = env::var_os("HOME");
     env::set_var("HOME", "/home/developer");
     let p = PathBuf::from("~/");
     assert_eq!(p.expand_tilde(), PathBuf::from("/home/developer/"));
-    if let Some(h) = original {
-        env::set_var("HOME", h);
+    match original {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 
 #[test]
 fn expand_tilde_only_tilde_alone_without_trailing() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original = env::var_os("HOME");
     env::set_var("HOME", "/home/developer");
     let p = PathBuf::from("~");
     assert_eq!(p.expand_tilde(), PathBuf::from("/home/developer"));
-    if let Some(h) = original {
-        env::set_var("HOME", h);
+    match original {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 
 #[test]
 fn expand_tilde_deep_nested_path() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original = env::var_os("HOME");
     env::set_var("HOME", "/home/developer");
     let p = PathBuf::from("~/a/b/c/d/e/f");
@@ -125,30 +135,35 @@ fn expand_tilde_deep_nested_path() {
         p.expand_tilde(),
         PathBuf::from("/home/developer/a/b/c/d/e/f")
     );
-    if let Some(h) = original {
-        env::set_var("HOME", h);
+    match original {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 
 #[test]
 fn expand_tilde_with_hidden_dirs() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original = env::var_os("HOME");
     env::set_var("HOME", "/home/u");
     let p = PathBuf::from("~/.local/share");
     assert_eq!(p.expand_tilde(), PathBuf::from("/home/u/.local/share"));
-    if let Some(h) = original {
-        env::set_var("HOME", h);
+    match original {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 
 #[test]
 fn expand_tilde_unicode_remainder_preserved() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
     let original = env::var_os("HOME");
     env::set_var("HOME", "/home/u");
     let p = PathBuf::from("~/文档");
     assert_eq!(p.expand_tilde(), PathBuf::from("/home/u/文档"));
-    if let Some(h) = original {
-        env::set_var("HOME", h);
+    match original {
+        Some(h) => env::set_var("HOME", h),
+        None => env::remove_var("HOME"),
     }
 }
 

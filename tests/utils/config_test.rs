@@ -1,36 +1,31 @@
+use super::ENV_LOCK;
 use flux::model::{CustomAction, MenuEntry};
 use flux::services::mounts::get_system_mounts;
 use flux::utils::config::{ensure_config_file, load_menu_config, save_menu_config, split_mime_cmd};
 use std::env;
-use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
 use tempfile::TempDir;
 
-// Global lock to prevent parallel env variable race conditions across test threads
-static ENV_LOCK: Mutex<()> = Mutex::new(());
+struct EnvGuard(Option<std::ffi::OsString>);
+impl Drop for EnvGuard {
+    fn drop(&mut self) {
+        match &self.0 {
+            Some(v) => std::env::set_var("XDG_CONFIG_HOME", v),
+            None => std::env::remove_var("XDG_CONFIG_HOME"),
+        }
+    }
+}
 
 #[test]
 fn test_ensure_config_file_creation() {
-    let _guard = ENV_LOCK.lock().unwrap();
-
-    let temp_dir = env::current_dir()
-        .unwrap()
-        .join("target")
-        .join("test_config_init");
-
-    if temp_dir.exists() {
-        fs::remove_dir_all(&temp_dir).unwrap();
-    }
-    fs::create_dir_all(&temp_dir).unwrap();
-
-    env::set_var("XDG_CONFIG_HOME", &temp_dir);
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let tmp = tempfile::tempdir().unwrap();
+    let _env = EnvGuard(env::var_os("XDG_CONFIG_HOME"));
+    env::set_var("XDG_CONFIG_HOME", tmp.path());
 
     let path = ensure_config_file();
     assert!(path.exists());
     assert!(path.to_string_lossy().contains("flux"));
-
-    fs::remove_dir_all(&temp_dir).unwrap();
 }
 
 #[test]
@@ -68,8 +63,8 @@ fn test_config_missing_fields() {
 
 #[test]
 fn test_load_menu_config_integration() {
-    let _guard = ENV_LOCK.lock().unwrap();
-    let original_xdg = std::env::var_os("XDG_CONFIG_HOME");
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env = EnvGuard(env::var_os("XDG_CONFIG_HOME"));
 
     let tmp = TempDir::new().unwrap();
     let temp_dir = tmp.path();
@@ -81,31 +76,28 @@ fn test_load_menu_config_integration() {
 
     let config_path = flux_config_dir.join("menu.rs");
     let mock_content = r#""Copy" => "all", "builtin::copy", "Copied to clipboard""#;
-
     std::fs::write(config_path, mock_content).unwrap();
 
     let actions = load_menu_config();
 
-    if let Some(val) = original_xdg {
-        std::env::set_var("XDG_CONFIG_HOME", val);
-    } else {
-        std::env::remove_var("XDG_CONFIG_HOME");
-    }
-
     assert!(!actions.is_empty(), "Actions vector should not be empty");
-    assert!(actions.iter().any(|a| a.label.contains("Copy")));
+    assert!(
+        actions.iter().any(|a| a.command == "builtin::copy"),
+        "expected a builtin::copy action, got: {:?}",
+        actions
+            .iter()
+            .map(|a| (&a.label, &a.command))
+            .collect::<Vec<_>>()
+    );
 }
 
 mod recents_tests {
-
     #[test]
     fn test_split_mime_cmd_malformed_inputs() {
         use flux::utils::config::split_mime_cmd;
 
         assert!(split_mime_cmd("all\", \"builtin::copy\"").is_none());
-
         assert!(split_mime_cmd("\"all\", \"builtin::copy").is_none());
-
         assert!(split_mime_cmd("").is_none());
     }
 
@@ -147,6 +139,9 @@ fn test_menu_entry_no_command_dialog_serialization() {
 
 #[test]
 fn test_save_and_load_menu_config_with_no_command_dialog() {
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env = EnvGuard(env::var_os("XDG_CONFIG_HOME"));
+
     let tmp_dir = tempfile::tempdir().unwrap();
     let config_dir = tmp_dir.path().join("flux");
     std::fs::create_dir_all(&config_dir).unwrap();
@@ -168,8 +163,6 @@ fn test_save_and_load_menu_config_with_no_command_dialog() {
     let loaded = load_menu_config();
     assert_eq!(loaded.len(), 1);
     assert!(loaded[0].no_command_dialog);
-
-    std::env::remove_var("XDG_CONFIG_HOME");
 }
 
 #[test]
@@ -208,7 +201,6 @@ fn test_split_mime_cmd_empty_command() {
 #[test]
 fn test_split_mime_cmd_escaped_quote_in_command() {
     use flux::utils::config::split_mime_cmd;
-    // Command with backslash-escaped inner quote
     let result = split_mime_cmd(r#""all", "echo \"x\"""#);
     assert!(result.is_some());
 }
@@ -296,13 +288,13 @@ fn default_xdg_folder_icon_unknown_dir_returns_none() {
 
 #[test]
 fn ensure_config_file_returns_stable_path() {
-    let _guard = ENV_LOCK.lock().unwrap();
+    let _guard = ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let _env = EnvGuard(env::var_os("XDG_CONFIG_HOME"));
     let tmp = TempDir::new().unwrap();
     std::env::set_var("XDG_CONFIG_HOME", tmp.path());
     let p1 = ensure_config_file();
     let p2 = ensure_config_file();
     assert_eq!(p1, p2);
-    std::env::remove_var("XDG_CONFIG_HOME");
 }
 
 #[test]
