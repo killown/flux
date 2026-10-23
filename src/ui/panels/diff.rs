@@ -12,31 +12,27 @@ pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
     buffer.set_text("");
     let tag_table = buffer.tag_table();
 
-    if tag_table.lookup("diff_add").is_none() {
-        let tag_add = gtk::TextTag::builder()
-            .name("diff_add")
-            .foreground("#57ab5a")
-            .build();
-        let tag_del = gtk::TextTag::builder()
-            .name("diff_del")
-            .foreground("#e5534b")
-            .build();
-        let tag_hdr = gtk::TextTag::builder()
-            .name("diff_hdr")
-            .foreground("#76e3ea")
-            .weight(700)
-            .build();
-        let tag_hunk = gtk::TextTag::builder()
-            .name("diff_hunk_link")
-            .foreground("#76e3ea")
-            .underline(gtk::pango::Underline::Single)
-            .weight(700)
-            .build();
-
-        tag_table.add(&tag_add);
-        tag_table.add(&tag_del);
-        tag_table.add(&tag_hdr);
-        tag_table.add(&tag_hunk);
+    let colors = super::preview_syntax::tag_colors();
+    let tags = [
+        ("diff_add", colors.added, false),
+        ("diff_del", colors.removed, false),
+        ("diff_hdr", colors.header, false),
+        ("diff_hunk_link", colors.header, true),
+    ];
+    for (name, color, underline) in tags {
+        // Reuse an existing tag so a color scheme change recolors it.
+        let tag = tag_table.lookup(name).unwrap_or_else(|| {
+            let tag = gtk::TextTag::builder().name(name).build();
+            if name.starts_with("diff_h") {
+                tag.set_weight(700);
+            }
+            if underline {
+                tag.set_underline(gtk::pango::Underline::Single);
+            }
+            tag_table.add(&tag);
+            tag
+        });
+        tag.set_foreground(Some(color));
     }
 
     for line in raw_diff.lines() {

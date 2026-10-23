@@ -5,6 +5,7 @@
 //! side only consumes `Vec<HighlightedRange>` - plain byte offsets - and
 //! turns them into `gtk::TextTag`s.
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Style, Theme, ThemeSet};
@@ -27,16 +28,69 @@ fn syntax_set() -> &'static SyntaxSet {
     SS.get_or_init(SyntaxSet::load_defaults_newlines)
 }
 
-fn theme() -> &'static Theme {
-    static TH: OnceLock<Theme> = OnceLock::new();
-    TH.get_or_init(|| {
-        let ts = ThemeSet::load_defaults();
-        ts.themes
-            .get("base16-ocean.dark")
-            .cloned()
-            .or_else(|| ts.themes.values().next().cloned())
-            .expect("syntect default theme set is non-empty")
-    })
+static DARK: AtomicBool = AtomicBool::new(true);
+
+/// Records the active color scheme, safe to read from the preview worker thread.
+pub fn set_dark(dark: bool) {
+    DARK.store(dark, Ordering::Relaxed);
+}
+
+/// Returns whether the app is currently using the dark color scheme.
+pub fn is_dark() -> bool {
+    DARK.load(Ordering::Relaxed)
+}
+
+/// Foreground colors for markdown and diff tags, tuned for the active scheme.
+pub struct TagColors {
+    pub added: &'static str,
+    pub removed: &'static str,
+    pub header: &'static str,
+    pub code_fg: &'static str,
+    pub code_bg: &'static str,
+    pub code_block: &'static str,
+    pub link: &'static str,
+    pub quote: &'static str,
+}
+
+/// Returns the tag palette for the active color scheme.
+pub fn tag_colors() -> TagColors {
+    if is_dark() {
+        TagColors {
+            added: "#57ab5a",
+            removed: "#e5534b",
+            header: "#76e3ea",
+            code_fg: "#e5c07b",
+            code_bg: "#2a2a2a",
+            code_block: "#98c379",
+            link: "#61afef",
+            quote: "#7f848e",
+        }
+    } else {
+        TagColors {
+            added: "#1a7f37",
+            removed: "#cf222e",
+            header: "#0969da",
+            code_fg: "#953800",
+            code_bg: "#eff1f3",
+            code_block: "#116329",
+            link: "#0969da",
+            quote: "#57606a",
+        }
+    }
+}
+
+fn theme(dark: bool) -> &'static Theme {
+    static TS: OnceLock<ThemeSet> = OnceLock::new();
+    let ts = TS.get_or_init(ThemeSet::load_defaults);
+    let name = if dark {
+        "base16-ocean.dark"
+    } else {
+        "InspiredGitHub"
+    };
+    ts.themes
+        .get(name)
+        .or_else(|| ts.themes.values().next())
+        .expect("syntect default theme set is non-empty")
 }
 
 /// Returns `(ranges, language_name)`. `language_name` is `None` when syntect
@@ -50,7 +104,7 @@ pub fn highlight(text: &str, ext: &str) -> (Vec<HighlightedRange>, Option<String
     };
     let lang = syntax.name.clone();
 
-    let mut h = HighlightLines::new(syntax, theme());
+    let mut h = HighlightLines::new(syntax, theme(is_dark()));
     let mut ranges = Vec::new();
     let mut offset = 0usize;
 

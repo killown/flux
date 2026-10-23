@@ -526,6 +526,7 @@ impl PreviewPanelHandle {
         }
 
         let body_family = body_font_family();
+        let colors = super::preview_syntax::tag_colors();
 
         let mut out = Vec::with_capacity(styles.len());
         let mut installed = Vec::with_capacity(styles.len());
@@ -543,16 +544,16 @@ impl PreviewPanelHandle {
                 MdStyle::Italic => b.family(&body_family).style(gtk::pango::Style::Italic),
                 MdStyle::Code => b
                     .family("monospace")
-                    .background("#2a2a2a")
-                    .foreground("#e5c07b"),
-                MdStyle::CodeBlock => b.family("monospace").foreground("#98c379"),
+                    .background(colors.code_bg)
+                    .foreground(colors.code_fg),
+                MdStyle::CodeBlock => b.family("monospace").foreground(colors.code_block),
                 MdStyle::Link => b
                     .family(&body_family)
-                    .foreground("#61afef")
+                    .foreground(colors.link)
                     .underline(gtk::pango::Underline::Single),
                 MdStyle::BlockQuote => b
                     .family(&body_family)
-                    .foreground("#7f848e")
+                    .foreground(colors.quote)
                     .style(gtk::pango::Style::Italic),
                 MdStyle::ListBullet => b.family(&body_family).weight(600),
             };
