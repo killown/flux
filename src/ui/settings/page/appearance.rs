@@ -359,7 +359,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
     relm4::view! {
         group = adw::PreferencesGroup {
             set_title: &tr("Header Buttons"),
-            set_description: Some(&tr("Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+M.")),
+            set_description: Some(&tr("Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+,.")),
             add = &adw::SwitchRow {
                 set_title: &tr("Filter Button"),
                 set_subtitle: &tr("Show the filter-by-pattern button"),
