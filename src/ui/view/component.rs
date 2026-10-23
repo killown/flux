@@ -95,38 +95,44 @@ impl SimpleAsyncComponent for FluxApp {
                 set_vexpand: true,
 
                 /// Left sidebar for system places and user bookmarks.
-                #[name = "sidebar_box"]
-                gtk::Box {
-                    set_orientation: gtk::Orientation::Vertical,
-                    set_width_request: model.config.ui.sidebar_width,
-                    add_css_class: constants::SIDEBAR_CSS_CLASS,
-                    add_css_class: constants::SIDEBAR_ROOT_CSS_CLASS,
-                    #[watch]
-                    set_visible: model.sidebar_visible,
-
-                    gtk::WindowControls {
+                /// resize handle overlaid on its right edge so it takes no layout space.
+                gtk::Overlay {
+                    #[name = "sidebar_box"]
+                    #[wrap(Some)]
+                    set_child = &gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_width_request: model.config.ui.sidebar_width,
+                        add_css_class: constants::SIDEBAR_CSS_CLASS,
+                        add_css_class: constants::SIDEBAR_ROOT_CSS_CLASS,
                         #[watch]
-                        set_visible: model.config.ui.show_csd && model.config.ui.window_controls_left,
-                        set_side: gtk::PackType::Start,
-                        set_decoration_layout: Some("close,minimize,maximize"),
-                        set_margin_top: 8,
-                        set_margin_start: 8,
-                        set_margin_bottom: 8,
+                        set_visible: model.sidebar_visible,
+
+                        gtk::WindowControls {
+                            #[watch]
+                            set_visible: model.config.ui.show_csd && model.config.ui.window_controls_left,
+                            set_side: gtk::PackType::Start,
+                            set_decoration_layout: Some("close,minimize,maximize"),
+                            set_margin_top: 8,
+                            set_margin_start: 8,
+                            set_margin_bottom: 8,
+                        },
+
+                        #[name = "sidebar_container"]
+                        gtk::ScrolledWindow {
+                            set_vexpand: true,
+                        },
                     },
 
-                    #[name = "sidebar_container"]
-                    gtk::ScrolledWindow {
-                        set_vexpand: true,
+                    /// Drag handle on the right edge of the sidebar
+                    #[name = "sidebar_resize_handle"]
+                    add_overlay = &gtk::Separator {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_halign: gtk::Align::End,
+                        set_width_request: 6,
+                        add_css_class: "sidebar-resize-handle",
+                        #[watch]
+                        set_visible: model.sidebar_visible,
                     },
-                },
-
-                /// Drag handle on the right edge of the sidebar
-                #[name = "sidebar_resize_handle"]
-                gtk::Separator {
-                    set_orientation: gtk::Orientation::Vertical,
-                    add_css_class: "sidebar-resize-handle",
-                    #[watch]
-                    set_visible: model.sidebar_visible,
                 },
 
                 /// Main content container for the header and file browser using AdwToolbarView.

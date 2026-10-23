@@ -37,7 +37,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | `--color-headerbar-fg` | `@headerbar_fg_color` | `:root` | 9 | Foreground text and icons in the header bar. |
 | `--color-popover-bg` | `@popover_bg_color` | `:root` | 1 | Background color of popovers and context menus. |
 | `--color-popover-fg` | `@popover_fg_color` | `:root` | 12 | Foreground text and icons in popovers. |
-| `--color-sidebar-bg` | `@sidebar_bg_color` | `:root` | 1 | Background color of the left sidebar. |
+| `--color-sidebar-bg` | `@sidebar_bg_color` | `:root` | 0 | Background color of the left sidebar. |
 | `--color-success` | `@green_4` | `:root` | 4 | Success states and git additions. |
 | `--color-warn` | `@orange_3` | `:root` | 8 | Warnings, restricted items and git conflicts. |
 | `--color-window-bg` | `@window_bg_color` | `:root` | 6 | Main window background color. |

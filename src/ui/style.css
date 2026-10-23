@@ -232,7 +232,8 @@ windowcontrols button.maximize:hover {
 }
 
 .sidebar-resize-handle {
-  background-color: var(--color-sidebar-bg);
+  background: transparent;
+  min-width: 0;
 }
 
 .sidebar-row image {
