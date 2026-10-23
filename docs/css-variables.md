@@ -29,7 +29,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | `--color-accent-text` | `@accent_color` | `:root` | 47 | Accent color for text, icons and borders on a plain background. |
 | `--color-card-bg` | `@card_bg_color` | `:root` | 1 | Background color of file cards in the grid view. |
 | `--color-danger` | `@red_3` | `:root` | 22 | Errors and destructive actions. |
-| `--color-fg` | `@theme_fg_color` | `:root` | 60 | Default foreground color used across the UI. |
+| `--color-fg` | `@theme_fg_color` | `:root` | 62 | Default foreground color used across the UI. |
 | `--color-git-mod` | `@blue_3` | `:root` | 2 | Git modified and mixed file states. |
 | `--color-git-staged` | `@purple_3` | `:root` | 2 | Git staged file states. |
 | `--color-git-untracked` | `@dark_2` | `:root` | 2 | Git untracked file states. |

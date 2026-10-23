@@ -1,5 +1,6 @@
 use crate::i18n::tr;
 use crate::model::{AppMsg, Config};
+use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -425,54 +426,45 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 },
                 add = &adw::ActionRow {
                     set_title: &tr("Accent Color"),
-                    set_subtitle: &tr("Hex color code for extension badges (e.g., '#1273b2')"),
+                    set_subtitle: &tr("Color of the extension badge"),
                     set_sensitive: config.ui.auto_generate_mime_icons,
-                    add_suffix = &gtk::Entry {
-                        set_text: &config.ui.auto_mime_accent_color,
+                    add_suffix = &gtk::ColorDialogButton {
                         set_valign: gtk::Align::Center,
-                        set_placeholder_text: Some("#1273b2"),
-                        connect_changed => move |entry: &gtk::Entry| {
-                            let val = entry.text().to_string();
-                            if !val.trim().is_empty() {
-                                if let Some(s) = crate::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetAutoMimeAccentColor(val.trim().to_string()));
-                                }
+                        set_dialog: &gtk::ColorDialog::builder().with_alpha(false).build(),
+                        set_rgba: &parse_color(&config.ui.auto_mime_accent_color, "#1273b2"),
+                        connect_rgba_notify => move |btn| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetAutoMimeAccentColor(rgba_to_hex(&btn.rgba())));
                             }
                         }
                     }
                 },
                 add = &adw::ActionRow {
                     set_title: &tr("Body Color"),
-                    set_subtitle: &tr("Hex color code for icon body (e.g., '#e4e4e4')"),
+                    set_subtitle: &tr("Color of the icon body"),
                     set_sensitive: config.ui.auto_generate_mime_icons,
-                    add_suffix = &gtk::Entry {
-                        set_text: &config.ui.auto_mime_body_color,
+                    add_suffix = &gtk::ColorDialogButton {
                         set_valign: gtk::Align::Center,
-                        set_placeholder_text: Some("#e4e4e4"),
-                        connect_changed => move |entry: &gtk::Entry| {
-                            let val = entry.text().to_string();
-                            if !val.trim().is_empty() {
-                                if let Some(s) = crate::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetAutoMimeBodyColor(val.trim().to_string()));
-                                }
+                        set_dialog: &gtk::ColorDialog::builder().with_alpha(false).build(),
+                        set_rgba: &parse_color(&config.ui.auto_mime_body_color, "#e4e4e4"),
+                        connect_rgba_notify => move |btn| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetAutoMimeBodyColor(rgba_to_hex(&btn.rgba())));
                             }
                         }
                     }
                 },
                 add = &adw::ActionRow {
                     set_title: &tr("Font Color"),
-                    set_subtitle: &tr("Hex color code for extension text (e.g., '#ffffff')"),
+                    set_subtitle: &tr("Color of the extension text"),
                     set_sensitive: config.ui.auto_generate_mime_icons,
-                    add_suffix = &gtk::Entry {
-                        set_text: &config.ui.auto_mime_font_color,
+                    add_suffix = &gtk::ColorDialogButton {
                         set_valign: gtk::Align::Center,
-                        set_placeholder_text: Some("#ffffff"),
-                        connect_changed => move |entry: &gtk::Entry| {
-                            let val = entry.text().to_string();
-                            if !val.trim().is_empty() {
-                                if let Some(s) = crate::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetAutoMimeFontColor(val.trim().to_string()));
-                                }
+                        set_dialog: &gtk::ColorDialog::builder().with_alpha(false).build(),
+                        set_rgba: &parse_color(&config.ui.auto_mime_font_color, "#ffffff"),
+                        connect_rgba_notify => move |btn| {
+                            if let Some(s) = crate::model::SENDER.get() {
+                                let _ = s.send(AppMsg::SetAutoMimeFontColor(rgba_to_hex(&btn.rgba())));
                             }
                         }
                     }
@@ -502,4 +494,22 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
     }
 
     page
+}
+
+/// Parses a CSS color string, falling back to `default` when it is invalid.
+fn parse_color(value: &str, default: &str) -> gdk::RGBA {
+    gdk::RGBA::parse(value.trim())
+        .or_else(|_| gdk::RGBA::parse(default))
+        .unwrap_or(gdk::RGBA::BLACK)
+}
+
+/// Formats a color as `#rrggbb`, the form the icon generator reads from the config.
+fn rgba_to_hex(c: &gdk::RGBA) -> String {
+    let ch = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    format!(
+        "#{:02x}{:02x}{:02x}",
+        ch(c.red()),
+        ch(c.green()),
+        ch(c.blue())
+    )
 }
