@@ -112,6 +112,17 @@ impl FluxApp {
         widgets.sidebar_container.set_child(Some(&sidebar_wrapper));
     }
 
+    /// Smallest sidebar width that still fits its rows, from their CSS-aware minimum.
+    fn sidebar_min_width(scroller: &gtk::ScrolledWindow) -> i32 {
+        let (min, _, _, _) = scroller
+            .child()
+            .and_then(|c| c.downcast::<gtk::Viewport>().ok())
+            .and_then(|v| v.child())
+            .map(|w| w.measure(gtk::Orientation::Horizontal, -1))
+            .unwrap_or((0, 0, 0, 0));
+        min.max(160)
+    }
+
     /// Wires the sidebar resize handle (hover cursor and drag gesture).
     pub(super) fn setup_sidebar_resize(
         model: &FluxApp,
@@ -120,6 +131,7 @@ impl FluxApp {
     ) {
         {
             let sidebar_box_weak = widgets.sidebar_box.downgrade();
+            let scroller_weak = widgets.sidebar_container.downgrade();
             let start_width = std::rc::Rc::new(std::cell::Cell::new(
                 model.config.ui.sidebar_width.clamp(160, 500),
             ));
@@ -203,6 +215,7 @@ impl FluxApp {
 
             {
                 let s_box_w = sidebar_box_weak.clone();
+                let sc_w = scroller_weak.clone();
                 let start_w = start_width.clone();
                 let start_rx = start_root_x.clone();
                 let ready_c = is_ready.clone();
@@ -221,8 +234,12 @@ impl FluxApp {
                                         )
                                     {
                                         let delta_x = curr_root_x - start_rx.get();
-                                        let new_w =
-                                            (start_w.get() + delta_x as i32).clamp(160, 500);
+                                        let min_w = sc_w
+                                            .upgrade()
+                                            .map(|sc| Self::sidebar_min_width(&sc))
+                                            .unwrap_or(160);
+                                        let new_w = (start_w.get() + delta_x as i32)
+                                            .clamp(min_w, 500.max(min_w));
 
                                         if s.width_request() != new_w {
                                             s.set_width_request(new_w);
@@ -237,6 +254,7 @@ impl FluxApp {
 
             {
                 let s_box_w = sidebar_box_weak;
+                let sc_w = scroller_weak;
                 let s_sender = sender.clone();
                 let ready_c = is_ready;
 
@@ -245,7 +263,11 @@ impl FluxApp {
                         return;
                     }
                     if let Some(s) = s_box_w.upgrade() {
-                        let final_width = s.width().clamp(160, 500);
+                        let min_w = sc_w
+                            .upgrade()
+                            .map(|sc| Self::sidebar_min_width(&sc))
+                            .unwrap_or(160);
+                        let final_width = s.width().clamp(min_w, 500.max(min_w));
                         s.set_width_request(final_width);
                         s_sender.input(AppMsg::SetSidebarWidth(final_width));
                     }
