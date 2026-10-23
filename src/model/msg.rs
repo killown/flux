@@ -22,6 +22,75 @@ pub enum WindowVisibility {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum AppMsg {
+    /// Opens the "Apply Patch" dialog (review/edit before applying).
+    PromptGitApplyPatch,
+    /// Applies a unified diff (clipboard text) to the repo containing the
+    /// current directory, via `git apply -`.
+    GitApplyPatch(String),
+    /// Runs `git add -A` in the repo containing the current directory.
+    GitStageAll,
+    /// Runs `git commit -m <message>` in the repo containing the current directory.
+    GitCommit(String),
+    /// Diffs HEAD to `/tmp/flux-<random>.diff` then runs `git checkout HEAD -- .`.
+    GitDiscardAll,
+    /// Background result of a git action, `Ok` is a short success label,
+    /// `Err` is the human-readable error to surface as a toast.
+    GitActionFinished(Result<String, String>),
+    /// Stages the given paths, then signals `GitCommitDialogReady`.
+    GitStageForCommit(Vec<PathBuf>),
+    /// Emitted after `GitStageForCommit` succeeds, opens the commit dialog.
+    GitCommitDialogReady,
+    /// Menu entry: stage the current selection (if any), then open the commit dialog.
+    PromptCommitWithSelection,
+    /// Runs `git restore --staged .`, the counterpart of `GitStageAll`.
+    GitUnstageAll,
+    /// Reverts only the selected files to HEAD, after backing their diff up to `/tmp`.
+    GitDiscardSelected,
+    /// Re-applies the backup diff written by the last discard.
+    GitRestoreLastDiscard,
+    /// Reverses the last patch applied through `GitApplyPatch`.
+    GitUndoApply,
+    /// Runs `git stash push -u`.
+    GitStash,
+    /// Runs `git stash pop`.
+    GitStashPop,
+    /// Runs `git pull --ff-only`.
+    GitPull,
+    /// Runs `git push`, failing with a clear message when no upstream is set.
+    GitPush,
+    /// Runs `git fetch --all --prune`.
+    GitFetch,
+    /// Menu entry: lists the local branches, then opens the branch dialog.
+    PromptGitSwitchBranch,
+    /// Emitted after `PromptGitSwitchBranch`, opens the branch dialog.
+    GitBranchesReady {
+        current: Option<String>,
+        branches: Vec<String>,
+    },
+    /// Runs `git switch <name>`.
+    GitSwitchBranch(String),
+    /// Runs `git switch -c <name>`.
+    GitCreateBranch(String),
+    /// Menu entry: copies `git diff HEAD` to the clipboard.
+    GitCopyDiff,
+    /// Emitted after `GitCopyDiff` with the diff text, copied on the GTK thread.
+    GitCopyDiffReady(String),
+    /// Menu entry: reads the last commit message, then opens the amend dialog.
+    PromptGitAmend,
+    /// Emitted after `PromptGitAmend` with the last commit message.
+    GitAmendDialogReady(String),
+    /// Runs `git commit --amend -m <message>`.
+    GitAmend(String),
+    /// Menu entry: shows `git log` for the selection (or the current directory).
+    GitShowLog,
+    /// Shows read-only git output in a dialog.
+    GitOutputReady { title: String, text: String },
+    /// Opens the `origin` web page of the current branch, or of the selected file or folder.
+    GitOpenRemote,
+    /// Loads only the files with staged changes into the view.
+    ShowGitStatusStaged,
+    /// Loads only the files with unstaged or untracked changes into the view.
+    ShowGitStatusUnstaged,
     /// Toggles the full-window terminal mode. F4 in Fullscreen position, the
     /// `--terminal` startup flag (when position is Fullscreen), and the
     /// `ToggleTerminal` dispatcher all funnel here when position is Fullscreen.

@@ -1,5 +1,5 @@
 use super::status::GitFileStatus;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
@@ -116,4 +116,62 @@ pub async fn query_git_status(
     }
 
     Ok(results)
+}
+
+/// Which side of the index [`query_git_status_paths`] keeps.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StatusFilter {
+    /// Entries with a change recorded in the index.
+    Staged,
+    /// Entries with a worktree change, untracked files included.
+    Unstaged,
+}
+
+/// Lists the repository paths that have a `filter` change, as absolute paths.
+///
+/// A path with both staged and unstaged changes is part of both sets.
+pub async fn query_git_status_paths(
+    repo_root: &Path,
+    filter: StatusFilter,
+) -> Result<HashSet<PathBuf>, String> {
+    crate::hit!("query_git_status_paths");
+    let output = timeout(
+        Duration::from_millis(3000),
+        Command::new("git")
+            .current_dir(repo_root)
+            .args([
+                "--no-optional-locks",
+                "status",
+                "--porcelain=v1",
+                "--untracked-files=normal",
+                "--no-renames",
+                "-z",
+            ])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .kill_on_drop(true)
+            .output(),
+    )
+    .await
+    .map_err(|_| "Git status scan timed out".to_string())?
+    .map_err(|e| e.to_string())?;
+
+    let mut paths = HashSet::new();
+    for entry in output.stdout.split(|b| *b == 0) {
+        if entry.len() < 4 || entry[2] != b' ' {
+            continue;
+        }
+        let (x, y) = (entry[0], entry[1]);
+        let keep = match filter {
+            StatusFilter::Staged => x != b' ' && x != b'?' && x != b'!',
+            StatusFilter::Unstaged => x != b'!' && y != b' ',
+        };
+        if !keep {
+            continue;
+        }
+        if let Ok(rel) = std::str::from_utf8(&entry[3..]) {
+            paths.insert(repo_root.join(rel));
+        }
+    }
+    Ok(paths)
 }

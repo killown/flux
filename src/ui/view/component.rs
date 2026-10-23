@@ -492,24 +492,20 @@ impl SimpleAsyncComponent for FluxApp {
                             }
                         },
 
-                        /// Contextual button to inspect Git status in current repository.
-                        pack_end = &gtk::Button {
+                        /// Git actions dropdown, visible only inside a repo.
+                        pack_end = &gtk::MenuButton {
                             #[watch]
                             set_visible: model.is_in_git_repo,
-                            connect_clicked => AppMsg::ShowGitStatusView,
-                            set_tooltip_text: Some(&tr("Show Git Changes")),
+                            set_icon_name: "git-symbolic",
+                            set_tooltip_text: Some(&tr("Git Actions")),
                             add_css_class: "flat",
-                            add_css_class: "flux-header-git-btn",
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-
-                            gtk::Box {
-                                set_orientation: gtk::Orientation::Horizontal,
-                                set_spacing: constants::HEADER_BTN_SPACING,
-
-                                gtk::Label {
-                                    set_label: &tr("Git Status"),
-                                }
-                            }
+                            #[wrap(Some)]
+                            set_popover: git_menu_popover = &gtk::PopoverMenu::from_model(
+                                Option::<&gtk::gio::MenuModel>::None,
+                            ) {
+                                set_has_arrow: false,
+                            },
                         },
 
                         /// Contextual button for Recents

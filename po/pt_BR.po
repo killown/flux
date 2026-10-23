@@ -1763,10 +1763,6 @@ msgstr "Nome de usuário"
 # src/ui/panels/diff.rs
 # ============================================================
 
-#: src/ui/panels/diff.rs:171
-msgid "Copy Diff to Clipboard"
-msgstr "Copiar Diff para a Área de Transferência"
-
 #: src/ui/panels/diff.rs:184
 msgid "Diff copied to clipboard"
 msgstr "Diff copiado para a área de transferência"
@@ -3387,14 +3383,6 @@ msgstr "Extrair Arquivo Compactado"
 msgid "Extract"
 msgstr "Extrair"
 
-#: src/ui/view/component.rs:488
-msgid "Show Git Changes"
-msgstr "Mostrar Alterações do Git"
-
-#: src/ui/view/component.rs:498
-msgid "Git Status"
-msgstr "Status do Git"
-
 #: src/ui/view/component.rs:529
 msgid "Main Menu"
 msgstr "Menu principal"
@@ -3804,14 +3792,8 @@ msgstr "Expressão regular inválida: {}"
 msgid "Command failed"
 msgstr "Falha no comando"
 
-#: src/ui/ops/git.rs:102
-msgid "Failed to query git status"
-msgstr "Falha ao consultar o status do Git"
-
 # ============================================================
-# Dynamic strings (built with format!() at runtime)
-# The msgid only matches when the menu file name is exactly "menu.rs",
-# other menu files (menu-image-png.rs, ...) will fall back to English.
+# Dynamic strings
 # ============================================================
 
 #: src/ui/menu/editor/mod.rs:346
@@ -3833,3 +3815,511 @@ msgstr "Posição da linha em menu.rs"
 #: src/ui/help/page/system_view.rs:41
 msgid "Toggle filter bar"
 msgstr "Alternar barra de filtro"
+
+# ============================================================
+# src/services/git/actions.rs
+# ============================================================
+
+#: src/services/git/actions.rs
+msgid "{} timed out after {}s"
+msgstr "{} excedeu o tempo limite após {}s"
+
+#: src/services/git/actions.rs
+msgid "{} failed: {}"
+msgstr "{} falhou: {}"
+
+#: src/services/git/actions.rs
+msgid "Could not create file {}"
+msgstr "Não foi possível criar o arquivo {}"
+
+#: src/services/git/actions.rs
+msgid "Could not write file {}"
+msgstr "Não foi possível escrever o arquivo {}"
+
+#: src/services/git/actions.rs
+msgid "git apply spawn failed"
+msgstr "falha ao executar git apply"
+
+#: src/services/git/actions.rs
+msgid "git apply: no stdin"
+msgstr "git apply: sem stdin"
+
+#: src/services/git/actions.rs
+msgid "git apply write failed"
+msgstr "falha ao escrever no git apply"
+
+#: src/services/git/actions.rs
+msgid "git apply wait failed"
+msgstr "falha ao aguardar git apply"
+
+#: src/services/git/actions.rs
+msgid "git apply failed: {}"
+msgstr "git apply falhou: {}"
+
+#: src/services/git/actions.rs
+msgid "git add spawn failed"
+msgstr "falha ao executar git add"
+
+#: src/services/git/actions.rs
+msgid "git add failed: {}"
+msgstr "git add falhou: {}"
+
+#: src/services/git/actions.rs
+msgid "git commit spawn failed"
+msgstr "falha ao executar git commit"
+
+#: src/services/git/actions.rs
+msgid "git commit failed: {}"
+msgstr "git commit falhou: {}"
+
+#: src/services/git/actions.rs
+msgid "git diff spawn failed"
+msgstr "falha ao executar git diff"
+
+#: src/services/git/actions.rs
+msgid "git diff --cached spawn failed"
+msgstr "falha ao executar git diff --cached"
+
+#: src/services/git/actions.rs
+msgid "git restore spawn failed"
+msgstr "falha ao executar git restore"
+
+#: src/services/git/actions.rs
+msgid "git restore failed: {}"
+msgstr "git restore falhou: {}"
+
+#: src/services/git/actions.rs
+msgid "git symbolic-ref spawn failed"
+msgstr "falha ao executar git symbolic-ref"
+
+#: src/services/git/actions.rs
+msgid "git rev-parse spawn failed"
+msgstr "falha ao executar git rev-parse"
+
+#: src/services/git/actions.rs
+msgid "xdg-open spawn failed"
+msgstr "falha ao executar xdg-open"
+
+# ============================================================
+# src/services/git/actions.rs
+# ============================================================
+
+#: src/services/git/actions.rs
+msgid "Clipboard is empty"
+msgstr "A área de transferência está vazia"
+
+#: src/services/git/actions.rs
+msgid "Patch applied and staged"
+msgstr "Patch aplicado e preparado para commit"
+
+#: src/services/git/actions.rs
+msgid "Patch applied (not staged)"
+msgstr "Patch aplicado (não preparado)"
+
+#: src/services/git/actions.rs
+msgid "No applied patch to undo"
+msgstr "Nenhum patch aplicado para desfazer"
+
+#: src/services/git/actions.rs
+msgid "The last patch was applied in another repository: {}"
+msgstr "O último patch foi aplicado em outro repositório: {}"
+
+#: src/services/git/actions.rs
+msgid "Last patch reverted"
+msgstr "Último patch revertido"
+
+#: src/services/git/actions.rs
+msgid "Staged {} path(s)"
+msgstr "{} caminho(s) preparado(s)"
+
+#: src/services/git/actions.rs
+msgid "Staged all changes"
+msgstr "Todas as alterações preparadas"
+
+#: src/services/git/actions.rs
+msgid "Commit message cannot be empty"
+msgstr "A mensagem do commit não pode estar vazia"
+
+#: src/services/git/actions.rs
+msgid "Commit created"
+msgstr "Commit criado"
+
+#: src/services/git/actions.rs
+msgid "Discarded tracked changes; backup at {}"
+msgstr "Alterações rastreadas descartadas; backup em {}"
+
+#: src/services/git/actions.rs
+msgid "Nothing to discard"
+msgstr "Nada para descartar"
+
+#: src/services/git/actions.rs
+msgid "Nothing selected inside this repository"
+msgstr "Nada selecionado dentro deste repositório"
+
+#: src/services/git/actions.rs
+msgid "Nothing to discard in the selection"
+msgstr "Nada para descartar na seleção"
+
+#: src/services/git/actions.rs
+msgid "Discarded {} file(s); backup at {}"
+msgstr "{} arquivo(s) descartado(s); backup em {}"
+
+#: src/services/git/actions.rs
+msgid "No discard to restore"
+msgstr "Nenhum descarte para restaurar"
+
+#: src/services/git/actions.rs
+msgid "The last discard happened in another repository: {}"
+msgstr "O último descarte ocorreu em outro repositório: {}"
+
+#: src/services/git/actions.rs
+msgid "Backup no longer exists: {}"
+msgstr "O backup não existe mais: {}"
+
+#: src/services/git/actions.rs
+msgid "Discarded changes restored and staged"
+msgstr "Alterações descartadas restauradas e preparadas"
+
+#: src/services/git/actions.rs
+msgid "Discarded changes restored (not staged)"
+msgstr "Alterações descartadas restauradas (não preparadas)"
+
+#: src/services/git/actions.rs
+msgid "Unstaged all changes"
+msgstr "Todas as alterações removidas do stage"
+
+#: src/services/git/actions.rs
+msgid "No local changes to stash"
+msgstr "Nenhuma alteração local para guardar"
+
+#: src/services/git/actions.rs
+msgid "Changes stashed (untracked files included)"
+msgstr "Alterações guardadas (incluindo arquivos não rastreados)"
+
+#: src/services/git/actions.rs
+msgid "Stash applied and dropped"
+msgstr "Stash aplicado e removido"
+
+#: src/services/git/actions.rs
+msgid "No upstream for '{}'. Run: git branch --set-upstream-to=origin/{}"
+msgstr "Sem upstream para '{}'. Execute: git branch --set-upstream-to=origin/{}"
+
+#: src/services/git/actions.rs
+msgid "HEAD is detached, switch to a branch before pulling"
+msgstr "HEAD está desanexado, mude para uma branch antes de fazer pull"
+
+#: src/services/git/actions.rs
+msgid "Already up to date"
+msgstr "Já está atualizado"
+
+#: src/services/git/actions.rs
+msgid "Pulled (fast-forward)"
+msgstr "Pull realizado (fast-forward)"
+
+#: src/services/git/actions.rs
+msgid "No upstream for '{}'. Run once: git push -u origin {}"
+msgstr "Sem upstream para '{}'. Execute uma vez: git push -u origin {}"
+
+#: src/services/git/actions.rs
+msgid "HEAD is detached, switch to a branch before pushing"
+msgstr "HEAD está desanexado, mude para uma branch antes de fazer push"
+
+#: src/services/git/actions.rs
+msgid "Pushed to {}"
+msgstr "Push realizado para {}"
+
+#: src/services/git/actions.rs
+msgid "Fetched all remotes"
+msgstr "Todos os remotes atualizados"
+
+#: src/services/git/actions.rs
+msgid "Branch name cannot be empty"
+msgstr "O nome da branch não pode estar vazio"
+
+#: src/services/git/actions.rs
+msgid "'{}' is not a valid branch name"
+msgstr "'{}' não é um nome de branch válido"
+
+#: src/services/git/actions.rs
+msgid "Switched to '{}'"
+msgstr "Mudou para '{}'"
+
+#: src/services/git/actions.rs
+msgid "Created and switched to '{}'"
+msgstr "Criada e mudou para '{}'"
+
+#: src/services/git/actions.rs
+msgid "No changes to copy"
+msgstr "Nenhuma alteração para copiar"
+
+#: src/services/git/actions.rs
+msgid "Last commit amended"
+msgstr "Último commit emendado"
+
+#: src/services/git/actions.rs
+msgid "No commits found for this selection"
+msgstr "Nenhum commit encontrado para esta seleção"
+
+#: src/services/git/actions.rs
+msgid "No 'origin' remote configured"
+msgstr "Nenhum remote 'origin' configurado"
+
+#: src/services/git/actions.rs
+msgid "Cannot build a web URL from remote '{}'"
+msgstr "Não foi possível construir uma URL web a partir do remote '{}'"
+
+# ============================================================
+# Git menu (src/ui/view/init.rs)
+# ============================================================
+
+#: src/ui/view/init.rs
+msgid "Git Status"
+msgstr "Status do Git"
+
+#: src/ui/view/init.rs
+msgid "Open Remote in Browser"
+msgstr "Abrir remote no navegador"
+
+#: src/ui/view/init.rs
+msgid "Show Log…"
+msgstr "Mostrar log…"
+
+#: src/ui/view/init.rs
+msgid "Commit…"
+msgstr "Commit…"
+
+#: src/ui/view/init.rs
+msgid "Amend Last Commit…"
+msgstr "Emendar último commit…"
+
+#: src/ui/view/init.rs
+msgid "Repository"
+msgstr "Repositório"
+
+#: src/ui/view/init.rs
+msgid "Working Tree"
+msgstr "Árvore de trabalho"
+
+# ============================================================
+# Git menu - Repository submenu (src/ui/view/init.rs)
+# ============================================================
+
+#: src/ui/view/init.rs
+msgid "Staged Only"
+msgstr "Apenas preparados"
+
+#: src/ui/view/init.rs
+msgid "Unstaged Only"
+msgstr "Apenas não preparados"
+
+#: src/ui/view/init.rs
+msgid "Stage All Changes"
+msgstr "Preparar todas as alterações"
+
+#: src/ui/view/init.rs
+msgid "Unstage All Changes"
+msgstr "Despreparar todas as alterações"
+
+#: src/ui/view/init.rs
+msgid "Stash Changes"
+msgstr "Guardar alterações (stash)"
+
+#: src/ui/view/init.rs
+msgid "Stash Pop"
+msgstr "Aplicar stash (pop)"
+
+#: src/ui/view/init.rs
+msgid "Switch Branch…"
+msgstr "Mudar de branch…"
+
+#: src/ui/view/init.rs
+msgid "Fetch"
+msgstr "Buscar (fetch)"
+
+#: src/ui/view/init.rs
+msgid "Pull"
+msgstr "Puxar (pull)"
+
+#: src/ui/view/init.rs
+msgid "Push"
+msgstr "Enviar (push)"
+
+# ============================================================
+# Git menu - Working Tree submenu (src/ui/view/init.rs)
+# ============================================================
+
+#: src/ui/view/init.rs
+msgid "Apply Patch…"
+msgstr "Aplicar patch…"
+
+#: src/ui/view/init.rs
+msgid "Undo Last Apply"
+msgstr "Desfazer último patch aplicado"
+
+#: src/ui/view/init.rs
+msgid "Copy Diff to Clipboard"
+msgstr "Copiar diff para a área de transferência"
+
+#: src/ui/view/init.rs
+msgid "Discard Selected Changes"
+msgstr "Descartar alterações selecionadas"
+
+#: src/ui/view/init.rs
+msgid "Discard All Changes"
+msgstr "Descartar todas as alterações"
+
+#: src/ui/view/init.rs
+msgid "Restore Last Discard"
+msgstr "Restaurar último descarte"
+
+# ============================================================
+# Git menu - header button (src/ui/view/component.rs)
+# ============================================================
+
+#: src/ui/view/component.rs
+msgid "Git Actions"
+msgstr "Ações do Git"
+
+#: src/ui/view/component.rs
+msgid "Show Git Changes"
+msgstr "Mostrar alterações do Git"
+
+# ============================================================
+# Git dialogs - src/ui/dialog/git_commit.rs
+# ============================================================
+
+#: src/ui/dialog/git_commit.rs
+msgid "Commit Changes"
+msgstr "Fazer commit das alterações"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Amend Last Commit"
+msgstr "Emendar último commit"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Commit message"
+msgstr "Mensagem do commit"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Commit"
+msgstr "Commit"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Amend"
+msgstr "Emendar"
+
+# ============================================================
+# Git dialogs - src/ui/dialog/git_apply_patch.rs
+# ============================================================
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Apply Patch"
+msgstr "Aplicar patch"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Patch (unified diff)"
+msgstr "Patch (diff unificado)"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "From Clipboard"
+msgstr "Da área de transferência"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Patch is empty"
+msgstr "O patch está vazio"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Loaded from clipboard"
+msgstr "Carregado da área de transferência"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Reloaded from clipboard"
+msgstr "Recarregado da área de transferência"
+
+# ============================================================
+# Git dialogs - src/ui/dialog/git_switch_branch.rs
+# ============================================================
+
+#: src/ui/dialog/git_switch_branch.rs
+msgid "Switch Branch"
+msgstr "Mudar de branch"
+
+#: src/ui/dialog/git_switch_branch.rs
+msgid "Branch"
+msgstr "Branch"
+
+#: src/ui/dialog/git_switch_branch.rs
+msgid "Filter branches or type a new name"
+msgstr "Filtrar branches ou digitar um novo nome"
+
+#: src/ui/dialog/git_switch_branch.rs
+msgid "current"
+msgstr "atual"
+
+#: src/ui/dialog/git_switch_branch.rs
+msgid "Create & Switch"
+msgstr "Criar e mudar"
+
+#: src/ui/dialog/git_switch_branch.rs
+msgid "Switch"
+msgstr "Mudar"
+
+# ============================================================
+# Git - src/ui/ops/git.rs (toast + dialog titles)
+# ============================================================
+
+#: src/ui/ops/git.rs
+msgid "Not inside a git repository"
+msgstr "Não está dentro de um repositório git"
+
+#: src/ui/ops/git.rs
+msgid "Nothing selected"
+msgstr "Nada selecionado"
+
+#: src/ui/ops/git.rs
+msgid "Pulling…"
+msgstr "Puxando (pull)…"
+
+#: src/ui/ops/git.rs
+msgid "Pushing…"
+msgstr "Enviando (push)…"
+
+#: src/ui/ops/git.rs
+msgid "Fetching…"
+msgstr "Buscando (fetch)…"
+
+#: src/ui/ops/git.rs
+msgid "No display for the clipboard"
+msgstr "Nenhum display disponível para a área de transferência"
+
+#: src/ui/ops/git.rs
+msgid "Diff copied ({} lines)"
+msgstr "Diff copiado ({} linha(s))"
+
+#: src/ui/ops/git.rs
+msgid "Git"
+msgstr "Git"
+
+#: src/ui/ops/git.rs
+msgid "Git Error"
+msgstr "Erro do Git"
+
+#: src/ui/ops/git.rs
+msgid "Git Log"
+msgstr "Log do Git"
+
+#: src/ui/ops/git.rs
+msgid "Git Log: {}"
+msgstr "Log do Git: {}"
+
+#: src/ui/ops/git.rs
+msgid "Failed to query git status"
+msgstr "Falha ao consultar o status do git"
+
+#: src/ui/ops/git.rs
+msgid "No staged changes"
+msgstr "Nenhuma alteração preparada"
+
+#: src/ui/ops/git.rs
+msgid "No unstaged changes"
+msgstr "Nenhuma alteração não preparada"
