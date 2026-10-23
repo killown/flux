@@ -111,7 +111,7 @@ impl FluxApp {
                     let mut redo_items = Vec::new();
                     let mut success = true;
                     for (src, dst) in items {
-                        if crate::ui::ops::paste::perform_file_op(
+                        if crate::app::update::file_ops::paste::perform_file_op(
                             &dst,
                             &src,
                             true,
@@ -229,7 +229,7 @@ impl FluxApp {
                     let mut undo_items = Vec::new();
                     let mut success = true;
                     for (src, dst) in items {
-                        if crate::ui::ops::paste::perform_file_op(
+                        if crate::app::update::file_ops::paste::perform_file_op(
                             &src,
                             &dst,
                             true,

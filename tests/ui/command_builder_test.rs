@@ -1,4 +1,4 @@
-use flux::ui::ops::file::build_execution_command;
+use flux::app::update::file_ops::build_execution_command;
 use std::path::Path;
 use std::path::PathBuf;
 

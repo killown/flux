@@ -109,7 +109,7 @@ impl FluxApp {
             mime_filter: None,
             mime_filter_from_space: false,
             preview_cache: std::sync::Arc::new(
-                crate::ui::ops::view::prefetch::PreviewCache::default(),
+                crate::app::update::view::prefetch::PreviewCache::default(),
             ),
             preview_view_stack: None,
             preview_view_switcher: None,

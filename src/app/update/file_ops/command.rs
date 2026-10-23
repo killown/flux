@@ -247,7 +247,8 @@ impl FluxApp {
 
         // Generate task ID only if tracking is needed – defined OUTSIDE the condition
         let task_id = if !bypass_tracking {
-            let id = crate::ui::ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+            let id =
+                crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
             // Insert into queue – note the full_command parameter
             let action_name = self
                 .menu_actions

@@ -31,7 +31,8 @@ impl FluxApp {
             return;
         }
 
-        let task_id = crate::ui::ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+        let task_id =
+            crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
         let cancellable = gtk::gio::Cancellable::new();
         let label = format!(
             "Extracting {}",

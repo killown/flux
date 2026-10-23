@@ -67,7 +67,7 @@ pub struct FluxApp {
     /// every selection change that should invalidate the previous preview.
     pub preview_session: Arc<AtomicU64>,
     /// Bounded LRU of prefetched preview payloads keyed on path + mtime.
-    pub preview_cache: std::sync::Arc<crate::ui::ops::view::prefetch::PreviewCache>,
+    pub preview_cache: std::sync::Arc<crate::app::update::view::prefetch::PreviewCache>,
     /// Revealer widget wrapping the peek-preview right side panel.
     pub preview_panel_revealer: Option<gtk::Revealer>,
     /// Whether the peek-preview panel is visible.

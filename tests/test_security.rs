@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use tempfile::tempdir;
 
 use adw::gio::prelude::*;
-use flux::ui::ops::paste::perform_file_op;
+use flux::app::update::file_ops::paste::perform_file_op;
 use gtk::gio;
 
 #[test]

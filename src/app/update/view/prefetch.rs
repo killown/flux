@@ -132,7 +132,7 @@ impl FluxApp {
                 if cache.get(&neighbour, mt).is_some() {
                     continue;
                 }
-                let content = crate::ui::ops::view::preview::compute_preview(&neighbour);
+                let content = crate::app::update::view::preview::compute_preview(&neighbour);
                 cache.insert(neighbour.clone(), mt, content.clone());
                 let _ = sender_clone.input_sender().send(AppMsg::PreviewPrefetched {
                     path: neighbour,

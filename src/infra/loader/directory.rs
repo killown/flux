@@ -146,7 +146,10 @@ impl FluxApp {
                             // download emits into a single FileChanged after the file
                             // has stopped growing, so the thumbnail pipeline never runs
                             // against a truncated source.
-                            crate::ui::ops::debounce_path_event(path, sender_clone.clone());
+                            crate::app::update::watcher::debounce_path_event(
+                                path,
+                                sender_clone.clone(),
+                            );
                         }
                         gio::FileMonitorEvent::Moved | gio::FileMonitorEvent::Renamed => {
                             sender_clone.input(AppMsg::FileDeleted(path));

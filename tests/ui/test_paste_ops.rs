@@ -23,8 +23,8 @@ use adw::gio::prelude::*;
 use gtk::gio;
 use tempfile::tempdir;
 
+use flux::app::update::file_ops::paste::perform_file_op;
 use flux::services::tasks::{new_queue, TaskQueue};
-use flux::ui::ops::paste::perform_file_op;
 
 // ─── stop_flag contract ───────────────────────────────────────────────────────
 
