@@ -13,16 +13,13 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             add = &adw::PreferencesGroup {
                 set_title: &tr("Preview Settings"),
                 set_description: Some(&tr("Enable or disable thumbnail generation for different file types")),
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Enable Thumbnails"),
                     set_subtitle: &tr("Show previews for supported file types"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowThumbnails(switch.is_active()));
-                            }
+                    set_active: config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowThumbnails(switch.is_active()));
                         }
                     }
                 },
@@ -56,148 +53,121 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Lazy Thumbnails"),
                     set_subtitle: &tr("Generate thumbnails only for items in view"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.lazy_thumbnails && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetLazyThumbnails(switch.is_active()));
-                            }
+                    set_active: config.ui.lazy_thumbnails && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetLazyThumbnails(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Cache Thumbnails in Zip Files"),
                     set_subtitle: &tr("Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.archive_thumbnail_cache,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetArchiveThumbnailCache(switch.is_active()));
-                            }
+                    set_active: config.ui.archive_thumbnail_cache,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetArchiveThumbnailCache(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Autoplay Video Previews"),
                     set_subtitle: &tr("Play a muted preview when a single video card is selected"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_valign: gtk::Align::Center,
-                        set_active: config.ui.autoplay_video_previews,
-                        connect_state_set => move |_, state| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetAutoplayVideoPreviews(state));
-                            }
-                            gtk::glib::Propagation::Proceed
+                    set_active: config.ui.autoplay_video_previews,
+                    connect_active_notify => move |row| {
+                        let state = row.is_active();
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetAutoplayVideoPreviews(state));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Images"),
                     set_subtitle: &tr("PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.thumbnail_types.images && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetThumbnailType {
-                                    type_name: "images".to_string(),
-                                    enabled: switch.is_active()
-                                });
-                            }
+                    set_active: config.ui.thumbnail_types.images && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetThumbnailType {
+                                type_name: "images".to_string(),
+                                enabled: switch.is_active()
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Videos"),
                     set_subtitle: &tr("MP4, MKV, WebM, AVI, MOV, FLV, WMV"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.thumbnail_types.videos && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetThumbnailType {
-                                    type_name: "videos".to_string(),
-                                    enabled: switch.is_active()
-                                });
-                            }
+                    set_active: config.ui.thumbnail_types.videos && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetThumbnailType {
+                                type_name: "videos".to_string(),
+                                enabled: switch.is_active()
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Fonts"),
                     set_subtitle: &tr("TTF, OTF, WOFF, WOFF2, TTC"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.thumbnail_types.fonts && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetThumbnailType {
-                                    type_name: "fonts".to_string(),
-                                    enabled: switch.is_active()
-                                });
-                            }
+                    set_active: config.ui.thumbnail_types.fonts && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetThumbnailType {
+                                type_name: "fonts".to_string(),
+                                enabled: switch.is_active()
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("PDF Documents"),
                     set_subtitle: &tr("Portable Document Format files"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.thumbnail_types.pdfs && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetThumbnailType {
-                                    type_name: "pdfs".to_string(),
-                                    enabled: switch.is_active()
-                                });
-                            }
+                    set_active: config.ui.thumbnail_types.pdfs && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetThumbnailType {
+                                type_name: "pdfs".to_string(),
+                                enabled: switch.is_active()
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Windows Executables"),
                     set_subtitle: &tr("EXE"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.thumbnail_types.executables && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetThumbnailType {
-                                    type_name: "executables".to_string(),
-                                    enabled: switch.is_active()
-                                });
-                            }
+                    set_active: config.ui.thumbnail_types.executables && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetThumbnailType {
+                                type_name: "executables".to_string(),
+                                enabled: switch.is_active()
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Audio"),
                     set_subtitle: &tr("MP3, FLAC, M4A, OGG, WAV (embedded album art)"),
                     set_sensitive: config.ui.show_thumbnails,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.thumbnail_types.audio && config.ui.show_thumbnails,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetThumbnailType {
-                                    type_name: "audio".to_string(),
-                                    enabled: switch.is_active()
-                                });
-                            }
+                    set_active: config.ui.thumbnail_types.audio && config.ui.show_thumbnails,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetThumbnailType {
+                                type_name: "audio".to_string(),
+                                enabled: switch.is_active()
+                            });
                         }
                     }
                 },

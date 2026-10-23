@@ -56,20 +56,17 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Height (lines)"),
                     set_subtitle: &tr("Number of character lines in the terminal"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(
-                            config.ui.terminal.height as f64,
-                            10.0, 200.0, 5.0, 0.0, 0.0
-                        ),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTerminalHeight(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(
+                        config.ui.terminal.height as f64,
+                        10.0, 200.0, 5.0, 0.0, 0.0
+                    )),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetTerminalHeight(spin.value() as i32));
                         }
                     }
                 },

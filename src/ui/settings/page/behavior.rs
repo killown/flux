@@ -13,102 +13,81 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             add = &adw::PreferencesGroup {
                 set_title: &tr("File Operations"),
                 set_description: Some(&tr("How files and directories are opened and managed")),
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Single Click to Open"),
                     set_subtitle: &tr("Open files with a single click instead of double click"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.single_click,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetSingleClick(switch.is_active()));
-                            }
+                    set_active: config.ui.single_click,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetSingleClick(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Disable Drag and Drop"),
                     set_subtitle: &tr("Prevent moving or copying files via mouse drag"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.disable_drag_and_drop,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetDisableDragAndDrop(switch.is_active()));
-                            }
+                    set_active: config.ui.disable_drag_and_drop,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetDisableDragAndDrop(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Highlight Empty Folders"),
                     set_subtitle: &tr("Color the border of folders that contain no items"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_empty_dir_emblem,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowEmptyDirEmblem(switch.is_active()));
-                            }
+                    set_active: config.ui.show_empty_dir_emblem,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowEmptyDirEmblem(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Highlight Symbolic Links"),
                     set_subtitle: &tr("Color the border of symbolic links"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_symlink_emblem,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowSymlinkEmblem(switch.is_active()));
-                            }
+                    set_active: config.ui.show_symlink_emblem,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowSymlinkEmblem(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Auto-Show Git Diff"),
                     set_subtitle: &tr("Automatically open the diff panel when selecting a modified file"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.auto_show_diff,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetAutoShowDiff(switch.is_active()));
-                            }
+                    set_active: config.ui.auto_show_diff,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetAutoShowDiff(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Default Layout"),
                     set_subtitle: &tr("Start with grid view (off) or list view (on)"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.default_list_mode,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |_switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::ToggleListMode);
-                            }
+                    set_active: config.default_list_mode,
+                    connect_active_notify => move |_switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::ToggleListMode);
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Auto List Mode Threshold"),
                     set_subtitle: &tr("Folders with more items than this open in list mode. 0 disables."),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(
-                            config.ui.auto_list_threshold as f64,
-                            0.0,
-                            100_000.0,
-                            100.0,
-                            1_000.0,
-                            0.0,
-                        ),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetAutoListThreshold(spin.value() as usize));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(
+                        config.ui.auto_list_threshold as f64,
+                        0.0,
+                        100_000.0,
+                        100.0,
+                        1_000.0,
+                        0.0,
+                    )),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetAutoListThreshold(spin.value() as usize));
                         }
                     }
                 },
@@ -184,29 +163,23 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                   }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Folders First"),
                     set_subtitle: &tr("Display folders before files"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.folders_first,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetFoldersFirst(switch.is_active()));
-                            }
+                    set_active: config.ui.folders_first,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetFoldersFirst(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Show Hidden Files"),
                     set_subtitle: &tr("Display files and folders starting with a dot"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_hidden_by_default,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowHidden(switch.is_active()));
-                            }
+                    set_active: config.ui.show_hidden_by_default,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowHidden(switch.is_active()));
                         }
                     }
                 },

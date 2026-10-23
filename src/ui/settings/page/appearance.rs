@@ -1,7 +1,6 @@
 use crate::i18n::tr;
 use crate::model::{AppMsg, Config};
 use adw::prelude::*;
-use gtk::glib;
 use relm4::prelude::*;
 
 pub fn build(config: &Config) -> adw::PreferencesPage {
@@ -43,115 +42,91 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Default Icon Size"),
                     set_subtitle: &tr("Base size of icons in the grid view"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.default_icon_size as f64, 16.0, 512.0, 16.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetIconSize(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.default_icon_size as f64, 16.0, 512.0, 16.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetIconSize(spin.value() as i32));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("List Icon Size"),
                     set_subtitle: &tr("Icon size used in list mode"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.list_icon_size as f64, 16.0, 128.0, 8.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetListIconSize(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.list_icon_size as f64, 16.0, 128.0, 8.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetListIconSize(spin.value() as i32));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Scale Font with Icons"),
                     set_subtitle: &tr("Dynamically adjust label font size when zooming or resizing grid icons"),
-                    add_suffix = &gtk::Switch {
-                        set_valign: gtk::Align::Center,
-                        set_active: config.ui.scale_font_with_icons,
-                        connect_state_set => move |_, state| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetScaleFontWithIcons(state));
-                            }
-                            glib::Propagation::Proceed
+                    set_active: config.ui.scale_font_with_icons,
+                    connect_active_notify => move |row| {
+                        let state = row.is_active();
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetScaleFontWithIcons(state));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Grid Spacing"),
                     set_subtitle: &tr("Pixel spacing between items in the grid view"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetGridSpacing(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetGridSpacing(spin.value() as i32));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Max Label Length"),
                     set_subtitle: &tr("Characters before truncating filenames"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.max_width_chars as f64, 8.0, 128.0, 1.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetMaxWidthChars(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.max_width_chars as f64, 8.0, 128.0, 1.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetMaxWidthChars(spin.value() as i32));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Breadcrumbs Shown"),
                     set_subtitle: &tr("Number of path segments shown in the header bar"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 1.0, 20.0, 1.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetBreadcrumbCount(spin.value() as usize));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 1.0, 20.0, 1.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetBreadcrumbCount(spin.value() as usize));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Breadcrumb Label Length"),
                     set_subtitle: &tr("Characters before truncating breadcrumb names"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 4.0, 64.0, 1.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetBreadcrumbMaxChars(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 4.0, 64.0, 1.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetBreadcrumbMaxChars(spin.value() as i32));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Expand Filenames"),
                     set_subtitle: &tr("Wrap filenames across multiple lines"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.expand_labels,
-                        set_valign: gtk::Align::Center,
-                        connect_state_set => move |_, state| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetExpandLabels(state));
-                            }
-                            glib::Propagation::Proceed
+                    set_active: config.ui.expand_labels,
+                    connect_active_notify => move |row| {
+                        let state = row.is_active();
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetExpandLabels(state));
                         }
                     }
                 },
@@ -160,78 +135,69 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             add = &adw::PreferencesGroup {
                 set_title: &tr("Background Tint Opacity"),
                 set_description: Some(&tr("Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)")),
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Window Background Opacity"),
                     set_subtitle: &tr("Tint overlay for the main background"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(
-                            config.ui.bg_alpha_window,
-                            0.0,
-                            1.0,
-                            0.05,
-                            0.1,
-                            0.0,
-                        ),
-                        set_digits: 2,
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetBackgroundAlpha {
-                                    slot: crate::model::BackgroundSlot::Window,
-                                    alpha: spin.value(),
-                                });
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(
+                        config.ui.bg_alpha_window,
+                        0.0,
+                        1.0,
+                        0.05,
+                        0.1,
+                        0.0,
+                    )),
+                    set_digits: 2,
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetBackgroundAlpha {
+                                slot: crate::model::BackgroundSlot::Window,
+                                alpha: spin.value(),
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Left Sidebar Opacity"),
                     set_subtitle: &tr("Tint overlay for the left sidebar"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(
-                            config.ui.bg_alpha_sidebar_left,
-                            0.0,
-                            1.0,
-                            0.05,
-                            0.1,
-                            0.0,
-                        ),
-                        set_digits: 2,
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetBackgroundAlpha {
-                                    slot: crate::model::BackgroundSlot::SidebarLeft,
-                                    alpha: spin.value(),
-                                });
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(
+                        config.ui.bg_alpha_sidebar_left,
+                        0.0,
+                        1.0,
+                        0.05,
+                        0.1,
+                        0.0,
+                    )),
+                    set_digits: 2,
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetBackgroundAlpha {
+                                slot: crate::model::BackgroundSlot::SidebarLeft,
+                                alpha: spin.value(),
+                            });
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Right Sidebar Opacity"),
                     set_subtitle: &tr("Tint overlay for the search / tag panel"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(
-                            config.ui.bg_alpha_sidebar_right,
-                            0.0,
-                            1.0,
-                            0.05,
-                            0.1,
-                            0.0,
-                        ),
-                        set_digits: 2,
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetBackgroundAlpha {
-                                    slot: crate::model::BackgroundSlot::SidebarRight,
-                                    alpha: spin.value(),
-                                });
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(
+                        config.ui.bg_alpha_sidebar_right,
+                        0.0,
+                        1.0,
+                        0.05,
+                        0.1,
+                        0.0,
+                    )),
+                    set_digits: 2,
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetBackgroundAlpha {
+                                slot: crate::model::BackgroundSlot::SidebarRight,
+                                alpha: spin.value(),
+                            });
                         }
                     }
                 },
@@ -240,71 +206,56 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             add = &adw::PreferencesGroup {
                 set_title: &tr("Window"),
                 set_description: Some(&tr("Window behavior and startup settings")),
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Start Maximized"),
                     set_subtitle: &tr("Open the application in maximized state"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.start_maximized,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetMaximized(switch.is_active()));
-                            }
+                    set_active: config.ui.start_maximized,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetMaximized(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Client-Side Decorations"),
                     set_subtitle: &tr("Show window controls in the header bar"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_csd,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowCsd(switch.is_active()));
-                            }
+                    set_active: config.ui.show_csd,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowCsd(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Window Controls on Left"),
                     set_subtitle: &tr("Move close/minimize/maximize buttons to the left"),
                     set_sensitive: config.ui.show_csd,
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.window_controls_left,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetWindowControlsLeft(switch.is_active()));
-                            }
+                    set_active: config.ui.window_controls_left,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetWindowControlsLeft(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Startup Width"),
                     set_subtitle: &tr("Initial window width in pixels"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetWindowWidth(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetWindowWidth(spin.value() as i32));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Startup Height"),
                     set_subtitle: &tr("Initial window height in pixels"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetWindowHeight(spin.value() as i32));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetWindowHeight(spin.value() as i32));
                         }
                     }
                 },
@@ -313,55 +264,43 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             add = &adw::PreferencesGroup {
                 set_title: &tr("Header Buttons"),
                 set_description: Some(&tr("Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+M.")),
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Filter Button"),
                     set_subtitle: &tr("Show the filter-by-pattern button"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.header_show_filter,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetHeaderShowFilter(switch.is_active()));
-                            }
+                    set_active: config.ui.header_show_filter,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetHeaderShowFilter(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Sort Indicator"),
                     set_subtitle: &tr("Show the current sort mode and its cycle control"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.header_show_sort,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetHeaderShowSort(switch.is_active()));
-                            }
+                    set_active: config.ui.header_show_sort,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetHeaderShowSort(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("List/Grid Toggle"),
                     set_subtitle: &tr("Show the button that switches between list and grid layout"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.header_show_view,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetHeaderShowView(switch.is_active()));
-                            }
+                    set_active: config.ui.header_show_view,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetHeaderShowView(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Preview Button"),
                     set_subtitle: &tr("Show the button that toggles the preview panel"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.header_show_preview,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetHeaderShowPreview(switch.is_active()));
-                            }
+                    set_active: config.ui.header_show_preview,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetHeaderShowPreview(switch.is_active()));
                         }
                     }
                 },
@@ -406,84 +345,66 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Fish Shell Integration"),
                     set_subtitle: &tr(
                         "Generate ~/.config/fish/conf.d/flux-theme.fish so the embedded fish shell's colors and prompt follow the Flux theme"
                     ),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.fish_theme,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetFishTheme(switch.is_active()));
-                            }
+                    set_active: config.ui.fish_theme,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetFishTheme(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Show Recents"),
                     set_subtitle: &tr("Show recently visited files in the sidebar"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_recents,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowRecents(switch.is_active()));
-                            }
+                    set_active: config.ui.show_recents,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowRecents(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Recents Position"),
                     set_subtitle: &tr("Row index of Recents in the sidebar (0 = top)"),
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(config.ui.recents_row as f64, 0.0, 999.0, 1.0, 0.0, 0.0),
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetRecentsRow(spin.value() as usize));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(config.ui.recents_row as f64, 0.0, 999.0, 1.0, 0.0, 0.0)),
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetRecentsRow(spin.value() as usize));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("XDG Directories"),
                     set_subtitle: &tr("Show standard user directories in sidebar"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.show_xdg_dirs,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShowXdgDirs(switch.is_active()));
-                            }
+                    set_active: config.ui.show_xdg_dirs,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetShowXdgDirs(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Sidebar Menu Needs Ctrl"),
                     set_subtitle: &tr("Open sidebar context menus only with Ctrl + right-click"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.sidebar_menu_requires_ctrl,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetSidebarMenuRequiresCtrl(switch.is_active()));
-                            }
+                    set_active: config.ui.sidebar_menu_requires_ctrl,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetSidebarMenuRequiresCtrl(switch.is_active()));
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Panel Menu Needs Ctrl"),
                     set_subtitle: &tr("Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.panel_menu_requires_ctrl,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetPanelMenuRequiresCtrl(switch.is_active()));
-                            }
+                    set_active: config.ui.panel_menu_requires_ctrl,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetPanelMenuRequiresCtrl(switch.is_active()));
                         }
                     }
                 },
@@ -492,16 +413,13 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             add = &adw::PreferencesGroup {
                 set_title: &tr("Generated Extension Icons"),
                 set_description: Some(&tr("Settings for dynamically generated icons when system themes lack a dedicated icon")),
-                add = &adw::ActionRow {
+                add = &adw::SwitchRow {
                     set_title: &tr("Auto-Generate Icons"),
                     set_subtitle: &tr("Synthesize SVG icons for unknown file extensions using template.svg"),
-                    add_suffix = &gtk::Switch {
-                        set_active: config.ui.auto_generate_mime_icons,
-                        set_valign: gtk::Align::Center,
-                        connect_active_notify => move |switch| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetAutoGenerateMimeIcons(switch.is_active()));
-                            }
+                    set_active: config.ui.auto_generate_mime_icons,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetAutoGenerateMimeIcons(switch.is_active()));
                         }
                     }
                 },
@@ -559,26 +477,23 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
                     }
                 },
-                add = &adw::ActionRow {
+                add = &adw::SpinRow {
                     set_title: &tr("Base Font Size"),
                     set_subtitle: &tr("Base font scale for extension labels inside generated badges"),
                     set_sensitive: config.ui.auto_generate_mime_icons,
-                    add_suffix = &gtk::SpinButton {
-                        set_adjustment: &gtk::Adjustment::new(
-                            config.ui.auto_mime_font_size,
-                            4.0,
-                            32.0,
-                            0.5,
-                            1.0,
-                            0.0,
-                        ),
-                        set_digits: 1,
-                        set_numeric: true,
-                        set_valign: gtk::Align::Center,
-                        connect_value_changed => move |spin| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetAutoMimeFontSize(spin.value()));
-                            }
+                    set_adjustment: Some(&gtk::Adjustment::new(
+                        config.ui.auto_mime_font_size,
+                        4.0,
+                        32.0,
+                        0.5,
+                        1.0,
+                        0.0,
+                    )),
+                    set_digits: 1,
+                    set_numeric: true,
+                    connect_value_notify => move |spin| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetAutoMimeFontSize(spin.value()));
                         }
                     }
                 },
