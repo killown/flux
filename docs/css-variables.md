@@ -23,7 +23,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 <!-- BEGIN GENERATED: custom-properties -->
 | Variable | Default | Declared in | Uses | Purpose |
 |---|---|---|---|---|
-| `--border-color` | `alpha(var(--color-fg), 0.1)` | `:root` | 18 | Hairline borders on the sidebar, list rows, inputs, tooltips and toasts. |
+| `--border-color` | `alpha(var(--color-fg), 0.1)` | `:root` | 16 | Hairline borders on the sidebar, list rows, inputs, tooltips and toasts. |
 | `--color-accent` | `@accent_bg_color` | `:root` | 24 | Primary accent background for selected and active elements. |
 | `--color-accent-fg` | `@accent_fg_color` | `:root` | 34 | Text and icons drawn on top of `--color-accent`. |
 | `--color-accent-text` | `@accent_color` | `:root` | 47 | Accent color for text, icons and borders on a plain background. |

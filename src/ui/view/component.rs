@@ -104,12 +104,6 @@ impl SimpleAsyncComponent for FluxApp {
                     #[watch]
                     set_visible: model.sidebar_visible,
 
-                    // Floating margins around the entire sidebar card
-                    set_margin_top: 8,
-                    set_margin_bottom: 8,
-                    set_margin_start: 8,
-                    set_margin_end: 4,
-
                     gtk::WindowControls {
                         #[watch]
                         set_visible: model.config.ui.show_csd && model.config.ui.window_controls_left,
@@ -872,10 +866,6 @@ impl SimpleAsyncComponent for FluxApp {
                     add_bottom_bar = &gtk::Box {
                         #[watch]
                         set_visible: model.statusbar_visible && !model.preview_panel_visible,
-                        set_margin_start: 8,
-                        set_margin_end: 8,
-                        set_margin_bottom: 2,
-                        set_spacing: 12,
                         add_css_class: "selection-status",
 
                         /// Selection information & child count
@@ -1030,7 +1020,7 @@ impl SimpleAsyncComponent for FluxApp {
                 },
             } -> { set_name: "fm" },
 
-            /// Host for the full-window terminal; empty until it is first used.
+            /// Host for the full-window terminal, empty until it is first used.
             #[name = "fullscreen_terminal_box"]
             add_child = &gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,

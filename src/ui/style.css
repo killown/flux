@@ -210,11 +210,15 @@ windowcontrols button.maximize:hover {
 }
 
 .sidebar {
+  font-size: 2em;
+  background-color: transparent;
+  border: transparent;
+}
+
+.flux-sidebar-root {
   font-size: 1em;
-  background-color: var(--color-sidebar-bg);
-  border-radius: 1.1em;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 0.3em 1.5em alpha(black, 0.4);
+  background-color: transparent;
+  border: transparent;
 }
 
 .sidebar-inner {
@@ -228,14 +232,7 @@ windowcontrols button.maximize:hover {
 }
 
 .sidebar-resize-handle {
-  min-width: 1.4em;
-  background: transparent;
-  margin-left: -0.5em;
-  margin-right: -0.5em;
-  padding: 0;
-  border: none;
-  opacity: 1;
-  transition: background-color 150ms ease;
+  background-color: var(--color-sidebar-bg);
 }
 
 .sidebar-row image {
@@ -898,18 +895,14 @@ textview text {
 .selection-status {
   font-size: 1em;
   background-color: var(--color-headerbar-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 0.9em;
-  padding: 0.45em 1.2em;
   min-height: 2.2em;
-  box-shadow: 0 0.3em 1.2em alpha(black, 0.3);
-  margin-bottom: 0.6em;
 }
 
 .selection-status label.caption {
   color: alpha(currentColor, 0.55);
   font-family: var(--font-mono);
   font-size: 0.85em;
+  padding: 0.45em 1.2em;
   letter-spacing: -0.01em;
 }
 
