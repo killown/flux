@@ -1,16 +1,12 @@
 use super::{Msg, Shared};
 use crate::i18n::tr;
 use adw::prelude::*;
-use gtk::glib;
 use relm4::prelude::*;
 
 pub(super) fn show_new_menu_dialog(shared: &Shared) {
-    let dialog = adw::Window::new();
-    dialog.set_title(Some(tr("Create Menu").as_str()));
-    dialog.set_modal(true);
-    dialog.set_transient_for(Some(&shared.root));
-    dialog.set_default_size(520, -1);
-    dialog.set_resizable(false);
+    let dialog = adw::Dialog::new();
+    dialog.set_title(tr("Create Menu").as_str());
+    dialog.set_content_width(520);
 
     let outer = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
@@ -57,24 +53,13 @@ pub(super) fn show_new_menu_dialog(shared: &Shared) {
     btn_bar.append(&create_btn);
     outer.append(&btn_bar);
 
-    dialog.set_content(Some(&outer));
+    dialog.set_child(Some(&outer));
 
     {
         let d = dialog.clone();
-        cancel_btn.connect_clicked(move |_| d.close());
-    }
-
-    {
-        let d = dialog.clone();
-        let esc = gtk::ShortcutController::new();
-        esc.add_shortcut(gtk::Shortcut::new(
-            gtk::ShortcutTrigger::parse_string("Escape"),
-            Some(gtk::CallbackAction::new(move |_, _| {
-                d.close();
-                glib::Propagation::Stop
-            })),
-        ));
-        dialog.add_controller(esc);
+        cancel_btn.connect_clicked(move |_| {
+            d.close();
+        });
     }
 
     {
@@ -92,5 +77,5 @@ pub(super) fn show_new_menu_dialog(shared: &Shared) {
         });
     }
 
-    dialog.present();
+    dialog.present(Some(&shared.root));
 }

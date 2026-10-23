@@ -19,14 +19,13 @@ pub fn show_template_editor(
     sender: AsyncComponentSender<crate::model::FluxApp>,
 ) {
     crate::hit!("show_template_editor");
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(tr("Edit Actions Template").as_str())
-        .modal(true)
         .build();
 
     if let Some(win) = parent {
-        dialog.set_transient_for(Some(win));
-        dialog.set_default_size(win.default_width(), win.default_height());
+        dialog.set_content_width(win.default_width());
+        dialog.set_content_height(win.default_height());
     }
 
     let outer = gtk::Box::builder()
@@ -90,25 +89,13 @@ pub fn show_template_editor(
         .build();
     outer.append(&status);
 
-    dialog.set_content(Some(&outer));
+    dialog.set_child(Some(&outer));
 
     {
         let d = dialog.clone();
-        cancel_btn.connect_clicked(move |_| d.close());
-    }
-
-    {
-        let d = dialog.clone();
-        let esc = gtk::EventControllerKey::new();
-        esc.set_propagation_phase(gtk::PropagationPhase::Capture);
-        esc.connect_key_pressed(move |_, key, _, _| {
-            if key == gtk::gdk::Key::Escape {
-                d.close();
-                return gtk::glib::Propagation::Stop;
-            }
-            gtk::glib::Propagation::Proceed
+        cancel_btn.connect_clicked(move |_| {
+            d.close();
         });
-        dialog.add_controller(esc);
     }
 
     {
@@ -140,9 +127,10 @@ pub fn show_template_editor(
     if let Some(win) = parent {
         let (w, h) = (win.width(), win.height());
         if w > 0 && h > 0 {
-            dialog.set_default_size(w, h);
+            dialog.set_content_width(w);
+            dialog.set_content_height(h);
         }
     }
 
-    dialog.present();
+    dialog.present(parent);
 }

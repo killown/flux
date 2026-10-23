@@ -2,25 +2,18 @@ use super::builtins::BUILTINS;
 use crate::i18n::tr;
 use adw::gdk;
 use adw::prelude::*;
-use gtk::glib;
 use relm4::prelude::*;
 use std::rc::Rc;
 
 pub(super) fn show_builtin_dialog(
-    parent: Option<&gtk::Window>,
+    parent: Option<&impl IsA<gtk::Widget>>,
     on_select: impl Fn(&str, &str) + 'static,
 ) {
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(tr("Select Built-in Action").as_str())
-        .modal(true)
-        .default_width(620)
-        .default_height(540)
-        .resizable(false)
+        .content_width(620)
+        .content_height(540)
         .build();
-
-    if let Some(win) = parent {
-        dialog.set_transient_for(Some(win));
-    }
 
     let root = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
@@ -131,17 +124,6 @@ pub(super) fn show_builtin_dialog(
         .build();
     root.append(&scroller);
 
-    let d_esc = dialog.clone();
-    let esc = gtk::ShortcutController::new();
-    esc.add_shortcut(gtk::Shortcut::new(
-        gtk::ShortcutTrigger::parse_string("Escape"),
-        Some(gtk::CallbackAction::new(move |_, _| {
-            d_esc.close();
-            glib::Propagation::Stop
-        })),
-    ));
-    dialog.add_controller(esc);
-
-    dialog.set_content(Some(&root));
-    dialog.present();
+    dialog.set_child(Some(&root));
+    dialog.present(parent);
 }

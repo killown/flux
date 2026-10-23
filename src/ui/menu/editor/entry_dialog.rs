@@ -3,21 +3,17 @@ use super::{Msg, Shared};
 use crate::i18n::tr;
 use crate::model::MenuEntry;
 use adw::prelude::*;
-use gtk::glib;
 use relm4::prelude::*;
 
 pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
-    let dialog = adw::Window::new();
+    let dialog = adw::Dialog::new();
     let dialog_title = if replace.is_some() {
         tr("Edit Entry")
     } else {
         tr("Add Entry")
     };
-    dialog.set_title(Some(dialog_title.as_str()));
-    dialog.set_modal(true);
-    dialog.set_transient_for(Some(&shared.root));
-    dialog.set_default_size(680, -1);
-    dialog.set_resizable(false);
+    dialog.set_title(dialog_title.as_str());
+    dialog.set_content_width(680);
 
     let outer = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
@@ -121,7 +117,7 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         let parent_win = window_weak.upgrade();
 
         crate::ui::dialog::menu_icon_picker::show_menu_icon_picker(
-            parent_win.as_ref().map(|w| w.upcast_ref()),
+            parent_win.as_ref(),
             move |glyph| {
                 let current = entry_ref.text().to_string();
                 let cleaned = current
@@ -187,7 +183,7 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         let parent_win = sub_window_weak.upgrade();
 
         crate::ui::dialog::menu_icon_picker::show_menu_icon_picker(
-            parent_win.as_ref().map(|w| w.upcast_ref()),
+            parent_win.as_ref(),
             move |glyph| {
                 let current = entry_ref.text().to_string();
                 let cleaned = current
@@ -262,15 +258,12 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         let mime_target = mime_entry_clone.clone();
         let parent_win = cmd_window_weak.upgrade();
 
-        show_builtin_dialog(
-            parent_win.as_ref().map(|w| w.upcast_ref()),
-            move |name, scope| {
-                cmd_target.set_text(name);
-                if mime_target.text().trim().is_empty() {
-                    mime_target.set_text(scope);
-                }
-            },
-        );
+        show_builtin_dialog(parent_win.as_ref(), move |name, scope| {
+            cmd_target.set_text(name);
+            if mime_target.text().trim().is_empty() {
+                mime_target.set_text(scope);
+            }
+        });
     });
 
     let cmd_input_box = gtk::Box::builder()
@@ -358,26 +351,14 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
     btn_bar.append(&commit_btn);
     outer.append(&btn_bar);
 
-    dialog.set_content(Some(&outer));
+    dialog.set_child(Some(&outer));
 
     // ── Cancel ────────────────────────────────────────────────────────────────
     {
         let d = dialog.clone();
-        cancel_btn.connect_clicked(move |_| d.close());
-    }
-
-    // ── Escape ────────────────────────────────────────────────────────────────
-    {
-        let d = dialog.clone();
-        let esc = gtk::ShortcutController::new();
-        esc.add_shortcut(gtk::Shortcut::new(
-            gtk::ShortcutTrigger::parse_string("Escape"),
-            Some(gtk::CallbackAction::new(move |_, _| {
-                d.close();
-                glib::Propagation::Stop
-            })),
-        ));
-        dialog.add_controller(esc);
+        cancel_btn.connect_clicked(move |_| {
+            d.close();
+        });
     }
 
     // ── Commit ────────────────────────────────────────────────────────────────
@@ -426,5 +407,5 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         });
     }
 
-    dialog.present();
+    dialog.present(Some(&shared.root));
 }

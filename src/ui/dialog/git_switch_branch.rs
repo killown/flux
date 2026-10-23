@@ -13,16 +13,11 @@ pub fn show_switch_branch_dialog(
     branches: Vec<String>,
 ) {
     crate::hit!("show_switch_branch_dialog");
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(tr("Switch Branch"))
-        .modal(true)
-        .default_width(420)
-        .default_height(480)
-        .resizable(true)
+        .content_width(420)
+        .content_height(480)
         .build();
-    if let Some(p) = parent {
-        dialog.set_transient_for(Some(p));
-    }
 
     let outer = gtk::Box::new(gtk::Orientation::Vertical, 0);
     outer.append(&adw::HeaderBar::new());
@@ -119,7 +114,7 @@ pub fn show_switch_branch_dialog(
     body.append(&btn_row);
 
     outer.append(&body);
-    dialog.set_content(Some(&outer));
+    dialog.set_child(Some(&outer));
 
     // Typing refilters the list and enables "Create" only for a name that does not exist yet.
     {
@@ -185,21 +180,11 @@ pub fn show_switch_branch_dialog(
     }
     {
         let d = dialog.clone();
-        cancel_btn.connect_clicked(move |_| d.close());
-    }
-    {
-        let d = dialog.clone();
-        let esc = gtk::ShortcutController::new();
-        esc.add_shortcut(gtk::Shortcut::new(
-            gtk::ShortcutTrigger::parse_string("Escape"),
-            Some(gtk::CallbackAction::new(move |_, _| {
-                d.close();
-                gtk::glib::Propagation::Stop
-            })),
-        ));
-        dialog.add_controller(esc);
+        cancel_btn.connect_clicked(move |_| {
+            d.close();
+        });
     }
 
-    dialog.present();
+    dialog.present(parent);
     entry.grab_focus();
 }

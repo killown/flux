@@ -4,7 +4,6 @@ use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::menu::secondary::{category_mime_pattern, secondary_template_filename, split_mime};
 use adw::prelude::*;
-use gtk::glib;
 use relm4::AsyncComponentSender;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -42,7 +41,7 @@ fn entry_row(title: &str, value: &str) -> (adw::PreferencesRow, gtk::Entry) {
 fn icon_entry_row(
     title: &str,
     value: &str,
-    dialog: &adw::Window,
+    dialog: &adw::Dialog,
 ) -> (adw::PreferencesRow, gtk::Entry) {
     let (row, entry) = entry_row(title, value);
 
@@ -57,7 +56,7 @@ fn icon_entry_row(
         let entry_ref = entry_ref.clone();
         let parent_win = window_weak.upgrade();
         crate::ui::dialog::menu_icon_picker::show_menu_icon_picker(
-            parent_win.as_ref().map(|w| w.upcast_ref()),
+            parent_win.as_ref(),
             move |glyph| {
                 let current = entry_ref.text().to_string();
                 let cleaned = current
@@ -116,14 +115,9 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("show_prompt_new_contextual_action");
-        let dialog = adw::Window::new();
-        dialog.set_title(Some(tr("New Action").as_str()));
-        dialog.set_modal(true);
-        if let Some(parent) = gtk::Application::default().active_window() {
-            dialog.set_transient_for(Some(&parent));
-        }
-        dialog.set_default_size(560, -1);
-        dialog.set_resizable(false);
+        let dialog = adw::Dialog::new();
+        dialog.set_title(tr("New Action").as_str());
+        dialog.set_content_width(560);
 
         let outer = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -221,23 +215,13 @@ impl FluxApp {
         btn_bar.append(&cancel_btn);
         btn_bar.append(&add_btn);
         outer.append(&btn_bar);
-        dialog.set_content(Some(&outer));
+        dialog.set_child(Some(&outer));
 
         {
             let d = dialog.clone();
-            cancel_btn.connect_clicked(move |_| d.close());
-        }
-        {
-            let d = dialog.clone();
-            let esc = gtk::ShortcutController::new();
-            esc.add_shortcut(gtk::Shortcut::new(
-                gtk::ShortcutTrigger::parse_string("Escape"),
-                Some(gtk::CallbackAction::new(move |_, _| {
-                    d.close();
-                    glib::Propagation::Stop
-                })),
-            ));
-            dialog.add_controller(esc);
+            cancel_btn.connect_clicked(move |_| {
+                d.close();
+            });
         }
 
         let focus_target = label_entry.clone();
@@ -275,7 +259,7 @@ impl FluxApp {
             });
         }
 
-        dialog.present();
+        dialog.present(gtk::Application::default().active_window().as_ref());
         focus_target.grab_focus();
     }
 }

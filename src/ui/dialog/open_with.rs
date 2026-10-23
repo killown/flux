@@ -9,17 +9,11 @@ impl FluxApp {
         let window = gtk::Application::default().active_window();
         let s = sender.clone();
 
-        let dialog = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(crate::i18n::tr("Open With…"))
-            .modal(true)
-            .default_width(460)
-            .default_height(520)
-            .resizable(false)
+            .content_width(460)
+            .content_height(520)
             .build();
-
-        if let Some(ref win) = window {
-            dialog.set_transient_for(Some(win));
-        }
 
         let root = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -251,7 +245,7 @@ impl FluxApp {
         content_box.append(&set_default_check);
 
         root.append(&content_box);
-        dialog.set_content(Some(&root));
+        dialog.set_child(Some(&root));
 
         // ── Execution Closure ─────────────────────────────────────────────────
         let target_clone = target_file.clone();
@@ -305,24 +299,12 @@ impl FluxApp {
             d_cancel.close();
         });
 
-        // Escape key closes
-        let d_esc = dialog.clone();
-        let key_ctrl = gtk::EventControllerKey::new();
-        key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
-            if keyval == adw::gdk::Key::Escape {
-                d_esc.close();
-                return gtk::glib::Propagation::Stop;
-            }
-            gtk::glib::Propagation::Proceed
-        });
-        dialog.add_controller(key_ctrl);
-
         // Autofocus search entry on map
         let search_focus = search_entry.clone();
         dialog.connect_map(move |_| {
             search_focus.grab_focus();
         });
 
-        dialog.present();
+        dialog.present(window.as_ref());
     }
 }

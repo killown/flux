@@ -11,19 +11,16 @@ use object::NerdIconObject;
 
 pub const MENU_ICON_PADDING: &str = "      ";
 
-pub fn show_menu_icon_picker(parent: Option<&gtk::Window>, on_select: impl Fn(&str) + 'static) {
+pub fn show_menu_icon_picker(
+    parent: Option<&impl IsA<gtk::Widget>>,
+    on_select: impl Fn(&str) + 'static,
+) {
     crate::hit!("show_menu_icon_picker");
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(tr("Select Nerd Font Icon").as_str())
-        .modal(true)
-        .default_width(480)
-        .default_height(560)
-        .resizable(false)
+        .content_width(480)
+        .content_height(560)
         .build();
-
-    if let Some(win) = parent {
-        dialog.set_transient_for(Some(win));
-    }
 
     // ── Model Setup ──────────────────────────────────────────────────────────
     let store = gio::ListStore::new::<NerdIconObject>();
@@ -160,12 +157,12 @@ pub fn show_menu_icon_picker(parent: Option<&gtk::Window>, on_select: impl Fn(&s
     root.append(&search_entry);
     root.append(&scrolled);
 
-    dialog.set_content(Some(&root));
+    dialog.set_child(Some(&root));
 
     let entry_focus = search_entry.clone();
     dialog.connect_map(move |_| {
         entry_focus.grab_focus();
     });
 
-    dialog.present();
+    dialog.present(parent);
 }

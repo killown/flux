@@ -22,7 +22,7 @@ fn copy_to_clipboard(text: &str) {
 #[derive(Debug)]
 pub struct CommandDialogHandle {
     #[allow(dead_code)]
-    window: adw::Window,
+    window: adw::Dialog,
     text_view: gtk::TextView,
     pub task_id: u64,
     #[allow(dead_code)]
@@ -61,17 +61,11 @@ pub fn create_command_dialog(
     crate::hit!("create_command_dialog");
     let window = gtk::Application::default().active_window();
 
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(crate::i18n::tr("Command Output"))
-        .modal(true)
-        .default_width(720)
-        .default_height(650)
-        .resizable(false)
+        .content_width(720)
+        .content_height(650)
         .build();
-
-    if let Some(ref win) = window {
-        dialog.set_transient_for(Some(win));
-    }
 
     // ─── Header bar ──────────────────────────────────────────────────────────
 
@@ -265,7 +259,7 @@ pub fn create_command_dialog(
         .build();
     content_box.append(&scrolled);
 
-    dialog.set_content(Some(&content_box));
+    dialog.set_child(Some(&content_box));
 
     // ─── Signals ────────────────────────────────────────────────────────────
 
@@ -277,29 +271,20 @@ pub fn create_command_dialog(
         dialog_cancel.close();
     });
 
-    // Escape closes dialog
-    let d_esc = dialog.clone();
-    let key_ctrl = gtk::EventControllerKey::new();
-    key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
-        if keyval == adw::gdk::Key::Escape {
-            d_esc.close();
-            return gtk::glib::Propagation::Stop;
-        }
-        gtk::glib::Propagation::Proceed
-    });
-    dialog.add_controller(key_ctrl);
-
     // Switch: toggle flag and close dialog if suppressing
     let sender_switch = sender.clone();
     let action_name_switch = action_name.clone();
     let dialog_switch = dialog.clone();
+    let suppressed = std::rc::Rc::new(std::cell::Cell::new(false));
+    let suppressed_closed = suppressed.clone();
     no_dialog_switch.connect_state_set(move |_switch, state| {
         if let Some(ref name) = action_name_switch {
             let _ = sender_switch.send(AppMsg::ToggleNoCommandDialog(name.clone()));
             if state {
-                // Hide the dialog instead of closing it, so the task keeps running
+                // Dismiss the dialog without cancelling the task, so it keeps running
                 let _ = sender_switch.send(AppMsg::CommandDialogClosed);
-                dialog_switch.set_visible(false);
+                suppressed.set(true);
+                dialog_switch.force_close();
             }
         }
         glib::Propagation::Proceed
@@ -477,13 +462,15 @@ pub fn create_command_dialog(
 
     // Close request
     let s_close = sender.clone();
-    dialog.connect_close_request(move |_| {
+    dialog.connect_closed(move |_| {
+        if suppressed_closed.get() {
+            return;
+        }
         let _ = s_close.send(AppMsg::CommandDialogClosed);
         let _ = s_close.send(AppMsg::CancelTask(task_id));
-        glib::Propagation::Proceed
     });
 
-    dialog.present();
+    dialog.present(window.as_ref());
 
     CommandDialogHandle {
         window: dialog,

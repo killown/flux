@@ -19,17 +19,11 @@ impl FluxApp {
             .map(|n| n.to_string_lossy().to_string())
             .unwrap_or_else(|| target_dir.display().to_string());
 
-        let dialog = adw::Window::builder()
+        let dialog = adw::Dialog::builder()
             .title(crate::i18n::tr("Directory Inspector"))
-            .modal(true)
-            .default_width(620)
-            .default_height(680)
-            .resizable(false)
+            .content_width(620)
+            .content_height(680)
             .build();
-
-        if let Some(ref win) = window {
-            dialog.set_transient_for(Some(win));
-        }
 
         let root = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
@@ -101,23 +95,14 @@ impl FluxApp {
 
         stack.add_named(&scrolled, Some("content"));
         root.append(&stack);
-        dialog.set_content(Some(&root));
+        dialog.set_child(Some(&root));
 
         let d_close = dialog.clone();
-        close_btn.connect_clicked(move |_| d_close.close());
-
-        let d_esc = dialog.clone();
-        let key_ctrl = gtk::EventControllerKey::new();
-        key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
-            if keyval == adw::gdk::Key::Escape {
-                d_esc.close();
-                return gtk::glib::Propagation::Stop;
-            }
-            gtk::glib::Propagation::Proceed
+        close_btn.connect_clicked(move |_| {
+            d_close.close();
         });
-        dialog.add_controller(key_ctrl);
 
-        dialog.present();
+        dialog.present(window.as_ref());
 
         let stats_slot = std::sync::Arc::new(std::sync::Mutex::new(None));
         let stats_slot_bg = stats_slot.clone();

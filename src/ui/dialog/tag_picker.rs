@@ -23,17 +23,11 @@ pub fn show_tag_picker(
 
     let parent_window = parent.root().and_downcast::<gtk::Window>();
 
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(tr("Edit Tags").as_str())
-        .modal(true)
-        .default_width(420)
-        .default_height(480)
-        .resizable(false)
+        .content_width(420)
+        .content_height(480)
         .build();
-
-    if let Some(ref win) = parent_window {
-        dialog.set_transient_for(Some(win));
-    }
 
     let current_selected = Rc::new(RefCell::new(
         initial_tags
@@ -134,7 +128,7 @@ pub fn show_tag_picker(
 
     content_box.append(&stack);
     main_box.append(&content_box);
-    dialog.set_content(Some(&main_box));
+    dialog.set_child(Some(&main_box));
 
     // ── Tag Chip Renderer ───────────────────────────────────────────────────
     let populate_tags = {
@@ -261,7 +255,9 @@ pub fn show_tag_picker(
     // Header buttons bindings
     {
         let d = dialog.clone();
-        cancel_btn.connect_clicked(move |_| d.close());
+        cancel_btn.connect_clicked(move |_| {
+            d.close();
+        });
     }
 
     {
@@ -298,30 +294,15 @@ pub fn show_tag_picker(
             .and_then(|p| p.parent())
             .map(|p| p.to_path_buf());
 
-        dialog.connect_close_request(move |_| {
+        dialog.connect_closed(move |_| {
             if !submitted.get() {
                 if let Some(target) = fallback_parent.as_ref() {
                     sender.input(AppMsg::CancelContentSearch);
                     sender.input(AppMsg::Navigate(target.clone()));
                 }
             }
-            gtk::glib::Propagation::Proceed
         });
     }
 
-    // Escape closes dialog
-    {
-        let d = dialog.clone();
-        let key_ctrl = gtk::EventControllerKey::new();
-        key_ctrl.connect_key_pressed(move |_, keyval, _, _| {
-            if keyval == adw::gdk::Key::Escape {
-                d.close();
-                return gtk::glib::Propagation::Stop;
-            }
-            gtk::glib::Propagation::Proceed
-        });
-        dialog.add_controller(key_ctrl);
-    }
-
-    dialog.present();
+    dialog.present(parent_window.as_ref());
 }

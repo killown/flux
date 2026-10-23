@@ -5,16 +5,11 @@ use adw::prelude::*;
 
 pub fn show_git_output_dialog(parent: Option<&gtk::Window>, title: &str, text: &str) {
     crate::hit!("show_git_output_dialog");
-    let dialog = adw::Window::builder()
+    let dialog = adw::Dialog::builder()
         .title(title)
-        .modal(true)
-        .default_width(820)
-        .default_height(560)
-        .resizable(true)
+        .content_width(820)
+        .content_height(560)
         .build();
-    if let Some(p) = parent {
-        dialog.set_transient_for(Some(p));
-    }
 
     let outer = gtk::Box::new(gtk::Orientation::Vertical, 0);
     outer.append(&adw::HeaderBar::new());
@@ -64,7 +59,7 @@ pub fn show_git_output_dialog(parent: Option<&gtk::Window>, title: &str, text: &
     body.append(&btn_row);
 
     outer.append(&body);
-    dialog.set_content(Some(&outer));
+    dialog.set_child(Some(&outer));
 
     {
         let text = text.to_string();
@@ -76,20 +71,10 @@ pub fn show_git_output_dialog(parent: Option<&gtk::Window>, title: &str, text: &
     }
     {
         let d = dialog.clone();
-        close_btn.connect_clicked(move |_| d.close());
-    }
-    {
-        let d = dialog.clone();
-        let esc = gtk::ShortcutController::new();
-        esc.add_shortcut(gtk::Shortcut::new(
-            gtk::ShortcutTrigger::parse_string("Escape"),
-            Some(gtk::CallbackAction::new(move |_, _| {
-                d.close();
-                gtk::glib::Propagation::Stop
-            })),
-        ));
-        dialog.add_controller(esc);
+        close_btn.connect_clicked(move |_| {
+            d.close();
+        });
     }
 
-    dialog.present();
+    dialog.present(parent);
 }
