@@ -1,7 +1,7 @@
 //! 7-Zip backend.
 
 use crate::services::archive::entry::collect_entry;
-use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at};
+use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
 use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use sevenz_rust2::{ArchiveReader, Password};
 use std::collections::HashMap;
@@ -261,7 +261,10 @@ pub(in crate::services::archive) fn extract_dir_7z_at(
                     return Ok(true);
                 }
 
-                let out_path = dest_dir.join(relative);
+                let Some(out_path) = safe_join(&dest_dir, relative) else {
+                    std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
+                    return Ok(true);
+                };
                 if entry.is_directory {
                     std::fs::create_dir_all(&out_path).ok();
                     std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;

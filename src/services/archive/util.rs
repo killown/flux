@@ -86,6 +86,20 @@ pub(super) fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathB
     make_dest_dir_at(inner_dir, None)
 }
 
+/// Joins an archive entry name onto `base`, or `None` if it could escape `base`.
+pub(super) fn safe_join(base: &Path, relative: &str) -> Option<PathBuf> {
+    let rel = Path::new(relative);
+    let escapes = rel.components().any(|c| {
+        matches!(
+            c,
+            std::path::Component::ParentDir
+                | std::path::Component::RootDir
+                | std::path::Component::Prefix(_)
+        )
+    });
+    (!escapes).then(|| base.join(rel))
+}
+
 pub(super) fn make_dest_dir_at(
     inner_dir: &str,
     override_dest: Option<&Path>,

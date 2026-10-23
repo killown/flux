@@ -284,3 +284,42 @@ pub(super) fn is_cancelled_error(cancellable: &gio::Cancellable, msg: &str) -> b
         || msg.contains("g-io-error-quark: 19")
         || msg.contains("g-io-error-quark:19")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::scan_total_bytes;
+    use std::os::unix::fs::symlink;
+
+    #[test]
+    fn sums_nested_file_sizes() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join("a/b")).unwrap();
+        std::fs::write(dir.path().join("a/one.bin"), [0u8; 100]).unwrap();
+        std::fs::write(dir.path().join("a/b/two.bin"), [0u8; 23]).unwrap();
+
+        assert_eq!(scan_total_bytes(dir.path()), 123);
+        assert_eq!(scan_total_bytes(&dir.path().join("a/one.bin")), 100);
+    }
+
+    #[test]
+    fn missing_path_counts_as_zero() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(scan_total_bytes(&dir.path().join("nope")), 0);
+    }
+
+    #[test]
+    fn symlink_loop_terminates_and_is_not_followed() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("real.bin"), [0u8; 50]).unwrap();
+        symlink(".", dir.path().join("loop")).unwrap();
+        symlink("/", dir.path().join("to_root")).unwrap();
+
+        let link_bytes = std::fs::symlink_metadata(dir.path().join("loop"))
+            .unwrap()
+            .len()
+            + std::fs::symlink_metadata(dir.path().join("to_root"))
+                .unwrap()
+                .len();
+        assert_eq!(scan_total_bytes(dir.path()), 50 + link_bytes);
+    }
+}

@@ -109,6 +109,24 @@ pub(crate) fn setup_selection_server() {
         });
 }
 
+/// Turns the NUL-separated reply into shell output and counts the paths it had to skip.
+fn format_selection(data: &[u8], null: bool) -> (Vec<u8>, usize) {
+    let mut out = Vec::with_capacity(data.len());
+    let mut skipped = 0;
+    for path in data.split(|&b| b == 0).filter(|p| !p.is_empty()) {
+        if null {
+            out.extend_from_slice(path);
+            out.push(0);
+        } else if path.contains(&b'\n') {
+            skipped += 1;
+        } else {
+            out.extend_from_slice(path);
+            out.push(b'\n');
+        }
+    }
+    (out, skipped)
+}
+
 /// Prints the selection of a running window to stdout and returns the process
 /// exit status.
 ///
@@ -149,20 +167,50 @@ pub(crate) fn print_selection(null: bool) -> i32 {
     if stream.read_to_end(&mut data).is_err() {
         return 1;
     }
-    let mut out = Vec::with_capacity(data.len());
-    for path in data.split(|&b| b == 0).filter(|p| !p.is_empty()) {
-        if null {
-            out.extend_from_slice(path);
-            out.push(0);
-        } else if path.contains(&b'\n') {
-            eprintln!("flux: skipped a path containing a newline, use --selection -0");
-        } else {
-            out.extend_from_slice(path);
-            out.push(b'\n');
-        }
+    let (out, skipped) = format_selection(&data, null);
+    for _ in 0..skipped {
+        eprintln!("flux: skipped a path containing a newline, use --selection -0");
     }
     match std::io::stdout().lock().write_all(&out) {
         Ok(()) => 0,
         Err(_) => 1,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_selection;
+
+    #[test]
+    fn newline_mode_terminates_each_path_with_a_newline() {
+        let (out, skipped) = format_selection(b"/a/one\0/a/two words\0", false);
+        assert_eq!(out, b"/a/one\n/a/two words\n");
+        assert_eq!(skipped, 0);
+    }
+
+    #[test]
+    fn newline_mode_skips_paths_a_shell_would_split() {
+        let (out, skipped) = format_selection(b"/ok\0/bad\nname\0/also ok\0", false);
+        assert_eq!(out, b"/ok\n/also ok\n");
+        assert_eq!(skipped, 1);
+    }
+
+    #[test]
+    fn nul_mode_keeps_every_path_intact() {
+        let (out, skipped) = format_selection(b"/ok\0/bad\nname\0", true);
+        assert_eq!(out, b"/ok\0/bad\nname\0");
+        assert_eq!(skipped, 0);
+    }
+
+    #[test]
+    fn non_utf8_bytes_pass_through_untouched() {
+        let (out, _) = format_selection(b"/caf\xe9\0", false);
+        assert_eq!(out, b"/caf\xe9\n");
+    }
+
+    #[test]
+    fn empty_reply_produces_no_output() {
+        assert_eq!(format_selection(b"", false), (Vec::new(), 0));
+        assert_eq!(format_selection(b"\0\0", true), (Vec::new(), 0));
     }
 }

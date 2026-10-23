@@ -48,6 +48,8 @@ pub fn save_config(config: &crate::model::Config) {
 
     let config_path = config_dir.join("config.toml");
 
+    let _ = fs::create_dir_all(&config_dir);
+
     if let Ok(toml_str) = toml::to_string_pretty(config) {
         let tmp_path = config_dir.join(".config.toml.tmp");
         if fs::write(&tmp_path, toml_str).is_ok() {

@@ -5,7 +5,7 @@
 //! A `.flux-cache/` without the sentinel is treated as foreign and left alone.
 
 use crate::services::archive::entry::collect_entry;
-use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at};
+use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
 use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek, Write};
@@ -472,10 +472,9 @@ pub(in crate::services::archive) fn extract_dir_zip_at(
             continue;
         }
 
-        let out_path = dest_dir.join(relative);
-        if !out_path.starts_with(&dest_dir) {
+        let Some(out_path) = safe_join(&dest_dir, relative) else {
             continue; // skip malicious entry silently
-        }
+        };
         if is_dir {
             std::fs::create_dir_all(&out_path)
                 .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
