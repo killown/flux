@@ -50,6 +50,7 @@ pub mod constants {
     // CSS Classes
     pub const CARD_CSS_CLASS: &str = "flux-card";
     pub const SIDEBAR_CSS_CLASS: &str = "sidebar";
+    pub const SIDEBAR_ROOT_CSS_CLASS: &str = "flux-sidebar-root";
     pub const BREADCRUMB_BTN_CLASS: &str = "breadcrumb-btn";
     pub const SIDEBAR_ROW_CLASS: &str = "sidebar-row";
     pub const SIDEBAR_LABEL_CLASS: &str = "sidebar-label";

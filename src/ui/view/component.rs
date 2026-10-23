@@ -100,6 +100,7 @@ impl SimpleAsyncComponent for FluxApp {
                     set_orientation: gtk::Orientation::Vertical,
                     set_width_request: model.config.ui.sidebar_width,
                     add_css_class: constants::SIDEBAR_CSS_CLASS,
+                    add_css_class: constants::SIDEBAR_ROOT_CSS_CLASS,
                     #[watch]
                     set_visible: model.sidebar_visible,
 

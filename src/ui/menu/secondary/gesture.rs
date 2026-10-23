@@ -6,6 +6,18 @@ use std::cell::RefCell;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+/// Returns whether `(x, y)` in `root` lands inside the left sidebar, which owns its own context menus.
+fn is_over_sidebar(root: &gtk::Widget, x: f64, y: f64) -> bool {
+    let mut cur = root.pick(x, y, gtk::PickFlags::DEFAULT);
+    while let Some(w) = cur {
+        if w.has_css_class(crate::ui::constants::SIDEBAR_ROOT_CSS_CLASS) {
+            return true;
+        }
+        cur = w.parent();
+    }
+    false
+}
+
 pub fn setup_secondary_menu_gesture(
     widget: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
@@ -16,9 +28,17 @@ pub fn setup_secondary_menu_gesture(
 
     let sender_g = sender.clone();
     let widget_weak = widget.as_ref().downgrade();
+    let press_weak = widget_weak.clone();
 
-    gesture.connect_pressed(|g, _n_press, _x, _y| {
+    gesture.connect_pressed(move |g, _n_press, x, y| {
         if g.current_button() == 3 {
+            if press_weak
+                .upgrade()
+                .is_some_and(|root| is_over_sidebar(&root, x, y))
+            {
+                return;
+            }
+
             let state = g
                 .current_event()
                 .map(|e| e.modifier_state())
@@ -41,6 +61,13 @@ pub fn setup_secondary_menu_gesture(
             .unwrap_or(gdk::ModifierType::empty());
 
         if !state.contains(gdk::ModifierType::CONTROL_MASK) {
+            return;
+        }
+
+        if widget_weak
+            .upgrade()
+            .is_some_and(|root| is_over_sidebar(&root, x, y))
+        {
             return;
         }
 
