@@ -9,22 +9,10 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Mutex;
 use std::time::Duration;
-use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
 /// Upper bound for local, quick commands.
 const LOCAL_TIMEOUT: Duration = Duration::from_secs(30);
-/// Upper bound for commands that talk to a remote (pull, push, fetch).
-const NETWORK_TIMEOUT: Duration = Duration::from_secs(120);
-/// Upper bound for commands that may run user hooks (amend).
-const HOOK_TIMEOUT: Duration = Duration::from_secs(300);
-
-/// The last patch applied through [`apply_patch`], kept so [`undo_last_apply`] can reverse it exactly.
-struct LastApply {
-    root: PathBuf,
-    patch: String,
-    staged: bool,
-}
 
 /// The backup diff written by the last discard, kept so [`restore_last_discard`] can re-apply it.
 struct LastDiscard {
@@ -32,7 +20,6 @@ struct LastDiscard {
     backup: PathBuf,
 }
 
-static LAST_APPLY: Mutex<Option<LastApply>> = Mutex::new(None);
 static LAST_DISCARD: Mutex<Option<LastDiscard>> = Mutex::new(None);
 
 /// Base `git` command for `repo_root`: no stdin, never prompts on a terminal, killed when dropped.
@@ -127,14 +114,6 @@ fn write_backup_diff(diff: &[u8]) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-fn remember_apply(repo_root: &Path, patch: String, staged: bool) {
-    *LAST_APPLY.lock().unwrap_or_else(|e| e.into_inner()) = Some(LastApply {
-        root: repo_root.to_path_buf(),
-        patch,
-        staged,
-    });
-}
-
 fn remember_discard(repo_root: &Path, backup: &Path) {
     *LAST_DISCARD.lock().unwrap_or_else(|e| e.into_inner()) = Some(LastDiscard {
         root: repo_root.to_path_buf(),
@@ -163,217 +142,10 @@ fn random_suffix() -> String {
         .collect()
 }
 
-/// Runs `git apply <flags> -` with `patch` on stdin, returning git's stderr on failure.
-async fn run_git_apply(repo_root: &Path, flags: &[&str], patch: &str) -> Result<(), String> {
-    crate::hit!("run_git_apply");
-    let mut child = Command::new("git")
-        .current_dir(repo_root)
-        .arg("apply")
-        .args(flags)
-        .arg("-")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("{}: {e}", tr("git apply spawn failed")))?;
-
-    {
-        let mut stdin = child
-            .stdin
-            .take()
-            .ok_or_else(|| tr("git apply: no stdin"))?;
-        // A broken pipe means git bailed early, its stderr below has the real reason.
-        if let Err(e) = stdin.write_all(patch.as_bytes()).await {
-            if e.kind() != std::io::ErrorKind::BrokenPipe {
-                return Err(format!("{}: {e}", tr("git apply write failed")));
-            }
-        }
-    }
-
-    let out = child
-        .wait_with_output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git apply wait failed")))?;
-    if !out.status.success() {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let msg = tr("git apply failed: {}").replace("{}", err.trim());
-        return Err(msg);
-    }
-    Ok(())
-}
-
-/// Applies `patch` staged (`--index`), retrying on the working tree alone when the index is out of sync.
-pub async fn apply_patch(repo_root: &Path, mut patch: String) -> Result<String, String> {
-    crate::hit!("apply_patch");
-    if patch.trim().is_empty() {
-        return Err(tr("Clipboard is empty"));
-    }
-    // git rejects a final line without '\n' as a corrupt patch, copied text often lacks it.
-    if !patch.ends_with('\n') {
-        patch.push('\n');
-    }
-    if run_git_apply(repo_root, &["--index"], &patch).await.is_ok() {
-        remember_apply(repo_root, patch, true);
-        return Ok(tr("Patch applied and staged"));
-    }
-    run_git_apply(repo_root, &[], &patch).await?;
-    remember_apply(repo_root, patch, false);
-    Ok(tr("Patch applied (not staged)"))
-}
-
-/// Reverses the last patch applied by [`apply_patch`] (`git apply -R`, with `--index` when it was staged).
-pub async fn undo_last_apply(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("undo_last_apply");
-    let last = LAST_APPLY
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .as_ref()
-        .map(|l| (l.root.clone(), l.patch.clone(), l.staged));
-    let Some((root, patch, staged)) = last else {
-        return Err(tr("No applied patch to undo"));
-    };
-    if root != repo_root {
-        let msg = tr("The last patch was applied in another repository: {}")
-            .replace("{}", &root.display().to_string());
-        return Err(msg);
-    }
-    let flags: &[&str] = if staged { &["-R", "--index"] } else { &["-R"] };
-    run_git_apply(repo_root, flags, &patch).await?;
-    *LAST_APPLY.lock().unwrap_or_else(|e| e.into_inner()) = None;
-    Ok(tr("Last patch reverted"))
-}
-
-/// Stages the given paths (`git add -- <paths>`). Paths must be relative to
-/// `repo_root` or absolute inside it. Empty input is a no-op.
-pub async fn stage_paths(repo_root: &Path, paths: &[PathBuf]) -> Result<String, String> {
-    if paths.is_empty() {
-        return Ok(String::new());
-    }
-    let mut cmd = Command::new("git");
-    cmd.current_dir(repo_root).args(["add", "--"]);
-    for p in paths {
-        cmd.arg(p);
-    }
-    let out = cmd
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git add spawn failed")))?;
-    if !out.status.success() {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let msg = tr("git add failed: {}").replace("{}", err.trim());
-        return Err(msg);
-    }
-    Ok(tr("Staged {} path(s)").replace("{}", &paths.len().to_string()))
-}
-
-pub async fn stage_all(repo_root: &Path) -> Result<String, String> {
-    let out = Command::new("git")
-        .current_dir(repo_root)
-        .args(["add", "-A"])
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git add spawn failed")))?;
-    if !out.status.success() {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let msg = tr("git add failed: {}").replace("{}", err.trim());
-        return Err(msg);
-    }
-    Ok(tr("Staged all changes"))
-}
-
-pub async fn commit(repo_root: &Path, message: String) -> Result<String, String> {
-    let msg = message.trim();
-    if msg.is_empty() {
-        return Err(tr("Commit message cannot be empty"));
-    }
-    let out = Command::new("git")
-        .current_dir(repo_root)
-        .args(["commit", "-m", msg])
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git commit spawn failed")))?;
-    if !out.status.success() {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let stdout = String::from_utf8_lossy(&out.stdout);
-        let combined = format!(
-            "{}{}",
-            stdout.trim(),
-            if err.trim().is_empty() { "" } else { " | " },
-        ) + err.trim();
-        let msg = tr("git commit failed: {}").replace("{}", &combined);
-        return Err(msg);
-    }
-    Ok(tr("Commit created"))
-}
-
-/// Diffs HEAD to a temp file, then resets both the index and the working
-/// tree to HEAD. Files that were newly staged (added by "Apply Patch") are
-/// also removed from the working tree, since `git restore` only un-stages
-/// them and leaves them behind as untracked.
-pub async fn discard_all(repo_root: &Path) -> Result<String, String> {
-    let diff = Command::new("git")
-        .current_dir(repo_root)
-        .args(["diff", "HEAD", "--binary", "--no-color", "--no-ext-diff"])
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git diff spawn failed")))?;
-    let backup = if diff.stdout.is_empty() {
-        None
-    } else {
-        Some(write_backup_diff(&diff.stdout)?)
-    };
-
-    let added = Command::new("git")
-        .current_dir(repo_root)
-        .args(["diff", "--cached", "--name-only", "--diff-filter=A", "HEAD"])
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git diff --cached spawn failed")))?;
-    let added_paths: Vec<PathBuf> = String::from_utf8_lossy(&added.stdout)
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .map(|l| repo_root.join(l))
-        .collect();
-
-    let out = Command::new("git")
-        .current_dir(repo_root)
-        .args([
-            "restore",
-            "--source=HEAD",
-            "--staged",
-            "--worktree",
-            "--",
-            ".",
-        ])
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git restore spawn failed")))?;
-    if !out.status.success() {
-        let err = String::from_utf8_lossy(&out.stderr);
-        let msg = tr("git restore failed: {}").replace("{}", err.trim());
-        return Err(msg);
-    }
-
-    for p in &added_paths {
-        let _ = std::fs::remove_file(p);
-    }
-
-    match backup {
-        Some(p) => {
-            remember_discard(repo_root, &p);
-            let msg = tr("Discarded tracked changes; backup at {}")
-                .replace("{}", &p.display().to_string());
-            Ok(msg)
-        }
-        None => Ok(tr("Nothing to discard")),
-    }
-}
-
 /// Reverts only `paths` (relative to `repo_root`) to HEAD, after backing their diff up to `/tmp`.
 ///
 /// Files newly added to the index are removed outright, everything else is restored from HEAD.
-/// Untracked files are never touched, matching [`discard_all`].
+/// Untracked files are never touched.
 pub async fn discard_selected(repo_root: &Path, paths: &[PathBuf]) -> Result<String, String> {
     crate::hit!("discard_selected");
     if paths.is_empty() {
@@ -475,56 +247,6 @@ pub async fn restore_last_discard(repo_root: &Path) -> Result<String, String> {
     Ok(label)
 }
 
-/// Unstages everything (`git restore --staged .`), the counterpart of [`stage_all`].
-pub async fn unstage_all(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("unstage_all");
-    let mut head = git_cmd(repo_root);
-    head.args(["rev-parse", "--verify", "-q", "HEAD"]);
-    let has_head = head
-        .output()
-        .await
-        .map(|o| o.status.success())
-        .unwrap_or(false);
-
-    let mut cmd = git_cmd(repo_root);
-    if has_head {
-        cmd.args(["restore", "--staged", "--", "."]);
-    } else {
-        // A repository without commits has no HEAD to restore from.
-        cmd.args(["rm", "-r", "--cached", "-q", "--", "."]);
-    }
-    run(cmd, "git unstage", LOCAL_TIMEOUT).await?;
-    Ok(tr("Unstaged all changes"))
-}
-
-/// Parks the dirty tree, untracked files included (`git stash push -u`).
-pub async fn stash_push(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("stash_push");
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["stash", "push", "-u"]);
-    let out = run(cmd, "git stash", LOCAL_TIMEOUT).await?;
-    if String::from_utf8_lossy(&out.stdout).contains("No local changes to save") {
-        return Ok(tr("No local changes to stash"));
-    }
-    Ok(tr("Changes stashed (untracked files included)"))
-}
-
-/// Re-applies and drops the newest stash (`git stash pop`). On conflicts git keeps the stash.
-pub async fn stash_pop(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("stash_pop");
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["stash", "pop"]);
-    run(cmd, "git stash pop", LOCAL_TIMEOUT).await?;
-    Ok(tr("Stash applied and dropped"))
-}
-
-/// Tracking state of the checked-out branch.
-enum Upstream {
-    Set(String),
-    Missing(String),
-    Detached,
-}
-
 /// Name of the checked-out branch, `None` on a detached HEAD.
 async fn current_branch(repo_root: &Path) -> Result<Option<String>, String> {
     let mut cmd = git_cmd(repo_root);
@@ -538,79 +260,6 @@ async fn current_branch(repo_root: &Path) -> Result<Option<String>, String> {
     }
     let name = String::from_utf8_lossy(&out.stdout).trim().to_string();
     Ok((!name.is_empty()).then_some(name))
-}
-
-async fn upstream(repo_root: &Path) -> Result<Upstream, String> {
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]);
-    let out = cmd
-        .output()
-        .await
-        .map_err(|e| format!("{}: {e}", tr("git rev-parse spawn failed")))?;
-    if out.status.success() {
-        return Ok(Upstream::Set(
-            String::from_utf8_lossy(&out.stdout).trim().to_string(),
-        ));
-    }
-    Ok(match current_branch(repo_root).await? {
-        Some(branch) => Upstream::Missing(branch),
-        None => Upstream::Detached,
-    })
-}
-
-/// Fast-forward-only pull, so it can never create a surprise merge commit.
-pub async fn pull(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("pull");
-    match upstream(repo_root).await? {
-        Upstream::Set(_) => {}
-        Upstream::Missing(branch) => {
-            let msg = tr("No upstream for '{}'. Run: git branch --set-upstream-to=origin/{}")
-                .replace("{}", &branch)
-                .replace("{}", &branch);
-            return Err(msg);
-        }
-        Upstream::Detached => {
-            return Err(tr("HEAD is detached, switch to a branch before pulling"));
-        }
-    }
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["pull", "--ff-only"]);
-    let out = run(cmd, "git pull", NETWORK_TIMEOUT).await?;
-    if String::from_utf8_lossy(&out.stdout).contains("Already up to date") {
-        return Ok(tr("Already up to date"));
-    }
-    Ok(tr("Pulled (fast-forward)"))
-}
-
-/// Pushes the current branch, failing with a clear message when it has no upstream.
-pub async fn push(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("push");
-    let target = match upstream(repo_root).await? {
-        Upstream::Set(target) => target,
-        Upstream::Missing(branch) => {
-            let msg = tr("No upstream for '{}'. Run once: git push -u origin {}")
-                .replace("{}", &branch)
-                .replace("{}", &branch);
-            return Err(msg);
-        }
-        Upstream::Detached => {
-            return Err(tr("HEAD is detached, switch to a branch before pushing"));
-        }
-    };
-    let mut cmd = git_cmd(repo_root);
-    cmd.arg("push");
-    run(cmd, "git push", NETWORK_TIMEOUT).await?;
-    let msg = tr("Pushed to {}").replace("{}", &target);
-    Ok(msg)
-}
-
-/// Fetches every remote and prunes deleted branches.
-pub async fn fetch(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("fetch");
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["fetch", "--all", "--prune"]);
-    run(cmd, "git fetch", NETWORK_TIMEOUT).await?;
-    Ok(tr("Fetched all remotes"))
 }
 
 /// Local branches and the checked-out one (`None` on a detached HEAD).
@@ -681,7 +330,7 @@ pub async fn create_branch(repo_root: &Path, name: String) -> Result<String, Str
     Ok(msg)
 }
 
-/// `git diff HEAD` as text, the reverse of [`apply_patch`].
+/// `git diff HEAD` as text.
 pub async fn diff_head(repo_root: &Path) -> Result<String, String> {
     crate::hit!("diff_head");
     let mut cmd = git_cmd(repo_root);
@@ -692,28 +341,6 @@ pub async fn diff_head(repo_root: &Path) -> Result<String, String> {
         return Err(tr("No changes to copy"));
     }
     Ok(text)
-}
-
-/// Full message of the newest commit, used to prefill the amend dialog.
-pub async fn last_commit_message(repo_root: &Path) -> Result<String, String> {
-    crate::hit!("last_commit_message");
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["log", "-1", "--format=%B"]);
-    let out = run(cmd, "git log", LOCAL_TIMEOUT).await?;
-    Ok(String::from_utf8_lossy(&out.stdout).trim_end().to_string())
-}
-
-/// Rewrites the newest commit with `message` and whatever is currently staged.
-pub async fn amend(repo_root: &Path, message: String) -> Result<String, String> {
-    crate::hit!("amend");
-    let msg = message.trim();
-    if msg.is_empty() {
-        return Err(tr("Commit message cannot be empty"));
-    }
-    let mut cmd = git_cmd(repo_root);
-    cmd.args(["commit", "--amend", "-m", msg]);
-    run(cmd, "git commit --amend", HOOK_TIMEOUT).await?;
-    Ok(tr("Last commit amended"))
 }
 
 /// History of `paths` (relative to `repo_root`) as plain text, the whole repository when empty.

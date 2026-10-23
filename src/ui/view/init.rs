@@ -8,6 +8,9 @@ use gtk::glib::{self};
 use relm4::prelude::*;
 use std::path::PathBuf;
 
+/// A named git menu action paired with a constructor for the message it sends.
+type GitActionEntry = (&'static str, fn() -> AppMsg);
+
 impl FluxApp {
     /// Attaches the tab bar, header widget, main menu and sidebar wrapper.
     pub(super) fn attach_tabs_and_header(
@@ -28,79 +31,39 @@ impl FluxApp {
 
         // Git actions dropdown (only shown when is_in_git_repo).
         //
-        // Layout: the five actions reached for daily sit at the top level
-        // (status, open remote, log, commit, amend). Everything else is
-        // grouped by what it acts on: `Repository` for branch, index and
-        // remote operations, `Working Tree` for patch and discard operations
-        // that rewrite files on disk.
+        // Layout: status, remote and log at the top, then the staged/unstaged
+        // filters, branch switching with diff copy, and the discard pair.
+        // Heavier workflows (commit, stash, push/pull, patches) belong in the
+        // embedded terminal.
         {
             let menu = gtk::gio::Menu::new();
 
-            // ── Top level: daily actions ────────────────────────────────────
             let primary = gtk::gio::Menu::new();
             primary.append(Some(&tr("Git Status")), Some("git.status"));
             primary.append(Some(&tr("Open Remote in Browser")), Some("git.open-remote"));
             primary.append(Some(&tr("Show Log…")), Some("git.log"));
             menu.append_section(None, &primary);
 
-            // ── Top level: commit cycle ─────────────────────────────────────
-            let commit_section = gtk::gio::Menu::new();
-            commit_section.append(Some(&tr("Commit…")), Some("git.commit"));
-            commit_section.append(Some(&tr("Amend Last Commit…")), Some("git.amend"));
-            menu.append_section(None, &commit_section);
-
-            // ── Repository ▸  (branch, index, remotes) ──────────────────────
-            let repository = gtk::gio::Menu::new();
-
             let filters = gtk::gio::Menu::new();
             filters.append(Some(&tr("Staged Only")), Some("git.status-staged"));
             filters.append(Some(&tr("Unstaged Only")), Some("git.status-unstaged"));
-            repository.append_section(None, &filters);
-
-            let index = gtk::gio::Menu::new();
-            index.append(Some(&tr("Stage All Changes")), Some("git.stage-all"));
-            index.append(Some(&tr("Unstage All Changes")), Some("git.unstage-all"));
-            repository.append_section(None, &index);
-
-            let stash = gtk::gio::Menu::new();
-            stash.append(Some(&tr("Stash Changes")), Some("git.stash"));
-            stash.append(Some(&tr("Stash Pop")), Some("git.stash-pop"));
-            repository.append_section(None, &stash);
+            menu.append_section(None, &filters);
 
             let branch = gtk::gio::Menu::new();
             branch.append(Some(&tr("Switch Branch…")), Some("git.switch-branch"));
-            repository.append_section(None, &branch);
-
-            let remote = gtk::gio::Menu::new();
-            remote.append(Some(&tr("Fetch")), Some("git.fetch"));
-            remote.append(Some(&tr("Pull")), Some("git.pull"));
-            remote.append(Some(&tr("Push")), Some("git.push"));
-            repository.append_section(None, &remote);
-
-            menu.append_submenu(Some(&tr("Repository")), &repository);
-
-            // ── Working Tree ▸  (patch, discard) ────────────────────────────
-            let working_tree = gtk::gio::Menu::new();
-
-            let patch = gtk::gio::Menu::new();
-            patch.append(Some(&tr("Apply Patch…")), Some("git.apply-patch"));
-            patch.append(Some(&tr("Undo Last Apply")), Some("git.undo-apply"));
-            patch.append(Some(&tr("Copy Diff to Clipboard")), Some("git.copy-diff"));
-            working_tree.append_section(None, &patch);
+            branch.append(Some(&tr("Copy Diff to Clipboard")), Some("git.copy-diff"));
+            menu.append_section(None, &branch);
 
             let discard = gtk::gio::Menu::new();
             discard.append(
                 Some(&tr("Discard Selected Changes")),
                 Some("git.discard-selected"),
             );
-            discard.append(Some(&tr("Discard All Changes")), Some("git.discard-all"));
             discard.append(
                 Some(&tr("Restore Last Discard")),
                 Some("git.restore-discard"),
             );
-            working_tree.append_section(None, &discard);
-
-            menu.append_submenu(Some(&tr("Working Tree")), &working_tree);
+            menu.append_section(None, &discard);
 
             widgets.git_menu_popover.set_menu_model(Some(&menu));
         }
@@ -118,56 +81,12 @@ impl FluxApp {
             git_actions.add_action(&a);
         }
 
-        {
-            let s = sender.clone();
-            let a = gtk::gio::SimpleAction::new("apply-patch", None);
-            a.connect_activate(move |_, _| {
-                let _ = s.input_sender().send(AppMsg::PromptGitApplyPatch);
-            });
-            git_actions.add_action(&a);
-        }
-
-        {
-            let s = sender.clone();
-            let a = gtk::gio::SimpleAction::new("stage-all", None);
-            a.connect_activate(move |_, _| {
-                let _ = s.input_sender().send(AppMsg::GitStageAll);
-            });
-            git_actions.add_action(&a);
-        }
-
-        {
-            let s = sender.clone();
-            let a = gtk::gio::SimpleAction::new("commit", None);
-            a.connect_activate(move |_, _| {
-                let _ = s.input_sender().send(AppMsg::PromptCommitWithSelection);
-            });
-            git_actions.add_action(&a);
-        }
-
-        {
-            let s = sender.clone();
-            let a = gtk::gio::SimpleAction::new("discard-all", None);
-            a.connect_activate(move |_, _| {
-                let _ = s.input_sender().send(AppMsg::GitDiscardAll);
-            });
-            git_actions.add_action(&a);
-        }
-
-        let simple_git_actions: [(&str, fn() -> AppMsg); 16] = [
+        let simple_git_actions: [GitActionEntry; 8] = [
             ("status-staged", || AppMsg::ShowGitStatusStaged),
             ("status-unstaged", || AppMsg::ShowGitStatusUnstaged),
             ("log", || AppMsg::GitShowLog),
-            ("undo-apply", || AppMsg::GitUndoApply),
             ("copy-diff", || AppMsg::GitCopyDiff),
-            ("unstage-all", || AppMsg::GitUnstageAll),
-            ("amend", || AppMsg::PromptGitAmend),
             ("switch-branch", || AppMsg::PromptGitSwitchBranch),
-            ("stash", || AppMsg::GitStash),
-            ("stash-pop", || AppMsg::GitStashPop),
-            ("fetch", || AppMsg::GitFetch),
-            ("pull", || AppMsg::GitPull),
-            ("push", || AppMsg::GitPush),
             ("open-remote", || AppMsg::GitOpenRemote),
             ("discard-selected", || AppMsg::GitDiscardSelected),
             ("restore-discard", || AppMsg::GitRestoreLastDiscard),

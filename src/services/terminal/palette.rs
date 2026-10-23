@@ -31,19 +31,6 @@ pub(super) fn default_ansi_palette() -> [gtk::gdk::RGBA; 16] {
     ENTRIES.map(|(r, g, b)| gtk::gdk::RGBA::new(r, g, b, 1.0))
 }
 
-/// Retained for use in [`TerminalState::color_from_256`] (indices 0-15 of the
-/// 256-color palette still need a static lookup path).
-#[allow(dead_code)]
-fn ansi_color(index: u16, bright: bool) -> gtk::gdk::RGBA {
-    let palette = default_ansi_palette();
-    let idx = if bright {
-        8 + (index as usize).min(7)
-    } else {
-        (index as usize).min(7)
-    };
-    palette[idx]
-}
-
 /// Converts a 24-bit RGB triple (0-255 each, passed as i64) into RGBA.
 #[inline]
 pub(super) fn rgb_color(r: i64, g: i64, b: i64) -> gtk::gdk::RGBA {

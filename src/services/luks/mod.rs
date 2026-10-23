@@ -4,12 +4,10 @@
 //!   * [`image`]    - `LuksImage` newtype
 //!   * [`probe`]    - read-only sysfs/procfs probes
 //!   * [`mount`]    - `unlock_and_mount`
-//!   * [`unmount`]  - `unmount_and_lock`
 
 mod image;
 mod mount;
 mod probe;
-mod unmount;
 
 pub use image::LuksImage;
 pub use mount::unlock_and_mount;

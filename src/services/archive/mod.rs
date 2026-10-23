@@ -42,8 +42,8 @@ pub use error::ArchiveError;
 pub use format::{is_browsable_archive, is_supported_archive};
 #[allow(unused_imports)]
 pub use temp::{
-    clear_archive_session_temp, clear_archive_temp_dirs, flux_scratch_dir,
-    purge_stale_scratch_dirs, register_temp_dir, register_temp_file,
+    clear_archive_session_temp, flux_scratch_dir, purge_stale_scratch_dirs, register_temp_dir,
+    register_temp_file,
 };
 #[allow(unused_imports)]
 pub use uri::{
@@ -53,24 +53,12 @@ pub use uri::{
 
 use backends::{extract_dir_7z_at, extract_dir_tar_at, extract_dir_zip_at};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use util::{copy_dir_recursive, lc_name, open_buf};
-
-/// Extracts the entire archive to a caller-supplied destination directory.
-///
-/// Equivalent to calling `extract_dir` with `inner_dir = ""` on the
-/// backend selected for `archive_path`.
-#[allow(dead_code)]
-pub fn extract_archive(
-    archive_path: &Path,
-    password: Option<&str>,
-) -> Result<PathBuf, ArchiveError> {
-    get_backend(archive_path, None).extract_dir(archive_path, "", password)
-}
 
 /// Extracts the entire archive directly into `dest_dir` (which must already exist).
 ///
-/// Unlike `extract_archive` this skips the internal temp-dir + rename dance, so
+/// This skips the internal temp-dir + rename dance, so
 /// the caller can poll `dest_dir` while extraction is in progress and get real
 /// byte counts.
 pub fn extract_archive_to_dir(

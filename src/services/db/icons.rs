@@ -40,15 +40,4 @@ impl StateManager {
         )?;
         Ok(())
     }
-
-    #[allow(dead_code)]
-    pub fn rename_folder_icon(&self, old_path: &str, new_path: &str) -> Result<()> {
-        crate::hit!("rename_folder_icon");
-        let conn = self.conn.lock().unwrap();
-        conn.execute(
-            "UPDATE folder_icons SET path = ?1 WHERE path = ?2",
-            params![new_path, old_path],
-        )?;
-        Ok(())
-    }
 }

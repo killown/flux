@@ -62,14 +62,6 @@ pub fn purge_stale_scratch_dirs() {
     }
 }
 
-/// Cleans up all extracted archive temp directories from `/tmp`.
-#[allow(dead_code)]
-pub fn clear_archive_temp_dirs() {
-    if let Ok(mut lock) = ACTIVE_TEMP_DIRS.lock() {
-        lock.clear();
-    }
-}
-
 /// Returns a shared scratch folder for Flux that is automatically purged by RAII on exit.
 pub fn flux_scratch_dir() -> &'static Path {
     FLUX_TEMP_DIR

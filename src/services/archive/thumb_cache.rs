@@ -93,15 +93,6 @@ pub fn flush_all() {
     }
 }
 
-/// Commits the queued thumbnails of one archive, blocking until the rewrite finishes.
-#[allow(dead_code)]
-pub fn flush_archive(archive: &Path) {
-    let batch = pending().lock().remove(archive);
-    if let Some(batch) = batch {
-        write_batch(archive, batch);
-    }
-}
-
 /// Writes one archive's batch, logging (never panicking on) failures.
 fn write_batch(archive: &Path, batch: PendingArchive) {
     crate::hit!("write_batch");

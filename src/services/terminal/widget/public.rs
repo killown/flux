@@ -39,10 +39,4 @@ impl Terminal {
     pub fn add_controller(&self, controller: &(impl IsA<gtk::EventController> + Clone)) {
         self.drawing_area.add_controller(controller.clone());
     }
-
-    /// Returns the raw PTY master fd, if any. Test/debug helper.
-    #[allow(dead_code)]
-    pub fn pty(&self) -> Option<std::os::unix::io::RawFd> {
-        self.state.lock().unwrap_or_else(|e| e.into_inner()).pty_fd
-    }
 }

@@ -8,8 +8,6 @@ mod archive;
 pub mod command;
 pub mod conflict;
 mod create;
-pub mod git_apply_patch;
-pub mod git_commit;
 pub mod git_output;
 pub mod git_switch_branch;
 mod icon;

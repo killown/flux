@@ -300,17 +300,6 @@ impl SearchIndex {
         hits.truncate(limit);
         Ok(hits.into_iter().map(|(_, p)| p).collect())
     }
-
-    #[allow(dead_code)]
-    pub fn delete_paths(&mut self, paths: &[String]) -> Result<()> {
-        crate::hit!("delete_paths");
-        let tx = self.conn.transaction()?;
-        for p in paths {
-            remove_tree(&tx, p)?;
-        }
-        tx.commit()?;
-        Ok(())
-    }
 }
 
 /// Range query deletes the directory and all children without SQL `LIKE` wildcard ambiguities.
@@ -802,18 +791,8 @@ pub fn notify_moved(from: &Path, to: &Path) {
     send(Job::Moved(from.to_path_buf(), to.to_path_buf()));
 }
 
-#[allow(dead_code)]
-pub fn notify_dir_changed(dir: &Path) {
-    send(Job::SyncDir(dir.to_path_buf()));
-}
-
 pub fn request_delta_scan() {
     send(Job::Delta { force: false });
-}
-
-#[allow(dead_code)]
-pub fn request_rebuild() {
-    send(Job::Rebuild);
 }
 
 pub fn prune_paths(paths: Vec<String>) {

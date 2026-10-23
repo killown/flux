@@ -38,37 +38,6 @@ impl FluxApp {
         });
     }
 
-    pub fn handle_git_stage_for_commit(
-        &mut self,
-        paths: Vec<PathBuf>,
-        sender: &AsyncComponentSender<Self>,
-    ) {
-        crate::hit!("handle_git_stage_for_commit");
-        let Some(root) = crate::services::git::find_git_repo_root(&self.current_path) else {
-            sender.input(AppMsg::ShowToast("Not inside a git repository".to_string()));
-            return;
-        };
-
-        // Convert absolute selection paths into repo-relative paths so
-        // `git add --` can resolve them regardless of cwd.
-        let rel: Vec<PathBuf> = paths
-            .into_iter()
-            .filter_map(|p| p.strip_prefix(&root).ok().map(|r| r.to_path_buf()))
-            .collect();
-
-        let s = sender.clone();
-        relm4::spawn(async move {
-            match crate::services::git::stage_paths(&root, &rel).await {
-                Ok(_) => {
-                    let _ = s.input_sender().send(AppMsg::GitCommitDialogReady);
-                }
-                Err(e) => {
-                    let _ = s.input_sender().send(AppMsg::GitActionFinished(Err(e)));
-                }
-            }
-        });
-    }
-
     /// Stores the scanned status for the current directory and rebinds items whose status changed.
     pub fn handle_git_status_ready(
         &mut self,
@@ -119,41 +88,6 @@ impl FluxApp {
         }
     }
 
-    pub fn handle_git_apply_patch(&mut self, patch: String, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_apply_patch");
-        self.spawn_git_action(sender, AppMsg::ShowGitStatusView, move |root| {
-            Box::pin(async move { crate::services::git::apply_patch(&root, patch).await })
-        });
-    }
-
-    pub fn handle_git_stage_all(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_stage_all");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::stage_all(&root).await })
-        });
-    }
-
-    pub fn handle_git_commit(&mut self, message: String, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_commit");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::commit(&root, message).await })
-        });
-    }
-
-    pub fn handle_git_discard_all(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_discard_all");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::discard_all(&root).await })
-        });
-    }
-
-    pub fn handle_git_unstage_all(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_unstage_all");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::unstage_all(&root).await })
-        });
-    }
-
     pub fn handle_git_discard_selected(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_discard_selected");
         let selection = self.get_selection();
@@ -173,59 +107,6 @@ impl FluxApp {
         crate::hit!("handle_git_restore_last_discard");
         self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
             Box::pin(async move { crate::services::git::restore_last_discard(&root).await })
-        });
-    }
-
-    pub fn handle_git_undo_apply(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_undo_apply");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::undo_last_apply(&root).await })
-        });
-    }
-
-    pub fn handle_git_stash(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_stash");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::stash_push(&root).await })
-        });
-    }
-
-    pub fn handle_git_stash_pop(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_stash_pop");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::stash_pop(&root).await })
-        });
-    }
-
-    pub fn handle_git_pull(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_pull");
-        sender.input(AppMsg::ShowToast("Pulling…".to_string()));
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::pull(&root).await })
-        });
-    }
-
-    pub fn handle_git_push(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_push");
-        sender.input(AppMsg::ShowToast("Pushing…".to_string()));
-        self.spawn_git_query(sender, move |root| {
-            Box::pin(async move {
-                crate::services::git::push(&root)
-                    .await
-                    .map(AppMsg::ShowToast)
-            })
-        });
-    }
-
-    pub fn handle_git_fetch(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_fetch");
-        sender.input(AppMsg::ShowToast("Fetching…".to_string()));
-        self.spawn_git_query(sender, move |root| {
-            Box::pin(async move {
-                crate::services::git::fetch(&root)
-                    .await
-                    .map(AppMsg::ShowToast)
-            })
         });
     }
 
@@ -281,24 +162,6 @@ impl FluxApp {
             "Diff copied ({} lines)",
             text.lines().count()
         )));
-    }
-
-    pub fn handle_prompt_git_amend(&mut self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_prompt_git_amend");
-        self.spawn_git_query(sender, move |root| {
-            Box::pin(async move {
-                crate::services::git::last_commit_message(&root)
-                    .await
-                    .map(AppMsg::GitAmendDialogReady)
-            })
-        });
-    }
-
-    pub fn handle_git_amend(&mut self, message: String, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_git_amend");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::amend(&root, message).await })
-        });
     }
 
     /// Selected paths, or the current directory when nothing is selected.

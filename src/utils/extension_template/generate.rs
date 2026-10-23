@@ -62,25 +62,6 @@ fn save_extension_icon(
     Ok(target_path)
 }
 
-/// Generates and writes the SVG icon to `~/.local/share/flux/icons/extensions/custom/<ext>.svg`.
-#[allow(dead_code)]
-pub fn save_custom_extension_icon(
-    extension: &str,
-    accent_color: &str,
-    body_color: &str,
-    font_color: &str,
-    base_font_size: f64,
-) -> std::io::Result<PathBuf> {
-    save_extension_icon(
-        extension,
-        "custom",
-        accent_color,
-        body_color,
-        font_color,
-        base_font_size,
-    )
-}
-
 /// Generates and writes the SVG icon to `~/.local/share/flux/icons/extensions/generated/<ext>.svg`.
 pub fn save_generated_extension_icon(
     extension: &str,
