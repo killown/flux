@@ -1,4 +1,4 @@
-use crate::model::defaults::{
+use crate::domain::model::defaults::{
     default_accent_color, default_actions_panel_width, default_auto_list_threshold,
     default_auto_show_diff, default_bg_alpha, default_breadcrumb_count,
     default_breadcrumb_max_chars, default_content_search_max_file_mb, default_diff_editor,

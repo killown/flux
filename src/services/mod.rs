@@ -1,27 +1,18 @@
-pub mod archive;
-pub mod db;
-pub mod fonts;
-pub mod git;
-pub mod inspector;
-pub mod loader;
-pub mod luks;
-pub mod mounts;
-pub mod network;
-pub mod search;
-pub mod tasks;
-pub mod terminal;
-pub mod thumbnails;
-pub mod trash;
-pub mod window_control;
-
-pub mod constants {
-    pub const MAX_CONTENT_SEARCH_RESULTS: usize = 100;
-    /// Recursive filename search flushes a batch to the UI at this many results.
-    pub const SEARCH_BATCH_SIZE: usize = 500;
-    /// Recursive filename search flushes a non-empty batch after this many milliseconds.
-    pub const SEARCH_FLUSH_INTERVAL_MS: u64 = 16;
-    /// Content search reads files in blocks of this many bytes.
-    pub const CONTENT_SEARCH_CHUNK_BYTES: usize = 256 * 1024;
-    /// Content search skips a file with a NUL byte in its first this-many bytes.
-    pub const CONTENT_SEARCH_BINARY_SNIFF_BYTES: usize = 1024;
-}
+// Temporary compatibility shim: every module now lives under `crate::infra`.
+// Removed once call sites use the new paths.
+pub use crate::infra::archive;
+pub use crate::infra::constants;
+pub use crate::infra::db;
+pub use crate::infra::fonts;
+pub use crate::infra::git;
+pub use crate::infra::inspector;
+pub use crate::infra::loader;
+pub use crate::infra::luks;
+pub use crate::infra::mounts;
+pub use crate::infra::network;
+pub use crate::infra::search;
+pub use crate::infra::tasks;
+pub use crate::infra::terminal;
+pub use crate::infra::thumbnails;
+pub use crate::infra::trash;
+pub use crate::infra::window_control;

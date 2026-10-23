@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct SevenZBackend;
+pub(in crate::infra::archive) struct SevenZBackend;
 
 impl ArchiveBackend for SevenZBackend {
     fn list_entries(
@@ -217,7 +217,7 @@ fn extract_dir_7z(
     extract_dir_7z_at(archive_path, inner_dir, password, None)
 }
 
-pub(in crate::services::archive) fn extract_dir_7z_at(
+pub(in crate::infra::archive) fn extract_dir_7z_at(
     archive_path: &Path,
     inner_dir: &str,
     password: Option<&str>,

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct TarBackend;
+pub(in crate::infra::archive) struct TarBackend;
 
 impl ArchiveBackend for TarBackend {
     fn list_entries(
@@ -182,7 +182,7 @@ pub(super) fn extract_dir_tar<R: Read>(
     extract_dir_tar_at(reader, inner_dir, None)
 }
 
-pub(in crate::services::archive) fn extract_dir_tar_at<R: Read>(
+pub(in crate::infra::archive) fn extract_dir_tar_at<R: Read>(
     reader: R,
     inner_dir: &str,
     override_dest: Option<&Path>,

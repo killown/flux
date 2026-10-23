@@ -5,7 +5,7 @@ use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct SingleFileBackend; // for .gz, .bz2, .xz, .lzma, .zst, .lz4
+pub(in crate::infra::archive) struct SingleFileBackend; // for .gz, .bz2, .xz, .lzma, .zst, .lz4
 
 impl ArchiveBackend for SingleFileBackend {
     fn list_entries(

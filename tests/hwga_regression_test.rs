@@ -3,7 +3,7 @@
 use flux::hwga;
 use flux::services::loader::{get_extension_icon_path, invalidate_extension_icon_cache};
 
-const SCAN_PROBE: &str = "flux::services::loader::icons::scan_directory_extensions";
+const SCAN_PROBE: &str = "flux::infra::loader::icons::scan_directory_extensions";
 
 #[test]
 fn extension_icon_lookups_do_not_rescan_directories() {

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct RarBackend;
+pub(in crate::infra::archive) struct RarBackend;
 
 impl ArchiveBackend for RarBackend {
     fn list_entries(

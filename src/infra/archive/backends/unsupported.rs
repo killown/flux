@@ -3,7 +3,7 @@
 use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct UnsupportedBackend;
+pub(in crate::infra::archive) struct UnsupportedBackend;
 
 impl ArchiveBackend for UnsupportedBackend {
     fn list_entries(

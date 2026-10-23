@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct IsoBackend;
+pub(in crate::infra::archive) struct IsoBackend;
 
 impl ArchiveBackend for IsoBackend {
     fn list_entries(

@@ -9,7 +9,9 @@
 #![allow(clippy::result_large_err)]
 
 mod cli;
+mod domain;
 mod i18n;
+mod infra;
 mod ipc;
 mod model;
 mod services;

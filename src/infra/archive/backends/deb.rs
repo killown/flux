@@ -5,7 +5,7 @@ use crate::services::archive::util::{extract_bytes_via_tempfile, lc_name, open_b
 use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::path::{Path, PathBuf};
 
-pub(in crate::services::archive) struct DebBackend; // for .deb (ar + inner data.tar.*)
+pub(in crate::infra::archive) struct DebBackend; // for .deb (ar + inner data.tar.*)
 
 impl ArchiveBackend for DebBackend {
     fn list_entries(

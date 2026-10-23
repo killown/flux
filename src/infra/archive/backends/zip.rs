@@ -13,13 +13,13 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 /// Reserved top-level folder that holds Flux-owned data inside a zip.
-pub(in crate::services::archive) const FLUX_CACHE_DIR: &str = ".flux-cache";
+pub(in crate::infra::archive) const FLUX_CACHE_DIR: &str = ".flux-cache";
 /// Sentinel entry proving `.flux-cache/` was created by Flux.
-pub(in crate::services::archive) const FLUX_CACHE_SENTINEL: &str = ".flux-cache/.flux";
+pub(in crate::infra::archive) const FLUX_CACHE_SENTINEL: &str = ".flux-cache/.flux";
 /// Metadata entry describing the cache (format version, generator, timestamp).
-pub(in crate::services::archive) const FLUX_CACHE_METADATA: &str = ".flux-cache/metadata.json";
+pub(in crate::infra::archive) const FLUX_CACHE_METADATA: &str = ".flux-cache/metadata.json";
 /// Folder holding one cached PNG per thumbnail.
-pub(in crate::services::archive) const FLUX_CACHE_THUMBS_DIR: &str = ".flux-cache/thumbnails";
+pub(in crate::infra::archive) const FLUX_CACHE_THUMBS_DIR: &str = ".flux-cache/thumbnails";
 
 /// Contents of the sentinel entry.
 const FLUX_CACHE_SENTINEL_BODY: &[u8] = b"flux-magic v1";
@@ -49,7 +49,7 @@ fn thumbnail_entry_name(inner_path: &str) -> String {
     )
 }
 
-pub(in crate::services::archive) struct ZipBackend;
+pub(in crate::infra::archive) struct ZipBackend;
 
 impl ArchiveBackend for ZipBackend {
     fn list_entries(
@@ -415,7 +415,7 @@ fn extract_dir_zip(
     extract_dir_zip_at(archive_path, inner_dir, password, None)
 }
 
-pub(in crate::services::archive) fn extract_dir_zip_at(
+pub(in crate::infra::archive) fn extract_dir_zip_at(
     archive_path: &Path,
     inner_dir: &str,
     password: Option<&str>,
