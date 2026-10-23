@@ -1,9 +1,7 @@
 use super::icons::get_custom_extension_icon_path;
-use super::media::is_visual_media_by_ext;
 use crate::model::{AppMsg, FileLoadContext, FluxApp};
 use crate::ui::FileItem;
 use crate::utils;
-use crate::utils::media::is_audio_file;
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -93,9 +91,15 @@ impl FluxApp {
         let mut chunk_media_tasks: Vec<(u32, PathBuf)> = Vec::new();
 
         let git_map = (self.git_status_dir == self.current_path).then_some(&self.git_status_map);
+
+        // Hoisted out of the per-item loop: euid is process-global and
+        // `dirs::cache_dir()` + join allocates a PathBuf that never changes
+        // across a chunk. Both were previously re-read once per item.
+        let current_uid = unsafe { libc::geteuid() };
+        let thumb_cache_root = dirs::cache_dir().map(|c| c.join("thumbnails"));
+
         for (offset, item) in items.into_iter().enumerate() {
             let grid_idx = start_idx + offset as u32;
-            let current_uid = unsafe { libc::geteuid() };
             let size = item.size();
             let mtime = item.mtime();
             let is_foreign_owner = item.is_foreign_owner(current_uid);
@@ -105,14 +109,15 @@ impl FluxApp {
                 false
             };
 
+            // One allocation per item instead of two: both lookups key the
+            // same path string.
+            let path_key = item.target_path.to_string_lossy().to_string();
             let custom_icon = config_file_icons
-                .get(&item.target_path.to_string_lossy().to_string())
+                .get(&path_key)
                 .cloned()
                 .or_else(|| {
                     if item.is_dir {
-                        config_folder_icons
-                            .get(&item.target_path.to_string_lossy().to_string())
-                            .cloned()
+                        config_folder_icons.get(&path_key).cloned()
                     } else if !item.sort_ext.is_empty() {
                         get_custom_extension_icon_path(&item.sort_ext)
                             .map(|p| p.to_string_lossy().into_owned())
@@ -134,20 +139,16 @@ impl FluxApp {
                 .and_then(|m| m.get(&item.target_path))
                 .cloned();
 
-            let is_inside_thumb_cache = dirs::cache_dir()
-                .map(|c| item.target_path.starts_with(c.join("thumbnails")))
-                .unwrap_or(false);
+            let is_inside_thumb_cache = thumb_cache_root
+                .as_ref()
+                .is_some_and(|root| item.target_path.starts_with(root));
 
             if !item.is_dir && thumbnail.is_none() && !is_inside_thumb_cache {
-                let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
-                let is_exe = item
-                    .target_path
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .is_some_and(|e| e.eq_ignore_ascii_case("exe"));
-                let is_audio = is_audio_file(&item.target_path);
-
-                if is_img || is_vid || is_exe || is_audio {
+                // The worker already ran the same media classification and set
+                // `thumbnail_path` if the file was image/video/exe/audio.
+                // Re-running it here duplicated the predicate on the GTK
+                // thread, gate on the worker's answer instead.
+                if item.thumbnail_path.is_some() {
                     let source = custom_icon
                         .as_ref()
                         .map(PathBuf::from)

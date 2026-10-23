@@ -180,6 +180,7 @@ impl FluxApp {
         let config_file_icons = self.config.ui.file_icons.clone();
         let extension_globset = self.extension_globset.clone();
         let expand_labels = self.config.ui.expand_labels;
+        let show_empty_dir_emblem = self.config.ui.show_empty_dir_emblem;
         let filter = self.filter.clone();
         let mime_filter = self.mime_filter.clone();
         let path_clone = path.clone();
@@ -518,6 +519,13 @@ impl FluxApp {
                         let _ = item.mtime();
                         let _ = item.is_foreign_owner(uid);
                         let _ = item.labels();
+                        // `is_empty()` does `read_dir().next().is_none()` on the
+                        // GTK thread when `show_empty_dir_emblem` is on. Warm it
+                        // here, on the Rayon pool, for the same reason as the
+                        // getters above.
+                        if show_empty_dir_emblem && item.is_dir {
+                            let _ = item.is_empty();
+                        }
 
                         Some(item)
                     })
