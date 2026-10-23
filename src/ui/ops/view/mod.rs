@@ -1,6 +1,2 @@
-mod layout;
+pub(crate) use crate::app::update::view::*;
 pub(crate) mod prefetch;
-mod preview;
-mod selection;
-mod thumbnails;
-mod video_preview;

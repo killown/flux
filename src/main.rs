@@ -8,6 +8,7 @@
 // and does not inherit its `#![allow]`.
 #![allow(clippy::result_large_err)]
 
+mod app;
 mod cli;
 mod domain;
 mod i18n;

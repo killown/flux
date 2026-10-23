@@ -1,21 +1,27 @@
-//! `FluxApp` operation handlers, grouped by domain.
-//!
-//! Most modules only add `handle_*` methods to `FluxApp`, `paste` also exposes
-//! the shared task-id counter and `perform_file_op`.
-
-pub mod paste;
-
-mod app_action;
-pub mod file;
-mod git;
-mod remote;
-mod sidebar;
-mod tag;
-mod task;
-mod terminal;
-mod toast;
-mod undo;
 pub(crate) mod view;
-mod watcher;
 
-pub(crate) use watcher::debounce_path_event;
+#[allow(unused_imports)]
+pub use crate::app::update::app_action;
+#[allow(unused_imports)]
+pub use crate::app::update::file_ops as file;
+pub use crate::app::update::file_ops::paste;
+#[allow(unused_imports)]
+pub use crate::app::update::git;
+#[allow(unused_imports)]
+pub use crate::app::update::network as remote;
+#[allow(unused_imports)]
+pub use crate::app::update::sidebar;
+#[allow(unused_imports)]
+pub use crate::app::update::tag;
+#[allow(unused_imports)]
+pub use crate::app::update::task;
+#[allow(unused_imports)]
+pub use crate::app::update::terminal;
+#[allow(unused_imports)]
+pub use crate::app::update::toast;
+#[allow(unused_imports)]
+pub use crate::app::update::undo;
+#[allow(unused_imports)]
+pub use crate::app::update::watcher;
+
+pub(crate) use crate::app::update::watcher::debounce_path_event;

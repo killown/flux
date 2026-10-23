@@ -1,14 +1,18 @@
 //! Shared UI helpers split by concern and re-exported here.
 
 mod background;
-mod files;
 mod format;
-mod input;
-mod selection;
-mod sidebar;
 mod system;
 mod theme;
-mod view;
+#[allow(unused_imports)]
+pub use crate::app::update::helpers::files;
+pub use crate::app::update::helpers::input;
+#[allow(unused_imports)]
+pub use crate::app::update::helpers::selection;
+#[allow(unused_imports)]
+pub use crate::app::update::helpers::sidebar;
+#[allow(unused_imports)]
+pub use crate::app::update::helpers::view;
 
 /// Converts `(x, y)` from `from`'s coordinate space into `to`'s.
 ///

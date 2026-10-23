@@ -1,10 +1,2 @@
-mod appearance;
-mod behavior;
-mod icons;
-mod performance;
-mod search;
-mod sidebar;
-mod terminal;
-mod thumbnails;
-mod view;
-mod window;
+#[allow(unused_imports)]
+pub use crate::app::update::settings::*;

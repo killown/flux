@@ -6,6 +6,7 @@
 // `AppMsg` would touch the entire preview pipeline. Silenced here instead.
 #![allow(clippy::result_large_err)]
 
+pub mod app;
 pub mod args;
 mod doc_cli;
 mod doc_fish;
