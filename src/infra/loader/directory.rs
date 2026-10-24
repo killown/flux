@@ -200,77 +200,86 @@ impl FluxApp {
             if let Some(cached) = self.folder_cache.get_mut(&cache_key) {
                 crate::hit!("load_path:cache_hit");
                 self.is_loading = false;
-                cached
-                    .items
-                    .retain(|item| item.target_path.symlink_metadata().is_ok());
-                cached
-                    .media_tasks
-                    .retain(|(_, p)| p.symlink_metadata().is_ok());
                 cached.last_visited = std::time::Instant::now();
-                let mut cached_items = cached.items.clone();
+                let cached_items = cached.items.clone();
 
-                // Keep cached items sorted to the currently active sort configuration
-                loader_pool().install(|| {
-                    crate::hit!("load_path:cache_hit:after_sort");
-                    cached_items.par_sort_unstable_by(move |a, b| {
-                        let group = a.cmp_folder_group(b, folders_first);
-                        if group != std::cmp::Ordering::Equal {
-                            return group;
-                        }
+                // The snapshot may be stale (the folder monitor was cancelled
+                // while we were away), so every entry is re-checked. That is
+                // one lstat per file, which must not run on the GTK thread:
+                // validation, sorting and media-task collection all run on the
+                // loader pool, and the result goes through the same
+                // `FolderLoaded` path as a cold load. `load_id` makes a newer
+                // navigation discard this result.
+                relm4::spawn_blocking(move || {
+                    let mut cached_items: Vec<FileLoadContext> = loader_pool().install(|| {
+                        cached_items
+                            .into_par_iter()
+                            .filter(|item| item.target_path.symlink_metadata().is_ok())
+                            .collect()
+                    });
 
-                        // In cached folder sort comparator:
-                        let primary_order = match sort_strategy {
-                            SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                            SortBy::Size => a.size().cmp(&b.size()),
-                            SortBy::Date => a.mtime().cmp(&b.mtime()),
-                            SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
+                    // Keep cached items sorted to the currently active sort configuration
+                    loader_pool().install(|| {
+                        crate::hit!("load_path:cache_hit:after_sort");
+                        cached_items.par_sort_unstable_by(move |a, b| {
+                            let group = a.cmp_folder_group(b, folders_first);
+                            if group != std::cmp::Ordering::Equal {
+                                return group;
+                            }
+
+                            // In cached folder sort comparator:
+                            let primary_order = match sort_strategy {
+                                SortBy::Name => a.sort_name.cmp(&b.sort_name),
+                                SortBy::Size => a.size().cmp(&b.size()),
+                                SortBy::Date => a.mtime().cmp(&b.mtime()),
+                                SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
+                            };
+
+                            let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
+                                a.sort_name.cmp(&b.sort_name)
+                            } else {
+                                primary_order
+                            };
+
+                            if sort_ascending {
+                                tie_breaker
+                            } else {
+                                tie_breaker.reverse()
+                            }
+                        })
+                    });
+
+                    let media_tasks: Vec<(u32, PathBuf)> = cached_items
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(i, item)| {
+                            if item.is_dir {
+                                return None;
+                            }
+                            let source = item
+                                .custom_icon
+                                .as_ref()
+                                .map(PathBuf::from)
+                                .or_else(|| item.thumbnail_path.clone())?;
+                            Some((i as u32, source))
+                        })
+                        .collect();
+
+                    let list_mode =
+                        if auto_list_threshold > 0 && cached_items.len() > auto_list_threshold {
+                            true
+                        } else {
+                            current_list_mode
                         };
 
-                        let tie_breaker = if primary_order == std::cmp::Ordering::Equal {
-                            a.sort_name.cmp(&b.sort_name)
-                        } else {
-                            primary_order
-                        };
-
-                        if sort_ascending {
-                            tie_breaker
-                        } else {
-                            tie_breaker.reverse()
-                        }
-                    })
+                    sender_clone.input(AppMsg::FolderLoaded {
+                        path: path_clone,
+                        load_id: current_session,
+                        items: cached_items,
+                        media_tasks,
+                        list_mode,
+                    });
                 });
-
-                let media_tasks: Vec<(u32, PathBuf)> = cached_items
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(i, item)| {
-                        if item.is_dir {
-                            return None;
-                        }
-                        let source = item
-                            .custom_icon
-                            .as_ref()
-                            .map(PathBuf::from)
-                            .or_else(|| item.thumbnail_path.clone())?;
-                        Some((i as u32, source))
-                    })
-                    .collect();
-
-                let list_mode =
-                    if auto_list_threshold > 0 && cached_items.len() > auto_list_threshold {
-                        true
-                    } else {
-                        current_list_mode
-                    };
-
-                self.handle_folder_loaded(
-                    path,
-                    current_session,
-                    cached_items,
-                    media_tasks,
-                    list_mode,
-                    sender,
-                );
                 return;
             }
         }
