@@ -1355,7 +1355,8 @@ fn set_wide_preview_layout(
         sibling = widget.next_sibling();
     }
 
-    let files_min_width = if wide && list_mode && total > 0 {
+    let list_wide = wide && list_mode;
+    let files_min_width = if list_wide && total > 0 {
         (total / 3)
             .max(WIDE_PREVIEW_LIST_MIN_WIDTH)
             .max(files_measured_min)
@@ -1382,19 +1383,14 @@ fn set_wide_preview_layout(
             })
             .and_downcast::<adw::Clamp>();
         if let Some(clamp) = clamp {
-            // Wide fills the space the list leaves, so its upper bound is the monitor width
-            // minus the list's width. The panel's natural width (folder grid, text, table)
-            // can otherwise exceed the screen and drag the whole window with it.
-            let cap = if !wide {
-                max_panel
-            } else if max_window > 0 {
-                let left = if list_mode {
-                    files_min_width
-                        .max(files_measured_min)
-                        .max(files_measured_nat)
-                } else {
-                    files_measured_min.max(WIDE_PREVIEW_LIST_MIN_WIDTH)
-                };
+            // Only list mode bounds the panel: its natural width (folder grid, text, table)
+            // can otherwise exceed the screen and drag the window with it. The cap is the
+            // monitor width minus the list's width. Grid mode keeps the panel unbounded,
+            // so it fills the space the grid leaves instead of being centred.
+            let cap = if list_wide && max_window > 0 {
+                let left = files_min_width
+                    .max(files_measured_min)
+                    .max(files_measured_nat);
                 (max_window - left).max(WIDE_PREVIEW_PANEL_MIN_WIDTH)
             } else {
                 i32::MAX
@@ -1404,7 +1400,7 @@ fn set_wide_preview_layout(
             clamp.set_hexpand(wide);
             if let Some(panel) = clamp.child() {
                 panel.set_hexpand(wide);
-                let width = if wide {
+                let width = if list_wide {
                     WIDE_PREVIEW_PANEL_MIN_WIDTH
                 } else if max_window > 0 {
                     saved_width.clamp(WIDE_PREVIEW_PANEL_MIN_WIDTH, max_panel)
