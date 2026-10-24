@@ -8,7 +8,7 @@ mod file_load;
 mod msg;
 mod types;
 
-pub use app::{AltCycle, FilterMode, FluxApp};
+pub use app::{AltCycle, FilterMode, FluxApp, NavigateMode};
 #[allow(unused_imports)]
 pub use config::ContextAction;
 pub use config::{

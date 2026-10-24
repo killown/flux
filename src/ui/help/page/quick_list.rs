@@ -9,7 +9,7 @@ pub fn build(_config: &Config) -> adw::PreferencesPage {
             row(&tr("Add selection or current folder to list"), "Insert"),
             row(
                 &tr("Pin selection or current folder to sidebar permanently"),
-                "Ctrl + Insert",
+                "Ctrl + Shift + Insert",
             ),
             row(&tr("Cycle to the next folder in the list"), "Tab"),
             row(&tr("Clear the entire list"), "Ctrl + End"),

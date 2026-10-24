@@ -146,7 +146,8 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
 
 /// Capture-phase key controller. Handles shortcuts that must win over
 /// focused children (Tab cycling, Ctrl+Z/Y, Insert/End/PageUp/PageDown,
-/// F-keys, Ctrl+Shift+T/A/L, Ctrl+Alt+<letter> cycle). Yields to editable
+/// F-keys, Ctrl+Shift+T/A/L, Ctrl+Alt+<letter> cycle, Ctrl+Insert Navigate
+/// mode). Yields to editable
 /// widgets and the terminal.
 ///
 /// Rule of thumb: if a chord must work no matter which widget currently
@@ -226,8 +227,17 @@ pub fn setup_capture(
         }
 
         match keyval {
-            gdk::Key::Insert if is_ctrl => {
+            gdk::Key::Insert if is_ctrl && is_shift => {
                 sender.input(AppMsg::AddToSidebarPermanent);
+                glib::Propagation::Stop
+            }
+            // Ctrl+Insert toggles Navigate mode. Text entries and the terminal
+            // keep it (Ctrl+Insert is copy there).
+            gdk::Key::Insert if is_ctrl => {
+                if terminal_focused || is_editable {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleNavigateMode);
                 glib::Propagation::Stop
             }
             gdk::Key::Insert => {

@@ -558,6 +558,18 @@ pub enum AppMsg {
     /// Re-anchor the cycle at the current directory. The next
     /// `CycleByLetter` builds a fresh candidate list from here.
     CycleByLetterReanchor,
+    /// Turns Navigate mode on or off (`Ctrl+Insert`, or a click on the status-bar chip).
+    ToggleNavigateMode,
+    /// A plain printable key reached the grid. In Navigate mode it extends the
+    /// prefix and jumps the selection, otherwise it is type-to-search as before.
+    KeyChar(char),
+    /// Enter on the grid: in Navigate mode, makes the folder just cycled into the
+    /// new base for letters, otherwise activates the selection as before.
+    KeyEnter,
+    /// Backspace on the grid: shortens the Navigate prefix, or edits the search filter.
+    KeyBackspace,
+    /// Esc on the grid: leaves Navigate mode, or clears filters as before.
+    KeyEscape,
     /// Navigate to the `network:///` GIO location that lists visible network neighbours.
     NavigateNetwork,
 
@@ -624,7 +636,7 @@ pub enum AppMsg {
     SelectionChanged { tab_id: Option<u64> },
     /// Requests the paths selected in the active tab.
     ///
-    /// Sent by the selection socket server; the update loop answers through
+    /// Sent by the selection socket server, the update loop answers through
     /// `reply`.
     QuerySelection {
         reply: std::sync::mpsc::Sender<Vec<PathBuf>>,
@@ -644,7 +656,7 @@ pub enum AppMsg {
     /// `0` disables the auto-switch. Persisted in the config file.
     SetAutoListThreshold(usize),
     /// Draws browsable archives as folders in the file grid. Persisted in the
-    /// config file; archives stay files (`is_dir` is unchanged).
+    /// config file, archives stay files (`is_dir` is unchanged).
     SetArchivesAsFolders(bool),
     /// Updates the default icon size.
     SetIconSize(i32),

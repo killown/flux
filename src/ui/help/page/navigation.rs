@@ -39,6 +39,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                 "Ctrl + Alt + <letter>",
             ),
             row(
+                &tr("Toggle Navigate mode: type letters to jump to a folder"),
+                "Ctrl + Insert",
+            ),
+            row(
                 &tr("Re-anchor the folder cycle at the current directory"),
                 "Ctrl + Alt + /",
             ),

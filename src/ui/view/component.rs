@@ -886,6 +886,20 @@ impl SimpleAsyncComponent for FluxApp {
                             set_ellipsize: gtk::pango::EllipsizeMode::End,
                         },
 
+                        /// Navigate mode chip, visible only while the mode is on, click leaves it.
+                        gtk::Button {
+                            #[watch]
+                            set_visible: model.navigate.is_some(),
+                            #[watch]
+                            set_label: &model.navigate_chip_label(),
+                            set_tooltip_text: Some(&tr("Navigate mode: type to jump to a folder. Click or press Esc to leave")),
+                            add_css_class: "flat",
+                            add_css_class: "navigate-chip",
+                            set_valign: gtk::Align::Center,
+                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                            connect_clicked => AppMsg::ToggleNavigateMode,
+                        },
+
                         /// Visual indicator for background task completion
                         gtk::ProgressBar {
                             #[watch]

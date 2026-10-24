@@ -80,6 +80,7 @@ impl FluxApp {
 
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
+        self.navigate_owe_first_selection();
 
         //--------------------------------------------------------------------------------------//
         //NOTE: this block of code is where in can intercept and handle special URIs or commands before
@@ -310,6 +311,7 @@ impl FluxApp {
         self.mime_filter = None;
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
+        self.navigate_owe_first_selection();
         let old_path = std::mem::replace(
             &mut self.current_path,
             crate::services::archive::build_archive_uri(&archive_path, ""),
@@ -362,6 +364,7 @@ impl FluxApp {
     }
 
     /// Jump to the next sibling folder whose name starts with `letter`.
+    /// Also driven by plain letters while Navigate mode is on.
     ///
     /// Repeated presses of the same chord cycle through the matching
     /// folders in the current sort order. If there is no current cycle
@@ -379,10 +382,7 @@ impl FluxApp {
             if c.letter != prefix {
                 return None;
             }
-            let inside_candidate = c
-                .candidates
-                .iter()
-                .any(|p| current == *p || current.starts_with(p));
+            let inside_candidate = c.candidates.iter().any(|p| Self::cycle_inside(&current, p));
             if current == c.anchor || inside_candidate {
                 Some(c)
             } else {
@@ -398,38 +398,59 @@ impl FluxApp {
             None => {
                 // First press: build the candidate list from the current
                 // directory's loaded FileItems.
-                let candidates: Vec<PathBuf> = {
+                let found: Vec<(PathBuf, bool)> = {
                     let files = &self.tabs[self.active_tab_index].files;
                     (0..files.len())
                         .filter_map(|i| files.get(i))
                         .filter_map(|w| {
                             let it = w.borrow();
-                            if it.is_dir
+                            if it.is_folder_like()
                                 && it.name.to_lowercase().starts_with(prefix)
                                 && it.path.parent() == Some(current.as_path())
                             {
-                                Some(it.path.clone())
+                                Some((it.path.clone(), it.is_virtual_dir))
                             } else {
                                 None
                             }
                         })
                         .collect()
                 };
-                if candidates.is_empty() {
+                if found.is_empty() {
                     return;
                 }
+                let virtual_targets = found
+                    .iter()
+                    .filter(|(_, is_virtual)| *is_virtual)
+                    .map(|(path, _)| path.clone())
+                    .collect();
                 AltCycle {
                     anchor: current,
                     letter: prefix,
-                    candidates,
+                    candidates: found.into_iter().map(|(path, _)| path).collect(),
                     index: 0,
+                    virtual_targets,
                 }
             }
         };
 
         let target = cycle.candidates[cycle.index].clone();
+        let is_virtual = cycle.virtual_targets.contains(&target);
         self.alt_cycle = Some(cycle);
-        sender.input(AppMsg::Navigate(target));
+        // An archive drawn as a folder is entered as an archive, not navigated to.
+        if is_virtual {
+            sender.input(AppMsg::EnterArchive(target));
+        } else {
+            sender.input(AppMsg::Navigate(target));
+        }
+    }
+
+    /// True when `current` is `candidate` itself, below it, or inside it when
+    /// `candidate` is an archive being browsed.
+    pub(super) fn cycle_inside(current: &std::path::Path, candidate: &std::path::Path) -> bool {
+        current == candidate
+            || current.starts_with(candidate)
+            || crate::services::archive::parse_archive_uri(&current.to_string_lossy())
+                .is_some_and(|(archive, _)| archive == candidate)
     }
 
     /// Cancel the cycle. If we descended into a candidate, go back to the
@@ -442,7 +463,7 @@ impl FluxApp {
         let inside_candidate = cycle
             .candidates
             .iter()
-            .any(|p| self.current_path == *p || self.current_path.starts_with(p));
+            .any(|p| Self::cycle_inside(&self.current_path, p));
         if inside_candidate {
             sender.input(AppMsg::Navigate(cycle.anchor));
         }

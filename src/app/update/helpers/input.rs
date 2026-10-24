@@ -1,7 +1,6 @@
 //! Keyboard, mouse and action wiring for the main window.
 
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::constants;
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;
@@ -110,8 +109,11 @@ impl FluxApp {
             return glib::Propagation::Stop;
         }
 
-        if keyval == gdk::Key::Insert {
-            if modifiers == gdk::ModifierType::CONTROL_MASK {
+        // Ctrl+Insert toggles Navigate mode. It is decided further down, once
+        // the terminal / editable yield is known, so it never eats the
+        // clipboard-copy meaning Ctrl+Insert has inside a text entry.
+        if keyval == gdk::Key::Insert && modifiers != gdk::ModifierType::CONTROL_MASK {
+            if modifiers == gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK {
                 sender.input(AppMsg::AddToSidebarPermanent);
             } else {
                 sender.input(AppMsg::AddExclusive(None));
@@ -147,6 +149,11 @@ impl FluxApp {
             return glib::Propagation::Proceed;
         }
 
+        if keyval == gdk::Key::Insert && modifiers == gdk::ModifierType::CONTROL_MASK {
+            sender.input(AppMsg::ToggleNavigateMode);
+            return glib::Propagation::Stop;
+        }
+
         // ── PEEK PREVIEW ─────────────────────────────────────────────────
         // Space toggles the peek-preview panel. Guarded by `is_editable`
         // above and by `terminal_focused`, so typing a space in the search
@@ -180,8 +187,9 @@ impl FluxApp {
             if let Some(c) = keyval.to_unicode() {
                 // Allow alphanumerics, tags (#), content search (:), and size filters (<)
                 if c.is_ascii_alphanumeric() || c == ':' || c == '<' || c == '#' {
-                    sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
-                    sender.input(AppMsg::SearchInput(c));
+                    // Type-to-search, or a Navigate-mode prefix jump: the update
+                    // handler knows which, so the key controller stays stateless.
+                    sender.input(AppMsg::KeyChar(c));
                     return glib::Propagation::Stop;
                 }
             }
@@ -191,7 +199,7 @@ impl FluxApp {
         match keyval {
             // Triggers batch activation for the current selection
             gdk::Key::Return | gdk::Key::KP_Enter => {
-                sender.input(AppMsg::Activate);
+                sender.input(AppMsg::KeyEnter);
                 glib::Propagation::Stop
             }
             gdk::Key::F2 => {
@@ -199,13 +207,11 @@ impl FluxApp {
                 glib::Propagation::Stop
             }
             gdk::Key::Escape => {
-                sender.input(AppMsg::UpdateFilter(String::new()));
-                sender.input(AppMsg::ClearMimeFilter);
-                sender.input(AppMsg::SwitchHeader("path".to_string()));
+                sender.input(AppMsg::KeyEscape);
                 glib::Propagation::Stop
             }
             gdk::Key::BackSpace => {
-                sender.input(AppMsg::SearchBackspace);
+                sender.input(AppMsg::KeyBackspace);
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,

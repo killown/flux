@@ -961,6 +961,14 @@ textview text {
   color: var(--color-accent-fg);
 }
 
+/* Navigate mode chip: same chip look, tinted so it reads as an active mode. */
+.selection-status button.navigate-chip {
+  background-color: alpha(var(--color-accent-text), 0.18);
+  border-color: alpha(var(--color-accent-text), 0.4);
+  color: var(--color-accent-text);
+  margin: 0 0.4em;
+}
+
 .selection-status button.destructive-action {
   background-color: alpha(var(--color-danger), 0.14);
   border: 1px solid alpha(var(--color-danger), 0.25);

@@ -42,7 +42,7 @@ pub struct FileItem {
     #[allow(dead_code)]
     pub is_dir: bool,
     /// Browsable archive drawn as a folder (`ui.archives_as_folders`). The item
-    /// is still a file (`is_dir == false`); this only drives icon, label and badge.
+    /// is still a file (`is_dir == false`), this only drives icon, label and badge.
     pub is_virtual_dir: bool,
     /// The archive's real file icon, resolved at load time. Only set for virtual
     /// dirs: `icon` holds the folder-style icon, this is what a selected card shows.
@@ -103,4 +103,17 @@ pub struct FileItem {
     /// Pre-formatted label strings, cloned from `FileLoadContext::labels()` at
     /// load time so `bind_widgets` never formats a size or date on the GTK thread.
     pub labels: CellLabels,
+}
+
+impl FileItem {
+    /// True when the cell is drawn as a folder: a real directory, or an
+    /// archive presented as one (`ui.archives_as_folders`).
+    ///
+    /// Presentation helper for Navigate mode's prefix jump only. It must not
+    /// replace `is_dir` in drag and drop, delete or `directory`-scoped menu
+    /// actions, because a virtual dir is still a file.
+    #[inline]
+    pub fn is_folder_like(&self) -> bool {
+        self.is_dir || self.is_virtual_dir
+    }
 }

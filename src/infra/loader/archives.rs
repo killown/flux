@@ -258,6 +258,9 @@ impl FluxApp {
 
                 self.update_breadcrumbs();
 
+                // Navigate mode: land on the first item so the arrow keys work at once.
+                self.select_first_for_navigate();
+
                 if !self.config.ui.lazy_thumbnails {
                     self.spawn_thumbnail_loader(
                         media_tasks,

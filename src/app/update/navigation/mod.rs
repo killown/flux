@@ -3,6 +3,7 @@ use relm4::prelude::*;
 
 mod history;
 mod navigate;
+mod navigate_mode;
 mod quick_list;
 
 pub(super) fn handle(
@@ -25,6 +26,11 @@ pub(super) fn handle(
             app.handle_go_forward(sender);
             sender.input(AppMsg::Refresh);
         }
+        AppMsg::ToggleNavigateMode => app.handle_toggle_navigate_mode(sender),
+        AppMsg::KeyChar(c) => app.handle_key_char(c, sender),
+        AppMsg::KeyEnter => app.handle_key_enter(sender),
+        AppMsg::KeyBackspace => app.handle_key_backspace(sender),
+        AppMsg::KeyEscape => app.handle_key_escape(sender),
         AppMsg::CycleByLetter(c) => app.handle_cycle_by_letter(c, sender),
         AppMsg::CycleByLetterCancel => app.handle_cycle_by_letter_cancel(sender),
         AppMsg::CycleByLetterReanchor => app.handle_cycle_by_letter_reanchor(sender),

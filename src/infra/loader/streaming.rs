@@ -498,5 +498,8 @@ impl FluxApp {
 
         // CLI `--preview`: the panel is already open, fill it as soon as the first batch is in.
         self.schedule_startup_preview_selection();
+
+        // Navigate mode: land on the first item so the arrow keys work at once.
+        self.select_first_for_navigate();
     }
 }
