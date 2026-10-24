@@ -77,7 +77,8 @@ pub fn get_icon_for_path_with_override(
         let (folder_icons, _, _, _, _, _, _) = &*get_icon_config_lazy();
 
         let mut folder_match = folder_icons.get(path_str.as_ref());
-        if folder_match.is_none() {
+        // canonicalize() is a syscall chain, skip it when there is nothing to match against.
+        if folder_match.is_none() && !folder_icons.is_empty() {
             if let Some(ref canon) = get_canon_str_lazy() {
                 folder_match = folder_icons.get(canon);
             }
@@ -107,7 +108,8 @@ pub fn get_icon_for_path_with_override(
     let (_, file_icons, _, _, _, _, _) = &*get_icon_config_lazy();
 
     let mut file_match = file_icons.get(path_str.as_ref());
-    if file_match.is_none() {
+    // canonicalize() is a syscall chain, skip it when there is nothing to match against.
+    if file_match.is_none() && !file_icons.is_empty() {
         if let Some(ref canon) = get_canon_str_lazy() {
             file_match = file_icons.get(canon);
         }
