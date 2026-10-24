@@ -1,12 +1,12 @@
 # Adding a Search Filter
 
 The search bar dispatches on the query string in
-`src/ui/search/filter.rs::handle_update_filter`. Each query syntax is a
+`src/app/update/search/filter.rs::handle_update_filter`. Each query syntax is a
 parser that either matches and returns a modified view, or returns
 `None` and lets the next parser try. Order of evaluation is load-bearing
 and is not enforced by any test.
 
-Read `src/ui/search/filter.rs` in full before starting.
+Read `src/app/update/search/filter.rs` in full before starting.
 
 ## Checklist
 
@@ -20,7 +20,7 @@ Read `src/ui/search/filter.rs` in full before starting.
 2. **`src/utils/search/mod.rs`** - `mod <syntax>;` and
     `pub use <syntax>::parse_<syntax>;`.
 
-3. **`src/ui/search/filter.rs`** - insert the guard in
+3. **`src/app/update/search/filter.rs`** - insert the guard in
     `handle_update_filter` at the correct position in the chain. The
     current order is:
 
@@ -75,7 +75,7 @@ example. The tag parser in `tag.rs` shows how to expose a table
 
 ## Where the reference code lives
 
-- `src/ui/search/filter.rs` - the dispatch chain. Read every branch
+- `src/app/update/search/filter.rs` - the dispatch chain. Read every branch
   the wildcard/walk branch is the most subtle, because it kicks off a
   recursive walk (via `AppMsg::StartAdvancedSearch`) rather than
   filtering in place.

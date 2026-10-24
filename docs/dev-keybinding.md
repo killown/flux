@@ -20,7 +20,7 @@ steps.
 
 ## Checklist
 
-1. **`src/model/config/shortcuts.rs`** - add an `Option<String>` field
+1. **`src/domain/model/config/shortcuts.rs`** - add an `Option<String>` field
    to `ShortcutsConfig`, doc-commented with the default accelerator
    (`"<Primary>k"`, `"F7"`, etc.). If the default is a stable contract
    (like `open = "Return"`), spell it out in the comment.

@@ -16,3 +16,5 @@
   - [Adding a menu action](dev-menu-action.md)
   - [Adding a search filter](dev-search-filter.md)
   - [Adding a keybinding](dev-keybinding.md)
+  - [Adding a message](dev-message-bus.md)
+  - [Adding a configuration option](dev-config-option.md)

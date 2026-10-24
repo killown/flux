@@ -1,13 +1,13 @@
 # Adding an Archive Backend
 
 Flux dispatches archive reads through the `ArchiveBackend` trait
-(`src/services/archive/backend.rs`). Every supported format is one
+(`src/infra/archive/backend.rs`). Every supported format is one
 implementation of that trait plus a small set of registrations scattered
 across the archive service. Adding a format means touching these files in
 order, missing any one is either a compile error or a format that lists
 but never extracts (or vice versa).
 
-Read `src/services/archive/backends/zip.rs` first if the new format is
+Read `src/infra/archive/backends/zip.rs` first if the new format is
 seekable and single-file. Read `backends/tar.rs` first if the new format
 is stream-oriented or needs an external decompressor. Read
 `backends/rar.rs` first if the new format has to shell out to a CLI
@@ -15,7 +15,7 @@ tool.
 
 ## Checklist
 
-1. **`src/services/archive/backends/<fmt>.rs`** - new file implementing
+1. **`src/infra/archive/backends/<fmt>.rs`** - new file implementing
     `ArchiveBackend`. The trait requires:
     - `list_entries` - returns immediate children of `prefix`, with
       `name`, `is_dir`, `size`, `mtime`, `inner_path`. Route through
@@ -30,16 +30,16 @@ tool.
     defaults return `ArchiveError::Other(...)`, which is the correct
     behaviour for read-only formats.
 
-2. **`src/services/archive/backends/mod.rs`** - declare the module and
+2. **`src/infra/archive/backends/mod.rs`** - declare the module and
     re-export the struct:
 
         mod <fmt>;
-        pub(in crate::services::archive) use self::<fmt>::<Fmt>Backend;
+        pub(in crate::infra::archive) use self::<fmt>::<Fmt>Backend;
 
     Exports that other modules need (e.g. `extract_dir_<fmt>_at` for the
     fast path in `extract_archive_to_dir`) go here too.
 
-3. **`src/services/archive/backend.rs`** - two edits in `get_backend`:
+3. **`src/infra/archive/backend.rs`** - two edits in `get_backend`:
     - Add an `else if name_lc.ends_with(".<ext>") { return Box::new(<Fmt>Backend); }`
       arm. Order matters: the `.tar.gz` family must stay grouped because
       every one of them begins with `.tar`.
@@ -48,7 +48,7 @@ tool.
       which is a ZIP in disguise, or MIME types that arrive from a network
       share).
 
-4. **`src/services/archive/format.rs`** - two functions:
+4. **`src/infra/archive/format.rs`** - two functions:
     - `is_browsable_archive` - add the extension to the `matches_extension`
       list so the grid treats the file as enterable.
     - `is_supported_archive` - add the extension to the `ends_with` chain
@@ -67,7 +67,7 @@ tool.
 
 7. **`po/pt_BR.po`** - any user-facing string the backend emits
     (`ArchiveError::Other(...)` messages that reach a toast). Group under
-    `# src/services/archive/backends/<fmt>.rs`.
+    `# src/infra/archive/backends/<fmt>.rs`.
 
 ## Where the reference code lives
 

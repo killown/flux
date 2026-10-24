@@ -3,7 +3,7 @@
 Every right-side panel in Flux, Tag, Search, Diff, Location, Connect,
 Preview, Actions, Terminal, is wired through the same set of files.
 The terminal panel (`src/ui/panels/terminal.rs` and the
-`RightPanelType::Terminal` arms in `src/utils/helpers/sidebar.rs`) is the
+`RightPanelType::Terminal` arms in `src/app/update/helpers/sidebar.rs`) is the
 smallest complete example, because it exercises every hook: config flag,
 message variants, lazy build, spawn-on-reveal, kill-on-hide, sidebar
 stash, focus skip. Read those two files before starting.
@@ -14,9 +14,9 @@ Work through these in order. Each line names the file, the change, and
 _why_ that file is on the list. Missing any of them is either a compile
 error or a silent bug.
 
-1. **`src/model/config/ui.rs`** - add the enable flag (`bool` with
+1. **`src/domain/model/config/ui.rs`** - add the enable flag (`bool` with
    `#[serde(default)]`). If the panel has a width or height, add an
-   `i32` field defaulted via a helper in `src/model/defaults.rs`.
+   `i32` field defaulted via a helper in `src/domain/model/defaults.rs`.
 
 2. **`src/utils/config/defaults.rs`** - mirror the field in the
    parse-failure `UIConfig { ... }` literal. Both branches must stay in
@@ -25,10 +25,10 @@ error or a silent bug.
 3. **`docs/config.md`** - run `cargo run --bin gen-docs`. Do not edit by
    hand.
 
-4. **`src/model/types.rs`** - add a variant to `RightPanelType`, grouped
+4. **`src/domain/model/types.rs`** - add a variant to `RightPanelType`, grouped
    with the other panel variants.
 
-5. **`src/model/app.rs`** - add three fields minimum:
+5. **`src/domain/model/app.rs`** - add three fields minimum:
    `Option<gtk::Revealer>`, `bool visible`, `bool initialized`. If the
    panel hides the left sidebar (Terminal, Preview), add `Option<bool>`
    to stash the prior visibility. Doc-comment each field so the
@@ -48,7 +48,7 @@ error or a silent bug.
    add a `root.connect_close_request` that tears it down, mirroring the
    terminal block.
 
-9. **`src/utils/helpers/sidebar.rs`** - three edits inside
+9. **`src/app/update/helpers/sidebar.rs`** - three edits inside
    `toggle_sidebar_right_panel`:
    - add the variant to `hide_other_right_panels` so opening another
      panel closes this one;
@@ -70,7 +70,7 @@ error or a silent bug.
     `spec::PanelSpec`. Add `const fn <panel>()` to `spec.rs` with the
     min / max / default widths.
 
-12. **`src/model/msg.rs`** and **`src/ui/update/*.rs`** - if the panel
+12. **`src/domain/model/msg.rs`** and **`src/app/update/**/mod.rs`** - if the panel
     has its own `AppMsg` variants, add them doc-commented and route them
     in the closest domain file.
 

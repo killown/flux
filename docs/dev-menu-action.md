@@ -33,52 +33,58 @@ first surface only. Adding a user-facing shell command to the default
     the committed page drifts from the table. It is also shown verbatim
     in the "Pick Built-in" dialog in the menu editor.
 
-2. **`src/ui/menu/context.rs`** - add the dispatch arm. The `match
-action.command.as_str() { ... }` block has three shapes, pick the
-    one that fits: - **Stateless, no target** - most actions. Use `register_simple`
-    with a closure that dispatches an `AppMsg`:
+2. **`src/ui/menu/context.rs`** - add the dispatch arm. The
+    `match action.command.as_str() { ... }` block has three shapes. Pick
+    the one that fits:
 
-                                                                      "builtin::my_action" => register_simple(
-                                                                          &action_group,
-                                                                          "my-action",
-                                                                          sender,
-                                                                          action_toast.clone(),
-                                                                          |s, toast| {
-                                                                              s.input(AppMsg::MyActionMsg);
-                                                                              emit_toast(s, toast);
-                                                                          },
-                                                                      ),
+    - **Stateless, no target** - most actions. Use `register_simple`
+      with a closure that dispatches an `AppMsg`:
 
-                                                                - **Path-bearing** - the action operates on the file or directory
-                                                                  the menu was opened on. Use `register_path_action`:
+      ```rust
+      "builtin::my_action" => register_simple(
+          &action_group,
+          "my-action",
+          sender,
+          action_toast.clone(),
+          |s, toast| {
+              s.input(AppMsg::MyActionMsg);
+              emit_toast(s, toast);
+          },
+      ),
+      ```
 
-                                                                      "builtin::my_action" => register_path_action(
-                                                                          &action_group,
-                                                                          "my-action",
-                                                                          sender,
-                                                                          target_path,
-                                                                          action_toast.clone(),
-                                                                          |s, target, toast| {
-                                                                              s.input(AppMsg::MyActionMsg { path: target });
-                                                                              emit_toast(s, toast);
-                                                                          },
-                                                                      ),
+    - **Path-bearing** - the action operates on the file or directory
+      the menu was opened on. Use `register_path_action`:
 
-                                                                - **Selection-based** - the action operates on the whole selection
-                                                                  rather than the clicked item. Resolve `self.get_selection()` (or
-                                                                  `get_selection_with_meta()` if you need `is_dir`) before the
-                                                                  `register_simple` call, like `builtin::install_fonts` does.
+      ```rust
+      "builtin::my_action" => register_path_action(
+          &action_group,
+          "my-action",
+          sender,
+          target_path,
+          action_toast.clone(),
+          |s, target, toast| {
+              s.input(AppMsg::MyActionMsg { path: target });
+              emit_toast(s, toast);
+          },
+      ),
+      ```
 
-3. **`src/model/msg.rs`** - add the `AppMsg` variant(s) the dispatch
+    - **Selection-based** - the action operates on the whole selection
+      rather than the clicked item. Resolve `self.get_selection()` (or
+      `get_selection_with_meta()` if you need `is_dir`) before the
+      `register_simple` call, like `builtin::install_fonts` does.
+
+3. **`src/domain/model/msg.rs`** - add the `AppMsg` variant(s) the dispatch
     arm produces, doc-commented. If the action opens a dialog, the
     message name is usually `Prompt<X>`, if it runs work in the
     background, `<X>Succeeded` / `<X>Failed` pair.
 
-4. **`src/ui/update/*.rs`** - route the new `AppMsg` in the closest
-    domain router (`file_ops.rs`, `window.rs`, `search.rs`, `sidebar.rs`,
-    `git.rs`, `network.rs`, `dialogs.rs`). Everything below the router
-    is a `handle_*` method on `FluxApp`, living in `src/ui/ops/` or
-    `src/ui/dialog/`.
+4. **`src/app/update/**/mod.rs`** - route the new `AppMsg` in the closest
+    domain router (`file_ops/mod.rs`, `window/mod.rs`, `search/mod.rs`,
+    `sidebar/mod.rs`, `git/mod.rs`, `network.rs`, `dialogs.rs`). Everything
+    below the router is a `handle_*` method on `FluxApp`, living in
+    `src/app/update/` or `src/ui/dialog/`.
 
 5. **`docs/actions.md`** - **do not edit by hand**. Run
     `cargo run --bin gen-docs` to regenerate it from `BUILTINS`. The
@@ -117,7 +123,7 @@ and silently rewriting it destroys custom entries.
 - `src/ui/menu/editor/builtins.rs` - the `BUILTINS` table and the
   `render_actions_markdown()` renderer that produces the existing
   `docs/actions.md`.
-- `src/ui/ops/file/command.rs` - `handle_execute_command`, which is
+- `src/app/update/file_ops/command.rs` - `handle_execute_command`, which is
   what non-`builtin::` entries dispatch to. If your action is closer
   to a shell command than a native operation, consider whether it
   needs a `builtin::` at all.

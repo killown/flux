@@ -12,7 +12,7 @@ A map of the codebase for contributors. Read it before the how-to guides: [Addin
 | binary `flux-fm` | `src/main.rs`, which calls `cli::run()` | The application. |
 | binary `gen-docs` | `src/bin/gen-docs.rs` | Regenerates the derived documentation. |
 
-`src/main.rs` declares its own `mod model`, `mod services`, `mod ui` and `mod utils`. The same files are therefore compiled twice, once into the library and once into the binary. This has consequences:
+`src/main.rs` declares its own `mod app`, `mod cli`, `mod domain`, `mod i18n`, `mod infra`, `mod ipc`, `mod model`, `mod services`, `mod shell_functions`, `mod ui` and `mod utils`. The same files are therefore compiled twice, once into the library and once into the binary. This has consequences:
 
 - `cargo fmt --check` and `cargo clippy` report a problem once per crate.
 - A crate-level lint such as `#![allow(clippy::result_large_err)]` must appear in both `lib.rs` and `main.rs`.
@@ -31,13 +31,13 @@ A map of the codebase for contributors. Read it before the how-to guides: [Addin
 
 The UI follows Relm4's model, view, update pattern.
 
-- `FluxApp` in `src/model/app.rs` is the model. It owns the state and the widget references.
-- `AppMsg` in `src/model/msg.rs` is every event the app can receive. Each variant is doc-commented.
-- `FluxApp::handle_update` in `src/ui/update/mod.rs` is the single entry point for messages. It passes the message through a chain of routers in this order: `navigation`, `loading`, `view`, `thumbnails`, `search`, `file_ops`, `dialogs`, `context_menu`, `network`, `git`, `window` and `sidebar`.
+- `FluxApp` in `src/domain/model/app.rs` is the model. It owns the state and the widget references.
+- `AppMsg` in `src/domain/model/msg.rs` is every event the app can receive. Each variant is doc-commented.
+- `FluxApp::handle_update` in `src/app/update/mod.rs` is the single entry point for messages. It passes the message through a chain of routers in this order: `navigation`, `loading`, `view`, `thumbnails`, `search`, `file_ops`, `dialogs`, `context_menu`, `network`, `git`, `window` and `sidebar`.
 - Each router exposes `handle(app, message, sender) -> Result<(), AppMsg>`. `Ok(())` means it consumed the message. `Err(message)` hands the message to the next router.
 - A message that no router claims is logged as `[flux] unhandled AppMsg`. A new `AppMsg` variant that you never routed shows up there, not as a compile error.
 
-Routers stay thin. The real work lives in `handle_*` methods on `FluxApp` under `src/ui/ops/` and `src/ui/dialog/`.
+Routers stay thin. The real work lives in `handle_*` methods on `FluxApp` under `src/app/update/` (grouped by area) and `src/ui/dialog/`.
 
 ## Threads
 
@@ -45,13 +45,13 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 
 - **Background threads** reach the app through `model::SENDER`, a global `relm4::Sender<AppMsg>`. The `--cwd` server, the `goto` watcher and the selection server all use it.
 - **Questions that need the UI** are forwarded as a message with a reply channel. The selection server sends `AppMsg::QuerySelection { reply }` and waits up to two seconds for the main thread to answer.
-- **Directory loading** runs on a dedicated Rayon pool in `src/services/loader/pool.rs`. It has between 4 and 8 threads with 2 MiB stacks, so the first large folder does not commit the global pool's much larger stacks. Results reach the grid in batches of `ui.loader_batch_size` items.
+- **Directory loading** runs on a dedicated Rayon pool in `src/infra/loader/pool.rs`. It has between 4 and 8 threads with 2 MiB stacks, so the first large folder does not commit the global pool's much larger stacks. Results reach the grid in batches of `ui.loader_batch_size` items.
 - **Subprocesses, network work and transfers** use Tokio, and short blocking jobs use `relm4::spawn_blocking`. A dispatch arm or message handler on the main thread should return in microseconds.
 
 ## Persistence
 
 - **`config.toml`** is read through `utils::load_config`, which keeps a cached copy. `save_config` primes that cache and `invalidate_config_cache` drops it. A config watcher in `src/cli/watcher.rs` reloads the file while Flux runs. Migrations of renamed keys run when the file is loaded, for example `ui.terminal_in_sidebar`, and are listed in [Configuration](config.md).
-- **SQLite state** lives behind `StateManager` in `src/services/db/`. It runs in WAL mode and holds per-folder view settings, location history and file tags, with one module per area: `views`, `history`, `tags`, `icons` and `maintenance`.
+- **SQLite state** lives behind `StateManager` in `src/infra/db/`. It runs in WAL mode and holds per-folder view settings, location history and file tags, with one module per area: `views`, `history`, `tags`, `icons` and `maintenance`.
 - **Shell bridge files** under `$XDG_CACHE_HOME/flux/` are described in [Shell integration](shell-integration.md).
 
 ## Source map
@@ -61,9 +61,8 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 | `src/args.rs`, `src/cli/` | Argument parsing and the non-GUI commands. |
 | `src/ipc.rs` | The `--cwd` Unix socket server and client. |
 | `src/shell_functions.rs` | The fish helper source, shared by the terminal snippet and `gen-docs`. |
-| `src/model/` | `FluxApp`, `AppMsg`, shared types, `config/` structs and their defaults. |
-| `src/ui/update/` | The message routers. |
-| `src/ui/ops/` | The `handle_*` methods that do the work, grouped by area: files, paste, view, tags, tasks, undo, terminal. |
+| `src/domain/model/` | `FluxApp`, `AppMsg`, shared types, `config/` structs and their defaults. `src/model/` only re-exports it. |
+| `src/app/update/` | The message routers (`mod.rs` plus one router per area) and the `handle_*` methods that do the work, grouped by area: `file_ops/` (clipboard, paste, rename, trash, links, commands), `navigation/`, `view/`, `search/`, `settings/`, `git/`, `sidebar/`, `window/`, `helpers/`, plus `tag.rs`, `task.rs`, `undo.rs`, `terminal.rs` and `watcher.rs`. |
 | `src/ui/panels/` | Right-side panels: tag, search, diff, location, connect, preview, actions and terminal. |
 | `src/ui/dialog/`, `src/ui/properties/` | Dialogs and the properties window. |
 | `src/ui/menu/` | The context menu, the Ctrl+right-click menu and the menu editor. |
@@ -72,12 +71,12 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 | `src/ui/settings/`, `src/ui/help/` | The settings window and the help window. |
 | `src/ui/startup/` | Building the window, sidebar, tabs and grid. |
 | `src/ui/debug/` | The debug window. |
-| `src/services/loader/` | Directory, archive, network and Recents loading. |
-| `src/services/archive/` | The `ArchiveBackend` trait and one backend per format. |
-| `src/services/search/` | Content search, the file indexer and the recursive walk. |
-| `src/services/thumbnails/`, `src/services/tasks/` | Thumbnail generation and the file-operation task queue. |
-| `src/services/terminal/` | The embedded terminal: PTY, emulator, drawing, and the shell bridge. |
-| `src/services/` (others) | `db`, `git`, `inspector`, `luks`, `mounts`, `network`, `trash`. |
+| `src/infra/loader/` | Directory, archive, network and Recents loading. |
+| `src/infra/archive/` | The `ArchiveBackend` trait and one backend per format. |
+| `src/infra/search/` | Content search, the file indexer and the recursive walk. |
+| `src/infra/thumbnails/`, `src/infra/tasks/` | Thumbnail generation and the file-operation task queue. |
+| `src/infra/terminal/` | The embedded terminal: PTY, emulator, drawing, and the shell bridge. |
+| `src/infra/` (others) | `db`, `git`, `inspector`, `luks`, `mounts`, `network`, `trash`, `fonts.rs`, `window_control.rs`. `src/services/` only re-exports it. |
 | `src/utils/` | Config loading, path and glob helpers, media and icon helpers, search parsers and `hwga`. |
 
 ## Debug and performance tooling
@@ -98,7 +97,7 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 | Output | Generated from |
 |---|---|
 | `docs/cli.md` | `src/doc_cli.rs` |
-| `docs/config.md` | `src/model/doc_config.rs` and the config structs |
+| `docs/config.md` | `src/domain/model/doc_config.rs` and the config structs |
 | `docs/css-variables.md` | `src/ui/doc_css_variables.rs` and `src/ui/style.css` |
 | `docs/actions.md` | The `BUILTINS` table in `src/ui/menu/editor/builtins.rs` |
 | `docs/search.md` | `src/utils/search/doc.rs` |
