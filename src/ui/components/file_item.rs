@@ -41,6 +41,12 @@ pub struct FileItem {
     pub thumbnail: Option<gdk::Texture>,
     #[allow(dead_code)]
     pub is_dir: bool,
+    /// Browsable archive drawn as a folder (`ui.archives_as_folders`). The item
+    /// is still a file (`is_dir == false`); this only drives icon, label and badge.
+    pub is_virtual_dir: bool,
+    /// The archive's real file icon, resolved at load time. Only set for virtual
+    /// dirs: `icon` holds the folder-style icon, this is what a selected card shows.
+    pub original_icon: Option<adw::gio::Icon>,
     pub path: PathBuf,
     pub icon_size: i32,
     pub is_editing: bool,

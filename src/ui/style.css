@@ -1683,6 +1683,30 @@ toast button image {
   min-height: 1.2em;
 }
 
+.flux-archive-badge {
+  min-width: 1em;
+  min-height: 1em;
+  padding: 0.15em;
+  margin-top: 0.7em;
+  margin-left: 0.7em;
+  border-radius: 0.3em;
+  background-color: alpha(var(--color-accent), 0.85);
+  color: var(--color-accent-fg);
+  box-shadow: 0 1px 3px alpha(black, 0.4);
+}
+
+.flux-vd-original {
+  opacity: 0;
+}
+
+gridview child:selected .flux-vd .flux-vd-original {
+  opacity: 1;
+}
+
+gridview child:selected .flux-vd .flux-vd-folder {
+  opacity: 0;
+}
+
 .flux-git-badge {
   font-family: "Symbols Nerd Font", "JetBrains Mono", var(--font-mono);
   font-size: 0.8em;

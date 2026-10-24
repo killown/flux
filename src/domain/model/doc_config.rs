@@ -11,6 +11,7 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("sidebar", "Custom sidebar entries; see [Array tables](#array-tables)."),
     ("ui.actions_panel_width", "Width in pixels of the right-side contextual-actions panel."),
     ("ui.archive_thumbnail_cache", "Store thumbnails of files inside zip archives in a hidden `.flux-cache/` folder in the zip itself."),
+    ("ui.archives_as_folders", "Draw browsable archives (zip, tar, 7z and so on) as folders in the file grid, with a small archive badge. A selected card shows the archive's own icon. Archives remain files for drag and drop, delete and menu actions. Off by default."),
     ("ui.ascending", "Sort listings in ascending order."),
     ("ui.auto_generate_mime_icons", "Generate and cache an SVG document icon when the icon theme has none."),
     ("ui.auto_list_threshold", "Folders with more items than this open in list mode. `0` disables the auto-switch."),

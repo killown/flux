@@ -259,6 +259,13 @@ pub struct UIConfig {
     /// `.flux-cache/` folder in the zip itself and read back on later visits.
     #[serde(default)]
     pub archive_thumbnail_cache: bool,
+    /// When true, browsable archives (zip, tar, 7z, ...) are drawn as folders in
+    /// the file grid. They stay files semantically (`is_dir` is still false):
+    /// only the icon, label and a small badge change. The card shows a folder
+    /// icon (or the one set with the folder-icon picker); selecting it reveals
+    /// the archive's real icon. Off by default.
+    #[serde(default)]
+    pub archives_as_folders: bool,
     /// When true, Flux generates `~/.config/fish/conf.d/flux-theme.fish`
     /// from the active GTK theme so the embedded fish shell's prompt and
     /// colors follow Flux. Off by default: the file is regenerated on every
@@ -351,6 +358,7 @@ impl Default for UIConfig {
             preview_syntax_highlighting: true,
             wide_preview: false,
             archive_thumbnail_cache: false,
+            archives_as_folders: false,
             folder_grid_thumbnails: true,
             fish_theme: false,
             auto_list_threshold: default_auto_list_threshold(),

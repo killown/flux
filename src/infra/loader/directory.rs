@@ -181,6 +181,7 @@ impl FluxApp {
         let extension_globset = self.extension_globset.clone();
         let expand_labels = self.config.ui.expand_labels;
         let show_empty_dir_emblem = self.config.ui.show_empty_dir_emblem;
+        let archives_as_folders = self.config.ui.archives_as_folders;
         let filter = self.filter.clone();
         let mime_filter = self.mime_filter.clone();
         let path_clone = path.clone();
@@ -212,12 +213,9 @@ impl FluxApp {
                 loader_pool().install(|| {
                     crate::hit!("load_path:cache_hit:after_sort");
                     cached_items.par_sort_unstable_by(move |a, b| {
-                        if a.is_dir != b.is_dir {
-                            return if folders_first {
-                                b.is_dir.cmp(&a.is_dir)
-                            } else {
-                                a.is_dir.cmp(&b.is_dir)
-                            };
+                        let group = a.cmp_folder_group(b, folders_first);
+                        if group != std::cmp::Ordering::Equal {
+                            return group;
                         }
 
                         // In cached folder sort comparator:
@@ -484,7 +482,15 @@ impl FluxApp {
                             false
                         };
 
-                        let item = FileLoadContext::new(
+                        // Visual folder, semantic file: `is_dir` stays false. Runs in
+                        // the Rayon pool, so the MIME fallback inside
+                        // `is_browsable_archive` never touches the GTK thread.
+                        let is_virtual_dir = archives_as_folders
+                            && !is_dir
+                            && !is_trash
+                            && crate::services::archive::is_browsable_archive(&target_path);
+
+                        let mut item = FileLoadContext::new(
                             name,
                             target_path,
                             is_dir,
@@ -496,6 +502,7 @@ impl FluxApp {
                             is_symlink,
                             is_broken_symlink,
                         );
+                        item.is_virtual_dir = is_virtual_dir;
 
                         // WARNING: do not remove these four lines.
                         //
@@ -539,12 +546,9 @@ impl FluxApp {
             // Sort - run inside the capped pool so no new threads are spawned
             loader_pool().install(|| {
                 items.par_sort_unstable_by(move |a, b| {
-                    if a.is_dir != b.is_dir {
-                        return if folders_first {
-                            b.is_dir.cmp(&a.is_dir)
-                        } else {
-                            a.is_dir.cmp(&b.is_dir)
-                        };
+                    let group = a.cmp_folder_group(b, folders_first);
+                    if group != std::cmp::Ordering::Equal {
+                        return group;
                     }
 
                     let primary_order = match sort_strategy {

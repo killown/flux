@@ -162,7 +162,10 @@ impl FluxApp {
         let target = self
             .get_selected_path()
             .unwrap_or_else(|| self.current_path.clone());
-        if target.is_dir() {
+        // Archives drawn as folders accept a folder icon through the same flow.
+        let is_virtual_dir = self.config.ui.archives_as_folders
+            && crate::services::archive::is_browsable_archive(&target);
+        if target.is_dir() || is_virtual_dir {
             self.show_icon_picker(target, sender);
         }
     }

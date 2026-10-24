@@ -66,6 +66,12 @@ pub struct FileLoadContext {
     pub target_path: PathBuf,
     /// True if the item is a directory, false if it is a file or symlink.
     pub is_dir: bool,
+    /// True when a browsable archive is drawn as a folder (`ui.archives_as_folders`).
+    ///
+    /// Visual folder, semantic file: `is_dir` stays `false`, so drag and drop,
+    /// delete, terminal "Open Here" and `directory`-scoped menu actions treat the
+    /// item as the file it is. Only the icon, label and badge change.
+    pub is_virtual_dir: bool,
     /// Pre-processed string used for case-insensitive and natural sorting.
     pub sort_name: String,
     /// Pre-computed lowercase file extension for zero-alloc Type sorting.
@@ -111,6 +117,7 @@ impl FileLoadContext {
             display_name,
             target_path,
             is_dir,
+            is_virtual_dir: false,
             sort_name,
             sort_ext,
             thumbnail_path,
@@ -161,6 +168,7 @@ impl FileLoadContext {
             display_name,
             target_path,
             is_dir,
+            is_virtual_dir: false,
             sort_name,
             sort_ext,
             thumbnail_path,
@@ -174,6 +182,34 @@ impl FileLoadContext {
             mtime: OnceLock::from(mtime),
             is_foreign_owner: OnceLock::from(false),
             labels: OnceLock::new(),
+        }
+    }
+
+    /// True when the item is drawn and sorted together with the folders.
+    ///
+    /// Real directories and virtual-dir archives (`ui.archives_as_folders`)
+    /// both qualify. This is a presentation helper for sorting only: it must
+    /// never replace `is_dir` in drag and drop, delete, terminal "Open Here"
+    /// or `directory`-scoped menu actions, because a virtual dir is still a file.
+    #[inline]
+    pub fn is_folder_like(&self) -> bool {
+        self.is_dir || self.is_virtual_dir
+    }
+
+    /// Orders two items by folder grouping alone.
+    ///
+    /// Returns `Equal` when both sit in the same group, so the caller falls
+    /// through to its Name / Size / Date / Type comparison and its ascending or
+    /// descending direction. With `folders_first` the folder group leads,
+    /// otherwise it trails. Items with `is_virtual_dir == false` group exactly
+    /// as the old `is_dir` comparison did.
+    #[inline]
+    pub fn cmp_folder_group(&self, other: &Self, folders_first: bool) -> std::cmp::Ordering {
+        let (a, b) = (self.is_folder_like(), other.is_folder_like());
+        if folders_first {
+            b.cmp(&a)
+        } else {
+            a.cmp(&b)
         }
     }
 
@@ -390,5 +426,144 @@ fn format_size(bytes: u64) -> String {
         b if b >= MB => format!("{:.1} MB", b as f64 / MB as f64),
         b if b >= KB => format!("{:.0} KB", b as f64 / KB as f64),
         b => format!("{b} B"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::cmp::Ordering as Ord3;
+
+    /// Builds an item, then sets `is_virtual_dir` after construction because
+    /// `FileLoadContext::new` does not take it.
+    fn item(name: &str, is_dir: bool, is_virtual_dir: bool) -> FileLoadContext {
+        let mut it = FileLoadContext::new(
+            name.to_string(),
+            PathBuf::from(format!("/t/{name}")),
+            is_dir,
+            name.to_lowercase(),
+            String::new(),
+            None,
+            false,
+            None,
+            false,
+            false,
+        );
+        it.is_virtual_dir = is_virtual_dir;
+        it
+    }
+
+    /// Same shape as the loader comparators: group first, then Name, with the
+    /// direction flipped after the group check.
+    fn sorted(mut items: Vec<FileLoadContext>, folders_first: bool, asc: bool) -> Vec<String> {
+        items.sort_by(|a, b| {
+            let group = a.cmp_folder_group(b, folders_first);
+            if group != Ord3::Equal {
+                return group;
+            }
+            let by_name = a.sort_name.cmp(&b.sort_name);
+            if asc {
+                by_name
+            } else {
+                by_name.reverse()
+            }
+        });
+        items.into_iter().map(|i| i.display_name).collect()
+    }
+
+    /// `archives_as_folders` on: the zip carries `is_virtual_dir`.
+    fn mixed_on() -> Vec<FileLoadContext> {
+        vec![
+            item("z.txt", false, false),
+            item("n.zip", false, true),
+            item("a.txt", false, false),
+            item("m_dir", true, false),
+        ]
+    }
+
+    /// `archives_as_folders` off: the loader never sets the flag.
+    fn mixed_off() -> Vec<FileLoadContext> {
+        vec![
+            item("z.txt", false, false),
+            item("n.zip", false, false),
+            item("a.txt", false, false),
+            item("m_dir", true, false),
+        ]
+    }
+
+    #[test]
+    fn folder_like_covers_dirs_and_virtual_dirs_but_not_files() {
+        assert!(item("d", true, false).is_folder_like());
+        assert!(item("a.zip", false, true).is_folder_like());
+        assert!(!item("f", false, false).is_folder_like());
+    }
+
+    #[test]
+    fn virtual_dir_stays_a_semantic_file() {
+        let zip = item("a.zip", false, true);
+        assert!(!zip.is_dir);
+        assert!(zip.is_virtual_dir);
+    }
+
+    #[test]
+    fn option_on_folders_first_groups_zip_with_folder() {
+        assert_eq!(
+            sorted(mixed_on(), true, true),
+            ["m_dir", "n.zip", "a.txt", "z.txt"]
+        );
+    }
+
+    #[test]
+    fn option_on_folders_last_groups_zip_with_folder_at_the_end() {
+        assert_eq!(
+            sorted(mixed_on(), false, true),
+            ["a.txt", "z.txt", "m_dir", "n.zip"]
+        );
+    }
+
+    #[test]
+    fn option_off_zip_sorts_with_files() {
+        assert_eq!(
+            sorted(mixed_off(), true, true),
+            ["m_dir", "a.txt", "n.zip", "z.txt"]
+        );
+        assert_eq!(
+            sorted(mixed_off(), false, true),
+            ["a.txt", "n.zip", "z.txt", "m_dir"]
+        );
+    }
+
+    #[test]
+    fn descending_reverses_inside_each_group_only() {
+        assert_eq!(
+            sorted(mixed_on(), true, false),
+            ["n.zip", "m_dir", "z.txt", "a.txt"]
+        );
+        assert_eq!(
+            sorted(mixed_on(), false, false),
+            ["z.txt", "a.txt", "n.zip", "m_dir"]
+        );
+    }
+
+    #[test]
+    fn without_virtual_dirs_grouping_matches_the_old_is_dir_rule() {
+        for folders_first in [true, false] {
+            for a_dir in [true, false] {
+                for b_dir in [true, false] {
+                    let a = item("a", a_dir, false);
+                    let b = item("b", b_dir, false);
+                    let old = if a.is_dir != b.is_dir {
+                        if folders_first {
+                            b.is_dir.cmp(&a.is_dir)
+                        } else {
+                            a.is_dir.cmp(&b.is_dir)
+                        }
+                    } else {
+                        Ord3::Equal
+                    };
+                    assert_eq!(a.cmp_folder_group(&b, folders_first), old);
+                }
+            }
+        }
     }
 }

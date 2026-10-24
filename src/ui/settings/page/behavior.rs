@@ -54,6 +54,16 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
+                    set_title: &tr("Archives as Folders"),
+                    set_subtitle: &tr("Draw browsable archives like folders, select one to reveal the archive icon"),
+                    set_active: config.ui.archives_as_folders,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::model::SENDER.get() {
+                            let _ = s.send(AppMsg::SetArchivesAsFolders(switch.is_active()));
+                        }
+                    }
+                },
+                add = &adw::SwitchRow {
                     set_title: &tr("Auto-Show Git Diff"),
                     set_subtitle: &tr("Automatically open the diff panel when selecting a modified file"),
                     set_active: config.ui.auto_show_diff,

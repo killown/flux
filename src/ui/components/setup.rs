@@ -133,8 +133,22 @@ impl FileItem {
             .halign(gtk::Align::Center)
             .valign(gtk::Align::End)
             .vexpand(false)
-            .css_classes([constants::THUMBNAIL_CLASS])
+            .css_classes([constants::THUMBNAIL_CLASS, "flux-vd-folder"])
             .build();
+
+        // The archive's real icon for a virtual dir, stacked over `icon_widget`.
+        // It is transparent until the grid child is `:selected` (see `style.css`),
+        // so the swap needs no signal handler and no repaint.
+        let original_widget = gtk::Image::builder()
+            .halign(gtk::Align::Fill)
+            .valign(gtk::Align::Fill)
+            .can_target(false)
+            .css_classes([constants::THUMBNAIL_CLASS, "flux-vd-original"])
+            .build();
+
+        let icon_overlay = gtk::Overlay::new();
+        icon_overlay.set_child(Some(&icon_widget));
+        icon_overlay.add_overlay(&original_widget);
 
         let video_widget = gtk::Video::builder()
             .autoplay(true)
@@ -166,7 +180,7 @@ impl FileItem {
             .vhomogeneous(false)
             .build();
 
-        preview_stack.add_named(&icon_widget, Some("icon"));
+        preview_stack.add_named(&icon_overlay, Some("icon"));
         preview_stack.add_named(&video_frame, Some("video"));
         preview_stack.set_visible_child_name("icon");
 
@@ -176,6 +190,18 @@ impl FileItem {
             .visible(false)
             .build();
         git_badge.add_css_class("flux-git-badge");
+
+        // Static marker so an archive drawn as a folder still reads as an archive
+        // without hovering. Hidden until `bind_widgets` sees a virtual dir.
+        let archive_badge = gtk::Image::builder()
+            .icon_name("package-x-generic-symbolic")
+            .pixel_size(14)
+            .halign(gtk::Align::Start)
+            .valign(gtk::Align::Start)
+            .can_target(false)
+            .visible(false)
+            .css_classes(["flux-archive-badge"])
+            .build();
 
         let grab_timer = std::rc::Rc::new(std::cell::Cell::new(None::<glib::SourceId>));
 
@@ -391,6 +417,7 @@ impl FileItem {
                 },
 
                 add_overlay: &git_badge,
+                add_overlay: &archive_badge,
             }
         }
 
@@ -424,6 +451,9 @@ impl FileItem {
                 label_scroller,
                 scale_css_provider: None,
                 git_badge,
+                archive_badge,
+                original_widget,
+                icon_overlay,
             },
         )
     }

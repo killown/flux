@@ -112,7 +112,8 @@ impl FluxApp {
             // One allocation per item instead of two: both lookups key the
             // same path string.
             let path_key = item.target_path.to_string_lossy().to_string();
-            let custom_icon = config_file_icons
+            let is_virtual_dir = item.is_virtual_dir;
+            let file_custom_icon = config_file_icons
                 .get(&path_key)
                 .cloned()
                 .or_else(|| {
@@ -127,12 +128,41 @@ impl FluxApp {
                 })
                 .or_else(|| item.custom_icon.clone());
 
+            // A virtual dir shows the `folder_icons` override (the SetFolderIcon
+            // flow) or the plain folder icon. File-level icons belong to
+            // `original_icon`, which a selected card shows.
+            let custom_icon = if is_virtual_dir {
+                config_folder_icons.get(&path_key).cloned()
+            } else {
+                file_custom_icon.clone()
+            };
+
             let icon = if let Some(ref custom) = custom_icon {
                 gtk::gio::Icon::for_string(custom).unwrap_or_else(|_| {
-                    utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
+                    if is_virtual_dir {
+                        utils::icon::get_icon_for_virtual_dir(&item.target_path)
+                    } else {
+                        utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
+                    }
                 })
+            } else if is_virtual_dir {
+                utils::icon::get_icon_for_virtual_dir(&item.target_path)
             } else {
                 utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
+            };
+
+            // What a selected card shows: the archive's real file icon, never the folder override.
+            let original_icon = if is_virtual_dir {
+                Some(
+                    file_custom_icon
+                        .as_deref()
+                        .and_then(|c| gtk::gio::Icon::for_string(c).ok())
+                        .unwrap_or_else(|| {
+                            utils::icon::get_icon_for_path(&item.target_path, false)
+                        }),
+                )
+            } else {
+                None
             };
 
             let thumbnail = cached_thumbs
@@ -163,16 +193,25 @@ impl FluxApp {
                 .copied()
                 .unwrap_or_default();
 
+            // Session-only: a virtual dir hides its archive extensions in the label
+            // without touching the persisted `hidden_extensions`.
+            let hidden_exts = crate::utils::helpers::effective_hidden_extensions(
+                &item.display_name,
+                is_virtual_dir,
+                &self.config.ui.hidden_extensions,
+            );
             let display_label = crate::utils::helpers::format_display_label(
                 &item.display_name,
                 item.is_dir,
-                &self.config.ui.hidden_extensions,
+                &hidden_exts,
             );
 
             let labels = item.labels().clone();
             let file_item = FileItem::builder(item.display_name, item.target_path, icon)
                 .display_label(display_label)
                 .is_dir(item.is_dir)
+                .is_virtual_dir(is_virtual_dir)
+                .original_icon(original_icon)
                 .thumbnail(thumbnail)
                 .icon_size(if is_list_mode {
                     list_icon_size

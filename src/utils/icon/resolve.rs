@@ -9,7 +9,16 @@ use std::path::Path;
 
 /// Returns a GIO icon for `path` using the default (no-override) resolution.
 pub fn get_icon_for_path(path: &Path, is_dir: bool) -> adw::gio::Icon {
-    get_icon_for_path_with_override(path, is_dir, None)
+    get_icon_for_path_with_override(path, is_dir, None, false)
+}
+
+/// Returns the folder-style icon for an archive drawn as a folder.
+///
+/// A `folder_icons` entry for `path` (set through the `SetFolderIcon` flow) wins.
+/// Without one, this is the regular folder icon. The archive's real icon is
+/// resolved separately (`get_icon_for_path(path, false)`) and shown while the card is selected.
+pub fn get_icon_for_virtual_dir(path: &Path) -> adw::gio::Icon {
+    get_icon_for_path_with_override(path, false, None, true)
 }
 
 #[inline]
@@ -25,10 +34,14 @@ fn is_generic_icon_name(name: &str) -> bool {
 /// * `path`        - absolute path to the file or directory.
 /// * `is_dir`      - whether the entry is a directory.
 /// * `custom_icon` - optional GTK icon name to use instead of the derived default.
+/// * `is_virtual_dir` - the entry is a file drawn as a folder (an archive with
+///   `ui.archives_as_folders`). It resolves exactly like a directory: a
+///   `folder_icons` override, else the regular folder icon.
 pub fn get_icon_for_path_with_override(
     path: &Path,
     is_dir: bool,
     custom_icon: Option<&str>,
+    is_virtual_dir: bool,
 ) -> adw::gio::Icon {
     crate::hit!("get_icon_for_path");
 
@@ -59,8 +72,8 @@ pub fn get_icon_for_path_with_override(
 
     let path_str = path.to_string_lossy();
 
-    // ── Directories ─────────────────────────────────────────────────────────
-    if is_dir {
+    // ── Directories (and virtual dirs: folder overrides only) ───────────────
+    if is_dir || is_virtual_dir {
         let (folder_icons, _, _, _, _, _, _) = &*get_icon_config_lazy();
 
         let mut folder_match = folder_icons.get(path_str.as_ref());

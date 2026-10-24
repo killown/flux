@@ -63,6 +63,36 @@ pub fn is_recursive_paste(src: &Path, dest_dir: &Path) -> bool {
     dest_dir.starts_with(src)
 }
 
+/// Returns the hidden-extension list to use for one item's label.
+///
+/// For an ordinary item this is `base` unchanged. For an archive drawn as a
+/// folder (`is_virtual_dir`) it is `base` plus every browsable archive extension
+/// and the item's own extension (covers MIME-mapped ones such as `.cbz`), so the
+/// label reads like a folder name. The result is per call and session-only:
+/// `config.ui.hidden_extensions` is never modified.
+pub fn effective_hidden_extensions<'a>(
+    name: &str,
+    is_virtual_dir: bool,
+    base: &'a [String],
+) -> std::borrow::Cow<'a, [String]> {
+    if !is_virtual_dir {
+        return std::borrow::Cow::Borrowed(base);
+    }
+    let mut list: Vec<String> = base.to_vec();
+    list.extend(
+        crate::services::archive::BROWSABLE_ARCHIVE_EXTENSIONS
+            .iter()
+            .map(|e| (*e).to_string()),
+    );
+    if let Some(ext) = std::path::Path::new(name)
+        .extension()
+        .and_then(|e| e.to_str())
+    {
+        list.push(ext.to_string());
+    }
+    std::borrow::Cow::Owned(list)
+}
+
 /// Returns the label to display for a file in the grid or list.
 ///
 /// If `name`'s extension is in `hidden_extensions` (case-insensitive, optional leading dot),
@@ -154,4 +184,38 @@ pub fn format_display_label(name: &str, is_dir: bool, hidden_extensions: &[Strin
     }
 
     name.to_string()
+}
+
+#[cfg(test)]
+mod virtual_dir_label_tests {
+    use super::*;
+
+    #[test]
+    fn ordinary_items_keep_the_configured_list() {
+        let base = vec!["desktop".to_string()];
+        let eff = effective_hidden_extensions("a.zip", false, &base);
+        assert_eq!(&*eff, base.as_slice());
+        assert_eq!(format_display_label("a.zip", false, &eff), "a.zip");
+    }
+
+    #[test]
+    fn virtual_dir_hides_archive_extensions() {
+        let base: Vec<String> = Vec::new();
+        for (name, want) in [
+            ("a.zip", "a"),
+            ("photos.tar.gz", "photos"),
+            ("book.cbz", "book"),
+            ("DATA.7Z", "DATA"),
+        ] {
+            let eff = effective_hidden_extensions(name, true, &base);
+            assert_eq!(format_display_label(name, false, &eff), want, "{name}");
+        }
+    }
+
+    #[test]
+    fn persisted_list_is_not_mutated() {
+        let base = vec!["desktop".to_string()];
+        let _ = effective_hidden_extensions("a.zip", true, &base);
+        assert_eq!(base, vec!["desktop".to_string()]);
+    }
 }

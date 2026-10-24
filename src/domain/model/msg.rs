@@ -643,6 +643,9 @@ pub enum AppMsg {
     /// Sets the item-count threshold above which folders open in list mode.
     /// `0` disables the auto-switch. Persisted in the config file.
     SetAutoListThreshold(usize),
+    /// Draws browsable archives as folders in the file grid. Persisted in the
+    /// config file; archives stay files (`is_dir` is unchanged).
+    SetArchivesAsFolders(bool),
     /// Updates the default icon size.
     SetIconSize(i32),
     /// Updates the default icon size for list mode view.

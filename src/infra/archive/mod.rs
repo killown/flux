@@ -39,7 +39,7 @@ pub use backends::{read_cached_thumbnail, write_thumbnails_to_archive};
 pub use entry::{entries_to_load_contexts, ArchiveEntry};
 pub use error::ArchiveError;
 #[allow(unused_imports)]
-pub use format::{is_browsable_archive, is_supported_archive};
+pub use format::{is_browsable_archive, is_supported_archive, BROWSABLE_ARCHIVE_EXTENSIONS};
 #[allow(unused_imports)]
 pub use temp::{
     clear_archive_session_temp, flux_scratch_dir, purge_stale_scratch_dirs, register_temp_dir,

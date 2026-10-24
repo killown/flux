@@ -14,6 +14,8 @@ impl FileItem {
             path,
             icon,
             is_dir: false,
+            is_virtual_dir: false,
+            original_icon: None,
             size: 0,
             mtime: 0,
             icon_size: 32,
@@ -54,6 +56,8 @@ pub struct FileItemBuilder {
     path: PathBuf,
     icon: adw::gio::Icon,
     is_dir: bool,
+    is_virtual_dir: bool,
+    original_icon: Option<adw::gio::Icon>,
     size: u64,
     mtime: i64,
     icon_size: i32,
@@ -172,6 +176,16 @@ impl FileItemBuilder {
         self
     }
 
+    pub fn is_virtual_dir(mut self, v: bool) -> Self {
+        self.is_virtual_dir = v;
+        self
+    }
+
+    pub fn original_icon(mut self, v: Option<adw::gio::Icon>) -> Self {
+        self.original_icon = v;
+        self
+    }
+
     pub fn is_custom_icon(mut self, v: bool) -> Self {
         self.is_custom_icon = v;
         self
@@ -248,6 +262,8 @@ impl FileItemBuilder {
             size: self.size,
             thumbnail: self.thumbnail,
             is_dir: self.is_dir,
+            is_virtual_dir: self.is_virtual_dir,
+            original_icon: self.original_icon,
             path: self.path,
             icon_size: self.icon_size,
             is_editing: false,

@@ -1,5 +1,6 @@
-use crate::model::FluxApp;
+use crate::model::{AppMsg, FluxApp};
 use crate::utils;
+use relm4::prelude::*;
 
 impl FluxApp {
     pub fn handle_set_single_click(&mut self, val: bool) {
@@ -11,6 +12,22 @@ impl FluxApp {
     pub fn handle_set_auto_list_threshold(&mut self, val: usize) {
         self.config.ui.auto_list_threshold = val;
         utils::save_config(&self.config);
+    }
+
+    /// Toggles drawing browsable archives as folders in the file grid.
+    ///
+    /// Persists the setting, drops cached icons so the next paint re-resolves
+    /// them, and refreshes the view. `AppMsg::Refresh` also clears the folder
+    /// cache, so snapshots built with the old flag are not reused.
+    pub fn handle_set_archives_as_folders(
+        &mut self,
+        val: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        self.config.ui.archives_as_folders = val;
+        utils::save_config(&self.config);
+        crate::utils::icon::invalidate_themed_icon_cache();
+        sender.input(AppMsg::Refresh);
     }
 
     pub fn handle_toggle_single_click(&mut self) {

@@ -24,8 +24,8 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | Variable | Default | Declared in | Uses | Purpose |
 |---|---|---|---|---|
 | `--border-color` | `alpha(var(--color-fg), 0.1)` | `:root` | 16 | Hairline borders on the sidebar, list rows, inputs, tooltips and toasts. |
-| `--color-accent` | `@accent_bg_color` | `:root` | 24 | Primary accent background for selected and active elements. |
-| `--color-accent-fg` | `@accent_fg_color` | `:root` | 34 | Text and icons drawn on top of `--color-accent`. |
+| `--color-accent` | `@accent_bg_color` | `:root` | 25 | Primary accent background for selected and active elements. |
+| `--color-accent-fg` | `@accent_fg_color` | `:root` | 35 | Text and icons drawn on top of `--color-accent`. |
 | `--color-accent-text` | `@accent_color` | `:root` | 47 | Accent color for text, icons and borders on a plain background. |
 | `--color-card-bg` | `@card_bg_color` | `:root` | 1 | Background color of file cards in the grid view. |
 | `--color-danger` | `@red_3` | `:root` | 22 | Errors and destructive actions. |

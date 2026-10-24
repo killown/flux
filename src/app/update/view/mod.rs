@@ -116,6 +116,7 @@ pub(super) fn handle(
         AppMsg::ToggleCurrentFoldersFirst => app.handle_toggle_current_folders_first(sender),
         AppMsg::SetSingleClick(val) => app.handle_set_single_click(val),
         AppMsg::SetAutoListThreshold(val) => app.handle_set_auto_list_threshold(val),
+        AppMsg::SetArchivesAsFolders(val) => app.handle_set_archives_as_folders(val, sender),
         AppMsg::ToggleSingleClick => app.handle_toggle_single_click(),
         AppMsg::SetScrolledToBottom(at_bottom) => app.scrolled_to_bottom = at_bottom,
 

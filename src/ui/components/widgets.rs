@@ -13,4 +13,11 @@ pub struct FileWidgets {
     pub label_scroller: gtk::ScrolledWindow,
     pub scale_css_provider: Option<gtk::CssProvider>,
     pub git_badge: gtk::Label,
+    /// Always-visible archive marker shown on virtual-dir cards.
+    pub archive_badge: gtk::Image,
+    /// The archive's real icon, stacked over `icon_widget` and revealed by CSS
+    /// while the card is selected. Empty for everything but virtual dirs.
+    pub original_widget: gtk::Image,
+    /// Holds `icon_widget` and `original_widget`; carries `flux-vd` on virtual dirs.
+    pub icon_overlay: gtk::Overlay,
 }

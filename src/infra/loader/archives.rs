@@ -89,6 +89,7 @@ impl FluxApp {
         let sort_strategy = self.sort_by;
         let sort_ascending = self.sort_ascending;
         let folders_first = self.config.ui.folders_first;
+        let archives_as_folders = self.config.ui.archives_as_folders;
         let extension_globset = self.extension_globset.clone();
 
         match result {
@@ -128,15 +129,25 @@ impl FluxApp {
                     });
                 }
 
+                // Resolve the virtual-dir flag before sorting, so archives nested
+                // inside this archive group with the folders. Runs in the Rayon
+                // pool because `is_browsable_archive` can fall back to MIME sniffing.
+                // Skipped entirely when the option is off, so nothing changes.
+                if archives_as_folders {
+                    loader_pool().install(|| {
+                        items.par_iter_mut().for_each(|item| {
+                            item.is_virtual_dir =
+                                !item.is_dir && archive::is_browsable_archive(&item.target_path);
+                        });
+                    });
+                }
+
                 // Sort entries
                 loader_pool().install(|| {
                     items.par_sort_unstable_by(move |a, b| {
-                        if a.is_dir != b.is_dir {
-                            return if folders_first {
-                                b.is_dir.cmp(&a.is_dir)
-                            } else {
-                                a.is_dir.cmp(&b.is_dir)
-                            };
+                        let group = a.cmp_folder_group(b, folders_first);
+                        if group != std::cmp::Ordering::Equal {
+                            return group;
                         }
 
                         // In directory scan sort comparator:
@@ -183,7 +194,19 @@ impl FluxApp {
                         false
                     };
 
-                    let icon = utils::icon::get_icon_for_path(&item.target_path, item.is_dir);
+                    // Archives nested inside an archive follow the same opt-in rule.
+                    let is_virtual_dir = item.is_virtual_dir;
+
+                    let icon = if is_virtual_dir {
+                        utils::icon::get_icon_for_virtual_dir(&item.target_path)
+                    } else {
+                        utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
+                    };
+                    let original_icon = if is_virtual_dir {
+                        Some(utils::icon::get_icon_for_path(&item.target_path, false))
+                    } else {
+                        None
+                    };
 
                     // Collect visual media files for thumbnail generation
                     if !item.is_dir {
@@ -194,16 +217,23 @@ impl FluxApp {
                         }
                     }
 
+                    let hidden_exts = crate::utils::helpers::effective_hidden_extensions(
+                        &item.display_name,
+                        is_virtual_dir,
+                        &self.config.ui.hidden_extensions,
+                    );
                     let display_label = crate::utils::helpers::format_display_label(
                         &item.display_name,
                         item.is_dir,
-                        &self.config.ui.hidden_extensions,
+                        &hidden_exts,
                     );
 
                     self.tabs[self.active_tab_index].files.append(
                         FileItem::builder(item.display_name.clone(), item.target_path, icon)
                             .display_label(display_label)
                             .is_dir(item.is_dir)
+                            .is_virtual_dir(is_virtual_dir)
+                            .original_icon(original_icon)
                             .size(size)
                             .mtime(mtime)
                             .is_empty(is_empty)
