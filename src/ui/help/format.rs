@@ -1,3 +1,4 @@
+use crate::i18n::tr;
 use crate::model::Config;
 
 /// Convert a config shortcut string (e.g. `<Primary>F7`) into a human-readable
@@ -8,6 +9,9 @@ pub fn format_shortcut(shortcut: Option<String>, default: &str) -> String {
     if raw.trim().is_empty() {
         return default.to_string();
     }
+    if raw.trim() == crate::ui::keymap::DISABLED {
+        return tr("Disabled");
+    }
     raw.split('|')
         .map(format_chord)
         .collect::<Vec<_>>()
@@ -17,7 +21,7 @@ pub fn format_shortcut(shortcut: Option<String>, default: &str) -> String {
 /// Formats a single accelerator chord (no `|` alternatives), e.g.
 /// `<Primary><Shift>f` becomes `Ctrl + Shift + F`.
 ///
-/// Modifier names are matched case-insensitively; unknown `<...>` prefixes are
+/// Modifier names are matched case-insensitively, unknown `<...>` prefixes are
 /// left untouched.
 fn format_chord(chord: &str) -> String {
     let mut rest = chord.trim();

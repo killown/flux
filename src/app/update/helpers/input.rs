@@ -251,6 +251,12 @@ impl FluxApp {
     /// widget that installs its own key controller, which is exactly what
     /// used to break panel-toggle chords once the user clicked inside a
     /// panel.
+    ///
+    /// `Delete` is deliberately **not** registered here. It is a
+    /// configurable shortcut (`[shortcuts].delete`), wired through
+    /// `KeyMap` and `ui/inputs/shortcuts.rs`. A hardcoded copy in this
+    /// controller would bypass the keymap, so `delete = "disabled"` and a
+    /// rebind to another chord would both keep firing on a bare `Delete`.
     pub fn setup_shortcuts(
         controller: &gtk::ShortcutController,
         sender: &AsyncComponentSender<Self>,
@@ -258,7 +264,6 @@ impl FluxApp {
         let shortcuts = [
             ("F1", AppMsg::ShowHelp),
             ("<Shift>s", AppMsg::CycleFolderPriority),
-            ("Delete", AppMsg::Delete),
         ];
 
         for (trigger_str, msg) in shortcuts {

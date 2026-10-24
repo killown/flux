@@ -4427,3 +4427,31 @@ msgstr "Nenhuma alteração preparada"
 #: src/ui/ops/git.rs
 msgid "No unstaged changes"
 msgstr "Nenhuma alteração não preparada"
+
+# ============================================================
+# Shortcut picker - src/ui/settings/page/shortcut_picker.rs
+# ============================================================
+
+#: src/ui/settings/page/shortcut_picker.rs
+msgid "Disable"
+msgstr "Desativar"
+
+#: src/ui/settings/page/shortcut_picker.rs
+msgid "Disable this shortcut"
+msgstr "Desativar este atalho"
+
+#: src/ui/settings/page/shortcut_picker.rs
+msgid "Restore"
+msgstr "Restaurar"
+
+#: src/ui/settings/page/shortcut_picker.rs
+msgid "Restore the default shortcut"
+msgstr "Restaurar o atalho padrão"
+
+#: src/ui/settings/page/shortcut_picker.rs src/ui/help/format.rs
+msgid "Disabled"
+msgstr "Desativado"
+
+#: src/ui/settings/page/shortcut_picker.rs
+msgid "Click the toggle to restore the default"
+msgstr "Clique no botão ao lado para restaurar o padrão"

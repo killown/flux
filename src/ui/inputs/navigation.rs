@@ -42,6 +42,11 @@ pub fn setup_navigation(
 }
 
 /// History back/forward shortcuts (driven by the resolved [`KeyMap`]).
+///
+/// Each field is an `Option`: a `None` means the user disabled the shortcut
+/// in `config.toml` (`back = "disabled"`), so no `gtk::Shortcut` is installed
+/// for it. A disabled chord therefore falls through to the focused widget
+/// exactly as if it were never registered.
 pub fn setup_history(
     window: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
@@ -49,23 +54,27 @@ pub fn setup_history(
 ) {
     let history = gtk::ShortcutController::new();
 
-    let sender_back = sender.clone();
-    history.add_shortcut(gtk::Shortcut::new(
-        Some(keymap.back.clone()),
-        Some(gtk::CallbackAction::new(move |_, _| {
-            sender_back.input(AppMsg::GoBack);
-            glib::Propagation::Stop
-        })),
-    ));
+    if let Some(back_trigger) = keymap.back.clone() {
+        let sender_back = sender.clone();
+        history.add_shortcut(gtk::Shortcut::new(
+            Some(back_trigger),
+            Some(gtk::CallbackAction::new(move |_, _| {
+                sender_back.input(AppMsg::GoBack);
+                glib::Propagation::Stop
+            })),
+        ));
+    }
 
-    let sender_forward = sender;
-    history.add_shortcut(gtk::Shortcut::new(
-        Some(keymap.forward.clone()),
-        Some(gtk::CallbackAction::new(move |_, _| {
-            sender_forward.input(AppMsg::GoForward);
-            glib::Propagation::Stop
-        })),
-    ));
+    if let Some(forward_trigger) = keymap.forward.clone() {
+        let sender_forward = sender;
+        history.add_shortcut(gtk::Shortcut::new(
+            Some(forward_trigger),
+            Some(gtk::CallbackAction::new(move |_, _| {
+                sender_forward.input(AppMsg::GoForward);
+                glib::Propagation::Stop
+            })),
+        ));
+    }
 
     window.add_controller(history);
 }

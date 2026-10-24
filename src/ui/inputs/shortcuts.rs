@@ -16,17 +16,24 @@ pub fn setup_global_shortcuts(
     sc.set_scope(gtk::ShortcutScope::Managed);
 
     // Helper to cut the boilerplate: register a trigger → AppMsg.
+    //
+    // The trigger is an `Option<gtk::ShortcutTrigger>` because `config.toml`
+    // can set a shortcut to `"disabled"`, which `KeyMap` resolves to `None`.
+    // A disabled shortcut must register nothing at all, not fall back to a
+    // default: otherwise the chord would still fire.
     macro_rules! bind_msg {
         ($trigger:expr, $msg:expr) => {{
-            let s = sender.clone();
-            let msg = $msg;
-            sc.add_shortcut(gtk::Shortcut::new(
-                Some($trigger),
-                Some(gtk::CallbackAction::new(move |_, _| {
-                    s.input(msg.clone());
-                    glib::Propagation::Stop
-                })),
-            ));
+            if let Some(trigger) = $trigger.clone() {
+                let s = sender.clone();
+                let msg = $msg;
+                sc.add_shortcut(gtk::Shortcut::new(
+                    Some(trigger),
+                    Some(gtk::CallbackAction::new(move |_, _| {
+                        s.input(msg.clone());
+                        glib::Propagation::Stop
+                    })),
+                ));
+            }
         }};
     }
 
@@ -79,33 +86,38 @@ pub fn setup_global_shortcuts(
     window.add_controller(sc);
 
     // ── Search has a special guard: don't steal focus during rename ───────
-    let search_sc = gtk::ShortcutController::new();
-    let s_search = sender.clone();
-    let search_trigger = keymap.search.clone();
-    search_sc.add_shortcut(gtk::Shortcut::new(
-        Some(search_trigger),
-        Some(gtk::CallbackAction::new(move |widget, _| {
-            let rename_is_focused = widget
-                .root()
-                .and_then(|root| root.focus())
-                .map(|focused: gtk::Widget| {
-                    focused
-                        .css_classes()
-                        .iter()
-                        .any(|c: &gtk::glib::GString| c.as_str() == "flux-rename-entry")
-                })
-                .unwrap_or(false);
+    //
+    // The trigger is resolved through `parse_trigger_opt`, so `search =
+    // "disabled"` skips the controller entirely instead of registering a
+    // dead chord.
+    if let Some(search_trigger) = keymap.search.clone() {
+        let search_sc = gtk::ShortcutController::new();
+        let s_search = sender.clone();
+        search_sc.add_shortcut(gtk::Shortcut::new(
+            Some(search_trigger),
+            Some(gtk::CallbackAction::new(move |widget, _| {
+                let rename_is_focused = widget
+                    .root()
+                    .and_then(|root| root.focus())
+                    .map(|focused: gtk::Widget| {
+                        focused
+                            .css_classes()
+                            .iter()
+                            .any(|c: &gtk::glib::GString| c.as_str() == "flux-rename-entry")
+                    })
+                    .unwrap_or(false);
 
-            if rename_is_focused {
-                return glib::Propagation::Proceed;
-            }
+                if rename_is_focused {
+                    return glib::Propagation::Proceed;
+                }
 
-            s_search.input(AppMsg::ToggleSearchPanel);
-            s_search.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
-            glib::Propagation::Stop
-        })),
-    ));
-    window.add_controller(search_sc);
+                s_search.input(AppMsg::ToggleSearchPanel);
+                s_search.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
+                glib::Propagation::Stop
+            })),
+        ));
+        window.add_controller(search_sc);
+    }
 }
 
 /// Settings window shortcut (needs the parent window for `transient_for`).
@@ -113,7 +125,12 @@ pub fn setup_settings_shortcut(window: &impl IsA<gtk::Widget>, keymap: &KeyMap) 
     let parent_window = window.root().and_downcast::<gtk::Window>();
     let sc = gtk::ShortcutController::new();
     sc.set_scope(gtk::ShortcutScope::Managed);
-    let trigger = keymap.settings.clone();
+
+    // `settings = "disabled"` resolves to `None`, so the controller is never
+    // installed and F10 (or whatever it was rebound to) does nothing.
+    let Some(trigger) = keymap.settings.clone() else {
+        return;
+    };
 
     sc.add_shortcut(gtk::Shortcut::new(
         Some(trigger),

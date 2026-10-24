@@ -39,17 +39,29 @@ fn trigger_matches(ctrl: &gtk::EventControllerKey, trigger: &gtk::ShortcutTrigge
 
 /// Builds the capture-phase bindings backed by the resolved [`KeyMap`].
 ///
+/// Every `KeyMap` field is an `Option`: a `None` means the user set the
+/// shortcut to `"disabled"` in `config.toml`, so the binding is skipped
+/// entirely rather than substituted with a default. A disabled chord
+/// therefore falls through to the focused widget exactly as if it were
+/// never registered.
+///
 /// # Arguments
 ///
 /// * `keymap` - The resolved key map holding the user's (or default) triggers.
 fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
-    let bind = |trigger: &gtk::ShortcutTrigger, msg: AppMsg, yield_to: Yield| CaptureBinding {
-        trigger: trigger.clone(),
-        msg,
-        yield_to,
+    let bind = |trigger: &Option<gtk::ShortcutTrigger>,
+                msg: AppMsg,
+                yield_to: Yield|
+     -> Option<CaptureBinding> {
+        let trigger = trigger.clone()?;
+        Some(CaptureBinding {
+            trigger,
+            msg,
+            yield_to,
+        })
     };
 
-    vec![
+    [
         // Ctrl+Alt+/ and Ctrl+Alt+\ folder cycle. Consumed at capture phase so the
         // ShortcutController (Ctrl+W = close tab, etc.) never sees the chord.
         bind(
@@ -142,6 +154,9 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
         bind(&keymap.undo, AppMsg::Undo, Yield::Terminal),
         bind(&keymap.redo, AppMsg::Redo, Yield::Terminal),
     ]
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 /// Capture-phase key controller. Handles shortcuts that must win over
