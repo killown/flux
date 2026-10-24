@@ -13,6 +13,33 @@ impl FluxApp {
         tab_index: usize,
         sender: AsyncComponentSender<Self>,
     ) {
+        self.spawn_thumbnail_loader_inner(media_tasks, current_session, tab_index, sender, false);
+    }
+
+    /// Same as [`Self::spawn_thumbnail_loader`], but each task first checks,
+    /// off the GTK thread, that no download scratch file (`.part`,
+    /// `.crdownload`, ...) sits next to the target, and skips it if one does.
+    ///
+    /// Used by the file watcher: the check scans the whole parent directory,
+    /// which must not run inside the event handler.
+    pub fn spawn_thumbnail_loader_unless_downloading(
+        &self,
+        media_tasks: Vec<(u32, PathBuf)>,
+        current_session: u64,
+        tab_index: usize,
+        sender: AsyncComponentSender<Self>,
+    ) {
+        self.spawn_thumbnail_loader_inner(media_tasks, current_session, tab_index, sender, true);
+    }
+
+    fn spawn_thumbnail_loader_inner(
+        &self,
+        media_tasks: Vec<(u32, PathBuf)>,
+        current_session: u64,
+        tab_index: usize,
+        sender: AsyncComponentSender<Self>,
+        skip_active_downloads: bool,
+    ) {
         crate::hit!("spawn_thumbnail_loader");
         let session_arc = self.load_id.clone();
 
@@ -35,10 +62,29 @@ impl FluxApp {
                     let inner_session = session_arc.clone();
                     let session_id = current_session;
                     let sem = sem.clone();
+                    let check_downloads = skip_active_downloads;
 
                     async move {
                         if inner_session.load(Ordering::Acquire) != session_id {
                             return;
+                        }
+
+                        // A scratch sibling means the download is still in
+                        // progress and the file is not safe to thumbnail yet.
+                        // The scan reads the whole parent directory, so it runs
+                        // on the blocking pool, before any FD permit is taken.
+                        if check_downloads {
+                            let probe = media_path.clone();
+                            let downloading = tokio::task::spawn_blocking(move || {
+                                crate::app::update::watcher::has_active_download_sibling(&probe)
+                            })
+                            .await
+                            .unwrap_or(false);
+
+                            if downloading || inner_session.load(Ordering::Acquire) != session_id
+                            {
+                                return;
+                            }
                         }
 
                         // Acquire a permit before opening any file. A stale

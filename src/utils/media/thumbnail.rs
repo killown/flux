@@ -104,6 +104,92 @@ fn is_ephemeral_source(path: &Path) -> bool {
     false
 }
 
+/// Which thumbnail pipeline (if any) applies to a path. Decided from the
+/// extension, falling back to a MIME guess on the file name. No file I/O.
+struct ThumbnailKind {
+    pdf: bool,
+    font: bool,
+    exe: bool,
+    audio: bool,
+    raw: bool,
+    img: bool,
+    vid: bool,
+}
+
+/// Single source of truth for "what kind of thumbnail is this?", shared by
+/// `generate_thumbnail_inner` and `may_have_thumbnail` so they cannot drift.
+/// `ext` must already be lowercase.
+fn classify_thumbnail_kind(path: &Path, ext: &str) -> ThumbnailKind {
+    let is_pdf_file = ext == "pdf";
+    let is_font_file = !is_pdf_file && matches!(ext, "ttf" | "otf" | "woff" | "woff2" | "ttc");
+    let is_exe_file = !is_pdf_file && !is_font_file && ext == "exe";
+    let is_audio = !is_pdf_file
+        && !is_font_file
+        && !is_exe_file
+        && matches!(
+            ext,
+            "mp3" | "flac" | "m4a" | "ogg" | "wav" | "aac" | "wma" | "opus"
+        );
+
+    // RAW files go through `raw-thumbnailer`, which extracts the camera's
+    // embedded JPEG preview instead of decoding sensor data. Classified as
+    // image so they honor `thumbnail_types.images` without a separate toggle.
+    let is_raw_file = !is_pdf_file
+        && !is_font_file
+        && !is_exe_file
+        && !is_audio
+        && crate::utils::media::is_raw_image_ext(ext);
+
+    let (is_img, is_vid) =
+        if !is_pdf_file && !is_font_file && !is_exe_file && !is_audio && !is_raw_file {
+            match ext {
+                "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp"
+                | "tiff" | "tif" | "jxl" | "svg" | "ico" => (true, false),
+                "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg"
+                | "ts" | "ogv" => (false, true),
+                _ => {
+                    let filename = path.file_name().unwrap_or_default().to_string_lossy();
+                    let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
+                    (ct.starts_with("image/"), ct.starts_with("video/"))
+                }
+            }
+        } else {
+            (false, false)
+        };
+
+    ThumbnailKind {
+        pdf: is_pdf_file,
+        font: is_font_file,
+        exe: is_exe_file,
+        audio: is_audio,
+        raw: is_raw_file,
+        img: is_img,
+        vid: is_vid,
+    }
+}
+
+/// Cheap, I/O-free pre-check: could `generate_thumbnail_sync` ever produce a
+/// texture for this path? Deliberately ignores user config (`thumbnail_types`,
+/// `show_thumbnails`): it only answers "is this a kind of file we thumbnail at
+/// all", so a `false` here means the generator would return `None` anyway.
+pub(crate) fn may_have_thumbnail(path: &Path) -> bool {
+    if path
+        .to_string_lossy()
+        .starts_with(crate::services::archive::ARCHIVE_URI)
+    {
+        return true;
+    }
+
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase())
+        .unwrap_or_default();
+
+    let k = classify_thumbnail_kind(path, &ext);
+    k.pdf || k.font || k.exe || k.audio || k.raw || k.img || k.vid
+}
+
 pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
     crate::hit!("generate_thumbnail_sync");
     let path_str = path.to_string_lossy();
@@ -130,43 +216,15 @@ fn generate_thumbnail_inner(path: &std::path::Path, ephemeral: bool) -> Option<g
         .map(|e| e.to_ascii_lowercase())
         .unwrap_or_default();
 
-    let is_pdf_file = ext == "pdf";
-    let is_font_file =
-        !is_pdf_file && matches!(ext.as_str(), "ttf" | "otf" | "woff" | "woff2" | "ttc");
-    let is_exe_file = !is_pdf_file && !is_font_file && ext == "exe";
-    let is_audio = !is_pdf_file
-        && !is_font_file
-        && !is_exe_file
-        && matches!(
-            ext.as_str(),
-            "mp3" | "flac" | "m4a" | "ogg" | "wav" | "aac" | "wma" | "opus"
-        );
-
-    // RAW files go through `raw-thumbnailer`, which extracts the camera's
-    // embedded JPEG preview instead of decoding sensor data. Classified as
-    // image so they honor `thumbnail_types.images` without a separate toggle.
-    let is_raw_file = !is_pdf_file
-        && !is_font_file
-        && !is_exe_file
-        && !is_audio
-        && crate::utils::media::is_raw_image_ext(&ext);
-
-    let (is_img, is_vid) =
-        if !is_pdf_file && !is_font_file && !is_exe_file && !is_audio && !is_raw_file {
-            match ext.as_str() {
-                "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp"
-                | "tiff" | "tif" | "jxl" | "svg" | "ico" => (true, false),
-                "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg"
-                | "ts" | "ogv" => (false, true),
-                _ => {
-                    let filename = path.file_name().unwrap_or_default().to_string_lossy();
-                    let (ct, _) = adw::gio::content_type_guess(Some(filename.as_ref()), None);
-                    (ct.starts_with("image/"), ct.starts_with("video/"))
-                }
-            }
-        } else {
-            (false, false)
-        };
+    let ThumbnailKind {
+        pdf: is_pdf_file,
+        font: is_font_file,
+        exe: is_exe_file,
+        audio: is_audio,
+        raw: is_raw_file,
+        img: is_img,
+        vid: is_vid,
+    } = classify_thumbnail_kind(path, &ext);
 
     let is_supported = (is_pdf_file && thumb_types.pdfs)
         || (is_font_file && thumb_types.fonts)

@@ -75,7 +75,11 @@ fn is_download_temp(path: &Path) -> bool {
 ///
 /// Matching is done on the file stem: `DSC_4207.NEF` matches
 /// `DSC_4207.L8Koxwkl.NEF.part` because both start with `DSC_4207`.
-fn has_active_download_sibling(path: &Path) -> bool {
+///
+/// This reads the entire parent directory with blocking I/O, so it must not
+/// run on the GTK thread. The watcher reaches it through
+/// `spawn_thumbnail_loader_unless_downloading`, which runs it on the blocking pool.
+pub(crate) fn has_active_download_sibling(path: &Path) -> bool {
     crate::hit!("has_active_download_sibling");
     let Some(parent) = path.parent() else {
         return false;
@@ -242,9 +246,9 @@ impl FluxApp {
                 self.tabs[self.active_tab_index].files.insert(idx, item);
             }
 
-            if needs_thumbnail && !has_active_download_sibling(&path) {
+            if needs_thumbnail && utils::media::may_have_thumbnail(&path) {
                 let current_session = self.load_id.load(Ordering::SeqCst);
-                self.spawn_thumbnail_loader(
+                self.spawn_thumbnail_loader_unless_downloading(
                     vec![(grid_idx, path.clone())],
                     current_session,
                     self.active_tab_index,
@@ -287,13 +291,14 @@ impl FluxApp {
                 .build(),
         );
 
-        // Spawn a thumbnail only when no download scratch file is present.
-        // Firefox writes `DSC_4207.L8Koxwkl.NEF.part` next to `DSC_4207.NEF`
-        // for the duration of the download, once the rename fires, the
-        // sibling is gone and this check passes.
-        if !is_dir && !has_active_download_sibling(&path) {
+        // Spawn a thumbnail only for file kinds we thumbnail, and only when no
+        // download scratch file is present. Firefox writes
+        // `DSC_4207.L8Koxwkl.NEF.part` next to `DSC_4207.NEF` for the duration
+        // of the download, once the rename fires, the sibling is gone and the
+        // check passes. The sibling scan itself runs off the GTK thread.
+        if !is_dir && utils::media::may_have_thumbnail(&path) {
             let current_session = self.load_id.load(Ordering::SeqCst);
-            self.spawn_thumbnail_loader(
+            self.spawn_thumbnail_loader_unless_downloading(
                 vec![(grid_idx, path.clone())],
                 current_session,
                 self.active_tab_index,

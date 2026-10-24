@@ -36,5 +36,5 @@ pub use video::probe_media_duration;
 
 // Crate-internal API surface (preserves original `pub(crate)` items).
 pub use audio::audio_thumbnail;
-pub(crate) use thumbnail::generate_thumbnail_sync;
+pub(crate) use thumbnail::{generate_thumbnail_sync, may_have_thumbnail};
 pub(crate) use video::extract_video_frame;
