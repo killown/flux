@@ -6,7 +6,7 @@ pub fn build(_config: &Config) -> adw::PreferencesPage {
     let g = group(
         &tr("Quick List Shortcuts"),
         vec![
-            row(&tr("Add selection or current folder to list"), "Insert"),
+            row(&tr("Add current folder to list"), "Insert"),
             row(
                 &tr("Pin selection or current folder to sidebar permanently"),
                 "Ctrl + Shift + Insert",

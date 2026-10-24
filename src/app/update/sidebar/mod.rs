@@ -474,6 +474,7 @@ pub(super) fn handle(
         AppMsg::ShowSidebarIconPicker(path) => app.show_sidebar_icon_picker(path, sender),
 
         AppMsg::AddExclusive(p) => app.handle_add_exclusive(p, sender),
+        AppMsg::AddCurrentFolderExclusive => app.handle_add_current_folder_exclusive(sender),
         AppMsg::ClearExclusive => app.handle_clear_exclusive(sender),
         AppMsg::RemoveQuickItem(p) => app.handle_remove_quick_item(p, sender),
         AppMsg::RebuildQuickPanel => app.handle_rebuild_quick_panel(sender),

@@ -2,7 +2,7 @@ use crate::model::{AppMsg, FluxApp};
 use gtk::gio;
 use gtk::prelude::*;
 use relm4::prelude::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 impl FluxApp {
     pub fn handle_perform_quick_transfer(
@@ -96,6 +96,14 @@ impl FluxApp {
         }
     }
 
+    /// Adds the folder shown in the grid to the quick panel list, whatever is
+    /// selected. Unlike [`Self::handle_add_exclusive`] with `None`, which prefers
+    /// the selection.
+    pub fn handle_add_current_folder_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_add_current_folder_exclusive");
+        self.handle_add_exclusive(Some(self.current_path.clone()), sender);
+    }
+
     /// Clears all entries from the temporary quick panel list.
     pub fn handle_clear_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_clear_exclusive");
@@ -127,13 +135,10 @@ impl FluxApp {
         }
         let active_idx = self.exclusive_index;
         for (idx, path) in self.exclusive_list.iter().enumerate() {
-            let label = path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_else(|| path.to_string_lossy().into_owned());
+            let label = quick_item_label(path);
 
             let btn = gtk::Button::with_label(&label);
-            btn.set_tooltip_text(Some(&path.to_string_lossy()));
+            btn.set_tooltip_text(Some(&quick_item_tooltip(path)));
             btn.add_css_class("flat");
             if active_idx == Some(idx) {
                 btn.add_css_class("suggested-action");
@@ -288,5 +293,41 @@ impl FluxApp {
             sender.input(AppMsg::Navigate(target));
             sender.input(AppMsg::RebuildQuickPanel);
         }
+    }
+}
+
+/// Short name for a quick-list button.
+///
+/// An `archive://` location is shown by what it points at: the archive's file
+/// name without its extension at the root, or the folder name inside it.
+/// Anything else uses its last path component.
+fn quick_item_label(path: &Path) -> String {
+    if let Some((archive, inner)) =
+        crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+    {
+        if let Some(name) = inner.trim_matches('/').rsplit('/').next() {
+            if !name.is_empty() {
+                return name.to_string();
+            }
+        }
+        if let Some(stem) = archive.file_stem().map(|s| s.to_string_lossy()) {
+            // `.tar.gz` and friends: the stem still ends in `.tar`.
+            return stem.strip_suffix(".tar").unwrap_or(&stem).to_string();
+        }
+    }
+    path.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| path.to_string_lossy().into_owned())
+}
+
+/// Tooltip for a quick-list button: the real location, with an `archive://`
+/// URI shown as the archive's path followed by the folder inside it.
+fn quick_item_tooltip(path: &Path) -> String {
+    match crate::services::archive::parse_archive_uri(&path.to_string_lossy()) {
+        Some((archive, inner)) => archive
+            .join(inner.trim_matches('/'))
+            .to_string_lossy()
+            .into(),
+        None => path.to_string_lossy().into_owned(),
     }
 }

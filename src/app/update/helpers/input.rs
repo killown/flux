@@ -116,7 +116,7 @@ impl FluxApp {
             if modifiers == gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK {
                 sender.input(AppMsg::AddToSidebarPermanent);
             } else {
-                sender.input(AppMsg::AddExclusive(None));
+                sender.input(AppMsg::AddCurrentFolderExclusive);
             }
             return glib::Propagation::Stop;
         }

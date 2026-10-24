@@ -718,8 +718,11 @@ pub enum AppMsg {
     ///
     /// `Some(path)` targets an explicit path (e.g. from a context menu action).
     /// `None` resolves the path from the current selection or working directory,
-    /// which is the behaviour of the `Insert` keyboard shortcut.
+    /// which is what the `add_to_quick_list` menu action does.
     AddExclusive(Option<PathBuf>),
+    /// Add the folder shown in the grid to the exclusive navigation list,
+    /// ignoring the selection (the `Insert` keyboard shortcut).
+    AddCurrentFolderExclusive,
     /// Clear all items from the exclusive navigation list.
     ClearExclusive,
     /// Switch to the next directory in the exclusive list.

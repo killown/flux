@@ -241,7 +241,7 @@ pub fn setup_capture(
                 glib::Propagation::Stop
             }
             gdk::Key::Insert => {
-                sender.input(AppMsg::AddExclusive(None));
+                sender.input(AppMsg::AddCurrentFolderExclusive);
                 glib::Propagation::Stop
             }
             gdk::Key::End if is_ctrl => {
