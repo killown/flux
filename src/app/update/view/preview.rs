@@ -1322,14 +1322,47 @@ fn set_wide_preview_layout(
     use gtk::prelude::*;
 
     let row = revealer.parent();
-    let total = row.as_ref().map_or(0, |r| r.width());
+    let row_width = row.as_ref().map_or(0, |r| r.width());
 
     // The window can never be wider than the monitor, so half of it caps the fixed panel.
     let max_window = match monitor_width(revealer) {
-        0 => total,
+        0 => row_width,
         w => w,
     };
+    // A row that already overshot the monitor must not feed its own width back into the
+    // split, otherwise every list/grid toggle would grow the window further.
+    let total = if max_window > 0 {
+        row_width.min(max_window)
+    } else {
+        row_width
+    };
     let max_panel = (max_window / 2).max(WIDE_PREVIEW_PANEL_MIN_WIDTH);
+
+    // Measure the file column's real, CSS-aware minimum width with our own request cleared,
+    // so list rows that cannot shrink are accounted for before the panel gets its share.
+    let mut files_measured_min = 0;
+    let mut files_measured_nat = 0;
+    let mut sibling = row.as_ref().and_then(|row| row.first_child());
+    while let Some(widget) = sibling {
+        if widget.is::<adw::ToolbarView>() {
+            widget.set_width_request(-1);
+            if widget.is_visible() {
+                let (min, nat, _, _) = widget.measure(gtk::Orientation::Horizontal, -1);
+                files_measured_min = files_measured_min.max(min);
+                files_measured_nat = files_measured_nat.max(nat);
+            }
+        }
+        sibling = widget.next_sibling();
+    }
+
+    let files_min_width = if wide && list_mode && total > 0 {
+        (total / 3)
+            .max(WIDE_PREVIEW_LIST_MIN_WIDTH)
+            .max(files_measured_min)
+            .min((total - WIDE_PREVIEW_PANEL_MIN_WIDTH).max(0))
+    } else {
+        -1
+    };
 
     revealer.set_hexpand(wide);
     if let Some(wrapper) = revealer.child() {
@@ -1339,9 +1372,33 @@ fn set_wide_preview_layout(
         } else {
             gtk::Align::End
         });
-        if let Some(clamp) = wrapper.last_child().and_downcast::<adw::Clamp>() {
-            // Cap only when wide is off, wide must fill the space the list leaves.
-            let cap = if wide { i32::MAX } else { max_panel };
+        // The wrapper holds `gtk::Overlay { adw::Clamp { panel } }` (see `panels/resize.rs`),
+        // so the clamp is the overlay's child, not the wrapper's last child.
+        let clamp = wrapper
+            .last_child()
+            .and_then(|w| match w.downcast::<gtk::Overlay>() {
+                Ok(overlay) => overlay.child(),
+                Err(w) => Some(w),
+            })
+            .and_downcast::<adw::Clamp>();
+        if let Some(clamp) = clamp {
+            // Wide fills the space the list leaves, so its upper bound is the monitor width
+            // minus the list's width. The panel's natural width (folder grid, text, table)
+            // can otherwise exceed the screen and drag the whole window with it.
+            let cap = if !wide {
+                max_panel
+            } else if max_window > 0 {
+                let left = if list_mode {
+                    files_min_width
+                        .max(files_measured_min)
+                        .max(files_measured_nat)
+                } else {
+                    files_measured_min.max(WIDE_PREVIEW_LIST_MIN_WIDTH)
+                };
+                (max_window - left).max(WIDE_PREVIEW_PANEL_MIN_WIDTH)
+            } else {
+                i32::MAX
+            };
             clamp.set_maximum_size(cap);
             clamp.set_tightening_threshold(cap);
             clamp.set_hexpand(wide);
@@ -1358,14 +1415,6 @@ fn set_wide_preview_layout(
             }
         }
     }
-
-    let files_min_width = if wide && list_mode && total > 0 {
-        (total / 3)
-            .max(WIDE_PREVIEW_LIST_MIN_WIDTH)
-            .min((total - WIDE_PREVIEW_PANEL_MIN_WIDTH).max(0))
-    } else {
-        -1
-    };
 
     let mut sibling = row.and_then(|row| row.first_child());
     while let Some(widget) = sibling {
