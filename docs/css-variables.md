@@ -33,7 +33,7 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | `--color-git-mod` | `@blue_3` | `:root` | 2 | Git modified and mixed file states. |
 | `--color-git-staged` | `@purple_3` | `:root` | 2 | Git staged file states. |
 | `--color-git-untracked` | `@dark_2` | `:root` | 2 | Git untracked file states. |
-| `--color-headerbar-bg` | `@headerbar_bg_color` | `:root` | 4 | Background color of the header bar and status bar. |
+| `--color-headerbar-bg` | `@headerbar_bg_color` | `:root` | 2 | Background color of the header bar and status bar. |
 | `--color-headerbar-fg` | `@headerbar_fg_color` | `:root` | 9 | Foreground text and icons in the header bar. |
 | `--color-popover-bg` | `@popover_bg_color` | `:root` | 1 | Background color of popovers and context menus. |
 | `--color-popover-fg` | `@popover_fg_color` | `:root` | 12 | Foreground text and icons in popovers. |

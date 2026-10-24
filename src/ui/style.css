@@ -39,10 +39,6 @@ headerbar {
   background-color: var(--color-headerbar-bg);
 }
 
-.selection-status {
-  background-color: var(--color-headerbar-bg);
-}
-
 toolbarview {
   background-color: transparent;
 }
@@ -895,7 +891,7 @@ textview text {
 
 .selection-status {
   font-size: 1em;
-  background-color: var(--color-headerbar-bg);
+  background-color: transparent;
   min-height: 2.2em;
 }
 
