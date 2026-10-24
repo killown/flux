@@ -485,6 +485,7 @@ impl FluxApp {
         model.location_panel_revealer = Some(widgets.location_panel_revealer.clone());
         model.connect_panel_revealer = Some(widgets.connect_panel_revealer.clone());
         model.actions_panel_revealer = Some(widgets.actions_panel_revealer.clone());
+        model.quick_list_panel_revealer = Some(widgets.quick_list_panel_revealer.clone());
         model.terminal_panel_revealer = Some(widgets.terminal_panel_revealer.clone());
         model.main_stack = Some(widgets.main_stack.clone());
         model.fullscreen_terminal_box = Some(widgets.fullscreen_terminal_box.clone());

@@ -70,22 +70,31 @@ impl FluxApp {
         // Terminal setup using custom terminal implementation from services
         let terminal = Self::build_terminal(&config, root, &sender);
 
-        // Fast in-memory deduplication without synchronous disk stats
-        let mut initial_exclusive_list = Vec::new();
-        let mut initial_exclusive_index = None;
-        if let Some(list) = quick_list {
-            for p in list {
-                if !initial_exclusive_list.contains(&p) {
-                    initial_exclusive_list.push(p);
-                }
-            }
-            if !initial_exclusive_list.is_empty() {
-                initial_exclusive_index = Some(0);
-            }
-        }
-
         // The DB has been opening in parallel with the UI construction above.
         let state_db = Arc::new(pending_db.wait().await);
+
+        // A list given on the command line is this session's only list (fast
+        // in-memory deduplication, no disk stats). Otherwise the saved lists
+        // resume in the same order, on the same list and the same slot.
+        let default_list_name = tr("Quick List");
+        let initial_quick_groups = match quick_list {
+            Some(list) => {
+                let mut deduped: Vec<PathBuf> = Vec::new();
+                for p in list {
+                    if !deduped.contains(&p) {
+                        deduped.push(p);
+                    }
+                }
+                crate::model::quick_groups::QuickGroups::single(
+                    &default_list_name,
+                    deduped,
+                    Some(0),
+                )
+            }
+            None => state_db.load_quick_groups(&default_list_name),
+        };
+        let initial_exclusive_list = initial_quick_groups.selected_list().items.clone();
+        let initial_exclusive_index = initial_quick_groups.selected_list().index;
 
         // Model Assembly
         let initial_icon_size = dirs::home_dir()
@@ -149,6 +158,10 @@ impl FluxApp {
             actions_panel_visible: false,
             actions_panel_initialized: false,
             actions_panel_session: Arc::new(AtomicU64::new(0)),
+            quick_list_panel_revealer: None,
+            quick_list_panel_visible: false,
+            quick_list_sidebar_stashed: None,
+            quick_list_panel_initialized: false,
             active_video_preview: None,
             video_preview_source: None,
             files,
@@ -169,6 +182,7 @@ impl FluxApp {
             action_group,
             exclusive_list: initial_exclusive_list,
             exclusive_index: initial_exclusive_index,
+            quick_groups: initial_quick_groups,
             extension_globset: None,
             search_just_opened: false,
             sort_by: config.ui.default_sort,
@@ -215,7 +229,6 @@ impl FluxApp {
             recents_has_selection: false,
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),
-            quick_panel_box: gtk::Box::new(gtk::Orientation::Horizontal, 0),
             cached_archive_password: None,
             archive_locked: false,
             network_section,
@@ -255,10 +268,6 @@ impl FluxApp {
         {
             crate::hit!("init_components:actions");
             model.setup_actions(&sender);
-        }
-
-        if !model.exclusive_list.is_empty() {
-            model.handle_rebuild_quick_panel(&sender);
         }
 
         model.recent_stack.push_front(start_path.clone());

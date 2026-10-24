@@ -240,7 +240,10 @@ impl FluxApp {
         }
 
         if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
-            self.exclusive_index = Some(pos);
+            if self.exclusive_index != Some(pos) {
+                self.exclusive_index = Some(pos);
+                self.persist_quick_list();
+            }
             sender.input(AppMsg::RebuildQuickPanel);
         }
 

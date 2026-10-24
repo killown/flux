@@ -210,6 +210,14 @@ impl FluxApp {
             self.actions_panel_visible = false;
             self.reset_actions_panel();
         }
+        if keep != RightPanelType::QuickList && self.quick_list_panel_visible {
+            if let Some(ref r) = self.quick_list_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.quick_list_panel_visible = false;
+            self.restore_sidebar_after_quick_list();
+        }
         if keep != RightPanelType::Terminal && self.terminal_panel_visible {
             if let Some(ref r) = self.terminal_panel_revealer {
                 r.set_reveal_child(false);
@@ -224,6 +232,33 @@ impl FluxApp {
             }
             if let Some(ref term) = self.sidebar_terminal {
                 term.kill_shell();
+            }
+        }
+    }
+
+    /// Hides the left sidebar while the Quick List panel is open, remembering
+    /// whether it was showing.
+    fn stash_sidebar_for_quick_list(&mut self) {
+        if self.quick_list_sidebar_stashed.is_none() {
+            self.quick_list_sidebar_stashed = Some(self.sidebar_visible);
+        }
+        if self.sidebar_visible {
+            self.sidebar_visible = false;
+            if let Some(ref w) = self.sidebar_widget {
+                w.set_visible(false);
+            }
+        }
+    }
+
+    /// Brings the left sidebar back after the Quick List panel closed, but only
+    /// if it was showing before and the config still says to show it.
+    fn restore_sidebar_after_quick_list(&mut self) {
+        if let Some(was_visible) = self.quick_list_sidebar_stashed.take() {
+            if was_visible && self.config.ui.sidebar_visible {
+                self.sidebar_visible = true;
+                if let Some(ref w) = self.sidebar_widget {
+                    w.set_visible(true);
+                }
             }
         }
     }
@@ -284,6 +319,14 @@ impl FluxApp {
                 self.actions_panel_revealer.clone(),
                 &mut self.actions_panel_initialized,
                 &mut self.actions_panel_visible,
+                false,
+            ),
+            // ── QUICK LIST ───────────────────────────────────────────────
+            // Not a search panel. A view of the app's named lists.
+            RightPanelType::QuickList => (
+                self.quick_list_panel_revealer.clone(),
+                &mut self.quick_list_panel_initialized,
+                &mut self.quick_list_panel_visible,
                 false,
             ),
             // ── SIDEBAR TERMINAL ─────────────────────────────────────────
@@ -352,6 +395,13 @@ impl FluxApp {
                     self.config.ui.actions_panel_width,
                     sender.clone(),
                 ),
+                // ── QUICK LIST ───────────────────────────────────────────
+                // The rows are drawn by `RebuildQuickPanel`, queued here so it
+                // runs once the panel is attached.
+                RightPanelType::QuickList => {
+                    sender.input(AppMsg::RebuildQuickPanel);
+                    crate::ui::panels::build_quick_list_panel(0, sender.clone())
+                }
                 // ── SIDEBAR TERMINAL ─────────────────────────────────────
                 // Build the widget tree and stash the `Terminal` on
                 // `FluxApp`. The shell is *not* spawned here: it is spawned
@@ -464,6 +514,15 @@ impl FluxApp {
 
         // ─────────────────────────────────────────────────────────────────
 
+        // The Quick List panel takes the left sidebar's place while it is open.
+        if panel_type == RightPanelType::QuickList {
+            if now_visible {
+                self.stash_sidebar_for_quick_list();
+            } else {
+                self.restore_sidebar_after_quick_list();
+            }
+        }
+
         // ── PEEK PREVIEW ─────────────────────────────────────────────────
         // The preview panel has no entry and must not steal focus from the
         // grid: grabbing focus here would break arrow-key scrubbing while
@@ -478,7 +537,10 @@ impl FluxApp {
         // idle focus call above puts them there).
         let skip_focus = matches!(
             panel_type,
-            RightPanelType::Preview | RightPanelType::Actions | RightPanelType::Terminal
+            RightPanelType::Preview
+                | RightPanelType::Actions
+                | RightPanelType::Terminal
+                | RightPanelType::QuickList
         );
 
         if now_visible && !skip_focus {

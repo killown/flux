@@ -17,6 +17,8 @@ mod ui {
     mod menu_editor_test;
     mod navigation_test;
     mod network_dialogs_test;
+    mod quick_groups_test;
+    mod quick_list_test;
     mod remote_ops_test;
     mod search_handlers_test;
     mod secondary_menu_test;

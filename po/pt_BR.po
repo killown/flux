@@ -931,12 +931,24 @@ msgid "Pin selection or current folder to sidebar permanently"
 msgstr "Fixar seleção ou pasta atual na barra lateral permanentemente"
 
 #: src/ui/help/page/quick_list.rs:14
-msgid "Cycle to the next folder in the list"
-msgstr "Avançar para a próxima pasta da lista"
+msgid "Cycle to the next folder in the selected list"
+msgstr "Avançar para a próxima pasta da lista selecionada"
+
+#: src/ui/help/page/quick_list.rs
+msgid "Previous / next folder in the selected list"
+msgstr "Pasta anterior / próxima da lista selecionada"
+
+#: src/ui/help/page/quick_list.rs
+msgid "Jump to folder 1-9 of the selected list"
+msgstr "Ir para a pasta 1-9 da lista selecionada"
+
+#: src/ui/help/page/quick_list.rs
+msgid "Show or hide the Quick List panel"
+msgstr "Mostrar ou ocultar o painel da lista rápida"
 
 #: src/ui/help/page/quick_list.rs:15
-msgid "Clear the entire list"
-msgstr "Limpar toda a lista"
+msgid "Clear the selected list"
+msgstr "Limpar a lista selecionada"
 
 #: src/ui/help/page/quick_list.rs:19
 msgid "Quick List"
@@ -1994,6 +2006,98 @@ msgstr "Direitos autorais"
 #: src/ui/panels/preview_binary.rs:111
 msgid "Categories"
 msgstr "Categorias"
+
+# ============================================================
+# src/ui/panels/quick_list.rs
+# ============================================================
+
+#: src/app/update/navigation/quick_list.rs
+msgid "A list needs a name"
+msgstr "Uma lista precisa de um nome"
+
+#: src/app/update/navigation/quick_list.rs
+msgid "A list with that name already exists"
+msgstr "Já existe uma lista com esse nome"
+
+#: src/app/update/navigation/quick_list.rs
+msgid "That folder is already in this list"
+msgstr "Essa pasta já está nesta lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "Filter lists and folders…"
+msgstr "Filtrar listas e pastas…"
+
+#: src/ui/panels/quick_list.rs
+msgid "No matches"
+msgstr "Nenhuma correspondência"
+
+#: src/ui/panels/quick_list.rs
+msgid "New list"
+msgstr "Nova lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "New Quick List"
+msgstr "Nova lista rápida"
+
+#: src/ui/panels/quick_list.rs
+msgid "Enter a name for the new list:"
+msgstr "Digite um nome para a nova lista:"
+
+#: src/ui/panels/quick_list.rs
+msgid "Collapse"
+msgstr "Recolher"
+
+#: src/ui/panels/quick_list.rs
+msgid "Expand"
+msgstr "Expandir"
+
+#: src/ui/panels/quick_list.rs
+msgid "Tab walks this list"
+msgstr "O Tab percorre esta lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "Add current folder to this list"
+msgstr "Adicionar a pasta atual a esta lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "Empty. Press Insert to add the current folder."
+msgstr "Vazia. Pressione Insert para adicionar a pasta atual."
+
+#: src/ui/panels/quick_list.rs
+msgid "Rename List…"
+msgstr "Renomear lista…"
+
+#: src/ui/panels/quick_list.rs
+msgid "Rename List"
+msgstr "Renomear lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "Enter a new name for this list:"
+msgstr "Digite um novo nome para esta lista:"
+
+#: src/ui/panels/quick_list.rs
+msgid "Add Current Folder"
+msgstr "Adicionar pasta atual"
+
+#: src/ui/panels/quick_list.rs
+msgid "Clear List"
+msgstr "Limpar lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "Delete List"
+msgstr "Excluir lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "This removes the list"
+msgstr "Isto remove a lista"
+
+#: src/ui/panels/quick_list.rs
+msgid "The folders themselves are not touched."
+msgstr "As pastas em si não são alteradas."
+
+#: src/ui/panels/quick_list.rs
+msgid "Move to List"
+msgstr "Mover para a lista"
 
 # ============================================================
 # src/ui/panels/search.rs

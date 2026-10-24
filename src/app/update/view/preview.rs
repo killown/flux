@@ -328,6 +328,7 @@ impl FluxApp {
             (&self.connect_panel_revealer, false),
             (&self.preview_panel_revealer, true),
             (&self.actions_panel_revealer, false),
+            (&self.quick_list_panel_revealer, false),
             (&self.terminal_panel_revealer, false),
         ];
         for (revealer, is_preview) in right_panels {

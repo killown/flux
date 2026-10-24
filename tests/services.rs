@@ -11,6 +11,8 @@ mod services {
     mod luks_test;
     mod mounts_test;
     mod network_services_test;
+    mod quick_groups_db_test;
+    mod quick_list_db_test;
     mod search_ops_test;
     mod state_manager_test;
     mod task_queue_test;

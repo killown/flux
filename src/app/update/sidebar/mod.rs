@@ -476,19 +476,25 @@ pub(super) fn handle(
         AppMsg::AddExclusive(p) => app.handle_add_exclusive(p, sender),
         AppMsg::AddCurrentFolderExclusive => app.handle_add_current_folder_exclusive(sender),
         AppMsg::ClearExclusive => app.handle_clear_exclusive(sender),
-        AppMsg::RemoveQuickItem(p) => app.handle_remove_quick_item(p, sender),
         AppMsg::RebuildQuickPanel => app.handle_rebuild_quick_panel(sender),
         AppMsg::NextExclusive => app.handle_next_exclusive(sender),
         AppMsg::PrevExclusive => app.handle_prev_exclusive(sender),
-        AppMsg::UpdateExclusiveSlot(index) => {
-            if index < app.exclusive_list.len() {
-                app.exclusive_list[index] = app.current_path.clone();
-                app.exclusive_index = Some(index);
-                app.handle_rebuild_quick_panel(sender);
-                sender.input(AppMsg::ShowToast(crate::i18n::tr(
-                    "Quick list slot updated",
-                )));
-            }
+        AppMsg::QuickListTab => app.handle_quick_list_tab(sender),
+        AppMsg::QuickListJump(n) => app.handle_quick_list_jump(n, sender),
+        AppMsg::ToggleQuickListPanel => app.handle_toggle_quick_list_panel(sender),
+        AppMsg::QuickListSelect(list) => app.handle_quick_list_select(list, sender),
+        AppMsg::QuickListOpen { list, path } => app.handle_quick_list_open(list, path, sender),
+        AppMsg::QuickListNew(name) => app.handle_quick_list_new(name, sender),
+        AppMsg::QuickListRename { list, name } => app.handle_quick_list_rename(list, name, sender),
+        AppMsg::QuickListDelete(list) => app.handle_quick_list_delete(list, sender),
+        AppMsg::QuickListClearList(list) => app.handle_quick_list_clear_list(list, sender),
+        AppMsg::QuickListAddCurrent(list) => app.handle_quick_list_add_current(list, sender),
+        AppMsg::QuickListRemove { list, path } => app.handle_quick_list_remove(list, path, sender),
+        AppMsg::QuickListMove { path, from, to } => {
+            app.handle_quick_list_move(path, from, to, sender)
+        }
+        AppMsg::QuickListSetSlot { list, slot } => {
+            app.handle_quick_list_set_slot(list, slot, sender)
         }
         AppMsg::AddPanelSidebarEntry { name, path, icon } => {
             app.handle_add_panel_sidebar_entry(name, path, icon, sender)

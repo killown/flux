@@ -23,6 +23,7 @@ pub enum RightPanelType {
     Preview,
     Actions,
     Terminal,
+    QuickList,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

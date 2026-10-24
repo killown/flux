@@ -213,8 +213,6 @@ pub enum AppMsg {
     SetScrolledToBottom(bool),
     /// Initiates a copy or move of selected items directly to a quick list destination.
     PerformQuickTransfer { dest: PathBuf, is_cut: bool },
-    /// Overwrites the quick-list entry at the given index with the current directory path.
-    UpdateExclusiveSlot(usize),
     /// Initiates a background scan and opens the native directory inspector dialog
     /// for the specified directory path.
     InspectDirectory(std::path::PathBuf),
@@ -729,6 +727,10 @@ pub enum AppMsg {
     NextExclusive,
     /// Switch to the previous directory in the exclusive list.
     PrevExclusive,
+    /// Tab: go to the current Quick List slot, or advance when already in it.
+    QuickListTab,
+    /// Ctrl+1..9: jump to Quick List slot N (1-based).
+    QuickListJump(usize),
     /// Enter inline rename mode for the specified file.
     StartRename(PathBuf),
     /// Execute the primary action for all currently selected items.
@@ -1051,11 +1053,37 @@ pub enum AppMsg {
     SetSidebarMenuRequiresCtrl(bool),
     /// Requires Ctrl to be held for preview-panel and quick-list context menus to open.
     SetPanelMenuRequiresCtrl(bool),
-    /// Remove a single path from the quick-list panel by exact match.
-    RemoveQuickItem(PathBuf),
-    /// Tear down and reconstruct all tab buttons in the quick-list panel.
+    /// Redraw the Quick List panel from the current lists.
     ///
-    /// Sent automatically after any mutation of `exclusive_list` so the widget
-    /// tree always reflects the current state.
+    /// Sent automatically after any mutation of the Quick Lists so the widget
+    /// tree always reflects the current state. A no-op while the panel has
+    /// never been opened.
     RebuildQuickPanel,
+    /// Toggles the right Quick List panel (Ctrl+Shift+Q).
+    ToggleQuickListPanel,
+    /// Makes list `n` the one Tab and Ctrl+PageUp/PageDown walk.
+    QuickListSelect(usize),
+    /// Opens a folder from list `list`: selects the list, puts its slot on
+    /// `path` and navigates there.
+    QuickListOpen { list: usize, path: PathBuf },
+    /// Creates an empty list. A blank or taken name is refused with a toast.
+    QuickListNew(String),
+    /// Renames a list. A blank or taken name is refused with a toast.
+    QuickListRename { list: usize, name: String },
+    /// Deletes a list. The last list cannot be deleted.
+    QuickListDelete(usize),
+    /// Empties a list but keeps it.
+    QuickListClearList(usize),
+    /// Adds the folder shown in the grid to the front of list `n`.
+    QuickListAddCurrent(usize),
+    /// Removes `path` from list `list`.
+    QuickListRemove { list: usize, path: PathBuf },
+    /// Moves `path` from list `from` to the front of list `to`.
+    QuickListMove {
+        path: PathBuf,
+        from: usize,
+        to: usize,
+    },
+    /// Points slot `slot` of list `list` at the folder shown in the grid.
+    QuickListSetSlot { list: usize, slot: usize },
 }

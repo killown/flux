@@ -226,6 +226,32 @@ pub fn setup_capture(
             }
         }
 
+        // Every Quick List chord is claimed here, and only here. While the
+        // terminal has focus `dispatch_key` returns `None`, so Tab, Insert,
+        // Ctrl+End, Ctrl+PageUp/Down and Ctrl+1..9 all reach the shell.
+        if let Some(chord) = crate::model::quick_list::dispatch_key(
+            keyval,
+            is_ctrl,
+            is_shift,
+            is_alt,
+            terminal_focused,
+        ) {
+            use crate::model::quick_list::QuickKey;
+            match chord {
+                QuickKey::AddCurrent => sender.input(AppMsg::AddCurrentFolderExclusive),
+                QuickKey::Clear => sender.input(AppMsg::ClearExclusive),
+                QuickKey::Prev => sender.input(AppMsg::PrevExclusive),
+                QuickKey::Next => sender.input(AppMsg::NextExclusive),
+                QuickKey::Jump(n) => sender.input(AppMsg::QuickListJump(n)),
+                QuickKey::TogglePanel => sender.input(AppMsg::ToggleQuickListPanel),
+                QuickKey::Tab => {
+                    sender.input(AppMsg::QuickListTab);
+                    sender.input(AppMsg::TogglePreviewGridFocus);
+                }
+            }
+            return glib::Propagation::Stop;
+        }
+
         match keyval {
             gdk::Key::Insert if is_ctrl && is_shift => {
                 sender.input(AppMsg::AddToSidebarPermanent);
@@ -238,22 +264,6 @@ pub fn setup_capture(
                     return glib::Propagation::Proceed;
                 }
                 sender.input(AppMsg::ToggleNavigateMode);
-                glib::Propagation::Stop
-            }
-            gdk::Key::Insert => {
-                sender.input(AppMsg::AddCurrentFolderExclusive);
-                glib::Propagation::Stop
-            }
-            gdk::Key::End if is_ctrl => {
-                sender.input(AppMsg::ClearExclusive);
-                glib::Propagation::Stop
-            }
-            gdk::Key::Page_Up if is_ctrl => {
-                sender.input(AppMsg::PrevExclusive);
-                glib::Propagation::Stop
-            }
-            gdk::Key::Page_Down if is_ctrl => {
-                sender.input(AppMsg::NextExclusive);
                 glib::Propagation::Stop
             }
             gdk::Key::Home if is_ctrl => {
@@ -278,16 +288,6 @@ pub fn setup_capture(
                 } else {
                     sender.input(AppMsg::NextTab);
                 }
-                glib::Propagation::Stop
-            }
-            gdk::Key::Tab => {
-                // When either terminal holds focus, let Tab pass through
-                // to its own EventControllerKey so the shell sees \t for completion.
-                if terminal_focused {
-                    return glib::Propagation::Proceed;
-                }
-                sender.input(AppMsg::NextExclusive);
-                sender.input(AppMsg::TogglePreviewGridFocus);
                 glib::Propagation::Stop
             }
             // Full-screen preview: Esc leaves it. The handler is a no-op otherwise and the key

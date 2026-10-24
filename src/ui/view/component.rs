@@ -673,8 +673,6 @@ impl SimpleAsyncComponent for FluxApp {
 
                             #[local_ref]
                             toast_overlay -> adw::ToastOverlay {
-                                #[watch]
-                                set_class_active: ("quick-dock-active", !model.exclusive_list.is_empty()),
                                 #[name = "grid_overlay"]
                                 gtk::Overlay {
                                     set_vexpand: true,
@@ -685,10 +683,6 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_orientation: gtk::Orientation::Vertical,
                                         set_vexpand: true,
                                         set_hexpand: true,
-
-                                        // Dynamically expand bottom clearance when the quick list panel is active
-                                        #[watch]
-                                        set_margin_bottom: if !model.exclusive_list.is_empty() && model.scrolled_to_bottom { 50 } else { 0 },
 
                                         /// Scroll event controller for UI zooming (Ctrl + Scroll).
                                         add_controller = gtk::EventControllerScroll {
@@ -723,38 +717,6 @@ impl SimpleAsyncComponent for FluxApp {
                                                 }
                                             }
                                         },
-                                    },
-
-                                    /// Floating Quick List Dock overlay
-                                    add_overlay = &gtk::Revealer {
-                                        set_transition_type: gtk::RevealerTransitionType::SlideUp,
-                                        set_transition_duration: 150,
-                                        set_valign: gtk::Align::End,
-                                        set_halign: gtk::Align::Center,
-                                        #[watch]
-                                        set_reveal_child: !model.exclusive_list.is_empty(),
-                                        #[watch]
-                                        set_visible: !model.exclusive_list.is_empty(),
-
-                                        gtk::ScrolledWindow {
-                                            set_hscrollbar_policy: gtk::PolicyType::Automatic,
-                                            set_vscrollbar_policy: gtk::PolicyType::Never,
-                                            set_propagate_natural_height: true,
-                                            set_propagate_natural_width: true,
-                                            add_css_class: "quick-panel-scroll",
-
-                                            #[local_ref]
-                                            quick_panel_box -> gtk::Box {
-                                                set_orientation: gtk::Orientation::Horizontal,
-                                                set_halign: gtk::Align::Center,
-                                                add_css_class: "quick-panel",
-                                                set_spacing: 6,
-                                                set_margin_start: 12,
-                                                set_margin_end: 12,
-                                                set_margin_top: 8,
-                                                set_margin_bottom: 3,
-                                            }
-                                        }
                                     },
 
                                     /// Lock overlay shown when the current archive requires a password.
@@ -1030,6 +992,15 @@ impl SimpleAsyncComponent for FluxApp {
                     set_visible: false,
                 },
 
+                /// Right Quick List panel revealer (lazy initialized).
+                #[name = "quick_list_panel_revealer"]
+                gtk::Revealer {
+                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
+                    set_transition_duration: 200,
+                    set_reveal_child: false,
+                    set_visible: false,
+                },
+
                 /// Right terminal panel revealer (lazy initialized).
                 #[name = "terminal_panel_revealer"]
                 gtk::Revealer {
@@ -1069,6 +1040,7 @@ impl SimpleAsyncComponent for FluxApp {
             tag_search,
             opts,
         } = init;
+        let quick_list_from_cli = quick_list.is_some();
         crate::hit!("view::init");
 
         let (mut model, breadcrumb_box) = FluxApp::init_components(
@@ -1090,7 +1062,6 @@ impl SimpleAsyncComponent for FluxApp {
                 && model.config.ui.terminal.position == crate::model::TerminalPosition::Fullscreen);
         model.startup_preview = preview;
         let toast_overlay = &model.toast_overlay;
-        let quick_panel_box = model.quick_panel_box.clone();
         crate::hit!("view::init:view_output");
         let widgets = view_output!();
 
@@ -1109,6 +1080,15 @@ impl SimpleAsyncComponent for FluxApp {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
                 s.input(crate::model::AppMsg::StartupPreview);
+            });
+        }
+
+        // A list given on the command line is shown at once. A restored one
+        // waits for Ctrl+Shift+Q.
+        if quick_list_from_cli {
+            let s = sender.clone();
+            gtk::glib::idle_add_local_once(move || {
+                s.input(crate::model::AppMsg::ToggleQuickListPanel);
             });
         }
 

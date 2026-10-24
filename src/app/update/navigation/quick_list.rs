@@ -1,8 +1,10 @@
-use crate::model::{AppMsg, FluxApp};
-use gtk::gio;
+use crate::i18n::tr;
+use crate::model::quick_groups::{NameError, QuickGroups};
+use crate::model::quick_list;
+use crate::model::{AppMsg, FluxApp, RightPanelType};
 use gtk::prelude::*;
 use relm4::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 impl FluxApp {
     pub fn handle_perform_quick_transfer(
@@ -59,7 +61,57 @@ impl FluxApp {
         }
     }
 
-    /// Adds a path or multiple selected paths to the temporary quick panel list.
+    /// Every list, with the live selected list (`exclusive_list`,
+    /// `exclusive_index`) laid over its stored copy.
+    pub fn quick_snapshot(&self) -> QuickGroups {
+        self.quick_groups
+            .with_selected(&self.exclusive_list, self.exclusive_index)
+    }
+
+    /// Takes `groups` as the new state and loads its selected list into the
+    /// working fields, which is what Tab and the other chords walk.
+    fn adopt_quick_groups(&mut self, groups: QuickGroups) {
+        debug_assert!(groups.invariant_holds());
+        let selected = groups.selected_list();
+        self.exclusive_list = selected.items.clone();
+        self.exclusive_index = selected.index;
+        self.quick_groups = groups;
+    }
+
+    /// Runs `edit` on a copy of every list. When it returns `true` the copy
+    /// becomes the new state, is saved and the panel is redrawn.
+    fn edit_quick_groups(
+        &mut self,
+        sender: &AsyncComponentSender<Self>,
+        edit: impl FnOnce(&mut QuickGroups) -> bool,
+    ) -> bool {
+        let mut groups = self.quick_snapshot();
+        if !edit(&mut groups) {
+            return false;
+        }
+        self.adopt_quick_groups(groups);
+        self.persist_quick_list();
+        sender.input(AppMsg::RebuildQuickPanel);
+        true
+    }
+
+    /// Saves every list, the selection and each list's slot. Write-through,
+    /// so what is on screen at exit is what is on disk at the next launch.
+    pub(crate) fn persist_quick_list(&self) {
+        debug_assert!(quick_list::invariant_holds(
+            &self.exclusive_list,
+            self.exclusive_index
+        ));
+        if let Err(e) = self.state_db.save_quick_groups(&self.quick_snapshot()) {
+            eprintln!("[flux] Failed to save quick list: {e}");
+        }
+    }
+
+    /// Adds a path or multiple selected paths to the FRONT of the quick list.
+    ///
+    /// Invariant Q (`index.is_none() <=> list.is_empty()`, else `index < len`)
+    /// holds: `add_front` keeps the index on the same folder, then it follows
+    /// the folder shown in the grid when that folder is in the list.
     pub fn handle_add_exclusive(
         &mut self,
         explicit_path: Option<PathBuf>,
@@ -79,19 +131,19 @@ impl FluxApp {
             }
         }
 
-        let mut added_any = false;
-        for path in paths_to_add {
-            let canon = path.canonicalize().unwrap_or(path);
-            if !self.exclusive_list.contains(&canon) {
-                self.exclusive_list.push(canon);
-                added_any = true;
-            }
-        }
+        let canon = paths_to_add
+            .into_iter()
+            .map(|p| p.canonicalize().unwrap_or(p));
+        let added =
+            quick_list::add_front(&mut self.exclusive_list, &mut self.exclusive_index, canon);
 
-        if added_any {
-            if self.exclusive_index.is_none() && !self.exclusive_list.is_empty() {
-                self.exclusive_index = Some(0);
-            }
+        if added > 0 {
+            quick_list::sync_to(
+                &self.exclusive_list,
+                &mut self.exclusive_index,
+                &self.current_path,
+            );
+            self.persist_quick_list();
             sender.input(AppMsg::RebuildQuickPanel);
         }
     }
@@ -104,230 +156,240 @@ impl FluxApp {
         self.handle_add_exclusive(Some(self.current_path.clone()), sender);
     }
 
-    /// Clears all entries from the temporary quick panel list.
+    /// Clears all entries from the selected quick list. The list itself stays.
+    ///
+    /// Silent: no toast, no dialog, and no `Navigate` is sent, so the folder
+    /// being shown cannot change. Clearing an empty list changes nothing.
+    /// Invariant Q holds: both fields are reset together.
     pub fn handle_clear_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_clear_exclusive");
-        self.exclusive_list.clear();
-        self.exclusive_index = None;
+        if quick_list::clear(&mut self.exclusive_list, &mut self.exclusive_index) {
+            self.persist_quick_list();
+            sender.input(AppMsg::RebuildQuickPanel);
+        }
+    }
+
+    /// Redraws the Quick List panel. Does nothing visible until it was opened once.
+    pub fn handle_rebuild_quick_panel(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_rebuild_quick_panel");
+        crate::ui::panels::quick_list::refresh(self.quick_snapshot(), sender);
+    }
+
+    /// Persists the new slot, then navigates to `target`.
+    fn quick_navigate_to(&mut self, target: PathBuf, sender: &AsyncComponentSender<Self>) {
+        self.persist_quick_list();
+        sender.input(AppMsg::Navigate(target));
         sender.input(AppMsg::RebuildQuickPanel);
     }
 
-    /// Removes a specific path from the quick panel list.
-    pub fn handle_remove_quick_item(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_remove_quick_item");
-        if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
-            self.exclusive_list.remove(pos);
-            self.exclusive_index = if self.exclusive_list.is_empty() {
-                None
-            } else {
-                Some(pos.saturating_sub(1).min(self.exclusive_list.len() - 1))
-            };
-            sender.input(AppMsg::RebuildQuickPanel);
-        }
-    }
-
-    /// Reconstructs the quick panel button bar widget layout.
-    pub fn handle_rebuild_quick_panel(&self, sender: &AsyncComponentSender<Self>) {
-        crate::hit!("handle_rebuild_quick_panel");
-        let panel = &self.quick_panel_box;
-        while let Some(child) = panel.first_child() {
-            panel.remove(&child);
-        }
-        let active_idx = self.exclusive_index;
-        for (idx, path) in self.exclusive_list.iter().enumerate() {
-            let label = quick_item_label(path);
-
-            let btn = gtk::Button::with_label(&label);
-            btn.set_tooltip_text(Some(&quick_item_tooltip(path)));
-            btn.add_css_class("flat");
-            if active_idx == Some(idx) {
-                btn.add_css_class("suggested-action");
-            }
-
-            let path_nav = path.clone();
-            let s_nav = sender.clone();
-            btn.connect_clicked(move |_| {
-                s_nav.input(AppMsg::Navigate(path_nav.clone()));
-            });
-
-            let path_rm = path.clone();
-            let s_rm = sender.clone();
-            let middle = gtk::GestureClick::new();
-            middle.set_button(2);
-            middle.connect_pressed(move |gesture, _, _, _| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                s_rm.input(AppMsg::RemoveQuickItem(path_rm.clone()));
-            });
-            btn.add_controller(middle);
-
-            // ── Right-Click Context Menu on Quick-List Tab ──
-            let right_click = gtk::GestureClick::new();
-            right_click.set_button(3);
-
-            let s_rc = sender.clone();
-            let target_path = path.clone();
-
-            right_click.connect_released(move |gesture, _, x, y| {
-                if crate::utils::load_config().ui.panel_menu_requires_ctrl
-                    && !gesture
-                        .current_event_state()
-                        .contains(gtk::gdk::ModifierType::CONTROL_MASK)
-                {
-                    return;
-                }
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-
-                let popover = gtk::PopoverMenu::builder().has_arrow(true).build();
-                let menu = gio::Menu::new();
-                let action_group = gio::SimpleActionGroup::new();
-
-                menu.append(
-                    Some(&format!("󰑮   {}", crate::i18n::tr("Set to Current Folder"))),
-                    Some("slot.update"),
-                );
-                let act_update = gio::SimpleAction::new("update", None);
-                let s_update = s_rc.clone();
-                act_update.connect_activate(move |_, _| {
-                    s_update.input(AppMsg::UpdateExclusiveSlot(idx));
-                });
-                action_group.add_action(&act_update);
-
-                menu.append(
-                    Some(&format!("󱇤   {}", crate::i18n::tr("Open in New Window"))),
-                    Some("slot.new_window"),
-                );
-                let act_win = gio::SimpleAction::new("new_window", None);
-                let win_path = target_path.clone();
-                act_win.connect_activate(move |_, _| {
-                    crate::utils::helpers::open_new_instance(&win_path);
-                });
-                action_group.add_action(&act_win);
-
-                menu.append(
-                    Some(&format!(
-                        "󰅖   {}",
-                        crate::i18n::tr("Remove from Quick List")
-                    )),
-                    Some("slot.remove"),
-                );
-                let act_rm_action = gio::SimpleAction::new("remove", None);
-                let s_rm_action = s_rc.clone();
-                let rm_path = target_path.clone();
-                act_rm_action.connect_activate(move |_, _| {
-                    s_rm_action.input(AppMsg::RemoveQuickItem(rm_path.clone()));
-                });
-                action_group.add_action(&act_rm_action);
-
-                popover.set_menu_model(Some(&menu));
-                if let Some(widget) = gesture.widget() {
-                    popover.set_parent(&widget);
-                    let rect = gtk::gdk::Rectangle::new(x as i32, y as i32, 1, 1);
-                    popover.set_pointing_to(Some(&rect));
-                    widget.insert_action_group("slot", Some(&action_group));
-                    popover.popup();
-                }
-            });
-            btn.add_controller(right_click);
-            // ── Add Drop Target for quick-list button ──
-            let formats = gtk::gdk::ContentFormats::builder()
-                .add_type(gtk::gdk::FileList::static_type())
-                .build();
-
-            let drop_target = gtk::DropTarget::builder()
-                .actions(gtk::gdk::DragAction::MOVE | gtk::gdk::DragAction::COPY)
-                .formats(&formats)
-                .build();
-
-            let target_path = path.clone();
-            let sender_drop = sender.clone();
-
-            drop_target.connect_drop(move |_target, value, _, _| {
-                if let Ok(file_list) = value.get::<gtk::gdk::FileList>() {
-                    let source_paths: Vec<PathBuf> = file_list
-                        .files()
-                        .into_iter()
-                        .filter_map(|f| f.path())
-                        .collect();
-
-                    if !source_paths.is_empty() {
-                        sender_drop.input(AppMsg::MoveFilesToTarget {
-                            sources: source_paths,
-                            destination: target_path.clone(),
-                        });
-                        return true;
-                    }
-                }
-                false
-            });
-
-            btn.add_controller(drop_target);
-            panel.append(&btn);
-        }
-    }
-
-    /// Switches to the next item in the quick panel list.
+    /// Switches to the next item in the quick panel list (Ctrl+PageDown).
+    /// Invariant Q holds via `quick_list::step`.
     pub fn handle_next_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_next_exclusive");
-        if !self.exclusive_list.is_empty() {
-            let new_idx = match self.exclusive_index {
-                Some(i) => (i + 1) % self.exclusive_list.len(),
-                None => 0,
-            };
-            self.exclusive_index = Some(new_idx);
-            let target = self.exclusive_list[new_idx].clone();
-            sender.input(AppMsg::Navigate(target));
-            sender.input(AppMsg::RebuildQuickPanel);
+        if let Some(target) = quick_list::step(
+            &self.exclusive_list,
+            &mut self.exclusive_index,
+            quick_list::Step::Next,
+        ) {
+            self.quick_navigate_to(target, sender);
         }
     }
 
-    /// Switches to the previous item in the quick panel list.
+    /// Switches to the previous item in the quick panel list (Ctrl+PageUp).
+    /// Invariant Q holds via `quick_list::step`.
     pub fn handle_prev_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_prev_exclusive");
-        if !self.exclusive_list.is_empty() {
-            let new_idx = match self.exclusive_index {
-                Some(i) if i > 0 => i - 1,
-                _ => self.exclusive_list.len() - 1,
-            };
-            self.exclusive_index = Some(new_idx);
-            let target = self.exclusive_list[new_idx].clone();
-            sender.input(AppMsg::Navigate(target));
-            sender.input(AppMsg::RebuildQuickPanel);
+        if let Some(target) = quick_list::step(
+            &self.exclusive_list,
+            &mut self.exclusive_index,
+            quick_list::Step::Prev,
+        ) {
+            self.quick_navigate_to(target, sender);
         }
     }
-}
 
-/// Short name for a quick-list button.
-///
-/// An `archive://` location is shown by what it points at: the archive's file
-/// name without its extension at the root, or the folder name inside it.
-/// Anything else uses its last path component.
-fn quick_item_label(path: &Path) -> String {
-    if let Some((archive, inner)) =
-        crate::services::archive::parse_archive_uri(&path.to_string_lossy())
-    {
-        if let Some(name) = inner.trim_matches('/').rsplit('/').next() {
-            if !name.is_empty() {
-                return name.to_string();
+    /// Tab: go to the current slot, or advance when already in its folder.
+    /// Invariant Q holds via `quick_list::tab`.
+    pub fn handle_quick_list_tab(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_quick_list_tab");
+        if let Some(target) = quick_list::tab(
+            &self.exclusive_list,
+            &mut self.exclusive_index,
+            &self.current_path,
+        ) {
+            // An empty list never reaches here, so Tab on an empty list stays silent.
+            self.reveal_quick_list_panel(sender);
+            self.quick_navigate_to(target, sender);
+        }
+    }
+
+    /// Ctrl+1..9: jump to slot `n` (1-based). Invariant Q holds via
+    /// `quick_list::jump`.
+    pub fn handle_quick_list_jump(&mut self, n: usize, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_quick_list_jump");
+        if let Some(target) = quick_list::jump(&self.exclusive_list, &mut self.exclusive_index, n) {
+            // Ctrl+1..9 reveals the panel like Tab.
+            self.reveal_quick_list_panel(sender);
+            self.quick_navigate_to(target, sender);
+        }
+    }
+
+    /// Tab and Ctrl+1..9 show the panel. Any other right-side panel that is
+    /// open gives way to it (`toggle_sidebar_right_panel` hides the others).
+    fn reveal_quick_list_panel(&mut self, sender: &AsyncComponentSender<Self>) {
+        if !self.quick_list_panel_visible {
+            self.toggle_sidebar_right_panel(RightPanelType::QuickList, sender);
+        }
+    }
+
+    /// Ctrl+Shift+Q and the panel's close button. Opening puts the cursor in
+    /// the filter entry.
+    pub fn handle_toggle_quick_list_panel(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_toggle_quick_list_panel");
+        self.toggle_sidebar_right_panel(RightPanelType::QuickList, sender);
+        if self.quick_list_panel_visible {
+            // The entry is not mapped yet the first time the panel is built.
+            gtk::glib::idle_add_local_once(crate::ui::panels::quick_list::focus_search);
+        }
+    }
+
+    /// Makes list `list` the one Tab and Ctrl+PageUp/PageDown walk.
+    pub fn handle_quick_list_select(&mut self, list: usize, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_quick_list_select");
+        self.edit_quick_groups(sender, |g| g.select(list));
+    }
+
+    /// Opens a folder of list `list`: selects the list, puts its slot on the
+    /// folder, navigates there and hands the keyboard back to the grid.
+    pub fn handle_quick_list_open(
+        &mut self,
+        list: usize,
+        path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_open");
+        if self.edit_quick_groups(sender, |g| g.open_item(list, &path)) {
+            sender.input(AppMsg::Navigate(path));
+            if let Some(tab) = self.tabs.get(self.active_tab_index) {
+                tab.files.view.grab_focus();
             }
         }
-        if let Some(stem) = archive.file_stem().map(|s| s.to_string_lossy()) {
-            // `.tar.gz` and friends: the stem still ends in `.tar`.
-            return stem.strip_suffix(".tar").unwrap_or(&stem).to_string();
+    }
+
+    fn quick_name_error(e: NameError) -> String {
+        match e {
+            NameError::Empty => tr("A list needs a name"),
+            NameError::Taken => tr("A list with that name already exists"),
         }
     }
-    path.file_name()
-        .map(|n| n.to_string_lossy().into_owned())
-        .unwrap_or_else(|| path.to_string_lossy().into_owned())
-}
 
-/// Tooltip for a quick-list button: the real location, with an `archive://`
-/// URI shown as the archive's path followed by the folder inside it.
-fn quick_item_tooltip(path: &Path) -> String {
-    match crate::services::archive::parse_archive_uri(&path.to_string_lossy()) {
-        Some((archive, inner)) => archive
-            .join(inner.trim_matches('/'))
-            .to_string_lossy()
-            .into(),
-        None => path.to_string_lossy().into_owned(),
+    /// Creates an empty list and selects it, so Insert fills it right away.
+    pub fn handle_quick_list_new(&mut self, name: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_quick_list_new");
+        let mut refused = None;
+        self.edit_quick_groups(sender, |g| match g.add_list(&name) {
+            Ok(i) => {
+                g.select(i);
+                true
+            }
+            Err(e) => {
+                refused = Some(e);
+                false
+            }
+        });
+        if let Some(e) = refused {
+            sender.input(AppMsg::ShowToast(Self::quick_name_error(e)));
+        }
+    }
+
+    pub fn handle_quick_list_rename(
+        &mut self,
+        list: usize,
+        name: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_rename");
+        let mut refused = None;
+        self.edit_quick_groups(sender, |g| match g.rename(list, &name) {
+            Ok(changed) => changed,
+            Err(e) => {
+                refused = Some(e);
+                false
+            }
+        });
+        if let Some(e) = refused {
+            sender.input(AppMsg::ShowToast(Self::quick_name_error(e)));
+        }
+    }
+
+    /// Deletes a list. The folders themselves are untouched.
+    pub fn handle_quick_list_delete(&mut self, list: usize, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_quick_list_delete");
+        self.edit_quick_groups(sender, |g| g.delete(list));
+    }
+
+    /// Empties a list but keeps it.
+    pub fn handle_quick_list_clear_list(
+        &mut self,
+        list: usize,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_clear_list");
+        self.edit_quick_groups(sender, |g| g.clear_list(list));
+    }
+
+    /// Adds the folder shown in the grid to the front of list `list`.
+    pub fn handle_quick_list_add_current(
+        &mut self,
+        list: usize,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_add_current");
+        let current = self.current_path.clone();
+        let canon = current.canonicalize().unwrap_or_else(|_| current.clone());
+        self.edit_quick_groups(sender, |g| {
+            let added = g.add_to(list, std::iter::once(canon));
+            if let Some(l) = g.lists.get_mut(list) {
+                quick_list::sync_to(&l.items, &mut l.index, &current);
+            }
+            added > 0
+        });
+    }
+
+    pub fn handle_quick_list_remove(
+        &mut self,
+        list: usize,
+        path: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_remove");
+        self.edit_quick_groups(sender, |g| g.remove_from(list, &path));
+    }
+
+    pub fn handle_quick_list_move(
+        &mut self,
+        path: PathBuf,
+        from: usize,
+        to: usize,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_move");
+        self.edit_quick_groups(sender, |g| g.move_item(&path, from, to));
+    }
+
+    /// Points slot `slot` of list `list` at the folder shown in the grid.
+    pub fn handle_quick_list_set_slot(
+        &mut self,
+        list: usize,
+        slot: usize,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_quick_list_set_slot");
+        let current = self.current_path.clone();
+        if self.edit_quick_groups(sender, |g| g.replace_slot(list, slot, current)) {
+            sender.input(AppMsg::ShowToast(tr("Quick list slot updated")));
+        } else {
+            sender.input(AppMsg::ShowToast(tr("That folder is already in this list")));
+        }
     }
 }

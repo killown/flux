@@ -25,7 +25,9 @@ impl FluxApp {
                 crate::ui::SidebarMsg::OpenInNewTab(path) => AppMsg::NewTab(Some(path)),
                 crate::ui::SidebarMsg::OpenInNewWindow(path) => {
                     crate::utils::helpers::open_new_instance(&path);
-                    AppMsg::ClearExclusive
+                    // Idempotent re-render. This used to be `ClearExclusive`, which
+                    // would now wipe the saved Quick List.
+                    AppMsg::RebuildQuickPanel
                 }
                 crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
                 crate::ui::SidebarMsg::ChangeIcon(path) => AppMsg::ShowSidebarIconPicker(path),

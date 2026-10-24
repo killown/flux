@@ -292,7 +292,8 @@ impl FluxApp {
                 || self.search_panel_visible
                 || self.location_panel_visible
                 || self.connect_panel_visible
-                || self.actions_panel_visible;
+                || self.actions_panel_visible
+                || self.quick_list_panel_visible;
 
             if !other_panel_open {
                 let mut diff_triggered = false;

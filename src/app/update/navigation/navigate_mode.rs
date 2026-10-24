@@ -183,6 +183,10 @@ impl FluxApp {
     /// Esc on the grid.
     pub fn handle_key_escape(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_key_escape");
+        // Esc closes the Quick List panel. The lists are kept.
+        if self.quick_list_panel_visible {
+            sender.input(AppMsg::ToggleQuickListPanel);
+        }
         if self.navigate.is_some() {
             self.exit_navigate_mode(sender);
             return;

@@ -176,6 +176,15 @@ pub struct FluxApp {
     pub actions_panel_initialized: bool,
     /// Session token for in-flight contextual-actions loads, guards stale results.
     pub actions_panel_session: Arc<AtomicU64>,
+    /// Revealer widget wrapping the right Quick List panel.
+    pub quick_list_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the right Quick List panel is currently visible.
+    pub quick_list_panel_visible: bool,
+    /// Left sidebar visibility when the Quick List panel opened. `Some` while
+    /// the panel has the sidebar hidden, taken when it gives it back.
+    pub quick_list_sidebar_stashed: Option<bool>,
+    /// Whether the Quick List panel widget tree has been instantiated.
+    pub quick_list_panel_initialized: bool,
     /// Line number of the item targeted by the last context menu. 0 when not a content-search hit.
     pub active_item_line: usize,
     /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.
@@ -280,6 +289,10 @@ pub struct FluxApp {
     pub exclusive_list: Vec<PathBuf>,
     /// The index of the currently active item in the exclusive directory list.
     pub exclusive_index: Option<usize>,
+    /// Every named Quick List. `exclusive_list` and `exclusive_index` always
+    /// mirror the selected one, so this copy of the selected list goes stale.
+    /// Read it through `FluxApp::quick_snapshot`.
+    pub quick_groups: crate::model::quick_groups::QuickGroups,
     /// Floating menu containing context-sensitive file and application actions.
     pub context_menu_popover: gtk::PopoverMenu,
     /// Collection of user-defined or plugin-provided contextual actions.
@@ -325,11 +338,6 @@ pub struct FluxApp {
     pub sidebar_visible: bool,
     /// Reference to the sidebar widget for toggling visibility.
     pub sidebar_widget: Option<gtk::Widget>,
-    /// Horizontal box holding the quick-list tab buttons.
-    ///
-    /// Populated imperatively by `RebuildQuickPanel` whenever `exclusive_list` changes.
-    /// Lives outside the relm4 view macro so it can be mutated freely from `update.rs`.
-    pub quick_panel_box: gtk::Box,
     /// Handle to the active file-transfer progress dialog, if open.
     ///
     /// `None` while no dialog is showing, `Some` while at least one transfer

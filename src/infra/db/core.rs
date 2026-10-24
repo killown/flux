@@ -47,6 +47,31 @@ impl StateManager {
                     path TEXT PRIMARY KEY,
                     icon TEXT NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS quick_list (
+                    slot INTEGER PRIMARY KEY,
+                    path BLOB NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS quick_list_state (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    slot INTEGER NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS quick_groups (
+                    pos INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    slot INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS quick_group_items (
+                    pos INTEGER NOT NULL,
+                    slot INTEGER NOT NULL,
+                    path BLOB NOT NULL,
+                    PRIMARY KEY (pos, slot)
+                );
+                CREATE TABLE IF NOT EXISTS quick_group_state (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    selected INTEGER NOT NULL
+                );
                 ",
         )?;
 
@@ -98,6 +123,31 @@ impl StateManager {
                 CREATE TABLE IF NOT EXISTS folder_icons (
                     path TEXT PRIMARY KEY,
                     icon TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS quick_list (
+                    slot INTEGER PRIMARY KEY,
+                    path BLOB NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS quick_list_state (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    slot INTEGER NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS quick_groups (
+                    pos INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    slot INTEGER
+                );
+                CREATE TABLE IF NOT EXISTS quick_group_items (
+                    pos INTEGER NOT NULL,
+                    slot INTEGER NOT NULL,
+                    path BLOB NOT NULL,
+                    PRIMARY KEY (pos, slot)
+                );
+                CREATE TABLE IF NOT EXISTS quick_group_state (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    selected INTEGER NOT NULL
                 );
             ",
         )?;

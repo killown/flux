@@ -6,6 +6,8 @@ mod defaults;
 mod doc_config;
 mod file_load;
 mod msg;
+pub mod quick_groups;
+pub mod quick_list;
 mod types;
 
 pub use app::{AltCycle, FilterMode, FluxApp, NavigateMode};
