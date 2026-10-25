@@ -52,6 +52,10 @@ pub fn perform_file_op_with_progress(
     let src_file = gio::File::for_path(src);
     let dst_file = gio::File::for_path(dest);
 
+    // Snapshot before touching anything: only a `dest` that did not exist yet
+    // belongs to this operation and may be removed if it fails or is cancelled.
+    let dest_existed = dest.symlink_metadata().is_ok();
+
     if is_cut {
         match src_file.move_(
             &dst_file,
@@ -65,7 +69,7 @@ pub fn perform_file_op_with_progress(
             Ok(()) => return Ok(()),
 
             Err(e) if cancellable.is_cancelled() || e.matches(gio::IOErrorEnum::Cancelled) => {
-                if !src.is_dir() {
+                if !src.is_dir() && !dest_existed {
                     let _ = std::fs::remove_file(dest);
                 }
                 return Err(e.to_string());
@@ -91,7 +95,7 @@ pub fn perform_file_op_with_progress(
         )
         .map_err(|e| e.to_string())
     } else {
-        if dest.symlink_metadata().is_err() {
+        if !dest_existed {
             created.push(dest.to_path_buf());
         }
         src_file
@@ -108,11 +112,9 @@ pub fn perform_file_op_with_progress(
     };
 
     if copy_res.is_err() {
-        if !src.is_dir() {
-            let _ = std::fs::remove_file(dest);
-        } else {
-            rollback_created(&created);
-        }
+        // `created` only holds paths that did not exist before this call, so a
+        // pre-existing destination that was being overwritten is left intact.
+        rollback_created(&created);
         return copy_res;
     }
 

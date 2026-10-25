@@ -9,7 +9,7 @@ use flux::app::update::file_ops::paste::perform_file_op;
 use gtk::gio;
 
 #[test]
-fn test_security_cancellation_preserves_source_and_cleans_destination() {
+fn test_security_cancellation_preserves_source_and_existing_destination() {
     let src_dir = tempdir().unwrap();
     let dest_dir = tempdir().unwrap();
 
@@ -28,6 +28,82 @@ fn test_security_cancellation_preserves_source_and_cleans_destination() {
     cancellable.cancel();
 
     let res = perform_file_op(&src_path, &dest_path, true, &cancellable);
+
+    assert!(res.is_err());
+    assert!(src_path.exists());
+    // The destination pre-existed, so it belongs to the user, not to this
+    // operation: a cancelled overwrite must leave it untouched.
+    assert!(dest_path.exists());
+    assert_eq!(fs::read(&dest_path).unwrap(), vec![0x00u8; 1024]);
+}
+
+#[test]
+fn test_security_cancellation_cleans_destination_it_created() {
+    let src_dir = tempdir().unwrap();
+    let dest_dir = tempdir().unwrap();
+
+    let src_path = src_dir.path().join("unmodified_source.bin");
+    File::create(&src_path)
+        .unwrap()
+        .write_all(&[0xAAu8; 8192])
+        .unwrap();
+
+    let dest_path = dest_dir.path().join("unmodified_source.bin");
+
+    let cancellable = gio::Cancellable::new();
+    cancellable.cancel();
+
+    let res = perform_file_op(&src_path, &dest_path, true, &cancellable);
+
+    assert!(res.is_err());
+    assert!(src_path.exists());
+    assert!(!dest_path.exists());
+}
+
+#[test]
+fn test_security_cancelled_copy_preserves_existing_destination() {
+    let src_dir = tempdir().unwrap();
+    let dest_dir = tempdir().unwrap();
+
+    let src_path = src_dir.path().join("src.bin");
+    File::create(&src_path)
+        .unwrap()
+        .write_all(&[0xAAu8; 8192])
+        .unwrap();
+
+    let dest_path = dest_dir.path().join("src.bin");
+    File::create(&dest_path)
+        .unwrap()
+        .write_all(&[0x00u8; 1024])
+        .unwrap();
+
+    let cancellable = gio::Cancellable::new();
+    cancellable.cancel();
+
+    let res = perform_file_op(&src_path, &dest_path, false, &cancellable);
+
+    assert!(res.is_err());
+    assert!(src_path.exists());
+    assert_eq!(fs::read(&dest_path).unwrap(), vec![0x00u8; 1024]);
+}
+
+#[test]
+fn test_security_cancelled_copy_leaves_no_new_destination() {
+    let src_dir = tempdir().unwrap();
+    let dest_dir = tempdir().unwrap();
+
+    let src_path = src_dir.path().join("src.bin");
+    File::create(&src_path)
+        .unwrap()
+        .write_all(&[0xAAu8; 8192])
+        .unwrap();
+
+    let dest_path = dest_dir.path().join("src.bin");
+
+    let cancellable = gio::Cancellable::new();
+    cancellable.cancel();
+
+    let res = perform_file_op(&src_path, &dest_path, false, &cancellable);
 
     assert!(res.is_err());
     assert!(src_path.exists());
