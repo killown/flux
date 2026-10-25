@@ -131,12 +131,17 @@ fn help_short_flag() {
     assert_eq!(action, StartupAction::PrintHelp);
 }
 
-// ── --menu-editor ────────────────────────────────────────────────────────
+// ── --menu-editor (removed) ──────────────────────────────────────────────
 
 #[test]
-fn menu_editor_flag() {
+fn menu_editor_flag_is_gone() {
+    // The menu editor opens in-process (F9 / app menu); the old standalone
+    // flag must now be rejected like any other unknown option.
     let action = resolve_startup_action(&args(&["flux-fm", "--menu-editor"]), home());
-    assert_eq!(action, StartupAction::MenuEditor);
+    assert_eq!(
+        action,
+        StartupAction::UnknownFlag("--menu-editor".to_string())
+    );
 }
 
 // ── --file-properties ────────────────────────────────────────────────────
@@ -239,7 +244,6 @@ fn all_flag_variants_are_distinct() {
 
     let version = resolve_startup_action(&args(&["flux-fm", "--version"]), home());
     let help = resolve_startup_action(&args(&["flux-fm", "--help"]), home());
-    let menu = resolve_startup_action(&args(&["flux-fm", "--menu-editor"]), home());
     let props = resolve_startup_action(&args(&["flux-fm", "--file-properties", "/f"]), home());
     let launch = resolve_startup_action(&args(&["flux-fm", "/tmp"]), home());
     let unknown = resolve_startup_action(&args(&["flux-fm", "--bad"]), home());
@@ -247,7 +251,6 @@ fn all_flag_variants_are_distinct() {
     let variants = [
         discriminant(&version),
         discriminant(&help),
-        discriminant(&menu),
         discriminant(&props),
         discriminant(&launch),
         discriminant(&unknown),
