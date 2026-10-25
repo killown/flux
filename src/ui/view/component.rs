@@ -174,8 +174,6 @@ impl SimpleAsyncComponent for FluxApp {
                             set_hexpand: false,
                             set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                             set_transition_type: gtk::StackTransitionType::Crossfade,
-                            #[watch]
-                            set_visible_child_name: &model.header_view,
 
                             /// Interactive breadcrumb container for directory parent navigation.
                             #[name = "path_entry"]
@@ -441,6 +439,13 @@ impl SimpleAsyncComponent for FluxApp {
                                     },
                                 },
                             } -> { set_name: constants::VIEW_FILTER },
+
+                            // Must stay AFTER every named child: relm4 applies properties in
+                            // source order, and selecting a child by name before it is added
+                            // makes GTK warn "Child name 'path' not found in GtkStack".
+                            // Keep #[watch], it is what switches breadcrumbs/entry/search.
+                            #[watch]
+                            set_visible_child_name: &model.header_view,
                         },
 
                         pack_end = &gtk::WindowControls {
