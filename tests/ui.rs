@@ -17,6 +17,7 @@ mod ui {
     mod menu_editor_test;
     mod navigation_test;
     mod network_dialogs_test;
+    mod paste_archive_test;
     mod paste_tmp_name_test;
     mod quick_groups_test;
     mod quick_list_test;

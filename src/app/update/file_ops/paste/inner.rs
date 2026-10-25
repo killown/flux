@@ -1,4 +1,4 @@
-use super::transfer::{resolve_gio_files, scan_total_bytes};
+use super::transfer::{archive_inner_path, remove_cut_source, resolve_gio_files, scan_total_bytes};
 use super::{DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::conflict_policy::ConflictPolicy;
@@ -27,8 +27,7 @@ impl FluxApp {
             if let Some((archive_path, prefix)) =
                 crate::services::archive::parse_archive_uri(&current_str)
             {
-                let resolved_sources: Vec<PathBuf> =
-                    files.into_iter().filter_map(|f| f.path()).collect();
+                let resolved_sources = resolve_gio_files(files);
                 let total_files = resolved_sources.len();
                 if total_files == 0 {
                     return;
@@ -43,15 +42,20 @@ impl FluxApp {
                     .unwrap_or_else(|| "archive".to_string());
 
                 let batch_label = if total_files == 1 {
-                    resolved_sources[0]
-                        .file_name()
-                        .map(|n| n.to_string_lossy().into_owned())
-                        .unwrap_or_else(|| "Adding file".to_string())
+                    resolved_sources[0].1.clone()
                 } else {
-                    format!("Adding {} items to {}", total_files, archive_name)
+                    format!(
+                        "{} {} items to {}",
+                        if is_cut { "Moving" } else { "Adding" },
+                        total_files,
+                        archive_name
+                    )
                 };
 
-                let total_bytes: u64 = resolved_sources.iter().map(|p| scan_total_bytes(p)).sum();
+                let total_bytes: u64 = resolved_sources
+                    .iter()
+                    .map(|(p, _, _)| scan_total_bytes(p))
+                    .sum();
 
                 self.task_queue.update(
                     task_id,
@@ -88,67 +92,70 @@ impl FluxApp {
                 relm4::spawn_blocking(move || {
                     let mut copied_bytes: u64 = 0;
 
-                    for (index, src) in resolved_sources.iter().enumerate() {
+                    for (index, (src, name, _)) in resolved_sources.iter().enumerate() {
                         if cancellable.is_cancelled() {
                             break;
                         }
 
                         let file_size = scan_total_bytes(src);
-                        if let Some(name) = src.file_name().and_then(|n| n.to_str()) {
-                            let current_label = if total_files > 1 {
-                                format!("({}/{}) {}", index + 1, total_files, name)
-                            } else {
-                                name.to_string()
-                            };
+                        let current_label = if total_files > 1 {
+                            format!("({}/{}) {}", index + 1, total_files, name)
+                        } else {
+                            name.clone()
+                        };
 
-                            let inner = if prefix.is_empty() {
-                                name.to_string()
-                            } else {
-                                format!("{}/{}", prefix.trim_end_matches('/'), name)
-                            };
+                        let inner = archive_inner_path(&prefix, name);
 
-                            let t_queue_cb = t_queue.clone();
-                            let s_cb = s.clone();
-                            let cancellable_cb = cancellable.clone();
-                            let label_cb = current_label.clone();
-                            let mut current_file_transferred = 0u64;
+                        let t_queue_cb = t_queue.clone();
+                        let s_cb = s.clone();
+                        let cancellable_cb = cancellable.clone();
+                        let label_cb = current_label.clone();
+                        let mut current_file_transferred = 0u64;
 
-                            let mut progress_cb = |chunk: u64| {
-                                current_file_transferred += chunk;
-                                let overall = copied_bytes + current_file_transferred;
+                        let mut progress_cb = |chunk: u64| {
+                            current_file_transferred += chunk;
+                            let overall = copied_bytes + current_file_transferred;
 
-                                t_queue_cb.update(
-                                    task_id,
-                                    label_cb.clone(),
-                                    overall,
-                                    total_bytes,
-                                    total_files,
-                                    cancellable_cb.clone(),
-                                );
-                                s_cb.input(AppMsg::TaskProgress {
-                                    id: task_id,
-                                    label: label_cb.clone(),
-                                    current: overall,
-                                    total: total_bytes,
-                                    total_items: total_files,
-                                    cancellable: cancellable_cb.clone(),
-                                });
-                                s_cb.input(AppMsg::TaskQueueTick);
-                            };
+                            t_queue_cb.update(
+                                task_id,
+                                label_cb.clone(),
+                                overall,
+                                total_bytes,
+                                total_files,
+                                cancellable_cb.clone(),
+                            );
+                            s_cb.input(AppMsg::TaskProgress {
+                                id: task_id,
+                                label: label_cb.clone(),
+                                current: overall,
+                                total: total_bytes,
+                                total_items: total_files,
+                                cancellable: cancellable_cb.clone(),
+                            });
+                            s_cb.input(AppMsg::TaskQueueTick);
+                        };
 
-                            if let Err(e) = crate::services::archive::write_archive_entry(
-                                &archive_path,
-                                src,
-                                &inner,
-                                None,
-                                Some(&mut progress_cb),
-                            ) {
-                                s.input(AppMsg::ShowToast(format!("Archive error: {e}")));
-                                break;
-                            }
-
-                            copied_bytes += file_size;
+                        if let Err(e) = crate::services::archive::write_archive_entry(
+                            &archive_path,
+                            src,
+                            &inner,
+                            None,
+                            Some(&mut progress_cb),
+                        ) {
+                            s.input(AppMsg::ShowToast(format!("Archive error: {e}")));
+                            break;
                         }
+
+                        if is_cut {
+                            if let Err(e) = remove_cut_source(src, &archive_path) {
+                                s.input(AppMsg::ShowToast(format!(
+                                    "Could not remove '{}' after moving: {e}",
+                                    name
+                                )));
+                            }
+                        }
+
+                        copied_bytes += file_size;
                     }
 
                     t_queue.remove(task_id);

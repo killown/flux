@@ -324,6 +324,40 @@ pub fn paste_name_for(src_path: &Path, orig_name: &str) -> String {
     cleaned
 }
 
+/// Entry path that `name` gets inside an archive, below the folder entry
+/// `prefix`.
+///
+/// An empty `prefix` is the archive root. Trailing slashes on `prefix` are
+/// ignored, so `"docs/"` and `"docs"` both give `docs/{name}`.
+pub fn archive_inner_path(prefix: &str, name: &str) -> String {
+    if prefix.is_empty() {
+        name.to_string()
+    } else {
+        format!("{}/{}", prefix.trim_end_matches('/'), name)
+    }
+}
+
+/// Removes `src` once a cut of it has been written into the archive at
+/// `archive_path`, so a cut ends up as a move instead of a copy.
+///
+/// Symlinks are removed as links and never followed. Nothing is removed when
+/// `archive_path` is `src` or lives inside it, because deleting the source
+/// would then delete the archive that was just written.
+///
+/// # Errors
+///
+/// Returns the I/O error when `src` cannot be inspected or removed.
+pub fn remove_cut_source(src: &Path, archive_path: &Path) -> std::io::Result<()> {
+    if archive_path.starts_with(src) {
+        return Ok(());
+    }
+    if src.symlink_metadata()?.is_dir() {
+        std::fs::remove_dir_all(src)
+    } else {
+        std::fs::remove_file(src)
+    }
+}
+
 pub(super) fn is_cancelled_error(cancellable: &gio::Cancellable, msg: &str) -> bool {
     cancellable.is_cancelled()
         || msg.contains("g-io-error-quark: 19")

@@ -5,7 +5,10 @@ mod inner;
 mod transfer;
 
 #[allow(unused_imports)]
-pub use transfer::{clean_tmp_basename, is_same_entry, paste_name_for, perform_file_op};
+pub use transfer::{
+    archive_inner_path, clean_tmp_basename, is_same_entry, paste_name_for, perform_file_op,
+    remove_cut_source,
+};
 
 pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
