@@ -474,7 +474,9 @@ impl FileItem {
         } else {
             // Recycled cell: drop the overlay left by a previous virtual-dir item.
             widgets.icon_overlay.remove_css_class("flux-vd");
-            widgets.original_widget.set_paintable(None::<&gdk::Paintable>);
+            widgets
+                .original_widget
+                .set_paintable(None::<&gdk::Paintable>);
         }
 
         // Lazy thumbnails (folder grid): report cells that are showing a plain icon.
@@ -611,8 +613,7 @@ impl FileItem {
                     let max_threads = self.thumbnail_threads;
                     relm4::spawn_blocking(move || {
                         crate::hit!("decode_custom_file_icon");
-                        let Some(_permit) = thumbnail_manager.acquire_blocking(max_threads)
-                        else {
+                        let Some(_permit) = thumbnail_manager.acquire_blocking(max_threads) else {
                             return;
                         };
                         if let Some(pixbuf) =
@@ -687,7 +688,9 @@ impl FileItem {
 
         // Virtual-dir state must not leak into the next item bound to this cell.
         widgets.icon_overlay.remove_css_class("flux-vd");
-        widgets.original_widget.set_paintable(None::<&gdk::Paintable>);
+        widgets
+            .original_widget
+            .set_paintable(None::<&gdk::Paintable>);
         widgets.original_widget.clear();
         widgets.archive_badge.set_visible(false);
 

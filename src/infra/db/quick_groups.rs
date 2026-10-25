@@ -38,9 +38,11 @@ fn read_groups(conn: &Connection) -> Option<QuickGroups> {
     }
 
     let selected = conn
-        .query_row("SELECT selected FROM quick_group_state WHERE id = 1", [], |r| {
-            r.get::<_, i64>(0)
-        })
+        .query_row(
+            "SELECT selected FROM quick_group_state WHERE id = 1",
+            [],
+            |r| r.get::<_, i64>(0),
+        )
         .ok()
         .and_then(|s| usize::try_from(s).ok())
         .unwrap_or(0);
@@ -82,8 +84,8 @@ impl StateManager {
         {
             let mut head =
                 tx.prepare("INSERT INTO quick_groups (pos, name, slot) VALUES (?1, ?2, ?3)")?;
-            let mut item = tx
-                .prepare("INSERT INTO quick_group_items (pos, slot, path) VALUES (?1, ?2, ?3)")?;
+            let mut item =
+                tx.prepare("INSERT INTO quick_group_items (pos, slot, path) VALUES (?1, ?2, ?3)")?;
             for (pos, g) in groups.lists.iter().enumerate() {
                 head.execute(params![pos as i64, g.name, g.index.map(|i| i as i64)])?;
                 for (slot, p) in g.items.iter().enumerate() {

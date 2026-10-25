@@ -81,8 +81,7 @@ impl FluxApp {
                             .await
                             .unwrap_or(false);
 
-                            if downloading || inner_session.load(Ordering::Acquire) != session_id
-                            {
+                            if downloading || inner_session.load(Ordering::Acquire) != session_id {
                                 return;
                             }
                         }

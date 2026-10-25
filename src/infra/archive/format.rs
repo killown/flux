@@ -7,8 +7,9 @@ use std::path::Path;
 
 /// Extensions (without the dot) that `is_browsable_archive` matches by name.
 pub const BROWSABLE_ARCHIVE_EXTENSIONS: &[&str] = &[
-    "zip", "tar", "tar.gz", "tgz", "tar.bz2", "tbz2", "tar.xz", "txz", "tar.lzma", "tlz", "tar.zst",
-    "tzst", "tar.lz4", "7z", "rar", "gz", "bz2", "xz", "lzma", "zst", "zstd", "lz4", "iso", "deb",
+    "zip", "tar", "tar.gz", "tgz", "tar.bz2", "tbz2", "tar.xz", "txz", "tar.lzma", "tlz",
+    "tar.zst", "tzst", "tar.lz4", "7z", "rar", "gz", "bz2", "xz", "lzma", "zst", "zstd", "lz4",
+    "iso", "deb",
 ];
 
 /// Returns `true` for archives that `list_archive_entries` can browse.
