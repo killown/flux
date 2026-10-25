@@ -1,37 +1,59 @@
-# Demo
+# Panel Showcase
 
-A short tour of the headline features: grid view, the embedded terminal,
-peek-preview, and fuzzy search.
+Flux features a suite of right-side panels to enhance your workflow without leaving the file manager. This page provides a visual guide to each panel, showing how to toggle them and what they are used for.
 
-<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 960px; margin: 1.5rem auto;">
-  <iframe
-    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
-    src="https://www.youtube-nocookie.com/embed/78IHL8aA8Jo"
-    title="Flux Demo"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowfullscreen>
-  </iframe>
-</div>
+Each panel can be opened and closed independently, and opening one will close any other that is currently active to maximize screen space.
 
-## Shot list
+## Contextual Actions
 
-| Time | Feature shown                                        |
-| ---- | ---------------------------------------------------- |
-| 0:00 | Grid view with thumbnails                            |
-| 0:04 | Embedded terminal (`F4`), `ls` command run           |
-| 0:09 | Close terminal, return to grid view                  |
-| 0:11 | Peek-preview panel on an image (`Space`)             |
-| 0:12 | Arrow through image files in peek-preview            |
-| 0:18 | Return to grid view                                  |
-| 0:22 | Navigate into "Videos" folder                        |
-| 0:24 | Peek-preview on video files, navigating through them |
-| 0:33 | Return to Videos folder grid view                    |
-| 0:35 | Return to main grid view                             |
-| 0:37 | Search panel / fuzzy search filtering (`Ctrl+F`)     |
-| 0:38 | Close search panel, return to grid view              |
+The **Contextual Actions** panel provides a list of user-defined commands relevant to the currently selected file type. It reads actions from `menu-*.rs` templates in your `~/.config/flux/menus/` directory.
 
-## Screenshots
+- **Toggle Shortcut:** `Ctrl+Shift+A`
+- **Use Cases:** Run custom scripts, open files in specific applications, or perform complex file operations with a single click. You can add new actions directly from the panel.
 
-For a still overview, see [`screenshots/`](https://github.com/killown/flux/tree/main/screenshots)
-in the repository.
+<video src="../screenshots/actions.mp4" controls muted playsinline width="100%"></video>
+
+## Quick List
+
+The **Quick List** panel gives you instant access to a "dock" of your most frequently used folders. Add the current directory or selected folders to the list, and use it to jump between projects or locations quickly.
+
+- **Toggle Shortcut:** `Ctrl+Shift+Q`
+- **Use Cases:** Keep your current project's directories, important download folders, or reference material just one click away. The list persists across sessions.
+
+<video src="../screenshots/quick_list.mp4" controls muted playsinline width="100%"></video>
+
+## Tag Navigator
+
+Flux allows you to organize files with tags using the `user.xdg.tags` extended attribute. The **Tag Navigator** panel lets you browse all tagged files, filter the current directory by tags, and manage your tags.
+
+- **Toggle Shortcut:** `Ctrl+Shift+T`
+- **Use Cases:** Create a cross-directory organization system for projects, photos, or documents. Click a tag to filter the view, or use the search bar to find a specific tag.
+
+<video src="../screenshots/tags.mp4" controls muted playsinline width="100%"></video>
+
+## Embedded Terminal
+
+The **Embedded Terminal** panel is a fully functional terminal right where you need it. It's powered by the same terminal engine as the bottom pane, but docks on the right.
+
+- **Toggle Shortcut:** `F4` (when `ui.terminal.position` is set to `"sidebar"`)
+- **Use Cases:** Run scripts on files you're browsing, use command-line tools like `git`, or perform complex file operations without leaving the Flux window. Press `Tab` for shell autocompletion, just as you would in a normal terminal.
+
+<video src="../screenshots/terminal.mp4" controls muted playsinline width="100%"></video>
+
+## Peek Preview
+
+The **Peek Preview** panel shows a rich preview of the selected file. It can render images, video, PDFs, Markdown, tables, and syntax-highlighted source code. It can also show the contents of folders and archives.
+
+- **Toggle Shortcut:** `Ctrl+Space` (or just `Space` from the grid)
+- **Use Cases:** Quickly inspect files without opening them in a separate application. Arrow through images or code, check the contents of a zip, or read a PDF.
+
+<video src="../screenshots/preview.mp4" controls muted playsinline width="100%"></video>
+
+## Search Panel
+
+The **Search** panel provides a powerful, advanced search interface. It allows you to perform a recursive search for files by name, extension, or even content, with filters for size and modification date.
+
+- **Toggle Shortcut:** `Ctrl+F`
+- **Use Cases:** Find all `.log` files in a subdirectory, search for a specific piece of text inside multiple files, or perform a case-sensitive regex search.
+
+<video src="../screenshots/search.mp4" controls muted playsinline width="100%"></video>
