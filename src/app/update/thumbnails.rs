@@ -1,4 +1,5 @@
 use crate::model::{AppMsg, FluxApp};
+use adw::prelude::*;
 use relm4::prelude::*;
 
 pub(super) fn handle(
@@ -12,14 +13,20 @@ pub(super) fn handle(
             crate::utils::icon::insert_cached_file_icon_texture(&path, texture);
             let files = &mut app.tabs[app.active_tab_index].files;
             for i in 0..files.len() {
-                if files.get(i).is_some_and(|w| w.borrow().path == path) {
+                let uses_icon = files.get(i).is_some_and(|w| {
+                    w.borrow()
+                        .icon
+                        .downcast_ref::<gtk::gio::FileIcon>()
+                        .and_then(|fi| fi.file().path())
+                        .is_some_and(|icon_path| icon_path == path)
+                });
+                if uses_icon {
                     if let Some(w) = files.get(i) {
                         crate::hit!("rebind_grid_item");
                         let item = w.borrow().clone();
                         files.remove(i);
                         files.insert(i, item);
                     }
-                    break;
                 }
             }
         }
