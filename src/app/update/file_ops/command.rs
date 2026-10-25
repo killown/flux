@@ -17,6 +17,74 @@ fn shell_safe(s: &str) -> Option<String> {
     Some(format!("'{}'", s.replace('\'', "'\\''")))
 }
 
+/// What a `%x` token in a command template stands for.
+enum Placeholder {
+    /// Not a placeholder: the text is kept exactly as written.
+    Unknown,
+    /// A value that is already shell-quoted. Quote characters written around
+    /// the token in the template (`"%p"` or `'%p'`) are consumed with it.
+    Shell(String),
+    /// An unquoted value that is inserted as is (the line number).
+    Plain(String),
+    /// A value cannot be used safely, so the whole command is abandoned.
+    Reject,
+}
+
+/// Expands the placeholders of `template` in a single left-to-right pass.
+///
+/// Substituted values are written straight to the output and are never
+/// scanned again. Expanding with chained `str::replace` calls re-scans the
+/// output of earlier replacements, so a file named `,touch pwn,%f` would have
+/// its own `%f` expanded inside the quotes around it and break out of them.
+///
+/// `lookup` receives each two-character token (for example `"%p"`). Returns
+/// `None` when `lookup` answers [`Placeholder::Reject`].
+fn expand_template(template: &str, mut lookup: impl FnMut(&str) -> Placeholder) -> Option<String> {
+    let chars: Vec<char> = template.chars().collect();
+    let mut out = String::with_capacity(template.len());
+    let mut i = 0;
+
+    while i < chars.len() {
+        let c = chars[i];
+
+        // A token wrapped in matching quotes, e.g. `"%p"` or `'%p'`.
+        if (c == '"' || c == '\'')
+            && i + 3 < chars.len()
+            && chars[i + 1] == '%'
+            && chars[i + 3] == c
+        {
+            let token: String = chars[i + 1..i + 3].iter().collect();
+            match lookup(&token) {
+                Placeholder::Shell(value) => {
+                    out.push_str(&value);
+                    i += 4;
+                    continue;
+                }
+                Placeholder::Reject => return None,
+                Placeholder::Plain(_) | Placeholder::Unknown => {}
+            }
+        }
+
+        if c == '%' && i + 1 < chars.len() {
+            let token: String = chars[i..i + 2].iter().collect();
+            match lookup(&token) {
+                Placeholder::Shell(value) | Placeholder::Plain(value) => {
+                    out.push_str(&value);
+                    i += 2;
+                    continue;
+                }
+                Placeholder::Reject => return None,
+                Placeholder::Unknown => {}
+            }
+        }
+
+        out.push(c);
+        i += 1;
+    }
+
+    Some(out)
+}
+
 /// Pure helper: builds the final shell command string and human-readable task label.
 pub fn build_execution_command(
     cmd_template: &str,
@@ -44,28 +112,16 @@ pub fn build_execution_command(
             None => return (String::new(), String::new()),
         };
 
-        let mut cmd = cmd_template
-            .replace("\"%p\"", &p_arg)
-            .replace("'%p'", &p_arg)
-            .replace("%p", &p_arg)
-            .replace("\"%d\"", &d_arg)
-            .replace("'%d'", &d_arg)
-            .replace("%d", &d_arg)
-            .replace("\"%f\"", &f_arg)
-            .replace("'%f'", &f_arg)
-            .replace("%f", &f_arg)
-            .replace("%l", &line_number.to_string());
-
-        if cmd.contains(constants::TEMPLATE_CWD) {
-            let cwd_arg = match shell_safe(&current_path.to_string_lossy()) {
-                Some(a) => a,
-                None => return (String::new(), String::new()),
-            };
-            cmd = cmd
-                .replace(&format!("\"{}\"", constants::TEMPLATE_CWD), &cwd_arg)
-                .replace(&format!("'{}'", constants::TEMPLATE_CWD), &cwd_arg)
-                .replace(constants::TEMPLATE_CWD, &cwd_arg);
-        }
+        let cmd = match expand_template(cmd_template, |token: &str| match token {
+            constants::TEMPLATE_PATHS => Placeholder::Shell(p_arg.clone()),
+            constants::TEMPLATE_CWD => Placeholder::Shell(d_arg.clone()),
+            "%f" => Placeholder::Shell(f_arg.clone()),
+            "%l" => Placeholder::Plain(line_number.to_string()),
+            _ => Placeholder::Unknown,
+        }) {
+            Some(cmd) => cmd,
+            None => return (String::new(), String::new()),
+        };
 
         let label = path
             .file_name()
@@ -82,23 +138,18 @@ pub fn build_execution_command(
             None => return (String::new(), String::new()),
         };
 
-        let mut cmd = cmd_template
-            .replace(&format!("\"{}\"", constants::TEMPLATE_PATHS), &paths_arg)
-            .replace(&format!("'{}'", constants::TEMPLATE_PATHS), &paths_arg)
-            .replace(constants::TEMPLATE_PATHS, &paths_arg);
-
-        if cmd.contains(constants::TEMPLATE_CWD) {
-            let cwd_arg = match shell_safe(&current_path.to_string_lossy()) {
-                Some(a) => a,
-                None => return (String::new(), String::new()),
-            };
-            cmd = cmd
-                .replace(&format!("\"{}\"", constants::TEMPLATE_CWD), &cwd_arg)
-                .replace(&format!("'{}'", constants::TEMPLATE_CWD), &cwd_arg)
-                .replace(constants::TEMPLATE_CWD, &cwd_arg);
-        }
-
-        cmd = cmd.replace("%l", "0");
+        let cmd = match expand_template(cmd_template, |token: &str| match token {
+            constants::TEMPLATE_PATHS => Placeholder::Shell(paths_arg.clone()),
+            constants::TEMPLATE_CWD => match shell_safe(&current_path.to_string_lossy()) {
+                Some(cwd_arg) => Placeholder::Shell(cwd_arg),
+                None => Placeholder::Reject,
+            },
+            "%l" => Placeholder::Plain("0".to_string()),
+            _ => Placeholder::Unknown,
+        }) {
+            Some(cmd) => cmd,
+            None => return (String::new(), String::new()),
+        };
 
         let label = format!("{} items", targets.len());
         (cmd, label)

@@ -172,3 +172,59 @@ fn build_command_target_with_newline_rejected_multi() {
     let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
     assert!(cmd.is_empty());
 }
+
+// ─── Substituted text must never be expanded again ─────────────────────────
+
+#[test]
+fn build_command_filename_with_placeholder_cannot_break_quoting() {
+    let template = "xdg-open %p";
+    let targets = vec![PathBuf::from("/tmp/;touch pwn;%f")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(cmd, "xdg-open '/tmp/;touch pwn;%f'");
+}
+
+#[test]
+fn build_command_single_target_values_are_not_rescanned() {
+    let template = "echo %p %f";
+    let targets = vec![PathBuf::from("/tmp/%d%l%p%f")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 7);
+    assert_eq!(cmd, "echo '/tmp/%d%l%p%f' '%d%l%p%f'");
+}
+
+#[test]
+fn build_command_multi_target_values_are_not_rescanned() {
+    let template = "rm %p";
+    let targets = vec![PathBuf::from("/tmp/%d"), PathBuf::from("/tmp/%l;x")];
+    let cwd = Path::new("/work'dir");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(cmd, "rm '/tmp/%d' '/tmp/%l;x'");
+}
+
+#[test]
+fn build_command_quoted_placeholders_are_replaced_with_their_quotes() {
+    let template = "echo \"%p\" '%f' \"%d\"";
+    let targets = vec![PathBuf::from("/tmp/dir/x y")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(cmd, "echo '/tmp/dir/x y' 'x y' '/tmp/dir'");
+}
+
+#[test]
+fn build_command_multi_target_cwd_placeholder_uses_current_dir() {
+    let template = "ls %d";
+    let targets = vec![PathBuf::from("/tmp/a"), PathBuf::from("/tmp/b")];
+    let cwd = Path::new("/work");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(cmd, "ls '/work'");
+}
+
+#[test]
+fn build_command_unknown_and_trailing_percent_are_kept() {
+    let template = "echo %x 100%";
+    let targets = vec![PathBuf::from("/tmp/x")];
+    let cwd = Path::new("/tmp");
+    let (cmd, _) = build_execution_command(template, &targets, cwd, 0);
+    assert_eq!(cmd, "echo %x 100%");
+}
