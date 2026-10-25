@@ -4,7 +4,7 @@ mod batch;
 mod inner;
 mod transfer;
 
-pub use transfer::perform_file_op;
+pub use transfer::{is_same_entry, perform_file_op};
 
 pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 

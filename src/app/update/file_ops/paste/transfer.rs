@@ -151,6 +151,22 @@ pub(super) fn is_strictly_inside(src: &Path, dest: &Path) -> bool {
     d != s && d.starts_with(&s)
 }
 
+/// True when `a` and `b` name the same directory entry, i.e. same file name in
+/// the same directory once the parent directories are resolved (so a symlinked
+/// alias of a folder counts as that folder).
+///
+/// The final component is deliberately not followed: a symlink named like the
+/// source that points at it is a different entry and gets replaced, not skipped.
+pub fn is_same_entry(a: &Path, b: &Path) -> bool {
+    crate::hit!("is_same_entry");
+    match (a.file_name(), b.file_name(), a.parent(), b.parent()) {
+        (Some(an), Some(bn), Some(ap), Some(bp)) => {
+            an == bn && resolve_for_compare(ap) == resolve_for_compare(bp)
+        }
+        _ => resolve_for_compare(a) == resolve_for_compare(b),
+    }
+}
+
 /// Removes `created` in reverse. Dirs use `remove_dir`, so a non-empty dir
 /// added by someone else is left alone.
 pub(super) fn rollback_created(created: &[PathBuf]) {

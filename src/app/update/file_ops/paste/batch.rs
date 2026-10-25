@@ -1,5 +1,5 @@
 use super::transfer::{is_cancelled_error, perform_file_op_with_progress, scan_total_bytes};
-use super::{CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
+use super::{is_same_entry, CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::conflict_policy::{
     auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
@@ -99,6 +99,10 @@ impl FluxApp {
 
             let mut copied_bytes: u64 = 0;
             let mut successful_ops = Vec::new();
+            // Copies that created their destination. Only these may be undone by
+            // deleting `dest`, a copy that replaced or merged into something that
+            // was already there has no safe inverse.
+            let mut undoable_copies = Vec::new();
 
             for (batch_index, (src_path, clean_name, is_dir, file_size)) in
                 files_with_sizes.into_iter().enumerate()
@@ -209,6 +213,16 @@ impl FluxApp {
                     dest_initial.clone()
                 };
 
+                // Pasting an entry onto itself (e.g. into its own folder and picking
+                // "Replace") transfers nothing. Skip it so it is never recorded,
+                // otherwise undoing the "copy" would delete the original.
+                if is_same_entry(&src_path, &dest) {
+                    copied_bytes += file_size;
+                    continue;
+                }
+
+                let dest_existed = dest.symlink_metadata().is_ok();
+
                 // Perform copy/move with byte-level progress reporting
                 let bytes_before = copied_bytes;
                 let s_cb = s.clone();
@@ -245,6 +259,9 @@ impl FluxApp {
                 );
                 if result.is_ok() {
                     successful_ops.push((src_path.clone(), dest.clone()));
+                    if !is_cut && !dest_existed {
+                        undoable_copies.push((src_path.clone(), dest.clone()));
+                    }
                     copied_bytes += file_size;
 
                     t_queue.update(
@@ -282,18 +299,23 @@ impl FluxApp {
             s.input(AppMsg::TaskCompleted(task_id));
             s.input(AppMsg::TaskQueueTick);
 
-            if !successful_ops.is_empty() {
-                if is_cut {
+            let any_done = !successful_ops.is_empty();
+
+            if is_cut {
+                if any_done {
                     s.input(AppMsg::MoveSucceeded {
                         items: successful_ops,
                         dest_dir: target_dir,
                     });
-                } else {
-                    s.input(AppMsg::CopySucceeded {
-                        copies: successful_ops,
-                        dest_dir: target_dir,
-                    });
                 }
+            } else if !undoable_copies.is_empty() {
+                s.input(AppMsg::CopySucceeded {
+                    copies: undoable_copies,
+                    dest_dir: target_dir,
+                });
+            }
+
+            if any_done {
                 s.input(AppMsg::Refresh);
             }
         });
