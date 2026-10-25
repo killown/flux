@@ -39,7 +39,6 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--show` | Bring the running window to the front |
 | `--hide` | Hide the running window |
 | `--theme NAME` | Set the theme to NAME, or 'default' to remove it |
-| `--menu-editor` | To manage menu.rs |
 <!-- END GENERATED: options -->
 
 ## Session flags

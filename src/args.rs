@@ -57,7 +57,6 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
         "    --theme NAME",
         "Set the theme to NAME, or 'default' to remove it",
     ),
-    ("    --menu-editor", "To manage menu.rs"),
 ];
 
 fn uri_to_path(s: &str) -> PathBuf {
@@ -185,8 +184,6 @@ pub enum StartupAction {
     SetTheme(String),
     /// Ask the running window to navigate to PATH, or launch a new window there.
     Cwd(PathBuf),
-    /// Open the context-menu editor utility.
-    MenuEditor,
     /// Print the paths selected in the running window and exit.
     PrintSelection {
         /// Terminate each path with NUL instead of a newline.
@@ -243,7 +240,6 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         },
         Some("--version" | "-v") => StartupAction::PrintVersion,
         Some("--help" | "-h") => StartupAction::PrintHelp,
-        Some("--menu-editor") => StartupAction::MenuEditor,
         Some("--selection") => StartupAction::PrintSelection {
             null: filtered_args.get(1) == Some(&"-0"),
         },

@@ -35,9 +35,9 @@ pub(super) fn setup_shortcuts(app: &adw::Application) {
         "open-menu-editor",
         &config.shortcuts.menu_editor,
         constants::MENU_EDITOR,
-        || {
-            let exe = std::env::current_exe().expect("Failed to get current exe path");
-            let _ = std::process::Command::new(exe).arg("--menu-editor").spawn();
+        {
+            let app = app.clone();
+            move || crate::ui::menu::editor::open(app.active_window().as_ref())
         },
     );
 

@@ -1,4 +1,4 @@
-//! Standalone menu editor window, `run()` is its entry point.
+//! Menu editor window, opened in-process via `open()` (F9 / app menu).
 
 use crate::i18n::tr;
 use crate::model::MenuEntry;
@@ -375,16 +375,19 @@ impl SimpleComponent for MenuEditor {
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
-pub fn run() {
-    adw::init().expect("Failed to initialize Libadwaita");
-    crate::i18n::init();
-    crate::utils::helpers::load_custom_css();
-
-    let app = adw::Application::builder()
-        .flags(gtk::gio::ApplicationFlags::NON_UNIQUE)
-        .build();
-
-    RelmApp::from_app(app)
-        .with_args(vec![])
-        .run::<MenuEditor>(());
+/// Opens the menu editor as a window of the running app. GTK, i18n and CSS are
+/// already initialised by the main process, so nothing else is needed.
+pub fn open(parent: Option<&gtk::Window>) {
+    // Dropping the controller shuts the component's runtime down, which makes
+    // every button click panic. Keep it alive until the window is destroyed.
+    let controller = MenuEditor::builder().launch(()).detach();
+    let window = controller.widget().clone();
+    if let Some(parent) = parent {
+        window.set_transient_for(Some(parent));
+    }
+    let keep_alive = RefCell::new(Some(controller));
+    window.connect_destroy(move |_| {
+        keep_alive.borrow_mut().take();
+    });
+    window.present();
 }

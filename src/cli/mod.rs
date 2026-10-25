@@ -103,10 +103,6 @@ pub fn run() {
             app.with_args(vec![]).run::<FileProperties>(path);
         }
 
-        StartupAction::MenuEditor => {
-            crate::ui::menu::editor::run();
-        }
-
         StartupAction::PrintSelection { .. } => unreachable!("handled before GTK initialisation"),
 
         StartupAction::Toggle | StartupAction::Show => {
