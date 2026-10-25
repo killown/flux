@@ -130,6 +130,11 @@ pub(super) const BUILTINS: &[BuiltinDef] = &[
         scope: "all",
         desc: "Clears all custom background images and resets styling to default.",
     },
+    BuiltinDef {
+        name: "builtin::forget_archive_password",
+        scope: "all",
+        desc: "Deletes the archive password saved in the system keyring for the target archive.",
+    },
 ];
 
 /// `(placeholder, one target, several targets)` rows of the placeholder table in `docs/actions.md`.

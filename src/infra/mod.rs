@@ -3,6 +3,7 @@ pub mod db;
 pub mod fonts;
 pub mod git;
 pub mod inspector;
+pub mod keyring;
 pub mod loader;
 pub mod luks;
 pub mod mounts;

@@ -44,7 +44,9 @@ impl FluxApp {
 
         let total_bytes = crate::services::archive::archive_total_bytes(
             &archive_path,
-            self.cached_archive_password.as_deref(),
+            self.cached_archive_passwords
+                .get(&archive_path)
+                .map(String::as_str),
         );
 
         sender.input(AppMsg::TaskProgress {
@@ -56,7 +58,7 @@ impl FluxApp {
             cancellable: cancellable.clone(),
         });
 
-        let password = self.cached_archive_password.clone();
+        let password = self.cached_archive_passwords.get(&archive_path).cloned();
         let s = sender.clone();
 
         // ── Polling thread: reads dest dir size every 150 ms ─────────────────

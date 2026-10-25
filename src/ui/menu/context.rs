@@ -458,6 +458,14 @@ impl FluxApp {
                             emit_toast(s, toast);
                         },
                     ),
+                    "builtin::forget_archive_password" => register_path_action(
+                        &action_group,
+                        "forget-archive-password",
+                        sender,
+                        target_path,
+                        action_toast.clone(),
+                        |s, target, _| s.input(AppMsg::ForgetArchivePassword(target)),
+                    ),
                     "builtin::add_to_quick_list" => register_simple(
                         &action_group,
                         "add-to-quick-list",

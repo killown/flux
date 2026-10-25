@@ -10,6 +10,7 @@ mod services {
     mod file_loader_test;
     mod file_sorting_test;
     mod indexer_test;
+    mod keyring_test;
     mod luks_parse_test;
     mod luks_test;
     mod luks_unlock_test;

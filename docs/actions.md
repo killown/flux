@@ -56,6 +56,7 @@ The following actions are recognised when `command` starts with `builtin::`. The
 | `builtin::set_bg_sidebar_left` | `image/all` | Sets the selected image as the left sidebar background. |
 | `builtin::set_bg_sidebar_right` | `image/all` | Sets the selected image as the right panel background. |
 | `builtin::clear_backgrounds` | `all` | Clears all custom background images and resets styling to default. |
+| `builtin::forget_archive_password` | `all` | Deletes the archive password saved in the system keyring for the target archive. |
 
 ## Worked examples
 

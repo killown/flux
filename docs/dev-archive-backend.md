@@ -110,7 +110,9 @@ tool.
   size 0 is a directory. An entry named `foo/` with size 0 that has
   children is still a directory. Do not infer from size alone.
 - **Forward the password argument, never cache it.** The password lives
-  on `FluxApp::cached_archive_password` and is forwarded by the caller.
+  in `FluxApp::cached_archive_passwords` (one entry per archive path) and
+  is forwarded by the caller. Persistent storage is `infra/keyring.rs`,
+  which only the UI layer talks to.
   A backend that stores it in a field survives past a session and
   leaks it into the next archive that happens to use the same struct.
 - **Respect `ArchiveError::PasswordRequired` vs `WrongPassword`.** The

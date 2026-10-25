@@ -11,6 +11,26 @@ use relm4::prelude::*;
 use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
+/// Runs the blocking archive listing on the blocking pool and awaits it.
+async fn list_off_thread(
+    archive_path: &std::path::Path,
+    prefix: &str,
+    password: Option<String>,
+) -> Result<Vec<archive::ArchiveEntry>, archive::ArchiveError> {
+    let archive_path = archive_path.to_path_buf();
+    let prefix = prefix.to_string();
+    match relm4::spawn_blocking(move || {
+        archive::list_archive_entries(&archive_path, &prefix, password.as_deref())
+    })
+    .await
+    {
+        Ok(result) => result,
+        Err(e) => Err(archive::ArchiveError::Other(format!(
+            "archive listing task failed: {e}"
+        ))),
+    }
+}
+
 impl FluxApp {
     /// Populates the file grid with the immediate children of `prefix` inside the
     /// archive located at `archive_path`.
@@ -22,12 +42,14 @@ impl FluxApp {
     /// # Arguments
     /// * `archive_path` - Real on-disk path of the archive file.
     /// * `prefix`       - Inner path component being listed (`""` = root level).
+    /// * `password`     - Password the caller already has (typed by the user). When
+    ///   `None`, the session map is consulted, then the system keyring.
     /// * `sender`       - Component handle for dispatching lifecycle messages.
     pub fn load_archive(
         &mut self,
         archive_path: PathBuf,
         prefix: String,
-        mut password: Option<String>,
+        password: Option<String>,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("load_archive");
@@ -36,26 +58,32 @@ impl FluxApp {
         }
         self.files.clear();
         self.is_loading = true;
-        // Bump the session counter and capture the resulting ID so the
-        // spawned closure can stamp the message it will later dispatch.
         let session_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
         self.thumbnail_manager.clear_and_cancel_all();
 
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
-        if password.is_none() {
-            password = self.cached_archive_password.clone();
-        }
+        let known_password =
+            password.or_else(|| self.cached_archive_passwords.get(&archive_path).cloned());
 
         let archive_path_c = archive_path.clone();
         let prefix_c = prefix.clone();
-        let password_c = password.clone();
         let sender_c = sender.clone();
 
-        relm4::spawn_blocking(move || {
-            let result =
-                archive::list_archive_entries(&archive_path_c, &prefix_c, password_c.as_deref());
+        relm4::spawn(async move {
+            let mut password_c = known_password;
+            let mut result = list_off_thread(&archive_path_c, &prefix_c, password_c.clone()).await;
+
+            let needs_password = matches!(result, Err(archive::ArchiveError::PasswordRequired));
+            if password_c.is_none() && needs_password {
+                if let Some(saved) =
+                    crate::infra::keyring::lookup_archive_password(&archive_path_c).await
+                {
+                    result = list_off_thread(&archive_path_c, &prefix_c, Some(saved.clone())).await;
+                    password_c = Some(saved);
+                }
+            }
 
             sender_c.input(AppMsg::ArchiveLoaded {
                 archive_path: archive_path_c,
@@ -64,6 +92,60 @@ impl FluxApp {
                 load_id: session_id,
                 result,
             });
+        });
+    }
+
+    /// Queues a keyring save requested from the password dialog.
+    pub fn queue_archive_password_save(&mut self, archive_path: PathBuf, password: String) {
+        crate::hit!("queue_archive_password_save");
+        self.pending_keyring_saves.queue(archive_path, password);
+    }
+
+    /// Persists `password` for `archive_path` in the system keyring.
+    pub fn handle_save_archive_password_to_keyring(
+        &self,
+        archive_path: PathBuf,
+        password: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_save_archive_password_to_keyring");
+        let sender_c = sender.clone();
+        relm4::spawn(async move {
+            let saved =
+                crate::infra::keyring::save_archive_password(&archive_path, &password).await;
+            let toast = if saved {
+                crate::i18n::tr("Password saved to the system keyring")
+            } else {
+                crate::i18n::tr("Could not save the password to the system keyring")
+            };
+            sender_c.input(AppMsg::ShowToast(toast));
+        });
+    }
+
+    /// Deletes the saved keyring password for the archive behind `target` and
+    /// drops the session copy, so the next open prompts again.
+    pub fn handle_forget_archive_password(
+        &mut self,
+        target: PathBuf,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_forget_archive_password");
+        let target_str = target.to_string_lossy().into_owned();
+        let archive_path = match archive::parse_archive_uri(&target_str) {
+            Some((archive_path, _)) => archive_path,
+            None => target,
+        };
+        self.cached_archive_passwords.remove(&archive_path);
+
+        let sender_c = sender.clone();
+        relm4::spawn(async move {
+            let forgotten = crate::infra::keyring::forget_archive_password(&archive_path).await;
+            let toast = if forgotten {
+                crate::i18n::tr("Saved archive password removed")
+            } else {
+                crate::i18n::tr("Could not remove the saved archive password")
+            };
+            sender_c.input(AppMsg::ShowToast(toast));
         });
     }
 
@@ -94,7 +176,8 @@ impl FluxApp {
 
         match result {
             Err(archive::ArchiveError::PasswordRequired) => {
-                self.cached_archive_password = None;
+                self.cached_archive_passwords.remove(&archive_path);
+                self.pending_keyring_saves.discard(&archive_path);
                 sender.input(AppMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
@@ -102,7 +185,8 @@ impl FluxApp {
                 });
             }
             Err(archive::ArchiveError::WrongPassword) => {
-                self.cached_archive_password = None;
+                self.cached_archive_passwords.remove(&archive_path);
+                self.pending_keyring_saves.discard(&archive_path);
                 sender.input(AppMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
@@ -113,8 +197,20 @@ impl FluxApp {
                 sender.input(AppMsg::ShowToast(e));
             }
             Ok(entries) => {
-                if password.is_some() {
-                    self.cached_archive_password = password;
+                if let Some(password) = &password {
+                    self.cached_archive_passwords
+                        .insert(archive_path.clone(), password.clone());
+                }
+
+                if let Some(confirmed) = self
+                    .pending_keyring_saves
+                    .confirm(&archive_path, password.as_deref())
+                {
+                    self.handle_save_archive_password_to_keyring(
+                        archive_path.clone(),
+                        confirmed,
+                        sender,
+                    );
                 }
 
                 let mut items =

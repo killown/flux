@@ -46,6 +46,11 @@ pub(super) fn handle(
             prefix,
             wrong_password,
         } => app.show_prompt_archive_password(archive_path, prefix, wrong_password, sender),
+        AppMsg::SaveArchivePasswordToKeyring {
+            archive_path,
+            password,
+        } => app.queue_archive_password_save(archive_path, password),
+        AppMsg::ForgetArchivePassword(target) => app.handle_forget_archive_password(target, sender),
         other => return Err(other),
     }
     Ok(())

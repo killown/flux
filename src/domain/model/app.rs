@@ -3,7 +3,7 @@ use crate::ui::keymap::KeyMap;
 use crate::ui::{FileItem, SidebarPlace};
 use relm4::factory::FactoryVecDeque;
 use relm4::typed_view::grid::TypedGridView;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
@@ -223,8 +223,10 @@ pub struct FluxApp {
     pub network_section: gtk::Box,
     /// True while the current archive path requires a password that has not yet been supplied.
     pub archive_locked: bool,
-    /// Cached password for accessing encrypted subdirectories within the current archive session.
-    pub cached_archive_password: Option<String>,
+    /// Passwords resolved this session, keyed by the archive's on-disk path.
+    pub cached_archive_passwords: HashMap<PathBuf, String>,
+    /// Keyring saves the user requested, held back until the archive accepts the password.
+    pub pending_keyring_saves: crate::infra::keyring::PendingSaves,
     /// The current label for the contextual Recents button.
     pub recents_label: String,
     /// The current tooltip for the contextual Recents button.

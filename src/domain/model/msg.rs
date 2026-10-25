@@ -892,6 +892,13 @@ pub enum AppMsg {
         prefix: String,
         password: String,
     },
+    /// Request that an archive password be saved to the system keyring.
+    SaveArchivePasswordToKeyring {
+        archive_path: PathBuf,
+        password: String,
+    },
+    /// Delete the keyring entry for an archive and drop the session copy.
+    ForgetArchivePassword(PathBuf),
     /// Open all currently selected files or navigate to the selected directory.
     ///
     /// `position` is supplied by `GridView::connect_activate` and addresses the

@@ -47,19 +47,35 @@ impl FluxApp {
             e.grab_focus();
         });
 
-        dialog.set_extra_child(Some(&entry));
+        let save_check =
+            gtk::CheckButton::with_label(&crate::i18n::tr("Save password to the system keyring"));
+        save_check.set_active(false);
+
+        let content = gtk::Box::new(gtk::Orientation::Vertical, 12);
+        content.append(&entry);
+        content.append(&save_check);
+
+        dialog.set_extra_child(Some(&content));
         dialog.present(parent.as_ref());
 
         let entry_clone = entry.clone();
+        let save_clone = save_check.clone();
         dialog.connect_response(None, move |_, resp| {
             if resp == "ok" {
                 let password = entry_clone.text().to_string();
                 if !password.is_empty() {
+                    let save_to_keyring = save_clone.is_active();
                     s.input(AppMsg::LoadArchiveWithPassword {
                         archive_path: archive_path.clone(),
                         prefix: prefix.clone(),
-                        password,
+                        password: password.clone(),
                     });
+                    if save_to_keyring {
+                        s.input(AppMsg::SaveArchivePasswordToKeyring {
+                            archive_path: archive_path.clone(),
+                            password,
+                        });
+                    }
                 }
             }
         });

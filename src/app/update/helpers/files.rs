@@ -115,7 +115,7 @@ impl FluxApp {
                 } else {
                     // Extracting and launching a file from inside the archive
                     let sender_clone = sender.clone();
-                    let cached_pwd = self.cached_archive_password.clone();
+                    let cached_pwd = self.cached_archive_passwords.get(&archive_path).cloned();
 
                     let parent_prefix = Path::new(&inner)
                         .parent()
@@ -267,7 +267,10 @@ impl FluxApp {
                 if let Some((archive_path, inner)) =
                     crate::services::archive::parse_archive_uri(&path_str)
                 {
-                    let cached_pwd = self.cached_archive_password.as_deref();
+                    let cached_pwd = self
+                        .cached_archive_passwords
+                        .get(&archive_path)
+                        .map(String::as_str);
                     if *is_dir {
                         match crate::services::archive::extract_dir_to_tempdir(
                             &archive_path,
