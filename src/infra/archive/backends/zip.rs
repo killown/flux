@@ -6,11 +6,15 @@
 
 use crate::services::archive::entry::collect_entry;
 use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
-use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::services::archive::{
+    register_temp_dir, zip_is_encrypted, ArchiveBackend, ArchiveEntry, ArchiveError,
+};
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use zip::unstable::write::FileOptionsExt;
+use zip::HasZipMetadata;
 
 /// Reserved top-level folder that holds Flux-owned data inside a zip.
 pub(in crate::infra::archive) const FLUX_CACHE_DIR: &str = ".flux-cache";
@@ -49,6 +53,147 @@ fn thumbnail_entry_name(inner_path: &str) -> String {
     )
 }
 
+/// How the entries of an encrypted ZIP are protected, read from the archive
+/// itself so that rewrites and new entries keep the same scheme.
+#[derive(Clone, Copy)]
+enum ZipCipher {
+    /// Legacy PKWARE encryption, written through `with_deprecated_encryption`.
+    ZipCrypto,
+    /// WinZip AES at the key strength the archive already uses.
+    Aes(zip::AesMode),
+}
+
+/// What a rewrite of an encrypted ZIP needs to keep it encrypted.
+#[derive(Clone, Copy)]
+struct EncryptionPlan<'p> {
+    cipher: ZipCipher,
+    password: &'p str,
+}
+
+impl<'p> EncryptionPlan<'p> {
+    /// Returns `base` with this plan's cipher and password set, for a new entry.
+    fn apply(
+        &self,
+        base: zip::write::SimpleFileOptions,
+    ) -> Result<zip::write::FileOptions<'p, ()>, ArchiveError> {
+        match self.cipher {
+            ZipCipher::ZipCrypto => base
+                .with_deprecated_encryption(self.password.as_bytes())
+                .map_err(|e| password_error(e, "set up encryption")),
+            ZipCipher::Aes(mode) => Ok(base.with_aes_encryption(mode, self.password)),
+        }
+    }
+}
+
+/// Maps a `zip` password failure to the error the UI keys its prompt on.
+fn password_error(e: zip::result::ZipError, what: &str) -> ArchiveError {
+    match e {
+        zip::result::ZipError::InvalidPassword | zip::result::ZipError::UnsupportedArchive(_) => {
+            ArchiveError::WrongPassword
+        }
+        e => ArchiveError::Other(format!("{what}: {e}")),
+    }
+}
+
+/// Decides whether a rewrite of `zip_in` has to keep it encrypted.
+fn encryption_plan<'p, R: Read + Seek>(
+    archive_path: &Path,
+    zip_in: &mut zip::ZipArchive<R>,
+    password: Option<&'p str>,
+) -> Result<Option<EncryptionPlan<'p>>, ArchiveError> {
+    let mut found: Option<(usize, ZipCipher)> = None;
+    for i in 0..zip_in.len() {
+        let Ok(raw) = zip_in.by_index_raw(i) else {
+            continue;
+        };
+        if raw.is_file() && raw.encrypted() {
+            let cipher = match raw.get_metadata().aes_mode {
+                Some((mode, _, _)) => ZipCipher::Aes(mode),
+                None => ZipCipher::ZipCrypto,
+            };
+            found = Some((i, cipher));
+            break;
+        }
+    }
+
+    if found.is_none() && !zip_is_encrypted(archive_path) {
+        return Ok(None);
+    }
+    let Some(password) = password else {
+        return Err(ArchiveError::PasswordRequired);
+    };
+    let Some((idx, cipher)) = found else {
+        return Ok(None);
+    };
+
+    zip_in
+        .by_index_decrypt(idx, password.as_bytes())
+        .map(|_| ())
+        .map_err(|e| password_error(e, "check password"))?;
+    Ok(Some(EncryptionPlan { cipher, password }))
+}
+
+/// Returns the name of entry `i`, with `\` normalised to `/`.
+fn entry_name<R: Read + Seek>(
+    zip_in: &zip::ZipArchive<R>,
+    i: usize,
+) -> Result<String, ArchiveError> {
+    zip_in
+        .name_for_index(i)
+        .map(|n| n.replace('\\', "/"))
+        .ok_or_else(|| ArchiveError::Other(format!("read raw entry {i}: entry not found")))
+}
+
+/// Copies entry `i` of `zip_in` into `zip_out` and returns its compressed size.
+fn copy_entry<W: Write + Seek>(
+    zip_in: &mut zip::ZipArchive<std::fs::File>,
+    i: usize,
+    zip_out: &mut zip::ZipWriter<W>,
+    plan: Option<&EncryptionPlan<'_>>,
+) -> Result<u64, ArchiveError> {
+    let raw = zip_in
+        .by_index_raw(i)
+        .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
+    let name = raw.name().to_owned();
+    let size = raw.compressed_size();
+
+    let plan = match plan {
+        Some(plan) if raw.is_file() && raw.encrypted() && raw.get_metadata().aes_mode.is_none() => {
+            plan
+        }
+        _ => {
+            zip_out
+                .raw_copy_file(raw)
+                .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+            return Ok(size);
+        }
+    };
+    drop(raw);
+
+    let mut entry = zip_in
+        .by_index_decrypt(i, plan.password.as_bytes())
+        .map_err(|e| password_error(e, &format!("decrypt entry {name}")))?;
+    let mut options = plan.apply(entry.options())?.into_full_options();
+    if !entry.comment().is_empty() {
+        options = options.with_file_comment(entry.comment());
+    }
+    zip_out
+        .start_file(name.as_str(), options)
+        .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+    std::io::copy(&mut entry, zip_out)
+        .map_err(|e| ArchiveError::Other(format!("re-encrypt entry {name}: {e}")))?;
+    Ok(size)
+}
+
+/// Gives the rewritten archive the permissions and mtime of the original, so
+/// replacing it is invisible apart from the content.
+fn restore_attributes(tmp: &tempfile::NamedTempFile, original: &std::fs::Metadata) {
+    let _ = std::fs::set_permissions(tmp.path(), original.permissions());
+    if let Ok(mtime) = original.modified() {
+        let _ = tmp.as_file().set_modified(mtime);
+    }
+}
+
 pub(in crate::infra::archive) struct ZipBackend;
 
 impl ArchiveBackend for ZipBackend {
@@ -85,13 +230,18 @@ impl ArchiveBackend for ZipBackend {
         &self,
         archive_path: &Path,
         inner_path: &str,
-        _password: Option<&str>,
+        password: Option<&str>,
         mut progress_cb: Option<&mut dyn FnMut(u64)>,
     ) -> Result<(), ArchiveError> {
         let src_file = std::fs::File::open(archive_path)
             .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+        let src_meta = src_file
+            .metadata()
+            .map_err(|e| ArchiveError::Other(format!("stat archive: {e}")))?;
         let mut zip_in = zip::ZipArchive::new(src_file)
             .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+        let plan = encryption_plan(archive_path, &mut zip_in, password)?;
 
         let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
         let mut tmp = tempfile::Builder::new()
@@ -107,20 +257,14 @@ impl ArchiveBackend for ZipBackend {
             let mut zip_out = zip::ZipWriter::new(&mut tmp);
 
             for i in 0..zip_in.len() {
-                let raw_entry = zip_in
-                    .by_index_raw(i)
-                    .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
-                let name = raw_entry.name().replace('\\', "/");
-                let entry_size = raw_entry.compressed_size();
+                let name = entry_name(&zip_in, i)?;
 
                 // Skip the entry being deleted (or any child if deleting a directory)
                 if name == target || name.starts_with(&target_dir_prefix) {
                     continue;
                 }
 
-                zip_out
-                    .raw_copy_file(raw_entry)
-                    .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+                let entry_size = copy_entry(&mut zip_in, i, &mut zip_out, plan.as_ref())?;
 
                 if let Some(ref mut cb) = progress_cb {
                     cb(entry_size);
@@ -132,6 +276,7 @@ impl ArchiveBackend for ZipBackend {
                 .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
         }
 
+        restore_attributes(&tmp, &src_meta);
         tmp.persist(archive_path)
             .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
 
@@ -142,12 +287,17 @@ impl ArchiveBackend for ZipBackend {
         &self,
         archive_path: &Path,
         inner_path: &str,
-        _password: Option<&str>,
+        password: Option<&str>,
     ) -> Result<(), ArchiveError> {
         let src_file = std::fs::File::open(archive_path)
             .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+        let src_meta = src_file
+            .metadata()
+            .map_err(|e| ArchiveError::Other(format!("stat archive: {e}")))?;
         let mut zip_in = zip::ZipArchive::new(src_file)
             .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+        let plan = encryption_plan(archive_path, &mut zip_in, password)?;
 
         let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
         let mut tmp = tempfile::Builder::new()
@@ -169,25 +319,21 @@ impl ArchiveBackend for ZipBackend {
 
             // Copy all existing entries, skipping a duplicate if it already exists
             for i in 0..zip_in.len() {
-                let raw_entry = zip_in
-                    .by_index_raw(i)
-                    .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
-                let name = raw_entry.name().replace('\\', "/");
+                let name = entry_name(&zip_in, i)?;
                 if name == dir_entry_name {
                     // Directory already exists, just copy it and we're done
-                    zip_out
-                        .raw_copy_file(raw_entry)
-                        .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+                    copy_entry(&mut zip_in, i, &mut zip_out, plan.as_ref())?;
                     continue;
                 }
-                zip_out
-                    .raw_copy_file(raw_entry)
-                    .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+                copy_entry(&mut zip_in, i, &mut zip_out, plan.as_ref())?;
             }
 
-            // Add the new directory entry
             let options = zip::write::SimpleFileOptions::default()
                 .compression_method(zip::CompressionMethod::Stored);
+            let options = match plan.as_ref() {
+                Some(plan) => plan.apply(options)?,
+                None => options,
+            };
             zip_out
                 .add_directory(&dir_entry_name, options)
                 .map_err(|e| ArchiveError::Other(format!("add directory: {e}")))?;
@@ -197,6 +343,7 @@ impl ArchiveBackend for ZipBackend {
                 .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
         }
 
+        restore_attributes(&tmp, &src_meta);
         tmp.persist(archive_path)
             .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
 
@@ -208,13 +355,18 @@ impl ArchiveBackend for ZipBackend {
         archive_path: &Path,
         source_file: &Path,
         inner_path: &str,
-        _password: Option<&str>,
+        password: Option<&str>,
         mut progress_cb: Option<&mut dyn FnMut(u64)>,
     ) -> Result<(), ArchiveError> {
         let src_file = std::fs::File::open(archive_path)
             .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
+        let src_meta = src_file
+            .metadata()
+            .map_err(|e| ArchiveError::Other(format!("stat archive: {e}")))?;
         let mut zip_in = zip::ZipArchive::new(src_file)
             .map_err(|e| ArchiveError::Other(format!("read zip: {e}")))?;
+
+        let plan = encryption_plan(archive_path, &mut zip_in, password)?;
 
         let parent_dir = archive_path.parent().unwrap_or_else(|| Path::new("."));
         let mut tmp = tempfile::Builder::new()
@@ -236,10 +388,7 @@ impl ArchiveBackend for ZipBackend {
 
             // Copy entries that do not collide with the target path (file or dir)
             for i in 0..zip_in.len() {
-                let raw_entry = zip_in
-                    .by_index_raw(i)
-                    .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
-                let name = raw_entry.name().replace('\\', "/");
+                let name = entry_name(&zip_in, i)?;
 
                 if name == target
                     || name == target_dir_prefix
@@ -248,9 +397,7 @@ impl ArchiveBackend for ZipBackend {
                     continue;
                 }
 
-                zip_out
-                    .raw_copy_file(raw_entry)
-                    .map_err(|e| ArchiveError::Other(format!("copy entry {name}: {e}")))?;
+                copy_entry(&mut zip_in, i, &mut zip_out, plan.as_ref())?;
             }
 
             // Write the source (file or directory tree) at inner_path
@@ -258,10 +405,15 @@ impl ArchiveBackend for ZipBackend {
                 writer: &mut zip::ZipWriter<&mut tempfile::NamedTempFile>,
                 src: &Path,
                 base_inner: &str,
+                plan: Option<&EncryptionPlan<'_>>,
                 progress_cb: &mut Option<&mut dyn FnMut(u64)>,
             ) -> Result<(), ArchiveError> {
                 let options = zip::write::SimpleFileOptions::default()
                     .compression_method(zip::CompressionMethod::Deflated);
+                let options = match plan {
+                    Some(plan) => plan.apply(options)?,
+                    None => options,
+                };
 
                 if src.is_dir() {
                     let dir_name = if base_inner.is_empty() {
@@ -292,7 +444,7 @@ impl ArchiveBackend for ZipBackend {
                             format!("{}{}", dir_name, name_str)
                         };
 
-                        write_recursive(writer, &child_path, &child_inner, progress_cb)?;
+                        write_recursive(writer, &child_path, &child_inner, plan, progress_cb)?;
                     }
                 } else {
                     writer
@@ -322,13 +474,20 @@ impl ArchiveBackend for ZipBackend {
                 Ok(())
             }
 
-            write_recursive(&mut zip_out, source_file, target, &mut progress_cb)?;
+            write_recursive(
+                &mut zip_out,
+                source_file,
+                target,
+                plan.as_ref(),
+                &mut progress_cb,
+            )?;
 
             zip_out
                 .finish()
                 .map_err(|e| ArchiveError::Other(format!("finalize zip: {e}")))?;
         }
 
+        restore_attributes(&tmp, &src_meta);
         tmp.persist(archive_path)
             .map_err(|e| ArchiveError::Other(format!("replace original archive: {e}")))?;
 

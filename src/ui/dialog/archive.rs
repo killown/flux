@@ -90,6 +90,7 @@ impl FluxApp {
         crate::hit!("show_archive_deletion_warning");
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
+        let password = self.cached_archive_passwords.get(&archive_path).cloned();
 
         let file_name = Path::new(&inner_path)
             .file_name()
@@ -117,6 +118,7 @@ impl FluxApp {
                 let a_path = archive_path.clone();
                 let i_path = inner_path.clone();
                 let file_name_clone = file_name.clone();
+                let password = password.clone();
 
                 relm4::spawn_blocking(move || {
                     let total_bytes = std::fs::metadata(&a_path).map(|m| m.len()).unwrap_or(0);
@@ -158,10 +160,12 @@ impl FluxApp {
                         }
                     };
 
+                    let was_encrypted = crate::services::archive::zip_is_encrypted(&a_path);
+
                     let result = crate::services::archive::remove_archive_entry(
                         &a_path,
                         &i_path,
-                        None,
+                        password.as_deref(),
                         Some(&mut progress_cb),
                     );
 
@@ -173,6 +177,12 @@ impl FluxApp {
                     match result {
                         Ok(()) => {
                             s_clone.input(AppMsg::Refresh);
+                            if was_encrypted && !crate::services::archive::zip_is_encrypted(&a_path)
+                            {
+                                s_clone.input(AppMsg::ShowToast(crate::i18n::tr(
+                                    "No encrypted files left: this archive is no longer password-protected, and files you add next will not be encrypted.",
+                                )));
+                            }
                         }
                         Err(e) => {
                             s_clone.input(AppMsg::ShowToast(format!("Archive error: {e}")));

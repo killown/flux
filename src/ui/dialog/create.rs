@@ -36,7 +36,12 @@ fn parse_names(input: &str) -> Vec<String> {
 
 /// Creates one entry inside an archive or on the local filesystem.
 /// Blocking: only call this from a worker thread, never from the GTK main thread.
-fn create_blocking(kind: Kind, current_path: &Path, name: &str) -> Created {
+fn create_blocking(
+    kind: Kind,
+    current_path: &Path,
+    name: &str,
+    archive_password: Option<&str>,
+) -> Created {
     let current_str = current_path.to_string_lossy();
     if kind == Kind::Folder && is_archive_uri(&current_str) {
         let Some((archive_path, prefix)) =
@@ -49,8 +54,11 @@ fn create_blocking(kind: Kind, current_path: &Path, name: &str) -> Created {
         } else {
             format!("{}/{}", prefix.trim_end_matches('/'), name)
         };
-        return match crate::services::archive::create_archive_directory(&archive_path, &inner, None)
-        {
+        return match crate::services::archive::create_archive_directory(
+            &archive_path,
+            &inner,
+            archive_password,
+        ) {
             Ok(()) => Created::Ok,
             Err(e) => Created::Failed(e.to_string()),
         };
@@ -135,6 +143,7 @@ async fn create_entries(
     kind: Kind,
     current_path: PathBuf,
     names: Vec<String>,
+    archive_password: Option<String>,
     s: AsyncComponentSender<FluxApp>,
 ) {
     let is_archive = kind == Kind::Folder && is_archive_uri(&current_path.to_string_lossy());
@@ -153,10 +162,11 @@ async fn create_entries(
             let status = create_network(kind, &uri).await;
             (status, PathBuf::from(uri))
         } else {
-            let (cp, n) = (current_path.clone(), name.clone());
-            let status = gtk::gio::spawn_blocking(move || create_blocking(kind, &cp, &n))
-                .await
-                .unwrap_or_else(|_| Created::Failed("worker thread panicked".to_string()));
+            let (cp, n, pwd) = (current_path.clone(), name.clone(), archive_password.clone());
+            let status =
+                gtk::gio::spawn_blocking(move || create_blocking(kind, &cp, &n, pwd.as_deref()))
+                    .await
+                    .unwrap_or_else(|_| Created::Failed("worker thread panicked".to_string()));
             (status, current_path.join(name))
         };
 
@@ -217,6 +227,10 @@ impl FluxApp {
         crate::hit!("show_prompt_new_folder");
         let window = gtk::Application::default().active_window();
         let current_path = self.current_path.clone();
+        let archive_password = crate::services::archive::parse_archive_uri(
+            &current_path.to_string_lossy(),
+        )
+        .and_then(|(archive_path, _)| self.cached_archive_passwords.get(&archive_path).cloned());
         let s = sender.clone();
 
         let dialog = adw::AlertDialog::new(
@@ -250,6 +264,7 @@ impl FluxApp {
                         Kind::Folder,
                         current_path.clone(),
                         names,
+                        archive_password.clone(),
                         s.clone(),
                     ));
                 }
@@ -297,6 +312,7 @@ impl FluxApp {
                         Kind::File,
                         current_path.clone(),
                         names,
+                        None,
                         s.clone(),
                     ));
                 }

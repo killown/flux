@@ -5,6 +5,7 @@ mod services {
     mod archive_extract_traversal_test;
     mod archive_services_test;
     mod archive_synthesis_test;
+    mod archive_zip_encrypted_write_test;
     mod db_advanced_test;
     mod delete_ops_test;
     mod file_loader_test;

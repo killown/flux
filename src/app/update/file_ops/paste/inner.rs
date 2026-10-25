@@ -88,6 +88,7 @@ impl FluxApp {
 
                 let s = sender.clone();
                 let t_queue = self.task_queue.clone();
+                let password = self.cached_archive_passwords.get(&archive_path).cloned();
 
                 relm4::spawn_blocking(move || {
                     let mut copied_bytes: u64 = 0;
@@ -139,7 +140,7 @@ impl FluxApp {
                             &archive_path,
                             src,
                             &inner,
-                            None,
+                            password.as_deref(),
                             Some(&mut progress_cb),
                         ) {
                             s.input(AppMsg::ShowToast(format!("Archive error: {e}")));
