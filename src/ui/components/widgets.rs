@@ -15,6 +15,12 @@ pub struct FileWidgets {
     pub git_badge: gtk::Label,
     /// Always-visible archive marker shown on virtual-dir cards.
     pub archive_badge: gtk::Image,
+    /// Closed padlock on the icon: encrypted archive, no password cached. Both lock
+    /// badges are built once; `bind` only toggles their visibility, so it neither
+    /// allocates nor touches icon names or CSS classes.
+    pub lock_badge_closed: gtk::Image,
+    /// Open padlock on the icon: encrypted archive, password cached this session.
+    pub lock_badge_open: gtk::Image,
     /// The archive's real icon, stacked over `icon_widget` and revealed by CSS
     /// while the card is selected. Empty for everything but virtual dirs.
     pub original_widget: gtk::Image,

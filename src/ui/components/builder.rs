@@ -30,6 +30,8 @@ impl FileItem {
             is_empty: false,
             is_symlink: false,
             is_broken_symlink: false,
+            is_encrypted_archive: false,
+            has_cached_password: false,
             expand_labels: false,
             is_foreign_owner: false,
             is_custom_icon: false,
@@ -72,6 +74,8 @@ pub struct FileItemBuilder {
     is_empty: bool,
     is_symlink: bool,
     is_broken_symlink: bool,
+    is_encrypted_archive: bool,
+    has_cached_password: bool,
     expand_labels: bool,
     is_foreign_owner: bool,
     is_custom_icon: bool,
@@ -163,6 +167,16 @@ impl FileItemBuilder {
 
     pub fn is_broken_symlink(mut self, v: bool) -> Self {
         self.is_broken_symlink = v;
+        self
+    }
+
+    pub fn is_encrypted_archive(mut self, v: bool) -> Self {
+        self.is_encrypted_archive = v;
+        self
+    }
+
+    pub fn has_cached_password(mut self, v: bool) -> Self {
+        self.has_cached_password = v;
         self
     }
 
@@ -280,6 +294,8 @@ impl FileItemBuilder {
             grid_spacing: self.grid_spacing,
             is_symlink: self.is_symlink,
             is_broken_symlink: self.is_broken_symlink,
+            is_encrypted_archive: self.is_encrypted_archive,
+            has_cached_password: self.has_cached_password,
             show_symlink_emblem: self.show_symlink_emblem,
             line_number: self.line_number,
             is_cut: self.is_cut,

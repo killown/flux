@@ -182,6 +182,7 @@ impl FluxApp {
         let expand_labels = self.config.ui.expand_labels;
         let show_empty_dir_emblem = self.config.ui.show_empty_dir_emblem;
         let archives_as_folders = self.config.ui.archives_as_folders;
+        let lock_snapshot = self.archive_lock_snapshot();
         let filter = self.filter.clone();
         let mime_filter = self.mime_filter.clone();
         let path_clone = path.clone();
@@ -214,7 +215,14 @@ impl FluxApp {
                     let mut cached_items: Vec<FileLoadContext> = loader_pool().install(|| {
                         cached_items
                             .into_par_iter()
-                            .filter(|item| item.target_path.symlink_metadata().is_ok())
+                            .filter_map(|mut item| {
+                                item.target_path.symlink_metadata().ok()?;
+                                // Unlock and forget happen while the snapshot sits in
+                                // the cache, so the cached padlock flags are never
+                                // trusted. Runs on the pool, not on the GTK thread.
+                                lock_snapshot.stamp(&mut item);
+                                Some(item)
+                            })
                             .collect()
                     });
 
@@ -535,6 +543,7 @@ impl FluxApp {
                         let _ = item.mtime();
                         let _ = item.is_foreign_owner(uid);
                         let _ = item.labels();
+                        lock_snapshot.stamp(&mut item);
                         // `is_empty()` does `read_dir().next().is_none()` on the
                         // GTK thread when `show_empty_dir_emblem` is on. Warm it
                         // here, on the Rayon pool, for the same reason as the

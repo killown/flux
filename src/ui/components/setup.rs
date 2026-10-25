@@ -150,6 +150,27 @@ impl FileItem {
         icon_overlay.set_child(Some(&icon_widget));
         icon_overlay.add_overlay(&original_widget);
 
+        // Padlock hints for encrypted archives. Two fixed widgets instead of one with a
+        // swapped icon, so `bind` flips visibility only. They sit on the icon's corner,
+        // clear of the archive and git badges, and can never take a click.
+        let make_lock_badge = |icon_name: &str, state_class: &str| {
+            gtk::Image::builder()
+                .icon_name(icon_name)
+                .pixel_size(12)
+                .halign(gtk::Align::End)
+                .valign(gtk::Align::End)
+                .can_target(false)
+                .can_focus(false)
+                .visible(false)
+                .css_classes(["flux-lock-hint", state_class])
+                .build()
+        };
+        let lock_badge_closed =
+            make_lock_badge("changes-prevent-symbolic", "flux-lock-hint--locked");
+        let lock_badge_open = make_lock_badge("changes-allow-symbolic", "flux-lock-hint--unlocked");
+        icon_overlay.add_overlay(&lock_badge_closed);
+        icon_overlay.add_overlay(&lock_badge_open);
+
         let video_widget = gtk::Video::builder()
             .autoplay(true)
             .loop_(true)
@@ -452,6 +473,8 @@ impl FileItem {
                 scale_css_provider: None,
                 git_badge,
                 archive_badge,
+                lock_badge_closed,
+                lock_badge_open,
                 original_widget,
                 icon_overlay,
             },

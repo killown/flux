@@ -479,6 +479,19 @@ impl FileItem {
                 .set_paintable(None::<&gdk::Paintable>);
         }
 
+        // ── Encrypted archive padlock ─────────────────────────────────────────
+        //
+        // Hint only. The two booleans were resolved by the loader pool (ZIP header
+        // read, session sets), so this is two visibility toggles: no I/O, no keyring,
+        // no allocation, no icon-name or CSS-class churn. Closed padlock = encrypted
+        // and locked, open padlock = encrypted and a password is cached.
+        widgets
+            .lock_badge_closed
+            .set_visible(self.is_encrypted_archive && !self.has_cached_password);
+        widgets
+            .lock_badge_open
+            .set_visible(self.is_encrypted_archive && self.has_cached_password);
+
         // Lazy thumbnails (folder grid): report cells that are showing a plain icon.
         if let Some(hook) = &self.thumb_hook {
             if self.thumbnail.is_none() && !self.is_dir {
@@ -693,6 +706,8 @@ impl FileItem {
             .set_paintable(None::<&gdk::Paintable>);
         widgets.original_widget.clear();
         widgets.archive_badge.set_visible(false);
+        widgets.lock_badge_closed.set_visible(false);
+        widgets.lock_badge_open.set_visible(false);
 
         // Release the texture on both the widget and the item model
         widgets.icon_widget.set_paintable(None::<&gdk::Paintable>);

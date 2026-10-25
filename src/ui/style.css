@@ -1699,6 +1699,24 @@ toast button image {
   box-shadow: 0 1px 3px alpha(black, 0.4);
 }
 
+.flux-lock-hint {
+  min-width: 1em;
+  min-height: 1em;
+  padding: 0.15em;
+  margin: 0.2em;
+  border-radius: 0.3em;
+  background-color: alpha(var(--color-window-bg), 0.85);
+  box-shadow: 0 1px 3px alpha(black, 0.4);
+}
+
+.flux-lock-hint--locked {
+  color: var(--color-warn);
+}
+
+.flux-lock-hint--unlocked {
+  color: var(--color-success);
+}
+
 .flux-vd-original {
   opacity: 0;
 }

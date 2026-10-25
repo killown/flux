@@ -28,6 +28,7 @@ mod backends;
 mod entry;
 mod error;
 mod format;
+mod lock_hint;
 mod temp;
 pub mod thumb_cache;
 mod uri;
@@ -40,6 +41,8 @@ pub use entry::{entries_to_load_contexts, ArchiveEntry};
 pub use error::ArchiveError;
 #[allow(unused_imports)]
 pub use format::{is_browsable_archive, is_supported_archive, BROWSABLE_ARCHIVE_EXTENSIONS};
+#[allow(unused_imports)]
+pub use lock_hint::{zip_is_encrypted, ArchiveLockSnapshot};
 #[allow(unused_imports)]
 pub use temp::{
     clear_archive_session_temp, flux_scratch_dir, purge_stale_scratch_dirs, register_temp_dir,

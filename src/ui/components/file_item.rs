@@ -81,6 +81,11 @@ pub struct FileItem {
     pub is_symlink: bool,
     /// Whether the symbolic link target does not exist.
     pub is_broken_symlink: bool,
+    /// Encrypted archive: the card shows a padlock. Hint only, never read by click
+    /// handling. Resolved off the GTK thread at load time.
+    pub is_encrypted_archive: bool,
+    /// A password for this archive is in the session cache: the padlock is open.
+    pub has_cached_password: bool,
     /// User setting controlling whether the visual symbolic link badge is shown.
     pub show_symlink_emblem: bool,
     /// Line number from a content-search hit. 0 for all other items.

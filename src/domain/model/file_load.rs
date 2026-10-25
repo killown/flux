@@ -87,6 +87,10 @@ pub struct FileLoadContext {
     pub is_symlink: bool,
     /// True if the symbolic link points to a non-existent target.
     pub is_broken_symlink: bool,
+    /// Encrypted archive, per the ZIP local header or what this session has learned.
+    pub is_encrypted_archive: bool,
+    /// A password for this archive is in the session cache. Hint only.
+    pub has_cached_password: bool,
 
     // Lazy metadata caches
     /// Cached emptiness flag determined lazily without consuming entire directory streams.
@@ -125,6 +129,8 @@ impl FileLoadContext {
             custom_icon,
             is_symlink,
             is_broken_symlink,
+            is_encrypted_archive: false,
+            has_cached_password: false,
             is_empty: OnceLock::new(),
             metadata: OnceLock::new(),
             size: OnceLock::new(),
@@ -176,6 +182,8 @@ impl FileLoadContext {
             custom_icon,
             is_symlink: false,
             is_broken_symlink: false,
+            is_encrypted_archive: false,
+            has_cached_password: false,
             is_empty: OnceLock::from(size == 0),
             metadata: OnceLock::new(),
             size: OnceLock::from(size),

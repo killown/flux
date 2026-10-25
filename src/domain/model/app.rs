@@ -225,6 +225,9 @@ pub struct FluxApp {
     pub archive_locked: bool,
     /// Passwords resolved this session, keyed by the archive's on-disk path.
     pub cached_archive_passwords: HashMap<PathBuf, String>,
+    /// Archives this session has seen demand a password (7z and RAR cannot be probed
+    /// cheaply). Paths only, in memory only, feeds the padlock badge.
+    pub known_encrypted_archives: std::collections::HashSet<PathBuf>,
     /// Keyring saves the user requested, held back until the archive accepts the password.
     pub pending_keyring_saves: crate::infra::keyring::PendingSaves,
     /// The current label for the contextual Recents button.

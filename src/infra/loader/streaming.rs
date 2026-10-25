@@ -211,6 +211,8 @@ impl FluxApp {
                 .display_label(display_label)
                 .is_dir(item.is_dir)
                 .is_virtual_dir(is_virtual_dir)
+                .is_encrypted_archive(item.is_encrypted_archive)
+                .has_cached_password(item.has_cached_password)
                 .original_icon(original_icon)
                 .thumbnail(thumbnail)
                 .icon_size(if is_list_mode {

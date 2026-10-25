@@ -233,6 +233,7 @@ impl FluxApp {
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),
             cached_archive_passwords: std::collections::HashMap::new(),
+            known_encrypted_archives: std::collections::HashSet::new(),
             pending_keyring_saves: crate::infra::keyring::PendingSaves::default(),
             archive_locked: false,
             network_section,

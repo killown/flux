@@ -95,6 +95,57 @@ impl FluxApp {
         });
     }
 
+    /// Paths-only copy of the session's archive lock state for the loader pool.
+    pub fn archive_lock_snapshot(&self) -> archive::ArchiveLockSnapshot {
+        archive::ArchiveLockSnapshot::new(
+            self.known_encrypted_archives.clone(),
+            self.cached_archive_passwords.keys().cloned().collect(),
+        )
+    }
+
+    /// Pushes the session's lock state for `archive_path` into every grid card that
+    /// shows it, so the padlock flips without a reload.
+    pub fn sync_archive_lock_badges(&mut self, archive_path: &std::path::Path) {
+        crate::hit!("sync_archive_lock_badges");
+        let encrypted = self.known_encrypted_archives.contains(archive_path);
+        let unlocked = self.cached_archive_passwords.contains_key(archive_path);
+
+        for tab in &mut self.tabs {
+            let selection = tab.files.view.model().and_downcast::<gtk::MultiSelection>();
+            for idx in 0..tab.files.len() {
+                let Some(wrapper) = tab.files.get(idx) else {
+                    continue;
+                };
+                let next = {
+                    let item = wrapper.borrow();
+                    if item.path.as_path() != archive_path {
+                        continue;
+                    }
+                    let is_encrypted = item.is_encrypted_archive || encrypted;
+                    if is_encrypted == item.is_encrypted_archive
+                        && unlocked == item.has_cached_password
+                    {
+                        continue;
+                    }
+                    let mut next = item.clone();
+                    next.is_encrypted_archive = is_encrypted;
+                    next.has_cached_password = unlocked;
+                    next
+                };
+                drop(wrapper);
+
+                let was_selected = selection.as_ref().is_some_and(|m| m.is_selected(idx));
+                tab.files.remove(idx);
+                tab.files.insert(idx, next);
+                if was_selected {
+                    if let Some(m) = &selection {
+                        m.select_item(idx, false);
+                    }
+                }
+            }
+        }
+    }
+
     /// Queues a keyring save requested from the password dialog.
     pub fn queue_archive_password_save(&mut self, archive_path: PathBuf, password: String) {
         crate::hit!("queue_archive_password_save");
@@ -136,6 +187,7 @@ impl FluxApp {
             None => target,
         };
         self.cached_archive_passwords.remove(&archive_path);
+        self.sync_archive_lock_badges(&archive_path);
 
         let sender_c = sender.clone();
         relm4::spawn(async move {
@@ -178,6 +230,8 @@ impl FluxApp {
             Err(archive::ArchiveError::PasswordRequired) => {
                 self.cached_archive_passwords.remove(&archive_path);
                 self.pending_keyring_saves.discard(&archive_path);
+                self.known_encrypted_archives.insert(archive_path.clone());
+                self.sync_archive_lock_badges(&archive_path);
                 sender.input(AppMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
@@ -187,6 +241,8 @@ impl FluxApp {
             Err(archive::ArchiveError::WrongPassword) => {
                 self.cached_archive_passwords.remove(&archive_path);
                 self.pending_keyring_saves.discard(&archive_path);
+                self.known_encrypted_archives.insert(archive_path.clone());
+                self.sync_archive_lock_badges(&archive_path);
                 sender.input(AppMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
@@ -200,6 +256,10 @@ impl FluxApp {
                 if let Some(password) = &password {
                     self.cached_archive_passwords
                         .insert(archive_path.clone(), password.clone());
+                    // A password only reaches this point after a prompt or a keyring
+                    // hit, so the archive is encrypted and now unlocked.
+                    self.known_encrypted_archives.insert(archive_path.clone());
+                    self.sync_archive_lock_badges(&archive_path);
                 }
 
                 if let Some(confirmed) = self
