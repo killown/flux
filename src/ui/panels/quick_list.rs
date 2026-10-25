@@ -505,6 +505,37 @@ fn group_row(
         add_btn.connect_clicked(move |_| s.input(AppMsg::QuickListAddCurrent(list)));
     }
     line.append(&add_btn);
+
+    let del_btn = gtk::Button::builder()
+        .icon_name("user-trash-symbolic")
+        .css_classes(["flat", "circular"])
+        .valign(gtk::Align::Center)
+        .tooltip_text(tr("Delete this list"))
+        .build();
+    {
+        let list = v.list;
+        let list_name = v.name.clone();
+        let total = v.total;
+        let s = sender.clone();
+        del_btn.connect_clicked(move |_| {
+            let body = if total == 0 {
+                format!("{} “{}”.", tr("This removes the list"), list_name)
+            } else {
+                format!(
+                    "{} “{}”. {}",
+                    tr("This removes the list"),
+                    list_name,
+                    tr("The folders themselves are not touched.")
+                )
+            };
+            let s2 = s.clone();
+            confirm(&tr("Delete List"), &body, &tr("Delete"), move || {
+                s2.input(AppMsg::QuickListDelete(list));
+            });
+        });
+    }
+    line.append(&del_btn);
+
     row.set_child(Some(&line));
 
     {
