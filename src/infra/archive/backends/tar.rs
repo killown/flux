@@ -5,8 +5,9 @@ use crate::services::archive::util::{
     extract_bytes_via_tempfile, lc_name, make_dest_dir_at, open_buf,
 };
 use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{Read, Write};
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
 pub(in crate::infra::archive) struct TarBackend;
@@ -175,6 +176,52 @@ pub(super) fn extract_tar<R: Read>(
     Err(ArchiveError::Other(format!("not found: {inner_path}")))
 }
 
+/// True when no component of `dir` below `base` is a symlink.
+///
+/// Extraction can run into an existing folder (`override_dest`) that already
+/// holds symlinks, and an earlier symlink entry of the same archive creates
+/// one too. Writing through either would land outside the destination.
+/// Components that do not exist yet are fine: they are created as real
+/// directories.
+fn real_dirs_below(base: &Path, dir: &Path) -> bool {
+    let Ok(rel) = dir.strip_prefix(base) else {
+        return false;
+    };
+    let mut cur = base.to_path_buf();
+    for comp in rel.components() {
+        cur.push(comp);
+        if std::fs::symlink_metadata(&cur).is_ok_and(|m| m.file_type().is_symlink()) {
+            return false;
+        }
+    }
+    true
+}
+
+/// Cached form of [`real_dirs_below`] for the per-entry hot path. Only
+/// directories already verified as symlink-free are cached, and extraction
+/// never turns one of them into a symlink: an existing directory is never
+/// replaced by an entry.
+fn dir_is_safe(base: &Path, dir: &Path, verified: &mut HashSet<PathBuf>) -> bool {
+    if verified.contains(dir) {
+        return true;
+    }
+    let safe = real_dirs_below(base, dir);
+    if safe {
+        verified.insert(dir.to_path_buf());
+    }
+    safe
+}
+
+/// Removes whatever non-directory sits at `path` so a link can take its
+/// place. Returns `false` when a directory is in the way.
+fn clear_non_dir(path: &Path) -> std::io::Result<bool> {
+    match std::fs::symlink_metadata(path) {
+        Ok(m) if m.is_dir() => Ok(false),
+        Ok(_) => std::fs::remove_file(path).map(|()| true),
+        Err(_) => Ok(true),
+    }
+}
+
 pub(super) fn extract_dir_tar<R: Read>(
     reader: R,
     inner_dir: &str,
@@ -196,6 +243,7 @@ pub(in crate::infra::archive) fn extract_dir_tar_at<R: Read>(
         format!("{}/", inner_dir.trim_matches('/'))
     };
 
+    let mut verified: HashSet<PathBuf> = HashSet::new();
     let mut archive = tar::Archive::new(reader);
     for entry in archive
         .entries()
@@ -232,20 +280,122 @@ pub(in crate::infra::archive) fn extract_dir_tar_at<R: Read>(
             continue;
         }
 
-        let is_dir = entry.header().entry_type().is_dir();
+        let entry_type = entry.header().entry_type();
+        let is_dir = entry_type.is_dir();
+
+        // Directory entries must themselves be real directories, every other
+        // entry needs a symlink-free parent chain.
+        let guard_dir = if is_dir {
+            Some(out_path.as_path())
+        } else {
+            out_path.parent()
+        };
+        if !guard_dir.is_some_and(|d| dir_is_safe(&dest_dir, d, &mut verified)) {
+            eprintln!("[archive] skipped TAR entry behind a symlink: {relative}");
+            continue;
+        }
 
         if is_dir {
             std::fs::create_dir_all(&out_path)
                 .map_err(|e| ArchiveError::Other(format!("create dir failed: {e}")))?;
-        } else {
-            if let Some(parent) = out_path.parent() {
-                std::fs::create_dir_all(parent)
-                    .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
+            continue;
+        }
+
+        if let Some(parent) = out_path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
+        }
+
+        if matches!(
+            entry_type,
+            tar::EntryType::Regular | tar::EntryType::Continuous | tar::EntryType::GNUSparse
+        ) {
+            // An existing symlink at the target is replaced, never followed.
+            // `O_NOFOLLOW` closes the window between this check and the open.
+            if std::fs::symlink_metadata(&out_path).is_ok_and(|m| m.file_type().is_symlink()) {
+                std::fs::remove_file(&out_path)
+                    .map_err(|e| ArchiveError::Other(format!("replace symlink failed: {e}")))?;
             }
-            let mut outfile = std::fs::File::create(&out_path)
+            let mut outfile = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .custom_flags(libc::O_NOFOLLOW)
+                .open(&out_path)
                 .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
             std::io::copy(&mut entry, &mut outfile)
                 .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
+        } else if entry_type.is_symlink() {
+            let Some(target) = entry
+                .link_name()
+                .map_err(|e| ArchiveError::Other(format!("TAR link name: {e}")))?
+                .map(|t| t.into_owned())
+            else {
+                eprintln!("[archive] skipped TAR symlink without a target: {relative}");
+                continue;
+            };
+            let free = clear_non_dir(&out_path)
+                .map_err(|e| ArchiveError::Other(format!("replace entry failed: {e}")))?;
+            if !free {
+                eprintln!("[archive] skipped TAR symlink over a directory: {relative}");
+                continue;
+            }
+            // The target is stored as is. Writes through it are refused by
+            // the symlink check above, so it cannot be used to escape.
+            std::os::unix::fs::symlink(&target, &out_path)
+                .map_err(|e| ArchiveError::Other(format!("create symlink failed: {e}")))?;
+        } else if entry_type.is_hard_link() {
+            let Some(link) = entry
+                .link_name()
+                .map_err(|e| ArchiveError::Other(format!("TAR link name: {e}")))?
+                .map(|t| t.into_owned())
+            else {
+                eprintln!("[archive] skipped TAR hard link without a target: {relative}");
+                continue;
+            };
+            // Hard link targets are archive paths, so they get the same
+            // prefix and traversal handling as entry names.
+            let link_raw = crate::utils::strip_current_dir(&link)
+                .to_string_lossy()
+                .replace('\\', "/");
+            let source = link_raw
+                .strip_prefix(prefix.as_str())
+                .map(Path::new)
+                .filter(|rel| {
+                    !rel.components().any(|c| {
+                        matches!(
+                            c,
+                            std::path::Component::ParentDir
+                                | std::path::Component::RootDir
+                                | std::path::Component::Prefix(_)
+                        )
+                    })
+                })
+                .map(|rel| dest_dir.join(rel));
+            let linked = match source {
+                Some(src)
+                    if src
+                        .parent()
+                        .is_some_and(|d| dir_is_safe(&dest_dir, d, &mut verified)) =>
+                {
+                    clear_non_dir(&out_path).is_ok_and(|free| free)
+                        && std::fs::hard_link(&src, &out_path).is_ok()
+                }
+                _ => false,
+            };
+            if !linked {
+                eprintln!("[archive] skipped TAR hard link, target not extracted: {relative}");
+            }
+        } else if !matches!(
+            entry_type,
+            tar::EntryType::XGlobalHeader
+                | tar::EntryType::XHeader
+                | tar::EntryType::GNULongName
+                | tar::EntryType::GNULongLink
+        ) {
+            // Devices and FIFOs are not recreated. Writing an empty regular
+            // file in their place would change the data silently.
+            eprintln!("[archive] skipped special TAR entry: {relative}");
         }
     }
 

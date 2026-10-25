@@ -1,6 +1,7 @@
 mod services {
     mod archive_backend_test;
     mod archive_extract_prefix_test;
+    mod archive_extract_tar_links_test;
     mod archive_extract_traversal_test;
     mod archive_services_test;
     mod archive_synthesis_test;
