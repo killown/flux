@@ -11,7 +11,7 @@ The **Contextual Actions** panel provides a list of user-defined commands releva
 - **Toggle Shortcut:** `Ctrl+Shift+A`
 - **Use Cases:** Run custom scripts, open files in specific applications, or perform complex file operations with a single click. You can add new actions directly from the panel.
 
-<video src="../screenshots/actions.mp4" controls muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/killown/flux/main/screenshots/actions.mp4" controls muted playsinline width="100%"></video>
 
 ## Quick List
 
@@ -20,7 +20,7 @@ The **Quick List** panel gives you instant access to a "dock" of your most frequ
 - **Toggle Shortcut:** `Ctrl+Shift+Q`
 - **Use Cases:** Keep your current project's directories, important download folders, or reference material just one click away. The list persists across sessions.
 
-<video src="../screenshots/quick_list.mp4" controls muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/killown/flux/main/screenshots/quick_list.mp4" controls muted playsinline width="100%"></video>
 
 ## Tag Navigator
 
@@ -29,7 +29,7 @@ Flux allows you to organize files with tags using the `user.xdg.tags` extended a
 - **Toggle Shortcut:** `Ctrl+Shift+T`
 - **Use Cases:** Create a cross-directory organization system for projects, photos, or documents. Click a tag to filter the view, or use the search bar to find a specific tag.
 
-<video src="../screenshots/tags.mp4" controls muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/killown/flux/main/screenshots/tags.mp4" controls muted playsinline width="100%"></video>
 
 ## Embedded Terminal
 
@@ -38,7 +38,7 @@ The **Embedded Terminal** panel is a fully functional terminal right where you n
 - **Toggle Shortcut:** `F4` (when `ui.terminal.position` is set to `"sidebar"`)
 - **Use Cases:** Run scripts on files you're browsing, use command-line tools like `git`, or perform complex file operations without leaving the Flux window. Press `Tab` for shell autocompletion, just as you would in a normal terminal.
 
-<video src="../screenshots/terminal.mp4" controls muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/killown/flux/main/screenshots/terminal.mp4" controls muted playsinline width="100%"></video>
 
 ## Peek Preview
 
@@ -47,7 +47,7 @@ The **Peek Preview** panel shows a rich preview of the selected file. It can ren
 - **Toggle Shortcut:** `Ctrl+Space` (or just `Space` from the grid)
 - **Use Cases:** Quickly inspect files without opening them in a separate application. Arrow through images or code, check the contents of a zip, or read a PDF.
 
-<video src="../screenshots/preview.mp4" controls muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/killown/flux/main/screenshots/preview.mp4" controls muted playsinline width="100%"></video>
 
 ## Search Panel
 
@@ -56,4 +56,4 @@ The **Search** panel provides a powerful, advanced search interface. It allows y
 - **Toggle Shortcut:** `Ctrl+F`
 - **Use Cases:** Find all `.log` files in a subdirectory, search for a specific piece of text inside multiple files, or perform a case-sensitive regex search.
 
-<video src="../screenshots/search.mp4" controls muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/killown/flux/main/screenshots/search.mp4" controls muted playsinline width="100%"></video>
