@@ -1,5 +1,6 @@
 //! Process spawning, editor launch and resource registration.
 
+use super::shell::{expand_template, shell_safe, Placeholder};
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::Path;
@@ -22,6 +23,25 @@ pub fn open_new_instance(path: &std::path::Path) -> bool {
     std::process::Command::new(exe).arg(path).spawn().is_ok()
 }
 
+/// Builds the `sh -c` command for an editor configured with `%p` / `%l`.
+///
+/// The path is single-quoted like every other shell argument, and the
+/// template is expanded in one pass so the path is never scanned for
+/// placeholders. Quotes written around `%p` in the config (`"%p"`) are
+/// absorbed. Returns `None` when `editor` uses neither placeholder, or when
+/// the path cannot be quoted safely (newline, carriage return or NUL).
+pub fn editor_shell_command(editor: &str, file_path: &Path, line: usize) -> Option<String> {
+    if !(editor.contains("%p") || editor.contains("%l")) {
+        return None;
+    }
+    let path_arg = shell_safe(&file_path.to_string_lossy())?;
+    expand_template(editor, |token: &str| match token {
+        "%p" => Placeholder::Shell(path_arg.clone()),
+        "%l" => Placeholder::Plain(line.to_string()),
+        _ => Placeholder::Unknown,
+    })
+}
+
 /// Spawns the user-configured editor detached without task queue overhead or progress dialogs.
 pub fn launch_editor_at_line(
     editor_cfg: &str,
@@ -39,9 +59,12 @@ pub fn launch_editor_at_line(
     let target = file_path.to_string_lossy().to_string();
 
     if editor.contains("%p") || editor.contains("%l") {
-        let cmd_str = editor
-            .replace("%p", &format!("\"{}\"", target))
-            .replace("%l", &line.to_string());
+        let Some(cmd_str) = editor_shell_command(editor, file_path, line) else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "file name contains characters that cannot be passed to a shell",
+            ));
+        };
         return std::process::Command::new("sh")
             .arg("-c")
             .arg(&cmd_str)

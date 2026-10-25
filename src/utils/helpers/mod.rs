@@ -2,6 +2,7 @@
 
 mod background;
 mod format;
+pub mod shell;
 mod system;
 mod theme;
 #[allow(unused_imports)]
@@ -67,6 +68,8 @@ pub use format::{
 #[allow(unused_imports)]
 pub use input::{parse_mouse_button, should_trigger_preview};
 #[allow(unused_imports)]
-pub use system::{launch_editor_at_line, open_new_instance, register_resources};
+pub use system::{
+    editor_shell_command, launch_editor_at_line, open_new_instance, register_resources,
+};
 #[allow(unused_imports)]
 pub use theme::{apply_ui_scale, list_available_themes, load_custom_css};
