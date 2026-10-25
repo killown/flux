@@ -4,11 +4,11 @@ use std::process::Command;
 
 /// Resolves a device-mapper node (`/dev/dm-N` or `/dev/mapper/...`) to the
 /// file stem of its backing loop file, when it's a LUKS image.
-fn resolve_luks_loop_name(dev_node: &str) -> Option<String> {
+pub(super) fn resolve_luks_loop_name(dev_node: &str) -> Option<String> {
     crate::hit!("mounts::resolve_luks_loop_name");
-    let dev_path = Path::new(dev_node);
+    let dev_path = fs::canonicalize(dev_node).ok()?;
     let dev_name = dev_path.file_name()?.to_str()?;
-    if !dev_name.starts_with("dm-") && !dev_name.starts_with("mapper/") {
+    if !dev_name.starts_with("dm-") {
         return None;
     }
     let sys_path = format!("/sys/block/{}/slaves", dev_name);

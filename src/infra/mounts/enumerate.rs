@@ -1,4 +1,4 @@
-use super::naming::resolve_mount_name;
+use super::naming::{resolve_luks_loop_name, resolve_mount_name};
 use std::fs;
 use std::path::PathBuf;
 
@@ -64,7 +64,9 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
             let is_user_fuse =
                 fs_type.contains("fuse") && path.starts_with(&home_dir) && path != home_dir;
 
-            if is_mnt || is_user_fuse {
+            let is_luks_image = resolve_luks_loop_name(dev_node).is_some();
+
+            if is_mnt || is_user_fuse || is_luks_image {
                 let name = resolve_mount_name(&path, Some(dev_node));
                 if !mounts.iter().any(|(_, p)| p == &path) {
                     mounts.push((name, path));
