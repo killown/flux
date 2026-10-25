@@ -6,6 +6,7 @@
 - [Configuration](config.md)
 - [Actions](actions.md)
 - [Search](search.md)
+- [Features](features.md)
 - [Shell integration](shell-integration.md)
 - [CSS variables](css-variables.md)
 - [Development](development.md)
