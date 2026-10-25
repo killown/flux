@@ -1,4 +1,4 @@
-//! Archive password storage in the system keyring.
+//! Archive password and LUKS passphrase storage in the system keyring.
 
 use std::collections::HashMap;
 use std::fmt;
@@ -10,6 +10,9 @@ pub const APPLICATION_ID: &str = "io.github.killown.flux";
 
 /// Value of the `kind` attribute that marks an archive password.
 pub const KIND_ARCHIVE_PASSWORD: &str = "archive-password";
+
+/// Value of the `kind` attribute that marks a LUKS volume passphrase.
+pub const KIND_LUKS_PASSPHRASE: &str = "luks-passphrase";
 
 /// Identity of one archive file at one point in time.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -68,6 +71,50 @@ impl ArchiveKey {
     }
 }
 
+/// Identity of one LUKS container file.
+///
+/// Unlike [`ArchiveKey`] there is no mtime component: a mounted container is
+/// written to constantly, so an mtime-bound entry would be orphaned after every
+/// session. The passphrase belongs to the container, not to a file revision.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LuksKey {
+    /// Canonical (symlink-resolved, absolute) path of the container image.
+    pub path: String,
+}
+
+impl LuksKey {
+    /// Builds a key from an already-canonical path string.
+    pub fn new(canonical_path: impl Into<String>) -> Self {
+        Self {
+            path: canonical_path.into(),
+        }
+    }
+
+    /// Resolves `image` on disk and builds its key.
+    pub async fn for_path(image: &Path) -> std::io::Result<Self> {
+        let canonical = tokio::fs::canonicalize(image).await?;
+        Ok(Self::new(canonical.to_string_lossy()))
+    }
+
+    /// The Secret Service attributes that identify this container.
+    pub fn attributes(&self) -> HashMap<&'static str, String> {
+        HashMap::from([
+            ("application", APPLICATION_ID.to_string()),
+            ("kind", KIND_LUKS_PASSPHRASE.to_string()),
+            ("luks-path", self.path.clone()),
+        ])
+    }
+
+    /// Human-readable item label shown by keyring tools such as Seahorse.
+    pub fn label(&self) -> String {
+        let name = Path::new(&self.path)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| self.path.clone());
+        format!("Flux LUKS passphrase: {name}")
+    }
+}
+
 /// Resolves the key for `archive`, logging and returning `None` on failure.
 async fn resolve_key(archive: &Path, op: &str) -> Option<ArchiveKey> {
     match ArchiveKey::for_path(archive).await {
@@ -92,15 +139,21 @@ pub async fn lookup_archive_password(archive: &Path) -> Option<String> {
 }
 
 async fn try_lookup(key: &ArchiveKey) -> Result<Option<String>, String> {
+    lookup_secret(&key.attributes()).await
+}
+
+/// Reads the secret stored under exactly `attributes`, if any.
+async fn lookup_secret(
+    attributes: &HashMap<&'static str, String>,
+) -> Result<Option<String>, String> {
     let keyring = oo7::Keyring::new()
         .await
         .map_err(|e| format!("keyring unavailable: {e}"))?;
-    let attributes = key.attributes();
 
     // Searching a locked collection is allowed and only returns locked
     // handles, so check for a match before asking the user to unlock anything.
     let items = keyring
-        .search_items(&attributes)
+        .search_items(attributes)
         .await
         .map_err(|e| format!("search failed: {e}"))?;
     let Some(item) = items.first() else {
@@ -136,6 +189,24 @@ pub async fn save_archive_password(archive: &Path, password: &str) -> bool {
 }
 
 async fn try_save(key: &ArchiveKey, password: &str) -> Result<(), String> {
+    store_secret(
+        &key.path,
+        &key.label(),
+        &key.attributes(),
+        &key.path_attributes(),
+        password,
+    )
+    .await
+}
+
+/// Stores `secret` under `attributes`, first sweeping entries matching `stale`.
+async fn store_secret(
+    subject: &str,
+    label: &str,
+    attributes: &HashMap<&'static str, String>,
+    stale: &HashMap<&'static str, String>,
+    secret: &str,
+) -> Result<(), String> {
     let keyring = oo7::Keyring::new()
         .await
         .map_err(|e| format!("keyring unavailable: {e}"))?;
@@ -143,11 +214,11 @@ async fn try_save(key: &ArchiveKey, password: &str) -> Result<(), String> {
         .unlock()
         .await
         .map_err(|e| format!("unlock failed: {e}"))?;
-    if let Err(e) = keyring.delete(&key.path_attributes()).await {
-        eprintln!("[keyring] stale-entry sweep failed for {}: {e}", key.path);
+    if let Err(e) = keyring.delete(stale).await {
+        eprintln!("[keyring] stale-entry sweep failed for {subject}: {e}");
     }
     keyring
-        .create_item(&key.label(), &key.attributes(), password, true)
+        .create_item(label, attributes, secret, true)
         .await
         .map_err(|e| format!("write failed: {e}"))?;
     Ok(())
@@ -170,6 +241,11 @@ pub async fn forget_archive_password(archive: &Path) -> bool {
 }
 
 async fn try_forget(key: &ArchiveKey) -> Result<(), String> {
+    delete_secrets(&key.path_attributes()).await
+}
+
+/// Deletes every secret whose attributes match `attributes`.
+async fn delete_secrets(attributes: &HashMap<&'static str, String>) -> Result<(), String> {
     let keyring = oo7::Keyring::new()
         .await
         .map_err(|e| format!("keyring unavailable: {e}"))?;
@@ -178,9 +254,72 @@ async fn try_forget(key: &ArchiveKey) -> Result<(), String> {
         .await
         .map_err(|e| format!("unlock failed: {e}"))?;
     keyring
-        .delete(&key.path_attributes())
+        .delete(attributes)
         .await
         .map_err(|e| format!("delete failed: {e}"))
+}
+
+/// Resolves the key for `image`, logging and returning `None` on failure.
+async fn resolve_luks_key(image: &Path, op: &str) -> Option<LuksKey> {
+    match LuksKey::for_path(image).await {
+        Ok(key) => Some(key),
+        Err(e) => {
+            eprintln!("[keyring] {op}: cannot stat {}: {e}", image.display());
+            None
+        }
+    }
+}
+
+/// Returns the saved passphrase for the LUKS container `image`, if one exists
+/// and can be read.
+pub async fn lookup_luks_passphrase(image: &Path) -> Option<String> {
+    let key = resolve_luks_key(image, "lookup").await?;
+    match lookup_secret(&key.attributes()).await {
+        Ok(passphrase) => passphrase,
+        Err(e) => {
+            eprintln!("[keyring] lookup failed for {}: {e}", image.display());
+            None
+        }
+    }
+}
+
+/// Saves `passphrase` for the LUKS container `image`, replacing any earlier
+/// secret for the same container. Returns `true` on success.
+pub async fn save_luks_passphrase(image: &Path, passphrase: &str) -> bool {
+    let Some(key) = resolve_luks_key(image, "save").await else {
+        return false;
+    };
+    let attributes = key.attributes();
+    match store_secret(
+        &key.path,
+        &key.label(),
+        &attributes,
+        &attributes,
+        passphrase,
+    )
+    .await
+    {
+        Ok(()) => true,
+        Err(e) => {
+            eprintln!("[keyring] save failed for {}: {e}", image.display());
+            false
+        }
+    }
+}
+
+/// Deletes the saved passphrase for the LUKS container `image`. Returns `true`
+/// when the keyring call succeeded, including when there was nothing to delete.
+pub async fn forget_luks_passphrase(image: &Path) -> bool {
+    let Some(key) = resolve_luks_key(image, "forget").await else {
+        return false;
+    };
+    match delete_secrets(&key.attributes()).await {
+        Ok(()) => true,
+        Err(e) => {
+            eprintln!("[keyring] forget failed for {}: {e}", image.display());
+            false
+        }
+    }
 }
 
 /// Passwords the user asked to save but that no archive has accepted yet.

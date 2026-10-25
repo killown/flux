@@ -174,7 +174,8 @@ impl FluxApp {
     }
 
     /// Deletes the saved keyring password for the archive behind `target` and
-    /// drops the session copy, so the next open prompts again.
+    /// drops the session copy, so the next open prompts again. A passphrase
+    /// saved for `target` as a LUKS image is deleted as well.
     pub fn handle_forget_archive_password(
         &mut self,
         target: PathBuf,
@@ -191,7 +192,10 @@ impl FluxApp {
 
         let sender_c = sender.clone();
         relm4::spawn(async move {
-            let forgotten = crate::infra::keyring::forget_archive_password(&archive_path).await;
+            let archive_forgotten =
+                crate::infra::keyring::forget_archive_password(&archive_path).await;
+            let luks_forgotten = crate::infra::keyring::forget_luks_passphrase(&archive_path).await;
+            let forgotten = archive_forgotten && luks_forgotten;
             let toast = if forgotten {
                 crate::i18n::tr("Saved archive password removed")
             } else {

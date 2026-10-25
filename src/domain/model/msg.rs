@@ -487,6 +487,12 @@ pub enum AppMsg {
     InstallFonts(Vec<PathBuf>),
     /// Dispatched when a LUKS image file is double-clicked and confirmed as LUKS.
     UnlockLuksImage { path: PathBuf },
+    /// Asks the user for the passphrase of a LUKS image no saved passphrase unlocked.
+    PromptLuksPassphrase {
+        path: PathBuf,
+        /// `true` when a saved passphrase was rejected - shows an error hint in the dialog.
+        wrong_passphrase: bool,
+    },
     /// Dispatched by the background thread after successful unlock + mount.
     LuksMounted {
         image_path: PathBuf,

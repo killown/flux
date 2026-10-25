@@ -24,7 +24,11 @@ pub(super) fn handle(
         AppMsg::RefreshNetworkSidebar => app.handle_refresh_network_sidebar(sender),
         AppMsg::SystemMountsReady(mounts) => app.handle_system_mounts_ready(mounts),
         AppMsg::UnmountDevice(path) => app.handle_unmount_device(path, sender),
-        AppMsg::UnlockLuksImage { path } => app.show_luks_passphrase_dialog(path, sender),
+        AppMsg::UnlockLuksImage { path } => app.handle_unlock_luks_image(path, sender),
+        AppMsg::PromptLuksPassphrase {
+            path,
+            wrong_passphrase,
+        } => app.show_luks_passphrase_dialog(path, wrong_passphrase, sender),
         AppMsg::LuksMounted { mount_point, .. } => {
             sender.input(AppMsg::Navigate(mount_point));
             sender.input(AppMsg::ShowToast(crate::i18n::tr("Volume mounted.")));
