@@ -1054,12 +1054,7 @@ impl SimpleAsyncComponent for FluxApp {
             sender.clone(),
         )
         .await;
-        // `--terminal` wins over `--preview` when the position is Fullscreen: the
-        // full-window terminal hides the preview panel, so it is not opened at all.
-        // Documented in docs/cli.md. For Bottom and Sidebar both open.
-        let preview = opts.preview
-            && !(opts.terminal
-                && model.config.ui.terminal.position == crate::model::TerminalPosition::Fullscreen);
+        let preview = opts.preview;
         model.startup_preview = preview;
         let toast_overlay = &model.toast_overlay;
         crate::hit!("view::init:view_output");
@@ -1089,16 +1084,6 @@ impl SimpleAsyncComponent for FluxApp {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
                 s.input(crate::model::AppMsg::ToggleQuickListPanel);
-            });
-        }
-
-        // CLI `--terminal`: dispatch `ToggleTerminal`, not `ToggleTerminalFullscreen`,
-        // so the dispatcher in `update/network.rs` opens whichever position the config
-        // says (bottom pane, sidebar panel or full window).
-        if opts.terminal {
-            let s = sender.clone();
-            gtk::glib::idle_add_local_once(move || {
-                s.input(crate::model::AppMsg::ToggleTerminal);
             });
         }
 

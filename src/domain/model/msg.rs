@@ -54,9 +54,7 @@ pub enum AppMsg {
     ShowGitStatusStaged,
     /// Loads only the files with unstaged or untracked changes into the view.
     ShowGitStatusUnstaged,
-    /// Toggles the full-window terminal mode. F4 in Fullscreen position, the
-    /// `--terminal` startup flag (when position is Fullscreen), and the
-    /// `ToggleTerminal` dispatcher all funnel here when position is Fullscreen.
+    /// Toggles the full-window terminal mode. F4 in Fullscreen position.
     ToggleTerminalFullscreen,
     /// Sets the terminal position (Bottom / Sidebar / Fullscreen) and persists it.
     /// Emitted by the Settings dropdown.

@@ -78,7 +78,6 @@ pub(super) fn launch_main_app(
             no_sidebar: opts.no_sidebar,
             no_header: opts.no_header,
             no_statusbar: opts.no_statusbar,
-            terminal: opts.terminal,
             preview: opts.preview,
         },
     });

@@ -46,8 +46,6 @@ pub struct WindowOptions {
     pub no_header: bool,
     /// Temporary CLI override to hide the bottom status bar without persisting to config.
     pub no_statusbar: bool,
-    /// Open the terminal in the configured position once the window exists.
-    pub terminal: bool,
     /// Open the preview panel in wide mode once the first folder has loaded.
     pub preview: bool,
 }
@@ -63,7 +61,7 @@ pub struct AppInit {
     /// Optional tag search filter (e.g. `"#games"`) to seed into the search entry
     /// and activate on initial application startup.
     pub tag_search: Option<String>,
-    /// Per-session window switches (`--no-sidebar`, `--terminal`, `--preview`, ...).
+    /// Per-session window switches (`--no-sidebar`, `--preview`, ...).
     pub opts: WindowOptions,
 }
 

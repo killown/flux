@@ -25,7 +25,6 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--no-sidebar` | Disable sidebar for this session |
 | `--no-header` | Disable header bar for this session |
 | `--no-statusbar` | Disable statusbar for this session |
-| `--terminal` | Start with the terminal open in the configured position |
 | `--file-properties PATH` | Open the file properties window for PATH |
 | `--set-icon TARGET IMAGE` | Set a custom icon/image for TARGET |
 | `--cwd PATH` | Navigate the running window to PATH (starts a new window if none is running) |
@@ -45,11 +44,9 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 
 ## Session flags
 
-`--no-sidebar`, `--no-header`, `--no-statusbar` and `--terminal` may appear anywhere on the command line. They apply to the window opened by `PATH`, a tag, `--preview`, `--quick-list` or `--quick-list-stdin`, and are ignored by the other options.
+`--no-sidebar`, `--no-header` and `--no-statusbar` may appear anywhere on the command line. They apply to the window opened by `PATH`, a tag, `--preview`, `--quick-list` or `--quick-list-stdin`, and are ignored by the other options.
 
 Every other option must be the first argument once the session flags are removed. Arguments after the first are read only by the options that take values.
-
-`--terminal` opens the embedded terminal in the position configured under Settings → Terminal: the bottom pane, the right sidebar panel or the full window. Combined with `--preview`, both open unless the position is full window, where the terminal takes over the whole window and `--preview` is superseded.
 
 ## Custom icons
 

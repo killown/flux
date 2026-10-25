@@ -11,10 +11,6 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
     ("    --no-header", "Disable header bar for this session"),
     ("    --no-statusbar", "Disable statusbar for this session"),
     (
-        "    --terminal",
-        "Start with the terminal open in the configured position",
-    ),
-    (
         "    --file-properties PATH",
         "Open the file properties window for PATH",
     ),
@@ -235,7 +231,6 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             "--no-sidebar" => opts.no_sidebar = true,
             "--no-header" => opts.no_header = true,
             "--no-statusbar" => opts.no_statusbar = true,
-            "--terminal" => opts.terminal = true,
             _ => filtered_args.push(arg.as_str()),
         }
     }

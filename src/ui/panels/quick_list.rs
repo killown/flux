@@ -352,11 +352,7 @@ fn render(sender: &Sender) {
     let filtering = pattern.is_some();
 
     let views = groups.views(
-        |t| {
-            pattern
-                .as_ref()
-                .map_or(true, |p| fuzzy_match_compiled(t, p))
-        },
+        |t| pattern.as_ref().is_none_or(|p| fuzzy_match_compiled(t, p)),
         |p| format!("{} {}", item_label(p), item_tooltip(p)),
     );
 

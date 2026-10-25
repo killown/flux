@@ -269,8 +269,7 @@ impl FluxApp {
     }
 
     /// Persists the terminal position. An open terminal is closed first, in whatever
-    /// position it is in. The new position is never opened automatically: changing a
-    /// preference is not a request for a terminal, that is F4 or `--terminal`.
+    /// position it is in.
     pub fn handle_set_terminal_position(
         &mut self,
         pos: TerminalPosition,
