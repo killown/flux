@@ -1,5 +1,7 @@
+use flux::model::FluxApp;
 use flux::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn test_history_starts_empty() {
@@ -58,42 +60,110 @@ fn test_undo_stack_pop_order() {
     assert!(!history.can_undo());
 }
 
+/// Renames `from` to `to` inside `dir` and records it the way
+/// `handle_perform_rename` does: canonical paths, op pushed on the undo stack.
+fn rename_and_record(dir: &Path, from: &str, to: &str, history: &mut FileOpHistory) {
+    let old_path = dir.join(from);
+    let new_path = FluxApp::rename_path(&old_path, to).unwrap();
+    history.push_undo(FileOp::Rename {
+        old_path: old_path.canonicalize().unwrap_or_else(|_| old_path.clone()),
+        new_path: new_path.canonicalize().unwrap_or_else(|_| new_path.clone()),
+        old_name: from.to_string(),
+        new_name: to.to_string(),
+    });
+}
+
+fn undo_once(history: &mut FileOpHistory) -> std::io::Result<()> {
+    let op = history.pop_undo().expect("nothing to undo");
+    FluxApp::undo_rename(history, op)
+}
+
+fn redo_once(history: &mut FileOpHistory) -> std::io::Result<()> {
+    let op = history.pop_redo().expect("nothing to redo");
+    FluxApp::redo_rename(history, op)
+}
+
 #[test]
-fn test_rename_operation_symmetry() {
-    let op = FileOp::Rename {
-        old_path: PathBuf::from("/tmp/old_name.txt"),
-        new_path: PathBuf::from("/tmp/new_name.txt"),
-        old_name: "old_name.txt".to_string(),
-        new_name: "new_name.txt".to_string(),
-    };
+fn rename_redo_after_undo_renames_again() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().canonicalize().unwrap();
+    fs::write(dir.join("a.txt"), "payload").unwrap();
+    let mut history = FileOpHistory::new();
+    rename_and_record(&dir, "a.txt", "b.txt", &mut history);
 
-    let inverse = match op {
-        FileOp::Rename {
-            old_path,
-            new_path,
-            old_name,
-            new_name,
-        } => FileOp::Rename {
-            old_path: new_path,
-            new_path: old_path,
-            old_name: new_name,
-            new_name: old_name,
-        },
-        _ => unreachable!(),
-    };
+    undo_once(&mut history).unwrap();
+    assert!(dir.join("a.txt").exists());
+    assert!(!dir.join("b.txt").exists());
+    assert!(history.can_redo());
+    assert!(!history.can_undo());
 
-    if let FileOp::Rename {
-        old_path,
-        new_path,
-        old_name,
-        new_name,
-    } = inverse
-    {
-        assert_eq!(old_path, PathBuf::from("/tmp/new_name.txt"));
-        assert_eq!(new_path, PathBuf::from("/tmp/old_name.txt"));
-        assert_eq!(old_name, "new_name.txt");
-        assert_eq!(new_name, "old_name.txt");
+    redo_once(&mut history).unwrap();
+    assert!(!dir.join("a.txt").exists());
+    assert_eq!(fs::read_to_string(dir.join("b.txt")).unwrap(), "payload");
+    assert!(history.can_undo());
+    assert!(!history.can_redo());
+}
+
+#[test]
+fn rename_undo_redo_undo_round_trip() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().canonicalize().unwrap();
+    fs::write(dir.join("a.txt"), "payload").unwrap();
+    let mut history = FileOpHistory::new();
+    rename_and_record(&dir, "a.txt", "b.txt", &mut history);
+
+    for _ in 0..3 {
+        undo_once(&mut history).unwrap();
+        assert!(dir.join("a.txt").exists() && !dir.join("b.txt").exists());
+        redo_once(&mut history).unwrap();
+        assert!(dir.join("b.txt").exists() && !dir.join("a.txt").exists());
     }
+    undo_once(&mut history).unwrap();
+    assert!(dir.join("a.txt").exists() && !dir.join("b.txt").exists());
+    assert_eq!(
+        history.redo_label().unwrap(),
+        "Rename \"a.txt\" → \"b.txt\""
+    );
+}
+
+#[test]
+fn rename_directory_survives_undo_redo() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().canonicalize().unwrap();
+    fs::create_dir(dir.join("old")).unwrap();
+    fs::write(dir.join("old").join("child.txt"), "x").unwrap();
+    let mut history = FileOpHistory::new();
+    rename_and_record(&dir, "old", "new", &mut history);
+
+    undo_once(&mut history).unwrap();
+    assert!(dir.join("old").join("child.txt").exists());
+    redo_once(&mut history).unwrap();
+    assert!(dir.join("new").join("child.txt").exists());
+    assert!(!dir.join("old").exists());
+}
+
+#[test]
+fn rename_undo_blocked_by_existing_name_pushes_nothing() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().canonicalize().unwrap();
+    fs::write(dir.join("a.txt"), "orig").unwrap();
+    let mut history = FileOpHistory::new();
+    rename_and_record(&dir, "a.txt", "b.txt", &mut history);
+    fs::write(dir.join("a.txt"), "squatter").unwrap();
+
+    assert!(undo_once(&mut history).is_err());
+    assert_eq!(fs::read_to_string(dir.join("a.txt")).unwrap(), "squatter");
+    assert_eq!(fs::read_to_string(dir.join("b.txt")).unwrap(), "orig");
+    assert!(!history.can_redo());
+}
+
+#[test]
+fn undo_and_redo_rename_reject_other_ops() {
+    let mut history = FileOpHistory::new();
+    let op = || FileOp::Trash { items: vec![] };
+    assert!(FluxApp::undo_rename(&mut history, op()).is_err());
+    assert!(FluxApp::redo_rename(&mut history, op()).is_err());
+    assert!(!history.can_undo() && !history.can_redo());
 }
 
 #[test]

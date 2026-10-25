@@ -1,11 +1,55 @@
 use crate::infra::trash::tracked::{restore_tracked, trash_tracked};
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::undo_redo::{FileOp, TrashedItem};
+use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
 impl FluxApp {
+    /// Undoes a [`FileOp::Rename`]: moves the item at `new_path` back to
+    /// `old_name`, then records `op` on the redo stack.
+    ///
+    /// A rename op always keeps the orientation it was recorded with
+    /// (`old_*` is the name before the rename, `new_*` the name after it), on
+    /// both stacks. Undo and redo each read it from that one point of view, so
+    /// the fields must never be swapped when the op changes stacks. On error
+    /// nothing is pushed.
+    pub fn undo_rename(history: &mut FileOpHistory, op: FileOp) -> std::io::Result<()> {
+        crate::hit!("undo_rename");
+        let FileOp::Rename {
+            new_path, old_name, ..
+        } = &op
+        else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "not a rename operation",
+            ));
+        };
+        Self::rename_path(new_path, old_name)?;
+        history.push_redo(op);
+        Ok(())
+    }
+
+    /// Redoes a [`FileOp::Rename`]: moves the item at `old_path` to
+    /// `new_name` again, then records `op` on the undo stack.
+    ///
+    /// See [`FluxApp::undo_rename`] for why `op` is pushed unchanged.
+    pub fn redo_rename(history: &mut FileOpHistory, op: FileOp) -> std::io::Result<()> {
+        crate::hit!("redo_rename");
+        let FileOp::Rename {
+            old_path, new_name, ..
+        } = &op
+        else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "not a rename operation",
+            ));
+        };
+        Self::rename_path(old_path, new_name)?;
+        history.push_undo(op);
+        Ok(())
+    }
+
     pub fn handle_undo(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_undo");
         if let Some(op) = self.file_op_history.pop_undo() {
@@ -85,19 +129,8 @@ impl FluxApp {
     fn execute_undo_op(&mut self, op: FileOp, sender: &AsyncComponentSender<Self>) {
         crate::hit!("execute_undo_op");
         match op {
-            FileOp::Rename {
-                old_path,
-                new_path,
-                old_name,
-                new_name,
-            } => {
-                if Self::rename_path(&new_path, &old_name).is_ok() {
-                    self.file_op_history.push_redo(FileOp::Rename {
-                        old_path: new_path,
-                        new_path: old_path,
-                        old_name: new_name,
-                        new_name: old_name,
-                    });
+            op @ FileOp::Rename { .. } => {
+                if Self::undo_rename(&mut self.file_op_history, op).is_ok() {
                     sender.input(AppMsg::Refresh);
                 }
             }
@@ -165,19 +198,8 @@ impl FluxApp {
     fn execute_redo_op(&mut self, op: FileOp, sender: &AsyncComponentSender<Self>) {
         crate::hit!("execute_redo_op");
         match op {
-            FileOp::Rename {
-                old_path,
-                new_path,
-                old_name,
-                new_name,
-            } => {
-                if Self::rename_path(&old_path, &new_name).is_ok() {
-                    self.file_op_history.push_undo(FileOp::Rename {
-                        old_path: new_path,
-                        new_path: old_path,
-                        old_name: new_name,
-                        new_name: old_name,
-                    });
+            op @ FileOp::Rename { .. } => {
+                if Self::redo_rename(&mut self.file_op_history, op).is_ok() {
                     sender.input(AppMsg::Refresh);
                 }
             }
