@@ -73,26 +73,29 @@ impl FluxApp {
         // The DB has been opening in parallel with the UI construction above.
         let state_db = Arc::new(pending_db.wait().await);
 
-        // A list given on the command line is this session's only list (fast
-        // in-memory deduplication, no disk stats). Otherwise the saved lists
-        // resume in the same order, on the same list and the same slot.
+        // The saved lists always resume, in the same order, on the same list and
+        // the same slot. A list given on the command line is appended as a new
+        // list under a unique name and selected for this session, so the lists
+        // the user already has are kept. The CLI list is persisted like any
+        // other list, so it survives a restart and can be renamed or deleted
+        // from the Quick List panel.
         let default_list_name = tr("Quick List");
-        let initial_quick_groups = match quick_list {
-            Some(list) => {
-                let mut deduped: Vec<PathBuf> = Vec::new();
-                for p in list {
-                    if !deduped.contains(&p) {
-                        deduped.push(p);
-                    }
+        let mut initial_quick_groups = state_db.load_quick_groups(&default_list_name);
+        if let Some(list) = quick_list {
+            let mut deduped: Vec<PathBuf> = Vec::new();
+            for p in list {
+                if !deduped.contains(&p) {
+                    deduped.push(p);
                 }
-                crate::model::quick_groups::QuickGroups::single(
-                    &default_list_name,
-                    deduped,
-                    Some(0),
-                )
             }
-            None => state_db.load_quick_groups(&default_list_name),
-        };
+            if !deduped.is_empty() {
+                let name = initial_quick_groups.unique_name(&default_list_name);
+                if let Ok(idx) = initial_quick_groups.add_list(&name) {
+                    initial_quick_groups.add_to(idx, deduped);
+                    initial_quick_groups.select(idx);
+                }
+            }
+        }
         let initial_exclusive_list = initial_quick_groups.selected_list().items.clone();
         let initial_exclusive_index = initial_quick_groups.selected_list().index;
 
