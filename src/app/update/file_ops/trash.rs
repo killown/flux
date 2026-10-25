@@ -1,6 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
-use crate::ui::undo_redo::FileOp;
+use crate::ui::undo_redo::{FileOp, TrashedItem};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -30,9 +30,10 @@ impl FluxApp {
     /// Only use this when the operation moved items to the system trash, for
     /// recursive deletes that bypass trash, call [`Self::record_delete`]
     /// instead.
-    pub fn record_trash(&mut self, paths: Vec<PathBuf>, sender: &AsyncComponentSender<Self>) {
+    pub fn record_trash(&mut self, items: Vec<TrashedItem>, sender: &AsyncComponentSender<Self>) {
+        let paths: Vec<PathBuf> = items.iter().map(|i| i.path.clone()).collect();
         self.evict_caches_for_paths(&paths);
-        self.file_op_history.push_undo(FileOp::Trash { paths });
+        self.file_op_history.push_undo(FileOp::Trash { items });
         let _ = sender;
     }
 

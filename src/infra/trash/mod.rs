@@ -2,6 +2,7 @@ mod local;
 mod network;
 mod protected;
 mod recursive;
+pub mod tracked;
 
 use crate::model::{AppMsg, FluxApp};
 use gtk::gio;

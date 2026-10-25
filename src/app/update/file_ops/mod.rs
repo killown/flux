@@ -92,9 +92,10 @@ pub(super) fn handle(
 
         AppMsg::Undo => app.handle_undo(sender),
         AppMsg::Redo => app.handle_redo(sender),
-        AppMsg::TrashSucceeded(paths) => {
+        AppMsg::TrashSucceeded(items) => {
+            let paths: Vec<std::path::PathBuf> = items.iter().map(|i| i.path.clone()).collect();
             app.purge_paths_from_all_tabs(&paths);
-            app.record_trash(paths, sender);
+            app.record_trash(items, sender);
         }
         AppMsg::MoveSucceeded { items, dest_dir } => {
             app.folder_cache.remove(&app.cache_key(&dest_dir));
@@ -118,14 +119,14 @@ pub(super) fn handle(
             app.handle_undo_move_complete(redo_items, dest_dir, sender);
         }
         AppMsg::UndoMoveFailed(op) => app.handle_undo_move_failed(op),
-        AppMsg::UndoTrashComplete { paths } => {
-            for p in &paths {
-                if let Some(parent) = p.parent() {
+        AppMsg::UndoTrashComplete { items } => {
+            for item in &items {
+                if let Some(parent) = item.path.parent() {
                     app.folder_cache.remove(&app.cache_key(parent));
                 }
             }
             app.folder_cache.remove(&app.cache_key(&app.current_path));
-            app.handle_undo_trash_complete(paths, sender);
+            app.handle_undo_trash_complete(items, sender);
         }
         AppMsg::UndoTrashFailed(op) => app.handle_undo_trash_failed(op),
         AppMsg::RedoMoveComplete { items, dest_dir } => {
@@ -134,14 +135,14 @@ pub(super) fn handle(
             app.handle_redo_move_complete(items, dest_dir, sender);
         }
         AppMsg::RedoMoveFailed(op) => app.handle_redo_move_failed(op),
-        AppMsg::RedoTrashComplete { paths } => {
-            for p in &paths {
-                if let Some(parent) = p.parent() {
+        AppMsg::RedoTrashComplete { items } => {
+            for item in &items {
+                if let Some(parent) = item.path.parent() {
                     app.folder_cache.remove(&app.cache_key(parent));
                 }
             }
             app.folder_cache.remove(&app.cache_key(&app.current_path));
-            app.handle_redo_trash_complete(paths, sender);
+            app.handle_redo_trash_complete(items, sender);
         }
         AppMsg::RedoTrashFailed(op) => app.handle_redo_trash_failed(op),
 

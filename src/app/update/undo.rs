@@ -1,6 +1,6 @@
+use crate::infra::trash::tracked::{restore_tracked, trash_tracked};
 use crate::model::{AppMsg, FluxApp};
-use crate::ui::undo_redo::FileOp;
-use adw::prelude::*;
+use crate::ui::undo_redo::{FileOp, TrashedItem};
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -40,11 +40,11 @@ impl FluxApp {
 
     pub fn handle_undo_trash_complete(
         &mut self,
-        paths: Vec<PathBuf>,
+        items: Vec<TrashedItem>,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_undo_trash_complete");
-        self.file_op_history.push_redo(FileOp::Trash { paths });
+        self.file_op_history.push_redo(FileOp::Trash { items });
         sender.input(AppMsg::Refresh);
     }
 
@@ -70,11 +70,11 @@ impl FluxApp {
 
     pub fn handle_redo_trash_complete(
         &mut self,
-        paths: Vec<PathBuf>,
+        items: Vec<TrashedItem>,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_redo_trash_complete");
-        self.file_op_history.push_undo(FileOp::Trash { paths });
+        self.file_op_history.push_undo(FileOp::Trash { items });
         sender.input(AppMsg::Refresh);
     }
 
@@ -140,60 +140,22 @@ impl FluxApp {
                 }
                 sender.input(AppMsg::Refresh);
             }
-            FileOp::Trash { paths } => {
+            FileOp::Trash { items } => {
                 let sender_clone = sender.clone();
-                let trash_op = FileOp::Trash {
-                    paths: paths.clone(),
-                };
                 relm4::spawn_blocking(move || {
-                    let trash_root = gio::File::for_uri("trash:///");
-                    let mut restored_paths = Vec::new();
-                    let mut success = true;
+                    // Each item is restored from the exact trash entry it
+                    // created, and results are reported per item so that a
+                    // failure never discards the items already restored.
+                    let (restored, failed) = restore_tracked(items);
 
-                    if let Ok(enumerator) = trash_root.enumerate_children(
-                        "standard::name,trash::orig-path",
-                        gio::FileQueryInfoFlags::NONE,
-                        gio::Cancellable::NONE,
-                    ) {
-                        for child_info in enumerator.flatten() {
-                            let orig_path = child_info
-                                .attribute_as_string("trash::orig-path")
-                                .map(|s| s.to_string())
-                                .or_else(|| {
-                                    child_info.attribute_byte_string("trash::orig-path").map(
-                                        |bytes| {
-                                            String::from_utf8_lossy(bytes.as_bytes()).to_string()
-                                        },
-                                    )
-                                });
-
-                            if let Some(orig) = orig_path {
-                                if paths.iter().any(|p| p.to_string_lossy() == orig) {
-                                    let trash_item = trash_root.child(child_info.name());
-                                    let dest = gio::File::for_path(&orig);
-                                    let restore_result = trash_item.move_(
-                                        &dest,
-                                        gio::FileCopyFlags::NONE,
-                                        gio::Cancellable::NONE,
-                                        None,
-                                    );
-                                    if restore_result.is_ok() {
-                                        restored_paths.push(PathBuf::from(&orig));
-                                    } else {
-                                        eprintln!("[Restore] move_ failed for {:?}", orig);
-                                        success = false;
-                                    }
-                                }
-                            }
-                        }
+                    // Failed first: `push_undo` clears the redo stack, so the
+                    // redo entry for the restored items has to come after it.
+                    if !failed.is_empty() {
+                        sender_clone
+                            .input(AppMsg::UndoTrashFailed(FileOp::Trash { items: failed }));
                     }
-
-                    if success && !restored_paths.is_empty() {
-                        sender_clone.input(AppMsg::UndoTrashComplete {
-                            paths: restored_paths,
-                        });
-                    } else {
-                        sender_clone.input(AppMsg::UndoTrashFailed(trash_op));
+                    if !restored.is_empty() {
+                        sender_clone.input(AppMsg::UndoTrashComplete { items: restored });
                     }
                 });
             }
@@ -253,28 +215,33 @@ impl FluxApp {
                 });
             }
             FileOp::Copy { .. } => {}
-            FileOp::Trash { paths } => {
+            FileOp::Trash { items } => {
                 let sender_clone = sender.clone();
-                let trash_op = FileOp::Trash {
-                    paths: paths.clone(),
-                };
                 relm4::spawn_blocking(move || {
                     let mut re_trashed = Vec::new();
-                    let mut success = true;
+                    let mut failed = Vec::new();
 
-                    for path in &paths {
-                        let file = gio::File::for_path(path);
-                        if file.trash(gio::Cancellable::NONE).is_ok() {
-                            re_trashed.push(path.clone());
-                        } else {
-                            success = false;
+                    for item in items {
+                        let file = gio::File::for_path(&item.path);
+                        // Re-trashing creates a new trash entry, so record
+                        // it: the old entry was consumed by the undo.
+                        match trash_tracked(&file, &item.path) {
+                            Ok(new_item) => re_trashed.push(new_item),
+                            Err(e) => {
+                                eprintln!("[Redo] trash failed for {:?}: {}", item.path, e);
+                                failed.push(item);
+                            }
                         }
                     }
 
-                    if success && !re_trashed.is_empty() {
-                        sender_clone.input(AppMsg::RedoTrashComplete { paths: re_trashed });
-                    } else {
-                        sender_clone.input(AppMsg::RedoTrashFailed(trash_op));
+                    // Complete first: `push_undo` clears the redo stack, so
+                    // the failed remainder has to be pushed to redo after it.
+                    if !re_trashed.is_empty() {
+                        sender_clone.input(AppMsg::RedoTrashComplete { items: re_trashed });
+                    }
+                    if !failed.is_empty() {
+                        sender_clone
+                            .input(AppMsg::RedoTrashFailed(FileOp::Trash { items: failed }));
                     }
                 });
             }

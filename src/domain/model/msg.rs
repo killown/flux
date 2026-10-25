@@ -370,7 +370,9 @@ pub enum AppMsg {
     /// Internal: background undo-move failed, restore op on the undo stack.
     UndoMoveFailed(crate::ui::undo_redo::FileOp),
     /// Internal: background undo-trash succeeded, record the inverse redo op.
-    UndoTrashComplete { paths: Vec<std::path::PathBuf> },
+    UndoTrashComplete {
+        items: Vec<crate::ui::undo_redo::TrashedItem>,
+    },
     /// Internal: background undo-trash failed, restore op on the undo stack.
     UndoTrashFailed(crate::ui::undo_redo::FileOp),
     /// Internal: background redo-move succeeded, record the inverse undo op.
@@ -381,11 +383,13 @@ pub enum AppMsg {
     /// Internal: background redo-move failed, restore op on the redo stack.
     RedoMoveFailed(crate::ui::undo_redo::FileOp),
     /// Internal: background redo-trash succeeded, record the inverse undo op.
-    RedoTrashComplete { paths: Vec<std::path::PathBuf> },
+    RedoTrashComplete {
+        items: Vec<crate::ui::undo_redo::TrashedItem>,
+    },
     /// Internal: background redo-trash failed, restore op on the redo stack.
     RedoTrashFailed(crate::ui::undo_redo::FileOp),
     /// Notification that items were sent to the trash.
-    TrashSucceeded(Vec<std::path::PathBuf>),
+    TrashSucceeded(Vec<crate::ui::undo_redo::TrashedItem>),
     /// Notification that a batch move completed.
     MoveSucceeded {
         items: Vec<(std::path::PathBuf, std::path::PathBuf)>,

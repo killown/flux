@@ -18,4 +18,5 @@ mod services {
     mod task_queue_test;
     mod terminal_emulator_test;
     mod thumbnails_test;
+    mod trash_tracking_test;
 }

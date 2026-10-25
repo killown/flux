@@ -1,4 +1,4 @@
-use flux::ui::undo_redo::{FileOp, FileOpHistory};
+use flux::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use std::path::PathBuf;
 
 #[test]
@@ -14,10 +14,10 @@ fn test_history_starts_empty() {
 fn test_push_undo_clears_redo_stack() {
     let mut history = FileOpHistory::new();
     let op1 = FileOp::Trash {
-        paths: vec![PathBuf::from("/tmp/test1.txt")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/tmp/test1.txt"))],
     };
     let op2 = FileOp::Trash {
-        paths: vec![PathBuf::from("/tmp/test2.txt")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/tmp/test2.txt"))],
     };
 
     history.push_undo(op1);
@@ -36,16 +36,19 @@ fn test_undo_stack_pop_order() {
 
     for i in 0..10 {
         history.push_undo(FileOp::Trash {
-            paths: vec![PathBuf::from(format!("/tmp/file_{}.txt", i))],
+            items: vec![TrashedItem::untracked(PathBuf::from(format!(
+                "/tmp/file_{}.txt",
+                i
+            )))],
         });
     }
 
     assert!(history.can_undo());
     let mut count = 0;
     while let Some(op) = history.pop_undo() {
-        if let FileOp::Trash { paths } = op {
+        if let FileOp::Trash { items } = op {
             assert_eq!(
-                paths[0],
+                items[0].path,
                 PathBuf::from(format!("/tmp/file_{}.txt", 9 - count))
             );
         }
@@ -98,7 +101,10 @@ fn history_limit_evicts_oldest() {
     let mut h = FileOpHistory::new();
     for i in 0..100 {
         h.push_undo(FileOp::Trash {
-            paths: vec![PathBuf::from(format!("/tmp/f{}", i))],
+            items: vec![TrashedItem::untracked(PathBuf::from(format!(
+                "/tmp/f{}",
+                i
+            )))],
         });
     }
     // Undo stack is capped, popping all should not return 100 entries.
@@ -113,7 +119,7 @@ fn history_limit_evicts_oldest() {
 fn can_undo_false_after_pop_all() {
     let mut h = FileOpHistory::new();
     h.push_undo(FileOp::Trash {
-        paths: vec![PathBuf::from("/tmp/a")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/tmp/a"))],
     });
     h.pop_undo();
     assert!(!h.can_undo());
@@ -123,7 +129,7 @@ fn can_undo_false_after_pop_all() {
 fn can_redo_false_after_pop_all() {
     let mut h = FileOpHistory::new();
     let op = FileOp::Trash {
-        paths: vec![PathBuf::from("/tmp/a")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/tmp/a"))],
     };
     h.push_redo(op);
     h.pop_redo();
@@ -133,8 +139,8 @@ fn can_redo_false_after_pop_all() {
 #[test]
 fn clear_empties_both_stacks() {
     let mut h = FileOpHistory::new();
-    h.push_undo(FileOp::Trash { paths: vec![] });
-    h.push_redo(FileOp::Trash { paths: vec![] });
+    h.push_undo(FileOp::Trash { items: vec![] });
+    h.push_redo(FileOp::Trash { items: vec![] });
     h.clear();
     assert!(!h.can_undo());
     assert!(!h.can_redo());
@@ -164,10 +170,10 @@ fn copy_op_label_singular() {
 #[test]
 fn trash_op_label_plural() {
     let op = FileOp::Trash {
-        paths: vec![
-            PathBuf::from("/a"),
-            PathBuf::from("/b"),
-            PathBuf::from("/c"),
+        items: vec![
+            TrashedItem::untracked(PathBuf::from("/a")),
+            TrashedItem::untracked(PathBuf::from("/b")),
+            TrashedItem::untracked(PathBuf::from("/c")),
         ],
     };
     assert!(op.label().contains("3"));
@@ -190,14 +196,14 @@ fn rename_op_label_includes_both_names() {
 fn push_redo_preserves_order() {
     let mut h = FileOpHistory::new();
     h.push_redo(FileOp::Trash {
-        paths: vec![PathBuf::from("/a")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/a"))],
     });
     h.push_redo(FileOp::Trash {
-        paths: vec![PathBuf::from("/b")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/b"))],
     });
     let first = h.pop_redo().unwrap();
-    if let FileOp::Trash { paths } = first {
-        assert_eq!(paths[0], PathBuf::from("/b"));
+    if let FileOp::Trash { items } = first {
+        assert_eq!(items[0].path, PathBuf::from("/b"));
     }
 }
 
@@ -205,11 +211,49 @@ fn push_redo_preserves_order() {
 fn undo_label_reflects_top_of_stack() {
     let mut h = FileOpHistory::new();
     h.push_undo(FileOp::Trash {
-        paths: vec![PathBuf::from("/old")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/old"))],
     });
     h.push_undo(FileOp::Trash {
-        paths: vec![PathBuf::from("/newest")],
+        items: vec![TrashedItem::untracked(PathBuf::from("/newest"))],
     });
     let label = h.undo_label().unwrap();
     assert!(label.contains("newest"));
+}
+
+#[test]
+fn trashed_items_with_same_path_stay_distinct() {
+    let first = TrashedItem {
+        path: PathBuf::from("/home/u/report.txt"),
+        trash_name: Some("report.txt".into()),
+        deletion_date: Some("2026-10-25T10:00:00".into()),
+    };
+    let second = TrashedItem {
+        path: PathBuf::from("/home/u/report.txt"),
+        trash_name: Some("report.2.txt".into()),
+        deletion_date: Some("2026-10-25T10:05:00".into()),
+    };
+    assert_ne!(first, second);
+
+    let op = FileOp::Trash {
+        items: vec![first.clone(), second.clone()],
+    };
+    if let FileOp::Trash { items } = op {
+        assert_eq!(items[0].trash_name.as_deref(), Some("report.txt"));
+        assert_eq!(items[1].trash_name.as_deref(), Some("report.2.txt"));
+    }
+}
+
+#[test]
+fn untracked_item_has_no_trash_identity() {
+    let item = TrashedItem::untracked(PathBuf::from("/a"));
+    assert!(item.trash_name.is_none());
+    assert!(item.deletion_date.is_none());
+}
+
+#[test]
+fn trash_op_label_singular_uses_file_name() {
+    let op = FileOp::Trash {
+        items: vec![TrashedItem::untracked(PathBuf::from("/x/notes.md"))],
+    };
+    assert!(op.label().contains("notes.md"));
 }

@@ -1,41 +1,41 @@
+use super::tracked::trash_tracked;
 use crate::model::{AppMsg, FluxApp};
+use gtk::gio;
 use gtk::gio::prelude::FileExt;
-use gtk::{gio, glib};
 use relm4::prelude::*;
 use std::path::PathBuf;
 
-/// Sends the file to the trash, falling back to a permanent recursive delete
-/// if the trash operation fails (e.g. the file is on a filesystem without a
-/// trash directory, or is inside a mount point where trash is unavailable).
+/// Sends the file to the trash on a worker thread and reports which trash
+/// entry the deletion created, so undo can restore that exact entry.
+///
+/// On failure a toast is shown and nothing is recorded in the undo history.
 pub(super) fn delete_via_trash(
     file: gio::File,
     raw_path: PathBuf,
     sender: AsyncComponentSender<FluxApp>,
 ) {
-    let file_for_fallback = file.clone();
-    let trashed_path = raw_path;
+    // `gio::File` is not `Send`, so hand the worker thread the URI instead.
+    let uri = file.uri().to_string();
 
-    file.trash_async(
-        glib::Priority::DEFAULT,
-        gio::Cancellable::NONE,
-        move |res| match res {
-            Ok(_) => {
-                sender.input(AppMsg::TrashSucceeded(vec![trashed_path]));
+    relm4::spawn_blocking(move || {
+        let file = gio::File::for_uri(&uri);
+        match trash_tracked(&file, &raw_path) {
+            Ok(item) => {
+                sender.input(AppMsg::TrashSucceeded(vec![item]));
                 sender.input(AppMsg::Refresh);
             }
             Err(trash_err) => {
                 eprintln!(
-                    "[Delete] trash_async failed gio_kind={:?} msg={:?}",
+                    "[Delete] trash failed gio_kind={:?} msg={:?}",
                     trash_err.kind::<gio::IOErrorEnum>(),
                     trash_err.message()
                 );
-                let _ = file_for_fallback;
                 sender.input(AppMsg::ShowToast(format!(
                     "{}: {}",
                     crate::i18n::tr("Could not move to trash"),
                     trash_err.message()
                 )));
             }
-        },
-    );
+        }
+    });
 }
