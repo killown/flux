@@ -175,7 +175,7 @@ windowcontrols button {
 windowcontrols button image,
 windowcontrols button image.icon,
 windowcontrols button > * {
-  margin: auto;
+  margin: 0;
   padding: 0;
   -gtk-icon-size: 1.15em;
   min-width: 1.15em;
