@@ -25,7 +25,16 @@ impl FluxApp {
         let (db_tx, db_rx) = tokio::sync::oneshot::channel();
 
         tokio::spawn(async move {
-            let db = crate::services::db::StateManager::new().expect("DB Init Failed");
+            // A corrupt, locked or unwritable state DB must not stop flux from starting.
+            // The file is left untouched; history, tags and layouts just won't be saved.
+            let db = crate::services::db::StateManager::new().unwrap_or_else(|e| {
+                eprintln!(
+                    "flux: could not open the state database ({e}); \
+                     using a temporary in-memory one, nothing will be saved this session"
+                );
+                crate::services::db::StateManager::new_in_memory()
+                    .expect("in-memory SQLite database must always open")
+            });
             let _ = db_tx.send(db);
         });
         tokio::spawn(async move {
