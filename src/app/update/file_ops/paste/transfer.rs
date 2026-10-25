@@ -14,7 +14,7 @@ pub(super) fn resolve_gio_files(files: Vec<gio::File>) -> Vec<(PathBuf, String, 
             })?;
 
             let orig_name = src_path.file_name()?.to_string_lossy().to_string();
-            let clean_name = clean_tmp_basename(&orig_name);
+            let clean_name = paste_name_for(&src_path, &orig_name);
             let is_dir = src_path.is_dir();
             Some((src_path, clean_name, is_dir))
         })
@@ -286,15 +286,42 @@ pub(super) fn scan_total_bytes(path: &Path) -> u64 {
     }
 }
 
-pub(super) fn clean_tmp_basename(name: &str) -> String {
-    if name.starts_with(".tmp") {
-        name.split_once('.')
-            .and_then(|(_, rest)| rest.split_once('.'))
-            .map(|(_, real)| real.to_string())
-            .unwrap_or_else(|| name.to_string())
-    } else {
-        name.to_string()
+/// Length of the random part `tempfile` puts after its default `.tmp` prefix.
+const TEMPFILE_RAND_LEN: usize = 6;
+
+/// Original file name of a file made by `tempfile::Builder` with its default
+/// prefix and a `.{name}` suffix, which is how archive entries are extracted:
+/// `.tmpAbC123.notes.txt` gives `notes.txt`.
+///
+/// Only that exact shape is rewritten (`.tmp`, six alphanumeric characters,
+/// a dot, then a non-empty name). Any other name is returned unchanged, so
+/// `.tmpnotes.txt` stays `.tmpnotes.txt`. A real file can still look like a
+/// temp file, so callers that know the path should use [`paste_name_for`].
+pub fn clean_tmp_basename(name: &str) -> String {
+    name.strip_prefix(".tmp")
+        .and_then(|rest| {
+            let (rand, real) = rest.split_at_checked(TEMPFILE_RAND_LEN)?;
+            let real = real.strip_prefix('.').filter(|r| !r.is_empty())?;
+            rand.bytes()
+                .all(|b| b.is_ascii_alphanumeric())
+                .then_some(real)
+        })
+        .unwrap_or(name)
+        .to_string()
+}
+
+/// Name a pasted or dropped `src_path` gets at its destination.
+///
+/// The temp-file prefix is removed only for files that live in Flux's scratch
+/// directory, the one place Flux creates such files. A file elsewhere keeps
+/// its name even if it happens to look like a temp file. The scratch
+/// directory is only looked up when the name would change.
+pub fn paste_name_for(src_path: &Path, orig_name: &str) -> String {
+    let cleaned = clean_tmp_basename(orig_name);
+    if cleaned != orig_name && !src_path.starts_with(crate::services::archive::flux_scratch_dir()) {
+        return orig_name.to_string();
     }
+    cleaned
 }
 
 pub(super) fn is_cancelled_error(cancellable: &gio::Cancellable, msg: &str) -> bool {
