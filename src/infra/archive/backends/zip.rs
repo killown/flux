@@ -463,11 +463,11 @@ pub(in crate::infra::archive) fn extract_dir_zip_at(
             continue;
         }
 
-        if !name.starts_with(&prefix) {
+        // `strip_prefix` removes the prefix exactly once. Trimming it
+        // repeatedly would turn `a/a/x` into `x` when extracting `a`.
+        let Some(relative) = name.strip_prefix(prefix.as_str()) else {
             continue;
-        }
-
-        let relative = name.trim_start_matches(prefix.as_str());
+        };
         if relative.is_empty() {
             continue;
         }

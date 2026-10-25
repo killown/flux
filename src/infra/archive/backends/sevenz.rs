@@ -251,11 +251,12 @@ pub(in crate::infra::archive) fn extract_dir_7z_at(
         .for_each_entries(
             &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn Read| {
                 let raw = entry.name().replace('\\', "/");
-                if !raw.starts_with(&prefix) {
+                // `strip_prefix` removes the prefix exactly once. Trimming it
+                // repeatedly would turn `a/a/x` into `x` when extracting `a`.
+                let Some(relative) = raw.strip_prefix(prefix.as_str()) else {
                     std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
                     return Ok(true);
-                }
-                let relative = raw.trim_start_matches(prefix.as_str());
+                };
                 if relative.is_empty() {
                     std::io::copy(r, &mut std::io::sink()).map_err(sevenz_rust2::Error::from)?;
                     return Ok(true);

@@ -208,10 +208,11 @@ pub(in crate::infra::archive) fn extract_dir_tar_at<R: Read>(
         let stripped_path = crate::utils::strip_current_dir(&entry_path);
         let raw_path = stripped_path.to_string_lossy().replace('\\', "/");
 
-        if !raw_path.starts_with(&prefix) {
+        // `strip_prefix` removes the prefix exactly once. Trimming it
+        // repeatedly would turn `a/a/x` into `x` when extracting `a`.
+        let Some(relative) = raw_path.strip_prefix(prefix.as_str()) else {
             continue;
-        }
-        let relative = raw_path.trim_start_matches(prefix.as_str());
+        };
         if relative.is_empty() {
             continue;
         }
