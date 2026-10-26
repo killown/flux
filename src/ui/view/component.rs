@@ -191,8 +191,8 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_spacing: 0,
                                     set_halign: gtk::Align::Center,
                                     set_valign: gtk::Align::Center,
-                                    set_focusable: true,
-                                    set_can_focus: true,
+                                    set_focusable: false,
+                                    set_can_focus: false,
                                     connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
                                     add_controller = gtk::EventControllerKey {
@@ -1066,6 +1066,8 @@ impl SimpleAsyncComponent for FluxApp {
         let widgets = view_output!();
 
         Self::attach_tabs_and_header(&mut model, &widgets, &sender);
+        Self::lock_header_focus(root.upcast_ref::<gtk::Widget>());
+        Self::lock_header_focus(widgets.header_bar.upcast_ref::<gtk::Widget>());
         Self::setup_sidebar_resize(&model, &widgets, &sender);
         Self::setup_pin_zone(&widgets, &sender);
         Self::setup_sidebar_context_menu(&widgets, &sender);

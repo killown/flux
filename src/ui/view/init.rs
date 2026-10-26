@@ -412,6 +412,26 @@ impl FluxApp {
         }
     }
 
+    /// Keeps keyboard focus out of the header bar.
+    ///
+    /// When the focused widget is hidden, destroyed or made insensitive (view
+    /// mode switch, panel close, history running out, ...) GTK falls back to
+    /// the first focusable widget, which landed on the back button, a
+    /// breadcrumb, etc. and painted a stray focus ring. Everything in the
+    /// header is made non-focusable except text entries (path / search), and
+    /// popover contents are left alone. Mouse use is unaffected.
+    pub(super) fn lock_header_focus(root: &gtk::Widget) {
+        let mut child = root.first_child();
+        while let Some(w) = child {
+            child = w.next_sibling();
+            if w.is::<gtk::Popover>() || w.is::<gtk::Editable>() {
+                continue;
+            }
+            w.set_focusable(false);
+            Self::lock_header_focus(&w);
+        }
+    }
+
     pub(super) fn setup_sidebar_context_menu(
         widgets: &FluxAppWidgets,
         sender: &AsyncComponentSender<Self>,
