@@ -132,9 +132,16 @@ impl FluxApp {
             let cmd_template = action.command.clone();
             let toast_msg = action.toast.clone();
             let sender_click = sender.clone();
+            let target_path = path.clone();
 
             gio_action.connect_activate(move |_, _| {
-                sender_click.input(AppMsg::ExecuteCommand(cmd_template.clone()));
+                match (cmd_template.as_str(), &target_path) {
+                    ("builtin::forget_archive_password", Some(target)) => {
+                        sender_click.input(AppMsg::ForgetArchivePassword(target.clone()));
+                    }
+                    ("builtin::forget_archive_password", None) => {}
+                    _ => sender_click.input(AppMsg::ExecuteCommand(cmd_template.clone())),
+                }
                 if let Some(ref msg) = toast_msg {
                     sender_click.input(AppMsg::ShowToast(msg.clone()));
                 }
