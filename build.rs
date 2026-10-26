@@ -58,4 +58,10 @@ fn main() {
     println!("cargo:rerun-if-changed=scripts/properties.py");
     println!("cargo:rerun-if-changed=flux.desktop");
     println!("cargo:rerun-if-changed=.git/HEAD");
+    println!("cargo:rerun-if-changed=.git/packed-refs");
+    if let Ok(head) = std::fs::read_to_string(".git/HEAD") {
+        if let Some(r) = head.strip_prefix("ref: ") {
+            println!("cargo:rerun-if-changed=.git/{}", r.trim());
+        }
+    }
 }
