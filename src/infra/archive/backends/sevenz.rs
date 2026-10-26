@@ -20,6 +20,14 @@ impl ArchiveBackend for SevenZBackend {
         list_7z(archive_path, prefix, password)
     }
 
+    fn total_bytes(
+        &self,
+        archive_path: &Path,
+        password: Option<&str>,
+    ) -> Result<u64, ArchiveError> {
+        total_7z(archive_path, password)
+    }
+
     fn extract_entry_bytes(
         &self,
         archive_path: &Path,
@@ -43,18 +51,17 @@ impl ArchiveBackend for SevenZBackend {
 
 // ─── 7-Zip ───────────────────────────────────────────────────────────────────
 
-fn list_7z(
+/// Opens the archive header, mapping password failures to [`ArchiveError`].
+fn open_7z_reader(
     archive_path: &Path,
-    prefix: &str,
     password: Option<&str>,
-) -> Result<Vec<ArchiveEntry>, ArchiveError> {
-    crate::hit!("list_7z");
+) -> Result<ArchiveReader<std::fs::File>, ArchiveError> {
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 
     let pwd: Password = password.map(Password::from).unwrap_or_else(Password::empty);
 
-    let reader = ArchiveReader::new(file, pwd).map_err(|e| match e {
+    ArchiveReader::new(file, pwd).map_err(|e| match e {
         sevenz_rust2::Error::PasswordRequired => ArchiveError::PasswordRequired,
         sevenz_rust2::Error::MaybeBadPassword(_) => {
             if password.is_none() {
@@ -82,7 +89,28 @@ fn list_7z(
                 ArchiveError::Other(msg)
             }
         }
-    })?;
+    })
+}
+
+/// Sums uncompressed file sizes from the header, without decompressing.
+fn total_7z(archive_path: &Path, password: Option<&str>) -> Result<u64, ArchiveError> {
+    crate::hit!("total_7z");
+    let reader = open_7z_reader(archive_path, password)?;
+    Ok(reader
+        .archive()
+        .files
+        .iter()
+        .filter(|e| !e.is_directory)
+        .fold(0u64, |acc, e| acc.saturating_add(e.size)))
+}
+
+fn list_7z(
+    archive_path: &Path,
+    prefix: &str,
+    password: Option<&str>,
+) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+    crate::hit!("list_7z");
+    let reader = open_7z_reader(archive_path, password)?;
 
     let mut seen: HashMap<String, ArchiveEntry> = HashMap::new();
 

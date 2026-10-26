@@ -42,18 +42,11 @@ impl FluxApp {
                 .to_string_lossy()
         );
 
-        let total_bytes = crate::services::archive::archive_total_bytes(
-            &archive_path,
-            self.cached_archive_passwords
-                .get(&archive_path)
-                .map(String::as_str),
-        );
-
         sender.input(AppMsg::TaskProgress {
             id: task_id,
             label: label.clone(),
             current: 0,
-            total: total_bytes,
+            total: 0,
             total_items: 1,
             cancellable: cancellable.clone(),
         });
@@ -68,6 +61,8 @@ impl FluxApp {
         let s_poll = s.clone();
         let done_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let done_flag_extractor = done_flag.clone();
+        let total_shared = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let total_poll = total_shared.clone();
 
         std::thread::spawn(move || {
             /// Sums regular-file bytes without following symlinks.
@@ -90,7 +85,7 @@ impl FluxApp {
                     id: task_id,
                     label: label_poll.clone(),
                     current,
-                    total: total_bytes,
+                    total: total_poll.load(std::sync::atomic::Ordering::Relaxed),
                     total_items: 1,
                     cancellable: cancellable_poll.clone(),
                 });
@@ -100,6 +95,10 @@ impl FluxApp {
 
         // ── Extraction thread ─────────────────────────────────────────────────
         relm4::spawn_blocking(move || {
+            let total_bytes =
+                crate::services::archive::archive_total_bytes(&archive_path, password.as_deref());
+            total_shared.store(total_bytes, Ordering::Relaxed);
+
             let result = crate::services::archive::extract_archive_to_dir(
                 &archive_path,
                 &dest,

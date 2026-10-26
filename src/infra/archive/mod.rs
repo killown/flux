@@ -134,14 +134,11 @@ pub fn extract_archive_to_dir(
     Ok(())
 }
 
-/// Returns the total uncompressed byte size of all file entries in the archive.
-///
-/// Used by the UI to seed a real `total` value for the progress bar before
-/// extraction starts.  Returns `0` when the format cannot report sizes without
-/// full decompression (e.g. standalone `.gz`).
+/// Returns the total uncompressed byte size of all file entries in the archive,
+/// including those in nested folders.
 pub fn archive_total_bytes(archive_path: &Path, password: Option<&str>) -> u64 {
-    list_archive_entries(archive_path, "", password)
-        .map(|entries| entries.iter().filter(|e| !e.is_dir).map(|e| e.size).sum())
+    get_backend(archive_path, None)
+        .total_bytes(archive_path, password)
         .unwrap_or(0)
 }
 

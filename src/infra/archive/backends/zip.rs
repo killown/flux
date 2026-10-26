@@ -206,6 +206,14 @@ impl ArchiveBackend for ZipBackend {
         list_zip(archive_path, prefix, password)
     }
 
+    fn total_bytes(
+        &self,
+        archive_path: &Path,
+        _password: Option<&str>,
+    ) -> Result<u64, ArchiveError> {
+        total_zip(archive_path)
+    }
+
     fn extract_entry_bytes(
         &self,
         archive_path: &Path,
@@ -564,6 +572,31 @@ fn list_zip(
     }
 
     Ok(seen.into_values().collect())
+}
+
+/// Sums uncompressed file sizes from the central directory. Raw header access
+/// works for encrypted entries too, so no password is needed.
+fn total_zip(archive_path: &Path) -> Result<u64, ArchiveError> {
+    crate::hit!("total_zip");
+    let file =
+        std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
+    let mut zip =
+        zip::ZipArchive::new(file).map_err(|e| ArchiveError::Other(format!("ZIP: {e}")))?;
+    let has_sentinel = zip.index_for_name(FLUX_CACHE_SENTINEL).is_some();
+    let mut total = 0u64;
+    for i in 0..zip.len() {
+        let entry = zip
+            .by_index_raw(i)
+            .map_err(|e| ArchiveError::Other(format!("ZIP idx {i}: {e}")))?;
+        if entry.is_dir() {
+            continue;
+        }
+        if has_sentinel && is_internal_path(entry.name().trim_end_matches('/')) {
+            continue;
+        }
+        total = total.saturating_add(entry.size());
+    }
+    Ok(total)
 }
 
 fn extract_dir_zip(

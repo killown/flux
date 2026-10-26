@@ -20,6 +20,26 @@ pub trait ArchiveBackend: Send + Sync {
         password: Option<&str>,
     ) -> Result<Vec<ArchiveEntry>, ArchiveError>;
 
+    /// Total uncompressed size of every file in the archive, including nested folders.
+    fn total_bytes(
+        &self,
+        archive_path: &Path,
+        password: Option<&str>,
+    ) -> Result<u64, ArchiveError> {
+        let mut total = 0u64;
+        let mut pending = vec![String::new()];
+        while let Some(prefix) = pending.pop() {
+            for entry in self.list_entries(archive_path, &prefix, password)? {
+                if entry.is_dir {
+                    pending.push(entry.inner_path);
+                } else {
+                    total = total.saturating_add(entry.size);
+                }
+            }
+        }
+        Ok(total)
+    }
+
     /// Extract a single entry as raw bytes.
     fn extract_entry_bytes(
         &self,

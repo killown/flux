@@ -46,6 +46,33 @@ impl ArchiveBackend for TarBackend {
         }
     }
 
+    fn total_bytes(
+        &self,
+        archive_path: &Path,
+        _password: Option<&str>,
+    ) -> Result<u64, ArchiveError> {
+        let name_lc = lc_name(archive_path);
+        if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
+            total_tar(flate2::read::GzDecoder::new(open_buf(archive_path)?))
+        } else if name_lc.ends_with(".tar.bz2") || name_lc.ends_with(".tbz2") {
+            total_tar(bzip2::read::BzDecoder::new(open_buf(archive_path)?))
+        } else if name_lc.ends_with(".tar.xz")
+            || name_lc.ends_with(".txz")
+            || name_lc.ends_with(".tar.lzma")
+            || name_lc.ends_with(".tlz")
+        {
+            total_tar(xz2::read::XzDecoder::new(open_buf(archive_path)?))
+        } else if name_lc.ends_with(".tar.zst") || name_lc.ends_with(".tzst") {
+            let dec = zstd::stream::read::Decoder::new(open_buf(archive_path)?)
+                .map_err(|e| ArchiveError::Other(format!("zstd open: {e}")))?;
+            total_tar(dec)
+        } else if name_lc.ends_with(".tar.lz4") {
+            total_tar(lz4_flex::frame::FrameDecoder::new(open_buf(archive_path)?))
+        } else {
+            total_tar(open_buf(archive_path)?)
+        }
+    }
+
     fn extract_entry_bytes(
         &self,
         archive_path: &Path,
@@ -146,6 +173,24 @@ fn list_tar<R: Read>(reader: R, prefix: &str) -> Result<Vec<ArchiveEntry>, Archi
     }
 
     Ok(seen.into_values().collect())
+}
+
+/// Sums the header sizes of regular files in a single pass.
+fn total_tar<R: Read>(reader: R) -> Result<u64, ArchiveError> {
+    crate::hit!("total_tar");
+    let mut archive = tar::Archive::new(reader);
+    let mut total = 0u64;
+    for entry in archive
+        .entries()
+        .map_err(|e| ArchiveError::Other(format!("TAR: {e}")))?
+    {
+        let entry = entry.map_err(|e| ArchiveError::Other(format!("TAR entry: {e}")))?;
+        let header = entry.header();
+        if header.entry_type().is_file() {
+            total = total.saturating_add(header.size().unwrap_or(0));
+        }
+    }
+    Ok(total)
 }
 
 pub(super) fn extract_tar<R: Read>(
