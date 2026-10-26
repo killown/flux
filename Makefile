@@ -26,6 +26,9 @@ PO_FILES   = $(wildcard $(PO_DIR)/*.po)
 # Derive language tags from filenames: po/pt_BR.po → pt_BR
 LANGS      = $(basename $(notdir $(PO_FILES)))
 
+# Desktop entry ID as installed by `make install`
+DESKTOP_ID = io.github.killown.flux.desktop
+
 # Theme Repository
 THEME_REPO = https://github.com/killown/flux-themes.git
 
@@ -127,18 +130,11 @@ translations:
 # To set flux as the default handler for compressed files:
 #   make set-archive-defaults
 set-archive-defaults:
-	xdg-mime default flux.desktop application/zip
-	xdg-mime default flux.desktop application/x-7z-compressed
-	xdg-mime default flux.desktop application/x-tar
-	xdg-mime default flux.desktop application/gzip
-	xdg-mime default flux.desktop application/x-bzip2
-	xdg-mime default flux.desktop application/x-xz
-	xdg-mime default flux.desktop application/zstd
-	xdg-mime default flux.desktop application/x-rar
-	xdg-mime default flux.desktop application/vnd.rar
-	xdg-mime default flux.desktop application/x-iso9660-image
-	xdg-mime default flux.desktop application/x-compressed-tar
-	xdg-mime default flux.desktop application/x-bzip-compressed-tar
-	xdg-mime default flux.desktop application/x-xz-compressed-tar
-	xdg-mime default flux.desktop application/x-zstd-compressed-tar
+	@for m in application/zip application/x-7z-compressed application/x-tar \
+	          application/gzip application/x-bzip2 application/x-xz application/zstd \
+	          application/x-rar application/vnd.rar application/x-iso9660-image \
+	          application/x-compressed-tar application/x-bzip-compressed-tar \
+	          application/x-xz-compressed-tar application/x-zstd-compressed-tar; do \
+		xdg-mime default $(DESKTOP_ID) $$m || exit 1; \
+	done
 	update-desktop-database ~/.local/share/applications
