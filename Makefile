@@ -35,7 +35,7 @@ THEME_REPO = https://github.com/killown/flux-themes.git
 
 .PHONY: install translations set-archive-defaults update-themes
 
-install: translations update-themes
+install: translations $(if $(DESTDIR),,update-themes)
 	# 0. Guard: fail loudly when no built binary is found, instead of
 	#    silently installing a stale target/release/flux-fm while the user
 	#    is on a --profile local build.
@@ -106,7 +106,7 @@ install: translations update-themes
 update-themes:
 	@mkdir -p $(DESTDIR)$(CONFDIR)/themes
 	@TMP_THEME_DIR=$$(mktemp -d); \
-	if git clone --quiet $(THEME_REPO) "$$TMP_THEME_DIR"; then \
+	if git clone --quiet --depth 1 $(THEME_REPO) "$$TMP_THEME_DIR"; then \
 		if [ -d "$$TMP_THEME_DIR/themes" ]; then \
 			cp -r "$$TMP_THEME_DIR/themes/." "$(DESTDIR)$(CONFDIR)/themes/"; \
 		else \
