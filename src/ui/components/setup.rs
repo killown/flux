@@ -48,6 +48,83 @@ fn clear_grid_selection(widget: &gtk::Widget) {
     }
 }
 
+/// Paths of the whole selection when `widget` is one of several selected cells.
+///
+/// Returns `None` (single-item drag, exactly as before) when the selection has
+/// fewer than two items, when the dragged cell is not part of it, when any
+/// selected item lives inside an archive, or when an item cannot be resolved.
+/// Runs at drag time on the GTK thread, never from `bind`.
+fn multi_drag_paths(widget: &gtk::Widget) -> Option<Vec<PathBuf>> {
+    let dragged: PathBuf = unsafe {
+        widget
+            .data::<PathBuf>("flux_path")
+            .map(|p| p.as_ref().clone())
+    }?;
+    let model = owning_grid_view(widget)?.model()?;
+    let selection = model.selection();
+    if selection.size() < 2 {
+        return None;
+    }
+
+    let (mut iter, first) = gtk::BitsetIter::init_first(&selection)?;
+    let mut paths = Vec::with_capacity(selection.size() as usize);
+    let mut current = Some(first);
+    while let Some(idx) = current {
+        let item = model.item(idx).and_downcast::<glib::BoxedAnyObject>()?;
+        let path = item.borrow::<FileItem>().path.clone();
+        if path
+            .to_string_lossy()
+            .starts_with(crate::infra::archive::ARCHIVE_URI)
+        {
+            return None;
+        }
+        paths.push(path);
+        current = iter.next();
+    }
+
+    // Dragging an unselected cell must not drag the selection along.
+    paths.contains(&dragged).then_some(paths)
+}
+
+/// Drag payload for several files: a `FileList` for in-app drop targets and a
+/// CRLF-separated `text/uri-list` (same body as `handle_clipboard_action`) for
+/// other windows and applications.
+fn multi_drag_provider(paths: &[PathBuf]) -> gdk::ContentProvider {
+    let files: Vec<gtk::gio::File> = paths.iter().map(gtk::gio::File::for_path).collect();
+
+    let mut uri_list = String::new();
+    for file in &files {
+        uri_list.push_str(&file.uri());
+        uri_list.push_str("\r\n");
+    }
+
+    let uri_provider =
+        gdk::ContentProvider::for_bytes("text/uri-list", &glib::Bytes::from(uri_list.as_bytes()));
+    let file_list = gdk::FileList::from_array(&files);
+    let file_list_provider = gdk::ContentProvider::for_value(&file_list.to_value());
+    gdk::ContentProvider::new_union(&[file_list_provider, uri_provider])
+}
+
+/// Drag icon for several items: the pressed cell plus a `+N` badge.
+fn set_multi_drag_icon(drag: &gdk::Drag, cell: &gtk::WidgetPaintable, count: usize) {
+    let picture = gtk::Picture::for_paintable(cell);
+    picture.set_can_shrink(false);
+
+    let badge = gtk::Label::new(Some(&format!("+{}", count - 1)));
+    badge.add_css_class("osd");
+    badge.add_css_class("caption-heading");
+    badge.set_halign(gtk::Align::End);
+    badge.set_valign(gtk::Align::Start);
+
+    let overlay = gtk::Overlay::new();
+    overlay.set_child(Some(&picture));
+    overlay.add_overlay(&badge);
+
+    if let Ok(icon) = gtk::DragIcon::for_drag(drag).downcast::<gtk::DragIcon>() {
+        icon.set_child(Some(&overlay));
+    }
+}
+
 /// Disables `source` for the current press sequence, remembering its phase.
 ///
 /// Used for the Ctrl+Shift select gesture: with the controller detached from
@@ -95,10 +172,31 @@ impl FileItem {
 
         let single_click = config.ui.single_click;
 
-        drag_source.connect_drag_begin(|src, _| {
+        // Number of items in the drag being started, 0 means a single-item drag.
+        let multi_count = std::rc::Rc::new(std::cell::Cell::new(0usize));
+
+        // Returning `None` keeps the single-item provider that `bind` installed.
+        let prepare_count = multi_count.clone();
+        drag_source.connect_prepare(move |src, _, _| {
+            prepare_count.set(0);
+            if !dnd_enabled {
+                return None;
+            }
+            let paths = multi_drag_paths(&src.widget()?)?;
+            prepare_count.set(paths.len());
+            Some(multi_drag_provider(&paths))
+        });
+
+        let begin_count = multi_count.clone();
+        drag_source.connect_drag_begin(move |src, drag| {
             if let Some(widget) = src.widget() {
                 let paintable = gtk::WidgetPaintable::new(Some(&widget));
-                src.set_icon(Some(&paintable), 0, 0);
+                let count = begin_count.get();
+                if count > 1 {
+                    set_multi_drag_icon(drag, &paintable, count);
+                } else {
+                    src.set_icon(Some(&paintable), 0, 0);
+                }
                 if let Some(native) = widget.native() {
                     if let Some(surface) = native.surface() {
                         surface.set_cursor(gdk::Cursor::from_name("grabbing", None).as_ref());
