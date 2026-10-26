@@ -50,6 +50,8 @@ reference page that documents the details.
 - **Drag and drop.** Files and folders can be dragged between grid cells,
   onto sidebar rows, onto Quick List rows, and between Flux windows. Drag
   and drop can be disabled from Settings.
+  Hold `Ctrl+Shift` while pressing an item to skip dragging and rubber-band
+  select from it instead; the previous selection is cleared first.
 - **Conflict resolution.** When a destination exists, a dialog offers
   **Replace**, **Skip**, **Auto-Rename** and **Apply to all**. Auto-Rename
   produces `file (1).txt`, `file (2).txt`, and so on.
