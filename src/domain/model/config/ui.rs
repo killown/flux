@@ -319,7 +319,7 @@ impl Default for UIConfig {
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
             autoplay_video_previews: true,
-            max_content_search_results: crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
+            max_content_search_results: crate::infra::constants::MAX_CONTENT_SEARCH_RESULTS,
             lazy_thumbnails: false,
             disable_drag_and_drop: false,
             loader_batch_size: default_loader_batch_size(),

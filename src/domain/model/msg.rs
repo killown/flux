@@ -130,7 +130,7 @@ pub enum AppMsg {
     GitStatusReady {
         path: PathBuf,
         load_id: u64,
-        updates: std::collections::HashMap<PathBuf, crate::services::git::GitFileStatus>,
+        updates: std::collections::HashMap<PathBuf, crate::infra::git::GitFileStatus>,
     },
     /// Toggles the background SQLite FTS5 file indexer.
     SetEnableFileIndexing(bool),
@@ -307,13 +307,13 @@ pub enum AppMsg {
     SetMaxContentSearchResults(usize),
     /// A batch of files matched a recursive extension/glob search.
     ExtensionSearchBatch {
-        results: Vec<crate::services::search::ExtensionMatch>,
+        results: Vec<crate::infra::search::ExtensionMatch>,
         session: u64,
     },
     /// Kick off a recursive filename search using glob patterns.
     StartExtensionSearch(Vec<String>),
     /// Recursive search with full advanced constraints.
-    StartAdvancedSearch(crate::services::search::AdvancedSearchParams),
+    StartAdvancedSearch(crate::infra::search::AdvancedSearchParams),
     /// Paste image data from the clipboard as a timestamped file into the current directory.
     PasteImageFromClipboard,
     /// Paste plain text as a file.
@@ -506,10 +506,8 @@ pub enum AppMsg {
         /// Session identifier captured at spawn time, used to discard results
         /// from background tasks that were superseded by a subsequent navigation.
         load_id: u64,
-        result: Result<
-            Vec<crate::services::archive::ArchiveEntry>,
-            crate::services::archive::ArchiveError,
-        >,
+        result:
+            Result<Vec<crate::infra::archive::ArchiveEntry>, crate::infra::archive::ArchiveError>,
     },
     /// Background ZIP header probe result: archives found to be encrypted.
     /// Sent after `FolderLoaded` so the padlock never delays the first paint.
@@ -588,18 +586,18 @@ pub enum AppMsg {
     /// Connect to a remote server using the supplied connection parameters.
     ///
     /// Dispatched by the "Connect to Server" dialog. The URI is built from
-    /// [`crate::services::network::ConnectToServerParams::build_uri`] and then
+    /// [`crate::infra::network::ConnectToServerParams::build_uri`] and then
     /// handled identically to `Navigate(PathBuf::from(uri))`.
     ConnectToServer {
         /// The canonical GIO URI of the remote location (e.g. `smb://server/share`).
         uri: String,
         /// Optional credentials to pre-populate the GVFS mount operation.
-        credentials: Option<crate::services::network::NetworkCredentials>,
+        credentials: Option<crate::infra::network::NetworkCredentials>,
     },
 
     /// The remote server at `uri` requires credentials before the listing can proceed.
     ///
-    /// Dispatched by `load_network` when [`crate::services::network::NetworkError::CredentialsRequired`]
+    /// Dispatched by `load_network` when [`crate::infra::network::NetworkError::CredentialsRequired`]
     /// is returned. The update loop shows the GTK credentials dialog and, on
     /// confirmation, re-dispatches [`AppMsg::ConnectToServer`] with the filled credentials.
     PromptNetworkCredentials {
@@ -607,7 +605,7 @@ pub enum AppMsg {
         /// Human-readable prompt from the GVFS backend.
         message: String,
         /// Which fields the server needs.
-        flags: crate::services::network::NetworkAuthFlags,
+        flags: crate::infra::network::NetworkAuthFlags,
         /// `true` when a previous attempt was rejected - the dialog shows an error hint.
         auth_failed: bool,
     },

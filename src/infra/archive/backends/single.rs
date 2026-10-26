@@ -1,7 +1,7 @@
 //! Standalone single-file compressed archive backend.
 
-use crate::services::archive::util::{lc_name, open_buf, strip_ext};
-use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::util::{lc_name, open_buf, strip_ext};
+use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 

@@ -1,6 +1,6 @@
 //! Archive format detection by extension and MIME type.
 
-use crate::services::archive::util::lc_name;
+use crate::infra::archive::util::lc_name;
 use std::path::Path;
 
 // ─── Format detection ─────────────────────────────────────────────────────────

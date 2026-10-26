@@ -561,12 +561,12 @@ impl FluxApp {
                         let mut targets: Vec<PathBuf> = self
                             .get_selection()
                             .into_iter()
-                            .filter(|p| crate::services::fonts::is_font_path(p))
+                            .filter(|p| crate::infra::fonts::is_font_path(p))
                             .collect();
                         if targets.is_empty() {
                             if let Some(p) = resolved_path
                                 .as_ref()
-                                .filter(|p| crate::services::fonts::is_font_path(p))
+                                .filter(|p| crate::infra::fonts::is_font_path(p))
                             {
                                 targets.push(p.clone());
                             }

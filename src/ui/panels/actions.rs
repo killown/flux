@@ -236,7 +236,7 @@ fn build_row(action: &CustomAction, sender: &AsyncComponentSender<FluxApp>) -> a
     }
 
     // Glyphs are Nerd Font characters, which render as tofu without one installed.
-    if glyph.is_empty() || !crate::services::git::is_nerd_font_available() {
+    if glyph.is_empty() || !crate::infra::git::is_nerd_font_available() {
         row.add_prefix(&gtk::Image::from_icon_name("system-run-symbolic"));
     } else {
         row.add_prefix(

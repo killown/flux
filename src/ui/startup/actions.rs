@@ -91,7 +91,7 @@ impl FluxApp {
             let s_icon = sender.clone();
             icon_theme.connect_changed(move |_| {
                 crate::utils::icon::invalidate_themed_icon_cache();
-                crate::services::loader::invalidate_extension_icon_cache();
+                crate::infra::loader::invalidate_extension_icon_cache();
                 s_icon.input(AppMsg::Refresh);
             });
         }
@@ -100,7 +100,7 @@ impl FluxApp {
             let s_settings = sender.clone();
             settings.connect_gtk_icon_theme_name_notify(move |_| {
                 crate::utils::icon::invalidate_themed_icon_cache();
-                crate::services::loader::invalidate_extension_icon_cache();
+                crate::infra::loader::invalidate_extension_icon_cache();
                 s_settings.input(AppMsg::Refresh);
             });
         }

@@ -164,7 +164,7 @@ impl FluxApp {
     pub fn handle_connect_to_server(
         &mut self,
         uri: String,
-        credentials: Option<crate::services::network::NetworkCredentials>,
+        credentials: Option<crate::infra::network::NetworkCredentials>,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_connect_to_server");
@@ -177,7 +177,7 @@ impl FluxApp {
         crate::hit!("handle_unmount_network");
         let sender_clone = sender.clone();
         relm4::spawn_local(async move {
-            if let Err(e) = crate::services::network::unmount_network_location(&uri).await {
+            if let Err(e) = crate::infra::network::unmount_network_location(&uri).await {
                 sender_clone.input(AppMsg::ShowToast(e.to_string()));
             } else {
                 sender_clone.input(AppMsg::RefreshNetworkSidebar);
@@ -192,7 +192,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_add_network_bookmark");
-        let bookmark = crate::services::network::NetworkBookmark::new(name, uri);
+        let bookmark = crate::infra::network::NetworkBookmark::new(name, uri);
         if !self
             .config
             .network_bookmarks
@@ -240,7 +240,7 @@ impl FluxApp {
         self.history.push(self.current_path.clone());
         self.forward_stack.clear();
         self.load_network(
-            crate::services::network::NETWORK_ROOT_URI,
+            crate::infra::network::NETWORK_ROOT_URI,
             None,
             sender.clone(),
         );

@@ -73,7 +73,7 @@ impl FluxApp {
     ) {
         self.config.ui.auto_mime_body_color = color;
         utils::save_config(&self.config);
-        crate::services::loader::invalidate_extension_icon_cache();
+        crate::infra::loader::invalidate_extension_icon_cache();
         crate::utils::icon::invalidate_themed_icon_cache();
         self.load_path(self.current_path.clone(), sender);
     }
@@ -85,7 +85,7 @@ impl FluxApp {
     ) {
         self.config.ui.auto_mime_font_color = color;
         utils::save_config(&self.config);
-        crate::services::loader::invalidate_extension_icon_cache();
+        crate::infra::loader::invalidate_extension_icon_cache();
         crate::utils::icon::invalidate_themed_icon_cache();
         self.load_path(self.current_path.clone(), sender);
     }
@@ -97,7 +97,7 @@ impl FluxApp {
     ) {
         self.config.ui.auto_generate_mime_icons = enabled;
         utils::save_config(&self.config);
-        crate::services::loader::invalidate_extension_icon_cache();
+        crate::infra::loader::invalidate_extension_icon_cache();
         sender.input(AppMsg::Refresh);
     }
 
@@ -108,7 +108,7 @@ impl FluxApp {
     ) {
         self.config.ui.auto_mime_accent_color = color;
         utils::save_config(&self.config);
-        crate::services::loader::invalidate_extension_icon_cache();
+        crate::infra::loader::invalidate_extension_icon_cache();
         sender.input(AppMsg::Refresh);
     }
 
@@ -119,7 +119,7 @@ impl FluxApp {
     ) {
         self.config.ui.auto_mime_font_size = size;
         utils::save_config(&self.config);
-        crate::services::loader::invalidate_extension_icon_cache();
+        crate::infra::loader::invalidate_extension_icon_cache();
         sender.input(AppMsg::Refresh);
     }
 
@@ -139,7 +139,7 @@ impl FluxApp {
             }
         }
 
-        crate::services::loader::invalidate_extension_icon_cache();
+        crate::infra::loader::invalidate_extension_icon_cache();
         crate::utils::icon::invalidate_themed_icon_cache();
         self.tabs[self.active_tab_index].files.clear();
         self.load_path(self.current_path.clone(), sender);
@@ -164,7 +164,7 @@ impl FluxApp {
             .unwrap_or_else(|| self.current_path.clone());
         // Archives drawn as folders accept a folder icon through the same flow.
         let is_virtual_dir = self.config.ui.archives_as_folders
-            && crate::services::archive::is_browsable_archive(&target);
+            && crate::infra::archive::is_browsable_archive(&target);
         if target.is_dir() || is_virtual_dir {
             self.show_icon_picker(target, sender);
         }

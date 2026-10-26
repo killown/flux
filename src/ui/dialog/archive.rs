@@ -160,9 +160,9 @@ impl FluxApp {
                         }
                     };
 
-                    let was_encrypted = crate::services::archive::zip_is_encrypted(&a_path);
+                    let was_encrypted = crate::infra::archive::zip_is_encrypted(&a_path);
 
-                    let result = crate::services::archive::remove_archive_entry(
+                    let result = crate::infra::archive::remove_archive_entry(
                         &a_path,
                         &i_path,
                         password.as_deref(),
@@ -177,7 +177,7 @@ impl FluxApp {
                     match result {
                         Ok(()) => {
                             s_clone.input(AppMsg::Refresh);
-                            if was_encrypted && !crate::services::archive::zip_is_encrypted(&a_path)
+                            if was_encrypted && !crate::infra::archive::zip_is_encrypted(&a_path)
                             {
                                 s_clone.input(AppMsg::ShowToast(crate::i18n::tr(
                                     "No encrypted files left: this archive is no longer password-protected, and files you add next will not be encrypted.",

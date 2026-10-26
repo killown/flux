@@ -203,7 +203,7 @@ impl FluxApp {
     /// and from the archive root it is the folder holding the archive file.
     fn navigate_parent(current: &Path) -> Option<PathBuf> {
         let Some((archive, inner)) =
-            crate::services::archive::parse_archive_uri(&current.to_string_lossy())
+            crate::infra::archive::parse_archive_uri(&current.to_string_lossy())
         else {
             return current.parent().map(PathBuf::from);
         };
@@ -212,7 +212,7 @@ impl FluxApp {
             return archive.parent().map(PathBuf::from);
         }
         let up = inner.rsplit_once('/').map_or("", |(head, _)| head);
-        Some(crate::services::archive::build_archive_uri(&archive, up))
+        Some(crate::infra::archive::build_archive_uri(&archive, up))
     }
 
     /// Status-bar chip text: `Navigate` or `Navigate: d` for the letter being cycled.

@@ -93,7 +93,7 @@ fn thumbnail_is_valid(cache_meta: &fs::Metadata, png: &[u8], source_meta: &fs::M
 }
 
 fn is_ephemeral_source(path: &Path) -> bool {
-    if path.starts_with(crate::services::archive::flux_scratch_dir()) {
+    if path.starts_with(crate::infra::archive::flux_scratch_dir()) {
         return true;
     }
     if let Some(cache_dir) = dirs::cache_dir() {
@@ -175,7 +175,7 @@ fn classify_thumbnail_kind(path: &Path, ext: &str) -> ThumbnailKind {
 pub(crate) fn may_have_thumbnail(path: &Path) -> bool {
     if path
         .to_string_lossy()
-        .starts_with(crate::services::archive::ARCHIVE_URI)
+        .starts_with(crate::infra::archive::ARCHIVE_URI)
     {
         return true;
     }
@@ -193,8 +193,8 @@ pub(crate) fn may_have_thumbnail(path: &Path) -> bool {
 pub(crate) fn generate_thumbnail_sync(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
     crate::hit!("generate_thumbnail_sync");
     let path_str = path.to_string_lossy();
-    if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-        return crate::services::archive::get_archive_thumbnail(path);
+    if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+        return crate::infra::archive::get_archive_thumbnail(path);
     }
 
     let ephemeral = is_ephemeral_source(path);
@@ -243,7 +243,7 @@ fn generate_thumbnail_inner(path: &std::path::Path, ephemeral: bool) -> Option<g
             // Decode without writing to disk: the caller already owns persistence.
             return crate::utils::media::decode_image_thumbnail_ephemeral(path, target_size);
         }
-        let throwaway_dir = crate::services::archive::flux_scratch_dir().join("ephemeral-thumbs");
+        let throwaway_dir = crate::infra::archive::flux_scratch_dir().join("ephemeral-thumbs");
         let _ = std::fs::create_dir_all(&throwaway_dir);
         let throwaway_path = throwaway_dir.join(format!(
             "ephemeral-{}-{}.png",

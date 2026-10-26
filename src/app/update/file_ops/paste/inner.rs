@@ -20,12 +20,12 @@ impl FluxApp {
         let current_str = self.current_path.to_string_lossy();
 
         // ── Archive Paste Intercept ──────────────────────────────────────────
-        if current_str.starts_with(crate::services::archive::ARCHIVE_URI)
+        if current_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             || current_str.starts_with("/archive:/")
             || current_str.starts_with("archive://")
         {
             if let Some((archive_path, prefix)) =
-                crate::services::archive::parse_archive_uri(&current_str)
+                crate::infra::archive::parse_archive_uri(&current_str)
             {
                 let resolved_sources = resolve_gio_files(files);
                 let total_files = resolved_sources.len();
@@ -136,7 +136,7 @@ impl FluxApp {
                             s_cb.input(AppMsg::TaskQueueTick);
                         };
 
-                        if let Err(e) = crate::services::archive::write_archive_entry(
+                        if let Err(e) = crate::infra::archive::write_archive_entry(
                             &archive_path,
                             src,
                             &inner,

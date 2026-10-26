@@ -1,8 +1,8 @@
 //! Debian package backend.
 
 use super::tar::{extract_dir_tar, extract_tar, TarBackend};
-use crate::services::archive::util::{extract_bytes_via_tempfile, lc_name, open_buf};
-use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::util::{extract_bytes_via_tempfile, lc_name, open_buf};
+use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::path::{Path, PathBuf};
 
 pub(in crate::infra::archive) struct DebBackend; // for .deb (ar + inner data.tar.*)

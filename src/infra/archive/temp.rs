@@ -24,7 +24,7 @@ pub fn register_temp_file(path: PathBuf) {
 pub fn clear_archive_session_temp() {
     crate::hit!("clear_archive_session_temp");
     // Navigating away from an archive commits any queued in-archive thumbnails.
-    crate::services::archive::thumb_cache::flush_all();
+    crate::infra::archive::thumb_cache::flush_all();
     if let Ok(mut dirs) = ACTIVE_TEMP_DIRS.lock() {
         dirs.clear();
     }
@@ -38,7 +38,7 @@ pub fn clear_archive_session_temp() {
 pub fn purge_stale_scratch_dirs() {
     crate::hit!("purge_stale_scratch_dirs");
     // Defensive: commit anything still queued (cheap when the queue is empty).
-    crate::services::archive::thumb_cache::flush_all();
+    crate::infra::archive::thumb_cache::flush_all();
     let current_pid = std::process::id();
     let Ok(entries) = std::fs::read_dir("/tmp") else {
         return;

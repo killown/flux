@@ -7,8 +7,8 @@ use std::path::PathBuf;
 /// the outcome as a `Result` so callers can tell a rejected passphrase apart.
 async fn unlock_off_thread(path: PathBuf, passphrase: String) -> Result<PathBuf, String> {
     match relm4::spawn_blocking(move || {
-        let image = crate::services::luks::LuksImage { path };
-        crate::services::luks::unlock_and_mount(&image, &passphrase)
+        let image = crate::infra::luks::LuksImage { path };
+        crate::infra::luks::unlock_and_mount(&image, &passphrase)
     })
     .await
     {

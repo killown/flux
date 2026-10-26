@@ -16,7 +16,7 @@ pub fn build_terminal_panel(
     config: &crate::model::TerminalConfig,
     initial_width: i32,
     sender: AsyncComponentSender<FluxApp>,
-) -> (gtk::Box, crate::services::terminal::Terminal) {
+) -> (gtk::Box, crate::infra::terminal::Terminal) {
     let spec = PanelSpec::new(380, 800, 720).with_initial(initial_width);
 
     let panel = gtk::Box::builder()
@@ -38,7 +38,7 @@ pub fn build_terminal_panel(
         panel.append(&header);
     }
 
-    let term = crate::services::terminal::Terminal::new(config);
+    let term = crate::infra::terminal::Terminal::new(config);
     term.drawing_area.add_css_class("flux-terminal-area");
     panel.append(&term.drawing_area);
 

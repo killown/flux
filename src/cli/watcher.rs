@@ -41,7 +41,7 @@ pub(super) fn setup_config_watcher() {
                 match event_type {
                     Changed | ChangesDoneHint | Created | MovedIn | Renamed | Moved => {
                         glib::timeout_add_local_once(std::time::Duration::from_millis(50), || {
-                            crate::services::loader::invalidate_extension_icon_cache();
+                            crate::infra::loader::invalidate_extension_icon_cache();
                             crate::utils::helpers::load_custom_css();
                             crate::utils::helpers::load_custom_background_images();
                             crate::utils::config::invalidate_config_cache();
@@ -83,7 +83,7 @@ pub(super) fn setup_config_watcher() {
                             glib::timeout_add_local_once(
                                 std::time::Duration::from_millis(50),
                                 || {
-                                    crate::services::loader::invalidate_extension_icon_cache();
+                                    crate::infra::loader::invalidate_extension_icon_cache();
                                     if let Some(sender) = crate::model::SENDER.get() {
                                         let _ = sender.send(crate::model::AppMsg::Refresh);
                                     }

@@ -1,6 +1,6 @@
 //! Helpers shared by several archive backends.
 
-use crate::services::archive::{flux_scratch_dir, ArchiveError};
+use crate::infra::archive::{flux_scratch_dir, ArchiveError};
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 

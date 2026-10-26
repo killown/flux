@@ -15,7 +15,7 @@ impl FluxApp {
         if self
             .current_path
             .to_string_lossy()
-            .starts_with(crate::services::archive::ARCHIVE_URI)
+            .starts_with(crate::infra::archive::ARCHIVE_URI)
         {
             return;
         }

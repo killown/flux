@@ -10,7 +10,7 @@ pub(crate) fn net_debug_enabled() -> bool {
 
 macro_rules! net_debug {
     ($($arg:tt)*) => {
-        if $crate::services::network::debug::net_debug_enabled() {
+        if $crate::infra::network::debug::net_debug_enabled() {
             eprintln!($($arg)*);
         }
     };

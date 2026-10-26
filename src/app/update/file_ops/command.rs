@@ -170,7 +170,7 @@ impl FluxApp {
         if cmd_template == "builtin::install_fonts" {
             let fonts: Vec<PathBuf> = final_targets
                 .into_iter()
-                .filter(|p| crate::services::fonts::is_font_path(p))
+                .filter(|p| crate::infra::fonts::is_font_path(p))
                 .collect();
             if !fonts.is_empty() {
                 sender.input(AppMsg::InstallFonts(fonts));

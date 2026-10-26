@@ -2,8 +2,8 @@
 //!
 //! Shows a tabbed Libadwaita window with one tab per active file operation.
 
+use crate::infra::tasks::TaskQueue;
 use crate::model::AppMsg;
-use crate::services::tasks::TaskQueue;
 use adw::prelude::*;
 use gtk::glib;
 use gtk::pango;
@@ -145,7 +145,7 @@ pub fn create_transfer_dialog(
 
 fn rebuild_tabs(
     notebook: &gtk::Notebook,
-    snapshot: &[(u64, crate::services::tasks::Task)],
+    snapshot: &[(u64, crate::infra::tasks::Task)],
     queue: &Arc<TaskQueue>,
     sender: &relm4::Sender<AppMsg>,
 ) {
@@ -167,7 +167,7 @@ fn rebuild_tabs(
 
 fn build_task_tab(
     id: u64,
-    task: &crate::services::tasks::Task,
+    task: &crate::infra::tasks::Task,
     _queue: &Arc<TaskQueue>,
     sender: &relm4::Sender<AppMsg>,
 ) -> gtk::Widget {
@@ -233,14 +233,14 @@ fn build_task_tab(
             let text = if task.total > 0 {
                 format!(
                     "{} / {} ({:.0}%)",
-                    crate::services::tasks::format_bytes(task.current),
-                    crate::services::tasks::format_bytes(task.total),
+                    crate::infra::tasks::format_bytes(task.current),
+                    crate::infra::tasks::format_bytes(task.total),
                     fraction * 100.0
                 )
             } else {
                 format!(
                     "{} transferred",
-                    crate::services::tasks::format_bytes(task.current)
+                    crate::infra::tasks::format_bytes(task.current)
                 )
             };
             gtk::Label::builder()
@@ -253,7 +253,7 @@ fn build_task_tab(
 
         let bps = task.speed.bytes_per_sec();
         if bps > 1.0 {
-            let speed_str = format!("{}/s", crate::services::tasks::format_bytes(bps as u64));
+            let speed_str = format!("{}/s", crate::infra::tasks::format_bytes(bps as u64));
             let speed_label = gtk::Label::builder()
                 .label(&speed_str)
                 .css_classes(["dim-label"])
@@ -266,7 +266,7 @@ fn build_task_tab(
                 if eta_secs < 86_400 {
                     let template = crate::i18n::tr("- {} remaining");
                     let label_text =
-                        template.replace("{}", &crate::services::tasks::format_duration(eta_secs));
+                        template.replace("{}", &crate::infra::tasks::format_duration(eta_secs));
                     let eta_label = gtk::Label::builder()
                         .label(&label_text)
                         .css_classes(["dim-label"])

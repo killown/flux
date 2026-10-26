@@ -43,15 +43,15 @@ impl FluxApp {
         let was_in_archive = self
             .current_path
             .to_string_lossy()
-            .starts_with(crate::services::archive::ARCHIVE_URI);
-        let will_be_in_archive = path_str.starts_with(crate::services::archive::ARCHIVE_URI);
+            .starts_with(crate::infra::archive::ARCHIVE_URI);
+        let will_be_in_archive = path_str.starts_with(crate::infra::archive::ARCHIVE_URI);
 
         if was_in_archive && !will_be_in_archive {
             // Defer so xdg-open / GtkVideo have time to open the file.
             // Linux unlink keeps the file alive while any fd holds it, but the
             // external app may not have called open() yet.
             glib::timeout_add_local_once(std::time::Duration::from_secs(3), || {
-                crate::services::archive::clear_archive_session_temp();
+                crate::infra::archive::clear_archive_session_temp();
             });
         }
 
@@ -66,8 +66,8 @@ impl FluxApp {
         }
 
         if !has_filter
-            && !crate::services::network::is_network_uri(&path)
-            && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+            && !crate::infra::network::is_network_uri(&path)
+            && !path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             && !path_str.starts_with(constants::TRASH_URI)
             && !path_str.starts_with(constants::RECENT_URI)
         {
@@ -118,7 +118,7 @@ impl FluxApp {
         }
 
         // Intercept Network URIs
-        if crate::services::network::is_network_uri(&path) {
+        if crate::infra::network::is_network_uri(&path) {
             let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
             self.sync_sidebar_selection();
@@ -171,9 +171,9 @@ impl FluxApp {
         }
 
         // Intercept Virtual Archive URIs
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             if let Some((archive_path, prefix)) =
-                crate::services::archive::parse_archive_uri(&path_str)
+                crate::infra::archive::parse_archive_uri(&path_str)
             {
                 let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
@@ -317,7 +317,7 @@ impl FluxApp {
         self.navigate_owe_first_selection();
         let old_path = std::mem::replace(
             &mut self.current_path,
-            crate::services::archive::build_archive_uri(&archive_path, ""),
+            crate::infra::archive::build_archive_uri(&archive_path, ""),
         );
 
         self.sync_sidebar_selection();
@@ -452,7 +452,7 @@ impl FluxApp {
     pub(super) fn cycle_inside(current: &std::path::Path, candidate: &std::path::Path) -> bool {
         current == candidate
             || current.starts_with(candidate)
-            || crate::services::archive::parse_archive_uri(&current.to_string_lossy())
+            || crate::infra::archive::parse_archive_uri(&current.to_string_lossy())
                 .is_some_and(|(archive, _)| archive == candidate)
     }
 

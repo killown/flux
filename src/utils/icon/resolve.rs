@@ -122,7 +122,7 @@ pub fn get_icon_for_path_with_override(
     }
 
     // ── Filename / extension (computed once) ────────────────────────────────
-    let filename = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+    let filename = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
         path_str.rsplit('/').next().unwrap_or("").to_string()
     } else {
         path.file_name()
@@ -158,7 +158,7 @@ pub fn get_icon_for_path_with_override(
 
     // Per-extension custom icon (only place this lookup happens now).
     if !ext.is_empty() {
-        if let Some(icon_path) = crate::services::loader::get_custom_extension_icon_path(ext) {
+        if let Some(icon_path) = crate::infra::loader::get_custom_extension_icon_path(ext) {
             if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
                 return icon;
             }
@@ -177,8 +177,8 @@ pub fn get_icon_for_path_with_override(
     let content_type = if let Some(mime) = crate::utils::media::guess_mime_from_extension(&filename)
     {
         mime
-    } else if crate::services::network::is_network_uri(path)
-        || path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+    } else if crate::infra::network::is_network_uri(path)
+        || path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
     {
         "application/octet-stream".to_string()
     } else {
@@ -251,8 +251,7 @@ pub fn get_icon_for_path_with_override(
         if !ext.is_empty() && ext.len() <= 9 {
             let (_, _, auto_gen, _, _, _, _) = &*get_icon_config_lazy();
             if *auto_gen {
-                if let Some(generated_path) = crate::services::loader::get_extension_icon_path(ext)
-                {
+                if let Some(generated_path) = crate::infra::loader::get_extension_icon_path(ext) {
                     if let Ok(generated_icon) =
                         gio::Icon::for_string(&generated_path.to_string_lossy())
                     {

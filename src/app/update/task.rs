@@ -201,7 +201,7 @@ impl FluxApp {
 
         self.is_loading = true;
 
-        if crate::services::network::is_network_uri(&p) {
+        if crate::infra::network::is_network_uri(&p) {
             self.load_network(&path_str, None, sender.clone());
         } else {
             self.load_path(p, sender);

@@ -69,7 +69,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         }
 
                         if state {
-                            crate::services::search::indexer::build_home_index_async();
+                            crate::infra::search::indexer::build_home_index_async();
                         }
                     }
                 },

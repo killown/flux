@@ -29,23 +29,23 @@ pub(super) fn handle(
         AppMsg::StartAdvancedSearch(params) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
             app.last_search_was_advanced = true;
-            crate::services::search::start_advanced_search(app, params, sender.clone());
+            crate::infra::search::start_advanced_search(app, params, sender.clone());
         }
         AppMsg::StartExtensionSearch(patterns) => {
-            crate::services::search::start_extension_search(app, patterns, sender.clone());
+            crate::infra::search::start_extension_search(app, patterns, sender.clone());
         }
         AppMsg::ExtensionSearchBatch { results, session } => {
             app.handle_extension_search_batch(results, session)
         }
         AppMsg::StartContentSearch(term, ext_filter) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
-            crate::services::search::start_content_search(app, term, ext_filter, sender.clone());
+            crate::infra::search::start_content_search(app, term, ext_filter, sender.clone());
         }
         AppMsg::SetEnableFileIndexing(enabled) => {
             app.config.ui.enable_file_indexing = enabled;
             crate::utils::save_config(&app.config);
             if enabled {
-                crate::services::search::indexer::build_home_index_async();
+                crate::infra::search::indexer::build_home_index_async();
             }
         }
         AppMsg::ContentSearchResult {

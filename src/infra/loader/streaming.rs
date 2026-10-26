@@ -302,7 +302,7 @@ impl FluxApp {
         if !path.to_string_lossy().starts_with("trash://")
             && !path
                 .to_string_lossy()
-                .starts_with(crate::services::archive::ARCHIVE_URI)
+                .starts_with(crate::infra::archive::ARCHIVE_URI)
             && self.filter.is_empty()
             && self.extension_globset.is_none()
             && self.mime_filter.is_none()
@@ -354,8 +354,8 @@ impl FluxApp {
         let path_str = self.current_path.to_string_lossy();
         let can_scan_git = !path_str.starts_with("trash://")
             && !path_str.starts_with("recent:///")
-            && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
-            && !crate::services::network::is_network_uri(&self.current_path);
+            && !path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
+            && !crate::infra::network::is_network_uri(&self.current_path);
 
         if can_scan_git {
             let target_dir = self.current_path.clone();
@@ -363,12 +363,11 @@ impl FluxApp {
             let s_clone = sender.clone();
 
             relm4::spawn(async move {
-                if let Some(repo_root) = crate::services::git::find_git_repo_root(&target_dir) {
+                if let Some(repo_root) = crate::infra::git::find_git_repo_root(&target_dir) {
                     s_clone.input(AppMsg::SetGitRepoActive(true));
 
                     if let Ok(raw_status) =
-                        crate::services::git::query_git_status_for_view(&repo_root, &target_dir)
-                            .await
+                        crate::infra::git::query_git_status_for_view(&repo_root, &target_dir).await
                     {
                         s_clone.input(AppMsg::GitStatusReady {
                             path: target_dir,
@@ -457,7 +456,7 @@ impl FluxApp {
         // exclusive: only one is spawned at a time, so only one needs to be
         // respawned here. The full-window terminal is deliberately absent: its
         // shell keeps running (and keeps its own cwd) across navigation.
-        let active_terminal: Option<crate::services::terminal::Terminal> =
+        let active_terminal: Option<crate::infra::terminal::Terminal> =
             if self.terminal_panel_visible {
                 self.sidebar_terminal.clone()
             } else if self.terminal_visible {
@@ -468,8 +467,8 @@ impl FluxApp {
 
         if let Some(term) = active_terminal {
             let path_str = self.current_path.to_string_lossy();
-            let effective_path = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-                crate::services::archive::parse_archive_uri(&path_str)
+            let effective_path = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+                crate::infra::archive::parse_archive_uri(&path_str)
                     .map(|(archive_path, _)| {
                         archive_path
                             .parent()
@@ -477,7 +476,7 @@ impl FluxApp {
                             .unwrap_or_else(|| "/".to_string())
                     })
                     .unwrap_or_else(|| "/".to_string())
-            } else if crate::services::network::is_network_uri(&self.current_path) {
+            } else if crate::infra::network::is_network_uri(&self.current_path) {
                 std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
             } else {
                 path_str.to_string()

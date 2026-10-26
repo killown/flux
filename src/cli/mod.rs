@@ -3,8 +3,8 @@ mod launch;
 mod shortcuts;
 mod watcher;
 
+use crate::infra::window_control;
 use crate::model::Config;
-use crate::services::window_control;
 use crate::ui::FileProperties;
 use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
 use relm4::prelude::*;
@@ -22,7 +22,7 @@ pub fn run() {
     // Runs before GTK initialisation so it needs no display and stays cheap
     // enough to be called from every `$F` expansion in a shell.
     if let StartupAction::PrintSelection { null } = action {
-        std::process::exit(crate::services::terminal::print_selection(null));
+        std::process::exit(crate::infra::terminal::print_selection(null));
     }
 
     // Talks to a running window over its socket, so it needs no display either.

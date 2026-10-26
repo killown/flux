@@ -71,7 +71,7 @@ thread_local! {
 /// Anything else uses its last path component.
 pub(crate) fn item_label(path: &Path) -> String {
     if let Some((archive, inner)) =
-        crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+        crate::infra::archive::parse_archive_uri(&path.to_string_lossy())
     {
         if let Some(name) = inner.trim_matches('/').rsplit('/').next() {
             if !name.is_empty() {
@@ -91,7 +91,7 @@ pub(crate) fn item_label(path: &Path) -> String {
 /// Tooltip for a quick-list row: the real location, with an `archive://`
 /// URI shown as the archive's path followed by the folder inside it.
 pub(crate) fn item_tooltip(path: &Path) -> String {
-    match crate::services::archive::parse_archive_uri(&path.to_string_lossy()) {
+    match crate::infra::archive::parse_archive_uri(&path.to_string_lossy()) {
         Some((archive, inner)) => archive
             .join(inner.trim_matches('/'))
             .to_string_lossy()

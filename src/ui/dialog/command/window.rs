@@ -2,8 +2,8 @@ use super::procfs::{
     count_fds, format_bytes, format_duration, get_cmdline, get_cwd, get_io_stats, parse_stat,
     parse_statm, state_name,
 };
+use crate::infra::tasks::TaskQueue;
 use crate::model::AppMsg;
-use crate::services::tasks::TaskQueue;
 use adw::prelude::*;
 use gtk::glib;
 use gtk::pango;

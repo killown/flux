@@ -2,8 +2,8 @@ use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
 use crate::i18n::tr;
+use crate::infra::db::StateManager;
 use crate::model::{AppMsg, FluxApp};
-use crate::services::db::StateManager;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::path::{Path, PathBuf};
@@ -176,8 +176,8 @@ pub fn build_location_panel(
             }
             let _ = db.add_location(trimmed);
 
-            let target = if crate::services::network::is_network_uri(Path::new(trimmed))
-                || trimmed.starts_with(crate::services::archive::ARCHIVE_URI)
+            let target = if crate::infra::network::is_network_uri(Path::new(trimmed))
+                || trimmed.starts_with(crate::infra::archive::ARCHIVE_URI)
                 || trimmed.starts_with("trash:///")
                 || trimmed.starts_with("recent:///")
             {

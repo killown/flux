@@ -241,7 +241,7 @@ impl FluxApp {
                 }
 
                 if std::fs::copy(&src_path, &dest_path).is_ok() {
-                    crate::services::loader::invalidate_extension_icon_cache();
+                    crate::infra::loader::invalidate_extension_icon_cache();
                     crate::utils::icon::invalidate_themed_icon_cache();
                     sender.input(AppMsg::Refresh);
 

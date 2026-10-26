@@ -44,12 +44,12 @@ impl FluxApp {
                 let old_key = old_path.to_string_lossy().to_string();
                 let new_key = new_path.to_string_lossy().to_string();
 
-                crate::services::db::rekey_path_prefix(
+                crate::infra::db::rekey_path_prefix(
                     &mut self.config.ui.file_icons,
                     &old_key,
                     &new_key,
                 );
-                crate::services::db::rekey_path_prefix(
+                crate::infra::db::rekey_path_prefix(
                     &mut self.config.ui.folder_icons,
                     &old_key,
                     &new_key,

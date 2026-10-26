@@ -1649,8 +1649,8 @@ impl PreviewPanelHandle {
             PreviewContent::Image { tex, info } => {
                 self.show_info(info);
                 self.set_mode(Mode::Image);
-                let is_font = crate::services::fonts::is_font_path(&info.path);
-                let installed = is_font && crate::services::fonts::is_installed(&info.path);
+                let is_font = crate::infra::fonts::is_font_path(&info.path);
+                let installed = is_font && crate::infra::fonts::is_installed(&info.path);
                 self.install_font_btn.set_visible(is_font);
                 self.install_font_btn.set_sensitive(!installed);
                 self.install_font_btn.set_tooltip_text(Some(&if installed {
@@ -2172,7 +2172,7 @@ impl PreviewPanelHandle {
         let virtual_path = info
             .path
             .to_string_lossy()
-            .starts_with(crate::services::archive::ARCHIVE_URI);
+            .starts_with(crate::infra::archive::ARCHIVE_URI);
         if info.size > 0 || !virtual_path {
             push_row(
                 &self.details_list,
@@ -2564,7 +2564,7 @@ fn build_folder_grid(
                 Some((path, false))
                     if path
                         .to_string_lossy()
-                        .starts_with(crate::services::archive::ARCHIVE_URI) =>
+                        .starts_with(crate::infra::archive::ARCHIVE_URI) =>
                 {
                     s.input(AppMsg::ActivateItems(vec![(path, false)]))
                 }

@@ -205,7 +205,7 @@ impl FluxApp {
             state_db: state_db.clone(),
             selection_status: String::new(),
             is_loading: false,
-            task_queue: crate::services::tasks::new_queue(),
+            task_queue: crate::infra::tasks::new_queue(),
             toast_overlay: adw::ToastOverlay::new(),
             last_toast: None,
             terminal,
@@ -252,9 +252,7 @@ impl FluxApp {
             scrolled_to_bottom: false,
             last_search_was_advanced: false,
             active_item_line: 0,
-            thumbnail_manager: Arc::new(
-                crate::services::thumbnails::ThumbnailTaskManager::default(),
-            ),
+            thumbnail_manager: Arc::new(crate::infra::thumbnails::ThumbnailTaskManager::default()),
             video_preview_launches: std::collections::VecDeque::new(),
             video_preview_cooldown_until: None,
         };

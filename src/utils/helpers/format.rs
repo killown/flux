@@ -80,7 +80,7 @@ pub fn effective_hidden_extensions<'a>(
     }
     let mut list: Vec<String> = base.to_vec();
     list.extend(
-        crate::services::archive::BROWSABLE_ARCHIVE_EXTENSIONS
+        crate::infra::archive::BROWSABLE_ARCHIVE_EXTENSIONS
             .iter()
             .map(|e| (*e).to_string()),
     );

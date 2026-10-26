@@ -124,7 +124,7 @@ pub(crate) fn has_active_download_sibling(path: &Path) -> bool {
 impl FluxApp {
     pub fn handle_file_deleted(&mut self, path: PathBuf) {
         crate::hit!("FluxApp::handle_file_deleted");
-        crate::services::search::indexer::notify_deleted(&path);
+        crate::infra::search::indexer::notify_deleted(&path);
 
         if let Some(parent) = path.parent() {
             self.folder_cache.remove(parent);
@@ -213,7 +213,7 @@ impl FluxApp {
             gio::Cancellable::NONE,
         ) else {
             // File vanished. Remove the row if it's there.
-            crate::services::search::indexer::notify_deleted(&path);
+            crate::infra::search::indexer::notify_deleted(&path);
             if let Some(idx) = self.find_file_index_by_name(&name) {
                 self.tabs[self.active_tab_index].files.remove(idx);
             }
@@ -260,7 +260,7 @@ impl FluxApp {
         }
 
         // Item doesn't exist yet. Append it.
-        crate::services::search::indexer::notify_created(&path);
+        crate::infra::search::indexer::notify_created(&path);
 
         let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
             FluxApp::is_dir_empty(&path)
@@ -368,7 +368,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_item_moved");
-        crate::services::search::indexer::notify_moved(&old_path, &new_path);
+        crate::infra::search::indexer::notify_moved(&old_path, &new_path);
 
         if let Some(p) = old_path.parent() {
             self.folder_cache.remove(&self.cache_key(p));
@@ -383,12 +383,9 @@ impl FluxApp {
 
         let old_key = old_path.to_string_lossy().to_string();
         let new_key = new_path.to_string_lossy().to_string();
-        let files_changed = crate::services::db::rekey_path_prefix(
-            &mut self.config.ui.file_icons,
-            &old_key,
-            &new_key,
-        );
-        let folders_changed = crate::services::db::rekey_path_prefix(
+        let files_changed =
+            crate::infra::db::rekey_path_prefix(&mut self.config.ui.file_icons, &old_key, &new_key);
+        let folders_changed = crate::infra::db::rekey_path_prefix(
             &mut self.config.ui.folder_icons,
             &old_key,
             &new_key,

@@ -1,10 +1,10 @@
 //! TAR backend with all compression flavours.
 
-use crate::services::archive::entry::collect_entry;
-use crate::services::archive::util::{
+use crate::infra::archive::entry::collect_entry;
+use crate::infra::archive::util::{
     extract_bytes_via_tempfile, lc_name, make_dest_dir_at, open_buf,
 };
-use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Write};
 use std::os::unix::fs::OpenOptionsExt;

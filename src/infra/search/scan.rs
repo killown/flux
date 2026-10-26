@@ -1,4 +1,4 @@
-use crate::services::constants::{
+use crate::infra::constants::{
     CONTENT_SEARCH_BINARY_SNIFF_BYTES as BINARY_SNIFF, CONTENT_SEARCH_CHUNK_BYTES as CHUNK,
 };
 use aho_corasick::AhoCorasick;

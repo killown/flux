@@ -585,7 +585,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
 
     let virtual_path = path
         .to_string_lossy()
-        .starts_with(crate::services::archive::ARCHIVE_URI);
+        .starts_with(crate::infra::archive::ARCHIVE_URI);
     if !virtual_path && !path.exists() {
         return PreviewContent::Error(tr("File no longer exists."));
     }
@@ -598,10 +598,10 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     // previews all work inside archives, not just audio/video.
     let real_path: Option<PathBuf> = if virtual_path {
         if let Some((archive_path, inner)) =
-            crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+            crate::infra::archive::parse_archive_uri(&path.to_string_lossy())
         {
             let extracted =
-                crate::services::archive::extract_archive_entry_for_playback(&archive_path, &inner);
+                crate::infra::archive::extract_archive_entry_for_playback(&archive_path, &inner);
             if extracted.is_some() {
                 info.extra.push((
                     tr("Extracted from"),
@@ -664,7 +664,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     }
 
     // ── Archives ────────────────────────────────────────────────────────────
-    if crate::services::archive::is_supported_archive(path) {
+    if crate::infra::archive::is_supported_archive(path) {
         if let Some(listing) = archive_listing(path, &mut info) {
             return listing;
         }
@@ -1154,7 +1154,7 @@ fn archive_listing(path: &Path, info: &mut FileInfo) -> Option<PreviewContent> {
     crate::hit!("archive_listing");
     use crate::i18n::tr;
 
-    let mut entries = crate::services::archive::list_archive_entries(path, "", None).ok()?;
+    let mut entries = crate::infra::archive::list_archive_entries(path, "", None).ok()?;
     entries.sort_by(|a, b| {
         b.is_dir
             .cmp(&a.is_dir)
@@ -1171,7 +1171,7 @@ fn archive_listing(path: &Path, info: &mut FileInfo) -> Option<PreviewContent> {
         .into_iter()
         .take(FOLDER_GRID_MAX_ITEMS)
         .map(|e| FolderEntry {
-            path: crate::services::archive::build_archive_uri(path, &e.inner_path),
+            path: crate::infra::archive::build_archive_uri(path, &e.inner_path),
             size: if e.is_dir { e.child_count } else { e.size },
             name: e.name,
             is_dir: e.is_dir,

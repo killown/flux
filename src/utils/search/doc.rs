@@ -11,7 +11,7 @@
 use super::content_query::{CONTENT_QUERY_SYNTAXES, MIN_CONTENT_TERM_LEN};
 use super::size::ACCEPTED_SIZE_UNITS;
 use super::tag::TAG_PREFIXES;
-use crate::services::constants::{
+use crate::infra::constants::{
     CONTENT_SEARCH_BINARY_SNIFF_BYTES, CONTENT_SEARCH_CHUNK_BYTES, SEARCH_BATCH_SIZE,
     SEARCH_FLUSH_INTERVAL_MS,
 };

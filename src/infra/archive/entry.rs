@@ -1,7 +1,7 @@
 //! Archive entry model and conversion to grid load contexts.
 
+use crate::infra::archive::build_archive_uri;
 use crate::model::FileLoadContext;
-use crate::services::archive::build_archive_uri;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -49,7 +49,7 @@ pub fn entries_to_load_contexts(
                 .unwrap_or_default();
 
             let custom_icon = if !e.is_dir && !sort_ext.is_empty() {
-                crate::services::loader::get_extension_icon_path(&sort_ext)
+                crate::infra::loader::get_extension_icon_path(&sort_ext)
                     .map(|p| p.to_string_lossy().into_owned())
             } else {
                 None

@@ -15,7 +15,7 @@ impl FluxApp {
     pub fn handle_extract_archive(&self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_extract_archive");
         let uri = self.current_path.to_string_lossy().to_string();
-        let Some((archive_path, _)) = crate::services::archive::parse_archive_uri(&uri) else {
+        let Some((archive_path, _)) = crate::infra::archive::parse_archive_uri(&uri) else {
             return;
         };
         let stem = archive_path
@@ -113,10 +113,10 @@ impl FluxApp {
             // Raises the flag on any exit from this closure, panics included.
             let done = ExtractDone(done_flag_extractor);
             let total_bytes =
-                crate::services::archive::archive_total_bytes(&archive_path, password.as_deref());
+                crate::infra::archive::archive_total_bytes(&archive_path, password.as_deref());
             total_shared.store(total_bytes, Ordering::Relaxed);
 
-            let result = crate::services::archive::extract_archive_to_dir(
+            let result = crate::infra::archive::extract_archive_to_dir(
                 &archive_path,
                 &dest,
                 password.as_deref(),

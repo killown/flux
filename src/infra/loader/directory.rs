@@ -36,15 +36,15 @@ impl FluxApp {
         let path_str = path.to_string_lossy().to_string();
 
         // ── Virtual / special paths - delegate and return immediately ────────────
-        if crate::services::network::is_network_uri(&path) {
+        if crate::infra::network::is_network_uri(&path) {
             self.archive_locked = false;
             self.current_path = path.clone();
             self.load_network(&path_str, None, sender.clone());
             return;
         }
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             if let Some((archive_path, prefix)) =
-                crate::services::archive::parse_archive_uri(&path_str)
+                crate::infra::archive::parse_archive_uri(&path_str)
             {
                 self.current_path = path;
                 self.load_archive(archive_path, prefix, None, sender);
@@ -193,7 +193,7 @@ impl FluxApp {
         let cache_key = path.canonicalize().unwrap_or_else(|_| path.clone());
 
         if !is_trash
-            && !path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+            && !path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             && filter.is_empty()
             && extension_globset.is_none()
             && mime_filter.is_none()
@@ -507,7 +507,7 @@ impl FluxApp {
                         let is_virtual_dir = archives_as_folders
                             && !is_dir
                             && !is_trash
-                            && crate::services::archive::is_browsable_archive(&target_path);
+                            && crate::infra::archive::is_browsable_archive(&target_path);
 
                         let mut item = FileLoadContext::new(
                             name,
@@ -643,7 +643,7 @@ fn spawn_zip_lock_probe(
         let encrypted: Vec<PathBuf> = loader_pool().install(|| {
             candidates
                 .into_par_iter()
-                .filter(|p| crate::services::archive::zip_is_encrypted(p))
+                .filter(|p| crate::infra::archive::zip_is_encrypted(p))
                 .collect()
         });
         if !encrypted.is_empty() {

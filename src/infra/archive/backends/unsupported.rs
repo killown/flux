@@ -1,6 +1,6 @@
 //! Fallback backend for unrecognised formats.
 
-use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::path::{Path, PathBuf};
 
 pub(in crate::infra::archive) struct UnsupportedBackend;

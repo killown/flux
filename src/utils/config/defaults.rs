@@ -281,8 +281,7 @@ path = "actions://"
                     show_thumbnails: true,
                     thumbnail_types: crate::model::ThumbnailTypes::default(),
                     thumbnail_size: 256,
-                    max_content_search_results:
-                        crate::services::constants::MAX_CONTENT_SEARCH_RESULTS,
+                    max_content_search_results: crate::infra::constants::MAX_CONTENT_SEARCH_RESULTS,
                     lazy_thumbnails: false,
                     disable_drag_and_drop: false,
                     loader_batch_size: 50,

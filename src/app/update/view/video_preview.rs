@@ -191,19 +191,16 @@ impl FluxApp {
 
         // Resolve real disk path: if it's an archive virtual path, extract to a tempfile first
         let resolved_file = if let Some((archive_path, inner_path)) =
-            crate::services::archive::parse_archive_uri(&path.to_string_lossy())
+            crate::infra::archive::parse_archive_uri(&path.to_string_lossy())
         {
-            match crate::services::archive::extract_entry_to_tempfile(
-                &archive_path,
-                &inner_path,
-                None,
-            ) {
+            match crate::infra::archive::extract_entry_to_tempfile(&archive_path, &inner_path, None)
+            {
                 Ok(tmp) => {
                     let tmp_path = tmp.path().to_path_buf();
                     // Keep the temp file alive until preview stops or app exits
                     if let Ok(file) = tmp.keep() {
                         let (_, path_buf) = file;
-                        crate::services::archive::register_temp_file(path_buf.clone());
+                        crate::infra::archive::register_temp_file(path_buf.clone());
                         Some(gtk::gio::File::for_path(path_buf))
                     } else {
                         Some(gtk::gio::File::for_path(tmp_path))

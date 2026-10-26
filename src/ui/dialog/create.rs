@@ -20,7 +20,7 @@ enum Created {
 }
 
 fn is_archive_uri(s: &str) -> bool {
-    s.starts_with(crate::services::archive::ARCHIVE_URI)
+    s.starts_with(crate::infra::archive::ARCHIVE_URI)
         || s.starts_with("/archive:/")
         || s.starts_with("archive://")
 }
@@ -44,8 +44,7 @@ fn create_blocking(
 ) -> Created {
     let current_str = current_path.to_string_lossy();
     if kind == Kind::Folder && is_archive_uri(&current_str) {
-        let Some((archive_path, prefix)) =
-            crate::services::archive::parse_archive_uri(&current_str)
+        let Some((archive_path, prefix)) = crate::infra::archive::parse_archive_uri(&current_str)
         else {
             return Created::Failed("invalid archive path".to_string());
         };
@@ -54,7 +53,7 @@ fn create_blocking(
         } else {
             format!("{}/{}", prefix.trim_end_matches('/'), name)
         };
-        return match crate::services::archive::create_archive_directory(
+        return match crate::infra::archive::create_archive_directory(
             &archive_path,
             &inner,
             archive_password,
@@ -101,7 +100,7 @@ async fn create_network(kind: Kind, uri: &str) -> Created {
     }
 
     match kind {
-        Kind::Folder => match crate::services::network::create_network_directory(uri, None).await {
+        Kind::Folder => match crate::infra::network::create_network_directory(uri, None).await {
             Ok(()) => Created::Ok,
             Err(_) => Created::Failed(String::new()),
         },
@@ -147,7 +146,7 @@ async fn create_entries(
     s: AsyncComponentSender<FluxApp>,
 ) {
     let is_archive = kind == Kind::Folder && is_archive_uri(&current_path.to_string_lossy());
-    let is_network = !is_archive && crate::services::network::is_network_uri(&current_path);
+    let is_network = !is_archive && crate::infra::network::is_network_uri(&current_path);
 
     let mut created = 0usize;
     let mut single: Option<(Created, PathBuf)> = None;
@@ -227,7 +226,7 @@ impl FluxApp {
         crate::hit!("show_prompt_new_folder");
         let window = gtk::Application::default().active_window();
         let current_path = self.current_path.clone();
-        let archive_password = crate::services::archive::parse_archive_uri(
+        let archive_password = crate::infra::archive::parse_archive_uri(
             &current_path.to_string_lossy(),
         )
         .and_then(|(archive_path, _)| self.cached_archive_passwords.get(&archive_path).cloned());

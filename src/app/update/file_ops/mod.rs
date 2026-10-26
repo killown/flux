@@ -47,7 +47,7 @@ pub(super) fn handle(
         AppMsg::InstallFonts(paths) => {
             let s = sender.clone();
             relm4::spawn_blocking(move || {
-                let report = crate::services::fonts::install_fonts(&paths);
+                let report = crate::infra::fonts::install_fonts(&paths);
                 s.input(AppMsg::ShowToast(report.message()));
             });
         }
@@ -56,7 +56,7 @@ pub(super) fn handle(
             if app.is_content_searching {
                 app.remove_search_results_for_paths(&selection);
             }
-            crate::services::trash::delete_items(
+            crate::infra::trash::delete_items(
                 selection,
                 app.active_item_path.clone(),
                 sender.clone(),

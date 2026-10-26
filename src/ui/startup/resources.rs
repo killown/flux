@@ -1,5 +1,5 @@
+use crate::infra::db::StateManager;
 use crate::model::{Config, CustomAction, FluxApp};
-use crate::services::db::StateManager;
 use crate::utils;
 use futures::try_join;
 
@@ -27,12 +27,12 @@ impl FluxApp {
         tokio::spawn(async move {
             // A corrupt, locked or unwritable state DB must not stop flux from starting.
             // The file is left untouched; history, tags and layouts just won't be saved.
-            let db = crate::services::db::StateManager::new().unwrap_or_else(|e| {
+            let db = crate::infra::db::StateManager::new().unwrap_or_else(|e| {
                 eprintln!(
                     "flux: could not open the state database ({e}); \
                      using a temporary in-memory one, nothing will be saved this session"
                 );
-                crate::services::db::StateManager::new_in_memory()
+                crate::infra::db::StateManager::new_in_memory()
                     .expect("in-memory SQLite database must always open")
             });
             let _ = db_tx.send(db);

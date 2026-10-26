@@ -58,7 +58,7 @@ impl FluxApp {
     pub fn update_breadcrumbs(&mut self) {
         crate::hit!("update_breadcrumbs");
         // Publish the directory for `flux_cwd` / `$FCWD` / `flux_goto`.
-        crate::services::terminal::write_cwd_cache(&self.current_path);
+        crate::infra::terminal::write_cwd_cache(&self.current_path);
 
         let max_chars = self.config.ui.breadcrumb_max_chars;
         let mut guard = self.breadcrumbs.guard();
@@ -67,16 +67,15 @@ impl FluxApp {
         let path_str = self.current_path.to_string_lossy();
 
         // Handle virtual archive breadcrumbs differently so they show human-readable names
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-            if let Some((archive_path, inner)) =
-                crate::services::archive::parse_archive_uri(&path_str)
+        if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+            if let Some((archive_path, inner)) = crate::infra::archive::parse_archive_uri(&path_str)
             {
                 let archive_name = archive_path
                     .file_name()
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_else(|| "Archive".to_string());
 
-                let root_uri = crate::services::archive::build_archive_uri(&archive_path, "");
+                let root_uri = crate::infra::archive::build_archive_uri(&archive_path, "");
                 guard.push_back(PathSegment {
                     name: archive_name,
                     path: root_uri,
@@ -91,7 +90,7 @@ impl FluxApp {
                             continue;
                         }
                         current_inner.push(&name);
-                        let segment_uri = crate::services::archive::build_archive_uri(
+                        let segment_uri = crate::infra::archive::build_archive_uri(
                             &archive_path,
                             &current_inner.to_string_lossy(),
                         );
@@ -115,7 +114,7 @@ impl FluxApp {
         // PathBuf::components - the stdlib has no URI awareness and will mangle
         // the scheme double-slash into bogus local paths. Split on '/' manually
         // and reconstruct each breadcrumb as a well-formed URI.
-        if crate::services::network::is_network_uri(&self.current_path) {
+        if crate::infra::network::is_network_uri(&self.current_path) {
             let uri = path_str.trim_end_matches('/');
 
             if let Some((scheme, after_scheme)) = uri.split_once("://") {
@@ -183,7 +182,7 @@ impl FluxApp {
     /// Appends a batch of extension/glob search results to the grid.
     pub fn handle_extension_search_batch(
         &mut self,
-        results: Vec<crate::services::search::ExtensionMatch>,
+        results: Vec<crate::infra::search::ExtensionMatch>,
         session: u64,
     ) {
         crate::hit!("handle_extension_search_batch");

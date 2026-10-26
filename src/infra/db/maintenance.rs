@@ -22,13 +22,13 @@ impl StateManager {
             (p1, p2, p3)
         };
 
-        let mounts = crate::services::mounts::MountTable::load();
+        let mounts = crate::infra::mounts::MountTable::load();
         let is_orphan = |path_str: &String| -> bool {
             if path_str.contains("://") {
                 // trash://, recent://, smb://, /archive:// ... are not local paths
                 return false;
             }
-            crate::services::mounts::is_confirmed_missing(std::path::Path::new(path_str), &mounts)
+            crate::infra::mounts::is_confirmed_missing(std::path::Path::new(path_str), &mounts)
         };
 
         let orphans: Vec<String> = paths.into_par_iter().filter(|p| is_orphan(p)).collect();

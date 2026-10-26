@@ -15,7 +15,6 @@ mod i18n;
 mod infra;
 mod ipc;
 mod model;
-mod services;
 mod shell_functions;
 mod ui;
 mod utils;

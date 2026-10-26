@@ -14,7 +14,7 @@ impl FluxApp {
         }
         if let Some(prev) = self.history.pop() {
             self.forward_stack.push(self.current_path.clone());
-            if crate::services::network::is_network_uri(&prev) {
+            if crate::infra::network::is_network_uri(&prev) {
                 self.current_path = prev.clone();
                 self.sync_sidebar_selection();
                 self.load_network(&prev.to_string_lossy(), None, sender.clone());
@@ -31,7 +31,7 @@ impl FluxApp {
         } else if let Some(parent) = self.current_path.parent() {
             let parent_path = parent.to_path_buf();
             self.forward_stack.push(self.current_path.clone());
-            if crate::services::network::is_network_uri(&parent_path) {
+            if crate::infra::network::is_network_uri(&parent_path) {
                 self.current_path = parent_path.clone();
                 self.sync_sidebar_selection();
                 self.load_network(&parent_path.to_string_lossy(), None, sender.clone());
@@ -62,8 +62,8 @@ impl FluxApp {
                 || next.exists()
                 || s.starts_with("trash:///")
                 || s.starts_with("recent:///")
-                || crate::services::network::is_network_uri(&next)
-                || s.starts_with(crate::services::archive::ARCHIVE_URI);
+                || crate::infra::network::is_network_uri(&next)
+                || s.starts_with(crate::infra::archive::ARCHIVE_URI);
 
             if !is_valid {
                 continue;
@@ -74,7 +74,7 @@ impl FluxApp {
                 self.history.remove(0);
             }
 
-            if crate::services::network::is_network_uri(&next) {
+            if crate::infra::network::is_network_uri(&next) {
                 self.current_path = next.clone();
                 self.sync_sidebar_selection();
                 self.load_network(&next.to_string_lossy(), None, sender.clone());

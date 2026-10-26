@@ -1,10 +1,10 @@
 use super::forbidden::forbidden_matcher;
 use super::types::{AdvancedSearchParams, ExtensionMatch};
 use crate::app::update::file_ops::paste::NEXT_TASK_ID;
-use crate::model::{AppMsg, FluxApp};
-use crate::services::constants::{
+use crate::infra::constants::{
     SEARCH_BATCH_SIZE as BATCH_SIZE, SEARCH_FLUSH_INTERVAL_MS as FLUSH_INTERVAL_MS,
 };
+use crate::model::{AppMsg, FluxApp};
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use regex::bytes::{RegexSet, RegexSetBuilder};
@@ -244,7 +244,7 @@ fn start_walk(
         });
 
         let mut index_hit = false;
-        let indexer_ready = crate::services::search::indexer::is_ready();
+        let indexer_ready = crate::infra::search::indexer::is_ready();
 
         // The index only does fuzzy name lookups, so extension and MIME patterns
         // (`*.rs`, `image/*`) and multi-pattern searches always go through the walk.
@@ -266,7 +266,7 @@ fn start_walk(
                     clean
                 );
                 if clean.len() >= 3 {
-                    match crate::services::search::indexer::SearchIndex::open_or_create() {
+                    match crate::infra::search::indexer::SearchIndex::open_or_create() {
                         Ok(index) => {
                             let query_limit = if max_results == 0 { 500 } else { max_results };
 
@@ -387,7 +387,7 @@ fn start_walk(
                                 }
 
                                 if !stale.is_empty() {
-                                    crate::services::search::indexer::prune_paths(stale);
+                                    crate::infra::search::indexer::prune_paths(stale);
                                 }
                                 index_hit = true;
                                 search_debug!(
@@ -421,7 +421,7 @@ fn start_walk(
             let indexed_dir_mtimes: std::collections::HashMap<std::path::PathBuf, i64> =
                 if indexer_ready && is_simple_name_search {
                     let mut map = std::collections::HashMap::new();
-                    let db_path = crate::services::search::indexer::SearchIndex::db_path();
+                    let db_path = crate::infra::search::indexer::SearchIndex::db_path();
                     if let Ok(conn) = rusqlite::Connection::open_with_flags(
                         &db_path,
                         rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,

@@ -1,8 +1,8 @@
 use super::forbidden::forbidden_matcher;
 use super::scan::scan_file;
 use crate::app::update::file_ops::paste::NEXT_TASK_ID;
+use crate::infra::constants::MAX_CONTENT_SEARCH_RESULTS;
 use crate::model::{AppMsg, FluxApp};
-use crate::services::constants::MAX_CONTENT_SEARCH_RESULTS;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
 use gtk::gio::prelude::*;

@@ -50,13 +50,13 @@ impl InstallReport {
 /// Resolves the readable source file and the destination file name, extracting archive entries first.
 fn resolve_source(path: &Path) -> Option<(PathBuf, String)> {
     let raw = path.to_string_lossy();
-    if raw.starts_with(crate::services::archive::ARCHIVE_URI) {
-        let (archive, inner) = crate::services::archive::parse_archive_uri(&raw)?;
+    if raw.starts_with(crate::infra::archive::ARCHIVE_URI) {
+        let (archive, inner) = crate::infra::archive::parse_archive_uri(&raw)?;
         let name = Path::new(&inner)
             .file_name()?
             .to_string_lossy()
             .into_owned();
-        let real = crate::services::archive::extract_archive_entry_for_playback(&archive, &inner)?;
+        let real = crate::infra::archive::extract_archive_entry_for_playback(&archive, &inner)?;
         Some((real, name))
     } else {
         let name = path.file_name()?.to_string_lossy().into_owned();
@@ -152,7 +152,7 @@ pub fn is_installed(path: &Path) -> bool {
     crate::hit!("is_installed");
     if path
         .to_string_lossy()
-        .starts_with(crate::services::archive::ARCHIVE_URI)
+        .starts_with(crate::infra::archive::ARCHIVE_URI)
     {
         return false;
     }

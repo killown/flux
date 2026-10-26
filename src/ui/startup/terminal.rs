@@ -1,5 +1,5 @@
+use crate::infra::terminal::Terminal;
 use crate::model::{AppMsg, Config, FluxApp, TerminalConfig};
-use crate::services::terminal::Terminal;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;

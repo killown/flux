@@ -10,7 +10,7 @@ impl FluxApp {
 
     pub fn handle_set_archive_thumbnail_cache(&mut self, val: bool) {
         self.config.ui.archive_thumbnail_cache = val;
-        crate::services::archive::thumb_cache::set_enabled(val);
+        crate::infra::archive::thumb_cache::set_enabled(val);
         utils::save_config(&self.config);
     }
 

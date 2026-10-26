@@ -16,9 +16,9 @@ impl FluxApp {
         let dest_str = dest_path.to_string_lossy();
 
         // ── Archive Drop Intercept ───────────────────────────────────────────
-        if dest_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        if dest_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             if let Some((archive_path, prefix)) =
-                crate::services::archive::parse_archive_uri(&dest_str)
+                crate::infra::archive::parse_archive_uri(&dest_str)
             {
                 let s_clone = sender.clone();
                 let password = self.cached_archive_passwords.get(&archive_path).cloned();
@@ -31,7 +31,7 @@ impl FluxApp {
                                 format!("{}/{}", prefix.trim_end_matches('/'), file_name)
                             };
 
-                            if let Err(e) = crate::services::archive::write_archive_entry(
+                            if let Err(e) = crate::infra::archive::write_archive_entry(
                                 &archive_path,
                                 &src,
                                 &inner,

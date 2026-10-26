@@ -1,8 +1,8 @@
 //! 7-Zip backend.
 
-use crate::services::archive::entry::collect_entry;
-use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
-use crate::services::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::entry::collect_entry;
+use crate::infra::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
+use crate::infra::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use sevenz_rust2::{ArchiveReader, Password};
 use std::collections::HashMap;
 use std::io::{Read, Write};

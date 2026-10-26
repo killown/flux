@@ -93,7 +93,7 @@ pub fn get_mime_type(path: &Path) -> String {
     crate::hit!("media::get_mime_type");
     let path_str = path.to_string_lossy();
 
-    if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+    if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
             if let Some(mime) = guess_mime_from_extension(ext) {
                 return mime;
@@ -102,7 +102,7 @@ pub fn get_mime_type(path: &Path) -> String {
         return "application/octet-stream".to_string();
     }
 
-    if crate::services::network::is_network_uri(path) {
+    if crate::infra::network::is_network_uri(path) {
         if path_str.ends_with('/') {
             return "inode/directory".to_string();
         }

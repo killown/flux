@@ -65,7 +65,7 @@ pub struct FluxApp {
     pub terminal_sidebar_stashed: Option<bool>,
     /// The sidebar terminal's `Terminal` instance, kept alive so its PTY
     /// survives panel toggles.
-    pub sidebar_terminal: Option<crate::services::terminal::Terminal>,
+    pub sidebar_terminal: Option<crate::infra::terminal::Terminal>,
     /// Revealer widget wrapping the right-side terminal panel.
     pub terminal_panel_revealer: Option<gtk::Revealer>,
     /// Whether the right-side terminal panel is currently visible.
@@ -136,7 +136,7 @@ pub struct FluxApp {
     /// Scanned directory for `git_status_map`.
     pub git_status_dir: PathBuf,
     /// Git file status lookup table for entries in `git_status_dir`.
-    pub git_status_map: std::collections::HashMap<PathBuf, crate::services::git::GitFileStatus>,
+    pub git_status_map: std::collections::HashMap<PathBuf, crate::infra::git::GitFileStatus>,
     /// Tracks if active directory belongs to a git repository.
     pub is_in_git_repo: bool,
     /// Timestamps of recent autoplay launches, used to enforce the launch-rate
@@ -155,7 +155,7 @@ pub struct FluxApp {
     /// Monotonically increasing identifier generator for assigning unique IDs to new tabs.
     pub next_tab_id: u64,
     /// Manages bounded concurrency and viewport-based cancellation tokens for lazy thumbnail generation tasks.
-    pub thumbnail_manager: Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+    pub thumbnail_manager: Arc<crate::infra::thumbnails::ThumbnailTaskManager>,
     /// Revealer widget wrapping the right tag navigator sidebar panel.
     pub tag_panel_revealer: Option<gtk::Revealer>,
     /// Whether the lazy-initialized right tag navigator sidebar panel is currently visible.
@@ -241,7 +241,7 @@ pub struct FluxApp {
     /// Whether the terminal has been cleared on first open.
     pub terminal_cleared: bool,
     /// The embedded VTE terminal widget.
-    pub terminal: crate::services::terminal::Terminal,
+    pub terminal: crate::infra::terminal::Terminal,
     /// Tracks whether the terminal's PTY shell process has been spawned.
     pub terminal_spawned: bool,
     /// Whether the terminal panel is currently visible.
@@ -255,7 +255,7 @@ pub struct FluxApp {
     pub root_window: Option<adw::Window>,
     /// Dedicated terminal instance for full-window mode. Lazily created on first
     /// entry, never reparented into the paned or sidebar. Killed on window close.
-    pub fullscreen_terminal: Option<crate::services::terminal::Terminal>,
+    pub fullscreen_terminal: Option<crate::infra::terminal::Terminal>,
     /// Handle to the container inside the `"terminal"` Stack page.
     pub fullscreen_terminal_box: Option<gtk::Box>,
     /// True once the fullscreen terminal has spawned its shell at least once.
@@ -264,7 +264,7 @@ pub struct FluxApp {
     /// Indicates whether a background file system operation or directory reload is currently in progress.
     pub is_loading: bool,
     /// Persistent SQLite-backed manager for application state and metadata.
-    pub state_db: Arc<crate::services::db::StateManager>,
+    pub state_db: Arc<crate::infra::db::StateManager>,
     /// Circular buffer of recently visited locations.
     pub recent_stack: VecDeque<PathBuf>,
     /// The primary grid view component displaying file items.
@@ -332,7 +332,7 @@ pub struct FluxApp {
     /// Reactive string containing selection counts and sizes for the status bar.
     pub selection_status: String,
     /// The completion percentage of the current background task, if any.
-    pub task_queue: Arc<crate::services::tasks::TaskQueue>,
+    pub task_queue: Arc<crate::infra::tasks::TaskQueue>,
     /// Toast overlay for displaying transient notifications.
     pub toast_overlay: adw::ToastOverlay,
     /// Tracks the currently displayed toast so it can be dismissed before showing a new one.

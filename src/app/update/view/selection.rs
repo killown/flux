@@ -309,8 +309,8 @@ impl FluxApp {
                                 self.git_status_map.get(&canon)
                             })
                             .is_some_and(|&s| {
-                                s != crate::services::git::GitFileStatus::None
-                                    && s != crate::services::git::GitFileStatus::Ignored
+                                s != crate::infra::git::GitFileStatus::None
+                                    && s != crate::infra::git::GitFileStatus::Ignored
                             });
 
                         if has_diff {

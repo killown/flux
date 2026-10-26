@@ -1,12 +1,12 @@
 //! ZIP backend.
 //!
 //! Zips may carry a Flux-owned `.flux-cache/` folder, see
-//! [`crate::services::archive::thumb_cache`] for the on-disk layout.
+//! [`crate::infra::archive::thumb_cache`] for the on-disk layout.
 //! A `.flux-cache/` without the sentinel is treated as foreign and left alone.
 
-use crate::services::archive::entry::collect_entry;
-use crate::services::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
-use crate::services::archive::{
+use crate::infra::archive::entry::collect_entry;
+use crate::infra::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
+use crate::infra::archive::{
     register_temp_dir, zip_is_encrypted, ArchiveBackend, ArchiveEntry, ArchiveError,
 };
 use std::collections::{HashMap, HashSet};

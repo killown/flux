@@ -5,7 +5,7 @@ use std::path::PathBuf;
 /// Returns `(display_name, path)` pairs for every mount point the sidebar
 /// should show: removable media under `/media` and `/run/media`, `/mnt/*`
 /// entries, FUSE mounts inside the user's home, and any active network
-/// mounts reported by [`crate::services::network`].
+/// mounts reported by [`crate::infra::network`].
 pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     crate::hit!("mounts::get_system_mounts");
     let mut mounts = Vec::new();
@@ -75,7 +75,7 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
         }
     }
 
-    for (uri, name, _icon) in crate::services::network::active_mounts() {
+    for (uri, name, _icon) in crate::infra::network::active_mounts() {
         let path = PathBuf::from(uri);
         if path.is_absolute() && !mounts.iter().any(|(_, p)| p == &path) {
             mounts.push((name, path));

@@ -147,7 +147,7 @@ impl FluxApp {
         // Mounts - Offloaded to background thread to prevent blocking the UI loop
         if let Some(sender) = crate::model::SENDER.get().cloned() {
             relm4::spawn_blocking(move || {
-                let mounts = crate::services::mounts::get_system_mounts();
+                let mounts = crate::infra::mounts::get_system_mounts();
                 let _ = sender.send(AppMsg::SystemMountsReady(mounts));
             });
         }
@@ -462,9 +462,8 @@ impl FluxApp {
                 if let Some(ref term) = self.sidebar_terminal {
                     term.kill_shell();
                     let path_str = self.current_path.to_string_lossy();
-                    let working_dir = if path_str.starts_with(crate::services::archive::ARCHIVE_URI)
-                    {
-                        crate::services::archive::parse_archive_uri(&path_str)
+                    let working_dir = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+                        crate::infra::archive::parse_archive_uri(&path_str)
                             .map(|(archive_path, _)| {
                                 archive_path
                                     .parent()
@@ -472,7 +471,7 @@ impl FluxApp {
                                     .unwrap_or_else(|| "/".to_string())
                             })
                             .unwrap_or_else(|| "/".to_string())
-                    } else if crate::services::network::is_network_uri(&self.current_path) {
+                    } else if crate::infra::network::is_network_uri(&self.current_path) {
                         std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
                     } else {
                         path_str.to_string()

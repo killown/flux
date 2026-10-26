@@ -20,7 +20,7 @@ impl FluxApp {
         let path_str = path.to_string_lossy();
 
         // Determine if this is a network URI
-        let file = if crate::services::network::is_network_uri(&path) {
+        let file = if crate::infra::network::is_network_uri(&path) {
             gio::File::for_uri(&path_str)
         } else {
             gio::File::for_path(&path)
@@ -32,7 +32,7 @@ impl FluxApp {
             let _ = app_info.launch(&[file], None::<&gio::AppLaunchContext>);
         } else {
             // Fallback: if we have a URI, use xdg-open with the URI, else the path
-            if crate::services::network::is_network_uri(&path) {
+            if crate::infra::network::is_network_uri(&path) {
                 let _ = Command::new("xdg-open").arg(&*path_str).spawn();
             } else {
                 let _ = Command::new("xdg-open").arg(path).spawn();

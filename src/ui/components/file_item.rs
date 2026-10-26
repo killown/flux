@@ -1,5 +1,5 @@
+use crate::infra::git::GitFileStatus;
 use crate::model::CellLabels;
-use crate::services::git::GitFileStatus;
 use adw::gdk;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -103,7 +103,7 @@ pub struct FileItem {
     pub disable_drag_and_drop: bool,
     /// Lazy-thumbnail callback, see [`ThumbHook`].
     pub thumb_hook: Option<ThumbHook>,
-    pub thumbnail_manager: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+    pub thumbnail_manager: std::sync::Arc<crate::infra::thumbnails::ThumbnailTaskManager>,
     pub thumbnail_threads: usize,
     /// Pre-formatted label strings, cloned from `FileLoadContext::labels()` at
     /// load time so `bind_widgets` never formats a size or date on the GTK thread.

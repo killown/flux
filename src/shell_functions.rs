@@ -1,7 +1,7 @@
 //! Fish function definitions that bridge a shell and the running Flux window.
 //!
 //! One source of truth, two consumers:
-//! * `services::terminal::fish_theme` embeds them in the `conf.d` snippet for
+//! * `infra::terminal::fish_theme` embeds them in the `conf.d` snippet for
 //!   Flux's embedded terminal.
 //! * `gen-docs` writes them to `data/fish/flux-integration.fish`, which can be
 //!   installed into fish's `vendor_conf.d` so any terminal gets them.

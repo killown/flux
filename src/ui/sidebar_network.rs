@@ -1,5 +1,5 @@
+use crate::infra::network::{self, NetworkBookmark};
 use crate::model::AppMsg;
-use crate::services::network::{self, NetworkBookmark};
 use gtk::gio::prelude::*;
 use gtk::prelude::*;
 use relm4::Sender;

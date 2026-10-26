@@ -1,6 +1,6 @@
 use super::file_item::{FileItem, ThumbHook};
+use crate::infra::git::GitFileStatus;
 use crate::model::CellLabels;
-use crate::services::git::GitFileStatus;
 use adw::gdk;
 use std::cell::RefCell;
 use std::path::PathBuf;
@@ -44,7 +44,7 @@ impl FileItem {
             disable_drag_and_drop: false,
             thumb_hook: None,
             thumbnail_manager: std::sync::Arc::new(
-                crate::services::thumbnails::ThumbnailTaskManager::default(),
+                crate::infra::thumbnails::ThumbnailTaskManager::default(),
             ),
             thumbnail_threads: 4,
             labels: CellLabels::default(),
@@ -88,7 +88,7 @@ pub struct FileItemBuilder {
     show_empty_dir_emblem: bool,
     disable_drag_and_drop: bool,
     thumb_hook: Option<ThumbHook>,
-    thumbnail_manager: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+    thumbnail_manager: std::sync::Arc<crate::infra::thumbnails::ThumbnailTaskManager>,
     thumbnail_threads: usize,
     labels: CellLabels,
 }
@@ -252,7 +252,7 @@ impl FileItemBuilder {
 
     pub fn thumbnail_manager(
         mut self,
-        v: std::sync::Arc<crate::services::thumbnails::ThumbnailTaskManager>,
+        v: std::sync::Arc<crate::infra::thumbnails::ThumbnailTaskManager>,
     ) -> Self {
         self.thumbnail_manager = v;
         self

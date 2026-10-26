@@ -1,8 +1,8 @@
 //! ISO 9660 and UDF backend.
 
-use crate::services::archive::entry::collect_entry;
-use crate::services::archive::util::{extract_bytes_via_tempfile, find_file_recursive};
-use crate::services::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::entry::collect_entry;
+use crate::infra::archive::util::{extract_bytes_via_tempfile, find_file_recursive};
+use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};

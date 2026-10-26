@@ -1,6 +1,6 @@
 //! The `/archive://` URI scheme: encoding, parsing and construction.
 
-use crate::services::archive::extract_entry_to_tempfile;
+use crate::infra::archive::extract_entry_to_tempfile;
 use std::path::{Path, PathBuf};
 
 // ─── URI scheme ───────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ pub fn get_archive_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture
 
     if is_zip {
         if let Some(tex) =
-            crate::services::archive::read_cached_thumbnail(&archive_path, &inner_path, None)
+            crate::infra::archive::read_cached_thumbnail(&archive_path, &inner_path, None)
         {
             return Some(tex);
         }
@@ -194,7 +194,7 @@ pub fn get_archive_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture
         use gtk::gdk::prelude::TextureExt;
         let png = tex.save_to_png_bytes();
         if !png.is_empty() {
-            crate::services::archive::thumb_cache::enqueue(
+            crate::infra::archive::thumb_cache::enqueue(
                 archive_path,
                 inner_path,
                 png.to_vec(),

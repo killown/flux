@@ -318,7 +318,7 @@ pub fn clean_tmp_basename(name: &str) -> String {
 /// directory is only looked up when the name would change.
 pub fn paste_name_for(src_path: &Path, orig_name: &str) -> String {
     let cleaned = clean_tmp_basename(orig_name);
-    if cleaned != orig_name && !src_path.starts_with(crate::services::archive::flux_scratch_dir()) {
+    if cleaned != orig_name && !src_path.starts_with(crate::infra::archive::flux_scratch_dir()) {
         return orig_name.to_string();
     }
     cleaned

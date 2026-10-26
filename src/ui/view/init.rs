@@ -605,7 +605,7 @@ impl FluxApp {
 
         if model.config.ui.enable_file_indexing {
             gtk::glib::idle_add_local_once(|| {
-                crate::services::search::indexer::build_home_index_async();
+                crate::infra::search::indexer::build_home_index_async();
             });
         }
     }

@@ -51,12 +51,12 @@ pub fn delete_items(
         let path_str = raw_path.to_string_lossy().into_owned();
 
         // ── Archive virtual URI ──────────────────────────────────────────────
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+        if path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             || path_str.starts_with("/archive:/")
             || path_str.starts_with("archive://")
         {
             if let Some((archive_path, inner_path)) =
-                crate::services::archive::parse_archive_uri(&path_str)
+                crate::infra::archive::parse_archive_uri(&path_str)
             {
                 sender_clone.input(AppMsg::PromptArchiveDeletion {
                     archive_path,
@@ -66,7 +66,7 @@ pub fn delete_items(
             continue;
         }
 
-        let is_network = crate::services::network::is_network_uri(&raw_path);
+        let is_network = crate::infra::network::is_network_uri(&raw_path);
 
         eprintln!(
             "[Delete] path={:?} is_network={} contains_scheme={}",

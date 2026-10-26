@@ -71,10 +71,10 @@ impl FluxApp {
             let clean_query = clean_query.trim().to_string();
             let current_dir = self.current_path.clone();
 
-            if crate::services::search::indexer::is_ready() && clean_query.len() >= 3 {
-                crate::services::search::indexer::request_delta_scan();
+            if crate::infra::search::indexer::is_ready() && clean_query.len() >= 3 {
+                crate::infra::search::indexer::request_delta_scan();
 
-                if let Ok(index) = crate::services::search::indexer::SearchIndex::open_or_create() {
+                if let Ok(index) = crate::infra::search::indexer::SearchIndex::open_or_create() {
                     if let Ok(matches) = index.query_in(&clean_query, Some(&current_dir), 300) {
                         let mut scoped_matches = Vec::new();
                         let mut stale_paths = Vec::new();
@@ -89,7 +89,7 @@ impl FluxApp {
 
                         // Prune dead entries in background if any ghost files were hit
                         if !stale_paths.is_empty() {
-                            crate::services::search::indexer::prune_paths(stale_paths);
+                            crate::infra::search::indexer::prune_paths(stale_paths);
                         }
 
                         if !scoped_matches.is_empty() {
@@ -100,7 +100,7 @@ impl FluxApp {
             }
 
             sender.input(AppMsg::StartAdvancedSearch(
-                crate::services::search::AdvancedSearchParams {
+                crate::infra::search::AdvancedSearchParams {
                     patterns: vec![query_target],
                     include_hidden: self.show_hidden,
                     ..Default::default()

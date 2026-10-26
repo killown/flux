@@ -1,5 +1,5 @@
+use crate::infra::db::StateManager;
 use crate::model::{AppMsg, FluxApp};
-use crate::services::db::StateManager;
 use crate::ui::constants;
 use gtk::glib;
 use relm4::prelude::*;
@@ -45,10 +45,10 @@ impl FluxApp {
             // Warm the Nerd Font OnceLock off the main thread so the first
             // `bind_git_badge` doesn't stall on fontconfig enumeration.
             std::thread::spawn(|| {
-                let _ = crate::services::git::is_nerd_font_available();
+                let _ = crate::infra::git::is_nerd_font_available();
             });
 
-            crate::services::archive::purge_stale_scratch_dirs();
+            crate::infra::archive::purge_stale_scratch_dirs();
 
             s_init.input(AppMsg::RefreshSidebar);
 
@@ -60,7 +60,7 @@ impl FluxApp {
             }
 
             glib::timeout_add_seconds_local(5, || {
-                crate::services::archive::thumb_cache::flush_all();
+                crate::infra::archive::thumb_cache::flush_all();
                 glib::ControlFlow::Continue
             });
         });

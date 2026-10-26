@@ -14,10 +14,10 @@ impl FluxApp {
     /// Returns true if the current path is inside an archive that supports full extraction.
     pub fn can_extract_current_archive(&self) -> bool {
         let path_str = self.current_path.to_string_lossy();
-        if !path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+        if !path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             return false;
         }
-        crate::services::archive::parse_archive_uri(&path_str)
+        crate::infra::archive::parse_archive_uri(&path_str)
             .map(|(archive_path, _)| {
                 let name = archive_path
                     .file_name()
@@ -104,13 +104,12 @@ impl FluxApp {
             let path_str = path.to_string_lossy();
 
             // Check if this is an archive URI (/archive://... or archive://... or /archive:/...)
-            if let Some((archive_path, inner)) =
-                crate::services::archive::parse_archive_uri(&path_str)
+            if let Some((archive_path, inner)) = crate::infra::archive::parse_archive_uri(&path_str)
             {
                 if is_dir {
                     // Navigating deeper into a virtual archive folder
                     sender.input(AppMsg::Navigate(path));
-                } else if crate::services::archive::is_browsable_archive(Path::new(&inner)) {
+                } else if crate::infra::archive::is_browsable_archive(Path::new(&inner)) {
                     sender.input(AppMsg::EnterArchive(path));
                 } else {
                     // Extracting and launching a file from inside the archive
@@ -124,7 +123,7 @@ impl FluxApp {
                         .to_string();
 
                     relm4::spawn_blocking(move || {
-                        match crate::services::archive::extract_entry_to_tempfile(
+                        match crate::infra::archive::extract_entry_to_tempfile(
                             &archive_path,
                             &inner,
                             cached_pwd.as_deref(),
@@ -134,14 +133,14 @@ impl FluxApp {
                                     Self::open_file(path_buf);
                                 }
                             }
-                            Err(crate::services::archive::ArchiveError::PasswordRequired) => {
+                            Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
                                 sender_clone.input(AppMsg::PromptArchivePassword {
                                     archive_path,
                                     prefix: parent_prefix,
                                     wrong_password: false,
                                 });
                             }
-                            Err(crate::services::archive::ArchiveError::WrongPassword) => {
+                            Err(crate::infra::archive::ArchiveError::WrongPassword) => {
                                 sender_clone.input(AppMsg::PromptArchivePassword {
                                     archive_path,
                                     prefix: parent_prefix,
@@ -162,7 +161,7 @@ impl FluxApp {
                 break;
             }
             // Opening a physical archive file from disk (.7z, .zip, etc.)
-            else if crate::services::archive::is_browsable_archive(&path) {
+            else if crate::infra::archive::is_browsable_archive(&path) {
                 sender.input(AppMsg::EnterArchive(path));
                 break;
             }
@@ -171,7 +170,7 @@ impl FluxApp {
                 let sender_clone = sender.clone();
                 let path_clone = path.clone();
                 relm4::spawn_blocking(move || {
-                    if crate::services::luks::is_luks_image(&path_clone) {
+                    if crate::infra::luks::is_luks_image(&path_clone) {
                         sender_clone.input(AppMsg::UnlockLuksImage { path: path_clone });
                     } else if crate::utils::media::is_appimage(&path_clone) {
                         if let Err(e) = Self::launch_appimage(&path_clone) {
@@ -263,16 +262,16 @@ impl FluxApp {
         let mut uri_list = String::new();
         for (path, is_dir) in &selection {
             let path_str = path.to_string_lossy();
-            let uri = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
+            let uri = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
                 if let Some((archive_path, inner)) =
-                    crate::services::archive::parse_archive_uri(&path_str)
+                    crate::infra::archive::parse_archive_uri(&path_str)
                 {
                     let cached_pwd = self
                         .cached_archive_passwords
                         .get(&archive_path)
                         .map(String::as_str);
                     if *is_dir {
-                        match crate::services::archive::extract_dir_to_tempdir(
+                        match crate::infra::archive::extract_dir_to_tempdir(
                             &archive_path,
                             &inner,
                             cached_pwd,
@@ -281,7 +280,7 @@ impl FluxApp {
                             Err(_) => continue,
                         }
                     } else {
-                        match crate::services::archive::extract_entry_to_tempfile(
+                        match crate::infra::archive::extract_entry_to_tempfile(
                             &archive_path,
                             &inner,
                             cached_pwd,

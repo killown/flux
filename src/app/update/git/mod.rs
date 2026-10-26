@@ -1,7 +1,7 @@
-use crate::model::{AppMsg, FileLoadContext, FluxApp};
-use crate::services::git::{
+use crate::infra::git::{
     find_git_repo_root, query_git_status, query_git_status_paths, GitFileStatus, StatusFilter,
 };
+use crate::model::{AppMsg, FileLoadContext, FluxApp};
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;
 use std::collections::HashMap;
@@ -25,9 +25,8 @@ impl FluxApp {
         let current_dir = self.current_path.clone();
 
         relm4::spawn(async move {
-            if let Some(repo_root) = crate::services::git::find_git_repo_root(&current_dir) {
-                if let Ok(diff) =
-                    crate::services::git::query_file_diff(&repo_root, &target_file).await
+            if let Some(repo_root) = crate::infra::git::find_git_repo_root(&current_dir) {
+                if let Ok(diff) = crate::infra::git::query_file_diff(&repo_root, &target_file).await
                 {
                     s_clone.input(AppMsg::DiffLoaded {
                         path: target_file,
@@ -97,8 +96,8 @@ impl FluxApp {
         }
         self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
             Box::pin(async move {
-                let rel = crate::services::git::repo_relative(&root, selection);
-                crate::services::git::discard_selected(&root, &rel).await
+                let rel = crate::infra::git::repo_relative(&root, selection);
+                crate::infra::git::discard_selected(&root, &rel).await
             })
         });
     }
@@ -106,7 +105,7 @@ impl FluxApp {
     pub fn handle_git_restore_last_discard(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_restore_last_discard");
         self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::restore_last_discard(&root).await })
+            Box::pin(async move { crate::infra::git::restore_last_discard(&root).await })
         });
     }
 
@@ -114,7 +113,7 @@ impl FluxApp {
         crate::hit!("handle_prompt_git_switch_branch");
         self.spawn_git_query(sender, move |root| {
             Box::pin(async move {
-                let list = crate::services::git::list_branches(&root).await?;
+                let list = crate::infra::git::list_branches(&root).await?;
                 Ok::<AppMsg, String>(AppMsg::GitBranchesReady {
                     current: list.current,
                     branches: list.branches,
@@ -126,14 +125,14 @@ impl FluxApp {
     pub fn handle_git_switch_branch(&mut self, name: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_switch_branch");
         self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::switch_branch(&root, name).await })
+            Box::pin(async move { crate::infra::git::switch_branch(&root, name).await })
         });
     }
 
     pub fn handle_git_create_branch(&mut self, name: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_create_branch");
         self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
-            Box::pin(async move { crate::services::git::create_branch(&root, name).await })
+            Box::pin(async move { crate::infra::git::create_branch(&root, name).await })
         });
     }
 
@@ -141,7 +140,7 @@ impl FluxApp {
         crate::hit!("handle_git_copy_diff");
         self.spawn_git_query(sender, move |root| {
             Box::pin(async move {
-                crate::services::git::diff_head(&root)
+                crate::infra::git::diff_head(&root)
                     .await
                     .map(AppMsg::GitCopyDiffReady)
             })
@@ -179,13 +178,13 @@ impl FluxApp {
         let targets = self.git_targets();
         self.spawn_git_query(sender, move |root| {
             Box::pin(async move {
-                let rel = crate::services::git::repo_relative(&root, targets);
+                let rel = crate::infra::git::repo_relative(&root, targets);
                 let title = match rel.as_slice() {
                     [] => "Git Log".to_string(),
                     [one] => format!("Git Log: {}", one.display()),
                     many => format!("Git Log: {} paths", many.len()),
                 };
-                let text = crate::services::git::log_paths(&root, &rel).await?;
+                let text = crate::infra::git::log_paths(&root, &rel).await?;
                 Ok::<AppMsg, String>(AppMsg::GitOutputReady { title, text })
             })
         });
@@ -197,11 +196,11 @@ impl FluxApp {
         self.spawn_git_query(sender, move |root| {
             Box::pin(async move {
                 let rel = target.and_then(|t| {
-                    crate::services::git::repo_relative(&root, vec![t])
+                    crate::infra::git::repo_relative(&root, vec![t])
                         .into_iter()
                         .next()
                 });
-                crate::services::git::open_remote(&root, rel.as_deref())
+                crate::infra::git::open_remote(&root, rel.as_deref())
                     .await
                     .map(AppMsg::ShowToast)
             })
@@ -218,7 +217,7 @@ impl FluxApp {
             > + Send
             + 'static,
     {
-        let Some(root) = crate::services::git::find_git_repo_root(&self.current_path) else {
+        let Some(root) = crate::infra::git::find_git_repo_root(&self.current_path) else {
             let _ = sender.input_sender().send(AppMsg::GitActionFinished(Err(
                 "Not inside a git repository".to_string(),
             )));
@@ -245,7 +244,7 @@ impl FluxApp {
             > + Send
             + 'static,
     {
-        let Some(root) = crate::services::git::find_git_repo_root(&self.current_path) else {
+        let Some(root) = crate::infra::git::find_git_repo_root(&self.current_path) else {
             let _ = sender.input_sender().send(AppMsg::GitActionFinished(Err(
                 "Not inside a git repository".to_string(),
             )));
@@ -486,11 +485,11 @@ pub(super) fn handle(
         }
         AppMsg::GitOpenRemote => app.handle_git_open_remote(sender),
         AppMsg::ShowGitStatusStaged => app.handle_show_git_status_filtered(
-            crate::services::git::StatusFilter::Staged,
+            crate::infra::git::StatusFilter::Staged,
             sender.clone(),
         ),
         AppMsg::ShowGitStatusUnstaged => app.handle_show_git_status_filtered(
-            crate::services::git::StatusFilter::Unstaged,
+            crate::infra::git::StatusFilter::Unstaged,
             sender.clone(),
         ),
         AppMsg::GitStatusReady {

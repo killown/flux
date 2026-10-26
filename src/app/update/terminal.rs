@@ -14,10 +14,10 @@ impl FluxApp {
         crate::hit!("handle_terminal_cwd_changed");
         let path_str = self.current_path.to_string_lossy();
 
-        let is_virtual = path_str.starts_with(crate::services::archive::ARCHIVE_URI)
+        let is_virtual = path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             || path_str.starts_with("trash://")
             || path_str.starts_with("recent://")
-            || crate::services::network::is_network_uri(&self.current_path);
+            || crate::infra::network::is_network_uri(&self.current_path);
 
         if !is_virtual {
             let curr_canon = self
@@ -37,8 +37,8 @@ impl FluxApp {
         self.terminal_visible = !self.terminal_visible;
 
         let path_str = self.current_path.to_string_lossy();
-        let effective_path = if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-            crate::services::archive::parse_archive_uri(&path_str)
+        let effective_path = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+            crate::infra::archive::parse_archive_uri(&path_str)
                 .map(|(archive_path, _)| {
                     archive_path
                         .parent()
@@ -46,7 +46,7 @@ impl FluxApp {
                         .unwrap_or_else(|| "/".to_string())
                 })
                 .unwrap_or_else(|| "/".to_string())
-        } else if crate::services::network::is_network_uri(&self.current_path) {
+        } else if crate::infra::network::is_network_uri(&self.current_path) {
             env::var("HOME").unwrap_or_else(|_| "/".to_string())
         } else {
             self.current_path.to_str().unwrap_or("/").to_string()
@@ -128,8 +128,8 @@ impl FluxApp {
     /// directory, `$HOME` on network locations, otherwise the current path.
     fn terminal_working_dir(&self) -> String {
         let path_str = self.current_path.to_string_lossy();
-        if path_str.starts_with(crate::services::archive::ARCHIVE_URI) {
-            crate::services::archive::parse_archive_uri(&path_str)
+        if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+            crate::infra::archive::parse_archive_uri(&path_str)
                 .map(|(archive_path, _)| {
                     archive_path
                         .parent()
@@ -137,7 +137,7 @@ impl FluxApp {
                         .unwrap_or_else(|| "/".to_string())
                 })
                 .unwrap_or_else(|| "/".to_string())
-        } else if crate::services::network::is_network_uri(&self.current_path) {
+        } else if crate::infra::network::is_network_uri(&self.current_path) {
             env::var("HOME").unwrap_or_else(|_| "/".to_string())
         } else {
             self.current_path.to_str().unwrap_or("/").to_string()
@@ -181,7 +181,7 @@ impl FluxApp {
                 return;
             };
 
-            let term = crate::services::terminal::Terminal::new(&self.config.ui.terminal);
+            let term = crate::infra::terminal::Terminal::new(&self.config.ui.terminal);
             crate::ui::startup::wire_terminal_theme(&term, &self.config.ui.terminal);
 
             // `capture.rs` and `navigation.rs` yield to any focused widget with this class.

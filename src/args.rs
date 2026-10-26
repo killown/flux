@@ -338,7 +338,7 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
                 }
             } else {
                 let p = uri_to_path(path);
-                if p.is_file() && crate::services::archive::is_supported_archive(&p) {
+                if p.is_file() && crate::infra::archive::is_supported_archive(&p) {
                     StartupAction::OpenArchive(p)
                 } else {
                     StartupAction::Launch { path: p, opts }
