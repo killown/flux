@@ -511,6 +511,12 @@ pub enum AppMsg {
             crate::services::archive::ArchiveError,
         >,
     },
+    /// Background ZIP header probe result: archives found to be encrypted.
+    /// Sent after `FolderLoaded` so the padlock never delays the first paint.
+    ArchiveLocksProbed {
+        load_id: u64,
+        encrypted: Vec<PathBuf>,
+    },
     /// Initiates a deep content search within the current directory.
     /// Syntax: `:term` to search all files, or `:.ext:term` to filter by extension
     /// (e.g., `:.rs:hello` for `.rs` files). Multiple extensions can be comma‑separated

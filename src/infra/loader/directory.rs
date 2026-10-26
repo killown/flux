@@ -280,6 +280,7 @@ impl FluxApp {
                             current_list_mode
                         };
 
+                    let zip_probe = lock_snapshot.zip_probe_candidates(&cached_items);
                     sender_clone.input(AppMsg::FolderLoaded {
                         path: path_clone,
                         load_id: current_session,
@@ -287,6 +288,7 @@ impl FluxApp {
                         media_tasks,
                         list_mode,
                     });
+                    spawn_zip_lock_probe(zip_probe, current_session, sender_clone);
                 });
                 return;
             }
@@ -612,6 +614,7 @@ impl FluxApp {
                 current_list_mode
             };
 
+            let zip_probe = lock_snapshot.zip_probe_candidates(&items);
             sender_clone.input(AppMsg::FolderLoaded {
                 path: path_clone,
                 load_id: current_session,
@@ -619,6 +622,32 @@ impl FluxApp {
                 media_tasks,
                 list_mode,
             });
+            spawn_zip_lock_probe(zip_probe, current_session, sender_clone);
         });
     }
+}
+
+/// Reads ZIP headers for the padlock badge after the folder is already on screen.
+///
+/// Each probe is a few remote range reads on FUSE/cloud mounts (rclone, sshfs),
+/// so it must never sit on the load path. Folders without ZIPs spawn nothing.
+fn spawn_zip_lock_probe(
+    candidates: Vec<PathBuf>,
+    load_id: u64,
+    sender: AsyncComponentSender<FluxApp>,
+) {
+    if candidates.is_empty() {
+        return;
+    }
+    relm4::spawn_blocking(move || {
+        let encrypted: Vec<PathBuf> = loader_pool().install(|| {
+            candidates
+                .into_par_iter()
+                .filter(|p| crate::services::archive::zip_is_encrypted(p))
+                .collect()
+        });
+        if !encrypted.is_empty() {
+            sender.input(AppMsg::ArchiveLocksProbed { load_id, encrypted });
+        }
+    });
 }

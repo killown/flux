@@ -34,6 +34,9 @@ pub(super) fn handle(
             app.show_archive_deletion_warning(archive_path, inner_path, sender);
         }
         AppMsg::ExtractArchive => app.handle_extract_archive(sender),
+        AppMsg::ArchiveLocksProbed { load_id, encrypted } => {
+            app.handle_archive_locks_probed(load_id, encrypted)
+        }
         AppMsg::ArchiveLoaded {
             archive_path,
             prefix,

@@ -113,7 +113,23 @@ impl ArchiveLockSnapshot {
         }
     }
 
-    /// Fills `is_encrypted_archive` and `has_cached_password` on `ctx`.
+    /// ZIP files whose lock state is not yet known to the session. The caller
+    /// probes these off the load path with [`zip_is_encrypted`].
+    pub fn zip_probe_candidates(&self, items: &[FileLoadContext]) -> Vec<PathBuf> {
+        items
+            .iter()
+            .filter(|c| {
+                !c.is_dir
+                    && !c.is_encrypted_archive
+                    && lock_source(&c.target_path) == Some(LockSource::ZipHeader)
+                    && !self.encrypted.contains(c.target_path.as_path())
+            })
+            .map(|c| c.target_path.clone())
+            .collect()
+    }
+
+    /// Fills `is_encrypted_archive` and `has_cached_password` on `ctx` from the
+    /// session state only. Performs no file I/O.
     pub fn stamp(&self, ctx: &mut FileLoadContext) {
         ctx.is_encrypted_archive = false;
         ctx.has_cached_password = false;
@@ -125,12 +141,10 @@ impl ArchiveLockSnapshot {
         };
         let learned = self.encrypted.contains(ctx.target_path.as_path());
         ctx.is_encrypted_archive = match source {
-            LockSource::ZipHeader => {
-                learned
-                    || (ctx.metadata().is_some_and(|m| m.is_file())
-                        && zip_is_encrypted(&ctx.target_path))
-            }
-            LockSource::SessionOnly => learned,
+            // No file I/O here. Reading a ZIP header is a remote range read on
+            // FUSE/cloud mounts and would stall the folder load, so ZIP headers
+            // are probed after the grid is shown (see `zip_probe_candidates`).
+            LockSource::ZipHeader | LockSource::SessionOnly => learned,
         };
         ctx.has_cached_password = self.unlocked.contains(ctx.target_path.as_path());
     }
