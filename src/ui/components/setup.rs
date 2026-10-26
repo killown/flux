@@ -175,16 +175,24 @@ impl FileItem {
         // Number of items in the drag being started, 0 means a single-item drag.
         let multi_count = std::rc::Rc::new(std::cell::Cell::new(0usize));
 
-        // Returning `None` keeps the single-item provider that `bind` installed.
+        // Falls back to the single-item provider that `bind` installed on the
+        // source. Returning `None` here would not do that: the signal stops at
+        // the first handler, so GTK's default handler, which returns the
+        // `content` property, never runs and the drag would not start.
         let prepare_count = multi_count.clone();
         drag_source.connect_prepare(move |src, _, _| {
             prepare_count.set(0);
             if !dnd_enabled {
                 return None;
             }
-            let paths = multi_drag_paths(&src.widget()?)?;
-            prepare_count.set(paths.len());
-            Some(multi_drag_provider(&paths))
+            let multi = src.widget().as_ref().and_then(multi_drag_paths);
+            match multi {
+                Some(paths) => {
+                    prepare_count.set(paths.len());
+                    Some(multi_drag_provider(&paths))
+                }
+                None => src.content(),
+            }
         });
 
         let begin_count = multi_count.clone();
