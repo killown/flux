@@ -30,14 +30,20 @@ impl FluxApp {
         let base_name = format!("{}_extracted", stem);
         let mut dest = parent.join(&base_name);
         let mut counter = 2;
-        while dest.exists() {
-            dest = parent.join(format!("{}_{}", base_name, counter));
-            counter += 1;
-        }
-
-        if let Err(e) = std::fs::create_dir_all(&dest) {
-            sender.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
-            return;
+        // `create_dir` is atomic, so the directory we end up with is always ours
+        // and the `remove_dir_all` on failure can never hit someone else's folder.
+        loop {
+            match std::fs::create_dir(&dest) {
+                Ok(()) => break,
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                    dest = parent.join(format!("{}_{}", base_name, counter));
+                    counter += 1;
+                }
+                Err(e) => {
+                    sender.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                    return;
+                }
+            }
         }
 
         let task_id =
