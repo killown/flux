@@ -11,6 +11,33 @@ use relm4::prelude::*;
 use std::cell::RefCell;
 use std::path::PathBuf;
 
+/// Returns the [gtk::GridView] that owns `widget`, if any.
+fn owning_grid_view(widget: &gtk::Widget) -> Option<gtk::GridView> {
+    widget
+        .ancestor(gtk::GridView::static_type())
+        .and_then(|ancestor| ancestor.downcast::<gtk::GridView>().ok())
+}
+
+/// Switches off rubber-band selection on the grid view that owns `widget`.
+fn suspend_rubberband(widget: &gtk::Widget) -> bool {
+    match owning_grid_view(widget) {
+        Some(view) if view.enables_rubberband() => {
+            view.set_enable_rubberband(false);
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Restores rubber-band selection previously disabled by [`suspend_rubberband`].
+fn resume_rubberband(widget: &gtk::Widget, suspended: &std::cell::Cell<bool>) {
+    if suspended.replace(false) {
+        if let Some(view) = owning_grid_view(widget) {
+            view.set_enable_rubberband(true);
+        }
+    }
+}
+
 impl FileItem {
     /// Initializes the widget hierarchy and event controllers for a grid item.
     ///
@@ -19,6 +46,8 @@ impl FileItem {
     pub(super) fn build_widgets(_item: &gtk::ListItem) -> (gtk::Overlay, FileWidgets) {
         crate::hit!("build_widgets");
         let config = utils::load_config();
+        let dnd_enabled = !config.ui.disable_drag_and_drop;
+        let rubberband_suspended = std::rc::Rc::new(std::cell::Cell::new(false));
         let drag_source = gtk::DragSource::builder()
             .actions(gdk::DragAction::COPY | gdk::DragAction::MOVE)
             .build();
@@ -38,8 +67,10 @@ impl FileItem {
             }
         });
 
+        let rubberband_on_end = rubberband_suspended.clone();
         drag_source.connect_drag_end(move |src, _, _| {
             if let Some(widget) = src.widget() {
+                resume_rubberband(&widget, &rubberband_on_end);
                 if let Some(native) = widget.native() {
                     if let Some(surface) = native.surface() {
                         surface.set_cursor(None);
@@ -53,8 +84,10 @@ impl FileItem {
             }
         });
 
+        let rubberband_on_cancel = rubberband_suspended.clone();
         drag_source.connect_drag_cancel(move |src, _, _| {
             if let Some(widget) = src.widget() {
+                resume_rubberband(&widget, &rubberband_on_cancel);
                 if let Some(native) = widget.native() {
                     if let Some(surface) = native.surface() {
                         surface.set_cursor(None);
@@ -246,7 +279,7 @@ impl FileItem {
                     add_controller = gtk::GestureClick {
                         set_button: 1,
                         set_propagation_phase: gtk::PropagationPhase::Capture,
-                        connect_pressed[timer = grab_timer.clone()] => move |gesture, _, _, _| {
+                        connect_pressed[timer = grab_timer.clone(), suspended = rubberband_suspended.clone(), dnd_enabled] => move |gesture, _, _, _| {
                             if let Some(event) = gesture.current_event() {
                                 if let Some(device) = event.device() {
                                     if device.source() == gdk::InputSource::Touchscreen {
@@ -257,6 +290,14 @@ impl FileItem {
 
                             if let Some(id) = timer.take() {
                                 id.remove();
+                            }
+
+                            if dnd_enabled {
+                                if let Some(widget) = gesture.widget() {
+                                    if suspend_rubberband(&widget) {
+                                        suspended.set(true);
+                                    }
+                                }
                             }
 
                             if let Some(widget) = gesture.widget() {
@@ -289,11 +330,12 @@ impl FileItem {
                                 timer.set(Some(id));
                             }
                         },
-                        connect_released[single_click, timer = grab_timer.clone()] => move |gesture, _, _, _| {
+                        connect_released[single_click, timer = grab_timer.clone(), suspended = rubberband_suspended.clone()] => move |gesture, _, _, _| {
                             if let Some(id) = timer.take() {
                                 id.remove();
                             }
                             if let Some(widget) = gesture.widget() {
+                                resume_rubberband(&widget, &suspended);
                                 if let Some(native) = widget.native() {
                                     if let Some(surface) = native.surface() {
                                         surface.set_cursor(None);
@@ -306,11 +348,12 @@ impl FileItem {
                                 }
                             }
                         },
-                        connect_cancel[single_click, timer = grab_timer] => move |gesture, _| {
+                        connect_cancel[single_click, timer = grab_timer, suspended = rubberband_suspended] => move |gesture, _| {
                             if let Some(id) = timer.take() {
                                 id.remove();
                             }
                             if let Some(widget) = gesture.widget() {
+                                resume_rubberband(&widget, &suspended);
                                 if let Some(native) = widget.native() {
                                     if let Some(surface) = native.surface() {
                                         surface.set_cursor(None);
@@ -442,7 +485,7 @@ impl FileItem {
             }
         }
 
-        if !config.ui.disable_drag_and_drop {
+        if dnd_enabled {
             root.add_controller(drag_source.clone());
             root.add_controller(drop_target.clone());
         }
