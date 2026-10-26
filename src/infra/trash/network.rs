@@ -1,15 +1,17 @@
 use super::recursive::delete_recursive;
 use crate::model::{AppMsg, FluxApp};
+use gtk::gio;
 use gtk::gio::prelude::FileExt;
-use gtk::{gio, glib};
 use relm4::prelude::*;
 
-/// Deletes a network-resident path by walking it recursively on the GLib main
-/// context. `gio::File::trash` is not used here because remote filesystems
+/// Deletes a network-resident path by walking it recursively on a worker
+/// thread. `gio::File::trash` is not used here because remote filesystems
 /// generally don't have a trash to move into.
 pub(super) fn delete_via_recursive(file: gio::File, sender: AsyncComponentSender<FluxApp>) {
-    eprintln!("[Delete] network path → skipping trash, using GLib-context delete_recursive");
-    glib::MainContext::default().spawn_local(async move {
+    eprintln!("[Delete] network path → skipping trash, using worker-thread delete_recursive");
+    let uri = file.uri().to_string();
+    relm4::spawn_blocking(move || {
+        let file = gio::File::for_uri(&uri);
         match delete_recursive(&file) {
             Ok(()) => {
                 sender.input(AppMsg::Refresh);
