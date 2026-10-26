@@ -100,6 +100,11 @@ impl FactoryComponent for SidebarPlace {
             set_selectable: !self.is_section_label,
             #[watch]
             set_activatable: !self.is_section_label,
+            // Section headers must never take keyboard focus: GTK would paint a
+            // focus ring on them (e.g. when focus falls back to the sidebar
+            // after a view-mode switch or a panel closing).
+            #[watch]
+            set_focusable: !self.is_section_label,
             #[watch] set_class_active: (constants::SIDEBAR_SECTION_ROW_CLASS, self.is_section_label),
             #[watch] set_class_active: (constants::SIDEBAR_ROW_CLASS, !self.is_section_label),
             #[watch] set_class_active: ("sidebar-mount", self.is_mount),

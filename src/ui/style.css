@@ -292,6 +292,13 @@ windowcontrols button.maximize:hover {
   transform: none;
 }
 
+.sidebar-section-row,
+.sidebar-section-row:focus,
+.sidebar-section-row:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .sidebar-section-label {
   font-family: var(--font-main);
   font-size: 0.75em;
