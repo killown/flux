@@ -79,11 +79,41 @@ pub fn setup_global_shortcuts(
         keymap.toggle_location_panel.clone(),
         AppMsg::ToggleLocationPanel
     );
-    bind_msg!(keymap.toggle_list_mode.clone(), AppMsg::ToggleListMode);
     bind_msg!(keymap.cycle_sort.clone(), AppMsg::CycleSort);
     bind_msg!(keymap.toggle_sort_order.clone(), AppMsg::ToggleSortOrder);
 
     window.add_controller(sc);
+
+    // ── Grid/list toggle must work no matter where focus is ───────────────
+    //
+    // Capture phase runs before the focused widget (entries, sidebar, panels)
+    // gets the key, so none of them can swallow it. The embedded terminals are
+    // the exception: they keep every key while focused, so the callback lets
+    // the chord through to them. Same `Option` rule as `bind_msg!`: "disabled"
+    // resolves to `None` and registers nothing.
+    if let Some(trigger) = keymap.toggle_list_mode.clone() {
+        let list_sc = gtk::ShortcutController::new();
+        list_sc.set_propagation_phase(gtk::PropagationPhase::Capture);
+        let s = sender.clone();
+        list_sc.add_shortcut(gtk::Shortcut::new(
+            Some(trigger),
+            Some(gtk::CallbackAction::new(move |widget, _| {
+                // All three terminals (bottom, sidebar, fullscreen) carry this
+                // class on their focusable `DrawingArea`.
+                let terminal_focused = widget
+                    .root()
+                    .and_then(|root| root.focus())
+                    .is_some_and(|f| f.has_css_class("flux-terminal-area"));
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+
+                s.input(AppMsg::ToggleListMode);
+                glib::Propagation::Stop
+            })),
+        ));
+        window.add_controller(list_sc);
+    }
 
     // ── Search has a special guard: don't steal focus during rename ───────
     //

@@ -1,12 +1,22 @@
 use crate::model::{AppMsg, FluxApp, SortBy};
 use crate::ui::constants;
 use crate::utils;
+use gtk::prelude::WidgetExt;
 use relm4::prelude::*;
 
 impl FluxApp {
     /// Toggles between grid card layout and compact list view.
     pub fn handle_toggle_list_mode(&mut self) {
         crate::hit!("handle_toggle_list_mode");
+        // The shortcut can fire from any focus (sidebar, panel, terminal).
+        // Pull focus back to the main grid first, then switch. Skipped while
+        // the full-window terminal is up, since the grid is hidden then.
+        if !self.terminal_fullscreen {
+            if let Some(tab) = self.tabs.get(self.active_tab_index) {
+                tab.files.view.grab_focus();
+            }
+        }
+
         self.is_list_mode = !self.is_list_mode;
         self.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
