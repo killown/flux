@@ -2,6 +2,15 @@ use crate::model::{AppMsg, FluxApp};
 use relm4::prelude::*;
 use std::sync::atomic::Ordering;
 
+/// Raises the flag on drop so the progress poller stops even if the extractor panics.
+struct ExtractDone(std::sync::Arc<std::sync::atomic::AtomicBool>);
+
+impl Drop for ExtractDone {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
+}
+
 impl FluxApp {
     pub fn handle_extract_archive(&self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_extract_archive");
@@ -95,6 +104,8 @@ impl FluxApp {
 
         // ── Extraction thread ─────────────────────────────────────────────────
         relm4::spawn_blocking(move || {
+            // Raises the flag on any exit from this closure, panics included.
+            let done = ExtractDone(done_flag_extractor);
             let total_bytes =
                 crate::services::archive::archive_total_bytes(&archive_path, password.as_deref());
             total_shared.store(total_bytes, Ordering::Relaxed);
@@ -105,7 +116,8 @@ impl FluxApp {
                 password.as_deref(),
             );
 
-            done_flag_extractor.store(true, std::sync::atomic::Ordering::Relaxed);
+            // Stop the poller before reporting completion.
+            drop(done);
 
             s.input(AppMsg::TaskProgress {
                 id: task_id,
