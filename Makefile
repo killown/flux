@@ -121,10 +121,10 @@ update-themes:
 # Compile every po/LANG.po → $(LOCALEDIR)/LANG/LC_MESSAGES/flux.mo
 translations:
 	@$(foreach lang,$(LANGS), \
-		mkdir -p $(DESTDIR)$(LOCALEDIR)/$(lang)/LC_MESSAGES; \
+		mkdir -p $(DESTDIR)$(LOCALEDIR)/$(lang)/LC_MESSAGES && \
 		msgfmt -o $(DESTDIR)$(LOCALEDIR)/$(lang)/LC_MESSAGES/flux.mo \
-		       $(PO_DIR)/$(lang).po; \
-		echo "Compiled translation: $(lang)"; \
+		       $(PO_DIR)/$(lang).po && \
+		echo "Compiled translation: $(lang)" || exit 1; \
 	)
 
 # To set flux as the default handler for compressed files:
