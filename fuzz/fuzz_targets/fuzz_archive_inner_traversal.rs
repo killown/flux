@@ -6,7 +6,7 @@ fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
         // Feed arbitrary strings as if they were archive URIs and check that any
         // successfully-parsed inner path stays within the archive virtual root.
-        if let Some((_archive, inner)) = flux::services::archive::parse_archive_uri(s) {
+        if let Some((_archive, inner)) = flux::infra::archive::parse_archive_uri(s) {
             for comp in Path::new(&inner).components() {
                 assert!(
                     !matches!(

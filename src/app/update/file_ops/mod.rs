@@ -9,7 +9,7 @@ mod dnd;
 mod link;
 pub mod paste;
 mod rename;
-mod system;
+pub mod system;
 mod trash;
 
 // Public so integration tests (and other crates) can reach the command builder.

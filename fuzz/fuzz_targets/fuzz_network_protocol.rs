@@ -1,5 +1,5 @@
 #![no_main]
-use flux::services::network::{is_network_uri, protocol_for_uri};
+use flux::infra::network::{is_network_uri, protocol_for_uri};
 use libfuzzer_sys::fuzz_target;
 use std::path::Path;
 

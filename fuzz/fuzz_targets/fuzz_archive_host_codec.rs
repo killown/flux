@@ -1,5 +1,5 @@
 #![no_main]
-use flux::services::archive::{decode_archive_host, encode_archive_host};
+use flux::infra::archive::{decode_archive_host, encode_archive_host};
 use libfuzzer_sys::fuzz_target;
 use std::path::Path;
 

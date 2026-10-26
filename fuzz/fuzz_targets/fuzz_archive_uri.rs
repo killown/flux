@@ -6,8 +6,8 @@ fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
         // Property 1: encode/decode is an identity on any path.
         let original = PathBuf::from(s);
-        let encoded = flux::services::archive::encode_archive_host(&original);
-        let decoded = flux::services::archive::decode_archive_host(&encoded);
+        let encoded = flux::infra::archive::encode_archive_host(&original);
+        let decoded = flux::infra::archive::decode_archive_host(&encoded);
         assert_eq!(
             decoded, original,
             "encode_archive_host → decode_archive_host must be identity"
@@ -15,9 +15,9 @@ fuzz_target!(|data: &[u8]| {
 
         // Property 2: build/parse round-trip preserves the archive path.
         let inner = "";
-        let uri = flux::services::archive::build_archive_uri(&original, inner);
+        let uri = flux::infra::archive::build_archive_uri(&original, inner);
         if let Some((parsed_path, _parsed_inner)) =
-            flux::services::archive::parse_archive_uri(&uri.to_string_lossy())
+            flux::infra::archive::parse_archive_uri(&uri.to_string_lossy())
         {
             assert_eq!(
                 parsed_path, original,
@@ -31,7 +31,7 @@ fuzz_target!(|data: &[u8]| {
             format!("/archive://{}/a/../../b", encoded),
             format!("/archive://{}/./x", encoded),
         ] {
-            if let Some((_, inner)) = flux::services::archive::parse_archive_uri(&candidate) {
+            if let Some((_, inner)) = flux::infra::archive::parse_archive_uri(&candidate) {
                 let inner_path = Path::new(&inner);
                 for comp in inner_path.components() {
                     assert!(

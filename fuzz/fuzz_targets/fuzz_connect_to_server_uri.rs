@@ -1,5 +1,5 @@
 #![no_main]
-use flux::services::network::ConnectToServerParams;
+use flux::infra::network::ConnectToServerParams;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

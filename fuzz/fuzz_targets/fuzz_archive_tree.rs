@@ -1,5 +1,5 @@
 #![no_main]
-use flux::services::archive::{entries_to_load_contexts, ArchiveEntry};
+use flux::infra::archive::{entries_to_load_contexts, ArchiveEntry};
 use libfuzzer_sys::fuzz_target;
 use std::path::Path;
 use std::sync::Once;

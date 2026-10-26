@@ -10,6 +10,7 @@ fuzz_target!(|data: &[u8]| {
         let path = PathBuf::from(path_str);
         let current_path = PathBuf::from("/tmp");
 
-        let _ = flux::ui::file_ops::build_execution_command(cmd, &[path], &current_path, 0);
+        let _ =
+            flux::app::update::file_ops::build_execution_command(cmd, &[path], &current_path, 0);
     }
 });

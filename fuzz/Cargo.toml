@@ -203,3 +203,33 @@ name = "fuzz_conflict_name"
 path = "fuzz_targets/fuzz_conflict_name.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_icon_pair"
+path = "fuzz_targets/fuzz_icon_pair.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_format_units"
+path = "fuzz_targets/fuzz_format_units.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_udisksctl_parse"
+path = "fuzz_targets/fuzz_udisksctl_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_mounts_parse"
+path = "fuzz_targets/fuzz_mounts_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_fuzzy_match"
+path = "fuzz_targets/fuzz_fuzzy_match.rs"
+test = false
+doc = false
