@@ -386,13 +386,15 @@ button.eject-button:active {
 }
 
 .sidebar-pin-zone {
-  margin: 0.3em 0.6em 0.5em 0.6em;
-  padding: 0.6em 0.8em;
-  border-radius: 0.8em;
+  margin: 0.3em 0.6em;
+  padding: 0.3em 0.7em;
+  border-radius: 0.6em;
   border: 1.5px dashed alpha(var(--color-accent-text), 0.5);
-  background-color: alpha(var(--color-accent-text), 0.05);
-  transition: all 150ms ease;
-  min-height: 2.6em;
+  background-color: alpha(var(--color-accent-text), 0.12);
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+  min-height: 0;
 }
 
 .sidebar-pin-zone-label {

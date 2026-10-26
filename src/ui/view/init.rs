@@ -286,11 +286,9 @@ impl FluxApp {
         crate::hit!("setup_pin_zone");
         let pin_zone = gtk::Box::builder()
             .orientation(gtk::Orientation::Horizontal)
-            .spacing(10)
-            .margin_start(12)
-            .margin_end(12)
-            .margin_top(6)
-            .margin_bottom(8)
+            .spacing(8)
+            .halign(gtk::Align::Fill)
+            .valign(gtk::Align::Start)
             .css_classes(["sidebar-pin-zone"])
             .visible(false)
             .build();
@@ -303,9 +301,31 @@ impl FluxApp {
         pin_label.add_css_class("sidebar-pin-zone-label");
         pin_zone.append(&pin_icon);
         pin_zone.append(&pin_label);
-        // prepend into sidebar_box (outside the ScrolledWindow) so it always
-        // appears at the very top, above the scrollable bookmark list.
-        widgets.sidebar_box.prepend(&pin_zone);
+
+        // Overlay on top of the sidebar so showing it never shifts the list.
+        // The drop target lives on the Overlay (not sidebar_box) so moving the
+        // pointer onto the zone doesn't count as leaving the sidebar.
+        let overlay = widgets
+            .sidebar_box
+            .parent()
+            .and_downcast::<gtk::Overlay>()
+            .expect("sidebar_box is the child of an Overlay");
+        overlay.add_overlay(&pin_zone);
+
+        type Slot = std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>>;
+        fn cancel(slot: &Slot) {
+            if let Some(id) = slot.take() {
+                id.remove();
+            }
+        }
+        fn is_pending(slot: &Slot) -> bool {
+            let cur = slot.take();
+            let pending = cur.is_some();
+            slot.set(cur);
+            pending
+        }
+        let show_timer: Slot = Slot::default();
+        let hide_timer: Slot = Slot::default();
 
         {
             let sidebar_ft = gtk::DropTarget::builder()
@@ -313,19 +333,39 @@ impl FluxApp {
                 .preload(false)
                 .build();
             sidebar_ft.set_types(&[gdk::FileList::static_type()]);
-            let pz_enter = pin_zone.clone();
+
+            let (pz, st, ht) = (pin_zone.clone(), show_timer.clone(), hide_timer.clone());
             sidebar_ft.connect_enter(move |_, _, _| {
-                pz_enter.set_visible(true);
+                cancel(&ht);
+                if !pz.is_visible() && !is_pending(&st) {
+                    let (pz2, st2) = (pz.clone(), st.clone());
+                    let id = glib::timeout_add_local_once(
+                        std::time::Duration::from_millis(
+                            crate::ui::constants::SIDEBAR_PIN_ZONE_DELAY_MS,
+                        ),
+                        move || {
+                            st2.set(None);
+                            pz2.set_visible(true);
+                        },
+                    );
+                    st.set(Some(id));
+                }
                 gdk::DragAction::empty()
             });
-            let pz_leave = pin_zone.clone();
+
+            let (pz, st, ht) = (pin_zone.clone(), show_timer.clone(), hide_timer.clone());
             sidebar_ft.connect_leave(move |_| {
-                let pz = pz_leave.clone();
-                glib::timeout_add_local_once(std::time::Duration::from_millis(80), move || {
-                    pz.set_visible(false);
-                });
+                cancel(&st);
+                cancel(&ht);
+                let (pz2, ht2) = (pz.clone(), ht.clone());
+                let id =
+                    glib::timeout_add_local_once(std::time::Duration::from_millis(80), move || {
+                        ht2.set(None);
+                        pz2.set_visible(false);
+                    });
+                ht.set(Some(id));
             });
-            widgets.sidebar_box.add_controller(sidebar_ft);
+            overlay.add_controller(sidebar_ft);
         }
 
         {
@@ -344,7 +384,10 @@ impl FluxApp {
             });
             let s_pin = sender.clone();
             let pz_drop = pin_zone.clone();
+            let (st_drop, ht_drop) = (show_timer.clone(), hide_timer.clone());
             pin_zone_dt.connect_drop(move |_, value, _, _| {
+                cancel(&st_drop);
+                cancel(&ht_drop);
                 pz_drop.remove_css_class("sidebar-pin-zone-hover");
                 pz_drop.set_visible(false);
                 if let Ok(file_list) = value.get::<gdk::FileList>() {

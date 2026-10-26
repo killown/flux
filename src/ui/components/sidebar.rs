@@ -10,6 +10,33 @@ use gtk::glib;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
+#[derive(Default)]
+struct RowDndTimers {
+    highlight: Option<glib::SourceId>,
+    navigate: Option<glib::SourceId>,
+}
+
+thread_local! {
+    /// Only one drag hovers one row at a time, and GTK emits `leave` for the old
+    /// row before `enter` for the new one, so a single shared slot is enough.
+    static ROW_DND_TIMERS: std::cell::RefCell<RowDndTimers> =
+        std::cell::RefCell::new(RowDndTimers::default());
+}
+
+/// Cancels pending highlight and auto-navigate timers. Fired once-sources clear
+/// their own slot first, so `remove()` is never called on a dead source.
+fn cancel_row_dnd_timers() {
+    ROW_DND_TIMERS.with(|t| {
+        let mut t = t.borrow_mut();
+        if let Some(id) = t.highlight.take() {
+            id.remove();
+        }
+        if let Some(id) = t.navigate.take() {
+            id.remove();
+        }
+    });
+}
+
 /// Output events emitted by a sidebar row.
 #[derive(Debug)]
 pub enum SidebarMsg {
@@ -258,52 +285,59 @@ impl FactoryComponent for SidebarPlace {
                 set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::COPY | gdk::DragAction::MOVE },
                 set_types: &[gdk::FileList::static_type()],
 
-                connect_enter[path = self.path.clone(), is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target, _, _| {
+                connect_enter[path = self.path.clone(), is_label = self.is_section_label] => move |target, _, _| {
                     if utils::load_config().ui.disable_drag_and_drop || is_label || !path.is_dir() {
                         return gdk::DragAction::empty();
                     }
 
+                    cancel_row_dnd_timers();
+
+                    // Highlight only after the drag has rested on this row for a moment.
                     if let Some(widget) = target.widget() {
-                        widget.add_css_class("sidebar-drop-hover");
+                        let weak = widget.downgrade();
+                        let id = gtk::glib::timeout_add_local_once(
+                            std::time::Duration::from_millis(constants::SIDEBAR_ROW_HOVER_DELAY_MS),
+                            move || {
+                                ROW_DND_TIMERS.with(|t| t.borrow_mut().highlight = None);
+                                if let Some(w) = weak.upgrade() {
+                                    w.add_css_class("sidebar-drop-hover");
+                                }
+                            },
+                        );
+                        ROW_DND_TIMERS.with(|t| t.borrow_mut().highlight = Some(id));
                     }
 
-                    // Auto-navigate after 750 ms while the drag idles over the row.
+                    // Auto-navigate while the drag idles over the row.
                     let nav_path = path.clone();
-                    let timer_ref = hover_timer.clone();
                     let id = gtk::glib::timeout_add_local_once(
-                        std::time::Duration::from_millis(750),
+                        std::time::Duration::from_millis(constants::SIDEBAR_AUTONAV_DELAY_MS),
                         move || {
-                            timer_ref.set(None);
+                            ROW_DND_TIMERS.with(|t| t.borrow_mut().navigate = None);
                             if let Some(s) = crate::model::SENDER.get() {
                                 let _ = s.send(crate::model::AppMsg::Navigate(nav_path.clone()));
                             }
                         },
                     );
-                    hover_timer.set(Some(id));
+                    ROW_DND_TIMERS.with(|t| t.borrow_mut().navigate = Some(id));
 
                     gdk::DragAction::MOVE
                 },
 
-                connect_leave[is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target| {
+                connect_leave[is_label = self.is_section_label] => move |target| {
                     if is_label { return; }
 
+                    cancel_row_dnd_timers();
                     if let Some(widget) = target.widget() {
                         widget.remove_css_class("sidebar-drop-hover");
                     }
-
-                    if let Some(id) = hover_timer.take() {
-                        id.remove();
-                    }
                 },
 
-                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label, hover_timer = std::rc::Rc::<std::cell::Cell::<Option<glib::SourceId>>>::default()] => move |target, value, _, _| {
+                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |target, value, _, _| {
                     if utils::load_config().ui.disable_drag_and_drop {
                         return false;
                     }
-                    // Cancel any pending auto-navigate on release.
-                    if let Some(id) = hover_timer.take() {
-                        id.remove();
-                    }
+                    // Cancel any pending highlight / auto-navigate on release.
+                    cancel_row_dnd_timers();
                     if let Some(widget) = target.widget() {
                         widget.remove_css_class("sidebar-drop-hover");
                     }

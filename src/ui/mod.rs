@@ -77,6 +77,12 @@ pub mod constants {
     pub const RECENT_STACK_CAPACITY: usize = 10;
     pub const MAX_RECENT_ITEMS: usize = 9;
     pub const SIDEBAR_SPACING: i32 = 18;
+    /// How long a drag must stay over the sidebar before the pin zone appears.
+    pub const SIDEBAR_PIN_ZONE_DELAY_MS: u64 = 400;
+    /// How long a drag must rest on a row before it highlights as a drop target.
+    pub const SIDEBAR_ROW_HOVER_DELAY_MS: u64 = 250;
+    /// Auto-navigate delay while a drag idles over a folder row.
+    pub const SIDEBAR_AUTONAV_DELAY_MS: u64 = 750;
     pub const HEADER_BTN_SPACING: i32 = 6;
     pub const STATUS_ICON_SPACING: i32 = 8;
     pub const HEADER_MARGIN_END: i32 = 12;
