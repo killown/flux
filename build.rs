@@ -53,6 +53,8 @@ fn main() {
         }
     }
 
+    println!("cargo:rerun-if-env-changed=FLUX_SYNC_ASSETS");
+    println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=Makefile");
     println!("cargo:rerun-if-changed=scripts/properties.py");
