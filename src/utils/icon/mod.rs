@@ -4,7 +4,8 @@ mod theme;
 mod xdg;
 
 pub use cache::{
-    insert_cached_file_icon_texture, invalidate_themed_icon_cache, peek_cached_file_icon_texture,
+    begin_file_icon_decode, end_file_icon_decode, insert_cached_file_icon_texture,
+    invalidate_themed_icon_cache, peek_cached_file_icon_texture,
 };
 pub use resolve::{get_icon_for_path, get_icon_for_virtual_dir};
 

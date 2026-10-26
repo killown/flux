@@ -581,6 +581,9 @@ impl FileItem {
         //     thumbnails and file-ops on the shared blocking pool.
         //   * The handler must force a rebind (remove + insert). `queue_draw()`
         //     re-runs draw, not bind, so the fallback icon stays on screen.
+        //   * Decodes are deduplicated per path (`begin_file_icon_decode`). Every
+        //     file with the same extension shares one icon, so without it a folder
+        //     of N such files decodes the image N times and rebinds O(N^2) cells.
         //
         // If you touch this block, verify with:
         //   FLUX_HWGA_OUT=1 flux-fm <dir-with-custom-icons>
@@ -620,7 +623,10 @@ impl FileItem {
                     gtk::IconLookupFlags::empty(),
                 );
 
-                if let Some(sender) = crate::model::SENDER.get().cloned() {
+                let decode_guard = crate::utils::icon::begin_file_icon_decode(&path);
+                if let (Some(sender), Some(decode_guard)) =
+                    (crate::model::SENDER.get().cloned(), decode_guard)
+                {
                     let path_clone = path.clone();
                     let thumbnail_manager = self.thumbnail_manager.clone();
                     let max_threads = self.thumbnail_threads;
@@ -636,6 +642,7 @@ impl FileItem {
                                 path: path_clone,
                                 texture: gdk::Texture::for_pixbuf(&pixbuf),
                             });
+                            decode_guard.disarm();
                         }
                     });
                 }

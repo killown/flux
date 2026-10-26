@@ -11,6 +11,7 @@ pub(super) fn handle(
         AppMsg::FileIconTextureReady { path, texture } => {
             crate::hit!("handle_file_icon_texture_ready");
             crate::utils::icon::insert_cached_file_icon_texture(&path, texture);
+            crate::utils::icon::end_file_icon_decode(&path);
             let files = &mut app.tabs[app.active_tab_index].files;
             for i in 0..files.len() {
                 let uses_icon = files.get(i).is_some_and(|w| {
