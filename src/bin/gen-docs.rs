@@ -1,8 +1,9 @@
 //! Regenerates the derived documentation under `docs/`.
 //!
-//! Run via `cargo run --bin gen-docs`. CI runs it and checks
-//! `git diff --exit-code docs/` so any drift between source and committed
-//! markdown is a build failure.
+//! Run via `cargo run --bin gen-docs`. Besides `docs/`, it also writes
+//! `completions/` and `data/fish/`. CI runs it and fails if `git diff` or
+//! `git status --porcelain` reports any change under those three paths, so
+//! any drift between source and committed output is a build failure.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all("docs")?;
