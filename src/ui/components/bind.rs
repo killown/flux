@@ -454,30 +454,8 @@ impl FileItem {
             widgets.icon_widget.set_paintable(Some(&paintable));
         }
 
-        // ── Archive drawn as a folder ─────────────────────────────────────────
-        //
-        // `icon_widget` shows the folder-style icon (`self.icon`). The archive's real
-        // icon goes on `original_widget`, stacked over it and transparent by default.
-        // `style.css` reveals it while the grid child is `:selected`, so the swap is
-        // pure CSS: `bind` runs per scroll tick, and no signal handler or repaint
-        // is involved when only the selection changes.
+        // Archive drawn as a folder: static badge.
         widgets.archive_badge.set_visible(self.is_virtual_dir);
-        if self.is_virtual_dir && self.thumbnail.is_none() {
-            crate::hit!("bind_virtual_dir");
-            let original = self
-                .original_icon
-                .as_ref()
-                .map(|orig| self.paintable_for_gicon(root, orig));
-            widgets.original_widget.set_pixel_size(self.icon_size);
-            widgets.original_widget.set_paintable(original.as_ref());
-            widgets.icon_overlay.add_css_class("flux-vd");
-        } else {
-            // Recycled cell: drop the overlay left by a previous virtual-dir item.
-            widgets.icon_overlay.remove_css_class("flux-vd");
-            widgets
-                .original_widget
-                .set_paintable(None::<&gdk::Paintable>);
-        }
 
         // ── Encrypted archive padlock ─────────────────────────────────────────
         //
