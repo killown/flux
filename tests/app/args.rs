@@ -135,7 +135,7 @@ fn help_short_flag() {
 
 #[test]
 fn menu_editor_flag_is_gone() {
-    // The menu editor opens in-process (F9 / app menu); the old standalone
+    // The menu editor opens in-process (F9 / app menu), the old standalone
     // flag must now be rejected like any other unknown option.
     let action = resolve_startup_action(&args(&["flux-fm", "--menu-editor"]), home());
     assert_eq!(
@@ -144,38 +144,20 @@ fn menu_editor_flag_is_gone() {
     );
 }
 
-// ── --file-properties ────────────────────────────────────────────────────
+// ── --file-properties (removed) ──────────────────────────────────────────
 
 #[test]
-fn file_properties_with_path() {
+fn file_properties_flag_is_gone() {
+    // The standalone flag was removed, it must now be rejected like any
+    // other unknown option.
     let action = resolve_startup_action(
         &args(&["flux-fm", "--file-properties", "/home/user/photo.jpg"]),
         home(),
     );
     assert_eq!(
         action,
-        StartupAction::FileProperties(PathBuf::from("/home/user/photo.jpg"))
+        StartupAction::UnknownFlag("--file-properties".to_string())
     );
-}
-
-#[test]
-fn file_properties_without_path_falls_back_to_help() {
-    // Missing PATH operand → show help rather than panicking.
-    let action = resolve_startup_action(&args(&["flux-fm", "--file-properties"]), home());
-    assert_eq!(action, StartupAction::PrintHelp);
-}
-
-#[test]
-fn file_properties_path_is_not_empty() {
-    let action = resolve_startup_action(
-        &args(&["flux-fm", "--file-properties", "/tmp/file.txt"]),
-        home(),
-    );
-    if let StartupAction::FileProperties(path) = action {
-        assert!(!path.as_os_str().is_empty());
-    } else {
-        panic!("expected FileProperties variant");
-    }
 }
 
 // ── Unknown flags ────────────────────────────────────────────────────────
@@ -244,14 +226,14 @@ fn all_flag_variants_are_distinct() {
 
     let version = resolve_startup_action(&args(&["flux-fm", "--version"]), home());
     let help = resolve_startup_action(&args(&["flux-fm", "--help"]), home());
-    let props = resolve_startup_action(&args(&["flux-fm", "--file-properties", "/f"]), home());
+    let cwd = resolve_startup_action(&args(&["flux-fm", "--cwd", "/f"]), home());
     let launch = resolve_startup_action(&args(&["flux-fm", "/tmp"]), home());
     let unknown = resolve_startup_action(&args(&["flux-fm", "--bad"]), home());
 
     let variants = [
         discriminant(&version),
         discriminant(&help),
-        discriminant(&props),
+        discriminant(&cwd),
         discriminant(&launch),
         discriminant(&unknown),
     ];
