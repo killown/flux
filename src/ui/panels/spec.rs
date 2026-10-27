@@ -55,4 +55,7 @@ impl PanelSpec {
     pub const fn quick_list() -> Self {
         Self::new(260, 700, 340)
     }
+    pub const fn properties() -> Self {
+        Self::new(280, 700, 380)
+    }
 }

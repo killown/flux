@@ -34,12 +34,6 @@ pub(super) fn build_sections(
         tr("File Identity"),
         vec![
             (tr("Filename"), filename),
-            (
-                tr("Extension"),
-                path.extension()
-                    .map(|e| e.to_string_lossy().to_string())
-                    .unwrap_or(tr("None")),
-            ),
             (tr("MIME Type"), mime_type.to_string()),
         ],
     ));
@@ -82,27 +76,14 @@ pub(super) fn build_sections(
 
     // ── System & disk, temporal, security ──────────────────────────────────
     if let Ok(meta) = path.metadata() {
-        let mut system_disk = vec![
+        let system_disk = vec![
             (tr("Full Path"), path.to_string_lossy().to_string()),
             (
                 tr("Size"),
                 format!("{} ({} B)", format_size(meta.len()), meta.len()),
             ),
-            (tr("Disk Usage"), format_size(meta.blocks() * 512)),
-            (tr("Inode"), meta.ino().to_string()),
-            (tr("Device ID"), meta.dev().to_string()),
         ];
 
-        if let Ok(mounts) = fs::read_to_string("/proc/self/mounts") {
-            let mount_info = mounts
-                .lines()
-                .rfind(|l| path.starts_with(l.split_whitespace().nth(1).unwrap_or("")));
-            if let Some(line) = mount_info {
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                system_disk.push((tr("Mount Source"), parts[0].to_string()));
-                system_disk.push((tr("FS Type"), parts[2].to_string()));
-            }
-        }
         sections_data.push((tr("System & Disk"), system_disk));
 
         let fmt_time = |t: std::time::SystemTime| -> String {
@@ -191,6 +172,15 @@ pub(super) fn build_sections(
     }
 
     let _ = utils::media::get_mime_type; // keep the `utils` import live for callers
+
+    // Pin the leading sections, the rest keep the order they were pushed in.
+    let leading = [tr("File Identity"), tr("Visual Media"), tr("Security")];
+    sections_data.sort_by_key(|(title, _)| {
+        leading
+            .iter()
+            .position(|t| t == title)
+            .unwrap_or(leading.len())
+    });
 
     sections_data
 }

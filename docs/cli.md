@@ -25,7 +25,6 @@ The binary is built as `flux-fm`; `--help` refers to it as `flux`. `PATH` may be
 | `--no-sidebar` | Disable sidebar for this session |
 | `--no-header` | Disable header bar for this session |
 | `--no-statusbar` | Disable statusbar for this session |
-| `--file-properties PATH` | Open the file properties window for PATH |
 | `--set-icon TARGET IMAGE` | Set a custom icon/image for TARGET |
 | `--cwd PATH` | Navigate the running window to PATH (starts a new window if none is running) |
 | `--set-icons-stdin` | Read TARGET&lt;TAB&gt;IMAGE pairs from standard input |
@@ -102,5 +101,5 @@ flux-fm --theme default
 
 | Status | Meaning |
 |---|---|
-| `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon`, `--theme` and `--quick-list` print the help text and also exit with `0`. |
+| `0` | Success. Missing values for `--set-icon`, `--reset-icon`, `--theme` and `--quick-list` print the help text and also exit with `0`. |
 | `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, an unknown `--theme` name, or `--selection` finding no running window. |

@@ -486,6 +486,18 @@ impl FluxApp {
                             emit_toast(s, toast);
                         },
                     ),
+                    // No target: the panel follows the grid selection, so the
+                    // command needs no path.
+                    "builtin::toggle_properties_panel" => register_simple(
+                        &action_group,
+                        "toggle-properties-panel",
+                        sender,
+                        action_toast.clone(),
+                        |s, toast| {
+                            s.input(AppMsg::ToggleFilePropertiesPanel);
+                            emit_toast(s, toast);
+                        },
+                    ),
                     "builtin::delete" => register_simple(
                         &action_group,
                         "delete-selection",

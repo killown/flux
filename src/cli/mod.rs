@@ -5,9 +5,7 @@ mod watcher;
 
 use crate::infra::window_control;
 use crate::model::Config;
-use crate::ui::FileProperties;
 use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
-use relm4::prelude::*;
 use std::io::BufRead;
 use std::path::PathBuf;
 
@@ -95,12 +93,6 @@ pub fn run() {
             for (flags, description) in flux::args::CLI_OPTIONS {
                 println!("  {flags:<28}{description}");
             }
-        }
-
-        StartupAction::FileProperties(path) => {
-            let app = RelmApp::new("flux.PropertiesViewer");
-            app.allow_multiple_instances(true);
-            app.with_args(vec![]).run::<FileProperties>(path);
         }
 
         StartupAction::PrintSelection { .. } => unreachable!("handled before GTK initialisation"),

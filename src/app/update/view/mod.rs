@@ -22,6 +22,11 @@ pub(super) fn handle(
             if app.actions_panel_visible {
                 app.request_actions_panel_load(sender);
             }
+            // Same for the Properties panel: it describes the selected item.
+            if app.properties_panel_visible {
+                app.properties_target = app.get_selected_path();
+                app.request_properties_panel_load(sender);
+            }
         }
         AppMsg::QuerySelection { reply } => {
             let _ = reply.send(app.get_selection());

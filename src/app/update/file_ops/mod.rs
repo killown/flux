@@ -1,5 +1,4 @@
 use crate::model::{AppMsg, FluxApp};
-use adw::prelude::*;
 use relm4::prelude::*;
 
 mod archive;
@@ -76,10 +75,17 @@ pub(super) fn handle(
         }
         AppMsg::PromptNewFolder => app.show_prompt_new_folder(sender),
         AppMsg::PromptNewFile => app.show_prompt_new_file(sender),
-        AppMsg::OpenFileProperties(path) => {
-            let properties_win = crate::ui::FileProperties::builder().launch(path).detach();
-            properties_win.widget().present();
+        AppMsg::OpenFileProperties(path) => app.handle_open_file_properties(path, sender),
+        AppMsg::ToggleFilePropertiesPanel => {
+            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Properties, sender)
         }
+        AppMsg::FilePropertiesReady {
+            session,
+            sections,
+            open_with,
+        } => app.handle_file_properties_ready(session, sections, open_with),
+        AppMsg::CopyPropertyValue(text) => app.handle_copy_property_value(text, sender),
+        AppMsg::OpenPropertiesTargetWith => app.handle_open_properties_target_with(sender),
         AppMsg::SetDisableDragAndDrop(val) => app.handle_set_disable_drag_and_drop(val),
         AppMsg::HandleDrop {
             source_paths,

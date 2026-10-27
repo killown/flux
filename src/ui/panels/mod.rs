@@ -43,3 +43,5 @@ pub mod location;
 pub use location::build_location_panel;
 pub mod connect;
 pub use connect::build_connect_panel;
+mod properties;
+pub use properties::build_properties_panel;

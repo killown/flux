@@ -30,6 +30,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             row(&tr("Toggle status bar"), "F7"),
             row(&tr("Toggle sidebar"), "F8"),
             row(&tr("Toggle wide preview"), "F11"),
+            row(&tr("Toggle properties panel"), "F12"),
             row(&tr("Resize grid items"), "Ctrl + Scroll"),
             row(&tr("Open folder in new tab"), "Middle Click"),
             row(&tr("Open folder in new window"), "Ctrl + Middle Click"),

@@ -710,8 +710,23 @@ pub enum AppMsg {
         path: Option<PathBuf>,
         mime: String,
     },
+    /// Opens the right-side Properties panel on this path, or retargets it if already open.
     #[allow(dead_code)]
     OpenFileProperties(PathBuf),
+    /// Toggles the right-side Properties panel (its header close button).
+    ToggleFilePropertiesPanel,
+    /// Background result of a Properties load: the `(title, rows)` sections and,
+    /// for a regular file, the name of its default application. Dropped unless
+    /// `session` is still current.
+    FilePropertiesReady {
+        session: u64,
+        sections: Vec<(String, Vec<(String, String)>)>,
+        open_with: Option<String>,
+    },
+    /// Copies one Properties row value to the clipboard.
+    CopyPropertyValue(String),
+    /// Opens the Open With dialog for the file shown in the Properties panel.
+    OpenPropertiesTargetWith,
     /// Update the current path and refresh the file list.
     Navigate(PathBuf),
     /// Finalize a file or directory rename operation.

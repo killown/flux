@@ -11,10 +11,6 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
     ("    --no-header", "Disable header bar for this session"),
     ("    --no-statusbar", "Disable statusbar for this session"),
     (
-        "    --file-properties PATH",
-        "Open the file properties window for PATH",
-    ),
-    (
         "    --set-icon TARGET IMAGE",
         "Set a custom icon/image for TARGET",
     ),
@@ -170,8 +166,6 @@ pub enum StartupAction {
     },
     /// Open the archive-explorer window for the given path.
     OpenArchive(PathBuf),
-    /// Open the standalone file-properties dialog for the given path.
-    FileProperties(PathBuf),
     /// Set a custom icon/image override for a target path.
     SetIcon { target: PathBuf, image: PathBuf },
     /// Read TAB/space-separated `<TARGET>\t<IMAGE>` pairs from standard input.
@@ -249,10 +243,6 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         Some("--cwd") => match filtered_args.get(1) {
             Some(path) => StartupAction::Cwd(uri_to_path(path)),
             None => StartupAction::InvalidArgument("--cwd requires a path".to_string()),
-        },
-        Some("--file-properties") => match filtered_args.get(1) {
-            Some(path) => StartupAction::FileProperties(uri_to_path(path)),
-            None => StartupAction::PrintHelp,
         },
         Some("--set-icon") => match (filtered_args.get(1), filtered_args.get(2)) {
             (Some(target), Some(image)) => StartupAction::SetIcon {

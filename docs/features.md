@@ -310,7 +310,6 @@ The full reference is in [cli](cli.md). Summary:
 - Open a path, a set of paths, or an archive directly.
 - `--no-sidebar`, `--no-header`, `--no-statusbar` for a session-only
   minimal window.
-- `--file-properties PATH` opens the properties window for a file.
 - `--set-icon TARGET IMAGE` and `--reset-icon TARGET` manage custom icons.
 - `--set-icons-stdin` reads `TARGET<TAB>IMAGE` pairs from standard input,
   so a script can set many icons in one process.

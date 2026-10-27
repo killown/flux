@@ -311,6 +311,15 @@ pub fn setup_capture(
                 sender.input(AppMsg::ExitPreviewFullscreen);
                 glib::Propagation::Proceed
             }
+            // F12 toggles the file Properties panel. Fixed like the other panel
+            // F-keys; the shell keeps the key when the terminal has focus.
+            gdk::Key::F12 if !is_ctrl && !is_shift && !is_alt => {
+                if terminal_focused {
+                    return glib::Propagation::Proceed;
+                }
+                sender.input(AppMsg::ToggleFilePropertiesPanel);
+                glib::Propagation::Stop
+            }
             _ => glib::Propagation::Proceed,
         }
     });

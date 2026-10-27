@@ -29,7 +29,6 @@ pub use tabs::TabState;
 mod components;
 mod doc_css_variables;
 mod help;
-mod properties;
 
 // --- 3. Public Re-exports ---
 // This allows main.rs to call `ui::FluxApp`
@@ -38,7 +37,6 @@ pub use components::{FileItem, SidebarPlace, ThumbEvent, ThumbHook};
 // used by `src/lib.rs` for `gen-docs`, not linked by the `flux-fm` binary alone
 pub use doc_css_variables::render_css_variables_markdown;
 pub use help::HelpWindow;
-pub use properties::FileProperties;
 
 /// Groups UI-specific constants such as default window dimensions or CSS class names.
 pub mod constants {

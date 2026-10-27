@@ -131,7 +131,7 @@ pub fn render_cli_markdown() -> String {
     out.push_str(
         "| Status | Meaning |\n\
          |---|---|\n\
-         | `0` | Success. Missing values for `--file-properties`, `--set-icon`, `--reset-icon`, `--theme` and `--quick-list` print the help text and also exit with `0`. |\n\
+         | `0` | Success. Missing values for `--set-icon`, `--reset-icon`, `--theme` and `--quick-list` print the help text and also exit with `0`. |\n\
          | `1` | Unrecognized option, `--preview` without a directory, an icon file that does not exist, a skipped line in `--set-icons-stdin`, an unknown `--theme` name, or `--selection` finding no running window. |\n",
     );
 

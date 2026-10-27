@@ -176,6 +176,16 @@ pub struct FluxApp {
     pub actions_panel_initialized: bool,
     /// Session token for in-flight contextual-actions loads, guards stale results.
     pub actions_panel_session: Arc<AtomicU64>,
+    /// Revealer widget wrapping the right file Properties panel.
+    pub properties_panel_revealer: Option<gtk::Revealer>,
+    /// Whether the right file Properties panel is currently visible.
+    pub properties_panel_visible: bool,
+    /// Whether the Properties panel widget tree has been instantiated.
+    pub properties_panel_initialized: bool,
+    /// Session token for in-flight Properties loads, guards stale results.
+    pub properties_panel_session: Arc<AtomicU64>,
+    /// Path the Properties panel describes. `None` shows the empty page.
+    pub properties_target: Option<PathBuf>,
     /// Revealer widget wrapping the right Quick List panel.
     pub quick_list_panel_revealer: Option<gtk::Revealer>,
     /// Whether the right Quick List panel is currently visible.

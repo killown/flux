@@ -234,6 +234,14 @@ impl FluxApp {
                 term.kill_shell();
             }
         }
+        if keep != RightPanelType::Properties && self.properties_panel_visible {
+            if let Some(ref r) = self.properties_panel_revealer {
+                r.set_reveal_child(false);
+                r.set_visible(false);
+            }
+            self.properties_panel_visible = false;
+            self.reset_properties_panel();
+        }
     }
 
     /// Hides the left sidebar while the Quick List panel is open, remembering
@@ -338,6 +346,14 @@ impl FluxApp {
                 &mut self.terminal_panel_visible,
                 false,
             ),
+            // ── PROPERTIES ───────────────────────────────────────────────
+            // Not a search panel. Follows the grid selection while open.
+            RightPanelType::Properties => (
+                self.properties_panel_revealer.clone(),
+                &mut self.properties_panel_initialized,
+                &mut self.properties_panel_visible,
+                false,
+            ),
         };
 
         let Some(revealer) = revealer else {
@@ -420,6 +436,12 @@ impl FluxApp {
                     crate::ui::startup::register_terminal_shutdown(&term, &revealer);
                     self.sidebar_terminal = Some(term);
                     root
+                }
+                // ── PROPERTIES ───────────────────────────────────────────
+                // `build_properties_panel` installs its handles into a
+                // thread-local; the first load is requested below.
+                RightPanelType::Properties => {
+                    crate::ui::panels::build_properties_panel(0, sender.clone())
                 }
             };
             revealer.set_child(Some(&panel));
@@ -540,6 +562,7 @@ impl FluxApp {
                 | RightPanelType::Actions
                 | RightPanelType::Terminal
                 | RightPanelType::QuickList
+                | RightPanelType::Properties
         );
 
         if now_visible && !skip_focus {
@@ -619,6 +642,19 @@ impl FluxApp {
                 self.request_actions_panel_load(sender);
             } else {
                 self.reset_actions_panel();
+            }
+        }
+
+        // Opening loads the metadata for the selection (unless `OpenFileProperties`
+        // already chose a target), closing bumps the session so late results are dropped.
+        if panel_type == RightPanelType::Properties {
+            if now_visible {
+                if self.properties_target.is_none() {
+                    self.properties_target = self.get_selected_path();
+                }
+                self.request_properties_panel_load(sender);
+            } else {
+                self.reset_properties_panel();
             }
         }
 

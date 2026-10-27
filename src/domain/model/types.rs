@@ -24,6 +24,8 @@ pub enum RightPanelType {
     Actions,
     Terminal,
     QuickList,
+    /// File metadata panel (opened from the context menu's Properties entry).
+    Properties,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

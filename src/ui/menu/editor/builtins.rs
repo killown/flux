@@ -135,6 +135,11 @@ pub(super) const BUILTINS: &[BuiltinDef] = &[
         scope: "all",
         desc: "Deletes the archive password saved in the system keyring for the target archive.",
     },
+    BuiltinDef {
+        name: "builtin::toggle_properties_panel",
+        scope: "all",
+        desc: "Shows or hides the properties panel for the current selection.",
+    },
 ];
 
 /// `(placeholder, one target, several targets)` rows of the placeholder table in `docs/actions.md`.
