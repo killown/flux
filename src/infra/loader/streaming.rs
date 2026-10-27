@@ -207,11 +207,15 @@ impl FluxApp {
             );
 
             let labels = item.labels().clone();
+            let is_encrypted_archive = item.is_encrypted_archive
+                || self
+                    .known_encrypted_archives
+                    .contains(item.target_path.as_path());
             let file_item = FileItem::builder(item.display_name, item.target_path, icon)
                 .display_label(display_label)
                 .is_dir(item.is_dir)
                 .is_virtual_dir(is_virtual_dir)
-                .is_encrypted_archive(item.is_encrypted_archive)
+                .is_encrypted_archive(is_encrypted_archive)
                 .has_cached_password(item.has_cached_password)
                 .original_icon(original_icon)
                 .thumbnail(thumbnail)

@@ -147,12 +147,11 @@ impl FluxApp {
     }
 
     /// Applies the result of the background ZIP header probe. The session set is
-    /// always updated; cards are only touched if the folder is still on screen.
-    pub fn handle_archive_locks_probed(&mut self, load_id: u64, encrypted: Vec<PathBuf>) {
+    /// updated and every card showing a probed archive is refreshed.
+    pub fn handle_archive_locks_probed(&mut self, _load_id: u64, encrypted: Vec<PathBuf>) {
         crate::hit!("handle_archive_locks_probed");
-        let current = load_id == self.load_id.load(std::sync::atomic::Ordering::SeqCst);
         for path in encrypted {
-            if self.known_encrypted_archives.insert(path.clone()) && current {
+            if self.known_encrypted_archives.insert(path.clone()) {
                 self.sync_archive_lock_badges(&path);
             }
         }

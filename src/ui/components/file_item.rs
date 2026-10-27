@@ -46,6 +46,7 @@ pub struct FileItem {
     pub is_virtual_dir: bool,
     /// The archive's real file icon, resolved at load time. Only set for virtual
     /// dirs: `icon` holds the folder-style icon, this is what a selected card shows.
+    #[allow(dead_code)]
     pub original_icon: Option<adw::gio::Icon>,
     pub path: PathBuf,
     pub icon_size: i32,
