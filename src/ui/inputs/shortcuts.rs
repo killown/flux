@@ -165,12 +165,7 @@ pub fn setup_settings_shortcut(window: &impl IsA<gtk::Widget>, keymap: &KeyMap) 
     sc.add_shortcut(gtk::Shortcut::new(
         Some(trigger),
         Some(gtk::CallbackAction::new(move |_, _| {
-            let controller = crate::ui::SettingsWindow::builder().launch(());
-            if let Some(parent) = &parent_window {
-                controller.widget().set_transient_for(Some(parent));
-            }
-            controller.widget().present();
-            controller.detach();
+            crate::ui::settings::open(parent_window.as_ref());
             glib::Propagation::Stop
         })),
     ));

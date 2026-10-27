@@ -46,9 +46,9 @@ pub(super) fn setup_shortcuts(app: &adw::Application) {
         "open-settings",
         &config.shortcuts.settings,
         constants::SETTINGS,
-        || {
-            let settings_win = crate::ui::SettingsWindow::builder().launch(()).detach();
-            settings_win.widget().present();
+        {
+            let app = app.clone();
+            move || crate::ui::settings::open(app.active_window().as_ref())
         },
     );
 
