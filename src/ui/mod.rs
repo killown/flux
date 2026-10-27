@@ -13,7 +13,6 @@ pub mod settings;
 pub mod startup;
 pub mod view;
 pub use components::SidebarMsg;
-pub use settings::SettingsWindow;
 pub mod clipboard;
 pub mod config_handlers;
 pub mod conflict_policy;
