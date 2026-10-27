@@ -7,6 +7,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::infra::mounts::unescape_mount_field;
+
 /// Returns `true` if the magic bytes of `path` identify it as a LUKS container.
 pub fn is_luks_image(path: &Path) -> bool {
     crate::hit!("is_luks_image");
@@ -27,7 +29,7 @@ pub fn find_mount_point(device_name: &str) -> Option<PathBuf> {
         let dev = parts.next()?;
         let mount = parts.next()?;
         if dev == format!("/dev/mapper/{device_name}") {
-            Some(PathBuf::from(mount))
+            Some(PathBuf::from(unescape_mount_field(mount)))
         } else {
             None
         }
@@ -81,7 +83,7 @@ pub(super) fn get_mount_point_for_dm(dm_dev: &str) -> Option<PathBuf> {
         let dev = parts.next()?;
         let mount = parts.next()?;
         if dev == dm_dev {
-            return Some(PathBuf::from(mount));
+            return Some(PathBuf::from(unescape_mount_field(mount)));
         }
     }
     None
