@@ -1,4 +1,4 @@
-use crate::infra::trash::tracked::{restore_tracked, trash_tracked};
+use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;
@@ -240,20 +240,15 @@ impl FluxApp {
             FileOp::Trash { items } => {
                 let sender_clone = sender.clone();
                 relm4::spawn_blocking(move || {
-                    let mut re_trashed = Vec::new();
+                    let files: Vec<(gio::File, PathBuf)> = items
+                        .iter()
+                        .map(|item| (gio::File::for_path(&item.path), item.path.clone()))
+                        .collect();
+                    let (re_trashed, errors) = trash_tracked_batch(&files);
                     let mut failed = Vec::new();
-
-                    for item in items {
-                        let file = gio::File::for_path(&item.path);
-                        // Re-trashing creates a new trash entry, so record
-                        // it: the old entry was consumed by the undo.
-                        match trash_tracked(&file, &item.path) {
-                            Ok(new_item) => re_trashed.push(new_item),
-                            Err(e) => {
-                                eprintln!("[Redo] trash failed for {:?}: {}", item.path, e);
-                                failed.push(item);
-                            }
-                        }
+                    for (idx, e) in errors {
+                        eprintln!("[Redo] trash failed for {:?}: {}", items[idx].path, e);
+                        failed.push(items[idx].clone());
                     }
 
                     // Complete first: `push_undo` clears the redo stack, so

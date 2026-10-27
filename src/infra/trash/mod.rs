@@ -32,6 +32,7 @@ pub fn delete_items(
     }
 
     let sender_clone = sender.clone();
+    let mut local_batch: Vec<(gio::File, PathBuf)> = Vec::new();
     for raw_path in selection {
         // Canonicalize only for protection checks, use raw_path for deletion.
         let canon_path = raw_path.canonicalize().unwrap_or_else(|_| raw_path.clone());
@@ -84,7 +85,11 @@ pub fn delete_items(
         if is_network {
             network::delete_via_recursive(file, sender_clone.clone());
         } else {
-            local::delete_via_trash(file, raw_path, sender_clone.clone());
+            local_batch.push((file, raw_path));
         }
+    }
+
+    if !local_batch.is_empty() {
+        local::delete_batch_via_trash(local_batch, sender_clone);
     }
 }

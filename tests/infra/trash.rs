@@ -1,4 +1,4 @@
-use flux::infra::trash::tracked::{find_entry, pick_new_entry, TrashEntry};
+use flux::infra::trash::tracked::{assign_new_entries, find_entry, pick_new_entry, TrashEntry};
 use flux::ui::undo_redo::TrashedItem;
 use std::collections::HashSet;
 use std::path::PathBuf;
@@ -95,4 +95,91 @@ fn used_entries_are_skipped() {
     let it = TrashedItem::untracked(PathBuf::from("/h/a.txt"));
     let got = find_entry(&entries, &it, &used).unwrap();
     assert_eq!(got.name, "a.txt");
+}
+
+// ── Batch assignment ─────────────────────────────────────────────────────
+
+fn names(got: &[Option<TrashEntry>]) -> Vec<Option<&str>> {
+    got.iter()
+        .map(|e| e.as_ref().map(|e| e.name.as_str()))
+        .collect()
+}
+
+#[test]
+fn batch_assigns_each_path_its_own_entry() {
+    let before: HashSet<String> = ["old".to_string()].into();
+    let after = vec![
+        entry("old", "/h/a.txt", "2026-01-01T09:00:00"),
+        entry("b.txt", "/h/b.txt", "2026-01-01T10:00:01"),
+        entry("a.txt", "/h/a.txt", "2026-01-01T10:00:00"),
+    ];
+    let paths = ["/h/a.txt".to_string(), "/h/b.txt".to_string()];
+    let got = assign_new_entries(&before, after, &paths);
+    assert_eq!(names(&got), [Some("a.txt"), Some("b.txt")]);
+}
+
+#[test]
+fn batch_never_hands_one_entry_to_two_paths() {
+    let after = vec![entry("t", "/real/t", "2026-01-01T10:00:00")];
+    let paths = ["/real/t".to_string(), "/real/t".to_string()];
+    let got = assign_new_entries(&HashSet::new(), after, &paths);
+    assert_eq!(got.iter().flatten().count(), 1);
+}
+
+#[test]
+fn batch_same_path_twice_takes_newest_first() {
+    let after = vec![
+        entry("a.txt", "/h/a.txt", "2026-01-01T10:00:00"),
+        entry("a.2.txt", "/h/a.txt", "2026-01-01T11:00:00"),
+    ];
+    let paths = ["/h/a.txt".to_string(), "/h/a.txt".to_string()];
+    let got = assign_new_entries(&HashSet::new(), after, &paths);
+    assert_eq!(names(&got), [Some("a.2.txt"), Some("a.txt")]);
+}
+
+#[test]
+fn batch_pairs_the_single_leftover_path_and_entry() {
+    let after = vec![
+        entry("a", "/h/a", "2026-01-01T10:00:00"),
+        entry("b", "/real/b", "2026-01-01T10:00:01"),
+    ];
+    let paths = ["/h/a".to_string(), "/link/b".to_string()];
+    let got = assign_new_entries(&HashSet::new(), after, &paths);
+    assert_eq!(names(&got), [Some("a"), Some("b")]);
+}
+
+#[test]
+fn batch_leaves_ambiguous_leftovers_unassigned() {
+    let after = vec![
+        entry("x", "/real/x", "2026-01-01T10:00:00"),
+        entry("y", "/real/y", "2026-01-01T10:00:01"),
+    ];
+    let paths = ["/link/x".to_string(), "/link/y".to_string()];
+    let got = assign_new_entries(&HashSet::new(), after, &paths);
+    assert_eq!(names(&got), [None, None]);
+}
+
+#[test]
+fn batch_of_one_matches_pick_new_entry() {
+    let before: HashSet<String> = ["a.txt".to_string()].into();
+    let after = || {
+        vec![
+            entry("a.txt", "/h/a.txt", "2026-01-01T10:00:00"),
+            entry("a.2.txt", "/h/a.txt", "2026-01-01T11:00:00"),
+        ]
+    };
+    let single = pick_new_entry(&before, after(), "/h/a.txt");
+    let batch = assign_new_entries(&before, after(), &["/h/a.txt".to_string()]);
+    assert_eq!(
+        single.map(|e| e.name),
+        batch.into_iter().next().flatten().map(|e| e.name)
+    );
+}
+
+#[test]
+fn batch_with_no_new_entries_assigns_nothing() {
+    let before: HashSet<String> = ["a.txt".to_string()].into();
+    let after = vec![entry("a.txt", "/h/a.txt", "2026-01-01T10:00:00")];
+    let got = assign_new_entries(&before, after, &["/h/a.txt".to_string()]);
+    assert_eq!(names(&got), [None]);
 }

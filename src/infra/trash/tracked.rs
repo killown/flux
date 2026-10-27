@@ -54,11 +54,6 @@ pub fn list_trash() -> Vec<TrashEntry> {
 
 /// Picks the entry created by a trash call, given the trash contents before
 /// (`before`) and after (`after`) it.
-///
-/// Only entries that were not there before are candidates. Among those, an
-/// entry whose original path matches `orig_path` wins (newest deletion date
-/// first). If none match by path (for example the trash records a resolved
-/// symlink path), a single new entry is still unambiguous and is used.
 pub fn pick_new_entry(
     before: &HashSet<String>,
     after: Vec<TrashEntry>,
@@ -80,10 +75,50 @@ pub fn pick_new_entry(
     }
 }
 
+/// Matches each of `orig_paths` (the files moved to the trash in one batch)
+/// to the trash entry that moving it created. The result has one slot per
+/// path, in the same order, `None` means the entry could not be identified.
+pub fn assign_new_entries(
+    before: &HashSet<String>,
+    after: Vec<TrashEntry>,
+    orig_paths: &[String],
+) -> Vec<Option<TrashEntry>> {
+    let mut new: Vec<Option<TrashEntry>> = after
+        .into_iter()
+        .filter(|e| !before.contains(&e.name))
+        .map(Some)
+        .collect();
+    let mut out: Vec<Option<TrashEntry>> = vec![None; orig_paths.len()];
+
+    for (slot, orig) in out.iter_mut().zip(orig_paths) {
+        let best = new
+            .iter()
+            .enumerate()
+            .filter_map(|(i, e)| {
+                e.as_ref()
+                    .filter(|e| e.orig_path.as_deref() == Some(orig.as_str()))
+                    .map(|e| (i, e))
+            })
+            .max_by(|a, b| a.1.deletion_date.cmp(&b.1.deletion_date))
+            .map(|(i, _)| i);
+        if let Some(i) = best {
+            *slot = new[i].take();
+        }
+    }
+
+    let unmatched: Vec<usize> = (0..out.len()).filter(|&i| out[i].is_none()).collect();
+    let leftover: Vec<usize> = (0..new.len()).filter(|&i| new[i].is_some()).collect();
+    if let ([slot], [i]) = (unmatched.as_slice(), leftover.as_slice()) {
+        out[*slot] = new[*i].take();
+    }
+    out
+}
+
 /// Moves `file` to the trash and returns a record of the entry it created.
 ///
 /// Blocking: call it from a worker thread. `orig_path` is the path the item
 /// is known by in the app and is stored in the returned item.
+#[allow(dead_code)]
 pub fn trash_tracked(file: &gio::File, orig_path: &Path) -> Result<TrashedItem, glib::Error> {
     let orig_str = file
         .path()
@@ -100,6 +135,47 @@ pub fn trash_tracked(file: &gio::File, orig_path: &Path) -> Result<TrashedItem, 
         trash_name: entry.as_ref().map(|e| e.name.clone()),
         deletion_date: entry.and_then(|e| e.deletion_date),
     })
+}
+
+/// Moves every file to the trash and returns a record of the entry each one
+/// created. Unlike calling [`trash_tracked`] in a loop, the trash is listed
+/// only twice for the whole batch, not twice per file.
+pub fn trash_tracked_batch(
+    files: &[(gio::File, PathBuf)],
+) -> (Vec<TrashedItem>, Vec<(usize, glib::Error)>) {
+    let before: HashSet<String> = list_trash().into_iter().map(|e| e.name).collect();
+
+    // (index into `files`, path the trash records the file under)
+    let mut trashed: Vec<(usize, String)> = Vec::new();
+    let mut failed: Vec<(usize, glib::Error)> = Vec::new();
+    for (i, (file, orig_path)) in files.iter().enumerate() {
+        let orig_str = file
+            .path()
+            .unwrap_or_else(|| orig_path.clone())
+            .to_string_lossy()
+            .into_owned();
+        match file.trash(gio::Cancellable::NONE) {
+            Ok(()) => trashed.push((i, orig_str)),
+            Err(e) => failed.push((i, e)),
+        }
+    }
+    if trashed.is_empty() {
+        return (Vec::new(), failed);
+    }
+
+    let orig_strs: Vec<String> = trashed.iter().map(|(_, s)| s.clone()).collect();
+    let entries = assign_new_entries(&before, list_trash(), &orig_strs);
+
+    let items = trashed
+        .into_iter()
+        .zip(entries)
+        .map(|((i, _), entry)| TrashedItem {
+            path: files[i].1.clone(),
+            trash_name: entry.as_ref().map(|e| e.name.clone()),
+            deletion_date: entry.and_then(|e| e.deletion_date),
+        })
+        .collect();
+    (items, failed)
 }
 
 /// Finds the trash entry that belongs to `item`, ignoring entries in `used`.
