@@ -51,6 +51,7 @@ pub(super) fn handle(
             }
         }
         AppMsg::ClearRecents => app.handle_clear_recents(sender),
+        AppMsg::ClearRecentsFinished(result) => app.handle_clear_recents_finished(result, sender),
         AppMsg::NewTab(target_path) => app.handle_new_tab(target_path, sender),
         AppMsg::OpenTabs(targets) => app.handle_open_tabs(targets, sender),
         AppMsg::Open { position, tab_id } => app.handle_open(position, tab_id, sender),

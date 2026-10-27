@@ -1,4 +1,4 @@
-use crate::model::FluxApp;
+use crate::model::{AppMsg, FluxApp};
 use crate::utils::path::PathExt;
 use adw::gio::prelude::*;
 use gtk::gio;
@@ -47,7 +47,7 @@ impl FluxApp {
     ///
     /// # Errors
     /// Returns an I/O error if the XBEL file cannot be read or written.
-    pub fn remove_recents(paths: Option<&[PathBuf]>) -> std::io::Result<()> {
+    pub fn remove_recents(paths: Option<Vec<PathBuf>>) -> std::io::Result<()> {
         crate::hit!("remove_recents");
         let xbel_path = dirs::data_local_dir()
             .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No data local dir"))?
@@ -90,5 +90,24 @@ impl FluxApp {
 
         std::fs::write(&xbel_path, keep.join("\n"))?;
         Ok(())
+    }
+
+    /// Applies the outcome of the background `remove_recents` run started by
+    /// `handle_clear_recents`: refreshes the view on success, toasts on failure.
+    pub fn handle_clear_recents_finished(
+        &mut self,
+        result: Result<(), String>,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_clear_recents_finished");
+        match result {
+            Ok(()) => {
+                self.recents_has_selection = false;
+                sender.input(AppMsg::Refresh);
+            }
+            Err(e) => {
+                sender.input(AppMsg::ShowToast(format!("Failed to clear recents: {}", e)));
+            }
+        }
     }
 }

@@ -225,21 +225,17 @@ impl FluxApp {
     pub fn handle_clear_recents(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_clear_recents");
         let selection = self.get_selection();
-        let result = if selection.is_empty() {
-            Self::remove_recents(None)
+        let targets = if selection.is_empty() {
+            None
         } else {
-            Self::remove_recents(Some(&selection))
+            Some(selection)
         };
 
-        match result {
-            Ok(()) => {
-                sender.input(AppMsg::Refresh);
-                self.recents_has_selection = false;
-            }
-            Err(e) => {
-                sender.input(AppMsg::ShowToast(format!("Failed to clear recents: {}", e)));
-            }
-        }
+        let s = sender.clone();
+        relm4::spawn_blocking(move || {
+            let result = Self::remove_recents(targets).map_err(|e| e.to_string());
+            s.input(AppMsg::ClearRecentsFinished(result));
+        });
     }
 
     /// Resolves target selection coordinates and triggers background MIME calculation for the context menu.

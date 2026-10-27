@@ -629,6 +629,9 @@ pub enum AppMsg {
     SetRecentsRow(usize),
     /// Remove one or all entries from the recent-files list.
     ClearRecents,
+    /// Result of `handle_clear_recents`: `Ok(())` means the XBEL file was
+    /// rewritten, `Err` carries the I/O error message.
+    ClearRecentsFinished(Result<(), String>),
     /// Toggle the embedded terminal panel visibility.
     ToggleTerminal,
     /// Internal trigger to open icon picker (resolves path from selection/current dir).
