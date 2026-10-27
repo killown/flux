@@ -1,5 +1,6 @@
 //! Temporary file and scratch directory management for archive sessions.
 
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 
@@ -55,10 +56,17 @@ pub fn purge_stale_scratch_dirs() {
         let Ok(pid) = pid_part.parse::<u32>() else {
             continue;
         };
-        if pid == current_pid {
+        if pid == current_pid || Path::new(&format!("/proc/{pid}")).exists() {
             continue;
         }
-        let _ = std::fs::remove_dir_all(entry.path());
+        let path = entry.path();
+        let Ok(meta) = std::fs::symlink_metadata(&path) else {
+            continue;
+        };
+        if !meta.file_type().is_dir() || meta.uid() != unsafe { libc::geteuid() } {
+            continue;
+        }
+        let _ = std::fs::remove_dir_all(&path);
     }
 }
 

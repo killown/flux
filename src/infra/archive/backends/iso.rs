@@ -1,7 +1,10 @@
 //! ISO 9660 and UDF backend.
 
 use crate::infra::archive::entry::collect_entry;
-use crate::infra::archive::util::{extract_bytes_via_tempfile, find_file_recursive};
+use crate::infra::archive::util::{
+    copy_limited, extract_bytes_via_tempfile, find_file_recursive, open_no_follow, reject_tool_arg,
+    MAX_ENTRY_BYTES,
+};
 use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::collections::HashMap;
 use std::io::Write;
@@ -319,6 +322,11 @@ fn extract_iso(
         .ok_or_else(|| ArchiveError::Other(format!("not found in ISO: {inner_path}")))?;
 
     let size = entry.file_size();
+    if size as u64 > MAX_ENTRY_BYTES {
+        return Err(ArchiveError::Other(format!(
+            "ISO entry too large to extract: {inner_path}"
+        )));
+    }
     let mut buffer = vec![0u8; size as usize];
     iso.read_file(&entry, 0, &mut buffer)
         .ok_or_else(|| ArchiveError::Other("failed to read file from ISO".into()))?;
@@ -338,6 +346,7 @@ fn extract_iso_udf(
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
     crate::hit!("extract_iso_udf");
+    reject_tool_arg(inner_path)?;
     let tmp_dir = tempfile::tempdir().map_err(|e| ArchiveError::Other(format!("tempdir: {e}")))?;
 
     let file_name = Path::new(inner_path)
@@ -365,9 +374,10 @@ fn extract_iso_udf(
 
     let extracted = find_file_recursive(tmp_dir.path(), file_name)?;
 
-    let mut src = std::fs::File::open(&extracted)
+    let mut src = open_no_follow(&extracted)
         .map_err(|e| ArchiveError::Other(format!("open extracted: {e}")))?;
-    std::io::copy(&mut src, &mut tmp).map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
+    copy_limited(&mut src, &mut tmp, MAX_ENTRY_BYTES)
+        .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
     tmp.flush()
         .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
     Ok(tmp)

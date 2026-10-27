@@ -5,7 +5,10 @@
 //! A `.flux-cache/` without the sentinel is treated as foreign and left alone.
 
 use crate::infra::archive::entry::collect_entry;
-use crate::infra::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
+use crate::infra::archive::util::{
+    copy_limited, create_no_follow, extract_bytes_via_tempfile, make_dest_dir_at, safe_join,
+    MAX_ENTRY_BYTES, MAX_EXTRACT_BYTES,
+};
 use crate::infra::archive::{
     register_temp_dir, zip_is_encrypted, ArchiveBackend, ArchiveEntry, ArchiveError,
 };
@@ -615,6 +618,7 @@ pub(in crate::infra::archive) fn extract_dir_zip_at(
 ) -> Result<PathBuf, ArchiveError> {
     crate::hit!("extract_dir_zip_at");
     let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
+    let mut budget = MAX_EXTRACT_BYTES;
 
     let prefix = if inner_dir.is_empty() {
         String::new()
@@ -675,9 +679,9 @@ pub(in crate::infra::archive) fn extract_dir_zip_at(
                 std::fs::create_dir_all(parent)
                     .map_err(|e| ArchiveError::Other(format!("create parent dir failed: {e}")))?;
             }
-            let mut outfile = std::fs::File::create(&out_path)
+            let mut outfile = create_no_follow(&out_path)
                 .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
-            std::io::copy(&mut reader, &mut outfile)
+            budget -= copy_limited(&mut reader, &mut outfile, budget)
                 .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
         }
     }
@@ -713,7 +717,7 @@ fn extract_zip(
         // Password supplied: try decrypting
         match zip.by_index_decrypt(idx, pwd.as_bytes()) {
             Ok(mut entry) => {
-                std::io::copy(&mut entry, &mut tmp)
+                copy_limited(&mut entry, &mut tmp, MAX_ENTRY_BYTES)
                     .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
                 tmp.flush()
                     .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
@@ -730,7 +734,7 @@ fn extract_zip(
                 if entry.encrypted() {
                     return Err(ArchiveError::PasswordRequired);
                 }
-                std::io::copy(&mut entry, &mut tmp)
+                copy_limited(&mut entry, &mut tmp, MAX_ENTRY_BYTES)
                     .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
                 tmp.flush()
                     .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;

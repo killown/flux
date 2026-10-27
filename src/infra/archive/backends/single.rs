@@ -1,6 +1,6 @@
 //! Standalone single-file compressed archive backend.
 
-use crate::infra::archive::util::{lc_name, open_buf, strip_ext};
+use crate::infra::archive::util::{copy_limited, lc_name, open_buf, strip_ext, MAX_ENTRY_BYTES};
 use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -60,7 +60,7 @@ impl ArchiveBackend for SingleFileBackend {
         };
         let mut data = Vec::new();
         let mut reader = reader;
-        std::io::copy(&mut reader, &mut data)
+        copy_limited(&mut reader, &mut data, MAX_ENTRY_BYTES)
             .map_err(|e| ArchiveError::Other(format!("decompress: {e}")))?;
         Ok(data)
     }

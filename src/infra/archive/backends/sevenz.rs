@@ -1,7 +1,10 @@
 //! 7-Zip backend.
 
 use crate::infra::archive::entry::collect_entry;
-use crate::infra::archive::util::{extract_bytes_via_tempfile, make_dest_dir_at, safe_join};
+use crate::infra::archive::util::{
+    copy_limited, create_no_follow, extract_bytes_via_tempfile, make_dest_dir_at, safe_join,
+    MAX_ENTRY_BYTES, MAX_EXTRACT_BYTES,
+};
 use crate::infra::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use sevenz_rust2::{ArchiveReader, Password};
 use std::collections::HashMap;
@@ -189,7 +192,8 @@ fn extract_7z(
             &mut |entry: &sevenz_rust2::ArchiveEntry, r: &mut dyn std::io::Read| {
                 let n = entry.name().replace('\\', "/");
                 if n.trim_end_matches('/') == inner_path {
-                    std::io::copy(r, &mut tmp).map_err(sevenz_rust2::Error::from)?;
+                    copy_limited(r, &mut tmp, MAX_ENTRY_BYTES)
+                        .map_err(sevenz_rust2::Error::from)?;
                     found = true;
                     Ok(false) // stop after first match
                 } else {
@@ -253,6 +257,7 @@ pub(in crate::infra::archive) fn extract_dir_7z_at(
 ) -> Result<PathBuf, ArchiveError> {
     crate::hit!("extract_dir_7z_at");
     let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
+    let mut budget = MAX_EXTRACT_BYTES;
 
     let prefix = if inner_dir.is_empty() {
         String::new()
@@ -301,10 +306,11 @@ pub(in crate::infra::archive) fn extract_dir_7z_at(
                     if let Some(parent) = out_path.parent() {
                         std::fs::create_dir_all(parent).ok();
                     }
-                    let mut outfile = std::fs::File::create(&out_path).map_err(|e| {
+                    let mut outfile = create_no_follow(&out_path).map_err(|e| {
                         sevenz_rust2::Error::from(std::io::Error::other(e.to_string()))
                     })?;
-                    std::io::copy(r, &mut outfile).map_err(sevenz_rust2::Error::from)?;
+                    budget -=
+                        copy_limited(r, &mut outfile, budget).map_err(sevenz_rust2::Error::from)?;
                 }
                 Ok(true)
             },

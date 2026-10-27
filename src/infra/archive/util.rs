@@ -1,7 +1,8 @@
 //! Helpers shared by several archive backends.
 
 use crate::infra::archive::{flux_scratch_dir, ArchiveError};
-use std::io::BufReader;
+use std::io::{BufReader, Read, Write};
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -21,6 +22,64 @@ pub(super) fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> 
         }
     }
     Ok(())
+}
+
+/// Upper bound for a single archive entry that is extracted to a scratch file
+/// or held in memory.
+pub(super) const MAX_ENTRY_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+
+/// Upper bound for the total bytes one directory extraction may write.
+pub(super) const MAX_EXTRACT_BYTES: u64 = 32 * 1024 * 1024 * 1024;
+
+/// Copies `reader` into `writer`, failing once more than `limit` bytes are available.
+pub(super) fn copy_limited<R: Read + ?Sized, W: Write + ?Sized>(
+    reader: &mut R,
+    writer: &mut W,
+    limit: u64,
+) -> std::io::Result<u64> {
+    let copied = std::io::copy(&mut (&mut *reader).take(limit), writer)?;
+    if copied == limit {
+        let mut probe = [0u8; 1];
+        if reader.read(&mut probe)? != 0 {
+            return Err(std::io::Error::other(format!(
+                "entry exceeds the {limit} byte extraction limit"
+            )));
+        }
+    }
+    Ok(copied)
+}
+
+/// Rejects entry names that an external extractor would read as an option
+/// (`-x`), a list file (`@list`) or a wildcard pattern instead of a literal path.
+pub(super) fn reject_tool_arg(name: &str) -> Result<(), ArchiveError> {
+    if name.starts_with('-') || name.starts_with('@') || name.contains(['*', '?']) {
+        return Err(ArchiveError::Other(format!(
+            "entry name not supported by the external extractor: {name}"
+        )));
+    }
+    Ok(())
+}
+
+/// Opens `path` for reading without following a symlink at the final component.
+pub(super) fn open_no_follow(path: &Path) -> std::io::Result<std::fs::File> {
+    std::fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)
+}
+
+/// Creates or truncates `path` for writing. A symlink already at `path` is
+/// replaced and never followed.
+pub(super) fn create_no_follow(path: &Path) -> std::io::Result<std::fs::File> {
+    if std::fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()) {
+        std::fs::remove_file(path)?;
+    }
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)
 }
 
 // ─── Helper to extract bytes via a temporary file ────────────────────────────
@@ -58,22 +117,30 @@ where
     let mut data = Vec::new();
     let mut file = std::fs::File::open(tmp.path())
         .map_err(|e| ArchiveError::Other(format!("open temp: {e}")))?;
-    std::io::copy(&mut file, &mut data)
+    copy_limited(&mut file, &mut data, MAX_ENTRY_BYTES)
         .map_err(|e| ArchiveError::Other(format!("read temp: {e}")))?;
     Ok(data)
 }
 
 /// Walks `dir` recursively to find the first file whose name matches `file_name`.
+///
+/// Symlinks are neither followed nor returned, so an extractor that unpacks a
+/// link cannot point the result at a file outside `dir`.
 pub(super) fn find_file_recursive(dir: &Path, file_name: &str) -> Result<PathBuf, ArchiveError> {
     crate::hit!("find_file_recursive");
     for entry in std::fs::read_dir(dir).map_err(|e| ArchiveError::Other(format!("readdir: {e}")))? {
         let entry = entry.map_err(|e| ArchiveError::Other(format!("entry: {e}")))?;
         let path = entry.path();
-        if path.is_dir() {
+        let file_type = entry
+            .file_type()
+            .map_err(|e| ArchiveError::Other(format!("file type: {e}")))?;
+        if file_type.is_dir() {
             if let Ok(found) = find_file_recursive(&path, file_name) {
                 return Ok(found);
             }
-        } else if path.file_name().and_then(|n| n.to_str()) == Some(file_name) {
+        } else if file_type.is_file()
+            && path.file_name().and_then(|n| n.to_str()) == Some(file_name)
+        {
             return Ok(path);
         }
     }

@@ -1,7 +1,10 @@
 //! RAR backend, shells out to `unar` or `unrar`.
 
 use crate::infra::archive::entry::collect_entry;
-use crate::infra::archive::util::{extract_bytes_via_tempfile, find_file_recursive, make_dest_dir};
+use crate::infra::archive::util::{
+    copy_limited, extract_bytes_via_tempfile, find_file_recursive, make_dest_dir, open_no_follow,
+    reject_tool_arg, MAX_ENTRY_BYTES,
+};
 use crate::infra::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::collections::HashMap;
 use std::io::Write;
@@ -36,6 +39,7 @@ impl ArchiveBackend for RarBackend {
         inner_dir: &str,
         password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError> {
+        reject_tool_arg(inner_dir)?;
         let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
 
         let tool = rar_tool().ok_or_else(|| {
@@ -254,6 +258,7 @@ fn extract_rar(
     mut tmp: tempfile::NamedTempFile,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
     crate::hit!("extract_rar");
+    reject_tool_arg(inner_path)?;
     let tool = rar_tool().ok_or_else(|| {
         ArchiveError::Other(
             "RAR support requires 'unar' or 'unrar' (install via your package manager)".to_owned(),
@@ -310,9 +315,10 @@ fn extract_rar(
 
     let extracted = find_file_recursive(tmp_dir.path(), file_name)?;
 
-    let mut src = std::fs::File::open(&extracted)
+    let mut src = open_no_follow(&extracted)
         .map_err(|e| ArchiveError::Other(format!("open extracted: {e}")))?;
-    std::io::copy(&mut src, &mut tmp).map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
+    copy_limited(&mut src, &mut tmp, MAX_ENTRY_BYTES)
+        .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
     tmp.flush()
         .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
     Ok(tmp)

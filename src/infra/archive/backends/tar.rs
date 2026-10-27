@@ -2,7 +2,8 @@
 
 use crate::infra::archive::entry::collect_entry;
 use crate::infra::archive::util::{
-    extract_bytes_via_tempfile, lc_name, make_dest_dir_at, open_buf,
+    copy_limited, extract_bytes_via_tempfile, lc_name, make_dest_dir_at, open_buf, MAX_ENTRY_BYTES,
+    MAX_EXTRACT_BYTES,
 };
 use crate::infra::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
 use std::collections::{HashMap, HashSet};
@@ -211,7 +212,7 @@ pub(super) fn extract_tar<R: Read>(
         let stripped_path = crate::utils::strip_current_dir(&entry_path);
         let path = stripped_path.to_string_lossy().replace('\\', "/");
         if path.trim_end_matches('/') == inner_path {
-            std::io::copy(&mut entry, &mut tmp)
+            copy_limited(&mut entry, &mut tmp, MAX_ENTRY_BYTES)
                 .map_err(|e| ArchiveError::Other(format!("copy: {e}")))?;
             tmp.flush()
                 .map_err(|e| ArchiveError::Other(format!("flush: {e}")))?;
@@ -281,6 +282,7 @@ pub(in crate::infra::archive) fn extract_dir_tar_at<R: Read>(
 ) -> Result<PathBuf, ArchiveError> {
     crate::hit!("extract_dir_tar_at");
     let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
+    let mut budget = MAX_EXTRACT_BYTES;
 
     let prefix = if inner_dir.is_empty() {
         String::new()
@@ -368,7 +370,7 @@ pub(in crate::infra::archive) fn extract_dir_tar_at<R: Read>(
                 .custom_flags(libc::O_NOFOLLOW)
                 .open(&out_path)
                 .map_err(|e| ArchiveError::Other(format!("create file failed: {e}")))?;
-            std::io::copy(&mut entry, &mut outfile)
+            budget -= copy_limited(&mut entry, &mut outfile, budget)
                 .map_err(|e| ArchiveError::Other(format!("copy entry failed: {e}")))?;
         } else if entry_type.is_symlink() {
             let Some(target) = entry
