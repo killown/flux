@@ -13,7 +13,7 @@ use std::sync::{Arc, Mutex};
 
 impl FluxApp {
     /// Core execution batch runner executing paste operations sequentially in one task.
-    pub(super) fn run_paste_batch(
+    pub(crate) fn run_paste_batch(
         &self,
         resolved_files: Vec<(PathBuf, String, bool)>,
         is_cut: bool,

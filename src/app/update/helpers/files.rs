@@ -1,7 +1,9 @@
 //! File actions: item activation, moves and clipboard export.
 
+use crate::app::update::file_ops::paste::{is_same_entry, paste_name_for};
 use crate::i18n::tr;
 use crate::model::{AppMsg, FluxApp};
+use crate::ui::conflict_policy::ConflictPolicy;
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;
@@ -224,23 +226,41 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_move_files_to_target");
-        let mut moved_any = false;
-        for src in sources {
-            if src == destination {
-                continue;
-            }
-            if let Some(file_name) = src.file_name() {
-                let dest_path = destination.join(file_name);
-                if let Err(e) = std::fs::rename(&src, &dest_path) {
-                    sender.input(AppMsg::ShowToast(format!("Failed to move file: {}", e)));
-                } else {
-                    moved_any = true;
+        let mut skipped_dirs = false;
+        let resolved: Vec<(PathBuf, String, bool)> = sources
+            .into_iter()
+            .filter_map(|src| {
+                if src == destination {
+                    return None;
                 }
-            }
+                let orig_name = src.file_name()?.to_string_lossy().into_owned();
+                let name = paste_name_for(&src, &orig_name);
+                let dest_path = destination.join(&name);
+                if is_same_entry(&src, &dest_path) {
+                    return None;
+                }
+                let is_dir = src.symlink_metadata().map(|m| m.is_dir()).unwrap_or(false);
+                if is_dir && dest_path.symlink_metadata().is_ok() {
+                    skipped_dirs = true;
+                    return None;
+                }
+                Some((src, name, is_dir))
+            })
+            .collect();
+
+        if skipped_dirs {
+            sender.input(AppMsg::ShowToast(tr(
+                "Skipped folders that already exist in the destination",
+            )));
         }
-        if moved_any {
-            sender.input(AppMsg::Refresh);
-        }
+
+        self.run_paste_batch(
+            resolved,
+            true,
+            destination,
+            sender.clone(),
+            ConflictPolicy::Ask,
+        );
     }
 
     /// Internal helper to populate the clipboard with the current selection.
