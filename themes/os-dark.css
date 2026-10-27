@@ -60,9 +60,7 @@
 
 .selection-status {
   font-size: 1em;
-  background-color: var(--color-sidebar-bg);
-  border-top: 1px solid var(--border-color);
-  border-left: 1px solid var(--border-color);
+  background-color: transparent;
   padding: 0.45em 1.2em;
   min-height: 2.2em;
 }
