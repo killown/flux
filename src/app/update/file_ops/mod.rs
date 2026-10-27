@@ -23,6 +23,7 @@ pub(super) fn handle(
     crate::hit!("handle");
     match msg {
         AppMsg::CopyPath => app.handle_copy_path(sender),
+        AppMsg::CopyPathReady(text) => app.handle_copy_path_ready(text, sender),
         AppMsg::CreateSymlink => app.handle_create_link(false, sender),
         AppMsg::CreateHardlink => app.handle_create_link(true, sender),
         AppMsg::Copy => app.handle_copy_or_cut(false, sender),

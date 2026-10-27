@@ -236,6 +236,9 @@ pub enum AppMsg {
     ResetExtensionIcon(String),
     /// Copy absolute paths of selected items to clipboard.
     CopyPath,
+    /// Result of `handle_copy_path`: the canonicalized, shell-quoted
+    /// space-joined selection ready to be placed on the clipboard.
+    CopyPathReady(String),
     /// Create symbolic links from clipboard paths.
     CreateSymlink,
     /// Create hard links from clipboard paths (directories not supported).

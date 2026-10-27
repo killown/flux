@@ -52,25 +52,46 @@ impl FluxApp {
             return;
         }
 
-        let paths: Vec<String> = selection
-            .iter()
-            .map(|p| {
-                let resolved = p.canonicalize().unwrap_or_else(|_| p.clone());
-                let s = resolved.to_string_lossy();
-                if s.contains(' ') {
-                    format!("'{}'", s.replace('\'', "'\\'\\'"))
-                } else {
-                    s.into_owned()
-                }
-            })
-            .collect();
-        let text = paths.join(" ");
+        let s = sender.clone();
+        relm4::spawn(async move {
+            let worker = relm4::spawn_blocking(move || {
+                let paths: Vec<String> = selection
+                    .iter()
+                    .map(|p| {
+                        let resolved = p.canonicalize().unwrap_or_else(|_| p.clone());
+                        let path = resolved.to_string_lossy();
+                        if path.contains(' ') {
+                            format!("'{}'", path.replace('\'', "'\\'\\'"))
+                        } else {
+                            path.into_owned()
+                        }
+                    })
+                    .collect();
+                paths.join(" ")
+            });
 
-        if let Some(display) = gtk::gdk::Display::default() {
-            display.clipboard().set_text(&text);
+            match worker.await {
+                Ok(text) => s.input(AppMsg::CopyPathReady(text)),
+                Err(_) => s.input(AppMsg::ShowToast(crate::i18n::tr(
+                    "Failed to copy paths to clipboard.",
+                ))),
+            }
+        });
+    }
+
+    /// Places the prepared path text on the clipboard once the background
+    /// canonicalization in `handle_copy_path` has finished.
+    pub fn handle_copy_path_ready(&self, text: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_copy_path_ready");
+        let Some(display) = gtk::gdk::Display::default() else {
             sender.input(AppMsg::ShowToast(crate::i18n::tr(
-                "Paths copied to clipboard.",
+                "No display available for clipboard operation",
             )));
-        }
+            return;
+        };
+        display.clipboard().set_text(&text);
+        sender.input(AppMsg::ShowToast(crate::i18n::tr(
+            "Paths copied to clipboard.",
+        )));
     }
 }
