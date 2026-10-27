@@ -2,7 +2,9 @@ use flux::args::{
     parse_icon_pair, resolve_startup_action, resolve_startup_action_with_reader, StartupAction,
     WindowOptions,
 };
+use std::ffi::{OsStr, OsString};
 use std::io::Cursor;
+use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 
 fn args(argv: &[&str]) -> Vec<String> {
@@ -55,7 +57,7 @@ fn no_args_launch_path_is_never_empty() {
 #[test]
 fn empty_args_slice_launches_home_dir() {
     // Edge case: completely empty slice (no argv[0]).
-    let action = resolve_startup_action(&[], home());
+    let action = resolve_startup_action(&[] as &[String], home());
     assert_eq!(action, launch_action(PathBuf::from(FAKE_HOME)));
 }
 
@@ -478,4 +480,75 @@ fn icon_pair_empty_field_after_tab_is_rejected() {
 #[test]
 fn icon_pair_empty_quoted_value_is_rejected() {
     assert!(parse_icon_pair("'' /b.png").is_err());
+}
+
+// ── Non-UTF-8 arguments ──────────────────────────────────────────────────
+// Linux paths are arbitrary bytes. `env::args()` panics on them, so the
+// parser takes what `args_os()` yields.
+
+fn os_args(argv: &[&[u8]]) -> Vec<OsString> {
+    argv.iter()
+        .map(|bytes| OsStr::from_bytes(bytes).to_os_string())
+        .collect()
+}
+
+fn latin1_cafe() -> PathBuf {
+    PathBuf::from(OsStr::from_bytes(b"/tmp/caf\xe9"))
+}
+
+#[test]
+fn non_utf8_positional_arg_launches_that_path() {
+    let action = resolve_startup_action(&os_args(&[b"flux-fm", b"/tmp/caf\xe9"]), home());
+    assert_eq!(action, launch_action(latin1_cafe()));
+}
+
+#[test]
+fn non_utf8_cwd_path_is_preserved_byte_for_byte() {
+    let action = resolve_startup_action(&os_args(&[b"flux-fm", b"--cwd", b"/tmp/caf\xe9"]), home());
+    assert_eq!(action, StartupAction::Cwd(latin1_cafe()));
+}
+
+#[test]
+fn non_utf8_quick_list_paths_are_kept() {
+    let action = resolve_startup_action(
+        &os_args(&[b"flux-fm", b"--quick-list", b"/tmp/a", b"/tmp/caf\xe9"]),
+        home(),
+    );
+    assert_eq!(
+        action,
+        quick_list_action(vec![PathBuf::from("/tmp/a"), latin1_cafe()])
+    );
+}
+
+#[test]
+fn non_utf8_positional_still_honours_window_flags() {
+    let action = resolve_startup_action(
+        &os_args(&[b"flux-fm", b"--no-sidebar", b"/tmp/caf\xe9"]),
+        home(),
+    );
+    match action {
+        StartupAction::Launch { path, opts } => {
+            assert_eq!(path, latin1_cafe());
+            assert!(opts.no_sidebar);
+        }
+        other => panic!("expected Launch, got {other:?}"),
+    }
+}
+
+#[test]
+fn quick_list_stdin_keeps_lines_after_a_non_utf8_one() {
+    let cursor = Cursor::new(&b"/tmp/a\n/tmp/caf\xe9\n/tmp/b\n"[..]);
+    let action = resolve_startup_action_with_reader(
+        &args(&["flux-fm", "--quick-list-stdin"]),
+        home(),
+        cursor,
+    );
+    assert_eq!(
+        action,
+        quick_list_action(vec![
+            PathBuf::from("/tmp/a"),
+            latin1_cafe(),
+            PathBuf::from("/tmp/b"),
+        ])
+    );
 }

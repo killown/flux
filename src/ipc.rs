@@ -12,7 +12,9 @@
 //! server-side `canonicalize` + `is_dir`, stale-socket recovery, bounded
 //! channel, strict `v1 cwd:`-only protocol.
 
+use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, ErrorKind, Read, Write};
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::io::AsRawFd;
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -23,7 +25,7 @@ use std::thread;
 use std::time::Duration;
 
 const CMD_PREFIX: &str = "v1 cwd:";
-const MAX_REQUEST_BYTES: u64 = 4096;
+const MAX_REQUEST_BYTES: u64 = 4096 + 64;
 const SERVER_READ_TIMEOUT: Duration = Duration::from_secs(2);
 const CLIENT_READ_TIMEOUT: Duration = Duration::from_secs(2);
 
@@ -199,19 +201,22 @@ fn handle_connection(mut stream: UnixStream, tx: &SyncSender<PathBuf>) {
         }
     }
 
-    let mut line = String::new();
+    let mut line = Vec::new();
     let mut reader = BufReader::new((&stream).take(MAX_REQUEST_BYTES));
-    if reader.read_line(&mut line).is_err() {
+    if reader.read_until(b'\n', &mut line).is_err() {
         return;
     }
-    let line = line.trim_end_matches(['\n', '\r']);
+    if line.pop() != Some(b'\n') {
+        let _ = stream.write_all(b"err\n");
+        return;
+    }
 
-    let Some(rest) = line.strip_prefix(CMD_PREFIX) else {
+    let Some(rest) = line.strip_prefix(CMD_PREFIX.as_bytes()) else {
         let _ = stream.write_all(b"err\n");
         return;
     };
 
-    let Ok(canon) = std::fs::canonicalize(rest) else {
+    let Ok(canon) = std::fs::canonicalize(OsStr::from_bytes(rest)) else {
         let _ = stream.write_all(b"err\n");
         return;
     };
@@ -247,11 +252,18 @@ pub fn send_cwd(path: &Path) -> ClientOutcome {
     let _ = stream.set_read_timeout(Some(CLIENT_READ_TIMEOUT));
     let _ = stream.set_write_timeout(Some(CLIENT_READ_TIMEOUT));
 
-    let display = path.to_string_lossy();
-    if display.contains('\n') || display.contains('\r') {
+    let bytes = path.as_os_str().as_bytes();
+    if bytes.contains(&b'\n') || bytes.contains(&b'\r') {
         return ClientOutcome::Rejected;
     }
-    if writeln!(stream, "{CMD_PREFIX}{display}").is_err() {
+    let mut msg = Vec::with_capacity(CMD_PREFIX.len() + bytes.len() + 1);
+    msg.extend_from_slice(CMD_PREFIX.as_bytes());
+    msg.extend_from_slice(bytes);
+    msg.push(b'\n');
+    if msg.len() as u64 > MAX_REQUEST_BYTES {
+        return ClientOutcome::Rejected;
+    }
+    if stream.write_all(&msg).is_err() {
         return ClientOutcome::NotRunning;
     }
 

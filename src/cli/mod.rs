@@ -6,14 +6,16 @@ mod watcher;
 use crate::infra::window_control;
 use crate::model::Config;
 use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
+use std::ffi::{OsStr, OsString};
 use std::io::BufRead;
+use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 
 use icons::{reset_icon_on_target, set_icon_on_target};
 
 /// The binary's real entry point. `main.rs` calls this.
 pub fn run() {
-    let args: Vec<String> = std::env::args().collect();
+    let args: Vec<OsString> = std::env::args_os().collect();
     let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
     let action = resolve_startup_action(&args, home_dir.clone());
 
@@ -253,13 +255,13 @@ pub fn run() {
             let stdin = std::io::stdin();
             let mut count = 0;
 
-            for line in stdin.lock().lines().map_while(Result::ok) {
-                let trimmed = line.trim();
-                if trimmed.is_empty() || trimmed.starts_with('#') {
+            for line in stdin.lock().split(b'\n').map_while(Result::ok) {
+                let trimmed = line.trim_ascii();
+                if trimmed.is_empty() || trimmed.starts_with(b"#") {
                     continue;
                 }
 
-                let target = PathBuf::from(trimmed);
+                let target = PathBuf::from(OsStr::from_bytes(trimmed));
                 let target_canon = target.canonicalize().unwrap_or(target);
                 reset_icon_on_target(&mut config, &target_canon);
                 count += 1;

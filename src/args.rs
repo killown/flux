@@ -1,4 +1,6 @@
+use std::ffi::OsStr;
 use std::io::BufRead;
+use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 
 pub use crate::model::WindowOptions;
@@ -55,11 +57,10 @@ pub const CLI_OPTIONS: &[(&str, &str)] = &[
     ),
 ];
 
-fn uri_to_path(s: &str) -> PathBuf {
-    if let Some(stripped) = s.strip_prefix("file://") {
-        PathBuf::from(stripped)
-    } else {
-        PathBuf::from(s)
+fn uri_to_path(s: &OsStr) -> PathBuf {
+    match s.as_bytes().strip_prefix(b"file://") {
+        Some(rest) => PathBuf::from(OsStr::from_bytes(rest)),
+        None => PathBuf::from(s),
     }
 }
 
@@ -147,7 +148,10 @@ pub fn parse_icon_pair(line: &str) -> Result<(PathBuf, PathBuf), String> {
     if target.is_empty() || image.is_empty() {
         return Err("TARGET and IMAGE must both be non-empty".to_string());
     }
-    Ok((uri_to_path(&target), uri_to_path(&image)))
+    Ok((
+        uri_to_path(OsStr::new(&target)),
+        uri_to_path(OsStr::new(&image)),
+    ))
 }
 
 /// Describes the action the process should take after argument parsing.
@@ -200,42 +204,41 @@ pub enum StartupAction {
 }
 
 /// Parses the raw process argument list into a [`StartupAction`].
-pub fn resolve_startup_action(args: &[String], home_dir: PathBuf) -> StartupAction {
+pub fn resolve_startup_action<S: AsRef<OsStr>>(args: &[S], home_dir: PathBuf) -> StartupAction {
     resolve_startup_action_with_reader(args, home_dir, std::io::stdin().lock())
 }
 
 /// Parses process arguments using a custom buffered reader stream for stdin operations,
 /// enabling non-blocking unit testing.
-pub fn resolve_startup_action_with_reader<R: BufRead>(
-    args: &[String],
+pub fn resolve_startup_action_with_reader<S: AsRef<OsStr>, R: BufRead>(
+    args: &[S],
     home_dir: PathBuf,
     reader: R,
 ) -> StartupAction {
     let mut opts = WindowOptions::default();
-    let mut filtered_args = Vec::new();
+    let mut filtered_args: Vec<&OsStr> = Vec::new();
 
-    for (i, arg) in args.iter().enumerate() {
-        if i == 0 {
-            continue;
-        }
-        match arg.as_str() {
-            "--no-sidebar" => opts.no_sidebar = true,
-            "--no-header" => opts.no_header = true,
-            "--no-statusbar" => opts.no_statusbar = true,
-            _ => filtered_args.push(arg.as_str()),
+    for arg in args.iter().skip(1) {
+        let arg = arg.as_ref();
+        match arg.to_str() {
+            Some("--no-sidebar") => opts.no_sidebar = true,
+            Some("--no-header") => opts.no_header = true,
+            Some("--no-statusbar") => opts.no_statusbar = true,
+            _ => filtered_args.push(arg),
         }
     }
 
     let positional = filtered_args.first().copied();
-    match positional {
-        None => StartupAction::Launch {
+    let keyword = positional.and_then(OsStr::to_str);
+    match keyword {
+        None if positional.is_none() => StartupAction::Launch {
             path: home_dir,
             opts,
         },
         Some("--version" | "-v") => StartupAction::PrintVersion,
         Some("--help" | "-h") => StartupAction::PrintHelp,
         Some("--selection") => StartupAction::PrintSelection {
-            null: filtered_args.get(1) == Some(&"-0"),
+            null: filtered_args.get(1).and_then(|a| a.to_str()) == Some("-0"),
         },
         Some("--toggle") => StartupAction::Toggle,
         Some("--show") => StartupAction::Show,
@@ -258,7 +261,7 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         },
         Some("--reset-icons-stdin") => StartupAction::ResetIconsStdin,
         Some("--theme") => match filtered_args.get(1) {
-            Some(name) => StartupAction::SetTheme(name.to_string()),
+            Some(name) => StartupAction::SetTheme(name.to_string_lossy().into_owned()),
             None => StartupAction::PrintHelp,
         },
         Some("--preview") => match filtered_args.get(1) {
@@ -284,7 +287,7 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         Some("--quick-list") => {
             let list: Vec<PathBuf> = filtered_args[1..]
                 .iter()
-                .filter(|a| !a.starts_with('-'))
+                .filter(|a| !a.as_bytes().starts_with(b"-"))
                 .map(|p| uri_to_path(p))
                 .collect();
             if list.is_empty() {
@@ -295,10 +298,10 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
         }
         Some("--quick-list-stdin") => {
             let mut list = Vec::new();
-            for line in reader.lines().map_while(Result::ok) {
-                let trimmed = line.trim();
-                if !trimmed.is_empty() && !trimmed.starts_with('#') {
-                    list.push(uri_to_path(trimmed));
+            for line in reader.split(b'\n').map_while(Result::ok) {
+                let trimmed = line.trim_ascii();
+                if !trimmed.is_empty() && !trimmed.starts_with(b"#") {
+                    list.push(uri_to_path(OsStr::from_bytes(trimmed)));
                 }
             }
             if list.is_empty() {
@@ -311,13 +314,16 @@ pub fn resolve_startup_action_with_reader<R: BufRead>(
             }
         }
         Some(arg) if arg.starts_with('-') => StartupAction::UnknownFlag(arg.to_string()),
-        Some(path) => {
-            if path.starts_with('#')
-                || path.starts_with(":tag:")
-                || path.starts_with(":t:")
-                || path.starts_with("tags://")
-            {
-                let clean = path
+        _ => {
+            let path = positional.unwrap_or_default();
+            let tag_query = keyword.filter(|k| {
+                k.starts_with('#')
+                    || k.starts_with(":tag:")
+                    || k.starts_with(":t:")
+                    || k.starts_with("tags://")
+            });
+            if let Some(query) = tag_query {
+                let clean = query
                     .trim_start_matches("tags://")
                     .trim_start_matches(":tag:")
                     .trim_start_matches(":t:")

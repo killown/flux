@@ -1,7 +1,10 @@
 //! `--cwd` IPC: round trip, rejection paths and stale-socket recovery.
 
 use flux::ipc::{send_cwd, start_server, ClientOutcome};
+use std::ffi::OsStr;
 use std::io::{BufRead, BufReader, Write};
+use std::net::Shutdown;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -31,6 +34,18 @@ fn raw_request(dir: &tempfile::TempDir, line: &str) -> String {
     stream.write_all(line.as_bytes()).unwrap();
     let mut answer = String::new();
     BufReader::new(&stream).read_line(&mut answer).unwrap();
+    answer
+}
+
+fn raw_bytes_request(dir: &tempfile::TempDir, bytes: &[u8]) -> String {
+    let mut stream = UnixStream::connect(sock(dir)).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_secs(3)))
+        .unwrap();
+    let _ = stream.write_all(bytes);
+    let _ = stream.shutdown(Shutdown::Write);
+    let mut answer = String::new();
+    let _ = BufReader::new(&stream).read_line(&mut answer);
     answer
 }
 
@@ -114,5 +129,40 @@ fn client_refuses_paths_containing_newlines() {
         send_cwd(&evil.canonicalize().unwrap()),
         ClientOutcome::Rejected
     );
+    assert!(rx.try_recv().is_err());
+}
+
+#[test]
+fn non_utf8_directory_is_navigated_to_byte_for_byte() {
+    let (_dir, _guard) = sandbox();
+    let rx = start_server().unwrap();
+    let scratch = tempfile::tempdir().unwrap();
+    let weird = scratch.path().join(OsStr::from_bytes(b"caf\xe9"));
+    std::fs::create_dir(&weird).unwrap();
+    let canonical = weird.canonicalize().unwrap();
+
+    assert_eq!(send_cwd(&canonical), ClientOutcome::Ok);
+    assert_eq!(rx.recv_timeout(Duration::from_secs(2)).unwrap(), canonical);
+}
+
+#[test]
+fn request_without_newline_is_rejected_and_never_forwarded() {
+    let (dir, _guard) = sandbox();
+    let rx = start_server().unwrap();
+
+    assert_eq!(raw_bytes_request(&dir, b"v1 cwd:/tmp"), "err\n");
+    assert!(rx.try_recv().is_err());
+}
+
+#[test]
+fn oversized_request_is_not_truncated_into_a_valid_path() {
+    let (dir, _guard) = sandbox();
+    let rx = start_server().unwrap();
+
+    let mut request = b"v1 cwd:/tmp".to_vec();
+    request.resize(8192, b'/');
+    request.push(b'\n');
+    let _ = raw_bytes_request(&dir, &request);
+
     assert!(rx.try_recv().is_err());
 }
