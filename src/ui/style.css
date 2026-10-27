@@ -525,22 +525,18 @@ gridview child {
   border-radius: 0.6em;
   padding: 0.4em 0.6em;
   margin: 0.15em 0.25em;
-  border: none;
-  box-shadow:
-    0 0 0 1px alpha(currentColor, 0.1),
-    0 2px 8px var(--shadow);
+  border: 1px solid alpha(currentColor, 0.1);
+  box-shadow: 0 2px 8px var(--shadow);
   transition:
     background-color 200ms ease,
-    box-shadow 200ms ease,
-    transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .flux-card:hover {
   background-color: alpha(var(--color-fg), 0.06);
-  box-shadow:
-    0 0 0 1px alpha(var(--color-accent-text), 0.3),
-    0 0.6em 1.2em var(--shadow-hover);
-  transform: translateY(-0.3em);
+  border-color: alpha(var(--color-accent-text), 0.3);
+  box-shadow: 0 0.6em 1.2em var(--shadow-hover);
 }
 
 .flux-label-scroller {
@@ -556,10 +552,10 @@ gridview child {
 
 gridview child:selected .flux-card {
   background-color: alpha(var(--color-fg), 0.04);
+  border-color: var(--color-accent-text);
   box-shadow:
-    0 0 0 2px var(--color-accent-text),
+    inset 0 0 0 1px var(--color-accent-text),
     0 0.45em 1.3em alpha(var(--color-accent-text), 0.35);
-  transform: translateY(-0.15em);
 }
 
 gridview child:selected .flux-label {
@@ -970,7 +966,6 @@ textview text {
   color: var(--color-accent-fg);
 }
 
-/* Navigate mode chip: same chip look, tinted so it reads as an active mode. */
 .selection-status button.navigate-chip {
   background-color: alpha(var(--color-accent-text), 0.18);
   border-color: alpha(var(--color-accent-text), 0.4);
