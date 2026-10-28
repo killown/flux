@@ -93,7 +93,7 @@ impl FluxApp {
                 if src_file
                     .move_(
                         &dst_file,
-                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
+                        gio::FileCopyFlags::ALL_METADATA,
                         gio::Cancellable::NONE,
                         None,
                     )
@@ -176,7 +176,7 @@ impl FluxApp {
                 if src_file
                     .move_(
                         &dst_file,
-                        gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::ALL_METADATA,
+                        gio::FileCopyFlags::ALL_METADATA,
                         gio::Cancellable::NONE,
                         None,
                     )
