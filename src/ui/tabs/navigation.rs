@@ -56,6 +56,8 @@ impl FluxApp {
             });
         }
 
+        crate::ui::inputs::setup_tab_grid_controllers(&tab.files.view, sender);
+
         Self::connect_tab_scroller(&tab.scroller, sender);
     }
 }

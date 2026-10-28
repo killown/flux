@@ -38,7 +38,14 @@ pub fn setup_controllers(
     mouse::setup_swipe(window, sender.clone());
     mouse::setup_mouse_back_forward(window, sender.clone());
     shortcuts::setup_settings_shortcut(window, keymap);
-    deselect::setup_deselect_on_background_click(grid_view, sender.clone());
 
     crate::ui::menu::secondary::setup_secondary_menu_gesture(window, sender);
+}
+
+pub fn setup_tab_grid_controllers(
+    grid_view: &gtk::GridView,
+    sender: &relm4::AsyncComponentSender<FluxApp>,
+) {
+    crate::hit!("setup_tab_grid_controllers");
+    deselect::setup_deselect_on_background_click(grid_view, sender.clone());
 }
