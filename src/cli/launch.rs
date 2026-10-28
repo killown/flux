@@ -29,10 +29,15 @@ pub(super) fn launch_main_app(
     });
 
     // Keeps preview colors in sync with the libadwaita light/dark scheme.
-    let style_manager = adw::StyleManager::default();
-    crate::ui::panels::preview_syntax::set_dark(style_manager.is_dark());
-    style_manager.connect_dark_notify(|sm| {
-        crate::ui::panels::preview_syntax::set_dark(sm.is_dark());
+    // Deferred: StyleManager::default() can block on org.freedesktop.portal.Settings
+    // activation, which is 250-900 ms on a cold session-bus portal.
+    glib::idle_add_local_once(|| {
+        crate::hit!("launch_main_app:style_manager");
+        let style_manager = adw::StyleManager::default();
+        crate::ui::panels::preview_syntax::set_dark(style_manager.is_dark());
+        style_manager.connect_dark_notify(|sm| {
+            crate::ui::panels::preview_syntax::set_dark(sm.is_dark());
+        });
     });
 
     // --- MAIN APP HANDLER ---
