@@ -5,7 +5,7 @@ use relm4::prelude::*;
 impl FluxApp {
     pub fn handle_set_single_click(&mut self, val: bool) {
         self.config.ui.single_click = val;
-        self.files.view.set_single_click_activate(val);
+        self.apply_single_click();
         utils::save_config(&self.config);
     }
 
@@ -32,10 +32,18 @@ impl FluxApp {
 
     pub fn handle_toggle_single_click(&mut self) {
         self.config.ui.single_click = !self.config.ui.single_click;
-        self.files
-            .view
-            .set_single_click_activate(self.config.ui.single_click);
+        self.apply_single_click();
         crate::utils::save_config(&self.config);
+    }
+
+    /// Pushes `config.ui.single_click` to every tab's grid, so the setting
+    /// applies to tabs that are already open and not only to new ones.
+    fn apply_single_click(&self) {
+        for tab in &self.tabs {
+            tab.files
+                .view
+                .set_single_click_activate(self.config.ui.single_click);
+        }
     }
 
     pub fn handle_set_shortcut(&mut self, key: String, val: Option<String>) {
