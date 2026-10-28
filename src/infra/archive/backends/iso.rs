@@ -64,6 +64,7 @@ impl iso9660_simple::Read for IsoFileDevice {
 /// Detects whether an ISO image contains a UDF filesystem by probing sector 256
 /// for the UDF Anchor Volume Descriptor Pointer tag (tag ID 2, little-endian u16).
 fn iso_has_udf(file: &mut std::fs::File) -> bool {
+    crate::hit!("iso_has_udf");
     use std::io::{Read, Seek, SeekFrom};
     // UDF AVDP is always at sector 256 (2048-byte sectors).
     if file.seek(SeekFrom::Start(256 * 2048)).is_err() {

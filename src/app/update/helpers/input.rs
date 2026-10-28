@@ -261,6 +261,7 @@ impl FluxApp {
         controller: &gtk::ShortcutController,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("setup_shortcuts");
         let shortcuts = [
             ("F1", AppMsg::ShowHelp),
             ("<Shift>s", AppMsg::CycleFolderPriority),
@@ -296,6 +297,7 @@ impl FluxApp {
 
     /// Registers GIO actions to the application's internal action group.
     pub fn setup_actions(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("setup_actions");
         // Folder Priority Action
         let prio_action = gio::SimpleAction::new("cycle-priority", None);
         let prio_sender = sender.clone();

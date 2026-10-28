@@ -66,8 +66,14 @@ pub fn run() {
         }
     }
 
-    crate::i18n::init();
-    adw::init().expect("Failed to initialize Libadwaita");
+    {
+        crate::hit!("run:i18n_init");
+        crate::i18n::init();
+    }
+    {
+        crate::hit!("run:adw_init");
+        adw::init().expect("Failed to initialize Libadwaita");
+    }
 
     // Defer icon setup past the first frame so the synchronous icon-theme
     // lookup doesn't block cold start.

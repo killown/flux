@@ -11,6 +11,7 @@ use std::path::PathBuf;
 impl FluxApp {
     /// Registers actions for quick transfer operations (move and copy) from the context menu.
     pub fn setup_quick_transfer_actions(&self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("setup_quick_transfer_actions");
         let q_move =
             gio::SimpleAction::new("quick-transfer-move", Some(&String::static_variant_type()));
         let s_move = sender.clone();

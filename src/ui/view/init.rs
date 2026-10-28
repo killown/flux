@@ -18,6 +18,7 @@ impl FluxApp {
         widgets: &FluxAppWidgets,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("attach_tabs_and_header");
         widgets.toolbar_view.add_top_bar(&model.tab_bar);
         widgets.tab_view_container.append(&model.tab_view);
         if let Some(first_tab) = model.tabs.first() {
@@ -129,6 +130,7 @@ impl FluxApp {
         widgets: &FluxAppWidgets,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("setup_sidebar_resize");
         {
             let sidebar_box_weak = widgets.sidebar_box.downgrade();
             let scroller_weak = widgets.sidebar_container.downgrade();
@@ -436,6 +438,7 @@ impl FluxApp {
         widgets: &FluxAppWidgets,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("setup_sidebar_context_menu");
         // Right-click on empty sidebar space → "New Section" and panel shortcuts.
         // On the ScrolledWindow, not sidebar_box: the empty area below the last
         // row is inside it, and GtkScrolledWindow eats the click before it can
@@ -538,6 +541,7 @@ impl FluxApp {
         widgets: &FluxAppWidgets,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("store_widget_refs");
         model.context_menu_popover.set_parent(&widgets.grid_overlay);
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
         model.terminal_paned = Some(widgets.main_paned.clone());
@@ -576,6 +580,7 @@ impl FluxApp {
         root: &adw::Window,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("setup_input_controllers");
         crate::ui::inputs::setup_controllers(
             root,
             &model.files.view,
@@ -625,6 +630,7 @@ impl FluxApp {
 
     /// Applies window size, maximize state, resources and the terminal widget.
     pub(super) fn setup_window(model: &FluxApp, widgets: &FluxAppWidgets, root: &adw::Window) {
+        crate::hit!("setup_window");
         root.set_default_size(
             model.config.ui.startup_window_width,
             model.config.ui.startup_window_height,
@@ -660,6 +666,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
         open_archive: Option<PathBuf>,
     ) {
+        crate::hit!("schedule_startup_tasks");
         if let Some(archive_path) = open_archive {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {

@@ -10,6 +10,7 @@ impl FluxApp {
         config: &Config,
         sender: &AsyncComponentSender<Self>,
     ) -> TypedGridView<FileItem, gtk::MultiSelection> {
+        crate::hit!("build_file_grid");
         let files = TypedGridView::<FileItem, gtk::MultiSelection>::new();
         files.view.set_enable_rubberband(true);
         files.view.set_single_click_activate(config.ui.single_click);

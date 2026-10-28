@@ -37,6 +37,7 @@ pub(super) fn copy_limited<R: Read + ?Sized, W: Write + ?Sized>(
     writer: &mut W,
     limit: u64,
 ) -> std::io::Result<u64> {
+    crate::hit!("copy_limited");
     let copied = std::io::copy(&mut (&mut *reader).take(limit), writer)?;
     if copied == limit {
         let mut probe = [0u8; 1];
@@ -71,6 +72,7 @@ pub(super) fn open_no_follow(path: &Path) -> std::io::Result<std::fs::File> {
 /// Creates or truncates `path` for writing. A symlink already at `path` is
 /// replaced and never followed.
 pub(super) fn create_no_follow(path: &Path) -> std::io::Result<std::fs::File> {
+    crate::hit!("create_no_follow");
     if std::fs::symlink_metadata(path).is_ok_and(|m| m.file_type().is_symlink()) {
         std::fs::remove_file(path)?;
     }
@@ -155,6 +157,7 @@ pub(super) fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathB
 
 /// Joins an archive entry name onto `base`, or `None` if it could escape `base`.
 pub(super) fn safe_join(base: &Path, relative: &str) -> Option<PathBuf> {
+    crate::hit!("safe_join");
     let rel = Path::new(relative);
     let escapes = rel.components().any(|c| {
         matches!(

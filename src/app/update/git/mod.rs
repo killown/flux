@@ -217,6 +217,7 @@ impl FluxApp {
             > + Send
             + 'static,
     {
+        crate::hit!("spawn_git_query");
         let Some(root) = crate::infra::git::find_git_repo_root(&self.current_path) else {
             let _ = sender.input_sender().send(AppMsg::GitActionFinished(Err(
                 "Not inside a git repository".to_string(),
@@ -244,6 +245,7 @@ impl FluxApp {
             > + Send
             + 'static,
     {
+        crate::hit!("spawn_git_action");
         let Some(root) = crate::infra::git::find_git_repo_root(&self.current_path) else {
             let _ = sender.input_sender().send(AppMsg::GitActionFinished(Err(
                 "Not inside a git repository".to_string(),
@@ -305,6 +307,7 @@ impl FluxApp {
         filter: Option<StatusFilter>,
         sender: AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_git_status_filtered");
         let target_dir = self.current_path.clone();
         let Some(repo_root) = find_git_repo_root(&target_dir) else {
             return;

@@ -20,6 +20,7 @@ impl Terminal {
         state: &Arc<Mutex<super::super::state::TerminalState>>,
         im_context: &gtk::IMMulticontext,
     ) {
+        crate::hit!("setup_keyboard");
         let state_for_keys = state.clone();
         let drawing_area_for_keys = drawing_area.clone();
         let im_context_for_keys = im_context.clone();

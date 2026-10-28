@@ -11,6 +11,7 @@ pub fn setup_deselect_on_background_click(
     grid_view: &gtk::GridView,
     _sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("setup_deselect_on_background_click");
     let deselect = gtk::GestureClick::new();
     deselect.set_button(1);
     // Bubble phase so individual GridView child cells get first refusal.

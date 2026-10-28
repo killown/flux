@@ -85,6 +85,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
         edit: impl FnOnce(&mut QuickGroups) -> bool,
     ) -> bool {
+        crate::hit!("edit_quick_groups");
         let mut groups = self.quick_snapshot();
         if !edit(&mut groups) {
             return false;

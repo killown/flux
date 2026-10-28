@@ -51,6 +51,7 @@ impl Terminal {
         drawing_area: &gtk::DrawingArea,
         font_desc: &pango::FontDescription,
     ) {
+        crate::hit!("setup_min_height_on_first_map");
         let font_desc = font_desc.clone();
         let done = Rc::new(Cell::new(false));
         drawing_area.connect_map(move |area| {
@@ -72,6 +73,7 @@ impl Terminal {
         needs_redraw: &Arc<AtomicBool>,
         state: &Arc<Mutex<TerminalState>>,
     ) {
+        crate::hit!("setup_timers_while_mapped");
         let sources: Rc<RefCell<Vec<glib::SourceId>>> = Rc::new(RefCell::new(Vec::new()));
 
         {
@@ -127,6 +129,7 @@ impl Terminal {
         state: &Arc<Mutex<TerminalState>>,
         im_context: &gtk::IMMulticontext,
     ) {
+        crate::hit!("setup_im_context");
         // Commit handler.
         {
             let state_for_im = state.clone();
@@ -166,6 +169,7 @@ impl Terminal {
     }
 
     fn setup_draw_func(drawing_area: &gtk::DrawingArea, state: &Arc<Mutex<TerminalState>>) {
+        crate::hit!("setup_draw_func");
         let state = state.clone();
         drawing_area.set_draw_func(move |area, cr, width, height| {
             let mut state = match state.lock() {

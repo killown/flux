@@ -104,6 +104,7 @@ fn encryption_plan<'p, R: Read + Seek>(
     zip_in: &mut zip::ZipArchive<R>,
     password: Option<&'p str>,
 ) -> Result<Option<EncryptionPlan<'p>>, ArchiveError> {
+    crate::hit!("encryption_plan");
     let mut found: Option<(usize, ZipCipher)> = None;
     for i in 0..zip_in.len() {
         let Ok(raw) = zip_in.by_index_raw(i) else {
@@ -154,6 +155,7 @@ fn copy_entry<W: Write + Seek>(
     zip_out: &mut zip::ZipWriter<W>,
     plan: Option<&EncryptionPlan<'_>>,
 ) -> Result<u64, ArchiveError> {
+    crate::hit!("copy_entry");
     let raw = zip_in
         .by_index_raw(i)
         .map_err(|e| ArchiveError::Other(format!("read raw entry {i}: {e}")))?;
@@ -244,6 +246,7 @@ impl ArchiveBackend for ZipBackend {
         password: Option<&str>,
         mut progress_cb: Option<&mut dyn FnMut(u64)>,
     ) -> Result<(), ArchiveError> {
+        crate::hit!("remove_entry");
         let src_file = std::fs::File::open(archive_path)
             .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
         let src_meta = src_file
@@ -300,6 +303,7 @@ impl ArchiveBackend for ZipBackend {
         inner_path: &str,
         password: Option<&str>,
     ) -> Result<(), ArchiveError> {
+        crate::hit!("create_directory");
         let src_file = std::fs::File::open(archive_path)
             .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
         let src_meta = src_file
@@ -369,6 +373,7 @@ impl ArchiveBackend for ZipBackend {
         password: Option<&str>,
         mut progress_cb: Option<&mut dyn FnMut(u64)>,
     ) -> Result<(), ArchiveError> {
+        crate::hit!("write_entry");
         let src_file = std::fs::File::open(archive_path)
             .map_err(|e| ArchiveError::Other(format!("open archive: {e}")))?;
         let src_meta = src_file

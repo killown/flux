@@ -4,6 +4,7 @@ use adw::prelude::*;
 use relm4::prelude::*;
 
 pub(super) fn show_new_menu_dialog(shared: &Shared) {
+    crate::hit!("show_new_menu_dialog");
     let dialog = adw::Dialog::new();
     dialog.set_title(tr("Create Menu").as_str());
     dialog.set_content_width(520);

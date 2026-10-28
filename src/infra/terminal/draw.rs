@@ -282,6 +282,7 @@ pub(super) fn draw_terminal(
 pub(crate) const SCROLLBAR_WIDTH: f64 = 6.0;
 
 fn draw_scrollbar(cr: &Context, state: &TerminalState, width: i32, height: i32) {
+    crate::hit!("draw_scrollbar");
     if state.scrollback.is_empty() {
         return;
     }

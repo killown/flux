@@ -34,6 +34,7 @@ impl ArchiveKey {
 
     /// Resolves `archive` on disk and builds its key.
     pub async fn for_path(archive: &Path) -> std::io::Result<Self> {
+        crate::hit!("for_path");
         let canonical = tokio::fs::canonicalize(archive).await?;
         let modified = tokio::fs::metadata(&canonical).await?.modified()?;
         // A pre-1970 mtime clamps to 0 rather than failing the whole lookup.
@@ -117,6 +118,7 @@ impl LuksKey {
 
 /// Resolves the key for `archive`, logging and returning `None` on failure.
 async fn resolve_key(archive: &Path, op: &str) -> Option<ArchiveKey> {
+    crate::hit!("resolve_key");
     match ArchiveKey::for_path(archive).await {
         Ok(key) => Some(key),
         Err(e) => {
@@ -128,6 +130,7 @@ async fn resolve_key(archive: &Path, op: &str) -> Option<ArchiveKey> {
 
 /// Returns the saved password for `archive`, if one exists and can be read.
 pub async fn lookup_archive_password(archive: &Path) -> Option<String> {
+    crate::hit!("lookup_archive_password");
     let key = resolve_key(archive, "lookup").await?;
     match try_lookup(&key).await {
         Ok(password) => password,
@@ -146,6 +149,7 @@ async fn try_lookup(key: &ArchiveKey) -> Result<Option<String>, String> {
 async fn lookup_secret(
     attributes: &HashMap<&'static str, String>,
 ) -> Result<Option<String>, String> {
+    crate::hit!("lookup_secret");
     let keyring = oo7::Keyring::new()
         .await
         .map_err(|e| format!("keyring unavailable: {e}"))?;
@@ -176,6 +180,7 @@ async fn lookup_secret(
 /// Saves `password` for `archive`, replacing any earlier secret for the same
 /// archive and mtime. Returns `true` on success.
 pub async fn save_archive_password(archive: &Path, password: &str) -> bool {
+    crate::hit!("save_archive_password");
     let Some(key) = resolve_key(archive, "save").await else {
         return false;
     };
@@ -189,6 +194,7 @@ pub async fn save_archive_password(archive: &Path, password: &str) -> bool {
 }
 
 async fn try_save(key: &ArchiveKey, password: &str) -> Result<(), String> {
+    crate::hit!("try_save");
     store_secret(
         &key.path,
         &key.label(),
@@ -207,6 +213,7 @@ async fn store_secret(
     stale: &HashMap<&'static str, String>,
     secret: &str,
 ) -> Result<(), String> {
+    crate::hit!("store_secret");
     let keyring = oo7::Keyring::new()
         .await
         .map_err(|e| format!("keyring unavailable: {e}"))?;
@@ -228,6 +235,7 @@ async fn store_secret(
 /// under. Returns `true` when the keyring call succeeded, including when there
 /// was nothing to delete.
 pub async fn forget_archive_password(archive: &Path) -> bool {
+    crate::hit!("forget_archive_password");
     let Some(key) = resolve_key(archive, "forget").await else {
         return false;
     };
@@ -246,6 +254,7 @@ async fn try_forget(key: &ArchiveKey) -> Result<(), String> {
 
 /// Deletes every secret whose attributes match `attributes`.
 async fn delete_secrets(attributes: &HashMap<&'static str, String>) -> Result<(), String> {
+    crate::hit!("delete_secrets");
     let keyring = oo7::Keyring::new()
         .await
         .map_err(|e| format!("keyring unavailable: {e}"))?;
@@ -261,6 +270,7 @@ async fn delete_secrets(attributes: &HashMap<&'static str, String>) -> Result<()
 
 /// Resolves the key for `image`, logging and returning `None` on failure.
 async fn resolve_luks_key(image: &Path, op: &str) -> Option<LuksKey> {
+    crate::hit!("resolve_luks_key");
     match LuksKey::for_path(image).await {
         Ok(key) => Some(key),
         Err(e) => {
@@ -273,6 +283,7 @@ async fn resolve_luks_key(image: &Path, op: &str) -> Option<LuksKey> {
 /// Returns the saved passphrase for the LUKS container `image`, if one exists
 /// and can be read.
 pub async fn lookup_luks_passphrase(image: &Path) -> Option<String> {
+    crate::hit!("lookup_luks_passphrase");
     let key = resolve_luks_key(image, "lookup").await?;
     match lookup_secret(&key.attributes()).await {
         Ok(passphrase) => passphrase,
@@ -286,6 +297,7 @@ pub async fn lookup_luks_passphrase(image: &Path) -> Option<String> {
 /// Saves `passphrase` for the LUKS container `image`, replacing any earlier
 /// secret for the same container. Returns `true` on success.
 pub async fn save_luks_passphrase(image: &Path, passphrase: &str) -> bool {
+    crate::hit!("save_luks_passphrase");
     let Some(key) = resolve_luks_key(image, "save").await else {
         return false;
     };
@@ -310,6 +322,7 @@ pub async fn save_luks_passphrase(image: &Path, passphrase: &str) -> bool {
 /// Deletes the saved passphrase for the LUKS container `image`. Returns `true`
 /// when the keyring call succeeded, including when there was nothing to delete.
 pub async fn forget_luks_passphrase(image: &Path) -> bool {
+    crate::hit!("forget_luks_passphrase");
     let Some(key) = resolve_luks_key(image, "forget").await else {
         return false;
     };

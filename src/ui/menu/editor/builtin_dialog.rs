@@ -9,6 +9,7 @@ pub(super) fn show_builtin_dialog(
     parent: Option<&impl IsA<gtk::Widget>>,
     on_select: impl Fn(&str, &str) + 'static,
 ) {
+    crate::hit!("show_builtin_dialog");
     let dialog = adw::Dialog::builder()
         .title(tr("Select Built-in Action").as_str())
         .content_width(620)

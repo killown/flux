@@ -271,6 +271,7 @@ fn spawn_ipc_thread(sock: PathBuf, seq: u64) {
 }
 
 fn stop_audio_mpv() {
+    crate::hit!("stop_audio_mpv");
     AUDIO_ACTIVE.store(0, Ordering::SeqCst);
     *AUDIO_IPC.lock().unwrap_or_else(|e| e.into_inner()) = None;
     let pid = AUDIO_MPV_PID.swap(0, Ordering::SeqCst);
@@ -2092,6 +2093,7 @@ impl PreviewPanelHandle {
     }
 
     fn start_audio(&self) {
+        crate::hit!("start_audio");
         if AUDIO_MPV_PID.load(Ordering::SeqCst) != 0 {
             return;
         }
@@ -2115,6 +2117,7 @@ impl PreviewPanelHandle {
     }
 
     pub fn stop_media(&self) {
+        crate::hit!("stop_media");
         self.state.token.set(self.state.token.get() + 1);
 
         let mf = self.state.media.borrow_mut().take();
@@ -2232,6 +2235,7 @@ impl PreviewPanelHandle {
     // ── Image ───────────────────────────────────────────────────────────────
 
     fn relayout_image(&self) {
+        crate::hit!("relayout_image");
         let (tw, th) = self.state.tex_px.get();
         let (vw, vh) = (self.image_scroller.width(), self.image_scroller.height());
         if tw <= 0 || th <= 0 || vw <= 0 || vh <= 0 {
@@ -2261,6 +2265,7 @@ impl PreviewPanelHandle {
     }
 
     fn go_to_page(&self, idx: usize) {
+        crate::hit!("go_to_page");
         let st = &self.state;
         let pages = st.pages.get();
         if pages == 0 {
@@ -2278,6 +2283,7 @@ impl PreviewPanelHandle {
     }
 
     fn schedule_resize(&self) {
+        crate::hit!("schedule_resize");
         let st = &self.state;
         let gen = st.resize_gen.get() + 1;
         st.resize_gen.set(gen);
@@ -2430,6 +2436,7 @@ fn render_pdf_raw(path: &Path, page_index: usize, target_w: i32) -> Option<RawPa
 // ─── Small widget helpers ─────────────────────────────────────────────────────
 
 fn install_css() {
+    crate::hit!("install_css");
     thread_local! {
         static DONE: Cell<bool> = const { Cell::new(false) };
     }
@@ -2632,6 +2639,7 @@ fn attach_context_menu(
     text_view: &gtk::TextView,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("attach_context_menu");
     let gesture = gtk::GestureClick::new();
     gesture.set_button(gtk::gdk::BUTTON_SECONDARY);
     gesture.set_propagation_phase(gtk::PropagationPhase::Capture);

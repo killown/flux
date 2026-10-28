@@ -60,6 +60,7 @@ async fn run(
     what: &str,
     limit: Duration,
 ) -> Result<std::process::Output, String> {
+    crate::hit!("run");
     let out = tokio::time::timeout(limit, cmd.output())
         .await
         .map_err(|_| {
@@ -97,6 +98,7 @@ pub fn repo_relative(repo_root: &Path, paths: Vec<PathBuf>) -> Vec<PathBuf> {
 
 /// Writes `diff` to `/tmp/flux-<random>.diff` and returns the path.
 fn write_backup_diff(diff: &[u8]) -> Result<PathBuf, String> {
+    crate::hit!("write_backup_diff");
     let mut path = std::env::temp_dir();
     path.push(format!("flux-{}.diff", random_suffix()));
     let mut file = std::fs::File::create(&path).map_err(|e| {
@@ -249,6 +251,7 @@ pub async fn restore_last_discard(repo_root: &Path) -> Result<String, String> {
 
 /// Name of the checked-out branch, `None` on a detached HEAD.
 async fn current_branch(repo_root: &Path) -> Result<Option<String>, String> {
+    crate::hit!("current_branch");
     let mut cmd = git_cmd(repo_root);
     cmd.args(["symbolic-ref", "--short", "-q", "HEAD"]);
     let out = cmd

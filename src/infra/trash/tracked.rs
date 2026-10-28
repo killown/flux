@@ -34,6 +34,7 @@ fn string_attr(info: &gio::FileInfo, attr: &str) -> Option<String> {
 /// Snapshot of everything currently in the trash. Blocking: call it from a
 /// worker thread.
 pub fn list_trash() -> Vec<TrashEntry> {
+    crate::hit!("list_trash");
     let root = gio::File::for_uri(TRASH_URI);
     let Ok(enumerator) = root.enumerate_children(
         TRASH_ATTRS,
@@ -59,6 +60,7 @@ pub fn pick_new_entry(
     after: Vec<TrashEntry>,
     orig_path: &str,
 ) -> Option<TrashEntry> {
+    crate::hit!("pick_new_entry");
     let new: Vec<TrashEntry> = after
         .into_iter()
         .filter(|e| !before.contains(&e.name))
@@ -83,6 +85,7 @@ pub fn assign_new_entries(
     after: Vec<TrashEntry>,
     orig_paths: &[String],
 ) -> Vec<Option<TrashEntry>> {
+    crate::hit!("assign_new_entries");
     let mut new: Vec<Option<TrashEntry>> = after
         .into_iter()
         .filter(|e| !before.contains(&e.name))
@@ -120,6 +123,7 @@ pub fn assign_new_entries(
 /// is known by in the app and is stored in the returned item.
 #[allow(dead_code)]
 pub fn trash_tracked(file: &gio::File, orig_path: &Path) -> Result<TrashedItem, glib::Error> {
+    crate::hit!("trash_tracked");
     let orig_str = file
         .path()
         .unwrap_or_else(|| orig_path.to_path_buf())
@@ -143,6 +147,7 @@ pub fn trash_tracked(file: &gio::File, orig_path: &Path) -> Result<TrashedItem, 
 pub fn trash_tracked_batch(
     files: &[(gio::File, PathBuf)],
 ) -> (Vec<TrashedItem>, Vec<(usize, glib::Error)>) {
+    crate::hit!("trash_tracked_batch");
     let before: HashSet<String> = list_trash().into_iter().map(|e| e.name).collect();
 
     // (index into `files`, path the trash records the file under)
@@ -189,6 +194,7 @@ pub fn find_entry<'a>(
     item: &TrashedItem,
     used: &HashSet<String>,
 ) -> Option<&'a TrashEntry> {
+    crate::hit!("find_entry");
     if let Some(name) = &item.trash_name {
         return entries.iter().find(|e| {
             &e.name == name
@@ -212,6 +218,7 @@ pub fn find_entry<'a>(
 /// failure does not undo or hide the items that were restored. Blocking:
 /// call it from a worker thread.
 pub fn restore_tracked(items: Vec<TrashedItem>) -> (Vec<TrashedItem>, Vec<TrashedItem>) {
+    crate::hit!("restore_tracked");
     let entries = list_trash();
     let root = gio::File::for_uri(TRASH_URI);
     let mut used: HashSet<String> = HashSet::new();

@@ -159,6 +159,7 @@ impl FluxApp {
     /// Selects the first item once, so the already-open `--preview` panel gets populated.
     /// No-op until the panel is open and the grid has items, clears `startup_preview` when it fires.
     pub fn schedule_startup_preview_selection(&mut self) {
+        crate::hit!("schedule_startup_preview_selection");
         if !self.startup_preview || !self.preview_panel_visible {
             return;
         }
@@ -217,6 +218,7 @@ impl FluxApp {
 
     /// Enters wide-preview mode when the panel is open, no-op if already wide.
     fn enter_wide_preview(&mut self) {
+        crate::hit!("enter_wide_preview");
         if self.wide_preview_sidebar.is_some() || !self.preview_panel_visible {
             return;
         }
@@ -377,6 +379,7 @@ impl FluxApp {
     /// `restore_wide` also drops the wide layout if full-screen had to turn it on, callers that
     /// are leaving wide mode themselves pass `false`.
     pub(crate) fn leave_preview_fullscreen(&mut self, restore_wide: bool) {
+        crate::hit!("leave_preview_fullscreen");
         use gtk::prelude::*;
 
         let Some((was_wide, window_was_fullscreen)) = self.preview_fullscreen.take() else {
@@ -398,6 +401,7 @@ impl FluxApp {
 
     /// Re-applies the wide-preview split after a view-mode change.
     pub fn refresh_wide_preview_layout(&self) {
+        crate::hit!("refresh_wide_preview_layout");
         if self.wide_preview_sidebar.is_none() {
             return;
         }
@@ -413,6 +417,7 @@ impl FluxApp {
 
     /// Leaves wide-preview mode, restoring the sidebar and the normal panel layout, no-op when inactive.
     pub fn exit_wide_preview(&mut self) {
+        crate::hit!("exit_wide_preview");
         // Leaving wide mode also ends full-screen preview, otherwise the grid would stay hidden.
         self.leave_preview_fullscreen(false);
         let Some(sidebar_was_visible) = self.wide_preview_sidebar.take() else {
@@ -841,6 +846,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
 /// Shared PDF path used both for real `.pdf` files and for office documents
 /// after soffice conversion.
 fn pdf_preview(path: &Path, mut info: FileInfo) -> PreviewContent {
+    crate::hit!("pdf_preview");
     use crate::i18n::tr;
     match pdf_summary(path) {
         Some((pages, w_pt, h_pt)) => {
@@ -1212,6 +1218,7 @@ fn is_texty_mime(mime: &str) -> bool {
 }
 
 fn decode_head(bytes: &[u8], hit_cap: bool, texty_mime: bool) -> Option<(String, bool)> {
+    crate::hit!("decode_head");
     match std::str::from_utf8(bytes) {
         Ok(s) => Some((s.to_owned(), false)),
         Err(e) if hit_cap && e.error_len().is_none() => {

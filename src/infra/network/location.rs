@@ -16,6 +16,7 @@ pub struct ConnectToServerParams {
 
 impl ConnectToServerParams {
     pub fn build_uri(&self) -> Option<String> {
+        crate::hit!("build_uri");
         if self.host.is_empty() {
             return None;
         }

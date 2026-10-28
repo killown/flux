@@ -19,6 +19,7 @@ pub(super) fn is_already_mounted(e: &glib::Error) -> bool {
 }
 
 pub(super) fn build_mount_op(credentials: Option<&NetworkCredentials>) -> gio::MountOperation {
+    crate::hit!("build_mount_op");
     let op = gio::MountOperation::new();
 
     if let Some(creds) = credentials {

@@ -12,6 +12,7 @@ pub fn setup_global_shortcuts(
     sender: relm4::AsyncComponentSender<FluxApp>,
     keymap: &KeyMap,
 ) {
+    crate::hit!("setup_global_shortcuts");
     let sc = gtk::ShortcutController::new();
     sc.set_scope(gtk::ShortcutScope::Managed);
 
@@ -152,6 +153,7 @@ pub fn setup_global_shortcuts(
 
 /// Settings window shortcut (needs the parent window for `transient_for`).
 pub fn setup_settings_shortcut(window: &impl IsA<gtk::Widget>, keymap: &KeyMap) {
+    crate::hit!("setup_settings_shortcut");
     let parent_window = window.root().and_downcast::<gtk::Window>();
     let sc = gtk::ShortcutController::new();
     sc.set_scope(gtk::ShortcutScope::Managed);

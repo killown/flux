@@ -127,6 +127,7 @@ impl FluxApp {
     /// Working directory for a freshly spawned terminal: the archive's parent
     /// directory, `$HOME` on network locations, otherwise the current path.
     fn terminal_working_dir(&self) -> String {
+        crate::hit!("terminal_working_dir");
         let path_str = self.current_path.to_string_lossy();
         if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             crate::infra::archive::parse_archive_uri(&path_str)

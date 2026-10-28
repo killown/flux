@@ -102,6 +102,7 @@ pub fn get_backend(
     archive_path: &Path,
     backend: Option<Box<dyn ArchiveBackend>>,
 ) -> Box<dyn ArchiveBackend> {
+    crate::hit!("get_backend");
     if let Some(b) = backend {
         return b;
     }

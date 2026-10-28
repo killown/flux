@@ -78,6 +78,7 @@ fn thumbnail_cache_path(path: &Path, target_size: i32) -> Option<(PathBuf, PathB
 ///
 /// Entries without `Thumb::MTime` (older flux caches) fall back to comparing file mtimes.
 fn thumbnail_is_valid(cache_meta: &fs::Metadata, png: &[u8], source_meta: &fs::Metadata) -> bool {
+    crate::hit!("thumbnail_is_valid");
     if cache_meta.len() == 0 {
         return false;
     }
@@ -120,6 +121,7 @@ struct ThumbnailKind {
 /// `generate_thumbnail_inner` and `may_have_thumbnail` so they cannot drift.
 /// `ext` must already be lowercase.
 fn classify_thumbnail_kind(path: &Path, ext: &str) -> ThumbnailKind {
+    crate::hit!("classify_thumbnail_kind");
     let is_pdf_file = ext == "pdf";
     let is_font_file = !is_pdf_file && matches!(ext, "ttf" | "otf" | "woff" | "woff2" | "ttc");
     let is_exe_file = !is_pdf_file && !is_font_file && ext == "exe";
@@ -173,6 +175,7 @@ fn classify_thumbnail_kind(path: &Path, ext: &str) -> ThumbnailKind {
 /// `show_thumbnails`): it only answers "is this a kind of file we thumbnail at
 /// all", so a `false` here means the generator would return `None` anyway.
 pub(crate) fn may_have_thumbnail(path: &Path) -> bool {
+    crate::hit!("may_have_thumbnail");
     if path
         .to_string_lossy()
         .starts_with(crate::infra::archive::ARCHIVE_URI)

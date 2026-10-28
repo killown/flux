@@ -30,6 +30,7 @@ impl FluxApp {
     /// Enters the mode. A live search-bar filter is stashed and cleared so the
     /// whole folder stays reachable, leaving the mode puts it back.
     fn enter_navigate_mode(&mut self) {
+        crate::hit!("enter_navigate_mode");
         let stashed_filter = if !self.filter.is_empty() && !self.is_content_searching {
             Some(self.filter.clone())
         } else {
@@ -66,6 +67,7 @@ impl FluxApp {
     /// One-shot: the debt is cleared even when the folder is empty, so a later
     /// refresh never moves the selection.
     pub fn select_first_for_navigate(&mut self) {
+        crate::hit!("select_first_for_navigate");
         match self.navigate.as_mut() {
             Some(state) if state.select_first => state.select_first = false,
             _ => return,
@@ -110,6 +112,7 @@ impl FluxApp {
     /// Leaves the mode and restores the stashed filter, unless a newer filter
     /// was started meanwhile.
     fn exit_navigate_mode(&mut self, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("exit_navigate_mode");
         let Some(state) = self.navigate.take() else {
             return;
         };
@@ -202,6 +205,7 @@ impl FluxApp {
     /// URI apart. There the parent is the enclosing folder inside the archive,
     /// and from the archive root it is the folder holding the archive file.
     fn navigate_parent(current: &Path) -> Option<PathBuf> {
+        crate::hit!("navigate_parent");
         let Some((archive, inner)) =
             crate::infra::archive::parse_archive_uri(&current.to_string_lossy())
         else {

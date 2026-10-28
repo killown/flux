@@ -428,6 +428,7 @@ fn group_row(
     can_delete: bool,
     sender: &Sender,
 ) -> gtk::ListBoxRow {
+    crate::hit!("group_row");
     let row = gtk::ListBoxRow::builder().activatable(true).build();
     if v.selected {
         row.set_tooltip_text(Some(&tr("Tab walks this list")));
@@ -614,6 +615,7 @@ fn item_row(
     others: &[(usize, String)],
     sender: &Sender,
 ) -> gtk::ListBoxRow {
+    crate::hit!("item_row");
     let row = gtk::ListBoxRow::builder()
         .activatable(true)
         .tooltip_text(item_tooltip(path))
@@ -788,6 +790,7 @@ fn attach_menu(row: &gtk::ListBoxRow, build: impl Fn() -> Vec<MenuItem> + 'stati
 }
 
 fn popup_menu(widget: &gtk::Widget, x: f64, y: f64, items: Vec<MenuItem>) {
+    crate::hit!("popup_menu");
     let menu = gio::Menu::new();
     let group = gio::SimpleActionGroup::new();
     let mut n = 0usize;

@@ -7,6 +7,7 @@ use relm4::prelude::*;
 /// Applies the theme to `terminal` now-ish: follows theme changes and resolves the
 /// colors once on first map, when the widget has its real style context.
 pub(crate) fn wire_terminal_theme(terminal: &Terminal, config: &TerminalConfig) {
+    crate::hit!("wire_terminal_theme");
     terminal.connect_theme_changes(config.clone());
 
     let applied = std::rc::Rc::new(std::cell::Cell::new(false));
@@ -29,6 +30,7 @@ pub(crate) fn attach_terminal_key_controller(
     sender: &AsyncComponentSender<FluxApp>,
     f4_msg: AppMsg,
 ) {
+    crate::hit!("attach_terminal_key_controller");
     let term_sender = sender.clone();
     let term_key_ctrl = gtk::EventControllerKey::new();
     term_key_ctrl.set_propagation_phase(gtk::PropagationPhase::Capture);
@@ -71,6 +73,7 @@ pub(crate) fn attach_terminal_key_controller(
 
 /// Suppresses the right-click menu and pastes the primary selection on middle click.
 pub(crate) fn attach_terminal_mouse_controllers(terminal: &Terminal) {
+    crate::hit!("attach_terminal_mouse_controllers");
     // Suppress right-click menu.
     let right_click = gtk::GestureClick::new();
     right_click.set_button(3);
@@ -94,6 +97,7 @@ pub(crate) fn attach_terminal_mouse_controllers(terminal: &Terminal) {
 /// Kills `terminal`'s shell when the window containing `anchor` closes and when the
 /// application shuts down. For terminals created lazily, after `setup_window`.
 pub(crate) fn register_terminal_shutdown(terminal: &Terminal, anchor: &impl IsA<gtk::Widget>) {
+    crate::hit!("register_terminal_shutdown");
     if let Some(window) = anchor.root().and_downcast::<gtk::Window>() {
         let term_for_close = terminal.clone();
         window.connect_close_request(move |_| {

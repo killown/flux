@@ -6,6 +6,7 @@ use gtk::glib;
 use relm4::prelude::*;
 
 pub(super) fn rebuild_list(shared: &Shared) {
+    crate::hit!("rebuild_list");
     let list_box = &shared.list_box;
     while let Some(child) = list_box.first_child() {
         list_box.remove(&child);

@@ -16,6 +16,7 @@ pub(super) fn delete_batch_via_trash(
     items: Vec<(gio::File, PathBuf)>,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("delete_batch_via_trash");
     // `gio::File` is not `Send`, so hand the worker thread the URIs instead.
     let targets: Vec<(String, PathBuf)> = items
         .into_iter()

@@ -6,6 +6,7 @@ use relm4::prelude::*;
 
 /// Two-finger horizontal swipe → back/forward.
 pub fn setup_swipe(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncComponentSender<FluxApp>) {
+    crate::hit!("setup_swipe");
     let swipe = gtk::GestureSwipe::new();
     swipe.connect_swipe(move |_, velocity_x, _| {
         if velocity_x > constants::SWIPE_VELOCITY_THRESHOLD {
@@ -22,6 +23,7 @@ pub fn setup_mouse_back_forward(
     window: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("setup_mouse_back_forward");
     let gesture = gtk::GestureClick::new();
     gesture.set_button(0);
 

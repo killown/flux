@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 impl FileItem {
     pub fn builder(name: String, path: PathBuf, icon: adw::gio::Icon) -> FileItemBuilder {
+        crate::hit!("builder");
         FileItemBuilder {
             display_label: name.clone(),
             name,

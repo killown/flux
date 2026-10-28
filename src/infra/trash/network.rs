@@ -8,6 +8,7 @@ use relm4::prelude::*;
 /// thread. `gio::File::trash` is not used here because remote filesystems
 /// generally don't have a trash to move into.
 pub(super) fn delete_via_recursive(file: gio::File, sender: AsyncComponentSender<FluxApp>) {
+    crate::hit!("delete_via_recursive");
     eprintln!("[Delete] network path → skipping trash, using worker-thread delete_recursive");
     let uri = file.uri().to_string();
     relm4::spawn_blocking(move || {

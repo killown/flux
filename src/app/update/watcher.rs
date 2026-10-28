@@ -38,6 +38,7 @@ const DOWNLOAD_TEMP_SUFFIXES: &[&str] = &["part", "crdownload", "download", "par
 /// file" from exiftool. This debounces the dispatch so the handler only runs
 /// once the writer has stopped.
 pub(crate) fn debounce_path_event(path: PathBuf, sender: relm4::AsyncComponentSender<FluxApp>) {
+    crate::hit!("debounce_path_event");
     PENDING_CHANGED.with(|map| {
         let mut map = map.borrow_mut();
 

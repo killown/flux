@@ -7,6 +7,7 @@ use std::path::PathBuf;
 
 /// Reads every saved list, or `None` when none were ever saved.
 fn read_groups(conn: &Connection) -> Option<QuickGroups> {
+    crate::hit!("read_groups");
     let mut stmt = conn
         .prepare("SELECT pos, name, slot FROM quick_groups ORDER BY pos")
         .ok()?;

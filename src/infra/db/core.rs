@@ -65,14 +65,23 @@ impl StateManager {
                 .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
         }
 
-        let conn = Connection::open(db_path)?;
+        let conn = {
+            crate::hit!("new_with_path:connect");
+            Connection::open(db_path)?
+        };
 
-        conn.pragma_update(None, "journal_mode", "WAL")?;
-        conn.pragma_update(None, "synchronous", "NORMAL")?;
-        conn.pragma_update(None, "busy_timeout", 5000)?;
-        conn.pragma_update(None, "mmap_size", 268435456)?;
+        {
+            crate::hit!("new_with_path:pragmas");
+            conn.pragma_update(None, "journal_mode", "WAL")?;
+            conn.pragma_update(None, "synchronous", "NORMAL")?;
+            conn.pragma_update(None, "busy_timeout", 5000)?;
+            conn.pragma_update(None, "mmap_size", 268435456)?;
+        }
 
-        conn.execute_batch(SCHEMA)?;
+        {
+            crate::hit!("new_with_path:schema");
+            conn.execute_batch(SCHEMA)?;
+        }
 
         Ok(Self {
             conn: Mutex::new(conn),

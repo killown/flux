@@ -54,6 +54,7 @@ pub struct TagColors {
 
 /// Returns the tag palette for the active color scheme.
 pub fn tag_colors() -> TagColors {
+    crate::hit!("tag_colors");
     if is_dark() {
         TagColors {
             added: "#57ab5a",
@@ -80,6 +81,7 @@ pub fn tag_colors() -> TagColors {
 }
 
 fn theme(dark: bool) -> &'static Theme {
+    crate::hit!("theme");
     static TS: OnceLock<ThemeSet> = OnceLock::new();
     let ts = TS.get_or_init(ThemeSet::load_defaults);
     let name = if dark {

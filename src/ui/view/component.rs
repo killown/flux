@@ -13,6 +13,7 @@ impl FluxApp {
         scroller: &gtk::ScrolledWindow,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("connect_tab_scroller");
         let vadj = scroller.vadjustment();
         let s_scroll = sender.clone();
         let scroll_debounce: std::rc::Rc<std::cell::Cell<Option<glib::SourceId>>> =

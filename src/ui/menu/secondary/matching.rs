@@ -10,6 +10,7 @@ use gtk::gio;
 /// matches as soon as any single requirement matches. Both surfaces call this so
 /// they always offer the same actions for the same file.
 pub fn action_matches_mime(action: &CustomAction, mime: &str) -> bool {
+    crate::hit!("action_matches_mime");
     action.mime_types.iter().any(|allowed_mime| {
         allowed_mime.split('+').any(|req| match req.trim() {
             "all" | constants::FILTER_ALL => true,

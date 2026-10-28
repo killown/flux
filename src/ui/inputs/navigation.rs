@@ -11,6 +11,7 @@ pub fn setup_navigation(
     terminal_area: &gtk::DrawingArea,
     sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("setup_navigation");
     let controller = gtk::EventControllerKey::new();
     controller.set_propagation_phase(gtk::PropagationPhase::Capture);
     let header_stack = header_stack.clone();
@@ -52,6 +53,7 @@ pub fn setup_history(
     sender: relm4::AsyncComponentSender<FluxApp>,
     keymap: &KeyMap,
 ) {
+    crate::hit!("setup_history");
     let history = gtk::ShortcutController::new();
 
     if let Some(back_trigger) = keymap.back.clone() {

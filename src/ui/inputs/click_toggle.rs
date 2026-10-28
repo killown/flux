@@ -9,6 +9,7 @@ pub fn setup_click_toggle(
     grid_view: &gtk::GridView,
     config_single_click: bool,
 ) {
+    crate::hit!("setup_click_toggle");
     let controller = gtk::EventControllerKey::new();
     controller.set_propagation_phase(gtk::PropagationPhase::Capture);
 

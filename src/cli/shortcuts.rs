@@ -28,6 +28,7 @@ fn bind_accel<F>(
 }
 
 pub(super) fn setup_shortcuts(app: &adw::Application) {
+    crate::hit!("setup_shortcuts");
     let config = crate::utils::load_config();
 
     bind_accel(

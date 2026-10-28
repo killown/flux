@@ -4,6 +4,7 @@ use gtk::prelude::*;
 /// Returns the workarea width of the monitor the widget's surface is on,
 /// or `0` when it cannot be determined (callers should treat `0` as "skip clamp").
 fn monitor_workarea_width(widget: &impl IsA<gtk::Widget>) -> i32 {
+    crate::hit!("monitor_workarea_width");
     let widget = widget.upcast_ref::<gtk::Widget>();
     let Some(native) = widget.native() else {
         return 0;

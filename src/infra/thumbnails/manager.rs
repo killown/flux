@@ -53,6 +53,7 @@ impl ThumbnailTaskManager {
 
     /// Registers a cancellation flag for a newly requested thumbnail index.
     pub fn register_token(&self, grid_idx: u32) -> Arc<AtomicBool> {
+        crate::hit!("register_token");
         let mut tokens = self.active_tokens.lock().unwrap();
         if let Some(old) = tokens.remove(&grid_idx) {
             old.store(true, Ordering::Release);

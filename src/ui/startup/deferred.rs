@@ -8,6 +8,7 @@ use std::sync::Arc;
 impl FluxApp {
     /// Refreshes the status bar from the task queue on a throttled timer.
     pub(super) fn start_task_queue_tick(sender: &AsyncComponentSender<Self>) {
+        crate::hit!("start_task_queue_tick");
         // Throttled task queue UI refresh, deferred by 150ms, updates status bar only.
         let tick_sender = sender.clone();
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {

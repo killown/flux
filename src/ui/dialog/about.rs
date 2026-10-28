@@ -4,6 +4,7 @@ use relm4::prelude::*;
 
 impl FluxApp {
     pub fn show_about_window() {
+        crate::hit!("show_about_window");
         let about = gtk::AboutDialog::builder()
             .program_name("Flux")
             .version(env!("CARGO_PKG_VERSION"))

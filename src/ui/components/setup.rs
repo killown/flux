@@ -55,6 +55,7 @@ fn clear_grid_selection(widget: &gtk::Widget) {
 /// selected item lives inside an archive, or when an item cannot be resolved.
 /// Runs at drag time on the GTK thread, never from `bind`.
 fn multi_drag_paths(widget: &gtk::Widget) -> Option<Vec<PathBuf>> {
+    crate::hit!("multi_drag_paths");
     let dragged: PathBuf = unsafe {
         widget
             .data::<PathBuf>("flux_path")
@@ -90,6 +91,7 @@ fn multi_drag_paths(widget: &gtk::Widget) -> Option<Vec<PathBuf>> {
 /// CRLF-separated `text/uri-list` (same body as `handle_clipboard_action`) for
 /// other windows and applications.
 fn multi_drag_provider(paths: &[PathBuf]) -> gdk::ContentProvider {
+    crate::hit!("multi_drag_provider");
     let files: Vec<gtk::gio::File> = paths.iter().map(gtk::gio::File::for_path).collect();
 
     let mut uri_list = String::new();
@@ -107,6 +109,7 @@ fn multi_drag_provider(paths: &[PathBuf]) -> gdk::ContentProvider {
 
 /// Drag icon for several items: the pressed cell plus a `+N` badge.
 fn set_multi_drag_icon(drag: &gdk::Drag, cell: &gtk::WidgetPaintable, count: usize) {
+    crate::hit!("set_multi_drag_icon");
     let picture = gtk::Picture::for_paintable(cell);
     picture.set_can_shrink(false);
 

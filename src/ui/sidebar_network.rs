@@ -82,6 +82,7 @@ pub fn build_network_section(bookmarks: &[NetworkBookmark], sender: Sender<AppMs
 }
 
 pub fn connect_volume_monitor_signals(sender: Sender<AppMsg>) {
+    crate::hit!("connect_volume_monitor_signals");
     let monitor = gtk::gio::VolumeMonitor::get();
 
     let s = sender.clone();

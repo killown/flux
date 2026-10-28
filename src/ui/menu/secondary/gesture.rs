@@ -22,6 +22,7 @@ pub fn setup_secondary_menu_gesture(
     widget: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("setup_secondary_menu_gesture");
     let gesture = gtk::GestureClick::new();
     gesture.set_button(0);
     gesture.set_propagation_phase(gtk::PropagationPhase::Capture);

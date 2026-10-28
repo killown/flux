@@ -152,6 +152,7 @@ pub async fn create_network_directory(
     uri: &str,
     credentials: Option<&NetworkCredentials>,
 ) -> Result<(), NetworkError> {
+    crate::hit!("create_network_directory");
     net_debug!("[network] create_network_directory uri = {uri:?}");
     let file = gio::File::for_uri(uri);
     let mount_op = build_mount_op(credentials);

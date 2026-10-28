@@ -9,6 +9,7 @@ impl FluxApp {
         root: &adw::Window,
         sender: &AsyncComponentSender<Self>,
     ) -> gio::SimpleActionGroup {
+        crate::hit!("register_window_actions");
         let shortcut_controller = gtk::ShortcutController::new();
         Self::setup_shortcuts(&shortcut_controller, sender);
         root.add_controller(shortcut_controller);

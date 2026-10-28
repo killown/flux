@@ -26,6 +26,7 @@ pub fn setup_controllers(
     keymap: &KeyMap,
     terminal_area: &gtk::DrawingArea,
 ) {
+    crate::hit!("setup_controllers");
     grid_view.set_enable_rubberband(true);
 
     navigation::setup_navigation(window, header_stack, terminal_area, sender.clone());

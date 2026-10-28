@@ -97,6 +97,7 @@ impl TaskQueue {
 
     /// Cancels a single in-flight task and removes it from the queue.
     pub fn cancel(&self, id: u64) {
+        crate::hit!("cancel");
         if let Ok(mut map) = self.inner.lock() {
             if let Some(task) = map.remove(&id) {
                 task.cancellable.cancel();
@@ -182,6 +183,7 @@ impl TaskQueue {
     /// Entries are sorted by task-id (insertion order proxy) so the dialog
     /// renders tasks in a stable order.
     pub fn snapshot(&self) -> Vec<(u64, Task)> {
+        crate::hit!("snapshot");
         let Ok(map) = self.inner.lock() else {
             return Vec::new();
         };

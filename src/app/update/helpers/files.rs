@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 impl FluxApp {
     /// Returns true if the current path is inside an archive that supports full extraction.
     pub fn can_extract_current_archive(&self) -> bool {
+        crate::hit!("can_extract_current_archive");
         let path_str = self.current_path.to_string_lossy();
         if !path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             return false;

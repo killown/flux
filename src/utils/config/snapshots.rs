@@ -47,6 +47,7 @@ pub type IconConfigSnapshot = Arc<IconConfigData>;
 pub(super) static ICON_CONFIG: OnceLock<RwLock<IconConfigSnapshot>> = OnceLock::new();
 
 pub(super) fn extract_icon_config(config: &crate::model::Config) -> IconConfigSnapshot {
+    crate::hit!("extract_icon_config");
     Arc::new((
         config.ui.folder_icons.clone(),
         config.ui.file_icons.clone(),

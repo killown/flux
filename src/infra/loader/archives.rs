@@ -17,6 +17,7 @@ async fn list_off_thread(
     prefix: &str,
     password: Option<String>,
 ) -> Result<Vec<archive::ArchiveEntry>, archive::ArchiveError> {
+    crate::hit!("list_off_thread");
     let archive_path = archive_path.to_path_buf();
     let prefix = prefix.to_string();
     match relm4::spawn_blocking(move || {

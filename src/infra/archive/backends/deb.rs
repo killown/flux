@@ -128,6 +128,7 @@ fn extract_deb(
 }
 
 fn extract_dir_deb(archive_path: &Path, inner_dir: &str) -> Result<PathBuf, ArchiveError> {
+    crate::hit!("extract_dir_deb");
     let (_dir, data_tar) = extract_deb_data(archive_path)?;
     let name_lc = lc_name(&data_tar);
     if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {

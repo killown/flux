@@ -164,14 +164,20 @@ impl SearchIndex {
         if let Some(dir) = db_path.parent() {
             std::fs::create_dir_all(dir)?;
         }
-        let mut conn = Connection::open(db_path)?;
+        let mut conn = {
+            crate::hit!("open_at:connect");
+            Connection::open(db_path)?
+        };
         conn.busy_timeout(Duration::from_secs(5))?;
-        conn.execute_batch(
-            "PRAGMA journal_mode = WAL;
-             PRAGMA synchronous = NORMAL;
-             PRAGMA temp_store = MEMORY;
-             PRAGMA mmap_size = 268435456;",
-        )?;
+        {
+            crate::hit!("open_at:pragmas");
+            conn.execute_batch(
+                "PRAGMA journal_mode = WAL;
+                 PRAGMA synchronous = NORMAL;
+                 PRAGMA temp_store = MEMORY;
+                 PRAGMA mmap_size = 268435456;",
+            )?;
+        }
         Self::migrate(&mut conn)?;
         Ok(Self { conn })
     }
@@ -528,6 +534,7 @@ pub fn delta_scan(
     crate::hit!("delta_scan");
     let conn = &idx.conn;
     let dirs: Vec<(String, i64)> = {
+        crate::hit!("delta_scan:load_dirs");
         let mut stmt = conn.prepare("SELECT path, mtime FROM entries WHERE is_dir = 1")?;
         let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))?;
         rows.flatten().collect()
@@ -536,34 +543,41 @@ pub fn delta_scan(
     let mut changed: Vec<PathBuf> = roots.to_vec();
     let mut gone: Vec<String> = Vec::new();
     let fallback_root = roots.first().map(|p| p.as_path()).unwrap_or(Path::new("/"));
-    for (path, stored) in dirs {
-        if should_stop() {
-            return Ok(());
-        }
-        match std::fs::metadata(&path) {
-            Ok(m) if m.is_dir() => {
-                if mtime_ns(&m) != stored || stored == 0 {
-                    changed.push(PathBuf::from(path));
+    {
+        crate::hit!("delta_scan:stat_loop");
+        for (path, stored) in dirs {
+            if should_stop() {
+                return Ok(());
+            }
+            match std::fs::metadata(&path) {
+                Ok(m) if m.is_dir() => {
+                    if mtime_ns(&m) != stored || stored == 0 {
+                        changed.push(PathBuf::from(path));
+                    }
                 }
+                Ok(_) => changed.push(
+                    Path::new(&path)
+                        .parent()
+                        .unwrap_or(fallback_root)
+                        .to_path_buf(),
+                ),
+                Err(e)
+                    if e.kind() == io::ErrorKind::NotFound
+                        || e.raw_os_error() == Some(libc::ENOTDIR) =>
+                {
+                    gone.push(path)
+                }
+                Err(_) => {}
             }
-            Ok(_) => changed.push(
-                Path::new(&path)
-                    .parent()
-                    .unwrap_or(fallback_root)
-                    .to_path_buf(),
-            ),
-            Err(e)
-                if e.kind() == io::ErrorKind::NotFound
-                    || e.raw_os_error() == Some(libc::ENOTDIR) =>
-            {
-                gone.push(path)
-            }
-            Err(_) => {}
         }
     }
 
-    conn.execute_batch("BEGIN IMMEDIATE")?;
+    {
+        crate::hit!("delta_scan:begin_immediate");
+        conn.execute_batch("BEGIN IMMEDIATE")?;
+    }
     let res = (|| -> Result<()> {
+        crate::hit!("delta_scan:apply_changes");
         for p in &gone {
             remove_tree(conn, p)?;
         }
@@ -575,7 +589,10 @@ pub fn delta_scan(
         }
         Ok(())
     })();
-    conn.execute_batch(if res.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
+    {
+        crate::hit!("delta_scan:commit");
+        conn.execute_batch(if res.is_ok() { "COMMIT" } else { "ROLLBACK" })?;
+    }
     res
 }
 
@@ -652,10 +669,12 @@ pub fn worker_loop(rx: mpsc::Receiver<Job>, db_path: PathBuf, roots: Vec<PathBuf
     let mut last_delta: Option<Instant> = None;
 
     let run_delta = |idx: &SearchIndex, last: &mut Option<Instant>| {
+        crate::hit!("worker_loop:run_delta");
         let _ = delta_scan(idx, &roots, &stop);
         *last = Some(Instant::now());
     };
     let build = |idx: &SearchIndex| {
+        crate::hit!("worker_loop:build");
         if full_scan(idx, &roots, &stop).unwrap_or(false) {
             INDEX_READY.store(true, Ordering::Relaxed);
         }
@@ -765,6 +784,7 @@ fn send(job: Job) {
 }
 
 pub fn set_enabled(enabled: bool) {
+    crate::hit!("set_enabled");
     ENABLED.store(enabled, Ordering::Relaxed);
     if enabled {
         if let Some(tx) = ensure_worker() {
@@ -774,6 +794,7 @@ pub fn set_enabled(enabled: bool) {
 }
 
 pub fn build_home_index_async() {
+    crate::hit!("build_home_index_async");
     if crate::utils::load_config().ui.enable_file_indexing {
         set_enabled(true);
     }

@@ -25,6 +25,7 @@ impl Terminal {
         state: &Arc<Mutex<super::super::state::TerminalState>>,
         drag_started: Rc<RefCell<bool>>,
     ) {
+        crate::hit!("setup_selection_drag");
         let state_for_drag = state.clone();
         let drawing_area_for_drag = drawing_area.clone();
         let drag_controller = gtk::GestureDrag::new();
@@ -113,6 +114,7 @@ impl Terminal {
         drawing_area: &gtk::DrawingArea,
         state: &Arc<Mutex<super::super::state::TerminalState>>,
     ) {
+        crate::hit!("setup_click_to_focus");
         let state_clone = state.clone();
         let drawing_area_focus = drawing_area.clone();
         let click_controller = gtk::GestureClick::new();
@@ -133,6 +135,7 @@ impl Terminal {
         drawing_area: &gtk::DrawingArea,
         state: &Arc<Mutex<super::super::state::TerminalState>>,
     ) {
+        crate::hit!("setup_scroll_wheel");
         let state_for_scroll = state.clone();
         let drawing_area_for_scroll = drawing_area.clone();
         let scroll_controller =
@@ -158,6 +161,7 @@ impl Terminal {
         drawing_area: &gtk::DrawingArea,
         state: &Arc<Mutex<super::super::state::TerminalState>>,
     ) {
+        crate::hit!("setup_scrollbar_drag");
         let state_for_sb = state.clone();
         let drawing_area_for_sb = drawing_area.clone();
         let sb_drag = gtk::GestureDrag::new();

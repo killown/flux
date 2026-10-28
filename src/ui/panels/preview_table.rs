@@ -94,6 +94,7 @@ pub fn parse(path: &Path, ext: &str) -> Option<TableData> {
 }
 
 pub fn build_store(data: &TableData) -> gio::ListStore {
+    crate::hit!("build_store");
     let outer = gio::ListStore::new::<gio::ListStore>();
 
     // Row 0 is the header, rendered through the same factory as body rows.

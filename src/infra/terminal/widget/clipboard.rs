@@ -5,6 +5,7 @@ use gtk::prelude::*;
 impl Terminal {
     /// Copies the current terminal selection to the CLIPBOARD selection.
     pub fn emit_copy_clipboard(&self) {
+        crate::hit!("emit_copy_clipboard");
         let text = self
             .state
             .lock()
@@ -21,6 +22,7 @@ impl Terminal {
     /// Reads the CLIPBOARD selection and writes it to the PTY, honouring the
     /// application's bracketed-paste mode.
     pub fn emit_paste_clipboard(&self) {
+        crate::hit!("emit_paste_clipboard");
         let state = self.state.clone();
         if let Some(display) = gtk::gdk::Display::default() {
             let clipboard = display.clipboard();

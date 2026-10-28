@@ -111,6 +111,7 @@ pub(crate) fn setup_selection_server() {
 
 /// Turns the NUL-separated reply into shell output and counts the paths it had to skip.
 fn format_selection(data: &[u8], null: bool) -> (Vec<u8>, usize) {
+    crate::hit!("format_selection");
     let mut out = Vec::with_capacity(data.len());
     let mut skipped = 0;
     for path in data.split(|&b| b == 0).filter(|p| !p.is_empty()) {

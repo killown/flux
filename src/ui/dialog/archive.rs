@@ -13,6 +13,7 @@ impl FluxApp {
         wrong_password: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_prompt_archive_password");
         self.archive_locked = true;
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();

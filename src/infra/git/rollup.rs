@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 /// Combines recursive file statuses for directory summaries.
 fn rollup_status(current: Option<GitFileStatus>, new: GitFileStatus) -> GitFileStatus {
+    crate::hit!("rollup_status");
     match (current, new) {
         (Some(GitFileStatus::Conflicted), _) | (_, GitFileStatus::Conflicted) => {
             GitFileStatus::Conflicted

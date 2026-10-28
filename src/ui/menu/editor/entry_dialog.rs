@@ -6,6 +6,7 @@ use adw::prelude::*;
 use relm4::prelude::*;
 
 pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuEntry) {
+    crate::hit!("show_dialog");
     let dialog = adw::Dialog::new();
     let dialog_title = if replace.is_some() {
         tr("Edit Entry")

@@ -41,6 +41,7 @@ const ZIP_CENTRAL_SCAN_CAP: u64 = 64 * 1024;
 
 /// True when any entry in the first part of the central directory is encrypted.
 fn zip_central_directory_encrypted(file: &mut std::fs::File, len: u64) -> bool {
+    crate::hit!("zip_central_directory_encrypted");
     let tail_len = len.min(22 + 65_535);
     let mut tail = vec![0u8; tail_len as usize];
     if file.seek(SeekFrom::Start(len - tail_len)).is_err() || file.read_exact(&mut tail).is_err() {
@@ -79,6 +80,7 @@ fn zip_central_directory_encrypted(file: &mut std::fs::File, len: u64) -> bool {
 
 /// Reads the encryption flag of a ZIP: first local header, then central directory.
 pub fn zip_is_encrypted(path: &Path) -> bool {
+    crate::hit!("zip_is_encrypted");
     let Ok(mut file) = std::fs::File::open(path) else {
         return false;
     };

@@ -59,6 +59,7 @@ fn open_7z_reader(
     archive_path: &Path,
     password: Option<&str>,
 ) -> Result<ArchiveReader<std::fs::File>, ArchiveError> {
+    crate::hit!("open_7z_reader");
     let file =
         std::fs::File::open(archive_path).map_err(|e| ArchiveError::Other(format!("open: {e}")))?;
 

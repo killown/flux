@@ -35,6 +35,7 @@ pub fn expand_template(
     template: &str,
     mut lookup: impl FnMut(&str) -> Placeholder,
 ) -> Option<String> {
+    crate::hit!("expand_template");
     let chars: Vec<char> = template.chars().collect();
     let mut out = String::with_capacity(template.len());
     let mut i = 0;

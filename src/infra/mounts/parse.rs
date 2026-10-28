@@ -41,6 +41,7 @@ pub fn parse_mountinfo(content: &str) -> Vec<String> {
 
 /// Extracts mount points from `/etc/fstab`, skipping comments and blank lines.
 pub fn parse_fstab(content: &str) -> Vec<String> {
+    crate::hit!("parse_fstab");
     content
         .lines()
         .map(str::trim)

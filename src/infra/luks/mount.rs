@@ -91,6 +91,7 @@ pub fn unlock_and_mount_with(
     image: &LuksImage,
     passphrase: &str,
 ) -> Result<PathBuf, String> {
+    crate::hit!("unlock_and_mount_with");
     let device_name = image
         .path
         .file_stem()

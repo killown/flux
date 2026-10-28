@@ -12,6 +12,7 @@ fn apply_flat_filters(
     date_seconds: Option<u64>,
     size_bytes: Option<(bool, u64)>,
 ) {
+    crate::hit!("apply_flat_filters");
     let mut parts: Vec<String> = Vec::new();
 
     if let Some(secs) = date_seconds {

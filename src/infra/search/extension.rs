@@ -45,6 +45,7 @@ pub fn start_extension_search(
     patterns: Vec<String>,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("start_extension_search");
     let params = AdvancedSearchParams {
         patterns,
         include_hidden: app.show_hidden,
@@ -62,6 +63,7 @@ pub fn start_advanced_search(
     params: AdvancedSearchParams,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("start_advanced_search");
     // When the dialog's "include hidden" toggle is off, respect the session
     // flag, when it's on, override it regardless of the global setting.
     let effective_hidden = params.include_hidden || app.show_hidden;

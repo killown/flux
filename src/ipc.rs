@@ -65,6 +65,7 @@ fn current_uid() -> u32 {
 /// `None` if the getsockopt call fails. Uses the stable `libc` binding rather
 /// than `std::os::unix::net::UnixStream::peer_cred`, which is still nightly.
 fn peer_uid(stream: &UnixStream) -> Option<u32> {
+    crate::hit!("peer_uid");
     let mut ucred = std::mem::MaybeUninit::<libc::ucred>::uninit();
     let mut len = std::mem::size_of::<libc::ucred>() as libc::socklen_t;
     let rc = unsafe {
@@ -93,6 +94,7 @@ static SOCKET_PATH: OnceLock<PathBuf> = OnceLock::new();
 /// Returns `None` (silently) when another Flux instance already owns the
 /// socket. Any real failure to bind is logged.
 pub fn start_server() -> Option<Receiver<PathBuf>> {
+    crate::hit!("start_server");
     let dir = socket_dir()?;
     let path = socket_path()?;
 
@@ -146,6 +148,7 @@ extern "C" fn cleanup_socket() {
 /// Binds the listener, recovering from a stale socket left by a crash, and
 /// reporting "another instance owns it" separately from a genuine failure.
 fn try_bind(path: &Path) -> BindOutcome {
+    crate::hit!("try_bind");
     match UnixListener::bind(path) {
         Ok(l) => BindOutcome::Bound(l),
         Err(e) if e.kind() == ErrorKind::AddrInUse => probe_existing(path),
@@ -155,6 +158,7 @@ fn try_bind(path: &Path) -> BindOutcome {
 
 /// Decides what to do when a socket file already exists.
 fn probe_existing(path: &Path) -> BindOutcome {
+    crate::hit!("probe_existing");
     match UnixStream::connect(path) {
         // A live server accepted our probe, do not clobber it.
         Ok(_) => BindOutcome::AlreadyOwned,
@@ -177,6 +181,7 @@ fn probe_existing(path: &Path) -> BindOutcome {
 }
 
 fn accept_loop(listener: UnixListener, tx: SyncSender<PathBuf>) {
+    crate::hit!("accept_loop");
     for stream in listener.incoming() {
         match stream {
             Ok(s) => handle_connection(s, &tx),
@@ -186,6 +191,7 @@ fn accept_loop(listener: UnixListener, tx: SyncSender<PathBuf>) {
 }
 
 fn handle_connection(mut stream: UnixStream, tx: &SyncSender<PathBuf>) {
+    crate::hit!("handle_connection");
     let _ = stream.set_read_timeout(Some(SERVER_READ_TIMEOUT));
     let _ = stream.set_write_timeout(Some(SERVER_READ_TIMEOUT));
 
@@ -237,6 +243,7 @@ fn handle_connection(mut stream: UnixStream, tx: &SyncSender<PathBuf>) {
 
 /// Sends `v1 cwd:<path>` to the running window. `path` must be canonical.
 pub fn send_cwd(path: &Path) -> ClientOutcome {
+    crate::hit!("send_cwd");
     let Some(sock) = socket_path() else {
         return ClientOutcome::NotRunning;
     };

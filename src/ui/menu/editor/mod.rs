@@ -81,6 +81,7 @@ impl SimpleComponent for MenuEditor {
         root: Self::Root,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
+        crate::hit!("MenuEditor::init");
         let current_menu = Rc::new(RefCell::new("menu.rs".to_string()));
         let entries = Rc::new(RefCell::new(load_from_disk("menu.rs")));
         let toast_overlay = adw::ToastOverlay::new();
@@ -241,6 +242,7 @@ impl SimpleComponent for MenuEditor {
     }
 
     fn update(&mut self, msg: Self::Input, _: ComponentSender<Self>) {
+        crate::hit!("MenuEditor::update");
         let shared = self.shared.borrow();
 
         match msg {
@@ -378,6 +380,7 @@ impl SimpleComponent for MenuEditor {
 /// Opens the menu editor as a window of the running app. GTK, i18n and CSS are
 /// already initialised by the main process, so nothing else is needed.
 pub fn open(parent: Option<&gtk::Window>) {
+    crate::hit!("open");
     // Dropping the controller shuts the component's runtime down, which makes
     // every button click panic. Keep it alive until the window is destroyed.
     let controller = MenuEditor::builder().launch(()).detach();

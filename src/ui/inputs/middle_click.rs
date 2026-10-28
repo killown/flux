@@ -10,6 +10,7 @@ pub fn setup_middle_click(
     window: &impl IsA<gtk::Widget>,
     sender: relm4::AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("setup_middle_click");
     let gesture = gtk::GestureClick::new();
     gesture.set_button(0);
 

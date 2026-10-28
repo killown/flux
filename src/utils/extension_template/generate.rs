@@ -10,6 +10,7 @@ pub fn generate_mime_svg(
     font_color: &str,
     base_font_size: f64,
 ) -> String {
+    crate::hit!("generate_mime_svg");
     let clean_ext = extension.trim_start_matches('.').to_ascii_uppercase();
     let template = get_or_create_template();
 
@@ -70,6 +71,7 @@ pub fn save_generated_extension_icon(
     font_color: &str,
     base_font_size: f64,
 ) -> std::io::Result<PathBuf> {
+    crate::hit!("save_generated_extension_icon");
     save_extension_icon(
         extension,
         "generated",

@@ -20,6 +20,7 @@ impl ArchiveBackend for TarBackend {
         prefix: &str,
         _password: Option<&str>,
     ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        crate::hit!("list_entries");
         let name_lc = lc_name(archive_path);
         if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
             list_tar(
@@ -52,6 +53,7 @@ impl ArchiveBackend for TarBackend {
         archive_path: &Path,
         _password: Option<&str>,
     ) -> Result<u64, ArchiveError> {
+        crate::hit!("total_bytes");
         let name_lc = lc_name(archive_path);
         if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
             total_tar(flate2::read::GzDecoder::new(open_buf(archive_path)?))
@@ -80,6 +82,7 @@ impl ArchiveBackend for TarBackend {
         inner_path: &str,
         password: Option<&str>,
     ) -> Result<Vec<u8>, ArchiveError> {
+        crate::hit!("extract_entry_bytes");
         extract_bytes_via_tempfile(archive_path, inner_path, password, |p, i, _pw, tmp| {
             let name_lc = lc_name(p);
             if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
@@ -110,6 +113,7 @@ impl ArchiveBackend for TarBackend {
         inner_dir: &str,
         _password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError> {
+        crate::hit!("extract_dir");
         let name_lc = lc_name(archive_path);
         if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
             extract_dir_tar(

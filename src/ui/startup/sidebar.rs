@@ -59,8 +59,16 @@ impl FluxApp {
             },
         );
 
-        let volume_monitor = gio::VolumeMonitor::get();
-        crate::ui::sidebar_network::connect_volume_monitor_signals(sender.input_sender().clone());
+        let volume_monitor = {
+            crate::hit!("build_sidebar:volume_monitor_get");
+            gio::VolumeMonitor::get()
+        };
+        {
+            crate::hit!("build_sidebar:volume_monitor_signals");
+            crate::ui::sidebar_network::connect_volume_monitor_signals(
+                sender.input_sender().clone(),
+            );
+        }
 
         let network_section = crate::ui::sidebar_network::build_network_section(
             &config.network_bookmarks,

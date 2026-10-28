@@ -17,6 +17,7 @@ pub(super) fn launch_main_app(
 ) {
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms.
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
+        crate::hit!("launch_main_app:deferred_init");
         crate::utils::helpers::load_custom_css();
         crate::utils::helpers::load_custom_background_images();
         setup_config_watcher();
@@ -39,7 +40,10 @@ pub(super) fn launch_main_app(
     // Setting application_id with .flags(gio::ApplicationFlags...) in the
     // builder triggers a synchronous D-Bus handshake and Wayland compositor
     // lookup that blocks the main thread for around ~200ms.
-    let base_app = adw::Application::builder().build();
+    let base_app = {
+        crate::hit!("launch_main_app:build_application");
+        adw::Application::builder().build()
+    };
 
     assert!(
         base_app.application_id().is_none(),
@@ -57,7 +61,10 @@ pub(super) fn launch_main_app(
      Remove .flags(gio::ApplicationFlags::NON_UNIQUE) from the adw::Application::builder() call.\n"
     );
 
-    setup_shortcuts(&base_app);
+    {
+        crate::hit!("launch_main_app:setup_shortcuts");
+        setup_shortcuts(&base_app);
+    }
 
     let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);
@@ -85,6 +92,7 @@ pub(super) fn launch_main_app(
 
 /// Drains IPC navigation requests into the app message loop on the GTK thread.
 fn forward_ipc_to_app(rx: Receiver<PathBuf>) {
+    crate::hit!("forward_ipc_to_app");
     glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
         while let Ok(path) = rx.try_recv() {
             if let Some(sender) = crate::model::SENDER.get() {

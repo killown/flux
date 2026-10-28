@@ -273,6 +273,7 @@ impl TerminalState {
     }
 
     pub fn write_pty(&self, data: &[u8]) -> bool {
+        crate::hit!("write_pty");
         if let Some(fd) = self.pty_fd {
             unsafe {
                 let n = libc::write(fd, data.as_ptr() as *const libc::c_void, data.len());

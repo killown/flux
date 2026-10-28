@@ -39,6 +39,7 @@ impl ArchiveBackend for RarBackend {
         inner_dir: &str,
         password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError> {
+        crate::hit!("extract_dir");
         reject_tool_arg(inner_dir)?;
         let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
 

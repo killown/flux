@@ -148,6 +148,7 @@ impl FluxApp {
         toast: Option<String>,
         sender: AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_custom_icon_file_chooser");
         let filter = gtk::FileFilter::new();
         filter.set_name(Some("Images"));
         filter.add_mime_type("image/png");

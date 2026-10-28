@@ -84,6 +84,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
 
 /// Builds the "layout" settings group.
 fn layout_group(config: &Config) -> adw::PreferencesGroup {
+    crate::hit!("layout_group");
     relm4::view! {
         group = adw::PreferencesGroup {
             set_title: &tr("Layout"),
@@ -408,6 +409,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
 
 /// Builds the "theme" settings group.
 fn theme_group(config: &Config) -> adw::PreferencesGroup {
+    crate::hit!("theme_group");
     relm4::view! {
         group = adw::PreferencesGroup {
             set_title: &tr("Theme"),
@@ -519,6 +521,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
 
 /// Builds the "icons" settings group.
 fn icons_group(config: &Config) -> adw::PreferencesGroup {
+    crate::hit!("icons_group");
     relm4::view! {
         group = adw::PreferencesGroup {
             set_title: &tr("Generated Extension Icons"),

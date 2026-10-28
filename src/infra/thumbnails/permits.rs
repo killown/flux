@@ -6,6 +6,7 @@
 /// thousands of images that adds up fast. Give thumbnails a quarter of
 /// RLIMIT_NOFILE and leave the rest for GTK, GIO, SQLite and the terminal.
 pub(super) fn effective_thumbnail_permits(configured: usize) -> usize {
+    crate::hit!("effective_thumbnail_permits");
     let mut lim = libc::rlimit {
         rlim_cur: 0,
         rlim_max: 0,

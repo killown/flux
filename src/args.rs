@@ -215,6 +215,7 @@ pub fn resolve_startup_action_with_reader<S: AsRef<OsStr>, R: BufRead>(
     home_dir: PathBuf,
     reader: R,
 ) -> StartupAction {
+    crate::hit!("resolve_startup_action_with_reader");
     let mut opts = WindowOptions::default();
     let mut filtered_args: Vec<&OsStr> = Vec::new();
 

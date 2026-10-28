@@ -636,6 +636,7 @@ fn spawn_zip_lock_probe(
     load_id: u64,
     sender: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("spawn_zip_lock_probe");
     if candidates.is_empty() {
         return;
     }

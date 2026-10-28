@@ -348,6 +348,7 @@ pub fn archive_inner_path(prefix: &str, name: &str) -> String {
 ///
 /// Returns the I/O error when `src` cannot be inspected or removed.
 pub fn remove_cut_source(src: &Path, archive_path: &Path) -> std::io::Result<()> {
+    crate::hit!("remove_cut_source");
     if archive_path.starts_with(src) {
         return Ok(());
     }

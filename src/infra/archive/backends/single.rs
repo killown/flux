@@ -14,6 +14,7 @@ impl ArchiveBackend for SingleFileBackend {
         _prefix: &str,
         _password: Option<&str>,
     ) -> Result<Vec<ArchiveEntry>, ArchiveError> {
+        crate::hit!("list_entries");
         let name_lc = lc_name(archive_path);
         let inner_name = if name_lc.ends_with(".gz") {
             strip_ext(&name_lc, ".gz")
@@ -41,6 +42,7 @@ impl ArchiveBackend for SingleFileBackend {
         _inner_path: &str,
         _password: Option<&str>,
     ) -> Result<Vec<u8>, ArchiveError> {
+        crate::hit!("extract_entry_bytes");
         // Extract the whole file (the only entry) to bytes.
         let name_lc = lc_name(archive_path);
         let reader: Box<dyn Read> = if name_lc.ends_with(".gz") {

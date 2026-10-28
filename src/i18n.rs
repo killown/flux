@@ -20,6 +20,7 @@ extern "C" {
 
 /// Initializes gettext locale bindings for the process.
 pub fn init() {
+    crate::hit!("init");
     unsafe {
         // Set locale based on environment variables (LANG, LC_ALL, etc.)
         libc::setlocale(libc::LC_ALL, c"".as_ptr());

@@ -55,6 +55,7 @@ impl SimpleComponent for SettingsWindow {
 
 /// Opens the preferences window as a non-modal window of the running app.
 pub fn open(parent: Option<&gtk::Window>) {
+    crate::hit!("open");
     // Only reuse a window that is still on screen. The Relm4 runtime can keep
     // a just-closed window alive for a moment, and presenting that dead
     // window would silently do nothing.

@@ -50,6 +50,7 @@ impl FluxApp {
     }
 
     pub fn stop_video_preview(&mut self) {
+        crate::hit!("stop_video_preview");
         if let Some(source_id) = self.video_preview_source.take() {
             source_id.remove();
         }

@@ -113,6 +113,7 @@ pub fn setup_toggle_server() {
 }
 
 fn start_server() {
+    crate::hit!("start_server");
     let Some(dir) = socket_dir() else { return };
     let _ = std::fs::create_dir_all(&dir);
     let _ = std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700));
@@ -136,6 +137,7 @@ fn start_server() {
 
 /// Sends `verb` to the window behind `pid` and reports whether it answered with a state.
 fn request(dir: &Path, pid: u32, verb: ToggleVerb) -> bool {
+    crate::hit!("request");
     let Ok(mut stream) = UnixStream::connect(socket_path(dir, pid)) else {
         return false;
     };
@@ -152,6 +154,7 @@ fn request(dir: &Path, pid: u32, verb: ToggleVerb) -> bool {
 
 /// Sends `verb` to running windows, highest PID first, and reports whether one answered.
 fn send_to_running(verb: ToggleVerb) -> bool {
+    crate::hit!("send_to_running");
     let Some(dir) = socket_dir() else {
         return false;
     };

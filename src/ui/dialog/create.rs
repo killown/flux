@@ -42,6 +42,7 @@ fn create_blocking(
     name: &str,
     archive_password: Option<&str>,
 ) -> Created {
+    crate::hit!("create_blocking");
     let current_str = current_path.to_string_lossy();
     if kind == Kind::Folder && is_archive_uri(&current_str) {
         let Some((archive_path, prefix)) = crate::infra::archive::parse_archive_uri(&current_str)
@@ -82,6 +83,7 @@ fn create_blocking(
 /// Creates one entry on a network location. Everything here is async so the
 /// GTK main loop keeps running (mounting a share needs it to).
 async fn create_network(kind: Kind, uri: &str) -> Created {
+    crate::hit!("create_network");
     use gtk::gio;
     let file = gio::File::for_uri(uri);
 
@@ -145,6 +147,7 @@ async fn create_entries(
     archive_password: Option<String>,
     s: AsyncComponentSender<FluxApp>,
 ) {
+    crate::hit!("create_entries");
     let is_archive = kind == Kind::Folder && is_archive_uri(&current_path.to_string_lossy());
     let is_network = !is_archive && crate::infra::network::is_network_uri(&current_path);
 

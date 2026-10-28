@@ -50,6 +50,7 @@ impl SpeedWindow {
     /// Uses all samples within the last [`SPEED_WINDOW_SECS`] seconds.
     /// Returns `0.0` if fewer than two qualifying samples exist.
     pub fn bytes_per_sec(&self) -> f64 {
+        crate::hit!("bytes_per_sec");
         if self.len < 2 {
             return 0.0;
         }

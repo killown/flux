@@ -49,6 +49,7 @@ fn trigger_matches(ctrl: &gtk::EventControllerKey, trigger: &gtk::ShortcutTrigge
 ///
 /// * `keymap` - The resolved key map holding the user's (or default) triggers.
 fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
+    crate::hit!("capture_bindings");
     let bind = |trigger: &Option<gtk::ShortcutTrigger>,
                 msg: AppMsg,
                 yield_to: Yield|
@@ -175,6 +176,7 @@ pub fn setup_capture(
     sender: relm4::AsyncComponentSender<FluxApp>,
     keymap: &KeyMap,
 ) {
+    crate::hit!("setup_capture");
     let bindings = capture_bindings(keymap);
     let capture = gtk::EventControllerKey::new();
     capture.set_propagation_phase(gtk::PropagationPhase::Capture);

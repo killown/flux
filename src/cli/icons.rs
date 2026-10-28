@@ -6,6 +6,7 @@ use std::path::Path;
 /// Directories also propagate the icon to any matching pinned sidebar entry,
 /// so the change is visible there without a separate edit.
 pub(super) fn set_icon_on_target(config: &mut Config, target: &Path, image: &Path) {
+    crate::hit!("set_icon_on_target");
     let key = target.to_string_lossy().to_string();
     let img_val = image.to_string_lossy().to_string();
 

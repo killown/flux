@@ -49,6 +49,7 @@ impl InstallReport {
 
 /// Resolves the readable source file and the destination file name, extracting archive entries first.
 fn resolve_source(path: &Path) -> Option<(PathBuf, String)> {
+    crate::hit!("resolve_source");
     let raw = path.to_string_lossy();
     if raw.starts_with(crate::infra::archive::ARCHIVE_URI) {
         let (archive, inner) = crate::infra::archive::parse_archive_uri(&raw)?;

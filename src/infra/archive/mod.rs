@@ -195,6 +195,7 @@ pub fn extract_entry_to_tempfile_with_backend(
     password: Option<&str>,
     backend: Option<Box<dyn ArchiveBackend>>,
 ) -> Result<tempfile::NamedTempFile, ArchiveError> {
+    crate::hit!("extract_entry_to_tempfile_with_backend");
     let backend = get_backend(archive_path, backend);
     let data = backend.extract_entry_bytes(archive_path, inner_path, password)?;
 

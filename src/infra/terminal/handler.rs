@@ -500,6 +500,7 @@ impl Perform for TerminalHandler {
     }
 
     fn osc_dispatch(&mut self, params: &[&[u8]], _command: bool) {
+        crate::hit!("osc_dispatch");
         let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
 
         if params.is_empty() {

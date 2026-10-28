@@ -17,6 +17,7 @@ pub fn build_terminal_panel(
     initial_width: i32,
     sender: AsyncComponentSender<FluxApp>,
 ) -> (gtk::Box, crate::infra::terminal::Terminal) {
+    crate::hit!("build_terminal_panel");
     let spec = PanelSpec::new(380, 800, 720).with_initial(initial_width);
 
     let panel = gtk::Box::builder()

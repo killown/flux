@@ -120,6 +120,7 @@ pub(super) fn get_elf_info(path: &Path) -> Option<Vec<(String, String)>> {
 
 /// Counts lines, words, TODOs, and detects CRLF vs LF endings in a UTF-8 body.
 pub(super) fn get_text_metrics(raw: &[u8]) -> Option<Vec<(String, String)>> {
+    crate::hit!("get_text_metrics");
     if let Ok(content) = std::str::from_utf8(raw) {
         let lines: Vec<&str> = content.lines().collect();
         let word_count: usize = lines.iter().map(|l| l.split_whitespace().count()).sum();

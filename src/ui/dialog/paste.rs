@@ -11,6 +11,7 @@ impl FluxApp {
         is_cut: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_confirm_replace_paste");
         let window = gtk::Application::default().active_window();
         let body = if conflicts.len() == 1 {
             format!(

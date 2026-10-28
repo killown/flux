@@ -25,6 +25,7 @@ impl FluxApp {
         image_path: PathBuf,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("handle_unlock_luks_image");
         let sender_c = sender.clone();
         relm4::spawn(async move {
             let Some(saved) = crate::infra::keyring::lookup_luks_passphrase(&image_path).await
@@ -59,6 +60,7 @@ impl FluxApp {
         wrong_passphrase: bool,
         sender: &AsyncComponentSender<Self>,
     ) {
+        crate::hit!("show_luks_passphrase_dialog");
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 

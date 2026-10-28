@@ -31,6 +31,7 @@ impl FluxApp {
     }
 
     pub(super) fn wire_tab_signals(&self, tab: &mut TabState, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("wire_tab_signals");
         tab.files
             .view
             .set_single_click_activate(self.config.ui.single_click);
