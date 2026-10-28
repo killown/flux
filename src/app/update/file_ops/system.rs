@@ -58,38 +58,35 @@ impl FluxApp {
         }
 
         let content = std::fs::read_to_string(&xbel_path)?;
-        let lines: Vec<&str> = content.lines().collect();
-        let mut keep = Vec::new();
-
-        if let Some(paths) = paths {
-            // Build a set of canonical file:// URIs to match against XBEL's href attributes.
-            let uris_to_remove: HashSet<String> = paths
+        let hrefs: Option<HashSet<String>> = paths.map(|paths| {
+            paths
                 .iter()
-                .map(|p| gio::File::for_path(p).uri().into())
-                .collect();
+                .map(|p| format!("href=\"{}\"", gio::File::for_path(p).uri()))
+                .collect()
+        });
 
-            for line in lines {
-                if line.trim_start().starts_with("<bookmark") {
-                    let should_remove =
-                        uris_to_remove.iter().any(|uri| line.contains(uri.as_str()));
-                    if !should_remove {
-                        keep.push(line);
-                    }
-                } else {
-                    keep.push(line);
-                }
+        let mut keep: Vec<&str> = Vec::new();
+        let mut skipping = false;
+        for line in content.lines() {
+            let trimmed = line.trim_start();
+            if skipping {
+                skipping = !trimmed.starts_with("</bookmark>");
+                continue;
             }
-        } else {
-            // Remove all bookmarks: keep everything except `<bookmark …>` lines.
-            for line in lines {
-                if !line.trim_start().starts_with("<bookmark") {
-                    keep.push(line);
-                }
+            if trimmed.starts_with("<bookmark ")
+                && hrefs
+                    .as_ref()
+                    .is_none_or(|set| set.iter().any(|h| line.contains(h.as_str())))
+            {
+                skipping = !trimmed.contains("</bookmark>") && !trimmed.ends_with("/>");
+                continue;
             }
+            keep.push(line);
         }
 
-        std::fs::write(&xbel_path, keep.join("\n"))?;
-        Ok(())
+        let tmp = xbel_path.with_extension("xbel.tmp");
+        std::fs::write(&tmp, keep.join("\n") + "\n")?;
+        std::fs::rename(&tmp, &xbel_path)
     }
 
     /// Applies the outcome of the background `remove_recents` run started by
