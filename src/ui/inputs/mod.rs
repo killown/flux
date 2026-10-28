@@ -19,18 +19,16 @@ use relm4::prelude::*;
 /// of being consumed by the file-grid cycle shortcut.
 pub fn setup_controllers(
     window: &impl IsA<gtk::Widget>,
-    grid_view: &gtk::GridView,
+    tab_view: &adw::TabView,
     sender: relm4::AsyncComponentSender<FluxApp>,
     header_stack: &gtk::Stack,
-    config_single_click: bool,
     keymap: &KeyMap,
     terminal_area: &gtk::DrawingArea,
 ) {
     crate::hit!("setup_controllers");
-    grid_view.set_enable_rubberband(true);
 
     navigation::setup_navigation(window, header_stack, terminal_area, sender.clone());
-    click_toggle::setup_click_toggle(window, grid_view, config_single_click);
+    click_toggle::setup_click_toggle(window, tab_view);
     middle_click::setup_middle_click(window, sender.clone());
     capture::setup_capture(window, sender.clone(), keymap);
     navigation::setup_history(window, sender.clone(), keymap);

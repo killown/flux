@@ -583,10 +583,9 @@ impl FluxApp {
         crate::hit!("setup_input_controllers");
         crate::ui::inputs::setup_controllers(
             root,
-            &model.files.view,
+            &model.tab_view,
             sender.clone(),
             &widgets.header_stack,
-            model.config.ui.single_click,
             &model.keymap,
             &model.terminal.drawing_area,
         );
