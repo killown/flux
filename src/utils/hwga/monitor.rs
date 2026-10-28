@@ -219,12 +219,23 @@ impl CallMonitor {
 #[allow(unused_imports)]
 use _count as _;
 
+/// Minimum number of distinct probes a crate needs before its exit report is
+/// printed. `flux-fm` re-declares the module tree with `mod`, so the binary and
+/// the `flux` library each own a separate probe registry and `atexit` hook.
+const MIN_REPORT_PROBES: usize = 8;
+
 /// The `atexit` handler: dumps to stderr and optionally writes a JSON file
-/// when `FLUX_HWGA_OUT` is set.
+/// when `FLUX_HWGA_OUT` is set. Registries holding fewer than
+/// [`MIN_REPORT_PROBES`] probes are skipped so a secondary crate in the same
+/// process neither prints a stub report nor overwrites the primary JSON file.
 pub(super) extern "C" fn dump_extern() {
     let Ok(target) = std::env::var("FLUX_HWGA_OUT") else {
         return;
     };
+
+    if CallMonitor::snapshot().len() < MIN_REPORT_PROBES {
+        return;
+    }
 
     CallMonitor::dump();
 
