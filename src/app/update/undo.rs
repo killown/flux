@@ -144,13 +144,14 @@ impl FluxApp {
                     let mut redo_items = Vec::new();
                     let mut success = true;
                     for (src, dst) in items {
-                        if crate::app::update::file_ops::paste::perform_file_op(
-                            &dst,
-                            &src,
-                            true,
-                            &gtk::gio::Cancellable::new(),
-                        )
-                        .is_err()
+                        if src.symlink_metadata().is_ok()
+                            || crate::app::update::file_ops::paste::perform_file_op(
+                                &dst,
+                                &src,
+                                true,
+                                &gtk::gio::Cancellable::new(),
+                            )
+                            .is_err()
                         {
                             success = false;
                             break;
@@ -213,13 +214,14 @@ impl FluxApp {
                     let mut undo_items = Vec::new();
                     let mut success = true;
                     for (src, dst) in items {
-                        if crate::app::update::file_ops::paste::perform_file_op(
-                            &src,
-                            &dst,
-                            true,
-                            &gtk::gio::Cancellable::new(),
-                        )
-                        .is_err()
+                        if dst.symlink_metadata().is_ok()
+                            || crate::app::update::file_ops::paste::perform_file_op(
+                                &src,
+                                &dst,
+                                true,
+                                &gtk::gio::Cancellable::new(),
+                            )
+                            .is_err()
                         {
                             success = false;
                             break;
