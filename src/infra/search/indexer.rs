@@ -17,6 +17,9 @@ const DEBOUNCE: Duration = Duration::from_millis(150);
 const MAX_BATCH: usize = 4096;
 /// Directory modifications within this window are untrusted to avoid race conditions.
 const RACY_WINDOW_NS: i64 = 2_000_000_000;
+/// Covering partial index for the directory listing read by `delta_scan`.
+const DIRS_INDEX: &str =
+    "CREATE INDEX IF NOT EXISTS entries_dirs ON entries(path, mtime) WHERE is_dir = 1";
 
 fn should_index(name: &str) -> bool {
     if name.starts_with('.') {
@@ -192,6 +195,7 @@ impl SearchIndex {
         crate::hit!("migrate");
         let version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
         if version == SCHEMA_VERSION {
+            conn.execute_batch(DIRS_INDEX)?;
             return Ok(());
         }
         let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -199,6 +203,7 @@ impl SearchIndex {
         if version != SCHEMA_VERSION {
             tx.execute_batch(DROP_ALL)?;
             tx.execute_batch(SCHEMA)?;
+            tx.execute_batch(DIRS_INDEX)?;
             tx.execute_batch(&format!("PRAGMA user_version = {SCHEMA_VERSION};"))?;
         }
         tx.commit()?;
@@ -334,7 +339,8 @@ fn upsert(conn: &Connection, parent: &str, name: &str, is_dir: bool, mtime: i64)
 
 fn set_dir_mtime(conn: &Connection, dir: &str, mtime: i64) -> Result<()> {
     crate::hit!("set_dir_mtime");
-    let stored = if now_ns() - mtime < RACY_WINDOW_NS {
+    let stored = if (0..RACY_WINDOW_NS).contains(&(now_ns() - mtime)) {
+        crate::hit!("set_dir_mtime:racy");
         0
     } else {
         mtime
@@ -454,7 +460,10 @@ fn sync_dir(conn: &Connection, dir: &Path, should_stop: &dyn Fn() -> bool) -> Re
         {
             return remove_tree(conn, &dir_s);
         }
-        Err(_) => return Ok(()),
+        Err(_) => {
+            crate::hit!("sync_dir:read_error");
+            return Ok(());
+        }
     };
 
     let existing: HashMap<String, bool> = {
@@ -522,6 +531,7 @@ pub fn full_scan(
             [],
         )?;
     }
+    conn.execute_batch(DIRS_INDEX)?;
     conn.execute_batch("COMMIT")?;
     Ok(all_finished)
 }
@@ -551,23 +561,32 @@ pub fn delta_scan(
             }
             match std::fs::metadata(&path) {
                 Ok(m) if m.is_dir() => {
-                    if mtime_ns(&m) != stored || stored == 0 {
+                    if stored == 0 {
+                        crate::hit!("delta_scan:changed_stored_zero");
+                        changed.push(PathBuf::from(path));
+                    } else if mtime_ns(&m) != stored {
+                        crate::hit!("delta_scan:changed_mtime_mismatch");
                         changed.push(PathBuf::from(path));
                     }
                 }
-                Ok(_) => changed.push(
-                    Path::new(&path)
-                        .parent()
-                        .unwrap_or(fallback_root)
-                        .to_path_buf(),
-                ),
+                Ok(_) => {
+                    crate::hit!("delta_scan:changed_not_dir");
+                    changed.push(
+                        Path::new(&path)
+                            .parent()
+                            .unwrap_or(fallback_root)
+                            .to_path_buf(),
+                    )
+                }
                 Err(e)
                     if e.kind() == io::ErrorKind::NotFound
                         || e.raw_os_error() == Some(libc::ENOTDIR) =>
                 {
                     gone.push(path)
                 }
-                Err(_) => {}
+                Err(_) => {
+                    crate::hit!("delta_scan:stat_error");
+                }
             }
         }
     }
@@ -757,17 +776,19 @@ fn ensure_worker() -> Option<&'static Sender<Job>> {
     if let Some(tx) = WORKER.get() {
         return Some(tx);
     }
-    let roots = collect_index_roots();
-    if roots.is_empty() {
-        return None;
-    }
     let (tx, rx) = mpsc::channel();
     // Only publish the sender after the thread is up. If spawn fails and we
     // still publish, every notify_* call queues forever into a channel
     // nobody drains.
     let spawned = std::thread::Builder::new()
         .name("flux-indexer".into())
-        .spawn(move || worker_loop(rx, SearchIndex::db_path(), roots));
+        .spawn(move || {
+            let roots = collect_index_roots();
+            if roots.is_empty() {
+                return;
+            }
+            worker_loop(rx, SearchIndex::db_path(), roots)
+        });
     if spawned.is_err() {
         return None;
     }
@@ -787,8 +808,11 @@ pub fn set_enabled(enabled: bool) {
     crate::hit!("set_enabled");
     ENABLED.store(enabled, Ordering::Relaxed);
     if enabled {
+        let spawned_now = WORKER.get().is_none();
         if let Some(tx) = ensure_worker() {
-            let _ = tx.send(Job::Delta { force: true });
+            if !spawned_now {
+                let _ = tx.send(Job::Delta { force: true });
+            }
         }
     }
 }
