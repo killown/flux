@@ -25,7 +25,7 @@ impl FluxApp {
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
-        self.files.clear();
+        self.tabs[self.active_tab_index].files.clear();
 
         let current_session = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
         self.pending_thumbnails.clear();
@@ -73,11 +73,11 @@ impl FluxApp {
         entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
 
         if self.is_list_mode {
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(1);
+            self.tabs[self.active_tab_index].files.view.set_min_columns(1);
+            self.tabs[self.active_tab_index].files.view.set_max_columns(1);
         } else {
-            self.files.view.set_min_columns(1);
-            self.files.view.set_max_columns(20);
+            self.tabs[self.active_tab_index].files.view.set_min_columns(1);
+            self.tabs[self.active_tab_index].files.view.set_max_columns(20);
         }
 
         let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
@@ -111,7 +111,7 @@ impl FluxApp {
             let (is_img, is_vid) = is_visual_media_by_ext(&path);
             let is_audio = is_audio_file(&path);
             if is_img || is_vid || is_audio {
-                media_tasks.push((self.files.len(), path.clone()));
+                media_tasks.push((self.tabs[self.active_tab_index].files.len(), path.clone()));
             }
 
             let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {
@@ -133,7 +133,7 @@ impl FluxApp {
                 &self.config.ui.hidden_extensions,
             );
 
-            self.files.append(
+            self.tabs[self.active_tab_index].files.append(
                 FileItem::builder(display_name, path, icon)
                     .display_label(display_label)
                     .is_dir(is_dir)
