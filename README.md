@@ -127,6 +127,19 @@ The menu editor uses Nerd Font icons. Arch gets the font from the package above.
 
 Network browsing needs `gvfs` plus a backend such as `gvfs-smb` or `gvfs-sftp`. LUKS needs `cryptsetup` and `udisks2`.
 
+## Startup time and icon themes
+
+Flux normally opens its window in about 105 ms.
+With some large icon themes, a startup occasionally takes longer.
+
+If you notice random slow startups, these may help:
+
+- Try a lighter icon theme, such as Adwaita:
+  `gsettings set org.gnome.desktop.interface icon-theme 'Adwaita'`
+- Refresh the icon caches of your theme (stale caches make GTK scan directories instead):
+  `sudo gtk-update-icon-cache -f /usr/share/icons/<theme>`
+- Avoid keeping two copies of the same theme in `~/.icons` and `/usr/share/icons`.
+
 ## Themes
 
 Flux includes a built-in theme engine. You can switch the GTK UI, the embedded terminal colors, and the Papirus folder icons simultaneously.
