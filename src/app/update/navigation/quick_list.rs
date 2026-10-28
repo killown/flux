@@ -37,8 +37,7 @@ impl FluxApp {
                         if src_file
                             .copy(
                                 &dst_file,
-                                gtk::gio::FileCopyFlags::OVERWRITE
-                                    | gtk::gio::FileCopyFlags::ALL_METADATA,
+                                gtk::gio::FileCopyFlags::ALL_METADATA,
                                 gtk::gio::Cancellable::NONE,
                                 None,
                             )
