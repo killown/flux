@@ -78,6 +78,9 @@ pub fn run() {
     // Defer icon setup past the first frame so the synchronous icon-theme
     // lookup doesn't block cold start.
     glib::idle_add_local_once(|| {
+        // Warm the theme's files on a worker thread first, so this lookup and
+        // the grid's first icon binds hit the page cache instead of the disk.
+        crate::utils::icon::preload_icon_theme();
         gtk::Window::set_default_icon_name("io.github.killown.flux");
     });
 
