@@ -50,9 +50,12 @@ pub fn purge_stale_scratch_dirs() {
         let Some(rest) = name.strip_prefix("flux-") else {
             continue;
         };
-        let Some(pid_part) = rest.split('-').next() else {
+        let Some((pid_part, suffix)) = rest.split_once('-') else {
             continue;
         };
+        if suffix.len() != 6 || !suffix.bytes().all(|b| b.is_ascii_alphanumeric()) {
+            continue;
+        }
         let Ok(pid) = pid_part.parse::<u32>() else {
             continue;
         };
