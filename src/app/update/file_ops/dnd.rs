@@ -63,7 +63,12 @@ impl FluxApp {
             let mut completed_moves = Vec::new();
 
             for source_path in source_paths {
-                let Ok(source_canon) = source_path.canonicalize() else {
+                let Some(source_canon) = source_path
+                    .parent()
+                    .and_then(|p| p.canonicalize().ok())
+                    .zip(source_path.file_name())
+                    .map(|(parent, name)| parent.join(name))
+                else {
                     continue;
                 };
 
@@ -145,7 +150,12 @@ impl FluxApp {
             let mut completed_moves = Vec::new();
 
             for source in source_paths {
-                let Ok(source_canon) = source.canonicalize() else {
+                let Some(source_canon) = source
+                    .parent()
+                    .and_then(|p| p.canonicalize().ok())
+                    .zip(source.file_name())
+                    .map(|(parent, name)| parent.join(name))
+                else {
                     continue;
                 };
 
