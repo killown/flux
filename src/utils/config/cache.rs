@@ -1,6 +1,7 @@
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::OnceLock;
 
 use super::defaults::load_config_from_disk;
@@ -8,9 +9,29 @@ use super::snapshots::{extract_icon_config, extract_thumb_config, ICON_CONFIG, T
 
 static CONFIG_CACHE: OnceLock<RwLock<Option<crate::model::Config>>> = OnceLock::new();
 
+/// Serializes `save_config`, so the cache and `config.toml` receive writes in the same order.
+static SAVE_LOCK: Mutex<()> = Mutex::new(());
+
+/// Set while the last write to `config.toml` failed, so an identical config is saved
+/// again instead of being skipped as already cached.
+static UNSAVED: AtomicBool = AtomicBool::new(false);
+
+/// Bumped on every cache invalidation, letting `load_config` detect that its disk
+/// read may predate a change to `config.toml`.
+static INVALIDATIONS: AtomicU64 = AtomicU64::new(0);
+
 #[inline]
 fn config_cache() -> &'static RwLock<Option<crate::model::Config>> {
     CONFIG_CACHE.get_or_init(|| RwLock::new(None))
+}
+
+fn write_atomic(path: &Path, contents: &str) -> std::io::Result<()> {
+    let tmp = path.with_file_name(format!(".config.toml.{}.tmp", std::process::id()));
+    let result = fs::write(&tmp, contents).and_then(|()| fs::rename(&tmp, path));
+    if result.is_err() {
+        let _ = fs::remove_file(&tmp);
+    }
+    result
 }
 
 pub fn save_config(config: &crate::model::Config) {
@@ -26,10 +47,12 @@ pub fn save_config(config: &crate::model::Config) {
     // It is cheap relative to `toml::to_string_pretty` + atomic rename.
     {
         let cache = config_cache().read();
-        if cache.as_ref() == Some(config) {
+        if !UNSAVED.load(Ordering::Relaxed) && cache.as_ref() == Some(config) {
             return;
         }
     }
+
+    let _save = SAVE_LOCK.lock();
 
     if let Some(lock) = THUMB_CONFIG.get() {
         *lock.write() = extract_thumb_config(config);
@@ -50,32 +73,39 @@ pub fn save_config(config: &crate::model::Config) {
 
     let _ = fs::create_dir_all(&config_dir);
 
-    if let Ok(toml_str) = toml::to_string_pretty(config) {
-        let tmp_path = config_dir.join(".config.toml.tmp");
-        if fs::write(&tmp_path, toml_str).is_ok() {
-            let _ = fs::rename(&tmp_path, &config_path);
-        }
-    }
+    let saved = toml::to_string_pretty(config)
+        .ok()
+        .is_some_and(|toml_str| write_atomic(&config_path, &toml_str).is_ok());
+    UNSAVED.store(!saved, Ordering::Relaxed);
 }
 
 pub fn invalidate_config_cache() {
-    if let Some(lock) = CONFIG_CACHE.get() {
-        *lock.write() = None;
-    }
+    let mut cache = config_cache().write();
+    INVALIDATIONS.fetch_add(1, Ordering::SeqCst);
+    *cache = None;
 }
 
 pub fn load_config() -> crate::model::Config {
     crate::hit!("load_config");
-    {
-        let cache = config_cache().read();
+    for _ in 0..3 {
+        {
+            let cache = config_cache().read();
+            if let Some(cfg) = cache.as_ref() {
+                return cfg.clone();
+            }
+        }
+        let seen = INVALIDATIONS.load(Ordering::SeqCst);
+        let config = load_config_from_disk();
+        let mut cache = config_cache().write();
         if let Some(cfg) = cache.as_ref() {
             return cfg.clone();
+        }
+        if INVALIDATIONS.load(Ordering::SeqCst) == seen {
+            *cache = Some(config.clone());
+            return config;
         }
     }
     let config = load_config_from_disk();
     let mut cache = config_cache().write();
-    if cache.is_none() {
-        *cache = Some(config.clone());
-    }
-    cache.as_ref().unwrap().clone()
+    cache.get_or_insert(config).clone()
 }
