@@ -18,7 +18,7 @@ mod menus {
 }
 
 mod panels {
-    mod preview_theme;
+    mod preview_syntax_files;
 }
 
 // `app_view`, `inputs`, `ui_components`, `help_window`, `location`,

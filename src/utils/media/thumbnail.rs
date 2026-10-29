@@ -229,6 +229,10 @@ fn generate_thumbnail_inner(path: &std::path::Path, ephemeral: bool) -> Option<g
         vid: is_vid,
     } = classify_thumbnail_kind(path, &ext);
 
+    if is_vid && ext == "ts" && !crate::utils::media::is_mpeg_ts(path) {
+        return None;
+    }
+
     let is_supported = (is_pdf_file && thumb_types.pdfs)
         || (is_font_file && thumb_types.fonts)
         || (is_img && thumb_types.images)

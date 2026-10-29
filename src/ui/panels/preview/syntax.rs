@@ -1,10 +1,11 @@
 //! Syntax highlighting helper for the peek-preview text viewer.
 
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Style, Theme, ThemeSet};
-use syntect::parsing::SyntaxSet;
+use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
 /// Byte range inside the joined preview text that shares one visual style.
@@ -90,15 +91,54 @@ fn theme(dark: bool) -> &'static Theme {
         .expect("syntect default theme set is non-empty")
 }
 
-/// Returns `(ranges, language_name)`. `language_name` is `None` when syntect
-/// could not match the extension - the caller should not install tags in
-/// that case and can still display the raw text.
-pub fn highlight(text: &str, ext: &str) -> (Vec<HighlightedRange>, Option<String>) {
-    crate::hit!("highlight");
+pub fn highlight_file(text: &str, path: &Path) -> (Vec<HighlightedRange>, Option<String>) {
+    crate::hit!("highlight_file");
     let ss = syntax_set();
-    let Some(syntax) = ss.find_syntax_by_extension(ext) else {
-        return (Vec::new(), None);
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+    let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+    let by_ext = if ext.is_empty() {
+        None
+    } else {
+        ss.find_syntax_by_extension(alias_for(ext).unwrap_or(ext))
     };
+    let syntax = by_ext
+        .or_else(|| {
+            (!name.is_empty())
+                .then(|| ss.find_syntax_by_extension(name))
+                .flatten()
+        })
+        .or_else(|| {
+            let bare = name.trim_start_matches('.');
+            (!bare.is_empty())
+                .then(|| ss.find_syntax_by_extension(bare))
+                .flatten()
+        })
+        .or_else(|| {
+            text.lines()
+                .next()
+                .and_then(|line| ss.find_syntax_by_first_line(line))
+        });
+
+    match syntax {
+        Some(syntax) => highlight_with(ss, syntax, text),
+        None => (Vec::new(), None),
+    }
+}
+
+fn alias_for(ext: &str) -> Option<&'static str> {
+    const JS_FAMILY: [&str; 7] = ["ts", "tsx", "mts", "cts", "jsx", "mjs", "cjs"];
+    JS_FAMILY
+        .iter()
+        .any(|e| e.eq_ignore_ascii_case(ext))
+        .then_some("js")
+}
+
+fn highlight_with(
+    ss: &SyntaxSet,
+    syntax: &SyntaxReference,
+    text: &str,
+) -> (Vec<HighlightedRange>, Option<String>) {
     let lang = syntax.name.clone();
 
     let mut h = HighlightLines::new(syntax, theme(is_dark()));

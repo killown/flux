@@ -23,7 +23,7 @@ pub(crate) use image::{
 };
 pub use mime::{
     container_mime_masks_extension, get_mime_type, guess_mime_from_extension, icon_gen_params,
-    is_appimage, is_audio_file, is_raw_image_ext, is_visual_media,
+    is_appimage, is_audio_file, is_mpeg_ts, is_raw_image_ext, is_visual_media,
 };
 #[allow(unused_imports)]
 pub use png::optimize_png_bytes;

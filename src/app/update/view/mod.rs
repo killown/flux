@@ -6,6 +6,7 @@ mod layout;
 pub(crate) mod prefetch;
 pub(crate) mod preview;
 mod selection;
+mod text_encoding;
 mod thumbnails;
 mod video_preview;
 

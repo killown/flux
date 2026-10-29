@@ -154,6 +154,29 @@ pub fn guess_mime_from_extension(filename: &str) -> Option<String> {
     crate::utils::extension_template::lookup_system_extension_mime(ext)
 }
 
+pub fn is_mpeg_ts(path: &Path) -> bool {
+    const PACKET: usize = 188;
+    let Ok(mut file) = fs::File::open(path) else {
+        return false;
+    };
+    let mut buf = [0u8; PACKET * 2 + 1];
+    let mut n = 0;
+    while n < buf.len() {
+        match file.read(&mut buf[n..]) {
+            Ok(0) => break,
+            Ok(k) => n += k,
+            Err(_) => return false,
+        }
+    }
+    if n <= PACKET {
+        return false;
+    }
+    [0, PACKET, PACKET * 2]
+        .iter()
+        .filter(|&&i| i < n)
+        .all(|&i| buf[i] == 0x47)
+}
+
 pub fn is_visual_media(path: &Path) -> (bool, bool) {
     let ext = path
         .extension()
@@ -173,9 +196,10 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
         ) => (true, false),
         // Video extensions - hard yes.
         Some(
-            "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ts"
-            | "ogv",
+            "mp4" | "mkv" | "webm" | "avi" | "mov" | "flv" | "wmv" | "m4v" | "mpg" | "mpeg" | "ogv",
         ) => (false, true),
+        // `.ts` is MPEG transport stream or TypeScript, tell them apart by content.
+        Some("ts") => (false, is_mpeg_ts(path)),
         // AUDIO extensions, hard NO for both. Never fall through to
         // `content_type_guess`: a mislabeled container (`x.wav.mp3`,
         // `x.m4a.mp3`, re-muxed PCM) can be sniffed as `video/mp4` and

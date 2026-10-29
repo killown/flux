@@ -6,6 +6,7 @@
 //! media tag cards. Every result carries a [`FileInfo`] for the Details
 //! drawer.
 
+use super::text_encoding;
 use crate::model::{AppMsg, FluxApp, RightPanelType};
 use crate::ui::panels::preview::{
     binary, markdown, office, registry, syntax, table, FileInfo, FolderEntry, PreviewContent,
@@ -637,6 +638,11 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         .unwrap_or_default();
     let ext = ext.as_str();
 
+    let ts_source = ext == "ts" && !crate::utils::media::is_mpeg_ts(path);
+    if ts_source {
+        info.mime = "text/x-typescript".to_string();
+    }
+
     // ── PDF ─────────────────────────────────────────────────────────────────
     if ext == "pdf" {
         return pdf_preview(path, info);
@@ -709,7 +715,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     }
 
     // ── Video ───────────────────────────────────────────────────────────────
-    if VIDEO_EXTS.contains(&ext) || info.mime.starts_with("video/") {
+    if (VIDEO_EXTS.contains(&ext) && !ts_source) || info.mime.starts_with("video/") {
         info.extra.extend(video_info(path));
         return PreviewContent::Media {
             path: path.to_path_buf(),
@@ -744,87 +750,76 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         return PreviewContent::Metadata { info };
     };
     let hit_cap = head.len() >= TEXT_HEAD_BYTES;
-    let probe = &head[..head.len().min(8192)];
     let texty_mime = is_texty_mime(&info.mime);
 
-    if !probe.contains(&0) {
-        if let Some((text, lossy)) = decode_head(&head, hit_cap, texty_mime) {
-            let total_lines = text.lines().count();
-            let mut clamped = false;
-            let shown: String = text
-                .lines()
-                .take(TEXT_HEAD_LINES)
-                .map(|l| match l.char_indices().nth(MAX_LINE_CHARS) {
-                    Some((i, _)) => {
-                        clamped = true;
-                        format!("{}…", &l[..i])
-                    }
-                    None => l.to_string(),
-                })
-                .collect::<Vec<_>>()
-                .join("\n");
-            let truncated = total_lines > TEXT_HEAD_LINES || hit_cap || clamped;
+    if let Some(decoded) = text_encoding::decode_text(&head, hit_cap, texty_mime) {
+        let text = decoded.text;
+        let total_lines = text.lines().count();
+        let mut clamped = false;
+        let shown: String = text
+            .lines()
+            .take(TEXT_HEAD_LINES)
+            .map(|l| match l.char_indices().nth(MAX_LINE_CHARS) {
+                Some((i, _)) => {
+                    clamped = true;
+                    format!("{}…", &l[..i])
+                }
+                None => l.to_string(),
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let truncated = total_lines > TEXT_HEAD_LINES || hit_cap || clamped;
 
-            info.extra.push((
-                tr("Encoding"),
-                if lossy {
-                    "UTF-8 (lossy)".to_string()
-                } else {
-                    "UTF-8".to_string()
-                },
-            ));
-            info.extra.push((
-                tr("Line endings"),
-                if text.contains("\r\n") { "CRLF" } else { "LF" }.to_string(),
-            ));
-            info.extra.push((
-                tr("Lines"),
-                if truncated {
-                    format!("{total_lines}+")
-                } else {
-                    total_lines.to_string()
-                },
-            ));
-            if !truncated {
-                info.extra
-                    .push((tr("Words"), text.split_whitespace().count().to_string()));
-            }
-
-            // Markdown takes priority over syntect for `.md` files.
-            if MARKDOWN_EXTS.contains(&ext) && !truncated {
-                let md = markdown::render(&shown);
-                return PreviewContent::Markdown {
-                    rendered: md.text,
-                    styles: md.styles,
-                    source: shown,
-                    info,
-                };
-            }
-
-            let cfg_on = crate::utils::load_config().ui.preview_syntax_highlighting;
-            // Skip syntect for clamped (very long line) input, and drop the
-            // result if it would create an unreasonable number of tag ranges.
-            let (mut highlighted, language) = if cfg_on && !ext.is_empty() && !clamped {
-                syntax::highlight(&shown, ext)
+        info.extra.push((tr("Encoding"), decoded.label.to_string()));
+        info.extra.push((
+            tr("Line endings"),
+            if text.contains("\r\n") { "CRLF" } else { "LF" }.to_string(),
+        ));
+        info.extra.push((
+            tr("Lines"),
+            if truncated {
+                format!("{total_lines}+")
             } else {
-                (Vec::new(), None)
-            };
-            if highlighted.len() > MAX_HIGHLIGHT_RANGES {
-                highlighted.clear();
-            }
-            if let Some(ref lang) = language {
-                info.extra.push((tr("Language"), lang.clone()));
-            }
+                total_lines.to_string()
+            },
+        ));
+        if !truncated {
+            info.extra
+                .push((tr("Words"), text.split_whitespace().count().to_string()));
+        }
 
-            return PreviewContent::Text {
-                head: shown,
-                truncated,
-                hex: false,
+        // Markdown takes priority over syntect for `.md` files.
+        if MARKDOWN_EXTS.contains(&ext) && !truncated {
+            let md = markdown::render(&shown);
+            return PreviewContent::Markdown {
+                rendered: md.text,
+                styles: md.styles,
+                source: shown,
                 info,
-                highlighted,
-                language,
             };
         }
+
+        let cfg_on = crate::utils::load_config().ui.preview_syntax_highlighting;
+        let (mut highlighted, language) = if cfg_on && !clamped {
+            syntax::highlight_file(&shown, path)
+        } else {
+            (Vec::new(), None)
+        };
+        if highlighted.len() > MAX_HIGHLIGHT_RANGES {
+            highlighted.clear();
+        }
+        if let Some(ref lang) = language {
+            info.extra.push((tr("Language"), lang.clone()));
+        }
+
+        return PreviewContent::Text {
+            head: shown,
+            truncated,
+            hex: false,
+            info,
+            highlighted,
+            language,
+        };
     }
 
     // Binary hex fallback.
@@ -1211,19 +1206,6 @@ fn is_texty_mime(mime: &str) -> bool {
                 | "application/x-ruby"
                 | "application/x-subrip"
         )
-}
-
-fn decode_head(bytes: &[u8], hit_cap: bool, texty_mime: bool) -> Option<(String, bool)> {
-    crate::hit!("decode_head");
-    match std::str::from_utf8(bytes) {
-        Ok(s) => Some((s.to_owned(), false)),
-        Err(e) if hit_cap && e.error_len().is_none() => {
-            let ok = std::str::from_utf8(&bytes[..e.valid_up_to()]).ok()?;
-            Some((ok.to_owned(), false))
-        }
-        Err(_) if texty_mime => Some((String::from_utf8_lossy(bytes).into_owned(), true)),
-        Err(_) => None,
-    }
 }
 
 fn hex_dump(bytes: &[u8]) -> String {
