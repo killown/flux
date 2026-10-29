@@ -63,8 +63,13 @@ impl FluxApp {
                 self.folder_cache
                     .remove(&self.cache_key(&self.current_path));
 
-                let canon_old = old_path.canonicalize().unwrap_or_else(|_| old_path.clone());
-                let canon_new = new_path.canonicalize().unwrap_or_else(|_| new_path.clone());
+                let canon_parent = old_path.parent().map(|p| self.cache_key(p));
+                let canon_join = |p: &Path| match (&canon_parent, p.file_name()) {
+                    (Some(dir), Some(name)) => dir.join(name),
+                    _ => p.to_path_buf(),
+                };
+                let canon_old = canon_join(&old_path);
+                let canon_new = canon_join(&new_path);
                 self.file_op_history
                     .push_undo(crate::ui::undo_redo::FileOp::Rename {
                         old_path: canon_old,
