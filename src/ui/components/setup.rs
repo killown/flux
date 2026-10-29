@@ -164,7 +164,7 @@ impl FileItem {
     /// context menu interaction.
     pub(super) fn build_widgets(_item: &gtk::ListItem) -> (gtk::Overlay, FileWidgets) {
         crate::hit!("build_widgets");
-        let config = utils::load_config();
+        let config = utils::config_snapshot();
         let dnd_enabled = !config.ui.disable_drag_and_drop;
         let rubberband_suspended = std::rc::Rc::new(std::cell::Cell::new(false));
         let drag_phase_saved =

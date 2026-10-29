@@ -2,12 +2,12 @@ use parking_lot::{Mutex, RwLock};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use super::defaults::load_config_from_disk;
 use super::snapshots::{extract_icon_config, extract_thumb_config, ICON_CONFIG, THUMB_CONFIG};
 
-static CONFIG_CACHE: OnceLock<RwLock<Option<crate::model::Config>>> = OnceLock::new();
+static CONFIG_CACHE: OnceLock<RwLock<Option<Arc<crate::model::Config>>>> = OnceLock::new();
 
 /// Serializes `save_config`, so the cache and `config.toml` receive writes in the same order.
 static SAVE_LOCK: Mutex<()> = Mutex::new(());
@@ -21,7 +21,7 @@ static UNSAVED: AtomicBool = AtomicBool::new(false);
 static INVALIDATIONS: AtomicU64 = AtomicU64::new(0);
 
 #[inline]
-fn config_cache() -> &'static RwLock<Option<crate::model::Config>> {
+fn config_cache() -> &'static RwLock<Option<Arc<crate::model::Config>>> {
     CONFIG_CACHE.get_or_init(|| RwLock::new(None))
 }
 
@@ -47,7 +47,7 @@ pub fn save_config(config: &crate::model::Config) {
     // It is cheap relative to `toml::to_string_pretty` + atomic rename.
     {
         let cache = config_cache().read();
-        if !UNSAVED.load(Ordering::Relaxed) && cache.as_ref() == Some(config) {
+        if !UNSAVED.load(Ordering::Relaxed) && cache.as_deref() == Some(config) {
             return;
         }
     }
@@ -62,7 +62,7 @@ pub fn save_config(config: &crate::model::Config) {
     }
     {
         let mut cache = config_cache().write();
-        *cache = Some(config.clone());
+        *cache = Some(Arc::new(config.clone()));
     }
 
     let config_dir = dirs::config_dir()
@@ -85,27 +85,33 @@ pub fn invalidate_config_cache() {
     *cache = None;
 }
 
-pub fn load_config() -> crate::model::Config {
-    crate::hit!("load_config");
+/// Returns the cached config as a shared handle.
+pub fn config_snapshot() -> Arc<crate::model::Config> {
     for _ in 0..3 {
         {
             let cache = config_cache().read();
             if let Some(cfg) = cache.as_ref() {
-                return cfg.clone();
+                return Arc::clone(cfg);
             }
         }
         let seen = INVALIDATIONS.load(Ordering::SeqCst);
-        let config = load_config_from_disk();
+        let config = Arc::new(load_config_from_disk());
         let mut cache = config_cache().write();
         if let Some(cfg) = cache.as_ref() {
-            return cfg.clone();
+            return Arc::clone(cfg);
         }
         if INVALIDATIONS.load(Ordering::SeqCst) == seen {
-            *cache = Some(config.clone());
+            *cache = Some(Arc::clone(&config));
             return config;
         }
     }
-    let config = load_config_from_disk();
+    let config = Arc::new(load_config_from_disk());
     let mut cache = config_cache().write();
-    cache.get_or_insert(config).clone()
+    Arc::clone(cache.get_or_insert(config))
+}
+
+/// Returns an owned copy of the config.
+pub fn load_config() -> crate::model::Config {
+    crate::hit!("load_config");
+    (*config_snapshot()).clone()
 }

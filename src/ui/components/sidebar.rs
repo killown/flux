@@ -144,7 +144,8 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
                 connect_pressed[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
-                    let ui_cfg = utils::load_config().ui;
+                    let cfg = utils::config_snapshot();
+                    let ui_cfg = &cfg.ui;
                     if (ui_cfg.sidebar_menu_requires_ctrl || ui_cfg.panel_menu_requires_ctrl)
                         && !gesture.current_event_state().contains(gdk::ModifierType::CONTROL_MASK)
                     {
@@ -237,9 +238,9 @@ impl FactoryComponent for SidebarPlace {
 
             // Drag source: carry this row's path or label identifier as a plain string
             add_controller = gtk::DragSource {
-                set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
+                set_actions: if utils::config_snapshot().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
                 connect_prepare[path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |src, _, _| {
-                    if utils::load_config().ui.disable_drag_and_drop {
+                    if utils::config_snapshot().ui.disable_drag_and_drop {
                         return None;
                     }
                     if let Some(w) = src.widget() {
@@ -261,10 +262,10 @@ impl FactoryComponent for SidebarPlace {
 
             // Drop target: accept a path string or label dropped from another sidebar row
             add_controller = gtk::DropTarget {
-                set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
+                set_actions: if utils::config_snapshot().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
                 set_types: &[glib::types::Type::STRING],
                 connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
-                    if utils::load_config().ui.disable_drag_and_drop {
+                    if utils::config_snapshot().ui.disable_drag_and_drop {
                         return false;
                     }
                     if let Ok(from_str) = value.get::<String>() {
@@ -287,11 +288,11 @@ impl FactoryComponent for SidebarPlace {
 
             // Drop target: accept any files/folders dragged from the file grid.
             add_controller = gtk::DropTarget {
-                set_actions: if utils::load_config().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::COPY | gdk::DragAction::MOVE },
+                set_actions: if utils::config_snapshot().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::COPY | gdk::DragAction::MOVE },
                 set_types: &[gdk::FileList::static_type()],
 
                 connect_enter[path = self.path.clone(), is_label = self.is_section_label] => move |target, _, _| {
-                    if utils::load_config().ui.disable_drag_and_drop || is_label || !path.is_dir() {
+                    if utils::config_snapshot().ui.disable_drag_and_drop || is_label || !path.is_dir() {
                         return gdk::DragAction::empty();
                     }
 
@@ -338,7 +339,7 @@ impl FactoryComponent for SidebarPlace {
                 },
 
                 connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |target, value, _, _| {
-                    if utils::load_config().ui.disable_drag_and_drop {
+                    if utils::config_snapshot().ui.disable_drag_and_drop {
                         return false;
                     }
                     // Cancel any pending highlight / auto-navigate on release.
