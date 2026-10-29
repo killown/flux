@@ -13,11 +13,14 @@ impl FluxApp {
         let expand_labels = self.config.ui.expand_labels;
 
         relm4::spawn_local(async move {
-            match crate::infra::network::list_network_entries(&uri_str, credentials.as_ref()).await
+            match crate::infra::network::list_network_contexts(
+                &uri_str,
+                credentials.as_ref(),
+                expand_labels,
+            )
+            .await
             {
-                Ok(entries) => {
-                    let contexts =
-                        crate::infra::network::entries_to_load_contexts(&entries, expand_labels);
+                Ok(contexts) => {
                     sender.input(AppMsg::NetworkLoaded {
                         uri: uri_str,
                         contexts,

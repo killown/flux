@@ -24,9 +24,8 @@ mod mount;
 mod protocol;
 
 pub use bookmark::NetworkBookmark;
-pub use browse::{create_network_directory, list_network_entries};
+pub use browse::{create_network_directory, list_network_contexts};
 pub use credentials::NetworkCredentials;
-pub use entry::entries_to_load_contexts;
 pub use error::{NetworkAuthFlags, NetworkError};
 pub use location::ConnectToServerParams;
 pub use mount::{active_mounts, unmount_network_location};

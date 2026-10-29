@@ -273,3 +273,26 @@ pub fn get_icon_for_path_with_override(
         icon
     })
 }
+
+/// Returns the icon for a file listed from a network location (GVFS).
+pub fn get_icon_for_network_file(path: &Path) -> adw::gio::Icon {
+    crate::hit!("get_icon_for_network_file");
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+
+    let cacheable = !ext.is_empty()
+        && !ext.eq_ignore_ascii_case("desktop")
+        && !ext.eq_ignore_ascii_case("AppImage")
+        && {
+            let (_, file_icons, _, _, _, _, _) = &*crate::utils::config::get_icon_config();
+            file_icons.is_empty()
+        };
+
+    if cacheable {
+        let hit = THEMED_ICON_CACHE.with(|c| c.borrow().get(&format!("ext:{ext}")).cloned());
+        if let Some(icon) = hit {
+            return icon;
+        }
+    }
+
+    get_icon_for_path_with_override(path, false, None, false)
+}

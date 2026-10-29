@@ -109,7 +109,7 @@ impl FluxApp {
                         crate::utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
                     })
             } else {
-                crate::utils::icon::get_icon_for_path(&item.target_path, item.is_dir)
+                crate::utils::icon::get_icon_for_network_file(&item.target_path)
             };
 
             net_debug!(
