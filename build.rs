@@ -1,4 +1,5 @@
 use std::env;
+use std::path::Path;
 use std::process::Command;
 
 fn main() {
@@ -25,9 +26,13 @@ fn main() {
 
     println!("cargo:rustc-env=FLUX_GIT_HASH={}", commit_hash);
 
-    let out_dir = env::var("OUT_DIR").unwrap_or_default();
-    let is_local_profile =
-        out_dir.contains("/target/local/") || out_dir.contains(r"\target\local\");
+    let is_local_profile = env::var_os("OUT_DIR").is_some_and(|dir| {
+        Path::new(&dir)
+            .ancestors()
+            .nth(3)
+            .and_then(Path::file_name)
+            .is_some_and(|name| name == "local")
+    });
 
     // Skip automations if we are building a package (e.g., Arch PKGBUILD)
     // Arch's makepkg sets SOURCE_DATE_EPOCH.
@@ -40,16 +45,10 @@ fn main() {
         let _ = Command::new("cargo").args(["fmt"]).status();
 
         println!("cargo:warning=>>> Local profile build detected. Syncing assets via Makefile...");
-        // Pin BIN_PATH to the exact profile this build script is running under,
-        // so make install can never fall back to a stale target/release/flux-fm.
-        match Command::new("make")
-            .arg("install")
-            .env("BIN_PATH", "target/local/flux-fm")
-            .status()
-        {
+        match Command::new("make").arg("install-assets").status() {
             Ok(s) if s.success() => println!("cargo:warning=>>> Assets synced successfully."),
-            Ok(s) => panic!("make install failed with status: {}", s),
-            Err(e) => panic!("make install failed to spawn: {}", e),
+            Ok(s) => panic!("make install-assets failed with status: {}", s),
+            Err(e) => panic!("make install-assets failed to spawn: {}", e),
         }
     }
 
@@ -57,13 +56,15 @@ fn main() {
     println!("cargo:rerun-if-env-changed=SOURCE_DATE_EPOCH");
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=Makefile");
-    println!("cargo:rerun-if-changed=scripts/properties.py");
-    println!("cargo:rerun-if-changed=flux.desktop");
-    println!("cargo:rerun-if-changed=.git/HEAD");
-    println!("cargo:rerun-if-changed=.git/packed-refs");
+    println!("cargo:rerun-if-changed=scripts");
+    println!("cargo:rerun-if-changed=flux.desktop.in");
+    let mut git_files = vec![".git/HEAD".to_string(), ".git/packed-refs".to_string()];
     if let Ok(head) = std::fs::read_to_string(".git/HEAD") {
         if let Some(r) = head.strip_prefix("ref: ") {
-            println!("cargo:rerun-if-changed=.git/{}", r.trim());
+            git_files.push(format!(".git/{}", r.trim()));
         }
+    }
+    for path in git_files.iter().filter(|p| Path::new(p.as_str()).exists()) {
+        println!("cargo:rerun-if-changed={path}");
     }
 }

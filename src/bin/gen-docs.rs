@@ -6,6 +6,7 @@
 //! any drift between source and committed output is a build failure.
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::env::set_current_dir(env!("CARGO_MANIFEST_DIR"))?;
     std::fs::create_dir_all("docs")?;
 
     std::fs::write("docs/cli.md", flux::_doc_gen::cli::render_cli_markdown())?;

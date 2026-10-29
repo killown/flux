@@ -88,7 +88,7 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 
 ## Build script
 
-`build.rs` compiles the GResource bundle from `data/resources.gresource.xml` and exports the short git hash as `FLUX_GIT_HASH`. When you build with the `local` profile and set `FLUX_SYNC_ASSETS`, it also runs `cargo fmt` and `make install` with `BIN_PATH` pinned to `target/local/flux-fm`. It skips both when `SOURCE_DATE_EPOCH` is set, which is how packaging tools such as Arch's `makepkg` build.
+`build.rs` compiles the GResource bundle from `data/resources.gresource.xml` and exports the short git hash as `FLUX_GIT_HASH`. When you build with the `local` profile and set `FLUX_SYNC_ASSETS`, it also runs `cargo fmt` and `make install-assets`, which installs everything except the binary because build scripts run before the crate is compiled; run `make install` afterwards to update the binary. It skips both when `SOURCE_DATE_EPOCH` is set, which is how packaging tools such as Arch's `makepkg` build.
 
 ## Generated files
 

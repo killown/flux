@@ -8,8 +8,7 @@ SCRIPTDIR  = $(CONFDIR)/scripts
 LOCALEDIR  = $(PREFIX)/share/locale
 
 # Detect the built binary, prefer local profile, then release, then debug.
-# Overridable by an environment variable so build.rs can pin the exact profile
-# it just compiled (see BIN_PATH=target/local/flux-fm in build.rs). When unset,
+# Overridable by an environment variable or `make BIN_PATH=...`. When unset,
 # falls back to the first existing path. If none exists, this is empty and
 # `install:` below aborts instead of silently copying a stale release binary.
 BIN_PATH   ?= $(shell if [ -f target/local/flux-fm ]; then echo target/local/flux-fm; \
@@ -33,9 +32,9 @@ DESKTOP_ID = io.github.killown.flux.desktop
 THEME_REPO = https://github.com/killown/flux-themes.git
 
 
-.PHONY: install translations set-archive-defaults update-themes
+.PHONY: install install-assets translations set-archive-defaults update-themes
 
-install: translations $(if $(DESTDIR),,update-themes)
+install:
 	# 0. Guard: fail loudly when no built binary is found, instead of
 	#    silently installing a stale target/release/flux-fm while the user
 	#    is on a --profile local build.
@@ -44,6 +43,18 @@ install: translations $(if $(DESTDIR),,update-themes)
 		exit 1; \
 	fi
 
+	# 2. Binary
+	@mkdir -p $(DESTDIR)$(BINDIR)
+	@install -m 755 $(BIN_PATH) $(DESTDIR)$(BINDIR)/flux-fm
+
+	# Everything else. A sub-make keeps the guard and the binary ahead of any
+	# translation or theme work.
+	@$(MAKE) --no-print-directory install-assets
+
+# Installs everything except the binary. build.rs runs this target: a build
+# script executes before the crate is compiled, so `install` would copy the
+# previous build's binary. Set UPDATE_THEMES=1 to fetch flux-themes first.
+install-assets: translations $(if $(UPDATE_THEMES),update-themes)
 	# 1. Create directories
 	@mkdir -p \
 		$(DESTDIR)$(BINDIR) \
@@ -54,9 +65,6 @@ install: translations $(if $(DESTDIR),,update-themes)
 		$(DESTDIR)$(CONFDIR)/menus \
 		$(DESTDIR)$(CONFDIR)/icons \
 		$(DESTDIR)$(SCRIPTDIR)
-
-	# 2. Binary
-	@install -m 755 $(BIN_PATH) $(DESTDIR)$(BINDIR)/flux-fm
 
 	# 3. Desktop file
 	@sed "s|@BIN_PATH@|$(BINDIR)/flux-fm|g" flux.desktop.in > flux.desktop.tmp
@@ -96,7 +104,12 @@ install: translations $(if $(DESTDIR),,update-themes)
 
 	# 9. Refresh desktop database (skip when packaging)
 	@if [ -z "$(DESTDIR)" ]; then \
-		update-desktop-database $(PREFIX)/share/applications; \
+		if command -v update-desktop-database >/dev/null 2>&1; then \
+			update-desktop-database $(PREFIX)/share/applications || \
+				echo "Warning: update-desktop-database failed" >&2; \
+		else \
+			echo "Warning: update-desktop-database not found, skipping" >&2; \
+		fi; \
 		echo "Successfully installed to $(PREFIX)"; \
 	else \
 		echo "Files staged to $(DESTDIR) for packaging."; \
