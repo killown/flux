@@ -34,8 +34,9 @@ pub fn delete_items(
     let sender_clone = sender.clone();
     let mut local_batch: Vec<(gio::File, PathBuf)> = Vec::new();
     for raw_path in selection {
-        // Canonicalize only for protection checks, use raw_path for deletion.
-        let canon_path = raw_path.canonicalize().unwrap_or_else(|_| raw_path.clone());
+        // Resolve only for protection checks, use raw_path for deletion. A symlink
+        // in the last component is not followed: trashing it removes the link.
+        let canon_path = protected::resolve_entry(&raw_path);
 
         if protected::is_protected_target(&canon_path) {
             eprintln!(

@@ -1,4 +1,21 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+/// Resolves `path` for a protection check without following a symlink in its
+/// last component.
+pub fn resolve_entry(path: &Path) -> PathBuf {
+    crate::hit!("resolve_entry");
+    if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
+        let parent = if parent.as_os_str().is_empty() {
+            Path::new(".")
+        } else {
+            parent
+        };
+        if let Ok(canon_parent) = parent.canonicalize() {
+            return canon_parent.join(name);
+        }
+    }
+    path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+}
 
 /// Returns `true` when `path` must never be deleted by the UI.
 pub fn is_protected_target(path: &Path) -> bool {
@@ -19,21 +36,23 @@ pub fn is_protected_target(path: &Path) -> bool {
         return false;
     }
 
-    // Standard path evaluation (canonicalize when possible to resolve symlinks
-    // and relative paths).
-    let resolved = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
+    // Standard path evaluation. The parent directory is resolved but a symlink
+    // in the last component is not followed, deleting a link only removes the
+    // link, so `~/mnt -> /mnt` must not be treated as `/mnt` itself.
+    let resolved = resolve_entry(path);
 
     if resolved == Path::new("/") {
         return true;
     }
 
     if let Some(home) = dirs::home_dir() {
+        if resolved == resolve_entry(&home) {
+            return true;
+        }
         if let Ok(canon_home) = home.canonicalize() {
             if resolved == canon_home {
                 return true;
             }
-        } else if resolved == home {
-            return true;
         }
     }
 
