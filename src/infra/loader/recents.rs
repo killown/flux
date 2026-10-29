@@ -73,11 +73,23 @@ impl FluxApp {
         entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
 
         if self.is_list_mode {
-            self.tabs[self.active_tab_index].files.view.set_min_columns(1);
-            self.tabs[self.active_tab_index].files.view.set_max_columns(1);
+            self.tabs[self.active_tab_index]
+                .files
+                .view
+                .set_min_columns(1);
+            self.tabs[self.active_tab_index]
+                .files
+                .view
+                .set_max_columns(1);
         } else {
-            self.tabs[self.active_tab_index].files.view.set_min_columns(1);
-            self.tabs[self.active_tab_index].files.view.set_max_columns(20);
+            self.tabs[self.active_tab_index]
+                .files
+                .view
+                .set_min_columns(1);
+            self.tabs[self.active_tab_index]
+                .files
+                .view
+                .set_max_columns(20);
         }
 
         let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();

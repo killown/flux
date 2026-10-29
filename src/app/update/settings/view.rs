@@ -167,7 +167,8 @@ impl FluxApp {
         );
 
         crate::utils::save_config(&self.config);
-        self.folder_cache.remove(&self.cache_key(&self.current_path));
+        self.folder_cache
+            .remove(&self.cache_key(&self.current_path));
         self.load_path(self.current_path.clone(), sender);
     }
 
