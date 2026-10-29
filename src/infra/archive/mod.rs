@@ -242,6 +242,27 @@ pub fn extract_dir_to_tempdir_with_backend(
     backend.extract_dir(archive_path, inner_dir, password)
 }
 
+/// Runs `f` holding the write lock of `archive_path`, so rewrites of one archive never overlap.
+fn with_archive_write_lock<T>(archive_path: &Path, f: impl FnOnce() -> T) -> T {
+    use std::collections::HashMap;
+    use std::path::PathBuf;
+    use std::sync::{Arc, Mutex, OnceLock};
+
+    static LOCKS: OnceLock<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>> = OnceLock::new();
+    let key = archive_path
+        .canonicalize()
+        .unwrap_or_else(|_| archive_path.to_path_buf());
+    let lock = LOCKS
+        .get_or_init(Default::default)
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .entry(key)
+        .or_default()
+        .clone();
+    let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
+    f()
+}
+
 /// Deletes an inner path entry from an archive file on disk.
 #[allow(dead_code)]
 pub fn remove_archive_entry(
@@ -251,7 +272,9 @@ pub fn remove_archive_entry(
     progress_cb: Option<&mut dyn FnMut(u64)>,
 ) -> Result<(), ArchiveError> {
     let backend = get_backend(archive_path, None);
-    backend.remove_entry(archive_path, inner_path, password, progress_cb)
+    with_archive_write_lock(archive_path, || {
+        backend.remove_entry(archive_path, inner_path, password, progress_cb)
+    })
 }
 
 /// Adds an entry to an archive from a local file, failing if the name is taken.
@@ -264,7 +287,9 @@ pub fn write_archive_entry(
     progress_cb: Option<&mut dyn FnMut(u64)>,
 ) -> Result<(), ArchiveError> {
     let backend = get_backend(archive_path, None);
-    backend.write_entry(archive_path, source_file, inner_path, password, progress_cb)
+    with_archive_write_lock(archive_path, || {
+        backend.write_entry(archive_path, source_file, inner_path, password, progress_cb)
+    })
 }
 
 /// Creates an empty directory entry inside an archive file.
@@ -275,5 +300,7 @@ pub fn create_archive_directory(
     password: Option<&str>,
 ) -> Result<(), ArchiveError> {
     let backend = get_backend(archive_path, None);
-    backend.create_directory(archive_path, inner_path, password)
+    with_archive_write_lock(archive_path, || {
+        backend.create_directory(archive_path, inner_path, password)
+    })
 }

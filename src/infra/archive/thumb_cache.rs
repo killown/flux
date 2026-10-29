@@ -28,9 +28,6 @@ static FLUSH_SCHEDULED: AtomicBool = AtomicBool::new(false);
 /// False once the user disables the cache: nothing is queued or written.
 static ENABLED: AtomicBool = AtomicBool::new(true);
 
-/// Serialises archive rewrites so two flushes never rebuild the same zip concurrently.
-static WRITE_LOCK: Mutex<()> = Mutex::new(());
-
 /// Returns the shared pending queue, creating it on first use.
 fn pending() -> &'static Mutex<HashMap<PathBuf, PendingArchive>> {
     PENDING.get_or_init(|| Mutex::new(HashMap::new()))
@@ -99,8 +96,11 @@ fn write_batch(archive: &Path, batch: PendingArchive) {
     if batch.thumbs.is_empty() || !ENABLED.load(Ordering::SeqCst) {
         return;
     }
-    let _guard = WRITE_LOCK.lock();
-    if let Err(e) = write_thumbnails_to_archive(archive, &batch.thumbs, batch.password.as_deref()) {
-        eprintln!("[thumb-cache] {}: {e}", archive.display());
-    }
+    super::with_archive_write_lock(archive, || {
+        if let Err(e) =
+            write_thumbnails_to_archive(archive, &batch.thumbs, batch.password.as_deref())
+        {
+            eprintln!("[thumb-cache] {}: {e}", archive.display());
+        }
+    });
 }
