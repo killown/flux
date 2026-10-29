@@ -8,19 +8,36 @@ use std::path::PathBuf;
 
 impl FluxApp {
     /// Deletes all files currently residing in the virtual system trash directory.
+    ///
+    /// The deletion runs on a worker thread. Folders are removed recursively,
+    /// and a toast reports any entries that could not be deleted.
     pub fn handle_empty_trash(&self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_empty_trash");
-        let root = gio::File::for_uri(constants::TRASH_URI);
-        if let Ok(enumerator) = root.enumerate_children(
-            "standard::name",
-            gio::FileQueryInfoFlags::NONE,
-            gio::Cancellable::NONE,
-        ) {
-            for info in enumerator.flatten() {
-                let _ = root.child(info.name()).delete(gio::Cancellable::NONE);
+        let sender = sender.clone();
+        relm4::spawn_blocking(move || {
+            let root = gio::File::for_uri(constants::TRASH_URI);
+            let mut failed = 0usize;
+            if let Ok(enumerator) = root.enumerate_children(
+                "standard::name",
+                gio::FileQueryInfoFlags::NONE,
+                gio::Cancellable::NONE,
+            ) {
+                for info in enumerator.flatten() {
+                    let child = root.child(info.name());
+                    if crate::infra::trash::delete_recursive(&child).is_err() {
+                        failed += 1;
+                    }
+                }
             }
-        }
-        sender.input(AppMsg::Refresh);
+            if failed > 0 {
+                sender.input(AppMsg::ShowToast(format!(
+                    "{}: {}",
+                    crate::i18n::tr("Could not delete some items from the trash"),
+                    failed
+                )));
+            }
+            sender.input(AppMsg::Refresh);
+        });
     }
 
     /// Records a successful trash batch in the undo history and evicts any
