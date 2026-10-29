@@ -80,6 +80,11 @@ pub fn perform_file_op_with_progress(
 
     let mut created: Vec<PathBuf> = Vec::new();
     let mut done_bytes: i64 = 0;
+    let copy_flags = if is_cut {
+        gio::FileCopyFlags::ALL_METADATA
+    } else {
+        gio::FileCopyFlags::NONE
+    };
 
     let copy_res = if src.is_dir() {
         copy_dir_recursive(
@@ -92,6 +97,7 @@ pub fn perform_file_op_with_progress(
             },
             &mut created,
             &mut done_bytes,
+            copy_flags,
         )
         .map_err(|e| e.to_string())
     } else {
@@ -101,7 +107,7 @@ pub fn perform_file_op_with_progress(
         src_file
             .copy(
                 &dst_file,
-                gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS | copy_flags,
                 Some(cancellable),
                 match progress_cb.as_mut() {
                     Some(f) => Some(&mut **f),
@@ -191,6 +197,7 @@ pub(super) fn copy_dir_recursive(
     mut progress_cb: Option<&mut dyn FnMut(i64, i64)>,
     created: &mut Vec<PathBuf>,
     done: &mut i64,
+    copy_flags: gio::FileCopyFlags,
 ) -> std::io::Result<()> {
     crate::hit!("copy_dir_recursive");
     if src == dest {
@@ -231,6 +238,7 @@ pub(super) fn copy_dir_recursive(
                 },
                 created,
                 done,
+                copy_flags,
             )?;
         } else {
             if child_dest.symlink_metadata().is_err() {
@@ -248,7 +256,9 @@ pub(super) fn copy_dir_recursive(
             gio::File::for_path(&child_src)
                 .copy(
                     &gio::File::for_path(&child_dest),
-                    gio::FileCopyFlags::OVERWRITE | gio::FileCopyFlags::NOFOLLOW_SYMLINKS,
+                    gio::FileCopyFlags::OVERWRITE
+                        | gio::FileCopyFlags::NOFOLLOW_SYMLINKS
+                        | copy_flags,
                     Some(cancellable),
                     Some(&mut child_cb),
                 )
