@@ -352,7 +352,7 @@ fn start_walk(
                                     std::collections::HashSet::new();
                                 let mut stale = Vec::new();
                                 for p in paths {
-                                    if p.to_string_lossy().contains("/run/user") {
+                                    if p.starts_with("/run/user") {
                                         stale.push(p.to_string_lossy().to_string());
                                         continue;
                                     }

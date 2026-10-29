@@ -1,10 +1,9 @@
 use crate::model::{AppMsg, FluxApp};
 use crate::utils;
-use crate::utils::search::{parse_size_filter, SizeOp};
+use crate::utils::search::{fuzzy_match_compiled, parse_size_filter, SizeOp};
 use gtk::glib;
 use gtk::prelude::*;
 use nucleo::pattern::{CaseMatching, Normalization, Pattern};
-use nucleo::Utf32Str;
 use relm4::prelude::*;
 use std::sync::atomic::Ordering;
 
@@ -65,39 +64,6 @@ impl FluxApp {
         if has_wildcard && (has_ext_char || query_lc.len() > 1) {
             self.filter = query.clone();
             let query_target = query_lc.clone();
-
-            // Try fast SQLite index query before falling back to full filesystem walk
-            let clean_query = query_target.replace(['*', '?'], "");
-            let clean_query = clean_query.trim().to_string();
-            let current_dir = self.current_path.clone();
-
-            if crate::infra::search::indexer::is_ready() && clean_query.len() >= 3 {
-                crate::infra::search::indexer::request_delta_scan();
-
-                if let Ok(index) = crate::infra::search::indexer::SearchIndex::open_or_create() {
-                    if let Ok(matches) = index.query_in(&clean_query, Some(&current_dir), 300) {
-                        let mut scoped_matches = Vec::new();
-                        let mut stale_paths = Vec::new();
-
-                        for p in matches {
-                            if p.exists() {
-                                scoped_matches.push(p);
-                            } else {
-                                stale_paths.push(p.to_string_lossy().to_string());
-                            }
-                        }
-
-                        // Prune dead entries in background if any ghost files were hit
-                        if !stale_paths.is_empty() {
-                            crate::infra::search::indexer::prune_paths(stale_paths);
-                        }
-
-                        if !scoped_matches.is_empty() {
-                            // Populate results or feed fast-path view
-                        }
-                    }
-                }
-            }
 
             sender.input(AppMsg::StartAdvancedSearch(
                 crate::infra::search::AdvancedSearchParams {
@@ -341,15 +307,6 @@ impl FluxApp {
 
         let parsed_pattern = Pattern::parse(trimmed, CaseMatching::Ignore, Normalization::Smart);
 
-        tab.files.add_filter(move |item| {
-            let mut target_buf = Vec::new();
-            let utf32_target = Utf32Str::new(&item.name, &mut target_buf);
-            parsed_pattern
-                .score(
-                    utf32_target,
-                    &mut nucleo::Matcher::new(nucleo::Config::DEFAULT),
-                )
-                .is_some()
-        });
+        tab.files.add_filter(move |item| fuzzy_match_compiled(&item.name, &parsed_pattern));
     }
 }
