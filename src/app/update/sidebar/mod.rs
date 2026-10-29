@@ -12,25 +12,6 @@ impl FluxApp {
     pub fn handle_refresh_sidebar(&mut self) {
         crate::hit!("handle_refresh_sidebar");
         self.config = utils::load_config();
-        self.sidebar.guard().clear();
-        for place in &self.config.sidebar {
-            let is_label = place.kind.as_deref() == Some("label");
-            let path = if is_label {
-                PathBuf::new()
-            } else if place.path == "tags://" {
-                PathBuf::from(&place.path)
-            } else {
-                Self::expand_path(&place.path)
-            };
-
-            self.sidebar.guard().push_back(crate::ui::SidebarPlace {
-                name: place.name.clone(),
-                icon: place.icon.clone(),
-                path,
-                is_mount: false,
-                is_section_label: is_label,
-            });
-        }
         self.refresh_sidebar();
     }
 

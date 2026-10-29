@@ -15,6 +15,20 @@ pub(super) fn launch_main_app(
     opts: flux::args::WindowOptions,
     cwd_rx: Option<Receiver<PathBuf>>,
 ) {
+    std::thread::spawn(|| {
+        let _ = crate::infra::git::is_nerd_font_available();
+    });
+
+    std::thread::spawn(|| {
+        let _monitor = {
+            crate::hit!("warm_volume_monitor");
+            gio::VolumeMonitor::get()
+        };
+        loop {
+            std::thread::park();
+        }
+    });
+
     // Defer non-critical CSS/Theme loading and dependency checks by 150ms.
     glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
         crate::hit!("launch_main_app:deferred_init");

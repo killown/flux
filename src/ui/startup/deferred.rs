@@ -43,12 +43,6 @@ impl FluxApp {
                 }
             });
 
-            // Warm the Nerd Font OnceLock off the main thread so the first
-            // `bind_git_badge` doesn't stall on fontconfig enumeration.
-            std::thread::spawn(|| {
-                let _ = crate::infra::git::is_nerd_font_available();
-            });
-
             crate::infra::archive::purge_stale_scratch_dirs();
 
             s_init.input(AppMsg::RefreshSidebar);
