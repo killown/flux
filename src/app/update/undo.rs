@@ -2,6 +2,7 @@ use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
 use crate::model::{AppMsg, FluxApp};
 use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;
+use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
@@ -169,10 +170,29 @@ impl FluxApp {
                 });
             }
             FileOp::Copy { copies, .. } => {
-                for path in copies {
-                    let _ = std::fs::remove_file(&path).or_else(|_| std::fs::remove_dir_all(&path));
+                // Undoing a copy sends it to the trash instead of deleting it for
+                // good, so edits made to the copy since it was pasted survive.
+                for path in &copies {
+                    if let Some(parent) = path.parent() {
+                        self.folder_cache.remove(&self.cache_key(parent));
+                    }
                 }
-                sender.input(AppMsg::Refresh);
+                let sender_clone = sender.clone();
+                relm4::spawn_blocking(move || {
+                    for path in copies {
+                        if path.symlink_metadata().is_err() {
+                            continue;
+                        }
+                        if let Err(e) = gio::File::for_path(&path).trash(gio::Cancellable::NONE) {
+                            sender_clone.input(AppMsg::ShowToast(format!(
+                                "{}: {}",
+                                crate::i18n::tr("Could not move to trash"),
+                                e.message()
+                            )));
+                        }
+                    }
+                    sender_clone.input(AppMsg::Refresh);
+                });
             }
             FileOp::Trash { items } => {
                 let sender_clone = sender.clone();
