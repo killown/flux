@@ -63,7 +63,7 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 | `src/shell_functions.rs` | The fish helper source, shared by the terminal snippet and `gen-docs`. |
 | `src/domain/model/` | `FluxApp`, `AppMsg`, shared types, `config/` structs and their defaults. `src/model/` only re-exports it. |
 | `src/app/update/` | The message routers (`mod.rs` plus one router per area) and the `handle_*` methods that do the work, grouped by area: `file_ops/` (clipboard, paste, rename, trash, links, commands), `navigation/`, `view/`, `search/`, `settings/`, `git/`, `sidebar/`, `window/`, `helpers/`, plus `tag.rs`, `task.rs`, `undo.rs`, `terminal.rs` and `watcher.rs`. |
-| `src/ui/panels/` | Right-side panels: tag, search, diff, location, connect, preview, actions, terminal and properties (`properties/`). |
+| `src/ui/panels/` | Right-side panels: tag, search, diff, location, connect, preview (`preview/`, which also holds the `syntax`, `markdown`, `table`, `gutter`, `binary`, `office`, `folder_thumbs` and `registry` helpers), actions, terminal and properties (`properties/`). |
 | `src/ui/dialog/` | Dialogs. |
 | `src/ui/menu/` | The context menu, the Ctrl+right-click menu and the menu editor. |
 | `src/ui/inputs/`, `src/ui/keymap/` | Keyboard handling and the configurable shortcut table. |

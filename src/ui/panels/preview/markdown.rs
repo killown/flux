@@ -1,10 +1,4 @@
 //! Markdown renderer for the peek-preview text viewer.
-//!
-//! `pulldown_cmark` events are flattened into a plain-text body plus a list
-//! of byte ranges with a per-range style. The panel turns those ranges into
-//! `gtk::TextTag`s. The raw source is the same text the syntect pipeline
-//! produces, so switching between "rendered" and "source" only swaps the
-//! buffer contents and the tag table.
 
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 use std::ops::Range;

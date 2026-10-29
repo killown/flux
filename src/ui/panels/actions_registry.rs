@@ -1,6 +1,6 @@
 //! Thread-local handle to the live contextual-actions panel widgets.
 //!
-//! Mirrors [`super::preview_registry`]: `build_actions_panel` installs the
+//! Mirrors [`super::preview::registry`]: `build_actions_panel` installs the
 //! handles once, and `FluxApp::handle_actions_panel_ready` reads them back so
 //! no widget has to be threaded through `FluxApp`.
 

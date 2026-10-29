@@ -1,12 +1,4 @@
 //! Office-document → PDF conversion helper for the peek-preview panel.
-//!
-//! Shells out to `soffice --headless --convert-to pdf` and caches the
-//! result under `~/.cache/flux/office-previews/<md5>.pdf`, keyed on the
-//! source path plus mtime. Reuses the panel's PDF viewer for display.
-//!
-//! Each invocation gets a private `-env:UserInstallation` profile
-//! directory so concurrent conversions cannot deadlock on the shared
-//! LibreOffice user profile lock.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

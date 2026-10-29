@@ -1,8 +1,4 @@
 //! Line-number gutter for the peek-preview text viewer.
-//!
-//! A `gtk::DrawingArea` parked to the left of the `TextView`, painting only
-//! the visible rows. Same "visible-range painter" shape as the terminal's
-//! `draw_scrollbar` in `src/services/terminal/draw.rs`.
 
 use gtk::cairo::Context;
 use gtk::prelude::*;

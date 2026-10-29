@@ -198,7 +198,7 @@ impl FluxApp {
                 r.set_visible(false);
             }
             self.preview_panel_visible = false;
-            crate::ui::panels::preview_registry::with(|h| h.stop_media());
+            crate::ui::panels::preview::registry::with(|h| h.stop_media());
             self.stop_video_preview();
             self.exit_wide_preview();
         }
@@ -448,9 +448,9 @@ impl FluxApp {
             *initialized = true;
 
             if panel_type == RightPanelType::Preview {
-                self.preview_view_stack = crate::ui::panels::preview_registry::get_view_stack();
+                self.preview_view_stack = crate::ui::panels::preview::registry::get_view_stack();
                 self.preview_view_switcher =
-                    crate::ui::panels::preview_registry::get_view_switcher();
+                    crate::ui::panels::preview::registry::get_view_switcher();
             }
         } else if panel_type == RightPanelType::Location && !*visible {
             // Panel is built once, so refresh the entry with the current path on each open.
@@ -621,7 +621,7 @@ impl FluxApp {
         // keeps playing after the panel is hidden. Placed after the last
         // `*visible` read so `self` is free to take `&mut self` here.
         if !now_visible && matches!(panel_type, RightPanelType::Preview) {
-            crate::ui::panels::preview_registry::with(|h| h.stop_media());
+            crate::ui::panels::preview::registry::with(|h| h.stop_media());
             self.stop_video_preview();
         }
 
@@ -630,8 +630,8 @@ impl FluxApp {
         // `"preview-switcher"` page instead of the breadcrumbs. Closing
         // the panel reverts to the path view.
         if panel_type == RightPanelType::Preview {
-            self.preview_view_stack = crate::ui::panels::preview_registry::get_view_stack();
-            self.preview_view_switcher = crate::ui::panels::preview_registry::get_view_switcher();
+            self.preview_view_stack = crate::ui::panels::preview::registry::get_view_stack();
+            self.preview_view_switcher = crate::ui::panels::preview::registry::get_view_switcher();
         }
         // ─────────────────────────────────────────────────────────────────
 

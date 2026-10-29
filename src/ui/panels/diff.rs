@@ -12,7 +12,7 @@ pub fn apply_diff_markup(buffer: &gtk::TextBuffer, raw_diff: &str) {
     buffer.set_text("");
     let tag_table = buffer.tag_table();
 
-    let colors = super::preview_syntax::tag_colors();
+    let colors = super::preview::syntax::tag_colors();
     let tags = [
         ("diff_add", colors.added, false),
         ("diff_del", colors.removed, false),

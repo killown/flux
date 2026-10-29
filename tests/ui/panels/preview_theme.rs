@@ -1,6 +1,6 @@
 //! Preview colors must stay legible in both libadwaita color schemes.
 
-use flux::ui::panels::preview_syntax::{highlight, set_dark, tag_colors};
+use flux::ui::panels::preview::syntax::{highlight, set_dark, tag_colors};
 
 /// WCAG relative luminance of a `#rrggbb` color.
 fn luminance(hex: &str) -> f64 {
@@ -56,7 +56,7 @@ fn palettes_and_syntax_theme_follow_the_color_scheme() {
     let (light_ranges, _) = highlight(src, "rs");
 
     assert!(!dark_ranges.is_empty() && !light_ranges.is_empty());
-    let colors = |r: &[flux::ui::panels::preview_syntax::HighlightedRange]| {
+    let colors = |r: &[flux::ui::panels::preview::syntax::HighlightedRange]| {
         r.iter().map(|h| h.fg).collect::<Vec<_>>()
     };
     assert_ne!(colors(&dark_ranges), colors(&light_ranges));

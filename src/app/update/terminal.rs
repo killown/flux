@@ -174,7 +174,7 @@ impl FluxApp {
         // Entering: nothing of the file manager stays visible, so stop its media.
         self.stop_video_preview();
         if self.preview_panel_visible {
-            crate::ui::panels::preview_registry::with(|h| h.stop_media());
+            crate::ui::panels::preview::registry::with(|h| h.stop_media());
         }
 
         if self.fullscreen_terminal.is_none() {

@@ -7,13 +7,9 @@
 //! drawer.
 
 use crate::model::{AppMsg, FluxApp, RightPanelType};
-use crate::ui::panels::preview::{FileInfo, FolderEntry, PreviewContent};
-use crate::ui::panels::preview_binary;
-use crate::ui::panels::preview_markdown;
-use crate::ui::panels::preview_office;
-use crate::ui::panels::preview_registry;
-use crate::ui::panels::preview_syntax;
-use crate::ui::panels::preview_table;
+use crate::ui::panels::preview::{
+    binary, markdown, office, registry, syntax, table, FileInfo, FolderEntry, PreviewContent,
+};
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
@@ -72,13 +68,13 @@ impl FluxApp {
         if self.mime_filter.is_some() {
             self.mime_filter = None;
             self.mime_filter_from_space = false; // Still good practice to reset
-            crate::ui::panels::preview_registry::set_mime_filter_active(false);
+            registry::set_mime_filter_active(false);
             sender.input(AppMsg::Refresh);
         }
 
         self.stop_preview_media();
-        let _ = preview_registry::with(|h| h.reset_mute());
-        let _ = preview_registry::with(|h| h.release_folder_grid());
+        let _ = registry::with(|h| h.reset_mute());
+        let _ = registry::with(|h| h.release_folder_grid());
         self.exit_wide_preview();
         self.toggle_sidebar_right_panel(RightPanelType::Preview, sender);
     }
@@ -189,7 +185,7 @@ impl FluxApp {
     /// the `mpv` child) and the grid card's autoplay preview. Safe to call when
     /// nothing is playing.
     pub fn stop_preview_media(&mut self) {
-        let _ = preview_registry::with(|h| h.stop_media());
+        let _ = registry::with(|h| h.stop_media());
         self.stop_video_preview();
     }
 
@@ -213,7 +209,7 @@ impl FluxApp {
             self.config.ui.wide_preview = on;
             crate::utils::save_config(&self.config);
         }
-        let _ = preview_registry::with(|h| h.set_wide_default_active(on));
+        let _ = registry::with(|h| h.set_wide_default_active(on));
     }
 
     /// Enters wide-preview mode when the panel is open, no-op if already wide.
@@ -263,7 +259,7 @@ impl FluxApp {
             w.fullscreen();
         }
         self.preview_fullscreen = Some((was_wide, window_was_fullscreen));
-        let _ = preview_registry::with(|h| h.set_fullscreen_active(true));
+        let _ = registry::with(|h| h.set_fullscreen_active(true));
     }
 
     /// Esc: leaves full-screen preview when active.
@@ -274,7 +270,7 @@ impl FluxApp {
     /// Moves keyboard focus between the main grid and the folder grid in the preview panel.
     pub fn handle_toggle_preview_grid_focus(&mut self) {
         crate::hit!("handle_toggle_preview_grid_focus");
-        let in_folder_grid = preview_registry::with(|h| h.folder_grid_has_focus()).unwrap_or(false);
+        let in_folder_grid = registry::with(|h| h.folder_grid_has_focus()).unwrap_or(false);
 
         if in_folder_grid {
             // Return to the main grid.
@@ -288,7 +284,7 @@ impl FluxApp {
         if !self.exclusive_list.is_empty() || !self.preview_panel_visible {
             return;
         }
-        let entered = preview_registry::with(|h| h.focus_folder_grid()).unwrap_or(false);
+        let entered = registry::with(|h| h.focus_folder_grid()).unwrap_or(false);
         let _ = entered; // focus_folder_grid should return bool
     }
 
@@ -362,7 +358,7 @@ impl FluxApp {
             let focused_ok = if i == grid_idx {
                 target.grab_focus()
             } else if Some(i) == preview_idx
-                && preview_registry::with(|h| h.focus_folder_grid()).unwrap_or(false)
+                && registry::with(|h| h.focus_folder_grid()).unwrap_or(false)
             {
                 true
             } else {
@@ -393,7 +389,7 @@ impl FluxApp {
                 }
             }
         }
-        let _ = preview_registry::with(|h| h.set_fullscreen_active(false));
+        let _ = registry::with(|h| h.set_fullscreen_active(false));
         if restore_wide && !was_wide {
             self.exit_wide_preview();
         }
@@ -444,7 +440,7 @@ impl FluxApp {
             return;
         }
 
-        if let Some(handle) = preview_registry::with(Clone::clone) {
+        if let Some(handle) = registry::with(Clone::clone) {
             handle.apply(&PreviewContent::Loading);
         }
 
@@ -476,7 +472,7 @@ impl FluxApp {
         if !self.preview_panel_visible {
             return;
         }
-        if let Some(handle) = preview_registry::with(Clone::clone) {
+        if let Some(handle) = registry::with(Clone::clone) {
             // `apply` runs on the GTK main thread. Log anything that blocks
             // the UI so offenders are visible instead of guessed at.
             let t = std::time::Instant::now();
@@ -647,8 +643,8 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     }
 
     // ── Office: convert to PDF, then render that PDF ────────────────────────
-    if preview_office::OFFICE_EXTS.contains(&ext) && preview_office::soffice_binary().is_some() {
-        if let Some(pdf_path) = preview_office::convert_to_pdf(path) {
+    if office::OFFICE_EXTS.contains(&ext) && office::soffice_binary().is_some() {
+        if let Some(pdf_path) = office::convert_to_pdf(path) {
             info.extra.push((
                 tr("Converted from"),
                 path.file_name()
@@ -661,7 +657,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     }
 
     // ── Executables: icon + embedded metadata ───────────────────────────────
-    if let Some(icon) = preview_binary::inspect(path, ext, &mut info) {
+    if let Some(icon) = binary::inspect(path, ext, &mut info) {
         return match icon {
             Some(tex) => PreviewContent::Image { tex, info },
             None => PreviewContent::Metadata { info },
@@ -677,7 +673,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
 
     // ── CSV / TSV ───────────────────────────────────────────────────────────
     if TABLE_EXTS.contains(&ext) {
-        if let Some(data) = preview_table::parse(path, ext) {
+        if let Some(data) = table::parse(path, ext) {
             info.extra.push((tr("Rows"), data.rows.len().to_string()));
             info.extra
                 .push((tr("Columns"), data.headers.len().to_string()));
@@ -796,7 +792,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
 
             // Markdown takes priority over syntect for `.md` files.
             if MARKDOWN_EXTS.contains(&ext) && !truncated {
-                let md = preview_markdown::render(&shown);
+                let md = markdown::render(&shown);
                 return PreviewContent::Markdown {
                     rendered: md.text,
                     styles: md.styles,
@@ -809,7 +805,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
             // Skip syntect for clamped (very long line) input, and drop the
             // result if it would create an unreasonable number of tag ranges.
             let (mut highlighted, language) = if cfg_on && !ext.is_empty() && !clamped {
-                preview_syntax::highlight(&shown, ext)
+                syntax::highlight(&shown, ext)
             } else {
                 (Vec::new(), None)
             };

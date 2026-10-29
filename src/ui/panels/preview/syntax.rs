@@ -1,9 +1,4 @@
 //! Syntax highlighting helper for the peek-preview text viewer.
-//!
-//! Runs inside `compute_preview` on the blocking worker so the (one-time)
-//! `SyntaxSet` construction never touches the GTK main thread. The widget
-//! side only consumes `Vec<HighlightedRange>` - plain byte offsets - and
-//! turns them into `gtk::TextTag`s.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::OnceLock;

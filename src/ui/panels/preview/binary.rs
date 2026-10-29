@@ -1,7 +1,7 @@
 //! Icon + embedded metadata for executables (Windows PE, AppImage).
 //! Shells out to `file`, `wrestool` and `7z` like the thumbnailers do.
 
-use super::preview::FileInfo;
+use super::FileInfo;
 use crate::i18n::tr;
 use std::path::Path;
 use std::process::Command;

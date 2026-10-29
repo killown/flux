@@ -28,7 +28,7 @@ impl FluxApp {
             crate::utils::media::get_mime_type(&path)
         };
         self.mime_filter = Some(mime);
-        crate::ui::panels::preview_registry::set_mime_filter_active(true);
+        crate::ui::panels::preview::registry::set_mime_filter_active(true);
         sender.input(AppMsg::Refresh);
     }
 
@@ -37,7 +37,7 @@ impl FluxApp {
         crate::hit!("handle_clear_mime_filter");
         self.mime_filter_from_space = false;
         if self.mime_filter.take().is_some() {
-            crate::ui::panels::preview_registry::set_mime_filter_active(false);
+            crate::ui::panels::preview::registry::set_mime_filter_active(false);
             sender.input(AppMsg::Refresh);
         }
     }

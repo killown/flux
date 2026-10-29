@@ -48,9 +48,9 @@ pub(super) fn launch_main_app(
     glib::idle_add_local_once(|| {
         crate::hit!("launch_main_app:style_manager");
         let style_manager = adw::StyleManager::default();
-        crate::ui::panels::preview_syntax::set_dark(style_manager.is_dark());
+        crate::ui::panels::preview::syntax::set_dark(style_manager.is_dark());
         style_manager.connect_dark_notify(|sm| {
-            crate::ui::panels::preview_syntax::set_dark(sm.is_dark());
+            crate::ui::panels::preview::syntax::set_dark(sm.is_dark());
         });
     });
 

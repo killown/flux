@@ -1,4 +1,4 @@
-use super::preview::PreviewPanelHandle;
+use super::PreviewPanelHandle;
 use std::cell::RefCell;
 
 thread_local! {

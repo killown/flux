@@ -1,21 +1,4 @@
 //! Lazy thumbnails for the folder grid in the peek-preview panel.
-//!
-//! The grid cells tell us when they get `Bound` or `Unbound` through a [`ThumbHook`]
-//! (see `ui/components/bind.rs`). That means only the cells actually visible on screen
-//! ever ask for a thumbnail, we never walk the whole folder.
-//!
-//! * **Debounce**: we collect binds and flush them 150 ms after the first one, so if
-//!   you're arrowing quickly through folders the grid gets replaced before any load
-//!   even starts.
-//! * **Cancellation**: each request gets its own cancel flag (set when the cell
-//!   scrolls away) plus a generation token (bumped whenever the grid is refilled or
-//!   released). Stale workers just drop their result and never touch the UI.
-//! * **Images and videos**: video frames come from ffmpeg, for plain folders and
-//!   `archive://` entries alike. No audio, PDF or font thumbnails here.
-//! * **Disk cache**: loads go through `utils::media::get_or_create_thumbnail`, the same
-//!   XDG cache the main grid uses, so revisiting a folder is a cache hit.
-//! * **Switch**: `ui.folder_grid_thumbnails` (on by default), also gated by the global
-//!   `show_thumbnails` and `thumbnail_types.images` / `thumbnail_types.videos`.
 
 use crate::model::Config;
 use crate::ui::{FileItem, ThumbEvent, ThumbHook};

@@ -1,10 +1,4 @@
 //! CSV / TSV viewer for the peek-preview panel.
-//!
-//! Parses with the `csv` crate (correct quoting, embedded delimiters,
-//! escaped quotes) and renders with `gtk::ColumnView` + `gio::ListStore`
-//! so 100k-row files virtualise correctly. Row/column counts are capped so
-//! a pathological file cannot allocate unbounded memory before the first
-//! paint.
 
 use csv::ReaderBuilder;
 use gtk::gio;
