@@ -65,6 +65,14 @@ impl FluxApp {
             self.filter = query.clone();
             let query_target = query_lc.clone();
 
+            // Keep the index fresh for the background search. This only queues a
+            // debounced job, so it is cheap on the UI thread.
+            if crate::infra::search::indexer::is_ready()
+                && query_target.replace(['*', '?'], "").trim().len() >= 3
+            {
+                crate::infra::search::indexer::request_delta_scan();
+            }
+
             sender.input(AppMsg::StartAdvancedSearch(
                 crate::infra::search::AdvancedSearchParams {
                     patterns: vec![query_target],
@@ -307,6 +315,7 @@ impl FluxApp {
 
         let parsed_pattern = Pattern::parse(trimmed, CaseMatching::Ignore, Normalization::Smart);
 
-        tab.files.add_filter(move |item| fuzzy_match_compiled(&item.name, &parsed_pattern));
+        tab.files
+            .add_filter(move |item| fuzzy_match_compiled(&item.name, &parsed_pattern));
     }
 }
