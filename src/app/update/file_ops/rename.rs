@@ -18,7 +18,7 @@ impl FluxApp {
         let mut new_path = old_path.to_path_buf();
         new_path.set_file_name(new_name);
 
-        if new_path.exists() {
+        if new_path.symlink_metadata().is_ok() {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::AlreadyExists,
                 "A file with this name already exists",
@@ -56,6 +56,13 @@ impl FluxApp {
                 );
 
                 utils::save_config(&self.config);
+
+                if let Some(parent) = old_path.parent() {
+                    self.folder_cache.remove(&self.cache_key(parent));
+                }
+                self.folder_cache
+                    .remove(&self.cache_key(&self.current_path));
+
                 let canon_old = old_path.canonicalize().unwrap_or_else(|_| old_path.clone());
                 let canon_new = new_path.canonicalize().unwrap_or_else(|_| new_path.clone());
                 self.file_op_history
@@ -75,10 +82,10 @@ impl FluxApp {
                 let msg = e.to_string();
                 if msg.contains("Permission denied") || msg.contains("Operation not permitted") {
                     sender.input(AppMsg::ShowToast(
-                        "Permission denied: Cannot move item to trash.".into(),
+                        "Permission denied: Cannot rename item.".into(),
                     ));
                 } else {
-                    sender.input(AppMsg::ShowToast(format!("Trash error: {}", e)));
+                    sender.input(AppMsg::ShowToast(format!("Rename error: {}", e)));
                 }
             }
         }
