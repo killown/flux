@@ -248,6 +248,18 @@ pub enum AppMsg {
         archive_path: PathBuf,
         inner_path: String,
     },
+    /// Asks whether to extract an archive that lives inside another archive
+    /// (`a.zip` containing `b.zip`) so it can be browsed.
+    PromptNestedArchiveExtract {
+        archive_path: PathBuf,
+        inner_path: String,
+    },
+    /// Extracts the nested archive entry next to its outer archive, then
+    /// enters the extracted copy with [`AppMsg::EnterArchive`].
+    ExtractNestedArchive {
+        archive_path: PathBuf,
+        inner_path: String,
+    },
     /// Toggles automatic muted video playback on card selection.
     SetAutoplayVideoPreviews(bool),
     /// Triggers deferred inline video playback after a debounce timeout.

@@ -4703,3 +4703,16 @@ msgstr "Nenhuma alteração preparada"
 #: src/ui/ops/git.rs
 msgid "No unstaged changes"
 msgstr "Nenhuma alteração não preparada"
+
+
+msgid "Extract \"{}\"?"
+msgstr "Extrair \"{}\"?"
+
+msgid "\"{}\" is an archive inside \"{}\". It will be extracted next to \"{}\" and then opened."
+msgstr "\"{}\" é um arquivo compactado dentro de \"{}\". Ele será extraído ao lado de \"{}\" e depois aberto."
+
+msgid "Yes"
+msgstr "Sim"
+
+msgid "No"
+msgstr "Não"

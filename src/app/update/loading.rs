@@ -34,6 +34,14 @@ pub(super) fn handle(
             app.show_archive_deletion_warning(archive_path, inner_path, sender);
         }
         AppMsg::ExtractArchive => app.handle_extract_archive(sender),
+        AppMsg::PromptNestedArchiveExtract {
+            archive_path,
+            inner_path,
+        } => app.show_nested_archive_prompt(archive_path, inner_path, sender),
+        AppMsg::ExtractNestedArchive {
+            archive_path,
+            inner_path,
+        } => app.handle_extract_nested_archive(archive_path, inner_path, sender),
         AppMsg::ArchiveLocksProbed { load_id, encrypted } => {
             app.handle_archive_locks_probed(load_id, encrypted)
         }

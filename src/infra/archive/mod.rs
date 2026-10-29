@@ -217,6 +217,66 @@ pub fn extract_entry_to_tempfile_with_backend(
     Ok(tmp)
 }
 
+/// Extracts one file entry into `dest_dir` as a regular file and returns its path.
+pub fn extract_entry_to_unique_file(
+    archive_path: &Path,
+    inner_path: &str,
+    password: Option<&str>,
+    dest_dir: &Path,
+) -> Result<std::path::PathBuf, ArchiveError> {
+    crate::hit!("extract_entry_to_unique_file");
+    let data =
+        get_backend(archive_path, None).extract_entry_bytes(archive_path, inner_path, password)?;
+
+    let name = Path::new(inner_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .filter(|n| !n.is_empty())
+        .ok_or_else(|| ArchiveError::Other(format!("invalid entry name: {inner_path}")))?;
+
+    // Split the base name from the extension, keeping `.tar.*` intact.
+    let name_lc = name.to_ascii_lowercase();
+    let split = name_lc
+        .rfind(".tar.")
+        .or_else(|| name.rfind('.').filter(|&i| i > 0))
+        .unwrap_or(name.len());
+    let (stem, ext) = name.split_at(split);
+
+    let mut counter = 1u32;
+    loop {
+        let candidate = if counter == 1 {
+            name.to_string()
+        } else {
+            format!("{stem}_{counter}{ext}")
+        };
+        let dest = dest_dir.join(candidate);
+        match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&dest)
+        {
+            Ok(mut file) => {
+                if let Err(e) = file.write_all(&data).and_then(|_| file.flush()) {
+                    drop(file);
+                    let _ = std::fs::remove_file(&dest);
+                    return Err(ArchiveError::Other(format!(
+                        "write {}: {e}",
+                        dest.display()
+                    )));
+                }
+                return Ok(dest);
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => counter += 1,
+            Err(e) => {
+                return Err(ArchiveError::Other(format!(
+                    "create {}: {e}",
+                    dest.display()
+                )))
+            }
+        }
+    }
+}
+
 /// Extracts a folder entry and all of its nested contents from an archive into a
 /// temporary directory under `/tmp`.
 ///

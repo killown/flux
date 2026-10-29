@@ -311,6 +311,24 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_enter_archive");
+
+        // An archive inside another archive arrives here as a virtual
+        // `archive://` path, which cannot be opened directly. Ask the user to
+        // extract it first, confirming extracts it and re-enters with the real
+        // on-disk path.
+        let archive_path =
+            match crate::infra::archive::parse_archive_uri(&archive_path.to_string_lossy()) {
+                Some((outer, inner)) if !inner.is_empty() => {
+                    sender.input(AppMsg::PromptNestedArchiveExtract {
+                        archive_path: outer,
+                        inner_path: inner,
+                    });
+                    return;
+                }
+                Some((outer, _)) => outer,
+                None => archive_path,
+            };
+
         self.mime_filter = None;
         self.reset_from_content_search();
         self.last_search_was_advanced = false;

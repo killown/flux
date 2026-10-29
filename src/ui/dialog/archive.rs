@@ -82,6 +82,52 @@ impl FluxApp {
         });
     }
 
+    /// Asks whether to extract an archive nested inside another archive.
+    pub fn show_nested_archive_prompt(
+        &self,
+        archive_path: PathBuf,
+        inner_path: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("show_nested_archive_prompt");
+        let parent = gtk::Application::default().active_window();
+        let s = sender.clone();
+
+        let name_of = |p: &Path| {
+            p.file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| p.to_string_lossy().into_owned())
+        };
+        let inner_name = name_of(Path::new(&inner_path));
+        let outer_name = name_of(&archive_path);
+
+        let title = crate::i18n::tr("Extract \"{}\"?").replace("{}", &inner_name);
+        let body = crate::i18n::tr(
+            "\"{}\" is an archive inside \"{}\". It will be extracted next to \"{}\" and then opened.",
+        )
+        .replacen("{}", &inner_name, 1)
+        .replacen("{}", &outer_name, 1)
+        .replacen("{}", &outer_name, 1);
+
+        let dialog = adw::AlertDialog::new(Some(&title), Some(&body));
+        dialog.add_response("no", &crate::i18n::tr("No"));
+        dialog.add_response("yes", &crate::i18n::tr("Yes"));
+        dialog.set_response_appearance("yes", adw::ResponseAppearance::Suggested);
+        dialog.set_default_response(Some("yes"));
+        dialog.set_close_response("no");
+
+        dialog.connect_response(None, move |_, resp| {
+            if resp == "yes" {
+                s.input(AppMsg::ExtractNestedArchive {
+                    archive_path: archive_path.clone(),
+                    inner_path: inner_path.clone(),
+                });
+            }
+        });
+
+        dialog.present(parent.as_ref());
+    }
+
     pub fn show_archive_deletion_warning(
         &self,
         archive_path: PathBuf,

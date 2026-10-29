@@ -1,5 +1,6 @@
 use crate::model::{AppMsg, FluxApp};
 use relm4::prelude::*;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 
 /// Raises the flag on drop so the progress poller stops even if the extractor panics.
@@ -145,6 +146,96 @@ impl FluxApp {
                 }
                 Err(e) => {
                     let _ = std::fs::remove_dir_all(&dest);
+                    s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                }
+            }
+        });
+    }
+
+    /// Extracts an archive nested inside another archive (`a.zip` containing
+    /// `b.zip`) next to the outer archive, then enters the extracted copy.
+    pub fn handle_extract_nested_archive(
+        &mut self,
+        archive_path: PathBuf,
+        inner_path: String,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_extract_nested_archive");
+        let Some(dest_dir) = archive_path.parent().map(Path::to_path_buf) else {
+            return;
+        };
+
+        let key = self.cache_key(&dest_dir);
+        self.folder_cache.remove(&key);
+
+        let entry_name = Path::new(&inner_path)
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let parent_prefix = Path::new(&inner_path)
+            .parent()
+            .and_then(|p| p.to_str())
+            .unwrap_or("")
+            .to_string();
+
+        let task_id =
+            crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+        let cancellable = gtk::gio::Cancellable::new();
+        let label = format!("Extracting {entry_name}");
+        sender.input(AppMsg::TaskProgress {
+            id: task_id,
+            label: label.clone(),
+            current: 0,
+            total: 0,
+            total_items: 1,
+            cancellable: cancellable.clone(),
+        });
+
+        let password = self.cached_archive_passwords.get(&archive_path).cloned();
+        let s = sender.clone();
+
+        relm4::spawn_blocking(move || {
+            let result = crate::infra::archive::extract_entry_to_unique_file(
+                &archive_path,
+                &inner_path,
+                password.as_deref(),
+                &dest_dir,
+            );
+
+            s.input(AppMsg::TaskProgress {
+                id: task_id,
+                label,
+                current: 1,
+                total: 1,
+                total_items: 1,
+                cancellable,
+            });
+            s.input(AppMsg::TaskCompleted(task_id));
+
+            match result {
+                Ok(dest) => {
+                    s.input(AppMsg::ShowToast(format!(
+                        "Extracted to {}",
+                        dest.display()
+                    )));
+                    s.input(AppMsg::EnterArchive(dest));
+                }
+                Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
+                    s.input(AppMsg::PromptArchivePassword {
+                        archive_path,
+                        prefix: parent_prefix,
+                        wrong_password: false,
+                    });
+                }
+                Err(crate::infra::archive::ArchiveError::WrongPassword) => {
+                    s.input(AppMsg::PromptArchivePassword {
+                        archive_path,
+                        prefix: parent_prefix,
+                        wrong_password: true,
+                    });
+                }
+                Err(e) => {
                     s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
                 }
             }
