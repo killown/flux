@@ -192,6 +192,12 @@ impl FluxApp {
 
         let cache_key = path.canonicalize().unwrap_or_else(|_| path.clone());
 
+        let sender_debounce = sender.clone();
+        let session = current_session;
+        glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
+            sender_debounce.input(AppMsg::ShowLoadingSpinner(session));
+        });
+
         if !is_trash
             && !path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             && filter.is_empty()
@@ -293,13 +299,6 @@ impl FluxApp {
                 return;
             }
         }
-
-        // Schedule delayed spinner activation only when performing a cold background read
-        let sender_debounce = sender.clone();
-        let session = current_session;
-        glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-            sender_debounce.input(AppMsg::ShowLoadingSpinner(session));
-        });
 
         let filter_mode = self.filter_mode;
 
