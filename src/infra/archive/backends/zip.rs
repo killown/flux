@@ -454,8 +454,9 @@ impl ArchiveBackend for ZipBackend {
 
                     for entry in std::fs::read_dir(src)
                         .map_err(|e| ArchiveError::Other(format!("read dir: {e}")))?
-                        .flatten()
                     {
+                        let entry = entry
+                            .map_err(|e| ArchiveError::Other(format!("read dir entry: {e}")))?;
                         let child_path = entry.path();
                         let file_name = entry.file_name();
                         let name_str = file_name.to_string_lossy();
