@@ -254,7 +254,7 @@ pub fn remove_archive_entry(
     backend.remove_entry(archive_path, inner_path, password, progress_cb)
 }
 
-/// Adds or replaces an entry inside an archive file using a local file on disk.
+/// Adds an entry to an archive from a local file, failing if the name is taken.
 #[allow(dead_code)]
 pub fn write_archive_entry(
     archive_path: &Path,

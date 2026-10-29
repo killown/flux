@@ -410,9 +410,9 @@ impl ArchiveBackend for ZipBackend {
                     || name == target_dir_prefix
                     || (!target_dir_prefix.is_empty() && name.starts_with(&target_dir_prefix))
                 {
-                    if name != target && name != target_dir_prefix {
+                    if name != target_dir_prefix {
                         return Err(ArchiveError::Other(format!(
-                            "'{}' already exists in the archive and is not empty",
+                            "'{}' already exists in the archive",
                             target
                         )));
                     }
