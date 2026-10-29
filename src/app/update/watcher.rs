@@ -127,10 +127,7 @@ impl FluxApp {
         crate::hit!("FluxApp::handle_file_deleted");
         crate::infra::search::indexer::notify_deleted(&path);
 
-        if let Some(parent) = path.parent() {
-            self.folder_cache.remove(parent);
-        }
-        self.folder_cache.remove(&path);
+        self.evict_folder_cache(&path);
 
         if self.is_content_searching {
             // A file can have multiple result rows (one per matching line),
@@ -198,10 +195,7 @@ impl FluxApp {
             return;
         }
 
-        if let Some(parent) = path.parent() {
-            self.folder_cache.remove(parent);
-        }
-        self.folder_cache.remove(&path);
+        self.evict_folder_cache(&path);
 
         let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) else {
             return;

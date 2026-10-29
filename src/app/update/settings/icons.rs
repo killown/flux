@@ -18,10 +18,7 @@ impl FluxApp {
             .insert(path_str.clone(), image_path.to_string_lossy().to_string());
         utils::save_config(&self.config);
 
-        if let Some(parent) = path.parent() {
-            self.folder_cache.remove(parent);
-        }
-        self.folder_cache.remove(&path);
+        self.evict_folder_cache(&path);
 
         // Live-update matching grid items instantly
         let new_icon = gtk::gio::Icon::for_string(&image_path.to_string_lossy())
@@ -46,10 +43,7 @@ impl FluxApp {
         self.config.ui.file_icons.remove(&path_str);
         utils::save_config(&self.config);
 
-        if let Some(parent) = path.parent() {
-            self.folder_cache.remove(parent);
-        }
-        self.folder_cache.remove(&path);
+        self.evict_folder_cache(&path);
 
         // Live-update matching grid items instantly back to default
         let default_icon = utils::icon::get_icon_for_path(&path, false);

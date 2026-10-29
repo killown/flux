@@ -356,4 +356,15 @@ impl FluxApp {
     pub fn cache_key(&self, path: &Path) -> PathBuf {
         path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
     }
+
+    /// Evicts the folder-cache entries invalidated by a change to `path`.
+    pub fn evict_folder_cache(&mut self, path: &Path) {
+        if let Some(parent) = path.parent() {
+            self.folder_cache.remove(&self.cache_key(parent));
+            if let Some(name) = path.file_name() {
+                self.folder_cache.remove(&self.cache_key(parent).join(name));
+            }
+        }
+        self.folder_cache.remove(&self.cache_key(path));
+    }
 }
