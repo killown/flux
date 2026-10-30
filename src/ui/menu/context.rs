@@ -209,7 +209,7 @@ impl FluxApp {
                 let action_toast = action.toast.clone();
 
                 if action.command.as_str() == "builtin::quick_list_transfer" {
-                    if self.exclusive_list.is_empty() {
+                    if self.quick.list.is_empty() {
                         continue;
                     }
 
@@ -217,7 +217,7 @@ impl FluxApp {
                     let move_menu = gio::Menu::new();
                     let copy_menu = gio::Menu::new();
 
-                    for (idx, target_path) in self.exclusive_list.iter().enumerate() {
+                    for (idx, target_path) in self.quick.list.iter().enumerate() {
                         let raw_name = target_path
                             .file_name()
                             .map(|n| n.to_string_lossy().to_string())

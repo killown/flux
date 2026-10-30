@@ -350,7 +350,7 @@ impl FluxApp {
             return;
         }
 
-        if self.wide_preview_sidebar.is_some() {
+        if self.preview.wide_sidebar.is_some() {
             self.exit_wide_preview();
             return;
         }

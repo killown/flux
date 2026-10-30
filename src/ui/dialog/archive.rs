@@ -14,7 +14,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("show_prompt_archive_password");
-        self.archive_locked = true;
+        self.archive.locked = true;
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
 
@@ -137,7 +137,7 @@ impl FluxApp {
         crate::hit!("show_archive_deletion_warning");
         let parent = gtk::Application::default().active_window();
         let s = sender.clone();
-        let password = self.cached_archive_passwords.get(&archive_path).cloned();
+        let password = self.archive.passwords.get(&archive_path).cloned();
 
         let file_name = Path::new(&inner_path)
             .file_name()

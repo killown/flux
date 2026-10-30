@@ -59,7 +59,7 @@ pub(super) fn handle(
         }
         AppMsg::FileOps(FileOpsMsg::Delete) => {
             let selection = app.get_selection();
-            if app.is_content_searching {
+            if app.search.content_searching {
                 app.remove_search_results_for_paths(&selection);
             }
             crate::infra::trash::delete_items(

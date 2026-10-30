@@ -40,7 +40,7 @@ impl FluxApp {
 
         // ── Virtual / special paths - delegate and return immediately ────────────
         if crate::infra::network::is_network_uri(&path) {
-            self.archive_locked = false;
+            self.archive.locked = false;
             self.current_path = path.clone();
             self.load_network(&path_str, None, sender.clone());
             return;
@@ -56,7 +56,7 @@ impl FluxApp {
         }
 
         // Exiting or not inside an archive: clear the lock state
-        self.archive_locked = false;
+        self.archive.locked = false;
 
         if path_str.starts_with("recent:///") {
             self.load_recents(sender);
@@ -181,13 +181,13 @@ impl FluxApp {
         let config_folder_icons = self.state_db.load_folder_icons();
         self.config.ui.folder_icons = config_folder_icons.clone();
         let config_file_icons = self.config.ui.file_icons.clone();
-        let extension_globset = self.extension_globset.clone();
+        let extension_globset = self.filters.extension_globset.clone();
         let expand_labels = self.config.ui.expand_labels;
         let show_empty_dir_emblem = self.config.ui.show_empty_dir_emblem;
         let archives_as_folders = self.config.ui.archives_as_folders;
         let lock_snapshot = self.archive_lock_snapshot();
         let filter = self.filter.clone();
-        let mime_filter = self.mime_filter.clone();
+        let mime_filter = self.filters.mime.clone();
         let path_clone = path.clone();
         let sender_clone = sender.clone();
         let auto_list_threshold = self.config.ui.auto_list_threshold;
@@ -303,7 +303,7 @@ impl FluxApp {
             }
         }
 
-        let filter_mode = self.filter_mode;
+        let filter_mode = self.filters.mode;
 
         // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {

@@ -66,7 +66,7 @@ impl FluxApp {
         self.current_path = archive::build_archive_uri(&archive_path, &prefix);
 
         let known_password =
-            password.or_else(|| self.cached_archive_passwords.get(&archive_path).cloned());
+            password.or_else(|| self.archive.passwords.get(&archive_path).cloned());
 
         let archive_path_c = archive_path.clone();
         let prefix_c = prefix.clone();
@@ -99,8 +99,8 @@ impl FluxApp {
     /// Paths-only copy of the session's archive lock state for the loader pool.
     pub fn archive_lock_snapshot(&self) -> archive::ArchiveLockSnapshot {
         archive::ArchiveLockSnapshot::new(
-            self.known_encrypted_archives.clone(),
-            self.cached_archive_passwords.keys().cloned().collect(),
+            self.archive.known_encrypted.clone(),
+            self.archive.passwords.keys().cloned().collect(),
         )
     }
 
@@ -108,8 +108,8 @@ impl FluxApp {
     /// shows it, so the padlock flips without a reload.
     pub fn sync_archive_lock_badges(&mut self, archive_path: &std::path::Path) {
         crate::hit!("sync_archive_lock_badges");
-        let encrypted = self.known_encrypted_archives.contains(archive_path);
-        let unlocked = self.cached_archive_passwords.contains_key(archive_path);
+        let encrypted = self.archive.known_encrypted.contains(archive_path);
+        let unlocked = self.archive.passwords.contains_key(archive_path);
 
         for tab in &mut self.tabs {
             let selection = tab.files.view.model().and_downcast::<gtk::MultiSelection>();
@@ -152,7 +152,7 @@ impl FluxApp {
     pub fn handle_archive_locks_probed(&mut self, _load_id: u64, encrypted: Vec<PathBuf>) {
         crate::hit!("handle_archive_locks_probed");
         for path in encrypted {
-            if self.known_encrypted_archives.insert(path.clone()) {
+            if self.archive.known_encrypted.insert(path.clone()) {
                 self.sync_archive_lock_badges(&path);
             }
         }
@@ -161,7 +161,9 @@ impl FluxApp {
     /// Queues a keyring save requested from the password dialog.
     pub fn queue_archive_password_save(&mut self, archive_path: PathBuf, password: String) {
         crate::hit!("queue_archive_password_save");
-        self.pending_keyring_saves.queue(archive_path, password);
+        self.archive
+            .pending_keyring_saves
+            .queue(archive_path, password);
     }
 
     /// Persists `password` for `archive_path` in the system keyring.
@@ -199,7 +201,7 @@ impl FluxApp {
             Some((archive_path, _)) => archive_path,
             None => target,
         };
-        self.cached_archive_passwords.remove(&archive_path);
+        self.archive.passwords.remove(&archive_path);
         self.sync_archive_lock_badges(&archive_path);
 
         let sender_c = sender.clone();
@@ -240,13 +242,13 @@ impl FluxApp {
         let sort_ascending = self.sort_ascending;
         let folders_first = self.config.ui.folders_first;
         let archives_as_folders = self.config.ui.archives_as_folders;
-        let extension_globset = self.extension_globset.clone();
+        let extension_globset = self.filters.extension_globset.clone();
 
         match result {
             Err(archive::ArchiveError::PasswordRequired) => {
-                self.cached_archive_passwords.remove(&archive_path);
-                self.pending_keyring_saves.discard(&archive_path);
-                self.known_encrypted_archives.insert(archive_path.clone());
+                self.archive.passwords.remove(&archive_path);
+                self.archive.pending_keyring_saves.discard(&archive_path);
+                self.archive.known_encrypted.insert(archive_path.clone());
                 self.sync_archive_lock_badges(&archive_path);
                 sender.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                     archive_path,
@@ -255,9 +257,9 @@ impl FluxApp {
                 }));
             }
             Err(archive::ArchiveError::WrongPassword) => {
-                self.cached_archive_passwords.remove(&archive_path);
-                self.pending_keyring_saves.discard(&archive_path);
-                self.known_encrypted_archives.insert(archive_path.clone());
+                self.archive.passwords.remove(&archive_path);
+                self.archive.pending_keyring_saves.discard(&archive_path);
+                self.archive.known_encrypted.insert(archive_path.clone());
                 self.sync_archive_lock_badges(&archive_path);
                 sender.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                     archive_path,
@@ -270,15 +272,17 @@ impl FluxApp {
             }
             Ok(entries) => {
                 if let Some(password) = &password {
-                    self.cached_archive_passwords
+                    self.archive
+                        .passwords
                         .insert(archive_path.clone(), password.clone());
                     // A password only reaches this point after a prompt or a keyring
                     // hit, so the archive is encrypted and now unlocked.
-                    self.known_encrypted_archives.insert(archive_path.clone());
+                    self.archive.known_encrypted.insert(archive_path.clone());
                     self.sync_archive_lock_badges(&archive_path);
                 }
 
                 if let Some(confirmed) = self
+                    .archive
                     .pending_keyring_saves
                     .confirm(&archive_path, password.as_deref())
                 {

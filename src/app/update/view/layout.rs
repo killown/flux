@@ -11,14 +11,14 @@ impl FluxApp {
         // The shortcut can fire from any focus (sidebar, panel, terminal).
         // Pull focus back to the main grid first, then switch. Skipped while
         // the full-window terminal is up, since the grid is hidden then.
-        if !self.terminal_fullscreen {
+        if !self.term.fullscreen {
             if let Some(tab) = self.tabs.get(self.active_tab_index) {
                 tab.files.view.grab_focus();
             }
         }
 
         self.is_list_mode = !self.is_list_mode;
-        self.saved_list_mode = self.is_list_mode;
+        self.search.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
         utils::save_config(&self.config);
 

@@ -1,9 +1,12 @@
-use crate::domain::model::{CachedFolder, Config, CustomAction, Panels, PathSegment, SortBy};
+use crate::domain::model::{
+    ArchiveState, CachedFolder, Config, CustomAction, Filters, GitState, Panels, PathSegment,
+    PreviewState, QuickState, SearchState, SortBy, TerminalState,
+};
 use crate::ui::keymap::KeyMap;
 use crate::ui::{FileItem, SidebarPlace};
 use relm4::factory::FactoryVecDeque;
 use relm4::typed_view::grid::TypedGridView;
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
@@ -62,6 +65,21 @@ pub struct NavigateMode {
 pub struct FluxApp {
     /// Session state of the ten right-side panels.
     pub panels: Panels,
+    /// The bottom and full-window terminals.
+    pub term: TerminalState,
+    /// The pinned directory list and the named Quick Lists behind it.
+    pub quick: QuickState,
+    /// Password state for encrypted archives browsed this session.
+    pub archive: ArchiveState,
+    /// Session-scoped filters applied to every directory load.
+    pub filters: Filters,
+    /// Content-search state and the layout it saves and restores.
+    pub search: SearchState,
+    /// Git status of the current directory and the file shown in the diff panel.
+    pub git: GitState,
+    /// Session state of the peek-preview feature outside the panel itself: the prefetch cache,
+    /// the wide and full-screen modes, and inline video autoplay.
+    pub preview: PreviewState,
     /// Cycle state for `Ctrl+Alt+<letter>`: the anchor directory whose
     /// children are being cycled, the letter, the ordered candidate paths
     /// captured on the first press, and the index of the one we are on
@@ -69,35 +87,6 @@ pub struct FluxApp {
     pub alt_cycle: Option<AltCycle>,
     /// `Some` while Navigate mode is on (see [`NavigateMode`]).
     pub navigate: Option<NavigateMode>,
-    /// One-shot: open the preview panel in wide mode after the first folder load (CLI `--preview`).
-    pub startup_preview: bool,
-    /// True when the current `mime_filter` was applied by the `Space` shortcut,
-    /// meaning closing the preview panel should also clear it.
-    pub mime_filter_from_space: bool,
-    /// Ephemeral MIME filter: only entries whose MIME type equals this are shown.
-    pub mime_filter: Option<String>,
-    /// Session-scoped folder/file filter applied to every directory load, persists across navigation.
-    pub filter_mode: FilterMode,
-    /// Bounded LRU of prefetched preview payloads keyed on path + mtime.
-    pub preview_cache: std::sync::Arc<crate::app::update::view::prefetch::PreviewCache>,
-    /// `Some(sidebar was visible)` while wide-preview mode is active, `None` otherwise.
-    pub wide_preview_sidebar: Option<bool>,
-    /// `Some((wide mode was already on, window was already full screen))` while full-screen
-    /// preview is active, `None` otherwise.
-    pub preview_fullscreen: Option<(bool, bool)>,
-    /// File path currently displayed inside the git diff review panel.
-    pub active_diff_target: Option<PathBuf>,
-    /// Scanned directory for `git_status_map`.
-    pub git_status_dir: PathBuf,
-    /// Git file status lookup table for entries in `git_status_dir`.
-    pub git_status_map: std::collections::HashMap<PathBuf, crate::infra::git::GitFileStatus>,
-    /// Tracks if active directory belongs to a git repository.
-    pub is_in_git_repo: bool,
-    /// Timestamps of recent autoplay launches, used to enforce the launch-rate
-    /// limit that prevents GStreamer pipeline FD exhaustion under rapid selection.
-    pub video_preview_launches: std::collections::VecDeque<std::time::Instant>,
-    /// Set when the launch-rate limit trips, autoplay is suppressed until this instant.
-    pub video_preview_cooldown_until: Option<std::time::Instant>,
     /// Container widget that holds and transitions between multiple tab pages.
     pub tab_view: adw::TabView,
     /// Header strip displaying open tabs, automatically hidden when only one tab is open.
@@ -114,7 +103,6 @@ pub struct FluxApp {
     pub active_item_line: usize,
     /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.
     #[allow(dead_code)]
-    pub last_search_was_advanced: bool,
     /// Whether the bottom status bar is currently visible.
     pub statusbar_visible: bool,
     /// Tracks whether the file grid scrollable container has reached the bottom boundary.
@@ -123,10 +111,6 @@ pub struct FluxApp {
     pub header_visible: bool,
     /// Weak or cloned handle to the header bar widget for toggling visibility dynamically.
     pub header_widget: Option<gtk::Widget>,
-    /// Path of the video currently playing inline in the selected card.
-    pub active_video_preview: Option<PathBuf>,
-    /// Active GLib timeout source ID used to debounce rapid selection changes for video previews.
-    pub video_preview_source: Option<glib::SourceId>,
     /// In-memory folder session cache mapped by directory path.
     pub folder_cache: std::collections::HashMap<PathBuf, CachedFolder>,
     /// In-session undo/redo history for file operations.
@@ -136,56 +120,17 @@ pub struct FluxApp {
     /// Weak reference to the inline header path entry for live text sync.
     pub header_path_entry: glib::WeakRef<gtk::Entry>,
     // Search state for content search mode.
-    pub search_saved_layout: bool,
-    /// Maximum grid columns before content search, restored when search ends.
-    pub saved_max_columns: u32,
-    /// The user's preferred list‑mode state before a content search forced it to `true`.
-    pub saved_list_mode: bool,
-    /// Indicates if an active content search is currently running.
-    pub is_content_searching: bool,
-    /// Token to cancel the currently active content search operation.
-    pub content_search_cancellable: Option<gio::Cancellable>,
     pub network_section: gtk::Box,
-    /// True while the current archive path requires a password that has not yet been supplied.
-    pub archive_locked: bool,
-    /// Passwords resolved this session, keyed by the archive's on-disk path.
-    pub cached_archive_passwords: HashMap<PathBuf, String>,
-    /// Archives this session has seen demand a password (7z and RAR cannot be probed
-    /// cheaply). Paths only, in memory only, feeds the padlock badge.
-    pub known_encrypted_archives: std::collections::HashSet<PathBuf>,
-    /// Keyring saves the user requested, held back until the archive accepts the password.
-    pub pending_keyring_saves: crate::infra::keyring::PendingSaves,
     /// The current label for the contextual Recents button.
     pub recents_label: String,
     /// The current tooltip for the contextual Recents button.
     pub recents_tooltip: String,
     /// Used to toggle the header button label.
     pub recents_has_selection: bool,
-    /// The Paned widget that contains the terminal.
-    pub terminal_paned: Option<gtk::Paned>,
-    /// Whether the terminal has been cleared on first open.
-    pub terminal_cleared: bool,
-    /// The embedded VTE terminal widget.
-    pub terminal: crate::infra::terminal::Terminal,
-    /// Tracks whether the terminal's PTY shell process has been spawned.
-    pub terminal_spawned: bool,
-    /// Whether the terminal panel is currently visible.
-    pub terminal_visible: bool,
-    /// True while the full-window terminal mode is active. Only meaningful
-    /// when `config.ui.terminal.position == TerminalPosition::Fullscreen`.
-    pub terminal_fullscreen: bool,
     /// Handle to the root `main_stack` (set in `view/init.rs`).
     pub main_stack: Option<gtk::Stack>,
     /// The main window, kept so the toggle socket can hide and show it while it is unmapped.
     pub root_window: Option<adw::Window>,
-    /// Dedicated terminal instance for full-window mode. Lazily created on first
-    /// entry, never reparented into the paned or sidebar. Killed on window close.
-    pub fullscreen_terminal: Option<crate::infra::terminal::Terminal>,
-    /// Handle to the container inside the `"terminal"` Stack page.
-    pub fullscreen_terminal_box: Option<gtk::Box>,
-    /// True once the fullscreen terminal has spawned its shell at least once.
-    /// Independent from `terminal_spawned` (bottom pane) and the sidebar panel.
-    pub terminal_spawned_fullscreen: bool,
     /// Indicates whether a background file system operation or directory reload is currently in progress.
     pub is_loading: bool,
     /// Persistent SQLite-backed manager for application state and metadata.
@@ -207,22 +152,12 @@ pub struct FluxApp {
     /// Grid indices for which a lazy thumbnail request has already been dispatched in
     /// the current session.
     pub pending_thumbnails: std::collections::HashSet<u32>,
-    /// Flag indicating the search interface was just initialized to trigger focus.
-    pub search_just_opened: bool,
     /// Current pixel size of the grid item icons.
     pub current_icon_size: i32,
     /// Current pixel size of icons when the view is in list mode.
     pub current_list_icon_size: i32,
     /// Factory-managed collection of breadcrumb segments for the header.
     pub breadcrumbs: FactoryVecDeque<PathSegment>,
-    /// A pinned list of directories for quick multi-context switching.
-    pub exclusive_list: Vec<PathBuf>,
-    /// The index of the currently active item in the exclusive directory list.
-    pub exclusive_index: Option<usize>,
-    /// Every named Quick List. `exclusive_list` and `exclusive_index` always
-    /// mirror the selected one, so this copy of the selected list goes stale.
-    /// Read it through `FluxApp::quick_snapshot`.
-    pub quick_groups: crate::domain::model::quick_groups::QuickGroups,
     /// Floating menu containing context-sensitive file and application actions.
     pub context_menu_popover: gtk::PopoverMenu,
     /// Collection of user-defined or plugin-provided contextual actions.
@@ -245,10 +180,6 @@ pub struct FluxApp {
     pub _volume_monitor: gio::VolumeMonitor,
     /// Current search/filter string.
     pub filter: String,
-    /// Session-scoped glob pattern allowlist for persistent navigation filtering.
-    pub extension_filter: Option<Vec<String>>,
-    /// Precompiled glob matcher for the current extension filter.
-    pub extension_globset: Option<globset::GlobSet>,
     /// When true the file grid renders items as compact horizontal rows
     /// (small icon + filename) instead of the default vertical card layout.
     pub is_list_mode: bool,

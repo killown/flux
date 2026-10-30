@@ -36,7 +36,7 @@ impl FluxApp {
 
     pub fn handle_toggle_terminal(&mut self) {
         crate::hit!("handle_toggle_terminal");
-        self.terminal_visible = !self.terminal_visible;
+        self.term.visible = !self.term.visible;
 
         let path_str = self.current_path.to_string_lossy();
         let effective_path = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
@@ -54,12 +54,12 @@ impl FluxApp {
             self.current_path.to_str().unwrap_or("/").to_string()
         };
 
-        if self.terminal_visible {
-            if !self.terminal_cleared {
-                self.terminal_cleared = true;
+        if self.term.visible {
+            if !self.term.cleared {
+                self.term.cleared = true;
             }
 
-            if let Some(paned) = &self.terminal_paned {
+            if let Some(paned) = &self.term.paned {
                 let paned_clone = paned.clone();
                 let target_h = self.config.ui.terminal.height;
 
@@ -84,11 +84,11 @@ impl FluxApp {
                 });
             }
 
-            if !self.terminal_spawned {
-                self.terminal_spawned = true;
+            if !self.term.spawned {
+                self.term.spawned = true;
 
                 let shell = env::var("SHELL").unwrap_or_else(|_| "/bin/bash".to_string());
-                let mut term_clone = self.terminal.clone();
+                let mut term_clone = self.term.widget.clone();
 
                 term_clone.spawn_async(
                     0,
@@ -107,18 +107,19 @@ impl FluxApp {
                 );
             } else {
                 let is_idle = self
-                    .terminal
+                    .term
+                    .widget
                     .state
                     .lock()
                     .map(|s| s.is_idle())
                     .unwrap_or(false);
 
                 if is_idle {
-                    self.terminal.respawn(&effective_path);
+                    self.term.widget.respawn(&effective_path);
                 }
             }
 
-            let term = self.terminal.clone();
+            let term = self.term.widget.clone();
             glib::idle_add_local_once(move || {
                 term.grab_focus();
                 term.send_sigwinch();
@@ -159,11 +160,11 @@ impl FluxApp {
             return;
         };
 
-        if self.terminal_fullscreen {
-            self.terminal_fullscreen = false;
+        if self.term.fullscreen {
+            self.term.fullscreen = false;
             stack.set_visible_child_name("fm");
 
-            if let Some(term) = &self.fullscreen_terminal {
+            if let Some(term) = &self.term.fullscreen_widget {
                 term.send_sigwinch();
             }
             // Mirror `toggle_sidebar_right_panel`'s close-focus: hand focus back to the grid.
@@ -179,8 +180,8 @@ impl FluxApp {
             crate::ui::panels::preview::registry::with(|h| h.stop_media());
         }
 
-        if self.fullscreen_terminal.is_none() {
-            let Some(host) = self.fullscreen_terminal_box.clone() else {
+        if self.term.fullscreen_widget.is_none() {
+            let Some(host) = self.term.fullscreen_box.clone() else {
                 return;
             };
 
@@ -222,20 +223,20 @@ impl FluxApp {
             crate::ui::startup::attach_terminal_mouse_controllers(&term);
             crate::ui::startup::register_terminal_shutdown(&term, &stack);
 
-            self.fullscreen_terminal = Some(term);
+            self.term.fullscreen_widget = Some(term);
         }
 
-        self.terminal_fullscreen = true;
+        self.term.fullscreen = true;
         stack.set_visible_child_name("terminal");
 
-        let Some(term) = self.fullscreen_terminal.clone() else {
+        let Some(term) = self.term.fullscreen_widget.clone() else {
             return;
         };
 
-        if !self.terminal_spawned_fullscreen {
+        if !self.term.fullscreen_spawned {
             // The spawn callback is `Send + 'static` and cannot touch `self`, so the
             // flag is set here, like `handle_toggle_terminal` does for the bottom pane.
-            self.terminal_spawned_fullscreen = true;
+            self.term.fullscreen_spawned = true;
             let working_dir = self.terminal_working_dir();
 
             // Spawn from an idle so the Stack page is already visible when the PTY is
@@ -283,13 +284,13 @@ impl FluxApp {
             return;
         }
 
-        if self.terminal_fullscreen && pos != TerminalPosition::Fullscreen {
+        if self.term.fullscreen && pos != TerminalPosition::Fullscreen {
             self.handle_toggle_terminal_fullscreen(sender);
         }
         if self.panels.terminal.visible && pos != TerminalPosition::Sidebar {
             self.toggle_sidebar_right_panel(RightPanelType::Terminal, sender);
         }
-        if self.terminal_visible && pos != TerminalPosition::Bottom {
+        if self.term.visible && pos != TerminalPosition::Bottom {
             self.handle_toggle_terminal();
         }
 

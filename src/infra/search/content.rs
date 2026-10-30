@@ -38,20 +38,20 @@ pub fn start_content_search(
     }
 
     // Cancel any previous search
-    if let Some(cancellable) = app.content_search_cancellable.take() {
+    if let Some(cancellable) = app.search.cancellable.take() {
         cancellable.cancel();
     }
-    app.is_content_searching = true;
+    app.search.content_searching = true;
     app.is_loading = true;
     let active_tab = &mut app.tabs[app.active_tab_index];
     active_tab.files.clear();
     app.filter.clear();
 
     // Force and save list mode layout for content search results snippet display
-    if !app.search_saved_layout {
-        app.saved_list_mode = app.is_list_mode;
-        app.saved_max_columns = app.tabs[app.active_tab_index].files.view.max_columns();
-        app.search_saved_layout = true;
+    if !app.search.saved_layout {
+        app.search.saved_list_mode = app.is_list_mode;
+        app.search.saved_max_columns = app.tabs[app.active_tab_index].files.view.max_columns();
+        app.search.saved_layout = true;
     }
     app.is_list_mode = true;
     let active_view = &app.tabs[app.active_tab_index].files.view;
@@ -60,7 +60,7 @@ pub fn start_content_search(
     app.sync_list_mode();
 
     let cancellable = gtk::gio::Cancellable::new();
-    app.content_search_cancellable = Some(cancellable.clone());
+    app.search.cancellable = Some(cancellable.clone());
 
     let session_id = NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
     app.load_id.store(session_id, Ordering::SeqCst);

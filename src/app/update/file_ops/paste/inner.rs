@@ -92,7 +92,7 @@ impl FluxApp {
 
                 let s = sender.clone();
                 let t_queue = self.task_queue.clone();
-                let password = self.cached_archive_passwords.get(&archive_path).cloned();
+                let password = self.archive.passwords.get(&archive_path).cloned();
 
                 relm4::spawn_blocking(move || {
                     let mut copied_bytes: u64 = 0;

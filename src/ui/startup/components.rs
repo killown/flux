@@ -1,4 +1,7 @@
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, Panels};
+use crate::domain::model::{
+    AppMsg, ArchiveState, Filters, FluxApp, GitState, NavigationMsg, Panels, PreviewState,
+    QuickState, SearchState, TerminalState,
+};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::prelude::*;
@@ -120,25 +123,36 @@ impl FluxApp {
 
         let mut model = FluxApp {
             panels: Panels::default(),
-            startup_preview: false,
-            mime_filter: None,
-            mime_filter_from_space: false,
-            preview_cache: std::sync::Arc::new(
-                crate::app::update::view::prefetch::PreviewCache::default(),
-            ),
-            wide_preview_sidebar: None,
-            preview_fullscreen: None,
-            active_diff_target: None,
-            git_status_dir: PathBuf::new(),
-            git_status_map: std::collections::HashMap::new(),
-            is_in_git_repo: false,
+            preview: PreviewState {
+                cache: std::sync::Arc::new(
+                    crate::app::update::view::prefetch::PreviewCache::default(),
+                ),
+                startup: false,
+                wide_sidebar: None,
+                fullscreen: None,
+                video_launches: std::collections::VecDeque::new(),
+                video_cooldown_until: None,
+                active_video: None,
+                video_source: None,
+            },
+            filters: Filters {
+                mime: None,
+                mime_from_space: false,
+                extension: None,
+                extension_globset: None,
+                mode: crate::domain::model::FilterMode::All,
+            },
+            git: GitState {
+                status_dir: PathBuf::new(),
+                status_map: std::collections::HashMap::new(),
+                in_repo: false,
+                active_diff_target: None,
+            },
             tab_view,
             tab_bar,
             tabs: vec![initial_tab],
             active_tab_index: 0,
             next_tab_id: 1,
-            active_video_preview: None,
-            video_preview_source: None,
             files,
             sidebar,
             breadcrumbs,
@@ -155,11 +169,20 @@ impl FluxApp {
             active_item_path: None,
             directory_monitor: None,
             action_group,
-            exclusive_list: initial_exclusive_list,
-            exclusive_index: initial_exclusive_index,
-            quick_groups: initial_quick_groups,
-            extension_globset: None,
-            search_just_opened: false,
+            quick: QuickState {
+                list: initial_exclusive_list,
+                index: initial_exclusive_index,
+                groups: initial_quick_groups,
+            },
+            search: SearchState {
+                content_searching: false,
+                cancellable: None,
+                last_was_advanced: false,
+                saved_layout: false,
+                saved_max_columns: 20,
+                saved_list_mode: false,
+                just_opened: false,
+            },
             sort_by: config.ui.default_sort,
             sort_ascending: true,
             show_hidden: config.ui.show_hidden_by_default,
@@ -167,8 +190,6 @@ impl FluxApp {
             config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),
-            extension_filter: None,
-            filter_mode: crate::domain::model::FilterMode::All,
             is_list_mode: config.default_list_mode,
             header_view: constants::VIEW_PATH.to_string(),
             recent_stack: std::collections::VecDeque::with_capacity(
@@ -180,17 +201,19 @@ impl FluxApp {
             task_queue: crate::infra::tasks::new_queue(),
             toast_overlay: adw::ToastOverlay::new(),
             last_toast: None,
-            terminal,
-            terminal_visible: false,
-            terminal_fullscreen: false,
+            term: TerminalState {
+                paned: None,
+                cleared: false,
+                widget: terminal,
+                spawned: false,
+                visible: false,
+                fullscreen: false,
+                fullscreen_widget: None,
+                fullscreen_box: None,
+                fullscreen_spawned: false,
+            },
             main_stack: None,
             root_window: Some(root.clone()),
-            fullscreen_terminal: None,
-            fullscreen_terminal_box: None,
-            terminal_spawned_fullscreen: false,
-            terminal_spawned: false,
-            terminal_cleared: false,
-            terminal_paned: None,
             sidebar_visible: effective_sidebar_visible,
             sidebar_widget: Some(sidebar_root.upcast()),
             header_visible: effective_header_visible,
@@ -199,16 +222,13 @@ impl FluxApp {
             recents_has_selection: false,
             recents_label: tr("Clear Recents"),
             recents_tooltip: tr("Clear all recents"),
-            cached_archive_passwords: std::collections::HashMap::new(),
-            known_encrypted_archives: std::collections::HashSet::new(),
-            pending_keyring_saves: crate::infra::keyring::PendingSaves::default(),
-            archive_locked: false,
+            archive: ArchiveState {
+                locked: false,
+                passwords: std::collections::HashMap::new(),
+                known_encrypted: std::collections::HashSet::new(),
+                pending_keyring_saves: crate::infra::keyring::PendingSaves::default(),
+            },
             network_section,
-            is_content_searching: false,
-            content_search_cancellable: None,
-            saved_list_mode: false,
-            saved_max_columns: 20,
-            search_saved_layout: false,
             transfer_dialog: None,
             command_dialog: None,
             header_path_entry: glib::WeakRef::new(),
@@ -217,11 +237,8 @@ impl FluxApp {
             pending_thumbnails: std::collections::HashSet::new(),
             folder_cache: std::collections::HashMap::with_capacity(32),
             scrolled_to_bottom: false,
-            last_search_was_advanced: false,
             active_item_line: 0,
             thumbnail_manager: Arc::new(crate::infra::thumbnails::ThumbnailTaskManager::default()),
-            video_preview_launches: std::collections::VecDeque::new(),
-            video_preview_cooldown_until: None,
         };
 
         // Apply initial list/grid mode to the view
@@ -232,7 +249,7 @@ impl FluxApp {
             model.files.view.set_max_columns(20);
             model.files.view.set_min_columns(1);
         }
-        model.saved_list_mode = model.is_list_mode;
+        model.search.saved_list_mode = model.is_list_mode;
 
         // Initial State Population
         {

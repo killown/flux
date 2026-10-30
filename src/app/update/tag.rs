@@ -129,7 +129,7 @@ impl FluxApp {
     pub fn handle_navigate_tag(&mut self, tag: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_navigate_tag");
         let filter_str = format!(":tag:{}", tag);
-        self.search_just_opened = false;
+        self.search.just_opened = false;
         self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
         sender.input(AppMsg::Search(SearchMsg::UpdateFilter(filter_str)));
     }

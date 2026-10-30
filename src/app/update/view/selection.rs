@@ -74,7 +74,7 @@ impl FluxApp {
             // a filtered-view position directly would return the wrong item.
             let query_lc = self.filter.to_lowercase();
 
-            let resolved: Vec<_> = if self.filter.is_empty() || self.is_content_searching {
+            let resolved: Vec<_> = if self.filter.is_empty() || self.search.content_searching {
                 // No filter: visual pos == store pos.
                 visual_indices
                     .iter()
@@ -295,7 +295,7 @@ impl FluxApp {
             }
         };
 
-        if self.config.ui.auto_show_diff && self.is_in_git_repo {
+        if self.config.ui.auto_show_diff && self.git.in_repo {
             // Don't auto-show the diff panel if the user already has a different
             // right panel open.
             let other_panel_open = self.panels.preview.visible
@@ -313,11 +313,12 @@ impl FluxApp {
                     if !item.is_dir {
                         let target_path = &item.path;
                         let has_diff = self
-                            .git_status_map
+                            .git
+                            .status_map
                             .get(target_path)
                             .or_else(|| {
                                 let canon = target_path.canonicalize().ok()?;
-                                self.git_status_map.get(&canon)
+                                self.git.status_map.get(&canon)
                             })
                             .is_some_and(|&s| {
                                 s != crate::infra::git::GitFileStatus::None

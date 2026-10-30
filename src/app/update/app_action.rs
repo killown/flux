@@ -79,7 +79,7 @@ impl FluxApp {
         let items: Vec<(PathBuf, bool)> = if let Some(pos) = position {
             let query_lc = self.filter.to_lowercase();
 
-            if self.filter.is_empty() || self.is_content_searching {
+            if self.filter.is_empty() || self.search.content_searching {
                 active_files
                     .get(pos)
                     .map(|w| {

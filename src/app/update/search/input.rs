@@ -6,7 +6,7 @@ impl FluxApp {
     /// Handles single character keystroke capture for type-to-search.
     pub fn handle_search_input(&mut self, c: char) {
         crate::hit!("handle_search_input");
-        self.search_just_opened = true;
+        self.search.just_opened = true;
         self.filter.push(c);
         self.header_view = constants::VIEW_SEARCH.to_string();
     }
@@ -26,26 +26,26 @@ impl FluxApp {
         crate::hit!("handle_switch_header");
         if self.header_view == constants::VIEW_SEARCH
             && view_name != constants::VIEW_SEARCH
-            && self.is_content_searching
+            && self.search.content_searching
         {
             self.reset_from_content_search();
         } else if self.header_view == constants::VIEW_SEARCH
             && view_name != constants::VIEW_SEARCH
-            && !self.is_content_searching
-            && self.is_list_mode != self.saved_list_mode
+            && !self.search.content_searching
+            && self.is_list_mode != self.search.saved_list_mode
         {
-            self.is_list_mode = self.saved_list_mode;
+            self.is_list_mode = self.search.saved_list_mode;
             self.tabs[self.active_tab_index]
                 .files
                 .view
-                .set_max_columns(self.saved_max_columns);
+                .set_max_columns(self.search.saved_max_columns);
             self.sync_list_mode();
-            self.search_saved_layout = false;
+            self.search.saved_layout = false;
         }
         self.header_view = view_name;
         if self.header_view != constants::VIEW_SEARCH {
             self.filter.clear();
-            self.search_just_opened = true;
+            self.search.just_opened = true;
             if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
                 tab.files.clear_filters();
             }

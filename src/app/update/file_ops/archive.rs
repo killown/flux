@@ -69,7 +69,7 @@ impl FluxApp {
             cancellable: cancellable.clone(),
         }));
 
-        let password = self.cached_archive_passwords.get(&archive_path).cloned();
+        let password = self.archive.passwords.get(&archive_path).cloned();
         let s = sender.clone();
 
         // ── Polling thread: reads dest dir size every 150 ms ─────────────────
@@ -198,7 +198,7 @@ impl FluxApp {
             cancellable: cancellable.clone(),
         }));
 
-        let password = self.cached_archive_passwords.get(&archive_path).cloned();
+        let password = self.archive.passwords.get(&archive_path).cloned();
         let s = sender.clone();
 
         relm4::spawn_blocking(move || {

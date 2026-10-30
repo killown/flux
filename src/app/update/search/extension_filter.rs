@@ -13,20 +13,20 @@ impl FluxApp {
             .iter()
             .flat_map(|p| crate::utils::glob::expand_mime_category(p))
             .collect();
-        self.extension_filter = if expanded.is_empty() {
+        self.filters.extension = if expanded.is_empty() {
             None
         } else {
             Some(expanded.clone())
         };
-        self.extension_globset = crate::utils::glob::compile_patterns(&expanded);
+        self.filters.extension_globset = crate::utils::glob::compile_patterns(&expanded);
         sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     #[allow(dead_code)]
     pub fn handle_clear_extension_filter(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_clear_extension_filter");
-        self.extension_filter = None;
-        self.extension_globset = None;
+        self.filters.extension = None;
+        self.filters.extension_globset = None;
         sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 }

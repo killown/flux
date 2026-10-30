@@ -76,9 +76,9 @@ impl FluxApp {
 
         // When the preview panel is closed, any active MIME filter is cleared.
         // This makes the "open preview and filter" action (Space) a true toggle.
-        if self.mime_filter.is_some() {
-            self.mime_filter = None;
-            self.mime_filter_from_space = false; // Still good practice to reset
+        if self.filters.mime.is_some() {
+            self.filters.mime = None;
+            self.filters.mime_from_space = false; // Still good practice to reset
             registry::set_mime_filter_active(false);
             sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         }
@@ -103,11 +103,11 @@ impl FluxApp {
             self.handle_toggle_preview(sender);
         }
 
-        if self.mime_filter.is_some() {
+        if self.filters.mime.is_some() {
             return;
         }
 
-        self.mime_filter_from_space = true;
+        self.filters.mime_from_space = true;
 
         if self.get_selected_path().is_none() {
             let view = self.tabs[self.active_tab_index].files.view.clone();
@@ -135,7 +135,7 @@ impl FluxApp {
     /// Also persists `config.ui.wide_preview` so the next open matches.
     pub fn handle_toggle_wide_preview(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_toggle_wide_preview");
-        if self.wide_preview_sidebar.is_some() {
+        if self.preview.wide_sidebar.is_some() {
             self.set_wide_preview_default(false);
             self.exit_wide_preview();
             return;
@@ -167,7 +167,7 @@ impl FluxApp {
     /// No-op until the panel is open and the grid has items, clears `startup_preview` when it fires.
     pub fn schedule_startup_preview_selection(&mut self) {
         crate::hit!("schedule_startup_preview_selection");
-        if !self.startup_preview || !self.panels.preview.visible {
+        if !self.preview.startup || !self.panels.preview.visible {
             return;
         }
         let view = self.tabs[self.active_tab_index].files.view.clone();
@@ -178,7 +178,7 @@ impl FluxApp {
         if !has_items {
             return;
         }
-        self.startup_preview = false;
+        self.preview.startup = false;
         // Deferred to idle so the grid/panel allocation settles first.
         glib::idle_add_local_once(move || {
             if let Some(model) = view
@@ -226,14 +226,14 @@ impl FluxApp {
     /// Enters wide-preview mode when the panel is open, no-op if already wide.
     fn enter_wide_preview(&mut self) {
         crate::hit!("enter_wide_preview");
-        if self.wide_preview_sidebar.is_some() || !self.panels.preview.visible {
+        if self.preview.wide_sidebar.is_some() || !self.panels.preview.visible {
             return;
         }
         let Some(revealer) = self.panels.preview.revealer.clone() else {
             return;
         };
 
-        self.wide_preview_sidebar = Some(self.sidebar_visible);
+        self.preview.wide_sidebar = Some(self.sidebar_visible);
         self.apply_sidebar_visibility(false);
         set_wide_preview_layout(
             &revealer,
@@ -249,7 +249,7 @@ impl FluxApp {
         crate::hit!("handle_toggle_preview_fullscreen");
         use gtk::prelude::*;
 
-        if self.preview_fullscreen.is_some() {
+        if self.preview.fullscreen.is_some() {
             self.leave_preview_fullscreen(true);
             return;
         }
@@ -260,7 +260,7 @@ impl FluxApp {
             return;
         };
 
-        let was_wide = self.wide_preview_sidebar.is_some();
+        let was_wide = self.preview.wide_sidebar.is_some();
         self.enter_wide_preview();
 
         let window = revealer.root().and_downcast::<gtk::Window>();
@@ -269,7 +269,7 @@ impl FluxApp {
         if let Some(w) = window.as_ref() {
             w.fullscreen();
         }
-        self.preview_fullscreen = Some((was_wide, window_was_fullscreen));
+        self.preview.fullscreen = Some((was_wide, window_was_fullscreen));
         let _ = registry::with(|h| h.set_fullscreen_active(true));
     }
 
@@ -292,7 +292,7 @@ impl FluxApp {
         }
 
         // Not in the folder grid: try to enter it if possible, otherwise stay on the grid.
-        if !self.exclusive_list.is_empty() || !self.panels.preview.visible {
+        if !self.quick.list.is_empty() || !self.panels.preview.visible {
             return;
         }
         let entered = registry::with(|h| h.focus_folder_grid()).unwrap_or(false);
@@ -389,7 +389,7 @@ impl FluxApp {
         crate::hit!("leave_preview_fullscreen");
         use gtk::prelude::*;
 
-        let Some((was_wide, window_was_fullscreen)) = self.preview_fullscreen.take() else {
+        let Some((was_wide, window_was_fullscreen)) = self.preview.fullscreen.take() else {
             return;
         };
         if let Some(revealer) = self.panels.preview.revealer.as_ref() {
@@ -409,7 +409,7 @@ impl FluxApp {
     /// Re-applies the wide-preview split after a view-mode change.
     pub fn refresh_wide_preview_layout(&self) {
         crate::hit!("refresh_wide_preview_layout");
-        if self.wide_preview_sidebar.is_none() {
+        if self.preview.wide_sidebar.is_none() {
             return;
         }
         if let Some(revealer) = self.panels.preview.revealer.as_ref() {
@@ -427,7 +427,7 @@ impl FluxApp {
         crate::hit!("exit_wide_preview");
         // Leaving wide mode also ends full-screen preview, otherwise the grid would stay hidden.
         self.leave_preview_fullscreen(false);
-        let Some(sidebar_was_visible) = self.wide_preview_sidebar.take() else {
+        let Some(sidebar_was_visible) = self.preview.wide_sidebar.take() else {
             return;
         };
         self.apply_sidebar_visibility(sidebar_was_visible);
@@ -502,7 +502,7 @@ impl FluxApp {
             // the UI so offenders are visible instead of guessed at.
             let t = std::time::Instant::now();
             handle.apply(&content);
-            handle.set_mime_filter_active(self.mime_filter.is_some());
+            handle.set_mime_filter_active(self.filters.mime.is_some());
             let ms = t.elapsed().as_millis();
             if ms > 30 {
                 eprintln!(

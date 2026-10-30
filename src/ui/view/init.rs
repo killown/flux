@@ -557,7 +557,7 @@ impl FluxApp {
         crate::hit!("store_widget_refs");
         model.context_menu_popover.set_parent(&widgets.grid_overlay);
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
-        model.terminal_paned = Some(widgets.main_paned.clone());
+        model.term.paned = Some(widgets.main_paned.clone());
         model.panels.search.revealer = Some(widgets.search_panel_revealer.clone());
         model.panels.tag.revealer = Some(widgets.tag_panel_revealer.clone());
         model.panels.diff.revealer = Some(widgets.diff_panel_revealer.clone());
@@ -569,9 +569,9 @@ impl FluxApp {
         model.panels.terminal.revealer = Some(widgets.terminal_panel_revealer.clone());
         model.panels.properties.revealer = Some(widgets.properties_panel_revealer.clone());
         model.main_stack = Some(widgets.main_stack.clone());
-        model.fullscreen_terminal_box = Some(widgets.fullscreen_terminal_box.clone());
+        model.term.fullscreen_box = Some(widgets.fullscreen_terminal_box.clone());
 
-        if let Some(paned) = &model.terminal_paned {
+        if let Some(paned) = &model.term.paned {
             let sender_clone = sender.clone();
             paned.connect_notify(Some("position"), move |paned, _| {
                 let total_height = paned.height();
@@ -602,7 +602,7 @@ impl FluxApp {
             sender.clone(),
             &widgets.header_stack,
             &model.keymap,
-            &model.terminal.drawing_area,
+            &model.term.widget.drawing_area,
         );
 
         // ── Mouse Navigation (Side Buttons 8 & 9) ──
@@ -658,7 +658,7 @@ impl FluxApp {
             crate::utils::helpers::register_resources();
         });
 
-        let terminal_widget = model.terminal.drawing_area.clone();
+        let terminal_widget = model.term.widget.drawing_area.clone();
         terminal_widget.add_css_class("flux-terminal-area");
         let terminal_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         terminal_box.append(&terminal_widget);

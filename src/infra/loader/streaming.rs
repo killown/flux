@@ -47,7 +47,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_folder_loaded_begin");
-        self.active_video_preview = None;
+        self.preview.active_video = None;
         self.handle_folder_loaded(path, load_id, items, media_tasks, list_mode, sender);
     }
 
@@ -92,7 +92,7 @@ impl FluxApp {
         let start_idx = active_tab.files.len();
         let mut chunk_media_tasks: Vec<(u32, PathBuf)> = Vec::new();
 
-        let git_map = (self.git_status_dir == self.current_path).then_some(&self.git_status_map);
+        let git_map = (self.git.status_dir == self.current_path).then_some(&self.git.status_map);
 
         // Hoisted out of the per-item loop: euid is process-global and
         // `dirs::cache_dir()` + join allocates a PathBuf that never changes
@@ -211,7 +211,8 @@ impl FluxApp {
             let labels = item.labels().clone();
             let is_encrypted_archive = item.is_encrypted_archive
                 || self
-                    .known_encrypted_archives
+                    .archive
+                    .known_encrypted
                     .contains(item.target_path.as_path());
             let file_item = FileItem::builder(item.display_name, item.target_path, icon)
                 .display_label(display_label)
@@ -293,7 +294,7 @@ impl FluxApp {
         let load_id = self.load_id.fetch_add(1, Ordering::SeqCst) + 1;
 
         self.is_loading = false;
-        self.archive_locked = false;
+        self.archive.locked = false;
 
         let cache_cap = self.config.ui.folder_cache_capacity;
 
@@ -310,8 +311,8 @@ impl FluxApp {
                 .to_string_lossy()
                 .starts_with(crate::infra::archive::ARCHIVE_URI)
             && self.filter.is_empty()
-            && self.extension_globset.is_none()
-            && self.mime_filter.is_none()
+            && self.filters.extension_globset.is_none()
+            && self.filters.mime.is_none()
             && !is_cached
             && cache_cap > 0
         {
@@ -386,7 +387,7 @@ impl FluxApp {
                 }
             });
         } else {
-            self.is_in_git_repo = false;
+            self.git.in_repo = false;
         }
 
         // Sync active tab so SwitchTab restores the correct path
@@ -466,8 +467,8 @@ impl FluxApp {
         let active_terminal: Option<crate::infra::terminal::Terminal> =
             if self.panels.terminal.visible {
                 self.panels.terminal.extras.terminal.clone()
-            } else if self.terminal_visible {
-                Some(self.terminal.clone())
+            } else if self.term.visible {
+                Some(self.term.widget.clone())
             } else {
                 None
             };

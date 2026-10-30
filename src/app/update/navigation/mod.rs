@@ -81,7 +81,7 @@ pub(super) fn handle(
         AppMsg::Tabs(TabsMsg::NextTab) => app.handle_next_tab(),
         AppMsg::Tabs(TabsMsg::PrevTab) => app.handle_prev_tab(),
         AppMsg::Navigation(NavigationMsg::Refresh) => {
-            app.active_video_preview = None;
+            app.preview.active_video = None;
             app.folder_cache.clear();
             app.handle_refresh_path(sender);
         }
@@ -94,7 +94,7 @@ pub(super) fn handle(
             prefix,
             password,
         }) => {
-            app.archive_locked = false;
+            app.archive.locked = false;
             app.load_archive(archive_path, prefix, Some(password), sender);
             app.update_breadcrumbs();
         }

@@ -27,7 +27,7 @@ pub(super) fn handle(
         AppMsg::Search(SearchMsg::UpdateFilter(query)) => app.handle_update_filter(query, sender),
         AppMsg::Search(SearchMsg::SearchInput(c)) => app.handle_search_input(c),
         AppMsg::Search(SearchMsg::SearchBackspace) => app.handle_search_backspace(sender),
-        AppMsg::Search(SearchMsg::CloseSearchSync) => app.search_just_opened = false,
+        AppMsg::Search(SearchMsg::CloseSearchSync) => app.search.just_opened = false,
         AppMsg::Search(SearchMsg::SetExtensionFilter(patterns)) => {
             app.handle_set_extension_filter(patterns, sender)
         }
@@ -40,7 +40,7 @@ pub(super) fn handle(
         }
         AppMsg::Search(SearchMsg::StartAdvancedSearch(params)) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
-            app.last_search_was_advanced = true;
+            app.search.last_was_advanced = true;
             crate::infra::search::start_advanced_search(app, params, sender.clone());
         }
         AppMsg::Search(SearchMsg::StartExtensionSearch(patterns)) => {

@@ -93,7 +93,7 @@ impl FluxApp {
         }
 
         let mut media_tasks: Vec<(u32, PathBuf)> = Vec::new();
-        let extension_globset = self.extension_globset.clone();
+        let extension_globset = self.filters.extension_globset.clone();
 
         for (grid_idx, (_ts, href)) in entries.into_iter().enumerate() {
             let gfile = gio::File::for_uri(&href);

@@ -233,10 +233,9 @@ impl FluxApp {
         crate::hit!("show_prompt_new_folder");
         let window = gtk::Application::default().active_window();
         let current_path = self.current_path.clone();
-        let archive_password = crate::infra::archive::parse_archive_uri(
-            &current_path.to_string_lossy(),
-        )
-        .and_then(|(archive_path, _)| self.cached_archive_passwords.get(&archive_path).cloned());
+        let archive_password =
+            crate::infra::archive::parse_archive_uri(&current_path.to_string_lossy())
+                .and_then(|(archive_path, _)| self.archive.passwords.get(&archive_path).cloned());
         let s = sender.clone();
 
         let dialog = adw::AlertDialog::new(

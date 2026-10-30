@@ -51,11 +51,11 @@ impl FluxApp {
 
     pub fn stop_video_preview(&mut self) {
         crate::hit!("stop_video_preview");
-        if let Some(source_id) = self.video_preview_source.take() {
+        if let Some(source_id) = self.preview.video_source.take() {
             source_id.remove();
         }
 
-        let Some(active_path) = self.active_video_preview.take() else {
+        let Some(active_path) = self.preview.active_video.take() else {
             return;
         };
 
@@ -91,13 +91,14 @@ impl FluxApp {
         let now = Instant::now();
 
         if self
-            .video_preview_cooldown_until
+            .preview
+            .video_cooldown_until
             .is_some_and(|until| now < until)
         {
             self.stop_video_preview();
             return;
         }
-        self.video_preview_cooldown_until = None;
+        self.preview.video_cooldown_until = None;
 
         let selection = self.get_selection();
         if selection.len() != 1 {
@@ -112,7 +113,7 @@ impl FluxApp {
             return;
         }
 
-        if self.active_video_preview.as_ref() == Some(&selected_path) {
+        if self.preview.active_video.as_ref() == Some(&selected_path) {
             let still_playing = self
                 .find_widget_by_path(&selected_path)
                 .map(|w| unsafe {
@@ -141,34 +142,36 @@ impl FluxApp {
                         )));
                     }
                 });
-            self.video_preview_source = Some(source_id);
+            self.preview.video_source = Some(source_id);
         }
     }
 
     pub fn handle_trigger_video_preview(&mut self, path: std::path::PathBuf) {
         crate::hit!("handle_trigger_video_preview");
-        self.video_preview_source = None;
+        self.preview.video_source = None;
 
         let now = Instant::now();
 
         if self
-            .video_preview_cooldown_until
+            .preview
+            .video_cooldown_until
             .is_some_and(|until| now < until)
         {
             return;
         }
 
         while self
-            .video_preview_launches
+            .preview
+            .video_launches
             .front()
             .is_some_and(|t| now.duration_since(*t) > VIDEO_PREVIEW_LAUNCH_WINDOW)
         {
-            self.video_preview_launches.pop_front();
+            self.preview.video_launches.pop_front();
         }
 
-        if self.video_preview_launches.len() >= VIDEO_PREVIEW_LAUNCH_LIMIT {
-            self.video_preview_cooldown_until = Some(now + VIDEO_PREVIEW_COOLDOWN);
-            self.video_preview_launches.clear();
+        if self.preview.video_launches.len() >= VIDEO_PREVIEW_LAUNCH_LIMIT {
+            self.preview.video_cooldown_until = Some(now + VIDEO_PREVIEW_COOLDOWN);
+            self.preview.video_launches.clear();
             self.stop_video_preview();
 
             if let Some(s) = crate::domain::model::SENDER.get() {
@@ -180,7 +183,7 @@ impl FluxApp {
             return;
         }
 
-        self.video_preview_launches.push_back(now);
+        self.preview.video_launches.push_back(now);
 
         let selection = self.get_selection();
         if selection.len() != 1 || selection[0] != path {
@@ -190,7 +193,7 @@ impl FluxApp {
         // Ensure any active preview is fully torn down first
         self.stop_video_preview();
 
-        self.active_video_preview = Some(path.clone());
+        self.preview.active_video = Some(path.clone());
 
         // Resolve real disk path: if it's an archive virtual path, extract to a tempfile first
         let resolved_file = if let Some((archive_path, inner_path)) =

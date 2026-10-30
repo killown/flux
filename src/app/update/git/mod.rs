@@ -14,10 +14,10 @@ impl FluxApp {
     /// Opens the right-side diff panel and loads changes for the target file in the background.
     pub fn handle_show_file_diff(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_show_file_diff");
-        if self.active_diff_target.as_ref() == Some(&path) && self.panels.diff.visible {
+        if self.git.active_diff_target.as_ref() == Some(&path) && self.panels.diff.visible {
             return;
         }
-        self.active_diff_target = Some(path.clone());
+        self.git.active_diff_target = Some(path.clone());
         if !self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
@@ -51,12 +51,12 @@ impl FluxApp {
             return;
         }
 
-        self.git_status_dir = path;
-        self.git_status_map = updates;
+        self.git.status_dir = path;
+        self.git.status_map = updates;
 
         // The header Git Actions menu must stay reachable on a clean tree,
         // so is_in_git_repo reflects "inside a repo", not "has changes".
-        self.is_in_git_repo = true;
+        self.git.in_repo = true;
 
         let Some(tab) = self.tabs.get_mut(self.active_tab_index) else {
             return;
@@ -70,7 +70,8 @@ impl FluxApp {
                 continue;
             };
             let new_status = self
-                .git_status_map
+                .git
+                .status_map
                 .get(&wrapper.borrow().path)
                 .copied()
                 .unwrap_or_default();
@@ -457,7 +458,7 @@ pub(super) fn handle(
     crate::hit!("handle");
     match msg {
         AppMsg::Git(GitMsg::OpenActiveDiffLine { line, query }) => {
-            if let Some(ref path) = app.active_diff_target {
+            if let Some(ref path) = app.git.active_diff_target {
                 if let Err(e) = crate::utils::helpers::launch_editor_at_line(
                     &app.config.ui.diff_editor,
                     path,
@@ -483,12 +484,12 @@ pub(super) fn handle(
             if let Some(ref buffer) = app.panels.diff.extras.diff_text_buffer {
                 crate::ui::panels::apply_diff_markup(buffer, &diff);
             }
-            app.active_diff_target = Some(path);
+            app.git.active_diff_target = Some(path);
         }
         AppMsg::Git(GitMsg::SetDiffPanelWidth(val)) => app.handle_set_diff_panel_width(val),
         AppMsg::Git(GitMsg::SetAutoShowDiff(val)) => app.handle_set_auto_show_diff(val),
         AppMsg::Git(GitMsg::ShowGitStatusView) => app.handle_show_git_status_view(sender.clone()),
-        AppMsg::Git(GitMsg::SetGitRepoActive(is_active)) => app.is_in_git_repo = is_active,
+        AppMsg::Git(GitMsg::SetGitRepoActive(is_active)) => app.git.in_repo = is_active,
         AppMsg::Git(GitMsg::GitActionFinished(result)) => {
             app.handle_git_action_finished(result, sender)
         }

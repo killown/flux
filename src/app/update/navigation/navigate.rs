@@ -18,8 +18,8 @@ impl FluxApp {
     pub fn handle_navigate(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_navigate");
         let path_str = path.to_string_lossy();
-        self.mime_filter = None;
-        self.mime_filter_from_space = false;
+        self.filters.mime = None;
+        self.filters.mime_from_space = false;
 
         // Intercept panel toggles before touching any current state or running resets
         if path_str == "tags://" || path_str == "tags:///" {
@@ -82,7 +82,7 @@ impl FluxApp {
         }
 
         self.reset_from_content_search();
-        self.last_search_was_advanced = false;
+        self.search.last_was_advanced = false;
         self.navigate_owe_first_selection();
 
         //--------------------------------------------------------------------------------------//
@@ -247,9 +247,9 @@ impl FluxApp {
             return;
         }
 
-        if let Some(pos) = self.exclusive_list.iter().position(|p| p == &path) {
-            if self.exclusive_index != Some(pos) {
-                self.exclusive_index = Some(pos);
+        if let Some(pos) = self.quick.list.iter().position(|p| p == &path) {
+            if self.quick.index != Some(pos) {
+                self.quick.index = Some(pos);
                 self.persist_quick_list();
             }
             sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
@@ -259,7 +259,7 @@ impl FluxApp {
             || path_str.starts_with(constants::TRASH_URI)
             || path_str.starts_with(constants::RECENT_URI)
         {
-            self.archive_locked = false;
+            self.archive.locked = false;
             let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
             self.sync_sidebar_selection();
@@ -337,9 +337,9 @@ impl FluxApp {
                 None => archive_path,
             };
 
-        self.mime_filter = None;
+        self.filters.mime = None;
         self.reset_from_content_search();
-        self.last_search_was_advanced = false;
+        self.search.last_was_advanced = false;
         self.navigate_owe_first_selection();
         let old_path = std::mem::replace(
             &mut self.current_path,

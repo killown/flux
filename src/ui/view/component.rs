@@ -329,7 +329,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 append = &gtk::SearchEntry {
                                     set_hexpand: false,
                                     set_width_request: constants::SEARCH_ENTRY_WIDTH_REQUEST,
-                                    #[track = "model.search_just_opened"]
+                                    #[track = "model.search.just_opened"]
                                     set_text: &model.filter,
                                     add_controller = gtk::EventControllerKey {
                                         connect_key_pressed[sender] => move |_, keyval, _, _| {
@@ -383,9 +383,9 @@ impl SimpleAsyncComponent for FluxApp {
                                 /// Activity indicator for content search.
                                 append = &gtk::Spinner {
                                     #[watch]
-                                    set_spinning: model.is_loading || model.is_content_searching,
+                                    set_spinning: model.is_loading || model.search.content_searching,
                                     #[watch]
-                                    set_visible: model.is_loading || model.is_content_searching,
+                                    set_visible: model.is_loading || model.search.content_searching,
                                 },
 
                                 /// Cancellation button for content search operations.
@@ -393,7 +393,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     set_icon_name: "process-stop-symbolic",
                                     add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                                     #[watch]
-                                    set_visible: model.is_content_searching,
+                                    set_visible: model.search.content_searching,
                                     connect_clicked => AppMsg::Search(SearchMsg::CancelContentSearch),
                                 },
                             } -> { set_name: constants::VIEW_SEARCH },
@@ -481,7 +481,7 @@ impl SimpleAsyncComponent for FluxApp {
                         /// Git actions dropdown, visible only inside a repo.
                         pack_end = &build_git_menu_button() -> gtk::MenuButton {
                             #[watch]
-                            set_visible: model.is_in_git_repo,
+                            set_visible: model.git.in_repo,
                             #[wrap(Some)]
                             set_popover: git_menu_popover = &gtk::PopoverMenu::from_model(
                                 Option::<&gtk::gio::MenuModel>::None,
@@ -527,7 +527,7 @@ impl SimpleAsyncComponent for FluxApp {
                         // Active state tracks whether any patterns are set.
                         pack_end = &build_filter_toggle(&sender) -> gtk::ToggleButton {
                             #[watch]
-                            set_active: model.extension_filter.is_some(),
+                            set_active: model.filters.extension.is_some(),
                             #[watch]
                             set_visible: model.config.ui.header_show_filter,
                         },
@@ -559,9 +559,9 @@ impl SimpleAsyncComponent for FluxApp {
                         set_transition_type: gtk::RevealerTransitionType::SlideDown,
                         set_transition_duration: 150,
                         #[watch]
-                        set_reveal_child: model.extension_filter.is_some(),
+                        set_reveal_child: model.filters.extension.is_some(),
                         #[watch]
-                        set_visible: model.extension_filter.is_some(),
+                        set_visible: model.filters.extension.is_some(),
 
                         #[name = "filter_bar"]
                         gtk::Box {
@@ -656,7 +656,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_margin_all: 24,
                                         set_can_target: false,
                                         #[watch]
-                                        set_visible: model.archive_locked,
+                                        set_visible: model.archive.locked,
 
                                         gtk::Image {
                                             set_icon_name: Some("changes-prevent-symbolic"),
@@ -688,14 +688,14 @@ impl SimpleAsyncComponent for FluxApp {
                                         #[watch]
                                         set_visible: model.tabs.get(model.active_tab_index).map(|t| t.files.is_empty()).unwrap_or(true)
                                             && !model.is_loading
-                                            && !model.is_content_searching
-                                            && !model.archive_locked
+                                            && !model.search.content_searching
+                                            && !model.archive.locked
                                             && (
                                                 model.header_view == constants::VIEW_SEARCH
                                                 || model.header_view == constants::VIEW_FILTER
-                                                || model.last_search_was_advanced
+                                                || model.search.last_was_advanced
                                                 || !model.filter.is_empty()
-                                                || model.extension_filter.is_some()
+                                                || model.filters.extension.is_some()
                                             ),
                                     },
 
@@ -717,9 +717,9 @@ impl SimpleAsyncComponent for FluxApp {
                             set_transition_type: gtk::RevealerTransitionType::SlideUp,
                             set_transition_duration: 150,
                             #[watch]
-                            set_reveal_child: model.terminal_visible,
+                            set_reveal_child: model.term.visible,
                             #[watch]
-                            set_visible: model.terminal_visible,
+                            set_visible: model.term.visible,
                         },
 
                         /// Global drop handler for cross-instance and external file transfers.
@@ -829,9 +829,9 @@ impl SimpleAsyncComponent for FluxApp {
                             #[watch]
                             set_label: &crate::utils::helpers::format_right_status(
                                 &model.current_path,
-                                model.extension_filter.as_deref(),
-                                model.filter_mode,
-                                model.mime_filter.as_deref().map(|m| {
+                                model.filters.extension.as_deref(),
+                                model.filters.mode,
+                                model.filters.mime.as_deref().map(|m| {
                                     (
                                         m,
                                         model
@@ -943,7 +943,7 @@ impl SimpleAsyncComponent for FluxApp {
         )
         .await;
         let preview = opts.preview;
-        model.startup_preview = preview;
+        model.preview.startup = preview;
         let toast_overlay = &model.toast_overlay;
         crate::hit!("view::init:view_output");
         let widgets = view_output!();

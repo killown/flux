@@ -65,8 +65,9 @@ impl FluxApp {
     /// Every list, with the live selected list (`exclusive_list`,
     /// `exclusive_index`) laid over its stored copy.
     pub fn quick_snapshot(&self) -> QuickGroups {
-        self.quick_groups
-            .with_selected(&self.exclusive_list, self.exclusive_index)
+        self.quick
+            .groups
+            .with_selected(&self.quick.list, self.quick.index)
     }
 
     /// Takes `groups` as the new state and loads its selected list into the
@@ -74,9 +75,9 @@ impl FluxApp {
     fn adopt_quick_groups(&mut self, groups: QuickGroups) {
         debug_assert!(groups.invariant_holds());
         let selected = groups.selected_list();
-        self.exclusive_list = selected.items.clone();
-        self.exclusive_index = selected.index;
-        self.quick_groups = groups;
+        self.quick.list = selected.items.clone();
+        self.quick.index = selected.index;
+        self.quick.groups = groups;
     }
 
     /// Runs `edit` on a copy of every list. When it returns `true` the copy
@@ -101,8 +102,8 @@ impl FluxApp {
     /// so what is on screen at exit is what is on disk at the next launch.
     pub(crate) fn persist_quick_list(&self) {
         debug_assert!(quick_list::invariant_holds(
-            &self.exclusive_list,
-            self.exclusive_index
+            &self.quick.list,
+            self.quick.index
         ));
         if let Err(e) = self.state_db.save_quick_groups(&self.quick_snapshot()) {
             eprintln!("[flux] Failed to save quick list: {e}");
@@ -136,15 +137,10 @@ impl FluxApp {
         let canon = paths_to_add
             .into_iter()
             .map(|p| p.canonicalize().unwrap_or(p));
-        let added =
-            quick_list::add_front(&mut self.exclusive_list, &mut self.exclusive_index, canon);
+        let added = quick_list::add_front(&mut self.quick.list, &mut self.quick.index, canon);
 
         if added > 0 {
-            quick_list::sync_to(
-                &self.exclusive_list,
-                &mut self.exclusive_index,
-                &self.current_path,
-            );
+            quick_list::sync_to(&self.quick.list, &mut self.quick.index, &self.current_path);
             self.persist_quick_list();
             sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
         }
@@ -165,7 +161,7 @@ impl FluxApp {
     /// Invariant Q holds: both fields are reset together.
     pub fn handle_clear_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_clear_exclusive");
-        if quick_list::clear(&mut self.exclusive_list, &mut self.exclusive_index) {
+        if quick_list::clear(&mut self.quick.list, &mut self.quick.index) {
             self.persist_quick_list();
             sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
         }
@@ -189,8 +185,8 @@ impl FluxApp {
     pub fn handle_next_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_next_exclusive");
         if let Some(target) = quick_list::step(
-            &self.exclusive_list,
-            &mut self.exclusive_index,
+            &self.quick.list,
+            &mut self.quick.index,
             quick_list::Step::Next,
         ) {
             self.quick_navigate_to(target, sender);
@@ -202,8 +198,8 @@ impl FluxApp {
     pub fn handle_prev_exclusive(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_prev_exclusive");
         if let Some(target) = quick_list::step(
-            &self.exclusive_list,
-            &mut self.exclusive_index,
+            &self.quick.list,
+            &mut self.quick.index,
             quick_list::Step::Prev,
         ) {
             self.quick_navigate_to(target, sender);
@@ -214,11 +210,9 @@ impl FluxApp {
     /// Invariant Q holds via `quick_list::tab`.
     pub fn handle_quick_list_tab(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_quick_list_tab");
-        if let Some(target) = quick_list::tab(
-            &self.exclusive_list,
-            &mut self.exclusive_index,
-            &self.current_path,
-        ) {
+        if let Some(target) =
+            quick_list::tab(&self.quick.list, &mut self.quick.index, &self.current_path)
+        {
             // An empty list never reaches here, so Tab on an empty list stays silent.
             self.reveal_quick_list_panel(sender);
             self.quick_navigate_to(target, sender);
@@ -229,7 +223,7 @@ impl FluxApp {
     /// `quick_list::jump`.
     pub fn handle_quick_list_jump(&mut self, n: usize, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_quick_list_jump");
-        if let Some(target) = quick_list::jump(&self.exclusive_list, &mut self.exclusive_index, n) {
+        if let Some(target) = quick_list::jump(&self.quick.list, &mut self.quick.index, n) {
             // Ctrl+1..9 reveals the panel like Tab.
             self.reveal_quick_list_panel(sender);
             self.quick_navigate_to(target, sender);

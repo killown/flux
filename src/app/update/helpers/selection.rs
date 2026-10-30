@@ -45,7 +45,7 @@ impl FluxApp {
 
             let query_lc = self.filter.to_lowercase();
 
-            if self.filter.is_empty() || self.is_content_searching {
+            if self.filter.is_empty() || self.search.content_searching {
                 for idx in visual_indices {
                     if let Some(wrapper) = active_files.get(idx) {
                         selected_paths.push(wrapper.borrow().path.clone());
@@ -133,7 +133,7 @@ impl FluxApp {
 
             let query_lc = self.filter.to_lowercase();
 
-            if self.filter.is_empty() || self.is_content_searching {
+            if self.filter.is_empty() || self.search.content_searching {
                 for idx in visual_indices {
                     if let Some(wrapper) = active_files.get(idx) {
                         let item = wrapper.borrow();

@@ -21,7 +21,7 @@ impl FluxApp {
                 crate::infra::archive::parse_archive_uri(&dest_str)
             {
                 let s_clone = sender.clone();
-                let password = self.cached_archive_passwords.get(&archive_path).cloned();
+                let password = self.archive.passwords.get(&archive_path).cloned();
                 relm4::spawn_blocking(move || {
                     for src in source_paths {
                         if let Some(file_name) = src.file_name().and_then(|n| n.to_str()) {

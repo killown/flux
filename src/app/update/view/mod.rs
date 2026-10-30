@@ -100,7 +100,7 @@ pub(super) fn handle(
         }
         AppMsg::Preview(PreviewMsg::PreviewPrefetched { .. }) => {}
         AppMsg::Search(SearchMsg::CycleFilterMode) => {
-            app.filter_mode = match app.filter_mode {
+            app.filters.mode = match app.filters.mode {
                 crate::domain::model::FilterMode::All => {
                     crate::domain::model::FilterMode::OnlyFolders
                 }

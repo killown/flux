@@ -8,7 +8,7 @@ impl FluxApp {
     pub fn handle_go_back(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_go_back");
         self.reset_from_content_search();
-        self.last_search_was_advanced = false;
+        self.search.last_was_advanced = false;
         if self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
@@ -52,7 +52,7 @@ impl FluxApp {
     pub fn handle_go_forward(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_go_forward");
         self.reset_from_content_search();
-        self.last_search_was_advanced = false;
+        self.search.last_was_advanced = false;
         if self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }

@@ -11,13 +11,13 @@ impl FluxApp {
     /// Resets the filter and view layout state when content search or tag search is active.
     pub fn handle_update_filter(&mut self, query: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_update_filter");
-        if query.is_empty() && self.search_just_opened {
-            self.search_just_opened = false;
+        if query.is_empty() && self.search.just_opened {
+            self.search.just_opened = false;
             return;
         }
         let query_lc = query.to_lowercase();
         if query_lc.is_empty() {
-            if self.is_content_searching {
+            if self.search.content_searching {
                 self.reset_from_content_search();
                 sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             } else {
@@ -48,10 +48,11 @@ impl FluxApp {
 
         // Instantly lock into list mode if the user starts typing a wildcard pattern
         if has_wildcard {
-            if !self.search_saved_layout {
-                self.saved_list_mode = self.is_list_mode;
-                self.saved_max_columns = self.tabs[self.active_tab_index].files.view.max_columns();
-                self.search_saved_layout = true;
+            if !self.search.saved_layout {
+                self.search.saved_list_mode = self.is_list_mode;
+                self.search.saved_max_columns =
+                    self.tabs[self.active_tab_index].files.view.max_columns();
+                self.search.saved_layout = true;
             }
             self.is_list_mode = true;
             let active_view = &self.tabs[self.active_tab_index].files.view;

@@ -390,8 +390,8 @@ impl FluxApp {
         crate::hit!("on_panel_close");
         match kind {
             RightPanelType::Search if reason == CloseReason::Toggled => {
-                if self.is_content_searching || self.last_search_was_advanced {
-                    self.last_search_was_advanced = false;
+                if self.search.content_searching || self.search.last_was_advanced {
+                    self.search.last_was_advanced = false;
                     sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
                     sender.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
                     sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
@@ -401,7 +401,7 @@ impl FluxApp {
                 sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
                 sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
-            RightPanelType::Diff => self.active_diff_target = None,
+            RightPanelType::Diff => self.git.active_diff_target = None,
             // Previews own live media (video/audio), stop it on close so nothing keeps playing
             // after the panel is hidden.
             RightPanelType::Preview => {

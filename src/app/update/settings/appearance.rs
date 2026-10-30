@@ -109,7 +109,7 @@ impl FluxApp {
         self.config.ui.theme = theme;
         utils::save_config(&self.config);
         crate::utils::helpers::load_custom_css();
-        let terminal = self.terminal.clone();
+        let terminal = self.term.widget.clone();
         let config = self.config.ui.terminal.clone();
         // Deferred so GTK re-resolves named colors after the provider swap.
         gtk::glib::idle_add_local_once(move || terminal.apply_theme(&config));

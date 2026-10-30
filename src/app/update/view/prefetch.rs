@@ -127,7 +127,7 @@ impl FluxApp {
         if neighbours.is_empty() {
             return;
         }
-        let cache = self.preview_cache.clone();
+        let cache = self.preview.cache.clone();
         let session_arc = self.panels.preview.extras.preview_session.clone();
         let sender_clone = sender.clone();
         relm4::spawn_blocking(move || {

@@ -18,20 +18,20 @@ impl FluxApp {
     /// use expanded horizontal layouts, this causes severe UI hangs on large folders.
     pub fn reset_from_content_search(&mut self) {
         crate::hit!("reset_from_content_search");
-        if let Some(cancellable) = self.content_search_cancellable.take() {
+        if let Some(cancellable) = self.search.cancellable.take() {
             cancellable.cancel();
         }
-        self.is_content_searching = false;
+        self.search.content_searching = false;
         self.load_id.fetch_add(1, Ordering::SeqCst);
         self.pending_thumbnails.clear();
         self.filter.clear();
-        self.search_just_opened = false;
+        self.search.just_opened = false;
         self.tabs[self.active_tab_index].files.clear();
-        self.is_list_mode = self.saved_list_mode;
+        self.is_list_mode = self.search.saved_list_mode;
         let target_max = if self.is_list_mode {
             1
         } else {
-            self.saved_max_columns.max(1)
+            self.search.saved_max_columns.max(1)
         };
         let target_min = 1;
         let view = &self.tabs[self.active_tab_index].files.view;
@@ -111,9 +111,9 @@ impl FluxApp {
             return;
         }
         self.is_loading = false;
-        self.is_content_searching = false;
+        self.search.content_searching = false;
 
-        self.content_search_cancellable = None;
+        self.search.cancellable = None;
 
         let view = self.tabs[self.active_tab_index].files.view.clone();
         glib::idle_add_local_once(move || {

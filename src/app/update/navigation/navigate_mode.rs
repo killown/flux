@@ -31,7 +31,7 @@ impl FluxApp {
     /// whole folder stays reachable, leaving the mode puts it back.
     fn enter_navigate_mode(&mut self) {
         crate::hit!("enter_navigate_mode");
-        let stashed_filter = if !self.filter.is_empty() && !self.is_content_searching {
+        let stashed_filter = if !self.filter.is_empty() && !self.search.content_searching {
             Some(self.filter.clone())
         } else {
             None
