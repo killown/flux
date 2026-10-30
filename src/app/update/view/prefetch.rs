@@ -110,10 +110,17 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_preview_prefetch");
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             return;
         }
-        if session != self.preview_session.load(Ordering::SeqCst) {
+        if session
+            != self
+                .panels
+                .preview
+                .extras
+                .preview_session
+                .load(Ordering::SeqCst)
+        {
             return;
         }
         let neighbours = self.preview_neighbour_paths(&path);
@@ -121,7 +128,7 @@ impl FluxApp {
             return;
         }
         let cache = self.preview_cache.clone();
-        let session_arc = self.preview_session.clone();
+        let session_arc = self.panels.preview.extras.preview_session.clone();
         let sender_clone = sender.clone();
         relm4::spawn_blocking(move || {
             for neighbour in neighbours {

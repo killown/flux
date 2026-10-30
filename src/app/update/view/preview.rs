@@ -22,7 +22,7 @@ use std::time::Duration;
 impl FluxApp {
     pub fn handle_toggle_preview(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_toggle_preview");
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             // Stop grid autoplay before the panel is shown. A live gtk::Video in
             // the grid reports its intrinsic size as natural width, and while the
             // preview panel is squeezing the grid's column allocation the toplevel
@@ -53,7 +53,13 @@ impl FluxApp {
                 return;
             };
 
-            let session = self.preview_session.fetch_add(1, Ordering::SeqCst) + 1;
+            let session = self
+                .panels
+                .preview
+                .extras
+                .preview_session
+                .fetch_add(1, Ordering::SeqCst)
+                + 1;
             sender.input(AppMsg::Preview(PreviewMsg::PreviewLoad { path, session }));
             return;
         }
@@ -62,7 +68,11 @@ impl FluxApp {
         // Selection changes are already synced by `handle_selection_changed`,
         // so no reload is needed here. Bumping the session discards any
         // in-flight preview results.
-        self.preview_session.fetch_add(1, Ordering::SeqCst);
+        self.panels
+            .preview
+            .extras
+            .preview_session
+            .fetch_add(1, Ordering::SeqCst);
 
         // When the preview panel is closed, any active MIME filter is cleared.
         // This makes the "open preview and filter" action (Space) a true toggle.
@@ -89,7 +99,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_toggle_preview_and_filter_by_selected_mime");
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             self.handle_toggle_preview(sender);
         }
 
@@ -131,7 +141,7 @@ impl FluxApp {
             return;
         }
 
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             self.handle_toggle_preview(sender);
         }
         self.set_wide_preview_default(true);
@@ -145,7 +155,7 @@ impl FluxApp {
     /// (see [`Self::schedule_startup_preview_selection`]).
     pub fn handle_startup_preview(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_startup_preview");
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             self.handle_toggle_preview(sender);
         }
         self.enter_wide_preview();
@@ -157,7 +167,7 @@ impl FluxApp {
     /// No-op until the panel is open and the grid has items, clears `startup_preview` when it fires.
     pub fn schedule_startup_preview_selection(&mut self) {
         crate::hit!("schedule_startup_preview_selection");
-        if !self.startup_preview || !self.preview_panel_visible {
+        if !self.startup_preview || !self.panels.preview.visible {
             return;
         }
         let view = self.tabs[self.active_tab_index].files.view.clone();
@@ -216,10 +226,10 @@ impl FluxApp {
     /// Enters wide-preview mode when the panel is open, no-op if already wide.
     fn enter_wide_preview(&mut self) {
         crate::hit!("enter_wide_preview");
-        if self.wide_preview_sidebar.is_some() || !self.preview_panel_visible {
+        if self.wide_preview_sidebar.is_some() || !self.panels.preview.visible {
             return;
         }
-        let Some(revealer) = self.preview_panel_revealer.clone() else {
+        let Some(revealer) = self.panels.preview.revealer.clone() else {
             return;
         };
 
@@ -243,10 +253,10 @@ impl FluxApp {
             self.leave_preview_fullscreen(true);
             return;
         }
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             return;
         }
-        let Some(revealer) = self.preview_panel_revealer.clone() else {
+        let Some(revealer) = self.panels.preview.revealer.clone() else {
             return;
         };
 
@@ -282,7 +292,7 @@ impl FluxApp {
         }
 
         // Not in the folder grid: try to enter it if possible, otherwise stay on the grid.
-        if !self.exclusive_list.is_empty() || !self.preview_panel_visible {
+        if !self.exclusive_list.is_empty() || !self.panels.preview.visible {
             return;
         }
         let entered = registry::with(|h| h.focus_folder_grid()).unwrap_or(false);
@@ -320,15 +330,15 @@ impl FluxApp {
 
         let mut preview_idx = None;
         let right_panels = [
-            (&self.search_panel_revealer, false),
-            (&self.tag_panel_revealer, false),
-            (&self.diff_panel_revealer, false),
-            (&self.location_panel_revealer, false),
-            (&self.connect_panel_revealer, false),
-            (&self.preview_panel_revealer, true),
-            (&self.actions_panel_revealer, false),
-            (&self.quick_list_panel_revealer, false),
-            (&self.terminal_panel_revealer, false),
+            (&self.panels.search.revealer, false),
+            (&self.panels.tag.revealer, false),
+            (&self.panels.diff.revealer, false),
+            (&self.panels.location.revealer, false),
+            (&self.panels.connect.revealer, false),
+            (&self.panels.preview.revealer, true),
+            (&self.panels.actions.revealer, false),
+            (&self.panels.quick_list.revealer, false),
+            (&self.panels.terminal.revealer, false),
         ];
         for (revealer, is_preview) in right_panels {
             let Some(revealer) = revealer.as_ref().filter(|r| r.reveals_child()) else {
@@ -382,7 +392,7 @@ impl FluxApp {
         let Some((was_wide, window_was_fullscreen)) = self.preview_fullscreen.take() else {
             return;
         };
-        if let Some(revealer) = self.preview_panel_revealer.as_ref() {
+        if let Some(revealer) = self.panels.preview.revealer.as_ref() {
             set_main_column_visible(revealer, true);
             if !window_was_fullscreen {
                 if let Some(w) = revealer.root().and_downcast::<gtk::Window>() {
@@ -402,7 +412,7 @@ impl FluxApp {
         if self.wide_preview_sidebar.is_none() {
             return;
         }
-        if let Some(revealer) = self.preview_panel_revealer.as_ref() {
+        if let Some(revealer) = self.panels.preview.revealer.as_ref() {
             set_wide_preview_layout(
                 revealer,
                 true,
@@ -421,7 +431,7 @@ impl FluxApp {
             return;
         };
         self.apply_sidebar_visibility(sidebar_was_visible);
-        if let Some(revealer) = self.preview_panel_revealer.clone() {
+        if let Some(revealer) = self.panels.preview.revealer.clone() {
             set_wide_preview_layout(&revealer, false, false, self.config.ui.preview_panel_width);
         }
     }
@@ -437,7 +447,14 @@ impl FluxApp {
 
     pub fn handle_preview_load(&self, path: PathBuf, session: u64) {
         crate::hit!("handle_preview_load");
-        if session != self.preview_session.load(Ordering::SeqCst) {
+        if session
+            != self
+                .panels
+                .preview
+                .extras
+                .preview_session
+                .load(Ordering::SeqCst)
+        {
             return;
         }
 
@@ -445,7 +462,7 @@ impl FluxApp {
             handle.apply(&PreviewContent::Loading);
         }
 
-        let session_arc = self.preview_session.clone();
+        let session_arc = self.panels.preview.extras.preview_session.clone();
         let sender = crate::domain::model::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
@@ -467,10 +484,17 @@ impl FluxApp {
 
     pub fn handle_preview_ready(&self, path: PathBuf, session: u64, content: PreviewContent) {
         crate::hit!("handle_preview_ready");
-        if session != self.preview_session.load(Ordering::SeqCst) {
+        if session
+            != self
+                .panels
+                .preview
+                .extras
+                .preview_session
+                .load(Ordering::SeqCst)
+        {
             return;
         }
-        if !self.preview_panel_visible {
+        if !self.panels.preview.visible {
             return;
         }
         if let Some(handle) = registry::with(Clone::clone) {

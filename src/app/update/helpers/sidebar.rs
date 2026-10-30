@@ -155,102 +155,17 @@ impl FluxApp {
         }
     }
 
-    /// Hides every right-side panel except `keep`, so only one is open at a time.
-    fn hide_other_right_panels(&mut self, keep: RightPanelType) {
-        crate::hit!("hide_other_right_panels");
-        if keep != RightPanelType::Tag && self.tag_panel_visible {
-            if let Some(ref r) = self.tag_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.tag_panel_visible = false;
-        }
-        if keep != RightPanelType::Search && self.search_panel_visible {
-            if let Some(ref r) = self.search_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.search_panel_visible = false;
-        }
-        if keep != RightPanelType::Diff && self.diff_panel_visible {
-            if let Some(ref r) = self.diff_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.diff_panel_visible = false;
-            self.active_diff_target = None;
-        }
-        if keep != RightPanelType::Location && self.location_panel_visible {
-            if let Some(ref r) = self.location_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.location_panel_visible = false;
-        }
-        if keep != RightPanelType::Connect && self.connect_panel_visible {
-            if let Some(ref r) = self.connect_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.connect_panel_visible = false;
-        }
-        if keep != RightPanelType::Preview && self.preview_panel_visible {
-            if let Some(ref r) = self.preview_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.preview_panel_visible = false;
-            crate::ui::panels::preview::registry::with(|h| h.stop_media());
-            self.stop_video_preview();
-            self.exit_wide_preview();
-        }
-        if keep != RightPanelType::Actions && self.actions_panel_visible {
-            if let Some(ref r) = self.actions_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.actions_panel_visible = false;
-            self.reset_actions_panel();
-        }
-        if keep != RightPanelType::QuickList && self.quick_list_panel_visible {
-            if let Some(ref r) = self.quick_list_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.quick_list_panel_visible = false;
-            self.restore_sidebar_after_quick_list();
-        }
-        if keep != RightPanelType::Terminal && self.terminal_panel_visible {
-            if let Some(ref r) = self.terminal_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.terminal_panel_visible = false;
-            if let Some(was_visible) = self.terminal_sidebar_stashed.take() {
-                self.sidebar_visible = was_visible;
-                if let Some(ref w) = self.sidebar_widget {
-                    w.set_visible(was_visible);
-                }
-            }
-            if let Some(ref term) = self.sidebar_terminal {
-                term.kill_shell();
-            }
-        }
-        if keep != RightPanelType::Properties && self.properties_panel_visible {
-            if let Some(ref r) = self.properties_panel_revealer {
-                r.set_reveal_child(false);
-                r.set_visible(false);
-            }
-            self.properties_panel_visible = false;
-            self.reset_properties_panel();
-        }
-    }
-
     /// Hides the left sidebar while the Quick List panel is open, remembering
     /// whether it was showing.
     fn stash_sidebar_for_quick_list(&mut self) {
-        if self.quick_list_sidebar_stashed.is_none() {
-            self.quick_list_sidebar_stashed = Some(self.sidebar_visible);
+        if self
+            .panels
+            .quick_list
+            .extras
+            .sidebar_quick_list_stashed
+            .is_none()
+        {
+            self.panels.quick_list.extras.sidebar_quick_list_stashed = Some(self.sidebar_visible);
         }
         if self.sidebar_visible {
             self.sidebar_visible = false;
@@ -263,7 +178,13 @@ impl FluxApp {
     /// Brings the left sidebar back after the Quick List panel closed, but only
     /// if it was showing before and the config still says to show it.
     fn restore_sidebar_after_quick_list(&mut self) {
-        if let Some(was_visible) = self.quick_list_sidebar_stashed.take() {
+        if let Some(was_visible) = self
+            .panels
+            .quick_list
+            .extras
+            .sidebar_quick_list_stashed
+            .take()
+        {
             if was_visible && self.config.ui.sidebar_visible {
                 self.sidebar_visible = true;
                 if let Some(ref w) = self.sidebar_widget {
@@ -273,404 +194,365 @@ impl FluxApp {
         }
     }
 
+    /// Opens `kind`, or closes it if it is already open.
+    ///
+    /// Only one right-side panel is open at a time: every other open panel is closed first
+    /// (`Panels::close_all_except`) and gets its close hook.
     pub fn toggle_sidebar_right_panel(
         &mut self,
-        panel_type: RightPanelType,
+        kind: RightPanelType,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("toggle_sidebar_right_panel");
         // Ensure mutually exclusive right-side panels
-        self.hide_other_right_panels(panel_type);
+        for other in self.panels.close_all_except(kind) {
+            self.on_panel_close(other, CloseReason::Displaced, sender);
+        }
 
-        let (revealer, initialized, visible, is_search) = match panel_type {
-            RightPanelType::Connect => (
-                self.connect_panel_revealer.clone(),
-                &mut self.connect_panel_initialized,
-                &mut self.connect_panel_visible,
-                false,
-            ),
-            RightPanelType::Tag => (
-                self.tag_panel_revealer.clone(),
-                &mut self.tag_panel_initialized,
-                &mut self.tag_panel_visible,
-                false,
-            ),
-            RightPanelType::Search => (
-                self.search_panel_revealer.clone(),
-                &mut self.search_panel_initialized,
-                &mut self.search_panel_visible,
-                true,
-            ),
-            RightPanelType::Diff => (
-                self.diff_panel_revealer.clone(),
-                &mut self.diff_panel_initialized,
-                &mut self.diff_panel_visible,
-                false,
-            ),
-            RightPanelType::Location => (
-                self.location_panel_revealer.clone(),
-                &mut self.location_panel_initialized,
-                &mut self.location_panel_visible,
-                false,
-            ),
-            // ── PEEK PREVIEW ─────────────────────────────────────────────
-            // Not a search panel (`is_search = false`), so closing it does
-            // not cancel an in-flight content search. Toggled by `Space`
-            // from the file grid.
-            RightPanelType::Preview => (
-                self.preview_panel_revealer.clone(),
-                &mut self.preview_panel_initialized,
-                &mut self.preview_panel_visible,
-                false,
-            ),
-            // ─────────────────────────────────────────────────────────────
-            // Not a search panel, closing it only drops its own session.
-            RightPanelType::Actions => (
-                self.actions_panel_revealer.clone(),
-                &mut self.actions_panel_initialized,
-                &mut self.actions_panel_visible,
-                false,
-            ),
-            // ── QUICK LIST ───────────────────────────────────────────────
-            // Not a search panel. A view of the app's named lists.
-            RightPanelType::QuickList => (
-                self.quick_list_panel_revealer.clone(),
-                &mut self.quick_list_panel_initialized,
-                &mut self.quick_list_panel_visible,
-                false,
-            ),
-            // ── SIDEBAR TERMINAL ─────────────────────────────────────────
-            // Not a search panel. Lives alongside the bottom terminal pane
-            // and hosts its own independent `Terminal` instance.
-            RightPanelType::Terminal => (
-                self.terminal_panel_revealer.clone(),
-                &mut self.terminal_panel_initialized,
-                &mut self.terminal_panel_visible,
-                false,
-            ),
-            // ── PROPERTIES ───────────────────────────────────────────────
-            // Not a search panel. Follows the grid selection while open.
-            RightPanelType::Properties => (
-                self.properties_panel_revealer.clone(),
-                &mut self.properties_panel_initialized,
-                &mut self.properties_panel_visible,
-                false,
-            ),
-        };
-
-        let Some(revealer) = revealer else {
+        let Some(revealer) = self.panels.get(kind).revealer.clone() else {
             return;
         };
 
-        if !*initialized {
-            let panel = match panel_type {
-                RightPanelType::Connect => crate::ui::panels::build_connect_panel(sender.clone()),
-                RightPanelType::Tag => {
-                    let tags = self.state_db.list_all_tags().unwrap_or_default();
-                    crate::ui::panels::build_tag_panel(
-                        tags,
-                        self.config.ui.tag_panel_width,
-                        sender.clone(),
-                    )
-                }
-                RightPanelType::Search => crate::ui::panels::build_search_panel(
-                    self.config.ui.search_panel_width,
-                    sender.clone(),
-                ),
-                RightPanelType::Diff => {
-                    let buf = gtk::TextBuffer::new(None);
-                    self.diff_text_buffer = Some(buf.clone());
-                    crate::ui::panels::build_diff_panel(
-                        self.config.ui.diff_panel_width,
-                        buf,
-                        sender.clone(),
-                    )
-                }
-                RightPanelType::Location => {
-                    let (panel, entry) = crate::ui::panels::build_location_panel(
-                        &self.current_path.to_string_lossy(),
-                        self.state_db.clone(),
-                        sender.clone(),
-                    );
-                    self.location_entry = Some(entry);
-                    panel
-                }
-                // ── PEEK PREVIEW ─────────────────────────────────────────
-                // `build_preview_panel` installs its own handle into the
-                // thread-local registry so `handle_preview_ready` can push
-                // content without threading a handle through `FluxApp`.
-                //
-                // Pull the `view_stack` and `switcher` out of the registry
-                // so the header bar's reactive bindings can pick them up.
-                RightPanelType::Preview => crate::ui::panels::build_preview_panel(
-                    self.config.ui.preview_panel_width,
-                    sender.clone(),
-                ),
-                // ─────────────────────────────────────────────────────────
-                // `build_actions_panel` installs its list/search/stack handles
-                // into the thread-local `actions_registry`.
-                RightPanelType::Actions => crate::ui::panels::build_actions_panel(
-                    self.config.ui.actions_panel_width,
-                    sender.clone(),
-                ),
-                // ── QUICK LIST ───────────────────────────────────────────
-                // The rows are drawn by `RebuildQuickPanel`, queued here so it
-                // runs once the panel is attached.
-                RightPanelType::QuickList => {
-                    sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
-                    crate::ui::panels::build_quick_list_panel(0, sender.clone())
-                }
-                // ── SIDEBAR TERMINAL ─────────────────────────────────────
-                // Build the widget tree and stash the `Terminal` on
-                // `FluxApp`. The shell is *not* spawned here: it is spawned
-                // by the visibility-change block below, every time the panel
-                // is opened, so that closing and reopening the panel always
-                // yields a live PTY instead of a dead one.
-                RightPanelType::Terminal => {
-                    let default_width = terminal_default_width(&revealer);
-                    let (root, term) = crate::ui::panels::build_terminal_panel(
-                        &self.config.ui.terminal,
-                        default_width,
-                        sender.clone(),
-                    );
-                    // The terminal is created lazily, long after `setup_window`, so
-                    // its shutdown hooks are registered here, once it exists.
-                    crate::ui::startup::register_terminal_shutdown(&term, &revealer);
-                    self.sidebar_terminal = Some(term);
-                    root
-                }
-                // ── PROPERTIES ───────────────────────────────────────────
-                // `build_properties_panel` installs its handles into a
-                // thread-local; the first load is requested below.
-                RightPanelType::Properties => {
-                    crate::ui::panels::build_properties_panel(0, sender.clone())
-                }
-            };
-            revealer.set_child(Some(&panel));
-            *initialized = true;
-
-            if panel_type == RightPanelType::Preview {
-                self.preview_view_stack = crate::ui::panels::preview::registry::get_view_stack();
-                self.preview_view_switcher =
-                    crate::ui::panels::preview::registry::get_view_switcher();
-            }
-        } else if panel_type == RightPanelType::Location && !*visible {
+        if !self.panels.get(kind).initialized {
+            let built = self.build_panel(kind, &revealer, sender);
+            revealer.set_child(Some(&built));
+            self.panels.get_mut(kind).initialized = true;
+        } else if kind == RightPanelType::Location && !self.panels.location.visible {
             // Panel is built once, so refresh the entry with the current path on each open.
-            if let Some(ref entry) = self.location_entry {
+            if let Some(ref entry) = self.panels.location.extras.location_entry {
                 entry.set_text(&self.current_path.to_string_lossy());
             }
         }
 
-        *visible = !*visible;
-        let now_visible = *visible;
-        revealer.set_visible(*visible);
-        revealer.set_reveal_child(*visible);
+        let panel = self.panels.get_mut(kind);
+        let now_visible = !panel.visible;
+        panel.visible = now_visible;
+        revealer.set_visible(now_visible);
+        revealer.set_reveal_child(now_visible);
 
-        // ── SIDEBAR TERMINAL lifecycle ───────────────────────────────────
-        // Spawn the shell on every reveal, kill it on every hide. This is
-        // what makes `F4` (toggle) behave correctly: the shell is not
-        // reused across opens, so its PTY fd is never stale.
-        if panel_type == RightPanelType::Terminal {
-            if now_visible {
-                // Stash and hide the left sidebar so the terminal has room.
-                if self.terminal_sidebar_stashed.is_none() {
-                    self.terminal_sidebar_stashed = Some(self.sidebar_visible);
-                }
-                if self.sidebar_visible {
-                    self.sidebar_visible = false;
-                    if let Some(ref w) = self.sidebar_widget {
-                        w.set_visible(false);
-                    }
-                }
-
-                if let Some(ref term) = self.sidebar_terminal {
-                    term.kill_shell();
-                    let path_str = self.current_path.to_string_lossy();
-                    let working_dir = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
-                        crate::infra::archive::parse_archive_uri(&path_str)
-                            .map(|(archive_path, _)| {
-                                archive_path
-                                    .parent()
-                                    .map(|p| p.to_string_lossy().to_string())
-                                    .unwrap_or_else(|| "/".to_string())
-                            })
-                            .unwrap_or_else(|| "/".to_string())
-                    } else if crate::infra::network::is_network_uri(&self.current_path) {
-                        std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
-                    } else {
-                        path_str.to_string()
-                    };
-                    let mut term_spawn = term.clone();
-                    term_spawn.spawn_async(
-                        0,
-                        Some(&working_dir),
-                        &[],
-                        &[],
-                        0,
-                        || {},
-                        -1,
-                        None,
-                        |result| {
-                            if let Err(e) = result {
-                                eprintln!("[flux] sidebar terminal spawn: {e}");
-                            }
-                        },
-                    );
-                    let da = term.drawing_area.clone();
-                    gtk::glib::idle_add_local_once(move || {
-                        da.grab_focus();
-                    });
-                }
-            } else {
-                // Restore the sidebar the user had when the panel opened.
-                if let Some(was_visible) = self.terminal_sidebar_stashed.take() {
-                    self.sidebar_visible = was_visible;
-                    if let Some(ref w) = self.sidebar_widget {
-                        w.set_visible(was_visible);
-                    }
-                }
-                if let Some(ref term) = self.sidebar_terminal {
-                    term.kill_shell();
-                }
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────
-
-        // The Quick List panel takes the left sidebar's place while it is open.
-        if panel_type == RightPanelType::QuickList {
-            if now_visible {
-                self.stash_sidebar_for_quick_list();
-            } else {
-                self.restore_sidebar_after_quick_list();
-            }
-        }
-
-        // ── PEEK PREVIEW ─────────────────────────────────────────────────
-        // The preview panel has no entry and must not steal focus from the
-        // grid: grabbing focus here would break arrow-key scrubbing while
-        // the panel is open. Skip the whole focus dance for Preview.
-        //
-        // The contextual-actions panel also follows grid selection, so it must not
-        // steal focus, arrow keys need to keep working while it is open.
-        //
-        // The sidebar terminal must also skip focus: the user usually wants
-        // to keep navigating the grid while the shell runs on the side. If
-        // they want to type into it, they click the terminal once (or the
-        // idle focus call above puts them there).
-        let skip_focus = matches!(
-            panel_type,
-            RightPanelType::Preview
-                | RightPanelType::Actions
-                | RightPanelType::Terminal
-                | RightPanelType::QuickList
-                | RightPanelType::Properties
-        );
-
-        if now_visible && !skip_focus {
-            if let Some(panel_box) = revealer.child() {
-                let mut next = panel_box.first_child();
-                let mut focused = false;
-                while let Some(w) = next {
-                    if let Some(entry) = w.downcast_ref::<gtk::Entry>() {
-                        entry.grab_focus();
-                        focused = true;
-                        break;
-                    }
-                    if let Some(entry) = w.downcast_ref::<gtk::SearchEntry>() {
-                        entry.grab_focus();
-                        focused = true;
-                        break;
-                    }
-                    if let Some(inner) = w.first_child() {
-                        if let Some(entry) = inner.downcast_ref::<gtk::Entry>() {
-                            entry.grab_focus();
-                            focused = true;
-                            break;
-                        }
-                        if let Some(entry) = inner.downcast_ref::<gtk::SearchEntry>() {
-                            entry.grab_focus();
-                            focused = true;
-                            break;
-                        }
-                    }
-                    next = w.next_sibling();
-                }
-                if !focused {
-                    panel_box.grab_focus();
-                }
-            }
-        } else if now_visible {
-            // Nothing to focus for Preview. Kept as an explicit branch so
-            // the intent is obvious and a future Preview variant with its
-            // own focusable child has an obvious place to hook in.
-            let _ = &revealer;
-        } else if is_search {
-            if self.is_content_searching || self.last_search_was_advanced {
-                self.last_search_was_advanced = false;
-                sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
-                sender.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
-                sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
-            }
-        } else if panel_type == RightPanelType::Diff {
-            self.active_diff_target = None;
-        } else if panel_type == RightPanelType::Tag {
-            sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
-            sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
-        }
-
-        // Previews own live media (video/audio), stop it on close so nothing
-        // keeps playing after the panel is hidden. Placed after the last
-        // `*visible` read so `self` is free to take `&mut self` here.
-        if !now_visible && matches!(panel_type, RightPanelType::Preview) {
-            crate::ui::panels::preview::registry::with(|h| h.stop_media());
-            self.stop_video_preview();
-        }
-
-        // ── PEEK PREVIEW header stack page ──────────────────────────────
-        // While the preview panel is visible, the header stack shows the
-        // `"preview-switcher"` page instead of the breadcrumbs. Closing
-        // the panel reverts to the path view.
-        if panel_type == RightPanelType::Preview {
-            self.preview_view_stack = crate::ui::panels::preview::registry::get_view_stack();
-            self.preview_view_switcher = crate::ui::panels::preview::registry::get_view_switcher();
-        }
-        // ─────────────────────────────────────────────────────────────────
-
-        // Opening loads the actions for the current selection, closing bumps the
-        // session so any in-flight result is dropped and empties the list.
-        if panel_type == RightPanelType::Actions {
-            if now_visible {
-                self.request_actions_panel_load(sender);
-            } else {
-                self.reset_actions_panel();
-            }
-        }
-
-        // Opening loads the metadata for the selection (unless `OpenFileProperties`
-        // already chose a target), closing bumps the session so late results are dropped.
-        if panel_type == RightPanelType::Properties {
-            if now_visible {
-                if self.properties_target.is_none() {
-                    self.properties_target = self.get_selected_path();
-                }
-                self.request_properties_panel_load(sender);
-            } else {
-                self.reset_properties_panel();
-            }
-        }
-
-        // ── FOCUS ────────────────────────────────────────────────────────
-        // When a right panel closes, its input widget is hidden/destroyed,
-        // causing GTK's focus chain to jump to the first available focusable
-        // widget (the sidebar), which paints an ugly focus outline square.
-        //
-        // If the panel was just closed (!now_visible), we pull focus back to
-        // the main file grid.
-        if !now_visible {
+        if now_visible {
+            self.on_panel_open(kind, &revealer, sender);
+        } else {
+            self.on_panel_close(kind, CloseReason::Toggled, sender);
+            // FOCUS: when a right panel closes, its input widget is hidden/destroyed, causing
+            // GTK's focus chain to jump to the first focusable widget (the sidebar), which
+            // paints an ugly focus outline square. Pull focus back to the main file grid.
             if let Some(tab) = self.tabs.get(self.active_tab_index) {
                 tab.files.view.grab_focus();
             }
         }
+    }
+
+    /// Builds the widget tree for `kind`, the first time it is opened.
+    ///
+    /// The caller attaches the result to the panel's revealer and marks it initialized.
+    /// Panels that keep handles into their tree (diff buffer, location entry, terminal)
+    /// store them in `self.panels` here.
+    fn build_panel(
+        &mut self,
+        kind: RightPanelType,
+        revealer: &gtk::Revealer,
+        sender: &AsyncComponentSender<Self>,
+    ) -> gtk::Box {
+        crate::hit!("build_panel");
+        match kind {
+            RightPanelType::Connect => crate::ui::panels::build_connect_panel(sender.clone()),
+            RightPanelType::Tag => {
+                let tags = self.state_db.list_all_tags().unwrap_or_default();
+                crate::ui::panels::build_tag_panel(
+                    tags,
+                    self.config.ui.tag_panel_width,
+                    sender.clone(),
+                )
+            }
+            RightPanelType::Search => crate::ui::panels::build_search_panel(
+                self.config.ui.search_panel_width,
+                sender.clone(),
+            ),
+            RightPanelType::Diff => {
+                let buf = gtk::TextBuffer::new(None);
+                self.panels.diff.extras.diff_text_buffer = Some(buf.clone());
+                crate::ui::panels::build_diff_panel(
+                    self.config.ui.diff_panel_width,
+                    buf,
+                    sender.clone(),
+                )
+            }
+            RightPanelType::Location => {
+                let (panel, entry) = crate::ui::panels::build_location_panel(
+                    &self.current_path.to_string_lossy(),
+                    self.state_db.clone(),
+                    sender.clone(),
+                );
+                self.panels.location.extras.location_entry = Some(entry);
+                panel
+            }
+            // `build_preview_panel` installs its own handle into the thread-local registry so
+            // `handle_preview_ready` can push content without threading a handle through
+            // `FluxApp`. The `view_stack` and `switcher` are pulled out of the registry so the
+            // header bar's reactive bindings can pick them up.
+            RightPanelType::Preview => {
+                let panel = crate::ui::panels::build_preview_panel(
+                    self.config.ui.preview_panel_width,
+                    sender.clone(),
+                );
+                self.refresh_preview_header_widgets();
+                panel
+            }
+            // `build_actions_panel` installs its list/search/stack handles into the
+            // thread-local `actions_registry`.
+            RightPanelType::Actions => crate::ui::panels::build_actions_panel(
+                self.config.ui.actions_panel_width,
+                sender.clone(),
+            ),
+            // The rows are drawn by `RebuildQuickPanel`, queued here so it runs once the panel
+            // is attached.
+            RightPanelType::QuickList => {
+                sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
+                crate::ui::panels::build_quick_list_panel(0, sender.clone())
+            }
+            // Build the widget tree and keep the `Terminal`. The shell is *not* spawned here:
+            // `on_panel_open` spawns it every time the panel is opened, so that closing and
+            // reopening always yields a live PTY instead of a dead one.
+            RightPanelType::Terminal => {
+                let default_width = terminal_default_width(revealer);
+                let (root, term) = crate::ui::panels::build_terminal_panel(
+                    &self.config.ui.terminal,
+                    default_width,
+                    sender.clone(),
+                );
+                // The terminal is created lazily, long after `setup_window`, so its shutdown
+                // hooks are registered here, once it exists.
+                crate::ui::startup::register_terminal_shutdown(&term, revealer);
+                self.panels.terminal.extras.terminal = Some(term);
+                root
+            }
+            // `build_properties_panel` installs its handles into a thread-local, the first load
+            // is requested by `on_panel_open`.
+            RightPanelType::Properties => {
+                crate::ui::panels::build_properties_panel(0, sender.clone())
+            }
+        }
+    }
+
+    /// Runs after `kind` became visible: sidebar stashes, shell spawn, loads, focus.
+    fn on_panel_open(
+        &mut self,
+        kind: RightPanelType,
+        revealer: &gtk::Revealer,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("on_panel_open");
+        match kind {
+            // Tag, Search, Diff, Location and Connect focus their first entry.
+            RightPanelType::Tag
+            | RightPanelType::Search
+            | RightPanelType::Diff
+            | RightPanelType::Location
+            | RightPanelType::Connect => focus_first_entry(revealer),
+            // The preview has no entry and must not steal focus from the grid: grabbing focus
+            // here would break arrow-key scrubbing while the panel is open. While it is
+            // visible the header stack shows the `"preview-switcher"` page instead of the
+            // breadcrumbs.
+            RightPanelType::Preview => self.refresh_preview_header_widgets(),
+            // The contextual-actions panel also follows grid selection, so it must not steal
+            // focus either. Opening loads the actions for the current selection.
+            RightPanelType::Actions => self.request_actions_panel_load(sender),
+            // The Quick List panel takes the left sidebar's place while it is open.
+            RightPanelType::QuickList => self.stash_sidebar_for_quick_list(),
+            // Spawn the shell on every reveal, kill it on every hide. This is what makes `F4`
+            // (toggle) behave correctly: the shell is not reused across opens, so its PTY fd
+            // is never stale. The terminal skips focus: the user usually wants to keep
+            // navigating the grid while the shell runs on the side.
+            RightPanelType::Terminal => self.open_terminal_shell(),
+            // Loads the metadata for the selection (unless `OpenFileProperties` already chose
+            // a target).
+            RightPanelType::Properties => {
+                if self.panels.properties.extras.properties_target.is_none() {
+                    self.panels.properties.extras.properties_target = self.get_selected_path();
+                }
+                self.request_properties_panel_load(sender);
+            }
+        }
+    }
+
+    /// Runs after `kind` became hidden, either toggled shut or displaced by another panel.
+    ///
+    /// Restores sidebars, kills the shell, stops media and drops in-flight loads. The two
+    /// reasons differ for Search, Tag (content search is only cancelled on a toggle) and
+    /// Preview (wide mode is only left on a displacement, as before).
+    fn on_panel_close(
+        &mut self,
+        kind: RightPanelType,
+        reason: CloseReason,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("on_panel_close");
+        match kind {
+            RightPanelType::Search if reason == CloseReason::Toggled => {
+                if self.is_content_searching || self.last_search_was_advanced {
+                    self.last_search_was_advanced = false;
+                    sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                    sender.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
+                    sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
+                }
+            }
+            RightPanelType::Tag if reason == CloseReason::Toggled => {
+                sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
+            }
+            RightPanelType::Diff => self.active_diff_target = None,
+            // Previews own live media (video/audio), stop it on close so nothing keeps playing
+            // after the panel is hidden.
+            RightPanelType::Preview => {
+                crate::ui::panels::preview::registry::with(|h| h.stop_media());
+                self.stop_video_preview();
+                match reason {
+                    CloseReason::Displaced => self.exit_wide_preview(),
+                    CloseReason::Toggled => self.refresh_preview_header_widgets(),
+                }
+            }
+            // Closing bumps the session so any in-flight result is dropped and empties the list.
+            RightPanelType::Actions => self.reset_actions_panel(),
+            RightPanelType::QuickList => self.restore_sidebar_after_quick_list(),
+            RightPanelType::Terminal => self.close_terminal_shell(),
+            // Closing bumps the session so late results are dropped.
+            RightPanelType::Properties => self.reset_properties_panel(),
+            // Displaced Search/Tag panels leave any content search running, as before.
+            RightPanelType::Search
+            | RightPanelType::Tag
+            | RightPanelType::Location
+            | RightPanelType::Connect => {}
+        }
+    }
+
+    /// Re-reads the preview `ViewStack` and `ViewSwitcher` from the panel registry, for the
+    /// header bar's reactive bindings.
+    fn refresh_preview_header_widgets(&mut self) {
+        let extras = &mut self.panels.preview.extras;
+        extras.preview_view_stack = crate::ui::panels::preview::registry::get_view_stack();
+        extras.preview_view_switcher = crate::ui::panels::preview::registry::get_view_switcher();
+    }
+
+    /// Stashes and hides the left sidebar so the terminal has room, then respawns the shell
+    /// in the current directory.
+    fn open_terminal_shell(&mut self) {
+        if self
+            .panels
+            .terminal
+            .extras
+            .sidebar_terminal_stashed
+            .is_none()
+        {
+            self.panels.terminal.extras.sidebar_terminal_stashed = Some(self.sidebar_visible);
+        }
+        if self.sidebar_visible {
+            self.sidebar_visible = false;
+            if let Some(ref w) = self.sidebar_widget {
+                w.set_visible(false);
+            }
+        }
+
+        if let Some(ref term) = self.panels.terminal.extras.terminal {
+            term.kill_shell();
+            let path_str = self.current_path.to_string_lossy();
+            let working_dir = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
+                crate::infra::archive::parse_archive_uri(&path_str)
+                    .map(|(archive_path, _)| {
+                        archive_path
+                            .parent()
+                            .map(|p| p.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "/".to_string())
+                    })
+                    .unwrap_or_else(|| "/".to_string())
+            } else if crate::infra::network::is_network_uri(&self.current_path) {
+                std::env::var("HOME").unwrap_or_else(|_| "/".to_string())
+            } else {
+                path_str.to_string()
+            };
+            let mut term_spawn = term.clone();
+            term_spawn.spawn_async(
+                0,
+                Some(&working_dir),
+                &[],
+                &[],
+                0,
+                || {},
+                -1,
+                None,
+                |result| {
+                    if let Err(e) = result {
+                        eprintln!("[flux] sidebar terminal spawn: {e}");
+                    }
+                },
+            );
+            let da = term.drawing_area.clone();
+            gtk::glib::idle_add_local_once(move || {
+                da.grab_focus();
+            });
+        }
+    }
+
+    /// Restores the left sidebar the user had when the terminal opened and kills the shell.
+    fn close_terminal_shell(&mut self) {
+        if let Some(was_visible) = self.panels.terminal.extras.sidebar_terminal_stashed.take() {
+            self.sidebar_visible = was_visible;
+            if let Some(ref w) = self.sidebar_widget {
+                w.set_visible(was_visible);
+            }
+        }
+        if let Some(ref term) = self.panels.terminal.extras.terminal {
+            term.kill_shell();
+        }
+    }
+}
+
+/// Why a right-side panel closed.
+///
+/// The old code ran slightly different hooks for the two paths, and `on_panel_close` keeps
+/// that difference.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum CloseReason {
+    /// The user toggled the panel shut.
+    Toggled,
+    /// Another panel opened and displaced it.
+    Displaced,
+}
+
+/// Focuses the first `gtk::Entry` or `gtk::SearchEntry` in the panel (looking one level
+/// down), or the panel box itself when there is none.
+fn focus_first_entry(revealer: &gtk::Revealer) {
+    let Some(panel_box) = revealer.child() else {
+        return;
+    };
+    let mut next = panel_box.first_child();
+    let mut focused = false;
+    while let Some(w) = next {
+        if let Some(entry) = w.downcast_ref::<gtk::Entry>() {
+            entry.grab_focus();
+            focused = true;
+            break;
+        }
+        if let Some(entry) = w.downcast_ref::<gtk::SearchEntry>() {
+            entry.grab_focus();
+            focused = true;
+            break;
+        }
+        if let Some(inner) = w.first_child() {
+            if let Some(entry) = inner.downcast_ref::<gtk::Entry>() {
+                entry.grab_focus();
+                focused = true;
+                break;
+            }
+            if let Some(entry) = inner.downcast_ref::<gtk::SearchEntry>() {
+                entry.grab_focus();
+                focused = true;
+                break;
+            }
+        }
+        next = w.next_sibling();
+    }
+    if !focused {
+        panel_box.grab_focus();
     }
 }

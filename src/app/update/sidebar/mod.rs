@@ -340,7 +340,7 @@ impl FluxApp {
 
     pub fn handle_toggle_sidebar(&mut self) {
         crate::hit!("handle_toggle_sidebar");
-        if self.terminal_panel_visible {
+        if self.panels.terminal.visible {
             // F8 while the terminal panel is open: close the panel and
             // restore the sidebar, rather than trying to toggle a sidebar
             // that was intentionally hidden.

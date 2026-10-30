@@ -14,11 +14,11 @@ impl FluxApp {
     /// Opens the right-side diff panel and loads changes for the target file in the background.
     pub fn handle_show_file_diff(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_show_file_diff");
-        if self.active_diff_target.as_ref() == Some(&path) && self.diff_panel_visible {
+        if self.active_diff_target.as_ref() == Some(&path) && self.panels.diff.visible {
             return;
         }
         self.active_diff_target = Some(path.clone());
-        if !self.diff_panel_visible {
+        if !self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
 
@@ -480,7 +480,7 @@ pub(super) fn handle(
         }
         AppMsg::Git(GitMsg::ShowFileDiff(path)) => app.handle_show_file_diff(path, sender),
         AppMsg::Git(GitMsg::DiffLoaded { path, diff }) => {
-            if let Some(ref buffer) = app.diff_text_buffer {
+            if let Some(ref buffer) = app.panels.diff.extras.diff_text_buffer {
                 crate::ui::panels::apply_diff_markup(buffer, &diff);
             }
             app.active_diff_target = Some(path);

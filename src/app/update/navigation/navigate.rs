@@ -39,7 +39,7 @@ impl FluxApp {
             return;
         }
 
-        if self.diff_panel_visible {
+        if self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
 

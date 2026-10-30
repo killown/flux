@@ -6,7 +6,7 @@
 //! scheme, no loader and no grid items.
 //!
 //! MIME resolution and template parsing run on a blocking worker guarded by
-//! `FluxApp::actions_panel_session`, the same way the peek-preview panel guards
+//! `PanelExtras::actions_panel_session`, the same way the peek-preview panel guards
 //! its loads.
 
 use super::actions_registry;
@@ -291,7 +291,13 @@ impl FluxApp {
     ///
     /// Called when the panel opens and on every `SelectionChanged` while it is visible.
     pub(crate) fn request_actions_panel_load(&self, sender: &AsyncComponentSender<Self>) {
-        let session = self.actions_panel_session.fetch_add(1, Ordering::SeqCst) + 1;
+        let session = self
+            .panels
+            .actions
+            .extras
+            .actions_panel_session
+            .fetch_add(1, Ordering::SeqCst)
+            + 1;
         sender.input(AppMsg::Actions(ActionsMsg::ActionsPanelLoad { session }));
     }
 
@@ -302,7 +308,11 @@ impl FluxApp {
     /// would otherwise still open the previous selection's file when the panel is
     /// reopened on a different MIME type before the first async load lands.
     pub(crate) fn reset_actions_panel(&self) {
-        self.actions_panel_session.fetch_add(1, Ordering::SeqCst);
+        self.panels
+            .actions
+            .extras
+            .actions_panel_session
+            .fetch_add(1, Ordering::SeqCst);
         if let Some((list, _search, stack)) = actions_registry::with(Clone::clone) {
             while let Some(child) = list.first_child() {
                 list.remove(&child);
@@ -318,10 +328,17 @@ impl FluxApp {
     /// resolves its targets from it and a stale right-click target would otherwise win.
     pub fn handle_actions_panel_refresh(&mut self, session: u64) {
         crate::hit!("handle_actions_panel_refresh");
-        if session != self.actions_panel_session.load(Ordering::SeqCst) {
+        if session
+            != self
+                .panels
+                .actions
+                .extras
+                .actions_panel_session
+                .load(Ordering::SeqCst)
+        {
             return;
         }
-        if !self.actions_panel_visible {
+        if !self.panels.actions.visible {
             return;
         }
 
@@ -334,7 +351,7 @@ impl FluxApp {
         // `line_number` on every right-click, so wiping it does not affect them.
         self.active_item_line = 0;
 
-        let session_arc = self.actions_panel_session.clone();
+        let session_arc = self.panels.actions.extras.actions_panel_session.clone();
         let sender = crate::domain::model::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
@@ -378,10 +395,17 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_actions_panel_ready");
-        if session != self.actions_panel_session.load(Ordering::SeqCst) {
+        if session
+            != self
+                .panels
+                .actions
+                .extras
+                .actions_panel_session
+                .load(Ordering::SeqCst)
+        {
             return;
         }
-        if !self.actions_panel_visible {
+        if !self.panels.actions.visible {
             return;
         }
         let Some((list, search, stack)) = actions_registry::with(Clone::clone) else {
@@ -422,7 +446,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_reload_actions_template");
-        if self.actions_panel_visible {
+        if self.panels.actions.visible {
             self.request_actions_panel_load(sender);
         }
     }
@@ -465,7 +489,7 @@ impl FluxApp {
                     tr("Action saved to"),
                     name
                 ))));
-                if self.actions_panel_visible {
+                if self.panels.actions.visible {
                     self.request_actions_panel_load(sender);
                 }
             }

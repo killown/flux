@@ -1,8 +1,4 @@
 //! Right-side file Properties panel.
-//!
-//! The widget tree is built once (lazily, by `toggle_sidebar_right_panel`) and
-//! refilled on every load: the metadata is gathered on a blocking thread, then
-//! [`PropertiesMsg::FilePropertiesReady`] hands it back to [`show_properties`].
 
 use super::section::MetadataSection;
 use super::sections::build_sections;
@@ -210,9 +206,15 @@ impl FluxApp {
     /// `network:///`) have no on-disk metadata and show the placeholder.
     pub(crate) fn request_properties_panel_load(&self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("request_properties_panel_load");
-        let session = self.properties_panel_session.fetch_add(1, Ordering::SeqCst) + 1;
+        let session = self
+            .panels
+            .properties
+            .extras
+            .properties_panel_session
+            .fetch_add(1, Ordering::SeqCst)
+            + 1;
 
-        let Some(path) = self.properties_target.clone() else {
+        let Some(path) = self.panels.properties.extras.properties_target.clone() else {
             show_empty();
             return;
         };
@@ -221,7 +223,12 @@ impl FluxApp {
             return;
         }
 
-        let live = self.properties_panel_session.clone();
+        let live = self
+            .panels
+            .properties
+            .extras
+            .properties_panel_session
+            .clone();
         let s = sender.clone();
         relm4::spawn_blocking(move || {
             std::thread::sleep(LOAD_DEBOUNCE);
@@ -239,8 +246,12 @@ impl FluxApp {
 
     /// Invalidates in-flight loads and empties the panel, called whenever it is hidden.
     pub(crate) fn reset_properties_panel(&mut self) {
-        self.properties_panel_session.fetch_add(1, Ordering::SeqCst);
-        self.properties_target = None;
+        self.panels
+            .properties
+            .extras
+            .properties_panel_session
+            .fetch_add(1, Ordering::SeqCst);
+        self.panels.properties.extras.properties_target = None;
         show_empty();
     }
 
@@ -252,10 +263,17 @@ impl FluxApp {
         open_with: Option<String>,
     ) {
         crate::hit!("handle_file_properties_ready");
-        if session != self.properties_panel_session.load(Ordering::SeqCst) {
+        if session
+            != self
+                .panels
+                .properties
+                .extras
+                .properties_panel_session
+                .load(Ordering::SeqCst)
+        {
             return;
         }
-        if !self.properties_panel_visible {
+        if !self.panels.properties.visible {
             return;
         }
         show_properties(sections, open_with);
@@ -268,8 +286,8 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_open_file_properties");
-        self.properties_target = Some(path);
-        if self.properties_panel_visible {
+        self.panels.properties.extras.properties_target = Some(path);
+        if self.panels.properties.visible {
             self.request_properties_panel_load(sender);
         } else {
             self.toggle_sidebar_right_panel(RightPanelType::Properties, sender);
@@ -279,7 +297,7 @@ impl FluxApp {
     /// Opens the Open With dialog for the file the Properties panel is showing.
     pub fn handle_open_properties_target_with(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_open_properties_target_with");
-        if let Some(path) = self.properties_target.clone() {
+        if let Some(path) = self.panels.properties.extras.properties_target.clone() {
             self.show_open_with_dialog(path, sender);
         }
     }

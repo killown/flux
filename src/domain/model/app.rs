@@ -1,4 +1,4 @@
-use crate::domain::model::{CachedFolder, Config, CustomAction, PathSegment, SortBy};
+use crate::domain::model::{CachedFolder, Config, CustomAction, Panels, PathSegment, SortBy};
 use crate::ui::keymap::KeyMap;
 use crate::ui::{FileItem, SidebarPlace};
 use relm4::factory::FactoryVecDeque;
@@ -60,18 +60,8 @@ pub struct NavigateMode {
 /// The primary state container for the Flux application.
 #[derive(Debug)]
 pub struct FluxApp {
-    /// `Some(sidebar_was_visible)` while the sidebar terminal is open, `None` otherwise.
-    /// Used to restore the sidebar when the panel is closed.
-    pub terminal_sidebar_stashed: Option<bool>,
-    /// The sidebar terminal's `Terminal` instance, kept alive so its PTY
-    /// survives panel toggles.
-    pub sidebar_terminal: Option<crate::infra::terminal::Terminal>,
-    /// Revealer widget wrapping the right-side terminal panel.
-    pub terminal_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the right-side terminal panel is currently visible.
-    pub terminal_panel_visible: bool,
-    /// Whether the right-side terminal panel widgets have been instantiated.
-    pub terminal_panel_initialized: bool,
+    /// Session state of the ten right-side panels.
+    pub panels: Panels,
     /// Cycle state for `Ctrl+Alt+<letter>`: the anchor directory whose
     /// children are being cycled, the letter, the ordered candidate paths
     /// captured on the first press, and the index of the one we are on
@@ -88,49 +78,13 @@ pub struct FluxApp {
     pub mime_filter: Option<String>,
     /// Session-scoped folder/file filter applied to every directory load, persists across navigation.
     pub filter_mode: FilterMode,
-    /// The preview panel's `adw::ViewStack`, read out of the panel registry at build time,
-    /// the window header hosts a `ViewSwitcher` bound to it.
-    pub preview_view_stack: Option<adw::ViewStack>,
-    /// The Preview/Details switcher, hoisted into the header bar.
-    pub preview_view_switcher: Option<adw::ViewSwitcher>,
-    /// Session token for in-flight preview loads. Bumped on every toggle and
-    /// every selection change that should invalidate the previous preview.
-    pub preview_session: Arc<AtomicU64>,
     /// Bounded LRU of prefetched preview payloads keyed on path + mtime.
     pub preview_cache: std::sync::Arc<crate::app::update::view::prefetch::PreviewCache>,
-    /// Revealer widget wrapping the peek-preview right side panel.
-    pub preview_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the peek-preview panel is visible.
-    pub preview_panel_visible: bool,
-    /// Whether the preview panel's widget tree has been lazily instantiated.
-    pub preview_panel_initialized: bool,
     /// `Some(sidebar was visible)` while wide-preview mode is active, `None` otherwise.
     pub wide_preview_sidebar: Option<bool>,
     /// `Some((wide mode was already on, window was already full screen))` while full-screen
     /// preview is active, `None` otherwise.
     pub preview_fullscreen: Option<(bool, bool)>,
-    /// Revealer widget wrapping the right connect-to-server panel.
-    pub connect_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the right connect-to-server panel is currently visible.
-    pub connect_panel_visible: bool,
-    /// Whether the right connect-to-server panel widgets have been instantiated.
-    pub connect_panel_initialized: bool,
-    /// Revealer widget wrapping the right location panel.
-    pub location_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the right location panel is currently visible.
-    pub location_panel_visible: bool,
-    /// Whether the right location panel widgets have been instantiated.
-    pub location_panel_initialized: bool,
-    /// Path entry inside the location panel, refreshed on each open.
-    pub location_entry: Option<gtk::Entry>,
-    /// Sliding revealer widget that wraps the right-side git diff review panel.
-    pub diff_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the git diff review panel is currently expanded and visible.
-    pub diff_panel_visible: bool,
-    /// Indicates if the diff panel widget tree has been constructed and bound.
-    pub diff_panel_initialized: bool,
-    /// Text buffer containing the formatted and syntax-highlighted git patch.
-    pub diff_text_buffer: Option<gtk::TextBuffer>,
     /// File path currently displayed inside the git diff review panel.
     pub active_diff_target: Option<PathBuf>,
     /// Scanned directory for `git_status_map`.
@@ -156,45 +110,6 @@ pub struct FluxApp {
     pub next_tab_id: u64,
     /// Manages bounded concurrency and viewport-based cancellation tokens for lazy thumbnail generation tasks.
     pub thumbnail_manager: Arc<crate::infra::thumbnails::ThumbnailTaskManager>,
-    /// Revealer widget wrapping the right tag navigator sidebar panel.
-    pub tag_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the lazy-initialized right tag navigator sidebar panel is currently visible.
-    pub tag_panel_visible: bool,
-    /// Whether the right tag navigator sidebar panel widgets have been instantiated.
-    pub tag_panel_initialized: bool,
-    /// Revealer widget wrapping the right search sidebar panel.
-    pub search_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the lazy-initialized right search sidebar panel is currently visible.
-    pub search_panel_visible: bool,
-    /// Whether the right search sidebar panel widgets have been instantiated.
-    pub search_panel_initialized: bool,
-    /// Revealer widget wrapping the right contextual-actions panel.
-    pub actions_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the right contextual-actions panel is currently visible.
-    pub actions_panel_visible: bool,
-    /// Whether the contextual-actions panel widget tree has been instantiated.
-    pub actions_panel_initialized: bool,
-    /// Session token for in-flight contextual-actions loads, guards stale results.
-    pub actions_panel_session: Arc<AtomicU64>,
-    /// Revealer widget wrapping the right file Properties panel.
-    pub properties_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the right file Properties panel is currently visible.
-    pub properties_panel_visible: bool,
-    /// Whether the Properties panel widget tree has been instantiated.
-    pub properties_panel_initialized: bool,
-    /// Session token for in-flight Properties loads, guards stale results.
-    pub properties_panel_session: Arc<AtomicU64>,
-    /// Path the Properties panel describes. `None` shows the empty page.
-    pub properties_target: Option<PathBuf>,
-    /// Revealer widget wrapping the right Quick List panel.
-    pub quick_list_panel_revealer: Option<gtk::Revealer>,
-    /// Whether the right Quick List panel is currently visible.
-    pub quick_list_panel_visible: bool,
-    /// Left sidebar visibility when the Quick List panel opened. `Some` while
-    /// the panel has the sidebar hidden, taken when it gives it back.
-    pub quick_list_sidebar_stashed: Option<bool>,
-    /// Whether the Quick List panel widget tree has been instantiated.
-    pub quick_list_panel_initialized: bool,
     /// Line number of the item targeted by the last context menu. 0 when not a content-search hit.
     pub active_item_line: usize,
     /// True while showing results (or no-results) from the advanced search dialog, cleared on navigate or reset.

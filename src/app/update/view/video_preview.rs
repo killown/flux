@@ -83,7 +83,7 @@ impl FluxApp {
         }
 
         // The peek-preview panel already plays the selected video.
-        if self.preview_panel_visible {
+        if self.panels.preview.visible {
             self.stop_video_preview();
             return;
         }

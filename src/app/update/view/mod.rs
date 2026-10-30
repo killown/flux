@@ -23,12 +23,12 @@ pub(super) fn handle(
         AppMsg::View(ViewMsg::SelectionChanged { tab_id }) => {
             app.handle_selection_changed(tab_id, sender);
             // Keep the contextual-actions panel in sync with the selection while open.
-            if app.actions_panel_visible {
+            if app.panels.actions.visible {
                 app.request_actions_panel_load(sender);
             }
             // Same for the Properties panel: it describes the selected item.
-            if app.properties_panel_visible {
-                app.properties_target = app.get_selected_path();
+            if app.panels.properties.visible {
+                app.panels.properties.extras.properties_target = app.get_selected_path();
                 app.request_properties_panel_load(sender);
             }
         }

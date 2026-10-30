@@ -558,16 +558,16 @@ impl FluxApp {
         model.context_menu_popover.set_parent(&widgets.grid_overlay);
         model.sidebar_widget = Some(widgets.sidebar_box.clone().upcast());
         model.terminal_paned = Some(widgets.main_paned.clone());
-        model.search_panel_revealer = Some(widgets.search_panel_revealer.clone());
-        model.tag_panel_revealer = Some(widgets.tag_panel_revealer.clone());
-        model.diff_panel_revealer = Some(widgets.diff_panel_revealer.clone());
-        model.preview_panel_revealer = Some(widgets.preview_panel_revealer.clone());
-        model.location_panel_revealer = Some(widgets.location_panel_revealer.clone());
-        model.connect_panel_revealer = Some(widgets.connect_panel_revealer.clone());
-        model.actions_panel_revealer = Some(widgets.actions_panel_revealer.clone());
-        model.quick_list_panel_revealer = Some(widgets.quick_list_panel_revealer.clone());
-        model.terminal_panel_revealer = Some(widgets.terminal_panel_revealer.clone());
-        model.properties_panel_revealer = Some(widgets.properties_panel_revealer.clone());
+        model.panels.search.revealer = Some(widgets.search_panel_revealer.clone());
+        model.panels.tag.revealer = Some(widgets.tag_panel_revealer.clone());
+        model.panels.diff.revealer = Some(widgets.diff_panel_revealer.clone());
+        model.panels.preview.revealer = Some(widgets.preview_panel_revealer.clone());
+        model.panels.location.revealer = Some(widgets.location_panel_revealer.clone());
+        model.panels.connect.revealer = Some(widgets.connect_panel_revealer.clone());
+        model.panels.actions.revealer = Some(widgets.actions_panel_revealer.clone());
+        model.panels.quick_list.revealer = Some(widgets.quick_list_panel_revealer.clone());
+        model.panels.terminal.revealer = Some(widgets.terminal_panel_revealer.clone());
+        model.panels.properties.revealer = Some(widgets.properties_panel_revealer.clone());
         model.main_stack = Some(widgets.main_stack.clone());
         model.fullscreen_terminal_box = Some(widgets.fullscreen_terminal_box.clone());
 
@@ -666,7 +666,7 @@ impl FluxApp {
 
         // Sidebar terminal cleanup: the bottom terminal's shutdown is wired
         // in `build_terminal`, this is the equivalent for the panel.
-        let sidebar_terminal = model.sidebar_terminal.clone();
+        let sidebar_terminal = model.panels.terminal.extras.terminal.clone();
         root.connect_close_request(move |_| {
             if let Some(ref term) = sidebar_terminal {
                 term.kill_shell();

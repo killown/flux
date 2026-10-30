@@ -464,8 +464,8 @@ impl FluxApp {
         // respawned here. The full-window terminal is deliberately absent: its
         // shell keeps running (and keeps its own cwd) across navigation.
         let active_terminal: Option<crate::infra::terminal::Terminal> =
-            if self.terminal_panel_visible {
-                self.sidebar_terminal.clone()
+            if self.panels.terminal.visible {
+                self.panels.terminal.extras.terminal.clone()
             } else if self.terminal_visible {
                 Some(self.terminal.clone())
             } else {

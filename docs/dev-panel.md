@@ -1,12 +1,33 @@
 # Adding a Right Panel
 
 Every right-side panel in Flux, Tag, Search, Diff, Location, Connect,
-Preview, Actions, Terminal, is wired through the same set of files.
+Preview, Actions, QuickList, Terminal, Properties, is wired through the same
+small set of files. Their session state lives in one place,
+`Panels` (`src/domain/model/panels.rs`), held by `FluxApp` as `panels`.
 The terminal panel (`src/ui/panels/terminal.rs` and the
 `RightPanelType::Terminal` arms in `src/app/update/helpers/sidebar.rs`) is the
 smallest complete example, because it exercises every hook: config flag,
 message variants, lazy build, spawn-on-reveal, kill-on-hide, sidebar
 stash, focus skip. Read those two files before starting.
+
+## How the pieces fit
+
+- **`Panels`** has one `PanelState` per panel: its `revealer`, `visible`,
+  `initialized`, and `extras` (handles only some panels need, such as the
+  terminal or the session tokens). It holds *session* state only.
+  Persisted settings such as `config.ui.<panel>_width` stay in the config.
+- **`Panels::close_all_except(keep)`** enforces "one panel at a time".
+  Afterwards `keep` may be open and every other panel is hidden. It hides
+  revealers and clears `visible`, leaves `initialized` alone (panels are built
+  once and reused), and returns the kinds it closed. It never kills
+  subprocesses, stops media or restores sidebars; that is what the close
+  hooks are for.
+- **`toggle_sidebar_right_panel`** (`sidebar.rs`) is the only entry point. It
+  calls `close_all_except`, runs `on_panel_close` for each panel that was
+  displaced, builds the panel on first use with `build_panel`, flips
+  visibility, then runs `on_panel_open` or `on_panel_close`.
+- **`build_panel`, `on_panel_open`, `on_panel_close`** are `match`es on
+  `RightPanelType`. Most arms are one or two lines.
 
 ## Checklist
 
@@ -14,97 +35,94 @@ Work through these in order. Each line names the file, the change, and
 _why_ that file is on the list. Missing any of them is either a compile
 error or a silent bug.
 
-1. **`src/domain/model/config/ui.rs`** - add the enable flag (`bool` with
-   `#[serde(default)]`). If the panel has a width or height, add an
-   `i32` field defaulted via a helper in `src/domain/model/defaults.rs`.
+1. **Config** - in `src/domain/model/config/ui.rs` add the enable flag
+   (`bool` with `#[serde(default)]`) and, if the panel has a width or height,
+   an `i32` field defaulted via a helper in `src/domain/model/defaults.rs`.
+   Mirror the field in the parse-failure `UIConfig { ... }` literal in
+   `src/utils/config/defaults.rs`; both branches must stay in sync or a
+   corrupt `config.toml` silently drops the field. Then run
+   `cargo run --bin gen-docs` for `docs/config.md`. Do not edit it by hand.
 
-2. **`src/utils/config/defaults.rs`** - mirror the field in the
-   parse-failure `UIConfig { ... }` literal. Both branches must stay in
-   sync or a corrupt `config.toml` silently drops the field.
+2. **`src/domain/model/types.rs`** - add a variant to `RightPanelType`,
+   grouped with the other panel variants.
 
-3. **`docs/config.md`** - run `cargo run --bin gen-docs`. Do not edit by
-   hand.
+3. **`src/domain/model/panels.rs`** - add a `PanelState` field to `Panels` and
+   an arm for it in `get`, `get_mut`, `iter_mut` and `any_visible`. The
+   `get`/`get_mut` matches are exhaustive, so the compiler flags a missing
+   arm; `iter_mut` and `any_visible` are lists and it does not. `iter_mut` is
+   also the order panels are closed in. If the panel needs handles of its own
+   (a subprocess, a text buffer, a session token), add them to `PanelExtras`
+   with a doc comment. There is nothing to add to `FluxApp` or its struct
+   literal in `src/ui/startup/components.rs`.
 
-4. **`src/domain/model/types.rs`** - add a variant to `RightPanelType`, grouped
-   with the other panel variants.
-
-5. **`src/domain/model/app.rs`** - add three fields minimum:
-   `Option<gtk::Revealer>`, `bool visible`, `bool initialized`. If the
-   panel hides the left sidebar (Terminal, Preview), add `Option<bool>`
-   to stash the prior visibility. Doc-comment each field so the
-   `Debug` derive stays readable.
-
-6. **`src/ui/startup/components.rs`** - initialize the new `FluxApp`
-   fields in the struct literal. `None` / `false` unless the panel is
-   open at startup.
-
-7. **`src/ui/view/component.rs`** - add a revealer in the `view!` macro
-   as `#[name = "<panel>_panel_revealer"] panel_revealer(Some(PANEL_TRANSITION_MS)) {}`.
+4. **Revealer** - in `src/ui/view/component.rs` add a revealer to the `view!`
+   macro as
+   `#[name = "<panel>_panel_revealer"] panel_revealer(Some(PANEL_TRANSITION_MS)) {}`.
    The helper in `src/ui/view/pages/panels.rs` sets `SlideLeft`,
    `reveal_child: false` and `visible: false`. Match the neighboring panels.
+   Then in `src/ui/view/init.rs`, in `store_widget_refs`, store it with
+   `model.panels.<panel>.revealer = Some(widgets.<panel>_panel_revealer.clone())`.
+   If the panel owns a subprocess (shell, mpv), add a
+   `root.connect_close_request` that tears it down, mirroring the terminal
+   block.
 
-8. **`src/ui/view/init.rs`** - in `store_widget_refs`, store the
-   revealer on the model. If the panel owns a subprocess (shell, mpv),
-   add a `root.connect_close_request` that tears it down, mirroring the
-   terminal block.
+5. **Panel builder** - in `src/ui/panels/<panel>.rs` expose
+   `pub fn build_<panel>_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box`.
+   Use `header::panel_header`, `resize::resizable_panel`, and
+   `spec::PanelSpec`. Add `const fn <panel>()` to `spec.rs` with the
+   min / max / default widths. Register it in `src/ui/panels/mod.rs` with
+   `pub mod <panel>;` and `pub use <panel>::build_<panel>_panel;`.
 
-9. **`src/app/update/helpers/sidebar.rs`** - three edits inside
-   `toggle_sidebar_right_panel`:
-   - add the variant to `hide_other_right_panels` so opening another
-     panel closes this one;
-   - add a match arm in the `(revealer, initialized, visible, is_search)`
-     tuple;
-   - add a match arm in the panel-construction `match` that returns the
-     `gtk::Box` from `build_<panel>_panel(...)`.
+6. **`src/app/update/helpers/sidebar.rs`** - add one arm to each of the three
+   hook `match`es. They are exhaustive, so the compiler flags a missing arm:
+   - `build_panel`: return the `gtk::Box` from `build_<panel>_panel(...)`,
+     and store any handle the builder returns in `self.panels.<panel>.extras`;
+   - `on_panel_open`: for a panel that needs text entry (Location, Connect,
+     Search) call `focus_first_entry(revealer)`. Otherwise leave focus alone
+     so arrow keys keep driving the grid;
+   - `on_panel_close`: undo whatever `on_panel_open` did (restore the
+     sidebar, kill the process, reset the panel). An empty arm is fine.
 
-   If the panel needs focus (Location, Connect, Search), leave it out of
-   `skip_focus`. Otherwise add it to `skip_focus` so arrow keys keep
-   driving the grid.
-
-10. **`src/ui/panels/mod.rs`** - `pub mod <panel>;` and
-    `pub use <panel>::build_<panel>_panel;`.
-
-11. **`src/ui/panels/<panel>.rs`** - expose
-    `pub fn build_<panel>_panel(initial_width: i32, sender: AsyncComponentSender<FluxApp>) -> gtk::Box`.
-    Use `header::panel_header`, `resize::resizable_panel`, and
-    `spec::PanelSpec`. Add `const fn <panel>()` to `spec.rs` with the
-    min / max / default widths.
-
-12. **`src/domain/model/msg.rs`** and **`src/app/update/**/mod.rs`** - if the panel
-    has its own `AppMsg` variants, add them doc-commented and route them
-    in the closest domain file.
-
-13. **`po/pt_BR.po`** - new strings, grouped under
-    `# src/ui/panels/<panel>.rs`.
+7. **Messages and translations** - in `src/domain/model/msg.rs` and
+   `src/app/update/**/mod.rs`, if the panel has its own `AppMsg` variants, add
+   them doc-commented and route them in the closest domain file. Put new
+   strings in `po/pt_BR.po`, grouped under `# src/ui/panels/<panel>.rs`.
 
 ## Lifecycle rules
 
 Panels are lazy: the widget tree is built on first open and kept alive
-afterwards. These five rules are what keeps close/reopen correct.
+afterwards. These six rules are what keeps close/reopen correct.
+
+- **One panel at a time.** `Panels::close_all_except` does the hiding, and
+  `toggle_sidebar_right_panel` calls it first, so a new panel gets this for
+  free once it has its `iter_mut` arm. Anything a displaced panel must undo
+  goes in its `on_panel_close` arm. `on_panel_close` is told whether the panel
+  was toggled shut or displaced by another one (`CloseReason`), because a few
+  hooks only apply to one of the two.
 
 - **Spawn on reveal, kill on hide.** Subprocesses (shell, media player)
-  are spawned in the `now_visible` branch and killed in the
-  `!now_visible` branch of `toggle_sidebar_right_panel`. Do not reuse a
-  process across toggles - the fd, pipe, or socket will be stale.
+  are spawned in `on_panel_open` and killed in `on_panel_close`. Do not reuse
+  a process across toggles - the fd, pipe, or socket will be stale.
 
-- **Do not grab focus by default.** Preview, Actions and Terminal add
-  themselves to `skip_focus`. Do the same unless the panel's purpose is
-  text entry (Location, Connect, Search). Grabbing focus breaks
-  arrow-key scrubbing in the grid.
+- **Do not grab focus by default.** Preview, Actions, QuickList, Terminal and
+  Properties do not call `focus_first_entry` in `on_panel_open`. Do the same
+  unless the panel's purpose is text entry (Tag, Search, Diff, Location,
+  Connect). Grabbing focus breaks arrow-key scrubbing in the grid.
 
-- **Stash the left sidebar if the panel is wide.** Terminal and Preview
-  do this: store `Some(self.sidebar_visible)` on first reveal, restore on
-  hide. Do not touch `config.ui.sidebar_visible` - that is a persisted
-  preference, not session state.
+- **Stash the left sidebar if the panel is wide.** Terminal and QuickList do
+  this: store `Some(self.sidebar_visible)` in the panel's `extras` on open,
+  restore it in `on_panel_close`. Preview does the same through
+  `wide_preview_sidebar`. Do not touch `config.ui.sidebar_visible` - that is
+  a persisted preference, not session state.
 
-- **Session-token every async load.** Bump an `Arc<AtomicU64>` on open,
-  capture its value, drop results whose token no longer matches. This is
-  what prevents old contents from flashing into a newly opened panel on
-  rapid switching.
+- **Session-token every async load.** Bump an `Arc<AtomicU64>` kept in the
+  panel's `extras` on open, capture its value, drop results whose token no
+  longer matches. This is what prevents old contents from flashing into a
+  newly opened panel on rapid switching.
 
 - **Stop media on close.** If the panel plays video or audio, call
-  `stop_media()` (or equivalent) in the `!now_visible` branch. Otherwise
-  the GStreamer pipeline and its fds keep running in the background.
+  `stop_media()` (or equivalent) in `on_panel_close`. Otherwise the
+  GStreamer pipeline and its fds keep running in the background.
 
 ## Verifying the result
 

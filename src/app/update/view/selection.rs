@@ -23,9 +23,15 @@ impl FluxApp {
         // Keep the peek-preview panel in sync with the selection while it is open.
         // Without this, arrowing down leaves the panel showing the previous file
         // and the user has to press Space just to refresh it.
-        if self.preview_panel_visible {
+        if self.panels.preview.visible {
             if let Some(path) = self.get_selected_path() {
-                let session = self.preview_session.fetch_add(1, Ordering::SeqCst) + 1;
+                let session = self
+                    .panels
+                    .preview
+                    .extras
+                    .preview_session
+                    .fetch_add(1, Ordering::SeqCst)
+                    + 1;
                 sender.input(AppMsg::Preview(PreviewMsg::PreviewLoad { path, session }));
             }
         }
@@ -292,13 +298,13 @@ impl FluxApp {
         if self.config.ui.auto_show_diff && self.is_in_git_repo {
             // Don't auto-show the diff panel if the user already has a different
             // right panel open.
-            let other_panel_open = self.preview_panel_visible
-                || self.tag_panel_visible
-                || self.search_panel_visible
-                || self.location_panel_visible
-                || self.connect_panel_visible
-                || self.actions_panel_visible
-                || self.quick_list_panel_visible;
+            let other_panel_open = self.panels.preview.visible
+                || self.panels.tag.visible
+                || self.panels.search.visible
+                || self.panels.location.visible
+                || self.panels.connect.visible
+                || self.panels.actions.visible
+                || self.panels.quick_list.visible;
 
             if !other_panel_open {
                 let mut diff_triggered = false;
@@ -325,7 +331,7 @@ impl FluxApp {
                     }
                 }
 
-                if !diff_triggered && self.diff_panel_visible {
+                if !diff_triggered && self.panels.diff.visible {
                     self.toggle_sidebar_right_panel(
                         crate::domain::model::RightPanelType::Diff,
                         sender,

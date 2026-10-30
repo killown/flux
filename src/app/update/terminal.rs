@@ -175,7 +175,7 @@ impl FluxApp {
 
         // Entering: nothing of the file manager stays visible, so stop its media.
         self.stop_video_preview();
-        if self.preview_panel_visible {
+        if self.panels.preview.visible {
             crate::ui::panels::preview::registry::with(|h| h.stop_media());
         }
 
@@ -286,7 +286,7 @@ impl FluxApp {
         if self.terminal_fullscreen && pos != TerminalPosition::Fullscreen {
             self.handle_toggle_terminal_fullscreen(sender);
         }
-        if self.terminal_panel_visible && pos != TerminalPosition::Sidebar {
+        if self.panels.terminal.visible && pos != TerminalPosition::Sidebar {
             self.toggle_sidebar_right_panel(RightPanelType::Terminal, sender);
         }
         if self.terminal_visible && pos != TerminalPosition::Bottom {

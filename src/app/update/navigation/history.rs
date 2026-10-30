@@ -9,7 +9,7 @@ impl FluxApp {
         crate::hit!("handle_go_back");
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
-        if self.diff_panel_visible {
+        if self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
         if let Some(prev) = self.history.pop() {
@@ -53,7 +53,7 @@ impl FluxApp {
         crate::hit!("handle_go_forward");
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
-        if self.diff_panel_visible {
+        if self.panels.diff.visible {
             self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
         while let Some(next) = self.forward_stack.pop() {

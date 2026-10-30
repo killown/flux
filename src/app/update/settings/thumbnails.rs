@@ -85,7 +85,7 @@ impl FluxApp {
             // Immediately regenerate the snippet with the current theme.
             // `apply_theme` is idempotent and cheap.
             self.terminal.apply_theme(&self.config.ui.terminal);
-            if let Some(ref sidebar_term) = self.sidebar_terminal {
+            if let Some(ref sidebar_term) = self.panels.terminal.extras.terminal {
                 sidebar_term.apply_theme(&self.config.ui.terminal);
             }
         }

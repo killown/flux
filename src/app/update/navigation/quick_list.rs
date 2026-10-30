@@ -239,7 +239,7 @@ impl FluxApp {
     /// Tab and Ctrl+1..9 show the panel. Any other right-side panel that is
     /// open gives way to it (`toggle_sidebar_right_panel` hides the others).
     fn reveal_quick_list_panel(&mut self, sender: &AsyncComponentSender<Self>) {
-        if !self.quick_list_panel_visible {
+        if !self.panels.quick_list.visible {
             self.toggle_sidebar_right_panel(RightPanelType::QuickList, sender);
         }
     }
@@ -249,7 +249,7 @@ impl FluxApp {
     pub fn handle_toggle_quick_list_panel(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_toggle_quick_list_panel");
         self.toggle_sidebar_right_panel(RightPanelType::QuickList, sender);
-        if self.quick_list_panel_visible {
+        if self.panels.quick_list.visible {
             // The entry is not mapped yet the first time the panel is built.
             gtk::glib::idle_add_local_once(crate::ui::panels::quick_list::focus_search);
         }

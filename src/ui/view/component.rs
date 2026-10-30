@@ -157,7 +157,7 @@ impl SimpleAsyncComponent for FluxApp {
                     #[name = "header_bar"]
                     add_top_bar = &adw::HeaderBar {
                         #[watch]
-                        set_visible: model.header_visible && !model.preview_panel_visible,
+                        set_visible: model.header_visible && !model.panels.preview.visible,
                         #[watch]
                         set_show_start_title_buttons: false,
                         #[watch]
@@ -277,11 +277,11 @@ impl SimpleAsyncComponent for FluxApp {
                                 set_valign: gtk::Align::Center,
 
                                 #[watch]
-                                set_visible: model.preview_panel_visible,
+                                set_visible: model.panels.preview.visible,
 
                                 append = &adw::ViewSwitcher {
                                     #[watch]
-                                    set_stack: model.preview_view_stack.as_ref(),
+                                    set_stack: model.panels.preview.extras.preview_view_stack.as_ref(),
                                     set_policy: adw::ViewSwitcherPolicy::Wide,
                                     set_halign: gtk::Align::Center,
                                 },
@@ -535,7 +535,7 @@ impl SimpleAsyncComponent for FluxApp {
                         /// Toggle the peek-preview right-side panel.
                         pack_end = &build_preview_toggle(&sender) -> gtk::ToggleButton {
                             #[watch]
-                            set_active: model.preview_panel_visible,
+                            set_active: model.panels.preview.visible,
                             #[watch]
                             set_visible: model.config.ui.header_show_preview,
                         },
@@ -761,7 +761,7 @@ impl SimpleAsyncComponent for FluxApp {
                     /// Selection status bar at the bottom of the main content view.
                     add_bottom_bar = &gtk::Box {
                         #[watch]
-                        set_visible: model.statusbar_visible && !model.preview_panel_visible,
+                        set_visible: model.statusbar_visible && !model.panels.preview.visible,
                         add_css_class: "selection-status",
 
                         /// Selection information & child count

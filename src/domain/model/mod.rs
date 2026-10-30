@@ -6,6 +6,7 @@ mod defaults;
 mod doc_config;
 mod file_load;
 mod msg;
+pub mod panels;
 pub mod quick_groups;
 pub mod quick_list;
 mod types;
@@ -27,6 +28,7 @@ pub use msg::{
     SearchMsg, SettingsMsg, TabsMsg, TagsMsg, TasksMsg, TerminalMsg, ThumbnailsMsg, ToggleVerb,
     TransferMsg, UndoMsg, ViewMsg, WindowMsg, WindowVisibility,
 };
+pub use panels::Panels;
 #[allow(unused_imports)]
 pub use types::ConflictResolver;
 pub use types::{
