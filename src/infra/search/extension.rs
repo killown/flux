@@ -142,11 +142,8 @@ fn start_walk(
     app.filter.clear();
 
     // Force list mode (same UX as content search).
-    if !app.search.saved_layout {
-        app.search.saved_list_mode = app.is_list_mode;
-        app.search.saved_max_columns = app.tabs[app.active_tab_index].files.view.max_columns();
-        app.search.saved_layout = true;
-    }
+    let max_columns = app.tabs[app.active_tab_index].files.view.max_columns();
+    app.search.stash_layout(app.is_list_mode, max_columns);
     app.is_list_mode = true;
     let active_view = &app.tabs[app.active_tab_index].files.view;
     active_view.set_min_columns(1);

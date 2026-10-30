@@ -32,15 +32,16 @@ impl FluxApp {
         } else if self.header_view == constants::VIEW_SEARCH
             && view_name != constants::VIEW_SEARCH
             && !self.search.content_searching
-            && self.is_list_mode != self.search.saved_list_mode
         {
-            self.is_list_mode = self.search.saved_list_mode;
-            self.tabs[self.active_tab_index]
-                .files
-                .view
-                .set_max_columns(self.search.saved_max_columns);
-            self.sync_list_mode();
-            self.search.saved_layout = false;
+            let (list_mode, max_columns) = self.search.take_layout();
+            if self.is_list_mode != list_mode {
+                self.is_list_mode = list_mode;
+                self.tabs[self.active_tab_index]
+                    .files
+                    .view
+                    .set_max_columns(max_columns);
+                self.sync_list_mode();
+            }
         }
         self.header_view = view_name;
         if self.header_view != constants::VIEW_SEARCH {

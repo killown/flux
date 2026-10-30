@@ -58,6 +58,24 @@ pub struct SearchState {
     pub just_opened: bool,
 }
 
+impl SearchState {
+    /// Stashes the user's grid layout before a search forces list mode.
+    pub fn stash_layout(&mut self, list_mode: bool, max_columns: u32) {
+        if !self.saved_layout {
+            self.saved_list_mode = list_mode;
+            self.saved_max_columns = max_columns;
+            self.saved_layout = true;
+        }
+    }
+
+    /// Returns the layout to restore, `(list_mode, max_columns)`, and ends the
+    /// stash session so the next search stashes afresh.
+    pub fn take_layout(&mut self) -> (bool, u32) {
+        self.saved_layout = false;
+        (self.saved_list_mode, self.saved_max_columns)
+    }
+}
+
 /// Session-scoped filters applied to every directory load.
 #[derive(Debug)]
 pub struct Filters {

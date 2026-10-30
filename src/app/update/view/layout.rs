@@ -34,13 +34,10 @@ impl FluxApp {
             None => return,
         };
 
-        if is_list {
-            active_tab.files.view.set_min_columns(1);
-            active_tab.files.view.set_max_columns(1);
-        } else {
-            active_tab.files.view.set_min_columns(1);
-            active_tab.files.view.set_max_columns(20);
-        }
+        let max_columns = if is_list { 1 } else { 20 };
+        active_tab.files.view.set_min_columns(1);
+        active_tab.files.view.set_max_columns(max_columns);
+        self.search.saved_max_columns = max_columns;
 
         for i in 0..active_tab.files.len() {
             if let Some(item_wrapper) = active_tab.files.get(i) {

@@ -27,11 +27,12 @@ impl FluxApp {
         self.filter.clear();
         self.search.just_opened = false;
         self.tabs[self.active_tab_index].files.clear();
-        self.is_list_mode = self.search.saved_list_mode;
+        let (list_mode, max_columns) = self.search.take_layout();
+        self.is_list_mode = list_mode;
         let target_max = if self.is_list_mode {
             1
         } else {
-            self.search.saved_max_columns.max(1)
+            max_columns.max(1)
         };
         let target_min = 1;
         let view = &self.tabs[self.active_tab_index].files.view;

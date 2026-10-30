@@ -48,12 +48,8 @@ impl FluxApp {
 
         // Instantly lock into list mode if the user starts typing a wildcard pattern
         if has_wildcard {
-            if !self.search.saved_layout {
-                self.search.saved_list_mode = self.is_list_mode;
-                self.search.saved_max_columns =
-                    self.tabs[self.active_tab_index].files.view.max_columns();
-                self.search.saved_layout = true;
-            }
+            let max_columns = self.tabs[self.active_tab_index].files.view.max_columns();
+            self.search.stash_layout(self.is_list_mode, max_columns);
             self.is_list_mode = true;
             let active_view = &self.tabs[self.active_tab_index].files.view;
             active_view.set_min_columns(1);
