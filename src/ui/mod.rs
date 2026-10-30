@@ -16,7 +16,6 @@ pub use components::SidebarMsg;
 pub mod clipboard;
 pub mod conflict_policy;
 pub mod dialog;
-pub mod search;
 pub mod sidebar_network;
 pub mod tabs;
 pub mod undo_redo;
