@@ -1,5 +1,11 @@
 use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
+use super::pages::header::{
+    build_empty_trash_button, build_extract_archive_button, build_filter_toggle,
+    build_git_menu_button, build_list_toggle, build_main_menu_button, build_preview_toggle,
+    build_recents_button, build_sort_indicator, icon_row,
+};
+use super::pages::panels::{panel_revealer, PANEL_TRANSITION_MS};
 use crate::ui::constants;
 use adw::gdk;
 use adw::prelude::*;
@@ -457,56 +463,20 @@ impl SimpleAsyncComponent for FluxApp {
                         },
 
                         /// Destructive action button to purge the Trash directory.
-                        pack_end = &gtk::Button {
+                        pack_end = &build_empty_trash_button(&sender) -> gtk::Button {
                             #[watch]
                             set_visible: model.current_path.to_string_lossy() == constants::TRASH_URI,
-                            connect_clicked => AppMsg::EmptyTrash,
-                            set_tooltip_text: Some(&tr("Empty Trash")),
-                            add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-
-                            gtk::Box {
-                                set_orientation: gtk::Orientation::Horizontal,
-                                set_spacing: constants::HEADER_BTN_SPACING,
-
-                                gtk::Image {
-                                    set_icon_name: Some(constants::ICON_TRASH),
-                                },
-                                gtk::Label {
-                                    set_label: &tr("Empty Trash"),
-                                }
-                            }
                         },
 
-                        pack_end = &gtk::Button {
+                        pack_end = &build_extract_archive_button(&sender) -> gtk::Button {
                             #[watch]
                             set_visible: model.can_extract_current_archive(),
-                            connect_clicked => AppMsg::ExtractArchive,
-                            set_tooltip_text: Some(&tr("Extract Archive")),
-                            add_css_class: "suggested-action",
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-
-                            gtk::Box {
-                                set_orientation: gtk::Orientation::Horizontal,
-                                set_spacing: constants::HEADER_BTN_SPACING,
-
-                                gtk::Image {
-                                    set_icon_name: Some("archive-extract-symbolic"),
-                                },
-                                gtk::Label {
-                                    set_label: &tr("Extract"),
-                                }
-                            }
                         },
 
                         /// Git actions dropdown, visible only inside a repo.
-                        pack_end = &gtk::MenuButton {
+                        pack_end = &build_git_menu_button() -> gtk::MenuButton {
                             #[watch]
                             set_visible: model.is_in_git_repo,
-                            set_icon_name: "git-symbolic",
-                            set_tooltip_text: Some(&tr("Git Actions")),
-                            add_css_class: "flat",
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                             #[wrap(Some)]
                             set_popover: git_menu_popover = &gtk::PopoverMenu::from_model(
                                 Option::<&gtk::gio::MenuModel>::None,
@@ -516,34 +486,22 @@ impl SimpleAsyncComponent for FluxApp {
                         },
 
                         /// Contextual button for Recents
-                        pack_end = &gtk::Button {
+                        pack_end = &build_recents_button(&sender) -> gtk::Button {
                             #[watch]
                             set_visible: model.current_path.to_string_lossy() == constants::RECENT_URI,
-                            connect_clicked => AppMsg::ClearRecents,
                             #[watch]
                             set_tooltip_text: Some(&model.recents_tooltip),
-                            add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
 
-                            gtk::Box {
-                                set_orientation: gtk::Orientation::Horizontal,
-                                set_spacing: constants::HEADER_BTN_SPACING,
-
-                                gtk::Image {
-                                    set_icon_name: Some("edit-clear-symbolic"),
-                                },
+                            #[wrap(Some)]
+                            set_child = &icon_row("edit-clear-symbolic") -> gtk::Box {
                                 gtk::Label {
                                     #[watch]
                                     set_label: &model.recents_label,
-                                }
-                            }
+                                },
+                            },
                         },
 
-                        pack_end = &gtk::MenuButton {
-                            set_icon_name: "open-menu-symbolic",
-                            set_tooltip_text: Some(&tr("Main Menu")),
-                            add_css_class: "flat",
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
+                        pack_end = &build_main_menu_button() -> gtk::MenuButton {
                             #[wrap(Some)]
                             set_popover: main_menu_popover = &gtk::PopoverMenu::from_model(
                                 Option::<&gtk::gio::MenuModel>::None,
@@ -553,76 +511,35 @@ impl SimpleAsyncComponent for FluxApp {
                         },
 
                         /// Toggle between grid card layout and compact list layout.
-                        pack_end = &gtk::ToggleButton {
+                        pack_end = &build_list_toggle(&sender) -> gtk::ToggleButton {
                             #[watch]
                             set_active: model.is_list_mode,
                             #[watch]
                             set_visible: model.config.ui.header_show_view,
-                            set_icon_name: "view-list-symbolic",
-                            set_tooltip_text: Some(&tr("Toggle List Mode")),
-                            add_css_class: "flat",
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-                            connect_clicked => AppMsg::ToggleListMode,
                         },
 
                         // Filter toggle button, opens the VIEW_FILTER stack child.
                         // Active state tracks whether any patterns are set.
-                        pack_end = &gtk::ToggleButton {
-                            set_tooltip_text: Some(&tr("Filter by Pattern")),
-                            add_css_class: "flat",
+                        pack_end = &build_filter_toggle(&sender) -> gtk::ToggleButton {
                             #[watch]
                             set_active: model.extension_filter.is_some(),
                             #[watch]
                             set_visible: model.config.ui.header_show_filter,
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-
-                            #[wrap(Some)]
-                            set_child = &gtk::Image {
-                                set_from_gicon: &gtk::gio::ThemedIcon::from_names(&[
-                                    "view-filter-symbolic",
-                                    "filter-symbolic",
-                                ]),
-                            },
-
-                            connect_clicked => AppMsg::ToggleFilterBar,
                         },
 
                         /// Toggle the peek-preview right-side panel.
-                        pack_end = &gtk::ToggleButton {
+                        pack_end = &build_preview_toggle(&sender) -> gtk::ToggleButton {
                             #[watch]
                             set_active: model.preview_panel_visible,
                             #[watch]
                             set_visible: model.config.ui.header_show_preview,
-                            set_icon_name: "view-reveal-symbolic",
-                            set_tooltip_text: Some(&tr("Toggle Preview Panel")),
-                            add_css_class: "flat",
-                            connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-                            connect_clicked => AppMsg::TogglePreview,
                         },
 
                         /// Visual indicator of the current active sorting mode.
-                        pack_end = &gtk::Box {
+                        pack_end = &build_sort_indicator(&sender) -> gtk::Box {
                             #[watch]
                             set_visible: model.config.ui.header_show_sort,
-                            set_orientation: gtk::Orientation::Horizontal,
-                            set_spacing: constants::STATUS_ICON_SPACING,
-                            set_margin_end: constants::HEADER_MARGIN_END,
-                            set_valign: gtk::Align::Center,
-                            add_css_class: constants::SORT_CONTAINER_CLASS,
 
-                            add_controller = gtk::GestureClick {
-                                set_propagation_phase: gtk::PropagationPhase::Capture,
-                                connect_pressed[sender] => move |gesture, _, _, _| {
-                                    gesture.set_state(gtk::EventSequenceState::Claimed);
-                                    sender.input(AppMsg::CycleSort);
-                                }
-                            },
-
-                            gtk::Image {
-                                set_icon_name: Some(constants::ICON_SORT_INDICATOR),
-                                set_pixel_size: constants::STATUS_ICON_SIZE,
-                                add_css_class: "dimmed"
-                            },
                             gtk::Label {
                                 add_css_class: constants::SORT_LABEL_CLASS,
                                 add_css_class: "dimmed",
@@ -938,92 +855,43 @@ impl SimpleAsyncComponent for FluxApp {
 
                 /// Right search panel revealer (lazy initialized).
                 #[name = "search_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right tag panel revealer (lazy initialized).
                 #[name = "tag_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right git diff panel revealer (lazy initialized).
                 #[name = "diff_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(None) -> gtk::Revealer {},
 
                 /// Right location panel revealer (lazy initialized).
                 #[name = "location_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right connect-to-server panel revealer (lazy initialized).
                 #[name = "connect_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right peek-preview panel revealer (lazy initialized).
                 #[name = "preview_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right contextual-actions panel revealer (lazy initialized).
                 #[name = "actions_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right Quick List panel revealer (lazy initialized).
                 #[name = "quick_list_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right terminal panel revealer (lazy initialized).
                 #[name = "terminal_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
 
                 /// Right file Properties panel revealer (lazy initialized).
                 #[name = "properties_panel_revealer"]
-                gtk::Revealer {
-                    set_transition_type: gtk::RevealerTransitionType::SlideLeft,
-                    set_transition_duration: 200,
-                    set_reveal_child: false,
-                    set_visible: false,
-                },
+                panel_revealer(Some(PANEL_TRANSITION_MS)) -> gtk::Revealer {},
             } -> { set_name: "fm" },
 
             /// Host for the full-window terminal, empty until it is first used.

@@ -38,10 +38,10 @@ error or a silent bug.
    fields in the struct literal. `None` / `false` unless the panel is
    open at startup.
 
-7. **`src/ui/view/component.rs`** - add a `gtk::Revealer` in the
-   `view!` macro with `#[name = "<panel>_panel_revealer"]`,
-   `SlideLeft`, `transition_duration: 200`, `reveal_child: false`,
-   `visible: false`. Match the neighboring panels.
+7. **`src/ui/view/component.rs`** - add a revealer in the `view!` macro
+   as `#[name = "<panel>_panel_revealer"] panel_revealer(Some(PANEL_TRANSITION_MS)) {}`.
+   The helper in `src/ui/view/pages/panels.rs` sets `SlideLeft`,
+   `reveal_child: false` and `visible: false`. Match the neighboring panels.
 
 8. **`src/ui/view/init.rs`** - in `store_widget_refs`, store the
    revealer on the model. If the panel owns a subprocess (shell, mpv),
