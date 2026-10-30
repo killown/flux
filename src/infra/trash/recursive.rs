@@ -8,51 +8,41 @@ use gtk::{gio, glib};
 pub fn delete_recursive(f: &gio::File) -> Result<(), glib::Error> {
     crate::hit!("delete_recursive");
     let uri = f.uri().to_string();
+
+    if uri.starts_with("trash:///") {
+        return f.delete(gio::Cancellable::NONE);
+    }
+
     eprintln!("[delete_recursive] entering uri={:?}", uri);
 
-    match f.query_info(
+    let info = f.query_info(
         "standard::type",
         gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
         gio::Cancellable::NONE,
-    ) {
-        Err(ref e) => {
+    )?;
+
+    eprintln!(
+        "[delete_recursive] file_type={:?} uri={:?}",
+        info.file_type(),
+        uri
+    );
+
+    if info.file_type() == gio::FileType::Directory {
+        let enumerator = f.enumerate_children(
+            "standard::name",
+            gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
+            gio::Cancellable::NONE,
+        )?;
+
+        let iter = enumerator.into_iter();
+        for child_info in iter {
+            let child_info = child_info?;
+            let child = f.child(child_info.name());
             eprintln!(
-                "[delete_recursive] query_info failed uri={:?} err={:?}",
-                uri,
-                e.message()
+                "[delete_recursive] recursing into child={:?}",
+                child.uri().to_string()
             );
-        }
-        Ok(ref info) => {
-            eprintln!(
-                "[delete_recursive] file_type={:?} uri={:?}",
-                info.file_type(),
-                uri
-            );
-            if info.file_type() == gio::FileType::Directory {
-                match f.enumerate_children(
-                    "standard::name",
-                    gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
-                    gio::Cancellable::NONE,
-                ) {
-                    Err(ref e) => {
-                        eprintln!(
-                            "[delete_recursive] enumerate_children failed uri={:?} err={:?}",
-                            uri,
-                            e.message()
-                        );
-                    }
-                    Ok(enumerator) => {
-                        for child_info in enumerator.flatten() {
-                            let child = f.child(child_info.name());
-                            eprintln!(
-                                "[delete_recursive] recursing into child={:?}",
-                                child.uri().to_string()
-                            );
-                            delete_recursive(&child)?;
-                        }
-                    }
-                }
-            }
+            delete_recursive(&child)?;
         }
     }
 
@@ -63,6 +53,5 @@ pub fn delete_recursive(f: &gio::File) -> Result<(), glib::Error> {
         res.as_ref().map(|_| "ok").unwrap_or("err"),
         uri
     );
-    res?;
-    Ok(())
+    res
 }
