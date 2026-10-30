@@ -1,11 +1,11 @@
-use crate::domain::model::{AppMsg, FluxApp};
-use crate::i18n::tr;
 use super::pages::header::{
     build_empty_trash_button, build_extract_archive_button, build_filter_toggle,
     build_git_menu_button, build_list_toggle, build_main_menu_button, build_preview_toggle,
     build_recents_button, build_sort_indicator, icon_row,
 };
 use super::pages::panels::{panel_revealer, PANEL_TRANSITION_MS};
+use crate::domain::model::{AppMsg, FluxApp};
+use crate::i18n::tr;
 use crate::ui::constants;
 use adw::gdk;
 use adw::prelude::*;

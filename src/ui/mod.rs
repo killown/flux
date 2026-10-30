@@ -17,7 +17,6 @@ pub mod clipboard;
 pub mod config_handlers;
 pub mod conflict_policy;
 pub mod dialog;
-pub mod navigation;
 pub mod search;
 pub mod sidebar_network;
 pub mod tabs;
