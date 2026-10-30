@@ -1,6 +1,6 @@
 //! Lazy thumbnails for the folder grid in the peek-preview panel.
 
-use crate::model::Config;
+use crate::domain::model::Config;
 use crate::ui::{FileItem, ThumbEvent, ThumbHook};
 use adw::prelude::*;
 use futures::channel::mpsc::{unbounded, UnboundedSender};

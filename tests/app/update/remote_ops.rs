@@ -1,5 +1,5 @@
+use flux::domain::model::Config;
 use flux::infra::network::NetworkBookmark;
-use flux::model::Config;
 
 #[test]
 fn test_add_network_bookmark_deduplication() {

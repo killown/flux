@@ -1,4 +1,4 @@
-use crate::model::FileLoadContext;
+use crate::domain::model::FileLoadContext;
 use parking_lot::RwLock;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;

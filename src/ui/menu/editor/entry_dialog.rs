@@ -1,7 +1,7 @@
 use super::builtin_dialog::show_builtin_dialog;
 use super::{Msg, Shared};
+use crate::domain::model::MenuEntry;
 use crate::i18n::tr;
-use crate::model::MenuEntry;
 use adw::prelude::*;
 use relm4::prelude::*;
 

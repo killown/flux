@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use relm4::prelude::*;
 
 mod history;
@@ -36,10 +36,10 @@ pub(super) fn handle(
         AppMsg::CycleByLetterReanchor => app.handle_cycle_by_letter_reanchor(sender),
         AppMsg::SyncPathEntry => {}
         AppMsg::ToggleLocationPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Location, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Location, sender)
         }
         AppMsg::ToggleConnectPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Connect, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Connect, sender)
         }
         AppMsg::JumpToRecent(rank) => {
             let target_index = if rank == 0 { 0 } else { rank - 1 };

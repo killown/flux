@@ -1,7 +1,7 @@
 //! Menu editor window, opened in-process via `open()` (F9 / app menu).
 
+use crate::domain::model::MenuEntry;
 use crate::i18n::tr;
-use crate::model::MenuEntry;
 use adw::prelude::*;
 use entry_dialog::show_dialog;
 use gtk::glib;

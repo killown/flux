@@ -1,5 +1,5 @@
-use flux::model::quick_groups::{NameError, QuickGroup, QuickGroups, DEFAULT_NAME};
-use flux::model::quick_list as ql;
+use flux::domain::model::quick_groups::{NameError, QuickGroup, QuickGroups, DEFAULT_NAME};
+use flux::domain::model::quick_list as ql;
 use std::path::{Path, PathBuf};
 
 fn p(s: &str) -> PathBuf {

@@ -3,7 +3,7 @@ use std::io::BufRead;
 use std::os::unix::ffi::OsStrExt;
 use std::path::PathBuf;
 
-pub use crate::model::WindowOptions;
+pub use crate::domain::model::WindowOptions;
 
 /// Every command-line option as `(flags, description)`, shared by `--help` and `docs/cli.md`.
 pub const CLI_OPTIONS: &[(&str, &str)] = &[

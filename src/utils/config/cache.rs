@@ -7,7 +7,7 @@ use std::sync::{Arc, OnceLock};
 use super::defaults::load_config_from_disk;
 use super::snapshots::{extract_icon_config, extract_thumb_config, ICON_CONFIG, THUMB_CONFIG};
 
-static CONFIG_CACHE: OnceLock<RwLock<Option<Arc<crate::model::Config>>>> = OnceLock::new();
+static CONFIG_CACHE: OnceLock<RwLock<Option<Arc<crate::domain::model::Config>>>> = OnceLock::new();
 
 /// Serializes `save_config`, so the cache and `config.toml` receive writes in the same order.
 static SAVE_LOCK: Mutex<()> = Mutex::new(());
@@ -21,7 +21,7 @@ static UNSAVED: AtomicBool = AtomicBool::new(false);
 static INVALIDATIONS: AtomicU64 = AtomicU64::new(0);
 
 #[inline]
-fn config_cache() -> &'static RwLock<Option<Arc<crate::model::Config>>> {
+fn config_cache() -> &'static RwLock<Option<Arc<crate::domain::model::Config>>> {
     CONFIG_CACHE.get_or_init(|| RwLock::new(None))
 }
 
@@ -34,7 +34,7 @@ fn write_atomic(path: &Path, contents: &str) -> std::io::Result<()> {
     result
 }
 
-pub fn save_config(config: &crate::model::Config) {
+pub fn save_config(config: &crate::domain::model::Config) {
     crate::hit!("save_config");
     // Skip the whole write when the incoming config is byte-identical to the
     // one already cached. Every settings toggle, watcher event and handler
@@ -86,7 +86,7 @@ pub fn invalidate_config_cache() {
 }
 
 /// Returns the cached config as a shared handle.
-pub fn config_snapshot() -> Arc<crate::model::Config> {
+pub fn config_snapshot() -> Arc<crate::domain::model::Config> {
     for _ in 0..3 {
         {
             let cache = config_cache().read();
@@ -111,7 +111,7 @@ pub fn config_snapshot() -> Arc<crate::model::Config> {
 }
 
 /// Returns an owned copy of the config.
-pub fn load_config() -> crate::model::Config {
+pub fn load_config() -> crate::domain::model::Config {
     crate::hit!("load_config");
     (*config_snapshot()).clone()
 }

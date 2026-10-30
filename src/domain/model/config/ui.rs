@@ -8,7 +8,7 @@ use crate::domain::model::defaults::{
     default_search_panel_width, default_tag_panel_width, default_thumbnail_size,
     default_thumbnail_threads, default_true, default_ui_scale,
 };
-use crate::model::{DeviceRename, SortBy, TerminalConfig, ThumbnailTypes};
+use crate::domain::model::{DeviceRename, SortBy, TerminalConfig, ThumbnailTypes};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -1,6 +1,6 @@
 use super::ENV_LOCK;
+use flux::domain::model::{CustomAction, MenuEntry};
 use flux::infra::mounts::get_system_mounts;
-use flux::model::{CustomAction, MenuEntry};
 use flux::utils::config::{ensure_config_file, load_menu_config, save_menu_config, split_mime_cmd};
 use std::env;
 use std::path::PathBuf;
@@ -44,7 +44,7 @@ fn test_get_system_mounts_structure() {
 fn test_config_invalid_toml() {
     let invalid_toml = "invalid = [unclosed bracket";
 
-    let result: Result<flux::model::Config, _> = toml::from_str(invalid_toml);
+    let result: Result<flux::domain::model::Config, _> = toml::from_str(invalid_toml);
     assert!(result.is_err());
 }
 
@@ -55,7 +55,7 @@ fn test_config_missing_fields() {
         sidebar_width = 300
     "#;
 
-    let config: flux::model::Config = toml::from_str(partial_toml).unwrap_or_default();
+    let config: flux::domain::model::Config = toml::from_str(partial_toml).unwrap_or_default();
 
     assert_eq!(config.ui.sidebar_width, 300);
     assert_eq!(config.ui.default_icon_size, 0);

@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::SidebarPlace;
 use crate::utils;
 use adw::gio;
@@ -163,7 +163,7 @@ impl FluxApp {
                 .unwrap_or_else(|| path_str.clone());
             self.config.sidebar.insert(
                 0,
-                crate::model::CustomPlace {
+                crate::domain::model::CustomPlace {
                     name,
                     kind: None,
                     icon: "folder-symbolic".to_string(),
@@ -181,7 +181,7 @@ impl FluxApp {
         let home = dirs::home_dir().unwrap_or_default();
         let home_str = home.to_string_lossy().to_string();
 
-        let resolve_key = |place: &crate::model::CustomPlace| -> String {
+        let resolve_key = |place: &crate::domain::model::CustomPlace| -> String {
             if place.kind.as_deref() == Some("label") {
                 format!("label:{}", place.name)
             } else if place.path.starts_with('~') {
@@ -251,7 +251,7 @@ impl FluxApp {
             .map(|n| n.to_string_lossy().into_owned())
             .unwrap_or_else(|| path_str.clone());
 
-        let new_entry = crate::model::CustomPlace {
+        let new_entry = crate::domain::model::CustomPlace {
             name,
             kind: None,
             icon: "folder-symbolic".to_string(),
@@ -342,7 +342,7 @@ impl FluxApp {
             // F8 while the terminal panel is open: close the panel and
             // restore the sidebar, rather than trying to toggle a sidebar
             // that was intentionally hidden.
-            if let Some(s) = crate::model::SENDER.get() {
+            if let Some(s) = crate::domain::model::SENDER.get() {
                 let _ = s.send(AppMsg::ToggleTerminalPanel);
             }
             return;

@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, Config};
 use crate::i18n::tr;
-use crate::model::{AppMsg, Config};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -23,18 +23,18 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     ]) {
                         set_valign: gtk::Align::Center,
                         set_selected: match config.ui.terminal.position {
-                            crate::model::TerminalPosition::Bottom => 0,
-                            crate::model::TerminalPosition::Sidebar => 1,
-                            crate::model::TerminalPosition::Fullscreen => 2,
+                            crate::domain::model::TerminalPosition::Bottom => 0,
+                            crate::domain::model::TerminalPosition::Sidebar => 1,
+                            crate::domain::model::TerminalPosition::Fullscreen => 2,
                         },
                         connect_selected_notify => move |drop| {
                             let pos = match drop.selected() {
-                                0 => crate::model::TerminalPosition::Bottom,
-                                1 => crate::model::TerminalPosition::Sidebar,
-                                2 => crate::model::TerminalPosition::Fullscreen,
+                                0 => crate::domain::model::TerminalPosition::Bottom,
+                                1 => crate::domain::model::TerminalPosition::Sidebar,
+                                2 => crate::domain::model::TerminalPosition::Fullscreen,
                                 _ => return,
                             };
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetTerminalPosition(pos));
                             }
                         }
@@ -50,7 +50,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         connect_changed => move |entry: &gtk::Entry| {
                             let val = entry.text().to_string();
                             let shell = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetTerminalShell(shell));
                             }
                         }
@@ -65,7 +65,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     )),
                     set_numeric: true,
                     connect_value_notify => move |spin| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetTerminalHeight(spin.value() as i32));
                         }
                     }
@@ -77,7 +77,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         set_text: &config.ui.terminal.font,
                         set_valign: gtk::Align::Center,
                         connect_changed => move |entry| {
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetTerminalFont(entry.text().to_string()));
                             }
                         }
@@ -90,7 +90,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         set_text: &config.ui.terminal.fg_color,
                         set_valign: gtk::Align::Center,
                         connect_changed => move |entry| {
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetTerminalFgColor(entry.text().to_string()));
                             }
                         }
@@ -103,7 +103,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         set_text: &config.ui.terminal.bg_color,
                         set_valign: gtk::Align::Center,
                         connect_changed => move |entry| {
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetTerminalBgColor(entry.text().to_string()));
                             }
                         }

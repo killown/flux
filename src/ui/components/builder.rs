@@ -1,6 +1,6 @@
 use super::file_item::{FileItem, ThumbHook};
+use crate::domain::model::CellLabels;
 use crate::infra::git::GitFileStatus;
-use crate::model::CellLabels;
 use adw::gdk;
 use std::cell::RefCell;
 use std::path::PathBuf;

@@ -16,7 +16,7 @@ use std::path::PathBuf;
 pub fn show_template_editor(
     parent: Option<&gtk::Window>,
     template_path: PathBuf,
-    sender: AsyncComponentSender<crate::model::FluxApp>,
+    sender: AsyncComponentSender<crate::domain::model::FluxApp>,
 ) {
     crate::hit!("show_template_editor");
     let dialog = adw::Dialog::builder()
@@ -110,7 +110,9 @@ pub fn show_template_editor(
             let text = buf.text(&start, &end, false).to_string();
             match std::fs::write(&path, text.as_bytes()) {
                 Ok(()) => {
-                    s.input(crate::model::AppMsg::ReloadActionsTemplate { path: path.clone() });
+                    s.input(crate::domain::model::AppMsg::ReloadActionsTemplate {
+                        path: path.clone(),
+                    });
                     d.close();
                 }
                 Err(e) => {

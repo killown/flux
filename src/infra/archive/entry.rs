@@ -1,7 +1,7 @@
 //! Archive entry model and conversion to grid load contexts.
 
+use crate::domain::model::FileLoadContext;
 use crate::infra::archive::build_archive_uri;
-use crate::model::FileLoadContext;
 use std::collections::HashMap;
 use std::path::Path;
 

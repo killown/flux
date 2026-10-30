@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::infra::db::StateManager;
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use gtk::glib;
 use relm4::prelude::*;

@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 
 impl FluxApp {
     /// Asynchronously lists a network location via GVFS and dispatches the result.

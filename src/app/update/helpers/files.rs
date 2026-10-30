@@ -1,8 +1,8 @@
 //! File actions: item activation, moves and clipboard export.
 
 use crate::app::update::file_ops::paste::{is_same_entry, paste_name_for};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::prelude::*;
 use gtk::gdk;

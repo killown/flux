@@ -1,14 +1,14 @@
 //! "Switch Branch" dialog for the git header menu: pick a local branch or create a new one.
 
+use crate::domain::model::AppMsg;
 use crate::i18n::tr;
-use crate::model::AppMsg;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::rc::Rc;
 
 pub fn show_switch_branch_dialog(
     parent: Option<&gtk::Window>,
-    sender: AsyncComponentSender<crate::model::FluxApp>,
+    sender: AsyncComponentSender<crate::domain::model::FluxApp>,
     current: Option<String>,
     branches: Vec<String>,
 ) {

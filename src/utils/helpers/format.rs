@@ -10,7 +10,7 @@ use std::path::Path;
 pub fn format_right_status(
     current_path: &Path,
     extension_filter: Option<&[String]>,
-    filter_mode: crate::model::FilterMode,
+    filter_mode: crate::domain::model::FilterMode,
     mime_filter: Option<(&str, usize)>,
 ) -> String {
     crate::hit!("format_right_status");
@@ -18,9 +18,9 @@ pub fn format_right_status(
 
     // Add filter mode indicator
     match filter_mode {
-        crate::model::FilterMode::OnlyFolders => parts.push(tr("[Folders Only]")),
-        crate::model::FilterMode::OnlyFiles => parts.push(tr("[Files Only]")),
-        crate::model::FilterMode::All => {}
+        crate::domain::model::FilterMode::OnlyFolders => parts.push(tr("[Folders Only]")),
+        crate::domain::model::FilterMode::OnlyFiles => parts.push(tr("[Files Only]")),
+        crate::domain::model::FilterMode::All => {}
     }
 
     if let Some((mime, count)) = mime_filter {

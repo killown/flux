@@ -1,7 +1,7 @@
+use crate::domain::model::{AppMsg, FileLoadContext, FluxApp};
 use crate::infra::git::{
     find_git_repo_root, query_git_status, query_git_status_paths, GitFileStatus, StatusFilter,
 };
-use crate::model::{AppMsg, FileLoadContext, FluxApp};
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;
 use std::collections::HashMap;
@@ -17,7 +17,7 @@ impl FluxApp {
         }
         self.active_diff_target = Some(path.clone());
         if !self.diff_panel_visible {
-            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+            self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
 
         let s_clone = sender.clone();
@@ -445,7 +445,7 @@ pub(super) fn handle(
             }
         }
         AppMsg::ToggleDiffPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender)
         }
         AppMsg::ShowFileDiff(path) => app.handle_show_file_diff(path, sender),
         AppMsg::DiffLoaded { path, diff } => {

@@ -1,7 +1,7 @@
 use super::super::draw::{cell_size, draw_terminal};
 use super::super::state::TerminalState;
 use super::super::Terminal;
-use crate::model::TerminalConfig;
+use crate::domain::model::TerminalConfig;
 use gtk::prelude::*;
 use gtk::DrawingArea;
 use std::cell::{Cell, RefCell};

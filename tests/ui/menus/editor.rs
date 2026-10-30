@@ -1,4 +1,4 @@
-use flux::model::MenuEntry;
+use flux::domain::model::MenuEntry;
 
 fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>)> {
     let input = input.trim();

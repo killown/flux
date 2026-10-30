@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, FluxApp, SortBy};
 use crate::utils;
 use relm4::prelude::*;
 
@@ -152,10 +152,10 @@ impl FluxApp {
         self.config.ui.current_folders_first.insert(key, new_val);
 
         let sort_col = match self.sort_by {
-            crate::model::SortBy::Name => "Name",
-            crate::model::SortBy::Date => "Date",
-            crate::model::SortBy::Size => "Size",
-            crate::model::SortBy::Type => "Type",
+            crate::domain::model::SortBy::Name => "Name",
+            crate::domain::model::SortBy::Date => "Date",
+            crate::domain::model::SortBy::Size => "Size",
+            crate::domain::model::SortBy::Type => "Type",
         };
 
         let _ = self.state_db.save_view(

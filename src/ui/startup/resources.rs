@@ -1,5 +1,5 @@
+use crate::domain::model::{Config, CustomAction, FluxApp};
 use crate::infra::db::StateManager;
-use crate::model::{Config, CustomAction, FluxApp};
 use crate::utils;
 use futures::try_join;
 

@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use crate::ui::inputs::util::find_flux_path_ancestor;
 use adw::gdk;

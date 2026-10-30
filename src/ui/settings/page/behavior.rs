@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, Config};
 use crate::i18n::tr;
-use crate::model::{AppMsg, Config};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -18,7 +18,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Open files with a single click instead of double click"),
                     set_active: config.ui.single_click,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetSingleClick(switch.is_active()));
                         }
                     }
@@ -28,7 +28,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Prevent moving or copying files via mouse drag"),
                     set_active: config.ui.disable_drag_and_drop,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetDisableDragAndDrop(switch.is_active()));
                         }
                     }
@@ -38,7 +38,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Color the border of folders that contain no items"),
                     set_active: config.ui.show_empty_dir_emblem,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetShowEmptyDirEmblem(switch.is_active()));
                         }
                     }
@@ -48,7 +48,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Color the border of symbolic links"),
                     set_active: config.ui.show_symlink_emblem,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetShowSymlinkEmblem(switch.is_active()));
                         }
                     }
@@ -58,7 +58,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Draw browsable archives like folders, select one to reveal the archive icon"),
                     set_active: config.ui.archives_as_folders,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetArchivesAsFolders(switch.is_active()));
                         }
                     }
@@ -68,7 +68,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Automatically open the diff panel when selecting a modified file"),
                     set_active: config.ui.auto_show_diff,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetAutoShowDiff(switch.is_active()));
                         }
                     }
@@ -78,7 +78,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Start with grid view (off) or list view (on)"),
                     set_active: config.default_list_mode,
                     connect_active_notify => move |_switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::ToggleListMode);
                         }
                     }
@@ -96,7 +96,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     )),
                     set_numeric: true,
                     connect_value_notify => move |spin| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetAutoListThreshold(spin.value() as usize));
                         }
                     }
@@ -112,20 +112,20 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     add_suffix = &gtk::DropDown::from_strings(&[&tr("Name"), &tr("Size"), &tr("Date"), &tr("Type")]) {
                         set_valign: gtk::Align::Center,
                         set_selected: match config.ui.default_sort {
-                            crate::model::SortBy::Name => 0,
-                            crate::model::SortBy::Size => 1,
-                            crate::model::SortBy::Date => 2,
-                            crate::model::SortBy::Type => 3,
+                            crate::domain::model::SortBy::Name => 0,
+                            crate::domain::model::SortBy::Size => 1,
+                            crate::domain::model::SortBy::Date => 2,
+                            crate::domain::model::SortBy::Type => 3,
                         },
                         connect_selected_notify => move |drop| {
                             let sort = match drop.selected() {
-                                0 => crate::model::SortBy::Name,
-                                1 => crate::model::SortBy::Size,
-                                2 => crate::model::SortBy::Date,
-                                3 => crate::model::SortBy::Type,
-                                _ => crate::model::SortBy::Name,
+                                0 => crate::domain::model::SortBy::Name,
+                                1 => crate::domain::model::SortBy::Size,
+                                2 => crate::domain::model::SortBy::Date,
+                                3 => crate::domain::model::SortBy::Type,
+                                _ => crate::domain::model::SortBy::Name,
                             };
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetDefaultSort(sort));
                             }
                         }
@@ -142,7 +142,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         },
                         connect_selected_notify => move |drop| {
                             let asc = matches!(drop.selected(), 0);
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetAsc(asc));
                             }
                         }
@@ -167,7 +167,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                                 .map(|s| s.trim().trim_start_matches('.').to_lowercase())
                                 .filter(|s| !s.is_empty())
                                 .collect::<Vec<String>>();
-                            if let Some(s) = crate::model::SENDER.get() {
+                            if let Some(s) = crate::domain::model::SENDER.get() {
                                 let _ = s.send(AppMsg::SetHiddenExtensions(exts));
                             }
                         }
@@ -178,7 +178,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Display folders before files"),
                     set_active: config.ui.folders_first,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetFoldersFirst(switch.is_active()));
                         }
                     }
@@ -188,7 +188,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_subtitle: &tr("Display files and folders starting with a dot"),
                     set_active: config.ui.show_hidden_by_default,
                     connect_active_notify => move |switch| {
-                        if let Some(s) = crate::model::SENDER.get() {
+                        if let Some(s) = crate::domain::model::SENDER.get() {
                             let _ = s.send(AppMsg::SetShowHidden(switch.is_active()));
                         }
                     }

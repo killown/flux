@@ -1,4 +1,4 @@
-use flux::model::{Config, CustomPlace};
+use flux::domain::model::{Config, CustomPlace};
 
 fn create_mock_config() -> Config {
     let mut config = Config::default();

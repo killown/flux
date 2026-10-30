@@ -1,4 +1,4 @@
-use flux::model::{
+use flux::domain::model::{
     Config, CustomPlace, DeviceRename, MenuEntry, ShortcutsConfig, SortBy, ThumbnailTypes, UIConfig,
 };
 use std::collections::HashMap;

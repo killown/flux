@@ -14,7 +14,6 @@ mod domain;
 mod i18n;
 mod infra;
 mod ipc;
-mod model;
 mod shell_functions;
 mod ui;
 mod utils;

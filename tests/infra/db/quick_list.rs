@@ -1,5 +1,5 @@
+use flux::domain::model::quick_list as ql;
 use flux::infra::db::StateManager;
-use flux::model::quick_list as ql;
 use std::ffi::OsString;
 use std::os::unix::ffi::OsStringExt;
 use std::path::{Path, PathBuf};

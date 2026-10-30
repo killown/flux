@@ -1,6 +1,6 @@
 use super::{group, page, row};
+use crate::domain::model::Config;
 use crate::i18n::tr;
-use crate::model::Config;
 use crate::ui::help::format::sc;
 
 pub fn build(config: &Config) -> adw::PreferencesPage {

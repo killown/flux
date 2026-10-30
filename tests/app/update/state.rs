@@ -1,4 +1,4 @@
-use flux::model::{CustomPlace, SortBy, UIConfig};
+use flux::domain::model::{CustomPlace, SortBy, UIConfig};
 use std::env;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};

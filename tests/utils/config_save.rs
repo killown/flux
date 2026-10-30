@@ -10,7 +10,7 @@ fn save_config_creates_the_missing_directory_and_round_trips() {
     std::env::set_var("HOME", sandbox.path());
     std::env::set_var("XDG_CONFIG_HOME", sandbox.path().join("missing"));
 
-    let mut config = flux::model::Config::default();
+    let mut config = flux::domain::model::Config::default();
     config.ui.theme = Some("roundtrip-theme".to_string());
     save_config(&config);
 

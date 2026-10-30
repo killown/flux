@@ -2,8 +2,8 @@
 //!
 //! Shows a tabbed Libadwaita window with one tab per active file operation.
 
+use crate::domain::model::AppMsg;
 use crate::infra::tasks::TaskQueue;
-use crate::model::AppMsg;
 use adw::prelude::*;
 use gtk::glib;
 use gtk::pango;

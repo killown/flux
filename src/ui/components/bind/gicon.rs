@@ -94,7 +94,8 @@ pub(super) fn paintable_for_gicon(
     let fallback = lookup_theme_icon(item, root, icon);
 
     let decode_guard = crate::utils::icon::begin_file_icon_decode(&path);
-    if let (Some(sender), Some(decode_guard)) = (crate::model::SENDER.get().cloned(), decode_guard)
+    if let (Some(sender), Some(decode_guard)) =
+        (crate::domain::model::SENDER.get().cloned(), decode_guard)
     {
         let path_clone = path.clone();
         let thumbnail_manager = item.thumbnail_manager.clone();
@@ -105,7 +106,7 @@ pub(super) fn paintable_for_gicon(
                 return;
             };
             if let Some(pixbuf) = crate::utils::media::decode_to_pixbuf(&path_clone, 256) {
-                let _ = sender.send(crate::model::AppMsg::FileIconTextureReady {
+                let _ = sender.send(crate::domain::model::AppMsg::FileIconTextureReady {
                     path: path_clone,
                     texture: gdk::Texture::for_pixbuf(&pixbuf),
                 });

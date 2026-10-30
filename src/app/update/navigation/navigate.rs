@@ -1,5 +1,5 @@
-use crate::model::AltCycle;
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::AltCycle;
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use gtk::glib;
 use gtk::prelude::*;
@@ -37,7 +37,7 @@ impl FluxApp {
         }
 
         if self.diff_panel_visible {
-            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+            self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
 
         let was_in_archive = self

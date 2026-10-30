@@ -1,6 +1,6 @@
 use super::transfer::{archive_inner_path, remove_cut_source, resolve_gio_files, scan_total_bytes};
 use super::{DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::gio::prelude::*;
 use gtk::gio;

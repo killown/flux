@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use relm4::prelude::*;
 
 mod archive;
@@ -78,7 +78,7 @@ pub(super) fn handle(
         AppMsg::PromptNewFile => app.show_prompt_new_file(sender),
         AppMsg::OpenFileProperties(path) => app.handle_open_file_properties(path, sender),
         AppMsg::ToggleFilePropertiesPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Properties, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Properties, sender)
         }
         AppMsg::FilePropertiesReady {
             session,

@@ -1,4 +1,4 @@
-use crate::model::MenuEntry;
+use crate::domain::model::MenuEntry;
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;

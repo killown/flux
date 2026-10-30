@@ -1,6 +1,6 @@
 use super::component::FluxAppWidgets;
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use adw::gdk;
 use adw::prelude::*;
 use gtk::gio;

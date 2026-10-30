@@ -1,10 +1,10 @@
 use super::forbidden::forbidden_matcher;
 use super::types::{AdvancedSearchParams, ExtensionMatch};
 use crate::app::update::file_ops::paste::NEXT_TASK_ID;
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::infra::constants::{
     SEARCH_BATCH_SIZE as BATCH_SIZE, SEARCH_FLUSH_INTERVAL_MS as FLUSH_INTERVAL_MS,
 };
-use crate::model::{AppMsg, FluxApp};
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use regex::bytes::{RegexSet, RegexSetBuilder};

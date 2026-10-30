@@ -1,4 +1,4 @@
-use crate::model::PathSegment;
+use crate::domain::model::PathSegment;
 use crate::ui::constants;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -45,8 +45,8 @@ impl FactoryComponent for PathSegment {
                 set_button: 2, // constants::MOUSE_MIDDLE
                 connect_pressed[path = self.path.clone()] => move |gesture, _, _, _| {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                    if let Some(s) = crate::model::SENDER.get() {
-                        let _ = s.send(crate::model::AppMsg::AddExclusive(Some(path.clone())));
+                    if let Some(s) = crate::domain::model::SENDER.get() {
+                        let _ = s.send(crate::domain::model::AppMsg::AddExclusive(Some(path.clone())));
                     }
                 }
             }

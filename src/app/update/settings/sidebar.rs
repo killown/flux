@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -57,7 +57,7 @@ impl FluxApp {
             } else {
                 self.config.ui.device_renames.insert(
                     path_str.clone(),
-                    crate::model::DeviceRename {
+                    crate::domain::model::DeviceRename {
                         name: new_name.clone(),
                         icon: None,
                     },
@@ -90,7 +90,7 @@ impl FluxApp {
         if title.is_empty() {
             return;
         }
-        self.config.sidebar.push(crate::model::CustomPlace {
+        self.config.sidebar.push(crate::domain::model::CustomPlace {
             name: title,
             kind: Some("label".to_string()),
             icon: String::new(),
@@ -115,7 +115,7 @@ impl FluxApp {
     pub fn handle_add_tag_to_sidebar(&mut self, tag: String) {
         crate::hit!("handle_add_tag_to_sidebar");
         let uri = format!("tags://{}", tag.trim_start_matches('#'));
-        self.config.sidebar.push(crate::model::CustomPlace {
+        self.config.sidebar.push(crate::domain::model::CustomPlace {
             name: format!("# {}", tag.trim_start_matches('#')),
             kind: None,
             icon: "tag-symbolic".to_string(),
@@ -139,7 +139,7 @@ impl FluxApp {
             sender.input(AppMsg::ShowToast(crate::i18n::tr("Already in sidebar")));
             return;
         }
-        self.config.sidebar.push(crate::model::CustomPlace {
+        self.config.sidebar.push(crate::domain::model::CustomPlace {
             name,
             kind: None,
             icon,

@@ -1,4 +1,4 @@
-use flux::model::{Config, UIConfig};
+use flux::domain::model::{Config, UIConfig};
 use std::path::PathBuf;
 
 #[test]
@@ -43,7 +43,7 @@ fn test_file_icon_override_insertion_and_removal() {
 
 #[test]
 fn test_rename_sidebar_device_in_config() {
-    use flux::model::{Config, DeviceRename};
+    use flux::domain::model::{Config, DeviceRename};
     use std::collections::HashMap;
     use std::path::PathBuf;
 

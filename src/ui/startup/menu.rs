@@ -1,5 +1,5 @@
+use crate::domain::model::FluxApp;
 use crate::i18n::tr;
-use crate::model::FluxApp;
 use adw::prelude::*;
 use gtk::glib;
 

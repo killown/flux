@@ -2,7 +2,7 @@
 
 use super::palette::default_ansi_palette;
 use super::Terminal;
-use crate::model::TerminalConfig;
+use crate::domain::model::TerminalConfig;
 use adw;
 use gtk::prelude::*;
 

@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
 use adw::gio::prelude::*;
@@ -358,7 +358,7 @@ impl FluxApp {
                         |s, target, toast| {
                             s.input(AppMsg::SetFluxBackground {
                                 target,
-                                slot: crate::model::BackgroundSlot::Window,
+                                slot: crate::domain::model::BackgroundSlot::Window,
                             });
                             emit_toast(s, toast);
                         },
@@ -372,7 +372,7 @@ impl FluxApp {
                         |s, target, toast| {
                             s.input(AppMsg::SetFluxBackground {
                                 target,
-                                slot: crate::model::BackgroundSlot::SidebarLeft,
+                                slot: crate::domain::model::BackgroundSlot::SidebarLeft,
                             });
                             emit_toast(s, toast);
                         },
@@ -386,7 +386,7 @@ impl FluxApp {
                         |s, target, toast| {
                             s.input(AppMsg::SetFluxBackground {
                                 target,
-                                slot: crate::model::BackgroundSlot::SidebarRight,
+                                slot: crate::domain::model::BackgroundSlot::SidebarRight,
                             });
                             emit_toast(s, toast);
                         },

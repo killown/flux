@@ -21,9 +21,9 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
+use crate::domain::model::quick_groups::{GroupView, QuickGroups};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::quick_groups::{GroupView, QuickGroups};
-use crate::model::{AppMsg, FluxApp};
 use crate::utils::search::fuzzy_match_compiled;
 use adw::prelude::*;
 use gtk::{gio, glib};

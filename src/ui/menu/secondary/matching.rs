@@ -1,6 +1,6 @@
 //! MIME matching shared by the right-click popover and the Contextual Actions panel.
 
-use crate::model::CustomAction;
+use crate::domain::model::CustomAction;
 use crate::ui::constants;
 use gtk::gio;
 

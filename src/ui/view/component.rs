@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
 use adw::prelude::*;
@@ -57,7 +57,7 @@ impl FluxApp {
 
 #[relm4::component(pub, async)]
 impl SimpleAsyncComponent for FluxApp {
-    type Init = crate::model::AppInit;
+    type Init = crate::domain::model::AppInit;
     type Input = AppMsg;
     type Output = ();
 
@@ -1048,7 +1048,7 @@ impl SimpleAsyncComponent for FluxApp {
         root: Self::Root,
         sender: AsyncComponentSender<Self>,
     ) -> AsyncComponentParts<Self> {
-        let crate::model::AppInit {
+        let crate::domain::model::AppInit {
             start_path,
             open_archive,
             quick_list,
@@ -1091,7 +1091,7 @@ impl SimpleAsyncComponent for FluxApp {
         if preview {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(crate::model::AppMsg::StartupPreview);
+                s.input(crate::domain::model::AppMsg::StartupPreview);
             });
         }
 
@@ -1100,7 +1100,7 @@ impl SimpleAsyncComponent for FluxApp {
         if quick_list_from_cli {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(crate::model::AppMsg::ToggleQuickListPanel);
+                s.input(crate::domain::model::AppMsg::ToggleQuickListPanel);
             });
         }
 

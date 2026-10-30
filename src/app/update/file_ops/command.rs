@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use crate::utils::helpers::shell::{expand_template, shell_safe, Placeholder};
 use adw::gio::prelude::*;

@@ -1,7 +1,7 @@
 use super::icons::get_custom_extension_icon_path;
 use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
-use crate::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
 use crate::utils::media::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
@@ -308,7 +308,7 @@ impl FluxApp {
             // reads this instead of calling `glib::DateTime::now_local()`
             // per item, which would be O(N) `localtime_r` syscalls on large
             // directories.
-            crate::model::set_now_unix(
+            crate::domain::model::set_now_unix(
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map(|d| d.as_secs() as i64)
@@ -414,10 +414,10 @@ impl FluxApp {
                         }
 
                         // Apply Folder/File filter
-                        if filter_mode == crate::model::FilterMode::OnlyFolders && !is_dir {
+                        if filter_mode == crate::domain::model::FilterMode::OnlyFolders && !is_dir {
                             return None;
                         }
-                        if filter_mode == crate::model::FilterMode::OnlyFiles && is_dir {
+                        if filter_mode == crate::domain::model::FilterMode::OnlyFiles && is_dir {
                             return None;
                         }
 

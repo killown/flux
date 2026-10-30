@@ -1,5 +1,5 @@
+use crate::domain::model::FluxApp;
 use crate::i18n::tr;
-use crate::model::FluxApp;
 use crate::ui::constants;
 use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
@@ -319,8 +319,8 @@ impl FactoryComponent for SidebarPlace {
                         std::time::Duration::from_millis(constants::SIDEBAR_AUTONAV_DELAY_MS),
                         move || {
                             ROW_DND_TIMERS.with(|t| t.borrow_mut().navigate = None);
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(crate::model::AppMsg::Navigate(nav_path.clone()));
+                            if let Some(s) = crate::domain::model::SENDER.get() {
+                                let _ = s.send(crate::domain::model::AppMsg::Navigate(nav_path.clone()));
                             }
                         },
                     );
@@ -421,8 +421,8 @@ impl FactoryComponent for SidebarPlace {
                         set_visible: self.is_mount,
                         add_css_class: "eject-button",
                         connect_clicked[path = self.path.clone()] => move |_| {
-                            if let Some(s) = crate::model::SENDER.get() {
-                                let _ = s.send(crate::model::AppMsg::UnmountDevice(path.clone()));
+                            if let Some(s) = crate::domain::model::SENDER.get() {
+                                let _ = s.send(crate::domain::model::AppMsg::UnmountDevice(path.clone()));
                             }
                         }
                     }

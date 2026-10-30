@@ -2,14 +2,14 @@
 //! starting with it, cycling on repeats. It is the `Ctrl+Alt+<letter>` cycle
 //! (`handle_cycle_by_letter`) without the chord.
 //!
-//! The state is [`crate::model::NavigateMode`] on `FluxApp`. The mode is
+//! The state is [`crate::domain::model::NavigateMode`] on `FluxApp`. The mode is
 //! entered and left by a chord (or Esc) and never auto-entered by focus.
 //! Text entries and the terminal are filtered out before a key becomes
 //! `AppMsg::KeyChar` / `KeyBackspace` / `KeyEscape`, so typing into the search
 //! panel, rename entry, location panel or terminal is unaffected.
 
+use crate::domain::model::{AppMsg, FluxApp, NavigateMode};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp, NavigateMode};
 use crate::ui::constants;
 use gtk::glib;
 use gtk::prelude::*;

@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use adw::prelude::*;
 use gtk::glib;
@@ -27,7 +27,7 @@ impl FluxApp {
         crate::hit!("init_components");
 
         // Static and Global Configuration
-        let _ = crate::model::SENDER.set(sender.input_sender().clone());
+        let _ = crate::domain::model::SENDER.set(sender.input_sender().clone());
         {
             crate::hit!("init_components:css");
             relm4::set_global_css(include_str!("../style.css"));
@@ -201,7 +201,7 @@ impl FluxApp {
             _volume_monitor: volume_monitor,
             filter: String::new(),
             extension_filter: None,
-            filter_mode: crate::model::FilterMode::All,
+            filter_mode: crate::domain::model::FilterMode::All,
             is_list_mode: config.default_list_mode,
             header_view: constants::VIEW_PATH.to_string(),
             recent_stack: std::collections::VecDeque::with_capacity(

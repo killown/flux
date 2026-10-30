@@ -1,6 +1,6 @@
 use super::{MenuEditor, Msg, Shared};
+use crate::domain::model::MenuEntry;
 use crate::i18n::tr;
-use crate::model::MenuEntry;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;

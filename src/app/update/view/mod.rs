@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use relm4::prelude::*;
 
@@ -78,9 +78,15 @@ pub(super) fn handle(
         AppMsg::PreviewPrefetched { .. } => {}
         AppMsg::CycleFilterMode => {
             app.filter_mode = match app.filter_mode {
-                crate::model::FilterMode::All => crate::model::FilterMode::OnlyFolders,
-                crate::model::FilterMode::OnlyFolders => crate::model::FilterMode::OnlyFiles,
-                crate::model::FilterMode::OnlyFiles => crate::model::FilterMode::All,
+                crate::domain::model::FilterMode::All => {
+                    crate::domain::model::FilterMode::OnlyFolders
+                }
+                crate::domain::model::FilterMode::OnlyFolders => {
+                    crate::domain::model::FilterMode::OnlyFiles
+                }
+                crate::domain::model::FilterMode::OnlyFiles => {
+                    crate::domain::model::FilterMode::All
+                }
             };
             sender.input(AppMsg::Refresh);
         }

@@ -1,6 +1,6 @@
 //! Selection queries that map the visual grid selection back to paths.
 
-use crate::model::FluxApp;
+use crate::domain::model::FluxApp;
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;

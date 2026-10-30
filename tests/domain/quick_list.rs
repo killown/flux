@@ -1,4 +1,4 @@
-use flux::model::quick_list::{self as ql, QuickKey, Step};
+use flux::domain::model::quick_list::{self as ql, QuickKey, Step};
 use gtk::gdk::Key;
 use std::path::{Path, PathBuf};
 

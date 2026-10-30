@@ -1,5 +1,5 @@
 use flux::app::update::file_ops::{build_execution_command, should_track_in_transfer_dialog};
-use flux::model::CustomAction;
+use flux::domain::model::CustomAction;
 use std::path::PathBuf;
 
 #[test]

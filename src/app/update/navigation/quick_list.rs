@@ -1,7 +1,7 @@
+use crate::domain::model::quick_groups::{NameError, QuickGroups};
+use crate::domain::model::quick_list;
+use crate::domain::model::{AppMsg, FluxApp, RightPanelType};
 use crate::i18n::tr;
-use crate::model::quick_groups::{NameError, QuickGroups};
-use crate::model::quick_list;
-use crate::model::{AppMsg, FluxApp, RightPanelType};
 use gtk::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;

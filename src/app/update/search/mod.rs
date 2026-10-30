@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use relm4::prelude::*;
 
 mod content;
@@ -77,13 +77,13 @@ pub(super) fn handle(
         AppMsg::SetFileTags { path, tags } => app.handle_set_file_tags(path, tags, sender),
         AppMsg::DeleteTagGlobally(tag) => app.handle_delete_tag_globally(tag, sender),
         AppMsg::ToggleTagPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Tag, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Tag, sender)
         }
         AppMsg::ToggleSearchPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Search, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Search, sender)
         }
         AppMsg::ToggleActionsPanel => {
-            app.toggle_sidebar_right_panel(crate::model::RightPanelType::Actions, sender)
+            app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Actions, sender)
         }
         other => return Err(other),
     }

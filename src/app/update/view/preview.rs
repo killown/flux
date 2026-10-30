@@ -7,7 +7,7 @@
 //! drawer.
 
 use super::text_encoding;
-use crate::model::{AppMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, FluxApp, RightPanelType};
 use crate::ui::panels::preview::{
     binary, markdown, office, registry, syntax, table, FileInfo, FolderEntry, PreviewContent,
 };
@@ -446,7 +446,7 @@ impl FluxApp {
         }
 
         let session_arc = self.preview_session.clone();
-        let sender = crate::model::SENDER.get().cloned();
+        let sender = crate::domain::model::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
                 return;

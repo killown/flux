@@ -1,4 +1,4 @@
-use flux::model::PathSegment;
+use flux::domain::model::PathSegment;
 use flux::ui::SidebarPlace;
 use std::path::PathBuf;
 
@@ -62,7 +62,7 @@ fn test_sidebar_place_section_label() {
 
 #[test]
 fn test_file_item_preserves_foreign_owner_flag() {
-    use flux::model::FileLoadContext;
+    use flux::domain::model::FileLoadContext;
     use flux::ui::FileItem;
     use std::path::PathBuf;
 

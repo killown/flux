@@ -1,6 +1,6 @@
 use super::constants;
 use super::parse::parse_trigger_opt;
-use crate::model::ShortcutsConfig;
+use crate::domain::model::ShortcutsConfig;
 
 /// A collection of resolved GTK `ShortcutTrigger`s.
 ///

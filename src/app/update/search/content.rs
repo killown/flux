@@ -1,4 +1,4 @@
-use crate::model::FluxApp;
+use crate::domain::model::FluxApp;
 use crate::utils;
 use gtk::glib;
 use gtk::prelude::*;

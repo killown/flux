@@ -1,5 +1,5 @@
+use crate::domain::model::Config;
 use crate::i18n::tr;
-use crate::model::Config;
 
 /// Convert a config shortcut string (e.g. `<Primary>F7`) into a human-readable
 /// keycap label (e.g. `Ctrl + F7`). Falls back to `default` when the config
@@ -64,7 +64,7 @@ fn format_key(key: &str) -> String {
 /// Convenience: format a shortcut field off a `Config`.
 pub fn sc(
     config: &Config,
-    field: impl Fn(&crate::model::ShortcutsConfig) -> Option<String>,
+    field: impl Fn(&crate::domain::model::ShortcutsConfig) -> Option<String>,
     default: &str,
 ) -> String {
     format_shortcut(field(&config.shortcuts), default)

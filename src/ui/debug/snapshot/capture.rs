@@ -6,7 +6,7 @@ use super::super::procfs::{
 };
 use super::super::smaps::{read_detailed_smaps, SmapsRegion};
 use super::model::*;
-use crate::model::FluxApp;
+use crate::domain::model::FluxApp;
 use std::rc::Rc;
 
 impl DebugSnapshot {
@@ -119,7 +119,7 @@ impl DebugSnapshot {
                                 .map(|p| p.as_os_str().len())
                                 .unwrap_or(0)
                             + ctx.custom_icon.as_ref().map(|s| s.len()).unwrap_or(0)
-                            + std::mem::size_of::<crate::model::FileLoadContext>()
+                            + std::mem::size_of::<crate::domain::model::FileLoadContext>()
                     })
                     .sum();
 

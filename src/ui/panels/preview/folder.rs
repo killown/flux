@@ -4,7 +4,7 @@
 use super::content::FolderEntry;
 use super::handle::PreviewPanelHandle;
 use super::registry;
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::FileItem;
 use adw::prelude::*;
 use relm4::typed_view::grid::TypedGridView;
@@ -29,7 +29,7 @@ const FOLDER_CHUNK_BUDGET: Duration = Duration::from_millis(6);
 struct FolderFill {
     icon_size: i32,
     entries: Vec<FolderEntry>,
-    cfg: crate::model::Config,
+    cfg: crate::domain::model::Config,
     hook: Option<crate::ui::ThumbHook>,
     next: Cell<usize>,
 }

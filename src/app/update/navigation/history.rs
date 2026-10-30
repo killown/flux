@@ -1,4 +1,4 @@
-use crate::model::FluxApp;
+use crate::domain::model::FluxApp;
 use crate::ui::constants;
 use gtk::prelude::*;
 use relm4::prelude::*;
@@ -10,7 +10,7 @@ impl FluxApp {
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
         if self.diff_panel_visible {
-            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+            self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
         if let Some(prev) = self.history.pop() {
             self.forward_stack.push(self.current_path.clone());
@@ -54,7 +54,7 @@ impl FluxApp {
         self.reset_from_content_search();
         self.last_search_was_advanced = false;
         if self.diff_panel_visible {
-            self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+            self.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender);
         }
         while let Some(next) = self.forward_stack.pop() {
             let s = next.to_string_lossy();

@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::FileItem;
 use crate::utils;
 use adw::gio::prelude::*;

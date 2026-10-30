@@ -1,4 +1,4 @@
-use crate::model::SortBy;
+use crate::domain::model::SortBy;
 use crate::ui::FileItem;
 use gtk::prelude::*;
 use relm4::typed_view::grid::TypedGridView;

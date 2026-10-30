@@ -15,7 +15,6 @@ pub mod infra;
 pub mod ipc;
 pub use crate::utils::hwga;
 pub mod i18n;
-pub mod model;
 pub mod shell_functions;
 pub mod ui;
 pub mod utils;
@@ -27,7 +26,7 @@ pub mod _doc_gen {
         pub use crate::doc_cli::render_cli_markdown;
     }
     pub mod config {
-        pub use crate::model::render_config_markdown;
+        pub use crate::domain::model::render_config_markdown;
     }
     pub mod css_variables {
         pub use crate::ui::render_css_variables_markdown;

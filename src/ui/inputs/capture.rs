@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::glib;
@@ -246,14 +246,14 @@ pub fn setup_capture(
         // Every Quick List chord is claimed here, and only here. While the
         // terminal has focus `dispatch_key` returns `None`, so Tab, Insert,
         // Ctrl+End, Ctrl+PageUp/Down and Ctrl+1..9 all reach the shell.
-        if let Some(chord) = crate::model::quick_list::dispatch_key(
+        if let Some(chord) = crate::domain::model::quick_list::dispatch_key(
             keyval,
             is_ctrl,
             is_shift,
             is_alt,
             terminal_focused,
         ) {
-            use crate::model::quick_list::QuickKey;
+            use crate::domain::model::quick_list::QuickKey;
             match chord {
                 QuickKey::AddCurrent => sender.input(AppMsg::AddCurrentFolderExclusive),
                 QuickKey::Clear => sender.input(AppMsg::ClearExclusive),

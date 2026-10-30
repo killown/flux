@@ -1,4 +1,4 @@
-use crate::model::{BackgroundSlot, ConflictResolver, FileLoadContext, SortBy};
+use crate::domain::model::{BackgroundSlot, ConflictResolver, FileLoadContext, SortBy};
 use crate::ui::conflict_policy::ConflictContext;
 use gtk::gdk;
 use std::path::PathBuf;
@@ -58,7 +58,7 @@ pub enum AppMsg {
     ToggleTerminalFullscreen,
     /// Sets the terminal position (Bottom / Sidebar / Fullscreen) and persists it.
     /// Emitted by the Settings dropdown.
-    SetTerminalPosition(crate::model::TerminalPosition),
+    SetTerminalPosition(crate::domain::model::TerminalPosition),
     /// Toggles the visibility of the right-side terminal panel.
     ToggleTerminalPanel,
     /// Reload the contextual-actions panel after its template file was
@@ -196,7 +196,7 @@ pub enum AppMsg {
     ActionsPanelReady {
         session: u64,
         mime: String,
-        actions: Vec<crate::model::CustomAction>,
+        actions: Vec<crate::domain::model::CustomAction>,
         template_path: Option<PathBuf>,
     },
     /// Activates the spinner after the debounce timeout if the session is still current.
@@ -445,7 +445,7 @@ pub enum AppMsg {
         y: f64,
         path: Option<PathBuf>,
         mime: String,
-        actions: Vec<crate::model::CustomAction>,
+        actions: Vec<crate::domain::model::CustomAction>,
     },
 
     /// Toggle the `no_command_dialog` flag for a specific menu action by its action name.
@@ -556,7 +556,7 @@ pub enum AppMsg {
     /// the GTK main thread can populate the grid without touching GIO directly.
     NetworkLoaded {
         uri: String,
-        contexts: Vec<crate::model::FileLoadContext>,
+        contexts: Vec<crate::domain::model::FileLoadContext>,
     },
     /// Carries the result of an async, off-thread folder enumeration back to
     /// the main loop so the grid can be populated without blocking the GTK thread.

@@ -1,6 +1,6 @@
 use super::file_item::FileItem;
 use super::widgets::FileWidgets;
-use crate::model::FluxApp;
+use crate::domain::model::FluxApp;
 use crate::ui::constants;
 use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
@@ -264,7 +264,7 @@ impl FileItem {
 
         drop_target.connect_drop(|target, value, _, _| {
             let widget = target.widget().unwrap();
-            let sender = crate::model::SENDER.get();
+            let sender = crate::domain::model::SENDER.get();
 
             let dest_path_opt: Option<PathBuf> = unsafe {
                 widget
@@ -289,7 +289,7 @@ impl FileItem {
 
             if let (Some(dest), Some(s)) = (dest_path_opt, sender) {
                 if !source_paths.is_empty() {
-                    s.send(crate::model::AppMsg::HandleDrop {
+                    s.send(crate::domain::model::AppMsg::HandleDrop {
                         source_paths,
                         dest_path: dest,
                     })
@@ -534,7 +534,7 @@ impl FileItem {
 
                     add_controller = gtk::GestureLongPress {
                         // Only claim or handle long press on touch input, preventing mouse drag conflicts
-                        connect_pressed[sender = crate::model::SENDER.clone()] => move |gesture, x, y| {
+                        connect_pressed[sender = crate::domain::model::SENDER.clone()] => move |gesture, x, y| {
                             if let Some(event) = gesture.current_event() {
                                 // Reject any event originating from a mouse button press
                                 if let Some(btn_event) = event.downcast_ref::<gdk::ButtonEvent>() {
@@ -567,7 +567,7 @@ impl FileItem {
                                 if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                     let (rel_x, rel_y) = crate::utils::helpers::translate_point(&widget, &popover_parent, x, y).unwrap_or((x, y));
                                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                                    s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                    s.send(crate::domain::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                 }
                             }
                         }
@@ -580,7 +580,7 @@ impl FileItem {
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
                             }
                         },
-                        connect_released[sender = crate::model::SENDER.clone()] => move |gesture, _, x, y| {
+                        connect_released[sender = crate::domain::model::SENDER.clone()] => move |gesture, _, x, y| {
                             if gesture.current_button() == MOUSE_RIGHT_CLICK {
                                 if let Some(s) = sender.get() {
                                     let widget = gesture.widget().unwrap();
@@ -592,7 +592,7 @@ impl FileItem {
 
                                     if let Some(popover_parent) = widget.ancestor(gtk::GridView::static_type()) {
                                         let (rel_x, rel_y) = crate::utils::helpers::translate_point(&widget, &popover_parent, x, y).unwrap_or((x, y));
-                                        s.send(crate::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
+                                        s.send(crate::domain::model::AppMsg::PrepareContextMenu(rel_x, rel_y, path_opt)).ok();
                                     }
                                 }
                             }

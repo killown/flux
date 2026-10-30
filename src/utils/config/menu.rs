@@ -1,5 +1,5 @@
+use crate::domain::model::{CustomAction, MenuEntry};
 use crate::i18n::tr;
-use crate::model::{CustomAction, MenuEntry};
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;

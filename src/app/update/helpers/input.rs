@@ -1,6 +1,6 @@
 //! Keyboard, mouse and action wiring for the main window.
 
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;

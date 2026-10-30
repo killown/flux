@@ -1,6 +1,6 @@
 //! Session-only "is this archive locked?" hint for grid cards.
 
-use crate::model::FileLoadContext;
+use crate::domain::model::FileLoadContext;
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::io::{Read, Seek, SeekFrom};

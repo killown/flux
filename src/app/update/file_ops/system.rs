@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::utils::path::PathExt;
 use adw::gio::prelude::*;
 use gtk::gio;

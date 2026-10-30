@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -228,7 +228,7 @@ impl FluxApp {
 
                                         config.ui.device_renames.insert(
                                             path_str,
-                                            crate::model::DeviceRename {
+                                            crate::domain::model::DeviceRename {
                                                 name: display_name,
                                                 icon: Some(name.to_string()),
                                             },

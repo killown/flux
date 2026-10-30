@@ -101,8 +101,8 @@ fn handle_goto(dir: &Path) {
     if !path.is_dir() {
         return;
     }
-    if let Some(sender) = crate::model::SENDER.get() {
-        let _ = sender.send(crate::model::AppMsg::Navigate(path));
+    if let Some(sender) = crate::domain::model::SENDER.get() {
+        let _ = sender.send(crate::domain::model::AppMsg::Navigate(path));
     }
     if let Some(app) =
         gio::Application::default().and_then(|a| a.downcast::<gtk::Application>().ok())

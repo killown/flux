@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, Config, FluxApp};
+use crate::domain::model::{AppMsg, Config, FluxApp};
 use crate::ui::SidebarPlace;
 use adw::prelude::*;
 use gtk::gio;

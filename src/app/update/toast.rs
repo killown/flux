@@ -1,4 +1,4 @@
-use crate::model::FluxApp;
+use crate::domain::model::FluxApp;
 use adw::prelude::*;
 use relm4::prelude::*;
 

@@ -5,8 +5,8 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::rc::Rc;
 
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 
 /// Constructs and presents the tag editor dialog centered on the application window.
 pub fn show_tag_picker(

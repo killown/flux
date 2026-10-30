@@ -3,8 +3,8 @@ mod launch;
 mod shortcuts;
 mod watcher;
 
+use crate::domain::model::Config;
 use crate::infra::window_control;
-use crate::model::Config;
 use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
 use std::ffi::{OsStr, OsString};
 use std::io::BufRead;

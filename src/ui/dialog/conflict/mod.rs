@@ -3,7 +3,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use tokio::sync::oneshot;
 
-use crate::model::AppMsg;
+use crate::domain::model::AppMsg;
 use crate::ui::conflict_policy::{ConflictChoice, ConflictContext};
 use relm4::prelude::*;
 
@@ -21,7 +21,7 @@ const RESP_REPLACE: &str = "replace";
 pub fn show_conflict_dialog(
     ctx: ConflictContext,
     tx: oneshot::Sender<(ConflictChoice, bool)>,
-    sender: AsyncComponentSender<crate::model::FluxApp>,
+    sender: AsyncComponentSender<crate::domain::model::FluxApp>,
 ) {
     crate::hit!("show_conflict_dialog");
     let window = gtk::Application::default().active_window();

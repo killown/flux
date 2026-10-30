@@ -1,6 +1,6 @@
 use super::{group, page, row};
+use crate::domain::model::Config;
 use crate::i18n::tr;
-use crate::model::Config;
 
 pub fn build(_config: &Config) -> adw::PreferencesPage {
     let g = group(

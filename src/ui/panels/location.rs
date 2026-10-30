@@ -1,9 +1,9 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
 use crate::infra::db::StateManager;
-use crate::model::{AppMsg, FluxApp};
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::path::{Path, PathBuf};

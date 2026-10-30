@@ -1,5 +1,5 @@
 use super::cache::load_config;
-use crate::model::ThumbnailTypes;
+use crate::domain::model::ThumbnailTypes;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
@@ -8,7 +8,7 @@ pub(super) type ThumbConfigSnapshot = (bool, i32, ThumbnailTypes, usize, bool, f
 
 pub(super) static THUMB_CONFIG: OnceLock<RwLock<ThumbConfigSnapshot>> = OnceLock::new();
 
-pub(super) fn extract_thumb_config(config: &crate::model::Config) -> ThumbConfigSnapshot {
+pub(super) fn extract_thumb_config(config: &crate::domain::model::Config) -> ThumbConfigSnapshot {
     crate::hit!("extract_thumb_config");
     (
         config.ui.show_thumbnails,
@@ -46,7 +46,7 @@ pub type IconConfigSnapshot = Arc<IconConfigData>;
 
 pub(super) static ICON_CONFIG: OnceLock<RwLock<IconConfigSnapshot>> = OnceLock::new();
 
-pub(super) fn extract_icon_config(config: &crate::model::Config) -> IconConfigSnapshot {
+pub(super) fn extract_icon_config(config: &crate::domain::model::Config) -> IconConfigSnapshot {
     crate::hit!("extract_icon_config");
     Arc::new((
         config.ui.folder_icons.clone(),

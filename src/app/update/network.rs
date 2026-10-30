@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::ui::FileItem;
 use adw::gio;
 use adw::prelude::*;
@@ -40,11 +40,14 @@ pub(super) fn handle(
         }
         // The single place that decides what F4 means: it follows the configured position.
         AppMsg::ToggleTerminal => match app.config.ui.terminal.position {
-            crate::model::TerminalPosition::Bottom => app.handle_toggle_terminal(),
-            crate::model::TerminalPosition::Sidebar => {
-                app.toggle_sidebar_right_panel(crate::model::RightPanelType::Terminal, sender);
+            crate::domain::model::TerminalPosition::Bottom => app.handle_toggle_terminal(),
+            crate::domain::model::TerminalPosition::Sidebar => {
+                app.toggle_sidebar_right_panel(
+                    crate::domain::model::RightPanelType::Terminal,
+                    sender,
+                );
             }
-            crate::model::TerminalPosition::Fullscreen => {
+            crate::domain::model::TerminalPosition::Fullscreen => {
                 app.handle_toggle_terminal_fullscreen(sender);
             }
         },
@@ -79,7 +82,7 @@ impl FluxApp {
     pub fn handle_network_loaded(
         &mut self,
         uri: String,
-        contexts: Vec<crate::model::FileLoadContext>,
+        contexts: Vec<crate::domain::model::FileLoadContext>,
     ) {
         crate::hit!("handle_network_loaded");
         net_debug!(

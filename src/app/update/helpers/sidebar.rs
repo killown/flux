@@ -1,6 +1,6 @@
 //! Sidebar rebuilding and the right-side panel toggle.
 
-use crate::model::{AppMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, FluxApp, RightPanelType};
 use crate::ui::{constants, SidebarPlace};
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -145,7 +145,7 @@ impl FluxApp {
         }
 
         // Mounts - Offloaded to background thread to prevent blocking the UI loop
-        if let Some(sender) = crate::model::SENDER.get().cloned() {
+        if let Some(sender) = crate::domain::model::SENDER.get().cloned() {
             relm4::spawn_blocking(move || {
                 let mounts = crate::infra::mounts::get_system_mounts();
                 let _ = sender.send(AppMsg::SystemMountsReady(mounts));

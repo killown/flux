@@ -1,5 +1,5 @@
 use super::StateManager;
-use crate::model::quick_groups::{QuickGroup, QuickGroups};
+use crate::domain::model::quick_groups::{QuickGroup, QuickGroups};
 use rusqlite::{params, Connection, Result};
 use std::ffi::OsString;
 use std::os::unix::ffi::{OsStrExt, OsStringExt};

@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, BackgroundSlot, FluxApp};
+use crate::domain::model::{AppMsg, BackgroundSlot, FluxApp};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -11,15 +11,21 @@ impl FluxApp {
         crate::utils::helpers::apply_ui_scale(scale);
     }
 
-    pub fn handle_set_background_alpha(&mut self, slot: crate::model::BackgroundSlot, val: f64) {
+    pub fn handle_set_background_alpha(
+        &mut self,
+        slot: crate::domain::model::BackgroundSlot,
+        val: f64,
+    ) {
         crate::hit!("handle_set_background_alpha");
         let clamped = val.clamp(0.0, 1.0);
         match slot {
-            crate::model::BackgroundSlot::Window => self.config.ui.bg_alpha_window = clamped,
-            crate::model::BackgroundSlot::SidebarLeft => {
+            crate::domain::model::BackgroundSlot::Window => {
+                self.config.ui.bg_alpha_window = clamped
+            }
+            crate::domain::model::BackgroundSlot::SidebarLeft => {
                 self.config.ui.bg_alpha_sidebar_left = clamped
             }
-            crate::model::BackgroundSlot::SidebarRight => {
+            crate::domain::model::BackgroundSlot::SidebarRight => {
                 self.config.ui.bg_alpha_sidebar_right = clamped
             }
         }

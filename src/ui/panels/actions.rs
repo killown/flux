@@ -13,8 +13,8 @@ use super::actions_registry;
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
+use crate::domain::model::{AppMsg, CustomAction, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, CustomAction, FluxApp};
 use crate::ui::constants;
 use crate::ui::menu::secondary::action_matches_mime;
 use crate::utils::search::fuzzy_match_compiled;
@@ -335,7 +335,7 @@ impl FluxApp {
         self.active_item_line = 0;
 
         let session_arc = self.actions_panel_session.clone();
-        let sender = crate::model::SENDER.get().cloned();
+        let sender = crate::domain::model::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
                 return;
@@ -437,7 +437,7 @@ impl FluxApp {
         action: crate::ui::menu::secondary::NewSecondaryAction,
     ) {
         crate::hit!("handle_save_contextual_action");
-        let sender = crate::model::SENDER.get().cloned();
+        let sender = crate::domain::model::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             let result =
                 crate::ui::menu::secondary::append_secondary_action(&mime, category_scope, &action);

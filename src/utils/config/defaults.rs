@@ -1,5 +1,5 @@
+use crate::domain::model::{TerminalConfig, TerminalPosition};
 use crate::i18n::tr;
-use crate::model::{TerminalConfig, TerminalPosition};
 use std::fs;
 use std::path::PathBuf;
 
@@ -24,7 +24,7 @@ fn legacy_terminal_in_sidebar(raw: &str) -> Option<bool> {
 ///
 /// Returns `true` when the key was present, i.e. `config.toml` must be rewritten.
 /// The rewrite drops the key, because `Config` no longer has a field for it.
-fn migrate_legacy_terminal_position(config: &mut crate::model::Config, raw: &str) -> bool {
+fn migrate_legacy_terminal_position(config: &mut crate::domain::model::Config, raw: &str) -> bool {
     let Some(legacy) = legacy_terminal_in_sidebar(raw) else {
         return false;
     };
@@ -34,7 +34,7 @@ fn migrate_legacy_terminal_position(config: &mut crate::model::Config, raw: &str
     true
 }
 
-pub(super) fn load_config_from_disk() -> crate::model::Config {
+pub(super) fn load_config_from_disk() -> crate::domain::model::Config {
     crate::hit!("load_config_from_disk");
     let config_dir = dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
@@ -211,12 +211,12 @@ path = "actions://"
 
     let config_content = fs::read_to_string(&config_path).unwrap_or_default();
 
-    let mut config: crate::model::Config = match toml::from_str(&config_content) {
+    let mut config: crate::domain::model::Config = match toml::from_str(&config_content) {
         Ok(parsed) => parsed,
         Err(e) => {
             eprintln!("[flux] CONFIG ERROR: Failed to parse config.toml: {}", e);
-            crate::model::Config {
-                ui: crate::model::UIConfig {
+            crate::domain::model::Config {
+                ui: crate::domain::model::UIConfig {
                     fish_theme: false,
                     auto_list_threshold: 300,
                     terminal: TerminalConfig::default(),
@@ -261,7 +261,7 @@ path = "actions://"
                     sidebar_width: 240,
                     show_xdg_dirs: false,
                     current_folders_first: std::collections::HashMap::new(),
-                    default_sort: crate::model::SortBy::Name,
+                    default_sort: crate::domain::model::SortBy::Name,
                     folder_sort: std::collections::HashMap::new(),
                     folder_icon_size: std::collections::HashMap::new(),
                     show_hidden_by_default: false,
@@ -279,7 +279,7 @@ path = "actions://"
                     show_recents: true,
                     recents_row: 0,
                     show_thumbnails: true,
-                    thumbnail_types: crate::model::ThumbnailTypes::default(),
+                    thumbnail_types: crate::domain::model::ThumbnailTypes::default(),
                     thumbnail_size: 256,
                     max_content_search_results: crate::infra::constants::MAX_CONTENT_SEARCH_RESULTS,
                     lazy_thumbnails: false,
@@ -300,7 +300,7 @@ path = "actions://"
                     content_search_max_file_mb: 128,
                 },
                 sidebar: vec![],
-                shortcuts: crate::model::ShortcutsConfig::default(),
+                shortcuts: crate::domain::model::ShortcutsConfig::default(),
                 network_bookmarks: vec![],
                 default_list_mode: false,
             }
@@ -373,7 +373,7 @@ path = "actions://"
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Config;
+    use crate::domain::model::Config;
 
     /// Parses `raw` like `load_config_from_disk`, migrates, and returns the config.
     fn load(raw: &str) -> (Config, bool) {

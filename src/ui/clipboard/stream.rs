@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use gtk::gio;
 use gtk::gio::prelude::InputStreamExt;
 use gtk::glib;

@@ -1,5 +1,5 @@
 use super::state::TabState;
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use gtk::prelude::*;
 use relm4::prelude::*;
 

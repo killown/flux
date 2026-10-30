@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;
 use gtk::gio::prelude::FileExt;

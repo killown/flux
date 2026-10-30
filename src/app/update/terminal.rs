@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp, RightPanelType, TerminalPosition};
+use crate::domain::model::{AppMsg, FluxApp, RightPanelType, TerminalPosition};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;

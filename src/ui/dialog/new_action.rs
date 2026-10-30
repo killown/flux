@@ -1,7 +1,7 @@
 //! "New Action" dialog of the Contextual Actions panel.
 
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::menu::secondary::{category_mime_pattern, secondary_template_filename, split_mime};
 use adw::prelude::*;
 use relm4::AsyncComponentSender;

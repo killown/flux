@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;

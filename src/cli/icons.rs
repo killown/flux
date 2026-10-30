@@ -1,4 +1,4 @@
-use crate::model::{Config, FluxApp};
+use crate::domain::model::{Config, FluxApp};
 use std::path::Path;
 
 /// Records a custom icon for `target` in the loaded config.

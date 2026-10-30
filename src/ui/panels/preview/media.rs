@@ -3,8 +3,8 @@
 
 use super::audio::{ipc_send, stop_audio_mpv, AUDIO_MPV_PID};
 use super::handle::PreviewPanelHandle;
+use crate::domain::model::AppMsg;
 use crate::i18n::tr;
-use crate::model::AppMsg;
 use adw::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -45,7 +45,7 @@ impl PreviewPanelHandle {
         self.state
             .playlist_skip_until
             .set(glib::monotonic_time() + PLAYLIST_SKIP_WINDOW_US);
-        if let Some(s) = crate::model::SENDER.get() {
+        if let Some(s) = crate::domain::model::SENDER.get() {
             let _ = s.send(AppMsg::SelectionStep(1));
         }
     }

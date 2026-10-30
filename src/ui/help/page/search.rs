@@ -1,6 +1,6 @@
 use super::{group, page, row, row_sub};
+use crate::domain::model::Config;
 use crate::i18n::tr;
-use crate::model::Config;
 use crate::ui::help::format::sc;
 use adw::prelude::*;
 

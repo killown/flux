@@ -1,6 +1,6 @@
 //! Shows, hides or toggles a running window over `$XDG_RUNTIME_DIR/flux/toggle-<pid>.sock`.
 
-use crate::model::{AppMsg, ToggleVerb, WindowVisibility};
+use crate::domain::model::{AppMsg, ToggleVerb, WindowVisibility};
 use std::io::{BufRead, BufReader, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -89,7 +89,7 @@ fn serve(mut stream: UnixStream) {
     let Some(verb) = parse_verb(&line) else {
         return;
     };
-    let Some(sender) = crate::model::SENDER.get() else {
+    let Some(sender) = crate::domain::model::SENDER.get() else {
         return;
     };
     let (reply, state) = mpsc::channel();

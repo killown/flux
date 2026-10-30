@@ -1,4 +1,4 @@
-use flux::model::FluxApp;
+use flux::domain::model::FluxApp;
 use flux::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use std::fs;
 use std::path::{Path, PathBuf};

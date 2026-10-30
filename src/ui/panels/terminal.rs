@@ -1,8 +1,8 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 
@@ -13,7 +13,7 @@ use relm4::AsyncComponentSender;
 /// handler, not here, so that closing and reopening the panel respawns a
 /// fresh shell instead of reusing a dead PTY.
 pub fn build_terminal_panel(
-    config: &crate::model::TerminalConfig,
+    config: &crate::domain::model::TerminalConfig,
     initial_width: i32,
     sender: AsyncComponentSender<FluxApp>,
 ) -> (gtk::Box, crate::infra::terminal::Terminal) {

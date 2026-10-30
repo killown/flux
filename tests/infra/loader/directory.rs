@@ -1,5 +1,5 @@
-use flux::model::FileLoadContext;
-use flux::model::SortBy;
+use flux::domain::model::FileLoadContext;
+use flux::domain::model::SortBy;
 use rayon::prelude::*;
 use std::path::{Path, PathBuf};
 

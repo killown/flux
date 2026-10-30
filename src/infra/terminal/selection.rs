@@ -6,7 +6,7 @@
 //! matches the grid. `flux-fm --selection` is the client behind
 //! `flux_selection` in fish.
 
-use crate::model::AppMsg;
+use crate::domain::model::AppMsg;
 use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
@@ -63,7 +63,7 @@ fn remove_stale_sockets(dir: &Path) {
 /// the request is forwarded to the update loop and awaited with a timeout.
 fn serve(mut stream: UnixStream) {
     crate::hit!("serve");
-    let Some(sender) = crate::model::SENDER.get() else {
+    let Some(sender) = crate::domain::model::SENDER.get() else {
         return;
     };
     let (reply, paths) = mpsc::channel();

@@ -5,7 +5,7 @@ use gtk::prelude::*;
 
 use super::debug::net_debug;
 use super::protocol::NetworkProtocol;
-use crate::model::FileLoadContext;
+use crate::domain::model::FileLoadContext;
 
 #[derive(Debug, Clone)]
 pub struct NetworkEntry {

@@ -1,5 +1,5 @@
 use super::recursive::delete_recursive;
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use gtk::gio;
 use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;

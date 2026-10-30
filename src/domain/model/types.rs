@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FileLoadContext};
+use crate::domain::model::{AppMsg, FileLoadContext};
 use crate::ui::conflict_policy::ConflictChoice;
 use gtk::gdk;
 use serde::{Deserialize, Serialize};

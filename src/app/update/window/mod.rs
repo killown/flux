@@ -1,4 +1,4 @@
-use crate::model::{AppMsg, FluxApp, ToggleVerb, WindowVisibility};
+use crate::domain::model::{AppMsg, FluxApp, ToggleVerb, WindowVisibility};
 use adw::prelude::*;
 use relm4::prelude::*;
 

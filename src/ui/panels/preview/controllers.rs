@@ -3,7 +3,7 @@
 
 use super::registry;
 use super::zoom::ZOOM_STEP;
-use crate::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp};
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::cell::Cell;

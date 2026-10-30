@@ -1,4 +1,4 @@
-use crate::model::{CachedFolder, Config, CustomAction, PathSegment, SortBy};
+use crate::domain::model::{CachedFolder, Config, CustomAction, PathSegment, SortBy};
 use crate::ui::keymap::KeyMap;
 use crate::ui::{FileItem, SidebarPlace};
 use relm4::factory::FactoryVecDeque;
@@ -307,7 +307,7 @@ pub struct FluxApp {
     /// Every named Quick List. `exclusive_list` and `exclusive_index` always
     /// mirror the selected one, so this copy of the selected list goes stale.
     /// Read it through `FluxApp::quick_snapshot`.
-    pub quick_groups: crate::model::quick_groups::QuickGroups,
+    pub quick_groups: crate::domain::model::quick_groups::QuickGroups,
     /// Floating menu containing context-sensitive file and application actions.
     pub context_menu_popover: gtk::PopoverMenu,
     /// Collection of user-defined or plugin-provided contextual actions.

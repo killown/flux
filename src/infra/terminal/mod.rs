@@ -21,7 +21,7 @@ pub(crate) use selection::{print_selection, setup_selection_server};
 pub use state::{Cell, CursorStyle, TerminalState};
 pub(crate) use theme::ThemeEnv;
 
-use crate::model::TerminalConfig;
+use crate::domain::model::TerminalConfig;
 use gtk::DrawingArea;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;

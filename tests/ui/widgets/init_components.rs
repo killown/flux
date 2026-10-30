@@ -1,4 +1,4 @@
-use flux::model::SortBy;
+use flux::domain::model::SortBy;
 
 #[test]
 fn test_sort_field_variant_key_mapping() {

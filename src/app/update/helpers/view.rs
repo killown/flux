@@ -1,6 +1,6 @@
 //! Sort status, list mode sync, breadcrumbs and search result batches.
 
-use crate::model::{FluxApp, PathSegment, SortBy};
+use crate::domain::model::{FluxApp, PathSegment, SortBy};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;

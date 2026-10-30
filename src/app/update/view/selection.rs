@@ -1,5 +1,5 @@
+use crate::domain::model::{AppMsg, FluxApp};
 use crate::i18n::tr;
-use crate::model::{AppMsg, FluxApp};
 use crate::ui::constants;
 use crate::utils;
 use adw::gio::prelude::*;
@@ -321,7 +321,10 @@ impl FluxApp {
                 }
 
                 if !diff_triggered && self.diff_panel_visible {
-                    self.toggle_sidebar_right_panel(crate::model::RightPanelType::Diff, sender);
+                    self.toggle_sidebar_right_panel(
+                        crate::domain::model::RightPanelType::Diff,
+                        sender,
+                    );
                 }
             }
         }

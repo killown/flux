@@ -1,6 +1,6 @@
 use super::mime::{sanitise_for_filename, split_mime};
+use crate::domain::model::CustomAction;
 use crate::i18n::tr;
-use crate::model::CustomAction;
 use crate::utils::config::split_mime_cmd;
 use std::io::Write;
 use std::path::{Path, PathBuf};
