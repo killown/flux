@@ -14,7 +14,6 @@ pub mod startup;
 pub mod view;
 pub use components::SidebarMsg;
 pub mod clipboard;
-pub mod config_handlers;
 pub mod conflict_policy;
 pub mod dialog;
 pub mod search;
