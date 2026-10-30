@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, ArchiveMsg, FileOpsMsg, IconsMsg, PropertiesMsg, QuickListMsg, SettingsMsg, TabsMsg, TagsMsg, WindowMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
 use adw::gio::prelude::*;
@@ -59,7 +59,7 @@ where
 #[inline]
 fn emit_toast(sender: &AsyncComponentSender<FluxApp>, toast: Option<&str>) {
     if let Some(msg) = toast {
-        sender.input(AppMsg::ShowToast(msg.to_string()));
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(msg.to_string())));
     }
 }
 
@@ -331,7 +331,7 @@ impl FluxApp {
                                 if let Some(ref model) = selection_model {
                                     model.unselect_all();
                                 }
-                                s.input(AppMsg::OpenTabs(targets.clone()));
+                                s.input(AppMsg::Tabs(TabsMsg::OpenTabs(targets.clone())));
                                 emit_toast(s, toast);
                             },
                         )
@@ -345,7 +345,7 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::StartRename(target));
+                            s.input(AppMsg::FileOps(FileOpsMsg::StartRename(target)));
                             emit_toast(s, toast);
                         },
                     ),
@@ -356,10 +356,10 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::SetFluxBackground {
+                            s.input(AppMsg::Settings(SettingsMsg::SetFluxBackground {
                                 target,
                                 slot: crate::domain::model::BackgroundSlot::Window,
-                            });
+                            }));
                             emit_toast(s, toast);
                         },
                     ),
@@ -370,10 +370,10 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::SetFluxBackground {
+                            s.input(AppMsg::Settings(SettingsMsg::SetFluxBackground {
                                 target,
                                 slot: crate::domain::model::BackgroundSlot::SidebarLeft,
-                            });
+                            }));
                             emit_toast(s, toast);
                         },
                     ),
@@ -384,10 +384,10 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::SetFluxBackground {
+                            s.input(AppMsg::Settings(SettingsMsg::SetFluxBackground {
                                 target,
                                 slot: crate::domain::model::BackgroundSlot::SidebarRight,
-                            });
+                            }));
                             emit_toast(s, toast);
                         },
                     ),
@@ -398,7 +398,7 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::ShowIconPicker(target));
+                            s.input(AppMsg::Icons(IconsMsg::ShowIconPicker(target)));
                             emit_toast(s, toast);
                         },
                     ),
@@ -408,7 +408,7 @@ impl FluxApp {
                         sender,
                         target_path,
                         action_toast.clone(),
-                        |s, target, _| s.input(AppMsg::InspectDirectory(target)),
+                        |s, target, _| s.input(AppMsg::Properties(PropertiesMsg::InspectDirectory(target))),
                     ),
                     "builtin::open_with_dialog" => register_path_action(
                         &action_group,
@@ -417,7 +417,7 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::ShowOpenWithDialog(target));
+                            s.input(AppMsg::Actions(ActionsMsg::ShowOpenWithDialog(target)));
                             emit_toast(s, toast);
                         },
                     ),
@@ -428,7 +428,7 @@ impl FluxApp {
                         target_path,
                         action_toast.clone(),
                         |s, target, toast| {
-                            s.input(AppMsg::ResetFileIcon(target));
+                            s.input(AppMsg::Icons(IconsMsg::ResetFileIcon(target)));
                             emit_toast(s, toast);
                         },
                     ),
@@ -454,7 +454,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::ClearFluxBackgrounds);
+                            s.input(AppMsg::Settings(SettingsMsg::ClearFluxBackgrounds));
                             emit_toast(s, toast);
                         },
                     ),
@@ -464,7 +464,7 @@ impl FluxApp {
                         sender,
                         target_path,
                         action_toast.clone(),
-                        |s, target, _| s.input(AppMsg::ForgetArchivePassword(target)),
+                        |s, target, _| s.input(AppMsg::Archive(ArchiveMsg::ForgetArchivePassword(target))),
                     ),
                     "builtin::add_to_quick_list" => register_simple(
                         &action_group,
@@ -472,7 +472,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::AddExclusive(None));
+                            s.input(AppMsg::QuickList(QuickListMsg::AddExclusive(None)));
                             emit_toast(s, toast);
                         },
                     ),
@@ -482,7 +482,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::AddToSidebarPermanent);
+                            s.input(AppMsg::Sidebar(AppSidebarMsg::AddToSidebarPermanent));
                             emit_toast(s, toast);
                         },
                     ),
@@ -494,7 +494,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::ToggleFilePropertiesPanel);
+                            s.input(AppMsg::Properties(PropertiesMsg::ToggleFilePropertiesPanel));
                             emit_toast(s, toast);
                         },
                     ),
@@ -504,7 +504,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::Delete);
+                            s.input(AppMsg::FileOps(FileOpsMsg::Delete));
                             emit_toast(s, toast);
                         },
                     ),
@@ -514,7 +514,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::PromptNewFolder);
+                            s.input(AppMsg::FileOps(FileOpsMsg::PromptNewFolder));
                             emit_toast(s, toast);
                         },
                     ),
@@ -524,7 +524,7 @@ impl FluxApp {
                         sender,
                         action_toast.clone(),
                         |s, toast| {
-                            s.input(AppMsg::PromptNewFile);
+                            s.input(AppMsg::FileOps(FileOpsMsg::PromptNewFile));
                             emit_toast(s, toast);
                         },
                     ),
@@ -562,7 +562,7 @@ impl FluxApp {
                             sender,
                             action_toast.clone(),
                             move |s, toast| {
-                                s.input(AppMsg::ResetExtensionIcon(ext.clone()));
+                                s.input(AppMsg::Icons(IconsMsg::ResetExtensionIcon(ext.clone())));
                                 emit_toast(s, toast);
                             },
                         )
@@ -591,7 +591,7 @@ impl FluxApp {
                             "install-fonts",
                             sender,
                             action_toast.clone(),
-                            move |s, _| s.input(AppMsg::InstallFonts(targets.clone())),
+                            move |s, _| s.input(AppMsg::FileOps(FileOpsMsg::InstallFonts(targets.clone()))),
                         )
                     }
 
@@ -606,7 +606,7 @@ impl FluxApp {
                             sender,
                             action_toast.clone(),
                             |s, toast| {
-                                s.input(AppMsg::OpenTagPicker);
+                                s.input(AppMsg::Tags(TagsMsg::OpenTagPicker));
                                 emit_toast(s, toast);
                             },
                         )

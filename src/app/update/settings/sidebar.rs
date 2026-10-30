@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, WindowMsg, FluxApp};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -24,7 +24,7 @@ impl FluxApp {
     pub fn handle_set_show_xdg_dirs(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.show_xdg_dirs = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::RefreshSidebar);
+        sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
     }
 
     pub fn handle_rename_sidebar_place(
@@ -70,7 +70,7 @@ impl FluxApp {
 
         if modified {
             utils::save_config(&self.config);
-            sender.input(AppMsg::RefreshSidebar);
+            sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
         }
     }
 
@@ -103,13 +103,13 @@ impl FluxApp {
     pub fn handle_set_show_recents(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.show_recents = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::RefreshSidebar);
+        sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
     }
 
     pub fn handle_set_recents_row(&mut self, val: usize, sender: &AsyncComponentSender<Self>) {
         self.config.ui.recents_row = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::RefreshSidebar);
+        sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
     }
 
     pub fn handle_add_tag_to_sidebar(&mut self, tag: String) {
@@ -136,7 +136,7 @@ impl FluxApp {
     ) {
         crate::hit!("handle_add_panel_sidebar_entry");
         if self.config.sidebar.iter().any(|p| p.path == path) {
-            sender.input(AppMsg::ShowToast(crate::i18n::tr("Already in sidebar")));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Already in sidebar"))));
             return;
         }
         self.config.sidebar.push(crate::domain::model::CustomPlace {
@@ -146,6 +146,6 @@ impl FluxApp {
             path,
         });
         utils::save_config(&self.config);
-        sender.input(AppMsg::RefreshSidebar);
+        sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
     }
 }

@@ -1,5 +1,5 @@
 use super::state::TabState;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ThumbnailsMsg, FluxApp};
 use gtk::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -141,7 +141,7 @@ impl FluxApp {
         if !thumbs_ready {
             let sender_clone = sender.clone();
             glib::timeout_add_local_once(std::time::Duration::from_millis(50), move || {
-                sender_clone.input(AppMsg::CheckVisibleThumbnails);
+                sender_clone.input(AppMsg::Thumbnails(ThumbnailsMsg::CheckVisibleThumbnails));
             });
         }
 

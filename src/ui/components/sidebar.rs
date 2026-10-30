@@ -320,7 +320,7 @@ impl FactoryComponent for SidebarPlace {
                         move || {
                             ROW_DND_TIMERS.with(|t| t.borrow_mut().navigate = None);
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(crate::domain::model::AppMsg::Navigate(nav_path.clone()));
+                                let _ = s.send(crate::domain::model::AppMsg::Navigation(crate::domain::model::NavigationMsg::Navigate(nav_path.clone())));
                             }
                         },
                     );
@@ -422,7 +422,7 @@ impl FactoryComponent for SidebarPlace {
                         add_css_class: "eject-button",
                         connect_clicked[path = self.path.clone()] => move |_| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(crate::domain::model::AppMsg::UnmountDevice(path.clone()));
+                                let _ = s.send(crate::domain::model::AppMsg::Device(crate::domain::model::DeviceMsg::UnmountDevice(path.clone())));
                             }
                         }
                     }

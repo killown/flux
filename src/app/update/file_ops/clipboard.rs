@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -38,7 +38,7 @@ impl FluxApp {
             .find(|a| a.command == cmd)
             .and_then(|a| a.toast.clone())
         {
-            sender.input(AppMsg::ShowToast(toast));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(toast)));
         }
     }
 
@@ -48,7 +48,7 @@ impl FluxApp {
         crate::hit!("handle_copy_path");
         let selection = self.get_selection();
         if selection.is_empty() {
-            sender.input(AppMsg::ShowToast(crate::i18n::tr("No items selected.")));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("No items selected."))));
             return;
         }
 
@@ -71,10 +71,10 @@ impl FluxApp {
             });
 
             match worker.await {
-                Ok(text) => s.input(AppMsg::CopyPathReady(text)),
-                Err(_) => s.input(AppMsg::ShowToast(crate::i18n::tr(
+                Ok(text) => s.input(AppMsg::FileOps(FileOpsMsg::CopyPathReady(text))),
+                Err(_) => s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                     "Failed to copy paths to clipboard.",
-                ))),
+                )))),
             }
         });
     }
@@ -84,14 +84,14 @@ impl FluxApp {
     pub fn handle_copy_path_ready(&self, text: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_copy_path_ready");
         let Some(display) = gtk::gdk::Display::default() else {
-            sender.input(AppMsg::ShowToast(crate::i18n::tr(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                 "No display available for clipboard operation",
-            )));
+            ))));
             return;
         };
         display.clipboard().set_text(&text);
-        sender.input(AppMsg::ShowToast(crate::i18n::tr(
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
             "Paths copied to clipboard.",
-        )));
+        ))));
     }
 }

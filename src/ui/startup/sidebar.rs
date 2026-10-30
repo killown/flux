@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, QuickListMsg, TabsMsg, Config, FluxApp};
 use crate::ui::SidebarPlace;
 use adw::prelude::*;
 use gtk::gio;
@@ -21,41 +21,41 @@ impl FluxApp {
         let sidebar = FactoryVecDeque::builder().launch(listbox.clone()).forward(
             sender.input_sender(),
             |msg| match msg {
-                crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigate(path),
-                crate::ui::SidebarMsg::OpenInNewTab(path) => AppMsg::NewTab(Some(path)),
+                crate::ui::SidebarMsg::Navigate(path) => AppMsg::Navigation(NavigationMsg::Navigate(path)),
+                crate::ui::SidebarMsg::OpenInNewTab(path) => AppMsg::Tabs(TabsMsg::NewTab(Some(path))),
                 crate::ui::SidebarMsg::OpenInNewWindow(path) => {
                     crate::utils::helpers::open_new_instance(&path);
                     // Idempotent re-render. This used to be `ClearExclusive`, which
                     // would now wipe the saved Quick List.
-                    AppMsg::RebuildQuickPanel
+                    AppMsg::QuickList(QuickListMsg::RebuildQuickPanel)
                 }
-                crate::ui::SidebarMsg::Remove(path) => AppMsg::RemoveFromSidebar(path),
-                crate::ui::SidebarMsg::ChangeIcon(path) => AppMsg::ShowSidebarIconPicker(path),
+                crate::ui::SidebarMsg::Remove(path) => AppMsg::Sidebar(AppSidebarMsg::RemoveFromSidebar(path)),
+                crate::ui::SidebarMsg::ChangeIcon(path) => AppMsg::Sidebar(AppSidebarMsg::ShowSidebarIconPicker(path)),
                 crate::ui::SidebarMsg::Rename { path, current_name } => {
-                    AppMsg::PromptSidebarRename { path, current_name }
+                    AppMsg::Sidebar(AppSidebarMsg::PromptSidebarRename { path, current_name })
                 }
-                crate::ui::SidebarMsg::Reorder { from, to } => AppMsg::ReorderSidebar { from, to },
+                crate::ui::SidebarMsg::Reorder { from, to } => AppMsg::Sidebar(AppSidebarMsg::ReorderSidebar { from, to }),
                 crate::ui::SidebarMsg::PinAt {
                     path,
                     before,
                     label_name,
-                } => AppMsg::PinFolderAt {
+                } => AppMsg::Sidebar(AppSidebarMsg::PinFolderAt {
                     path,
                     before,
                     label_name,
-                },
+                }),
                 crate::ui::SidebarMsg::DropMove {
                     source_paths,
                     dest_path,
-                } => AppMsg::SidebarDropMove {
+                } => AppMsg::Sidebar(AppSidebarMsg::SidebarDropMove {
                     source_paths,
                     dest_path,
-                },
-                crate::ui::SidebarMsg::RenameSection(name) => AppMsg::PromptSidebarRenameSection {
+                }),
+                crate::ui::SidebarMsg::RenameSection(name) => AppMsg::Sidebar(AppSidebarMsg::PromptSidebarRenameSection {
                     old_name: name.clone(),
                     current_name: name,
-                },
-                crate::ui::SidebarMsg::RemoveSection(name) => AppMsg::RemoveSidebarSection(name),
+                }),
+                crate::ui::SidebarMsg::RemoveSection(name) => AppMsg::Sidebar(AppSidebarMsg::RemoveSidebarSection(name)),
             },
         );
 
@@ -147,7 +147,7 @@ impl FluxApp {
                 if let Some(s) = sidebar_weak.upgrade() {
                     let final_width = s.width().clamp(160, 500);
                     s.set_width_request(final_width);
-                    sender_c.input(AppMsg::SetSidebarWidth(final_width));
+                    sender_c.input(AppMsg::Sidebar(AppSidebarMsg::SetSidebarWidth(final_width)));
                 }
             });
         }

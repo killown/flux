@@ -7,7 +7,7 @@ use std::rc::Rc;
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, SearchMsg, TagsMsg, FluxApp};
 use crate::i18n::tr;
 
 /// Builds and returns the unified tag panel navigator.
@@ -30,7 +30,7 @@ pub fn build_tag_panel(
     {
         let s = sender.clone();
         let header = panel_header(None, &tr("Tag Navigator"), &[], move || {
-            s.input(AppMsg::ToggleTagPanel)
+            s.input(AppMsg::Tags(TagsMsg::ToggleTagPanel))
         });
         panel.append(&header);
     }
@@ -143,7 +143,7 @@ pub fn build_tag_panel(
                     let pop = popover.clone();
                     apply_item.connect_clicked(move |_| {
                         pop.popdown();
-                        s.input(AppMsg::ApplyTagsToSelection(vec![tag_name.clone()]));
+                        s.input(AppMsg::Tags(TagsMsg::ApplyTagsToSelection(vec![tag_name.clone()])));
                     });
                 }
                 menu_box.append(&apply_item);
@@ -159,7 +159,7 @@ pub fn build_tag_panel(
                     let pop = popover.clone();
                     remove_item.connect_clicked(move |_| {
                         pop.popdown();
-                        s.input(AppMsg::RemoveTagFromSelection(tag_name.clone()));
+                        s.input(AppMsg::Tags(TagsMsg::RemoveTagFromSelection(tag_name.clone())));
                     });
                 }
                 menu_box.append(&remove_item);
@@ -175,7 +175,7 @@ pub fn build_tag_panel(
                     let pop = popover.clone();
                     pin_item.connect_clicked(move |_| {
                         pop.popdown();
-                        s.input(AppMsg::AddTagToSidebar(tag_name.clone()));
+                        s.input(AppMsg::Sidebar(AppSidebarMsg::AddTagToSidebar(tag_name.clone())));
                     });
                 }
                 menu_box.append(&pin_item);
@@ -229,7 +229,7 @@ pub fn build_tag_panel(
                             if response == "delete" {
                                 all_known_tags.borrow_mut().remove(&tag_name);
                                 list_box.remove(&row);
-                                s.input(AppMsg::DeleteTagGlobally(tag_name.clone()));
+                                s.input(AppMsg::Tags(TagsMsg::DeleteTagGlobally(tag_name.clone())));
                             }
                         });
 
@@ -297,7 +297,7 @@ pub fn build_tag_panel(
             if let Some(row_box) = row.child().and_downcast::<gtk::Box>() {
                 if let Some(lbl) = row_box.first_child().and_downcast::<gtk::Label>() {
                     let tag_query = format!("#{}", lbl.text().trim_start_matches('#'));
-                    s.input(AppMsg::UpdateFilter(tag_query));
+                    s.input(AppMsg::Search(SearchMsg::UpdateFilter(tag_query)));
                 }
             }
         });
@@ -309,7 +309,7 @@ pub fn build_tag_panel(
         let list_box = list_box.clone();
         key_ctrl.connect_key_pressed(move |_, keyval, _, _| match keyval {
             adw::gdk::Key::Escape => {
-                s.input(AppMsg::ToggleTagPanel);
+                s.input(AppMsg::Tags(TagsMsg::ToggleTagPanel));
                 gtk::glib::Propagation::Stop
             }
             adw::gdk::Key::Down => {
@@ -341,6 +341,6 @@ pub fn build_tag_panel(
 
     let sender_for_resize = sender.clone();
     resizable_panel(&spec, &panel, move |w| {
-        sender_for_resize.input(AppMsg::SetTagPanelWidth(w));
+        sender_for_resize.input(AppMsg::Tags(TagsMsg::SetTagPanelWidth(w)));
     })
 }

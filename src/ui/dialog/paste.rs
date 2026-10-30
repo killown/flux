@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -33,10 +33,10 @@ impl FluxApp {
         let s = sender.clone();
         dialog.connect_response(None, move |_, response| {
             if response == "replace" {
-                s.input(AppMsg::PerformPasteForced {
+                s.input(AppMsg::FileOps(FileOpsMsg::PerformPasteForced {
                     files: files.clone(),
                     is_cut,
-                });
+                }));
             }
         });
         dialog.present(window.as_ref());

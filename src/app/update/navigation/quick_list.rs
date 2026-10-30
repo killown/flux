@@ -1,6 +1,6 @@
 use crate::domain::model::quick_groups::{NameError, QuickGroups};
 use crate::domain::model::quick_list;
-use crate::domain::model::{AppMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, NavigationMsg, QuickListMsg, WindowMsg, FluxApp, RightPanelType};
 use crate::i18n::tr;
 use gtk::prelude::*;
 use relm4::prelude::*;
@@ -49,12 +49,12 @@ impl FluxApp {
                 }
 
                 if count > 0 {
-                    sender_clone.input(AppMsg::ShowToast(format!(
+                    sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                         "Copied {} item(s) to {}",
                         count,
                         dest.file_name().unwrap_or_default().to_string_lossy()
-                    )));
-                    sender_clone.input(AppMsg::Refresh);
+                    ))));
+                    sender_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 }
             });
         }
@@ -91,7 +91,7 @@ impl FluxApp {
         }
         self.adopt_quick_groups(groups);
         self.persist_quick_list();
-        sender.input(AppMsg::RebuildQuickPanel);
+        sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
         true
     }
 
@@ -144,7 +144,7 @@ impl FluxApp {
                 &self.current_path,
             );
             self.persist_quick_list();
-            sender.input(AppMsg::RebuildQuickPanel);
+            sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
         }
     }
 
@@ -165,7 +165,7 @@ impl FluxApp {
         crate::hit!("handle_clear_exclusive");
         if quick_list::clear(&mut self.exclusive_list, &mut self.exclusive_index) {
             self.persist_quick_list();
-            sender.input(AppMsg::RebuildQuickPanel);
+            sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
         }
     }
 
@@ -178,8 +178,8 @@ impl FluxApp {
     /// Persists the new slot, then navigates to `target`.
     fn quick_navigate_to(&mut self, target: PathBuf, sender: &AsyncComponentSender<Self>) {
         self.persist_quick_list();
-        sender.input(AppMsg::Navigate(target));
-        sender.input(AppMsg::RebuildQuickPanel);
+        sender.input(AppMsg::Navigation(NavigationMsg::Navigate(target)));
+        sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
     }
 
     /// Switches to the next item in the quick panel list (Ctrl+PageDown).
@@ -269,7 +269,7 @@ impl FluxApp {
     ) {
         crate::hit!("handle_quick_list_open");
         if self.edit_quick_groups(sender, |g| g.open_item(list, &path)) {
-            sender.input(AppMsg::Navigate(path));
+            sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
             if let Some(tab) = self.tabs.get(self.active_tab_index) {
                 tab.files.view.grab_focus();
             }
@@ -298,7 +298,7 @@ impl FluxApp {
             }
         });
         if let Some(e) = refused {
-            sender.input(AppMsg::ShowToast(Self::quick_name_error(e)));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(Self::quick_name_error(e))));
         }
     }
 
@@ -318,7 +318,7 @@ impl FluxApp {
             }
         });
         if let Some(e) = refused {
-            sender.input(AppMsg::ShowToast(Self::quick_name_error(e)));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(Self::quick_name_error(e))));
         }
     }
 
@@ -387,9 +387,9 @@ impl FluxApp {
         crate::hit!("handle_quick_list_set_slot");
         let current = self.current_path.clone();
         if self.edit_quick_groups(sender, |g| g.replace_slot(list, slot, current)) {
-            sender.input(AppMsg::ShowToast(tr("Quick list slot updated")));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr("Quick list slot updated"))));
         } else {
-            sender.input(AppMsg::ShowToast(tr("That folder is already in this list")));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr("That folder is already in this list"))));
         }
     }
 }

@@ -22,7 +22,7 @@ use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
 use crate::domain::model::quick_groups::{GroupView, QuickGroups};
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, QuickListMsg, FluxApp};
 use crate::i18n::tr;
 use crate::utils::search::fuzzy_match_compiled;
 use adw::prelude::*;
@@ -129,7 +129,7 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
             Some("view-list-symbolic"),
             &tr("Quick List"),
             &[new_btn.upcast()],
-            move || s.input(AppMsg::ToggleQuickListPanel),
+            move || s.input(AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel)),
         )
     };
     panel.append(&header);
@@ -187,9 +187,9 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
             };
             let action = actions.borrow().get(idx).cloned();
             match action {
-                Some(RowAction::Group { list, .. }) => s.input(AppMsg::QuickListSelect(list)),
+                Some(RowAction::Group { list, .. }) => s.input(AppMsg::QuickList(QuickListMsg::QuickListSelect(list))),
                 Some(RowAction::Item { list, path }) => {
-                    s.input(AppMsg::QuickListOpen { list, path })
+                    s.input(AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }))
                 }
                 Some(RowAction::Hint) | None => {}
             }
@@ -231,7 +231,7 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
                     gtk::gdk::Key::Delete | gtk::gdk::Key::KP_Delete,
                     Some(RowAction::Item { list, path }),
                 ) => {
-                    s.input(AppMsg::QuickListRemove { list, path });
+                    s.input(AppMsg::QuickList(QuickListMsg::QuickListRemove { list, path }));
                     glib::Propagation::Stop
                 }
                 _ => glib::Propagation::Proceed,
@@ -255,7 +255,7 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
                 _ => None,
             });
             if let Some((list, path)) = first {
-                s.input(AppMsg::QuickListOpen { list, path });
+                s.input(AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }));
             }
         });
     }
@@ -263,7 +263,7 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
         let s = sender.clone();
         search.connect_stop_search(move |entry| {
             if entry.text().is_empty() {
-                s.input(AppMsg::ToggleQuickListPanel);
+                s.input(AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel));
             } else {
                 entry.set_text("");
             }
@@ -499,7 +499,7 @@ fn group_row(
     {
         let list = v.list;
         let s = sender.clone();
-        add_btn.connect_clicked(move |_| s.input(AppMsg::QuickListAddCurrent(list)));
+        add_btn.connect_clicked(move |_| s.input(AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list))));
     }
     line.append(&add_btn);
 
@@ -527,7 +527,7 @@ fn group_row(
             };
             let s2 = s.clone();
             confirm(&tr("Delete List"), &body, &tr("Delete"), move || {
-                s2.input(AppMsg::QuickListDelete(list));
+                s2.input(AppMsg::QuickList(QuickListMsg::QuickListDelete(list)));
             });
         });
     }
@@ -554,7 +554,7 @@ fn group_row(
                         &n1,
                         &tr("Rename"),
                         move |name| {
-                            s2.input(AppMsg::QuickListRename { list, name });
+                            s2.input(AppMsg::QuickList(QuickListMsg::QuickListRename { list, name }));
                         },
                     );
                 }),
@@ -563,14 +563,14 @@ fn group_row(
             let s1 = s.clone();
             items.push(MenuItem::Action(
                 tr("Add Current Folder"),
-                Box::new(move || s1.input(AppMsg::QuickListAddCurrent(list))),
+                Box::new(move || s1.input(AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)))),
             ));
 
             if total > 0 {
                 let s1 = s.clone();
                 items.push(MenuItem::Action(
                     tr("Clear List"),
-                    Box::new(move || s1.input(AppMsg::QuickListClearList(list))),
+                    Box::new(move || s1.input(AppMsg::QuickList(QuickListMsg::QuickListClearList(list)))),
                 ));
             }
 
@@ -580,7 +580,7 @@ fn group_row(
                     tr("Delete List"),
                     Box::new(move || {
                         if total == 0 {
-                            s1.input(AppMsg::QuickListDelete(list));
+                            s1.input(AppMsg::QuickList(QuickListMsg::QuickListDelete(list)));
                             return;
                         }
                         let s2 = s1.clone();
@@ -593,7 +593,7 @@ fn group_row(
                                 tr("The folders themselves are not touched.")
                             ),
                             &tr("Delete"),
-                            move || s2.input(AppMsg::QuickListDelete(list)),
+                            move || s2.input(AppMsg::QuickList(QuickListMsg::QuickListDelete(list))),
                         );
                     }),
                 ));
@@ -665,10 +665,10 @@ fn item_row(
         middle.set_button(2);
         middle.connect_pressed(move |gesture, _, _, _| {
             gesture.set_state(gtk::EventSequenceState::Claimed);
-            s.input(AppMsg::QuickListRemove {
+            s.input(AppMsg::QuickList(QuickListMsg::QuickListRemove {
                 list,
                 path: path.clone(),
-            });
+            }));
         });
         row.add_controller(middle);
     }
@@ -684,7 +684,7 @@ fn item_row(
             let s1 = s.clone();
             items.push(MenuItem::Action(
                 tr("Set to Current Folder"),
-                Box::new(move || s1.input(AppMsg::QuickListSetSlot { list, slot })),
+                Box::new(move || s1.input(AppMsg::QuickList(QuickListMsg::QuickListSetSlot { list, slot }))),
             ));
 
             let p1 = path.clone();
@@ -701,11 +701,11 @@ fn item_row(
                     .map(|(to, name)| {
                         let (s1, p1, to) = (s.clone(), path.clone(), *to);
                         let f: Box<dyn Fn() + 'static> = Box::new(move || {
-                            s1.input(AppMsg::QuickListMove {
+                            s1.input(AppMsg::QuickList(QuickListMsg::QuickListMove {
                                 path: p1.clone(),
                                 from: list,
                                 to,
-                            })
+                            }))
                         });
                         (name.clone(), f)
                     })
@@ -717,10 +717,10 @@ fn item_row(
             items.push(MenuItem::Action(
                 tr("Remove from Quick List"),
                 Box::new(move || {
-                    s1.input(AppMsg::QuickListRemove {
+                    s1.input(AppMsg::QuickList(QuickListMsg::QuickListRemove {
                         list,
                         path: p1.clone(),
-                    })
+                    }))
                 }),
             ));
             items
@@ -746,10 +746,10 @@ fn item_row(
                     .filter_map(|f| f.path())
                     .collect();
                 if !sources.is_empty() {
-                    s.input(AppMsg::MoveFilesToTarget {
+                    s.input(AppMsg::QuickList(QuickListMsg::MoveFilesToTarget {
                         sources,
                         destination: target.clone(),
-                    });
+                    }));
                     return true;
                 }
             }
@@ -840,7 +840,7 @@ fn prompt_new_list(sender: &Sender) {
         &tr("Enter a name for the new list:"),
         &suggestion,
         &tr("Create"),
-        move |name| s.input(AppMsg::QuickListNew(name)),
+        move |name| s.input(AppMsg::QuickList(QuickListMsg::QuickListNew(name))),
     );
 }
 

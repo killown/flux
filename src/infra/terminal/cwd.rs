@@ -102,7 +102,7 @@ fn handle_goto(dir: &Path) {
         return;
     }
     if let Some(sender) = crate::domain::model::SENDER.get() {
-        let _ = sender.send(crate::domain::model::AppMsg::Navigate(path));
+        let _ = sender.send(crate::domain::model::AppMsg::Navigation(crate::domain::model::NavigationMsg::Navigate(path)));
     }
     if let Some(app) =
         gio::Application::default().and_then(|a| a.downcast::<gtk::Application>().ok())

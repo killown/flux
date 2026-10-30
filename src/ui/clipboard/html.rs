@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, WindowMsg, FluxApp};
 use gtk::gdk;
 use gtk::gio;
 use gtk::glib;
@@ -26,11 +26,11 @@ impl FluxApp {
                     read_stream_async_into_bytes(stream, dest_dir, s);
                 }
                 Err(e) => {
-                    s.input(AppMsg::ShowToast(format!(
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                         "{}: {}",
                         crate::i18n::tr("Clipboard read error"),
                         e
-                    )));
+                    ))));
                 }
             },
         );

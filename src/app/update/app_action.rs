@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, NavigationMsg, QuickListMsg, FluxApp};
 use crate::ui::constants;
 use crate::utils;
 use adw::gdk;
@@ -20,7 +20,7 @@ impl FluxApp {
                 let parts: Vec<&str> = dest_str.splitn(2, ':').collect();
                 if parts.len() == 2 {
                     let dest = PathBuf::from(parts[1]);
-                    s_move.input(AppMsg::PerformQuickTransfer { dest, is_cut: true });
+                    s_move.input(AppMsg::QuickList(QuickListMsg::PerformQuickTransfer { dest, is_cut: true }));
                 }
             }
         });
@@ -34,10 +34,10 @@ impl FluxApp {
                 let parts: Vec<&str> = dest_str.splitn(2, ':').collect();
                 if parts.len() == 2 {
                     let dest = PathBuf::from(parts[1]);
-                    s_copy.input(AppMsg::PerformQuickTransfer {
+                    s_copy.input(AppMsg::QuickList(QuickListMsg::PerformQuickTransfer {
                         dest,
                         is_cut: false,
-                    });
+                    }));
                 }
             }
         });
@@ -235,7 +235,7 @@ impl FluxApp {
         let s = sender.clone();
         relm4::spawn_blocking(move || {
             let result = Self::remove_recents(targets).map_err(|e| e.to_string());
-            s.input(AppMsg::ClearRecentsFinished(result));
+            s.input(AppMsg::Navigation(NavigationMsg::ClearRecentsFinished(result)));
         });
     }
 
@@ -257,12 +257,12 @@ impl FluxApp {
                 .map(|p| utils::media::get_mime_type(p))
                 .unwrap_or_else(|| constants::MIME_DIR.to_string());
 
-            sender_ctx.input(AppMsg::ShowContextMenu {
+            sender_ctx.input(AppMsg::Actions(ActionsMsg::ShowContextMenu {
                 x,
                 y,
                 path: resolved_path,
                 mime,
-            });
+            }));
         });
     }
 }

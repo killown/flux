@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
 use crate::ui::constants;
 use adw::gdk;
 use gtk::prelude::*;
@@ -10,9 +10,9 @@ pub fn setup_swipe(window: &impl IsA<gtk::Widget>, sender: relm4::AsyncComponent
     let swipe = gtk::GestureSwipe::new();
     swipe.connect_swipe(move |_, velocity_x, _| {
         if velocity_x > constants::SWIPE_VELOCITY_THRESHOLD {
-            sender.input(AppMsg::GoBack);
+            sender.input(AppMsg::Navigation(NavigationMsg::GoBack));
         } else if velocity_x < -constants::SWIPE_VELOCITY_THRESHOLD {
-            sender.input(AppMsg::GoForward);
+            sender.input(AppMsg::Navigation(NavigationMsg::GoForward));
         }
     });
     window.add_controller(swipe);
@@ -40,7 +40,7 @@ pub fn setup_mouse_back_forward(
         let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
         if button == constants::MOUSE_BACK && modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
-            sender.input(AppMsg::JumpToRecent(0));
+            sender.input(AppMsg::Navigation(NavigationMsg::JumpToRecent(0)));
         }
     });
 

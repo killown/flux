@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp, SortBy};
 use crate::ui::constants;
 use crate::utils;
 use gtk::prelude::WidgetExt;
@@ -67,7 +67,7 @@ impl FluxApp {
             self.current_icon_size as u32,
             self.config.ui.folders_first,
         );
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     /// Cycles through available sorting criteria (Name -> Date -> Size -> Type).
@@ -86,7 +86,7 @@ impl FluxApp {
             self.current_icon_size as u32,
             self.config.ui.folders_first,
         );
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     /// Toggles "Folders First" sorting priority for the current directory view.

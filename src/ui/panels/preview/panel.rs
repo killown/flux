@@ -17,7 +17,7 @@ use super::state::{Mode, State};
 use super::text::body_font_family;
 use super::widgets::{first_available_icon, flat_icon_button, info_clamp, install_css};
 use super::zoom::ZOOM_STEP;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FileOpsMsg, PreviewMsg, SearchMsg, ViewMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::panels::header::panel_header;
 use crate::ui::panels::resize::resizable_panel;
@@ -491,18 +491,18 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             Some("view-compact-symbolic"),
             &tr("Preview"),
             &extras,
-            move || s.input(AppMsg::TogglePreview),
+            move || s.input(AppMsg::Preview(PreviewMsg::TogglePreview)),
         );
         panel.append(&header);
         header
     };
     {
         let s = sender.clone();
-        wide_btn.connect_toggled(move |b| s.input(AppMsg::SetWidePreviewDefault(b.is_active())));
+        wide_btn.connect_toggled(move |b| s.input(AppMsg::Sidebar(AppSidebarMsg::SetWidePreviewDefault(b.is_active()))));
     }
     {
         let s = sender.clone();
-        fullscreen_btn.connect_clicked(move |_| s.input(AppMsg::TogglePreviewFullscreen));
+        fullscreen_btn.connect_clicked(move |_| s.input(AppMsg::Preview(PreviewMsg::TogglePreviewFullscreen)));
     }
     {
         let s = sender.clone();
@@ -513,7 +513,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             if suppress {
                 return;
             }
-            s.input(AppMsg::FilterBySelectedMime);
+            s.input(AppMsg::Search(SearchMsg::FilterBySelectedMime));
         });
     }
     mute_btn.connect_toggled(|b| {
@@ -538,7 +538,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
         install_font_btn.connect_clicked(move |_| {
             let path = registry::with(|h| h.state.path.borrow().clone()).flatten();
             if let Some(path) = path {
-                s.input(AppMsg::InstallFonts(vec![path]));
+                s.input(AppMsg::FileOps(FileOpsMsg::InstallFonts(vec![path])));
             }
         });
     }
@@ -584,11 +584,11 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     {
         let s = sender.clone();
-        nav_prev.connect_clicked(move |_| s.input(AppMsg::SelectionStep(-1)));
+        nav_prev.connect_clicked(move |_| s.input(AppMsg::View(ViewMsg::SelectionStep(-1))));
     }
     {
         let s = sender.clone();
-        nav_next.connect_clicked(move |_| s.input(AppMsg::SelectionStep(1)));
+        nav_next.connect_clicked(move |_| s.input(AppMsg::View(ViewMsg::SelectionStep(1))));
     }
 
     let view_overlay = gtk::Overlay::builder().vexpand(true).hexpand(true).build();
@@ -632,7 +632,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             {
                 return;
             }
-            s.input(AppMsg::TogglePreviewFullscreen);
+            s.input(AppMsg::Preview(PreviewMsg::TogglePreviewFullscreen));
         });
     }
     view_overlay.add_controller(dbl_click);
@@ -828,6 +828,6 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     let sender_for_resize = sender.clone();
     resizable_panel(&spec, &panel, move |w| {
-        sender_for_resize.input(AppMsg::SetPreviewPanelWidth(w));
+        sender_for_resize.input(AppMsg::Preview(PreviewMsg::SetPreviewPanelWidth(w)));
     })
 }

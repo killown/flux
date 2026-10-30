@@ -1,6 +1,6 @@
 use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
-use crate::domain::model::{AppMsg, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, ArchiveMsg, ThumbnailsMsg, WindowMsg, FluxApp, SortBy};
 use crate::infra::archive;
 use crate::ui::FileItem;
 use crate::utils;
@@ -86,13 +86,13 @@ impl FluxApp {
                 }
             }
 
-            sender_c.input(AppMsg::ArchiveLoaded {
+            sender_c.input(AppMsg::Archive(ArchiveMsg::ArchiveLoaded {
                 archive_path: archive_path_c,
                 prefix: prefix_c,
                 password: password_c,
                 load_id: session_id,
                 result,
-            });
+            }));
         });
     }
 
@@ -181,7 +181,7 @@ impl FluxApp {
             } else {
                 crate::i18n::tr("Could not save the password to the system keyring")
             };
-            sender_c.input(AppMsg::ShowToast(toast));
+            sender_c.input(AppMsg::Window(WindowMsg::ShowToast(toast)));
         });
     }
 
@@ -213,7 +213,7 @@ impl FluxApp {
             } else {
                 crate::i18n::tr("Could not remove the saved archive password")
             };
-            sender_c.input(AppMsg::ShowToast(toast));
+            sender_c.input(AppMsg::Window(WindowMsg::ShowToast(toast)));
         });
     }
 
@@ -248,25 +248,25 @@ impl FluxApp {
                 self.pending_keyring_saves.discard(&archive_path);
                 self.known_encrypted_archives.insert(archive_path.clone());
                 self.sync_archive_lock_badges(&archive_path);
-                sender.input(AppMsg::PromptArchivePassword {
+                sender.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
                     wrong_password: false,
-                });
+                }));
             }
             Err(archive::ArchiveError::WrongPassword) => {
                 self.cached_archive_passwords.remove(&archive_path);
                 self.pending_keyring_saves.discard(&archive_path);
                 self.known_encrypted_archives.insert(archive_path.clone());
                 self.sync_archive_lock_badges(&archive_path);
-                sender.input(AppMsg::PromptArchivePassword {
+                sender.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                     archive_path,
                     prefix,
                     wrong_password: true,
-                });
+                }));
             }
             Err(archive::ArchiveError::Other(e)) => {
-                sender.input(AppMsg::ShowToast(e));
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(e)));
             }
             Ok(entries) => {
                 if let Some(password) = &password {
@@ -441,7 +441,7 @@ impl FluxApp {
                         sender.clone(),
                     );
                 } else {
-                    sender.input(AppMsg::CheckVisibleThumbnails);
+                    sender.input(AppMsg::Thumbnails(ThumbnailsMsg::CheckVisibleThumbnails));
                 }
             }
         }

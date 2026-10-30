@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, Config, FluxApp};
 use crate::ui::FileItem;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -17,10 +17,10 @@ impl FluxApp {
 
         let sender_clone = sender.clone();
         files.view.connect_activate(move |_, position| {
-            sender_clone.input(AppMsg::Open {
+            sender_clone.input(AppMsg::Navigation(NavigationMsg::Open {
                 position: Some(position),
                 tab_id: None,
-            })
+            }))
         });
 
         files.view.set_max_columns(20);

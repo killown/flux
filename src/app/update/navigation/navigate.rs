@@ -1,5 +1,5 @@
 use crate::domain::model::AltCycle;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, ArchiveMsg, NavigationMsg, QuickListMsg, SearchMsg, TagsMsg, WindowMsg, FluxApp};
 use crate::ui::constants;
 use gtk::glib;
 use gtk::prelude::*;
@@ -20,19 +20,19 @@ impl FluxApp {
 
         // Intercept panel toggles before touching any current state or running resets
         if path_str == "tags://" || path_str == "tags:///" {
-            sender.input(AppMsg::ToggleTagPanel);
+            sender.input(AppMsg::Tags(TagsMsg::ToggleTagPanel));
             return;
         }
 
         // Intercept Search panel shortcut URI
         if path_str == "search://" || path_str == "search:///" {
-            sender.input(AppMsg::ToggleSearchPanel);
+            sender.input(AppMsg::Search(SearchMsg::ToggleSearchPanel));
             return;
         }
 
         // Intercept Contextual Actions panel shortcut entry
         if path_str == "actions://" || path_str == "actions:///" {
-            sender.input(AppMsg::ToggleActionsPanel);
+            sender.input(AppMsg::Actions(ActionsMsg::ToggleActionsPanel));
             return;
         }
 
@@ -100,10 +100,10 @@ impl FluxApp {
                 .trim_start_matches('#');
 
             if clean_tag.is_empty() {
-                sender.input(AppMsg::ToggleTagPanel);
+                sender.input(AppMsg::Tags(TagsMsg::ToggleTagPanel));
             } else {
-                sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
-                sender.input(AppMsg::UpdateFilter(format!("#{}", clean_tag)));
+                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
+                sender.input(AppMsg::Search(SearchMsg::UpdateFilter(format!("#{}", clean_tag))));
 
                 if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
                     let title = format!("#{}", clean_tag);
@@ -131,7 +131,7 @@ impl FluxApp {
             if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
                 tab.files.clear_filters();
             }
-            sender.input(AppMsg::CloseSearchSync);
+            sender.input(AppMsg::Search(SearchMsg::CloseSearchSync));
 
             if self.header_view == constants::VIEW_SEARCH {
                 self.header_view = "path".to_string();
@@ -187,7 +187,7 @@ impl FluxApp {
                 if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
                     tab.files.clear_filters();
                 }
-                sender.input(AppMsg::CloseSearchSync);
+                sender.input(AppMsg::Search(SearchMsg::CloseSearchSync));
 
                 if self.header_view == constants::VIEW_SEARCH {
                     self.header_view = "path".to_string();
@@ -231,11 +231,11 @@ impl FluxApp {
             || path_str.starts_with("tags://");
 
         if !path_valid {
-            sender.input(AppMsg::ShowToast(format!(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                 "{}: {}",
                 crate::i18n::tr("Path not found"),
                 path_str
-            )));
+            ))));
             return;
         }
 
@@ -244,7 +244,7 @@ impl FluxApp {
                 self.exclusive_index = Some(pos);
                 self.persist_quick_list();
             }
-            sender.input(AppMsg::RebuildQuickPanel);
+            sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
         }
 
         if path.is_dir()
@@ -269,7 +269,7 @@ impl FluxApp {
                 tab.files.clear_filters();
             }
 
-            sender.input(AppMsg::CloseSearchSync);
+            sender.input(AppMsg::Search(SearchMsg::CloseSearchSync));
 
             if self.header_view == constants::VIEW_SEARCH {
                 self.header_view = constants::VIEW_PATH.to_string();
@@ -319,10 +319,10 @@ impl FluxApp {
         let archive_path =
             match crate::infra::archive::parse_archive_uri(&archive_path.to_string_lossy()) {
                 Some((outer, inner)) if !inner.is_empty() => {
-                    sender.input(AppMsg::PromptNestedArchiveExtract {
+                    sender.input(AppMsg::Archive(ArchiveMsg::PromptNestedArchiveExtract {
                         archive_path: outer,
                         inner_path: inner,
-                    });
+                    }));
                     return;
                 }
                 Some((outer, _)) => outer,
@@ -349,7 +349,7 @@ impl FluxApp {
         if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
             tab.files.clear_filters();
         }
-        sender.input(AppMsg::CloseSearchSync);
+        sender.input(AppMsg::Search(SearchMsg::CloseSearchSync));
 
         if self.header_view == constants::VIEW_SEARCH {
             self.header_view = constants::VIEW_PATH.to_string();
@@ -459,9 +459,9 @@ impl FluxApp {
         self.alt_cycle = Some(cycle);
         // An archive drawn as a folder is entered as an archive, not navigated to.
         if is_virtual {
-            sender.input(AppMsg::EnterArchive(target));
+            sender.input(AppMsg::Archive(ArchiveMsg::EnterArchive(target)));
         } else {
-            sender.input(AppMsg::Navigate(target));
+            sender.input(AppMsg::Navigation(NavigationMsg::Navigate(target)));
         }
     }
 
@@ -486,9 +486,9 @@ impl FluxApp {
             .iter()
             .any(|p| Self::cycle_inside(&self.current_path, p));
         if inside_candidate {
-            sender.input(AppMsg::Navigate(cycle.anchor));
+            sender.input(AppMsg::Navigation(NavigationMsg::Navigate(cycle.anchor)));
         }
-        sender.input(AppMsg::ShowToast(crate::i18n::tr("Cycle cancelled")));
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Cycle cancelled"))));
     }
 
     /// Forget the cycle without navigating. The next letter press builds
@@ -496,8 +496,8 @@ impl FluxApp {
     pub fn handle_cycle_by_letter_reanchor(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_cycle_by_letter_reanchor");
         self.alt_cycle = None;
-        sender.input(AppMsg::ShowToast(crate::i18n::tr(
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
             "Cycle anchored to current folder",
-        )));
+        ))));
     }
 }

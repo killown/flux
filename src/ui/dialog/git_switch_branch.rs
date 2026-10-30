@@ -1,6 +1,6 @@
 //! "Switch Branch" dialog for the git header menu: pick a local branch or create a new one.
 
-use crate::domain::model::AppMsg;
+use crate::domain::model::{AppMsg, GitMsg};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
@@ -147,7 +147,7 @@ pub fn show_switch_branch_dialog(
             else {
                 return;
             };
-            let _ = s.input_sender().send(AppMsg::GitSwitchBranch(name.clone()));
+            let _ = s.input_sender().send(AppMsg::Git(GitMsg::GitSwitchBranch(name.clone())));
             d.close();
         })
     };
@@ -174,7 +174,7 @@ pub fn show_switch_branch_dialog(
             if name.is_empty() {
                 return;
             }
-            let _ = s.input_sender().send(AppMsg::GitCreateBranch(name));
+            let _ = s.input_sender().send(AppMsg::Git(GitMsg::GitCreateBranch(name)));
             d.close();
         });
     }

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config};
+use crate::domain::model::{AppMsg, ArchiveMsg, FileOpsMsg, GitMsg, IconsMsg, SettingsMsg, ViewMsg, Config};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -19,7 +19,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.single_click,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetSingleClick(switch.is_active()));
+                            let _ = s.send(AppMsg::Settings(SettingsMsg::SetSingleClick(switch.is_active())));
                         }
                     }
                 },
@@ -29,7 +29,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.disable_drag_and_drop,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetDisableDragAndDrop(switch.is_active()));
+                            let _ = s.send(AppMsg::FileOps(FileOpsMsg::SetDisableDragAndDrop(switch.is_active())));
                         }
                     }
                 },
@@ -39,7 +39,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.show_empty_dir_emblem,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetShowEmptyDirEmblem(switch.is_active()));
+                            let _ = s.send(AppMsg::Icons(IconsMsg::SetShowEmptyDirEmblem(switch.is_active())));
                         }
                     }
                 },
@@ -49,7 +49,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.show_symlink_emblem,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetShowSymlinkEmblem(switch.is_active()));
+                            let _ = s.send(AppMsg::Icons(IconsMsg::SetShowSymlinkEmblem(switch.is_active())));
                         }
                     }
                 },
@@ -59,7 +59,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.archives_as_folders,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetArchivesAsFolders(switch.is_active()));
+                            let _ = s.send(AppMsg::Archive(ArchiveMsg::SetArchivesAsFolders(switch.is_active())));
                         }
                     }
                 },
@@ -69,7 +69,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.auto_show_diff,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetAutoShowDiff(switch.is_active()));
+                            let _ = s.send(AppMsg::Git(GitMsg::SetAutoShowDiff(switch.is_active())));
                         }
                     }
                 },
@@ -79,7 +79,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.default_list_mode,
                     connect_active_notify => move |_switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::ToggleListMode);
+                            let _ = s.send(AppMsg::View(ViewMsg::ToggleListMode));
                         }
                     }
                 },
@@ -97,7 +97,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetAutoListThreshold(spin.value() as usize));
+                            let _ = s.send(AppMsg::Settings(SettingsMsg::SetAutoListThreshold(spin.value() as usize)));
                         }
                     }
                 },
@@ -126,7 +126,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                                 _ => crate::domain::model::SortBy::Name,
                             };
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetDefaultSort(sort));
+                                let _ = s.send(AppMsg::View(ViewMsg::SetDefaultSort(sort)));
                             }
                         }
                     }
@@ -143,7 +143,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         connect_selected_notify => move |drop| {
                             let asc = matches!(drop.selected(), 0);
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetAsc(asc));
+                                let _ = s.send(AppMsg::View(ViewMsg::SetAsc(asc)));
                             }
                         }
                     }
@@ -168,7 +168,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                                 .filter(|s| !s.is_empty())
                                 .collect::<Vec<String>>();
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetHiddenExtensions(exts));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetHiddenExtensions(exts)));
                             }
                         }
                   }
@@ -179,7 +179,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.folders_first,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetFoldersFirst(switch.is_active()));
+                            let _ = s.send(AppMsg::Settings(SettingsMsg::SetFoldersFirst(switch.is_active())));
                         }
                     }
                 },
@@ -189,7 +189,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.show_hidden_by_default,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetShowHidden(switch.is_active()));
+                            let _ = s.send(AppMsg::Settings(SettingsMsg::SetShowHidden(switch.is_active())));
                         }
                     }
                 },

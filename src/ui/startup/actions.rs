@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, ViewMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -21,7 +21,7 @@ impl FluxApp {
         let toggle_sidebar_action = gio::SimpleAction::new("toggle-sidebar", None);
         let s_sidebar = sender.clone();
         toggle_sidebar_action.connect_activate(move |_, _| {
-            s_sidebar.input(AppMsg::ToggleSidebar);
+            s_sidebar.input(AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar));
         });
         action_group.add_action(&toggle_sidebar_action);
         action_group
@@ -34,7 +34,7 @@ impl FluxApp {
         let sender_reload = sender.clone();
         let reload_action = gio::SimpleAction::new("reload-sidebar", None);
         reload_action.connect_activate(move |_, _| {
-            sender_reload.input(AppMsg::RefreshSidebar);
+            sender_reload.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
         });
         app.add_action(&reload_action);
 
@@ -51,9 +51,9 @@ impl FluxApp {
                 if let Some(v) = target {
                     action.set_state(v);
                     if let Some(key) = v.str() {
-                        s.input(AppMsg::SetDefaultSort(
+                        s.input(AppMsg::View(ViewMsg::SetDefaultSort(
                             crate::domain::model::SortBy::from_action_key(key),
-                        ));
+                        )));
                     }
                 }
             });
@@ -71,7 +71,7 @@ impl FluxApp {
                 if let Some(v) = target {
                     action.set_state(v);
                     if let Some(key) = v.str() {
-                        s.input(AppMsg::SetAsc(key == "asc"));
+                        s.input(AppMsg::View(ViewMsg::SetAsc(key == "asc")));
                     }
                 }
             });
@@ -81,7 +81,7 @@ impl FluxApp {
         let s_about = sender.clone();
         let action_about = gio::SimpleAction::new("show-about", None);
         action_about.connect_activate(move |_, _| {
-            s_about.input(AppMsg::ShowAbout);
+            s_about.input(AppMsg::Window(WindowMsg::ShowAbout));
         });
         app.add_action(&action_about);
         app.set_accels_for_action("app.show-about", &[]);
@@ -93,7 +93,7 @@ impl FluxApp {
             icon_theme.connect_changed(move |_| {
                 crate::utils::icon::invalidate_themed_icon_cache();
                 crate::infra::loader::invalidate_extension_icon_cache();
-                s_icon.input(AppMsg::Refresh);
+                s_icon.input(AppMsg::Navigation(NavigationMsg::Refresh));
             });
         }
 
@@ -102,7 +102,7 @@ impl FluxApp {
             settings.connect_gtk_icon_theme_name_notify(move |_| {
                 crate::utils::icon::invalidate_themed_icon_cache();
                 crate::infra::loader::invalidate_extension_icon_cache();
-                s_settings.input(AppMsg::Refresh);
+                s_settings.input(AppMsg::Navigation(NavigationMsg::Refresh));
             });
         }
     }

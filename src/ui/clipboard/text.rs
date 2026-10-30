@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use gtk::gdk;
 use gtk::gio;
 use relm4::prelude::*;
@@ -28,15 +28,15 @@ impl FluxApp {
 
                 relm4::spawn_blocking(move || match std::fs::write(&dest, text.as_bytes()) {
                     Ok(()) => {
-                        s.input(AppMsg::ShowToast(crate::i18n::tr("Text pasted as file")));
-                        s.input(AppMsg::Refresh);
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Text pasted as file"))));
+                        s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                     }
                     Err(e) => {
-                        s.input(AppMsg::ShowToast(format!(
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                             "{}: {}",
                             crate::i18n::tr("Failed to save text"),
                             e
-                        )));
+                        ))));
                     }
                 });
             }

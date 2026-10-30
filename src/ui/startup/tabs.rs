@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, TabsMsg, ViewMsg, Config, FluxApp};
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
@@ -37,10 +37,10 @@ impl FluxApp {
 
         let s_open = sender.clone();
         initial_tab.files.view.connect_activate(move |_, pos| {
-            s_open.input(AppMsg::Open {
+            s_open.input(AppMsg::Navigation(NavigationMsg::Open {
                 position: Some(pos),
                 tab_id: Some(tab_id),
-            });
+            }));
         });
 
         let s_sel = sender.clone();
@@ -51,9 +51,9 @@ impl FluxApp {
             .and_downcast::<gtk::MultiSelection>()
         {
             selection_model.connect_selection_changed(move |_, _, _| {
-                s_sel.input(AppMsg::SelectionChanged {
+                s_sel.input(AppMsg::View(ViewMsg::SelectionChanged {
                     tab_id: Some(tab_id),
-                });
+                }));
             });
         }
 
@@ -74,10 +74,10 @@ impl FluxApp {
                     .map(|r| *r.as_ref())
                     .unwrap_or(0)
             };
-            s_tab_reorder.input(AppMsg::TabReordered {
+            s_tab_reorder.input(AppMsg::Tabs(TabsMsg::TabReordered {
                 moved_id,
                 new_position: new_position as usize,
-            });
+            }));
         });
 
         let s_tab_select = sender.clone();
@@ -85,7 +85,7 @@ impl FluxApp {
             if let Some(selected_page) = tv.selected_page() {
                 let position = tv.page_position(&selected_page) as usize;
                 // Only request SwitchTab if the user clicked a different tab header
-                s_tab_select.input(AppMsg::SwitchTab(position));
+                s_tab_select.input(AppMsg::Tabs(TabsMsg::SwitchTab(position)));
             }
         });
 
@@ -105,7 +105,7 @@ impl FluxApp {
         let s_tab_detached = sender.clone();
         tab_view.connect_page_detached(move |_tv, _page, position| {
             // Only notify our model AFTER the widget is fully detached
-            s_tab_detached.input(AppMsg::CloseTab(Some(position as usize)));
+            s_tab_detached.input(AppMsg::Tabs(TabsMsg::CloseTab(Some(position as usize))));
         });
         (tab_view, tab_bar, initial_tab)
     }

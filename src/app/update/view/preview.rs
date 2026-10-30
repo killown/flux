@@ -7,7 +7,7 @@
 //! drawer.
 
 use super::text_encoding;
-use crate::domain::model::{AppMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg, SearchMsg, FluxApp, RightPanelType};
 use crate::ui::panels::preview::{
     binary, markdown, office, registry, syntax, table, FileInfo, FolderEntry, PreviewContent,
 };
@@ -54,7 +54,7 @@ impl FluxApp {
             };
 
             let session = self.preview_session.fetch_add(1, Ordering::SeqCst) + 1;
-            sender.input(AppMsg::PreviewLoad { path, session });
+            sender.input(AppMsg::Preview(PreviewMsg::PreviewLoad { path, session }));
             return;
         }
 
@@ -70,7 +70,7 @@ impl FluxApp {
             self.mime_filter = None;
             self.mime_filter_from_space = false; // Still good practice to reset
             registry::set_mime_filter_active(false);
-            sender.input(AppMsg::Refresh);
+            sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         }
 
         self.stop_preview_media();
@@ -113,12 +113,12 @@ impl FluxApp {
                     return;
                 }
                 model.select_item(0, true);
-                sender_clone.input(AppMsg::FilterBySelectedMime);
+                sender_clone.input(AppMsg::Search(SearchMsg::FilterBySelectedMime));
             });
             return;
         }
 
-        sender.input(AppMsg::FilterBySelectedMime);
+        sender.input(AppMsg::Search(SearchMsg::FilterBySelectedMime));
     }
 
     /// Toggles wide-preview mode (sidebar hidden, panel fills the remaining width).
@@ -456,11 +456,11 @@ impl FluxApp {
                 return;
             }
             if let Some(s) = sender {
-                let _ = s.send(AppMsg::PreviewReady {
+                let _ = s.send(AppMsg::Preview(PreviewMsg::PreviewReady {
                     path,
                     session,
                     content,
-                });
+                }));
             }
         });
     }

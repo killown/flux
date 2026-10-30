@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, GitMsg, WindowMsg, FluxApp};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
@@ -181,7 +181,7 @@ pub fn build_diff_panel(
             if !diff_text.is_empty() {
                 let display = btn.display();
                 display.clipboard().set_text(&diff_text);
-                s.input(AppMsg::ShowToast(tr("Diff copied to clipboard")));
+                s.input(AppMsg::Window(WindowMsg::ShowToast(tr("Diff copied to clipboard"))));
             }
         });
     }
@@ -192,7 +192,7 @@ pub fn build_diff_panel(
             Some("text-x-generic-symbolic"),
             &tr("Git Diff"),
             &[copy_btn.upcast::<gtk::Widget>()],
-            move || s.input(AppMsg::ToggleDiffPanel),
+            move || s.input(AppMsg::Git(GitMsg::ToggleDiffPanel)),
         );
         panel.append(&header);
     }
@@ -229,10 +229,10 @@ pub fn build_diff_panel(
             };
 
             if let Some((start_line, query)) = find_hunk_info_from_iter(&iter) {
-                s.input(AppMsg::OpenActiveDiffLine {
+                s.input(AppMsg::Git(GitMsg::OpenActiveDiffLine {
                     line: start_line,
                     query,
-                });
+                }));
             }
         });
     }
@@ -278,6 +278,6 @@ pub fn build_diff_panel(
 
     let sender_for_resize = sender.clone();
     resizable_panel(&spec, &panel, move |w| {
-        sender_for_resize.input(AppMsg::SetDiffPanelWidth(w));
+        sender_for_resize.input(AppMsg::Git(GitMsg::SetDiffPanelWidth(w)));
     })
 }

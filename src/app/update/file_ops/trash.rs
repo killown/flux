@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use crate::ui::constants;
 use crate::ui::undo_redo::{FileOp, TrashedItem};
 use adw::gio::prelude::*;
@@ -30,13 +30,13 @@ impl FluxApp {
                 }
             }
             if failed > 0 {
-                sender.input(AppMsg::ShowToast(format!(
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                     "{}: {}",
                     crate::i18n::tr("Could not delete some items from the trash"),
                     failed
-                )));
+                ))));
             }
-            sender.input(AppMsg::Refresh);
+            sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         });
     }
 
@@ -76,7 +76,7 @@ impl FluxApp {
     /// a tag-filtered result set.
     ///
     /// Directory views normally rely on the GIO directory monitor to dispatch
-    /// `AppMsg::FileDeleted` and remove rows organically. Tag views have no
+    /// `FileOpsMsg::FileDeleted` and remove rows organically. Tag views have no
     /// monitor, so deleted files would otherwise linger as orphaned
     /// [`FileItem`]s pointing at nonexistent paths, and `Refresh` deliberately
     /// no-ops for `#tag` filters (see [`Self::handle_refresh_path`]).

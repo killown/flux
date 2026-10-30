@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config};
+use crate::domain::model::{AppMsg, TerminalMsg, Config};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -35,7 +35,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                                 _ => return,
                             };
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTerminalPosition(pos));
+                                let _ = s.send(AppMsg::Terminal(TerminalMsg::SetTerminalPosition(pos)));
                             }
                         }
                     }
@@ -51,7 +51,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             let val = entry.text().to_string();
                             let shell = if val.trim().is_empty() { None } else { Some(val.trim().to_string()) };
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTerminalShell(shell));
+                                let _ = s.send(AppMsg::Terminal(TerminalMsg::SetTerminalShell(shell)));
                             }
                         }
                     }
@@ -66,7 +66,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetTerminalHeight(spin.value() as i32));
+                            let _ = s.send(AppMsg::Terminal(TerminalMsg::SetTerminalHeight(spin.value() as i32)));
                         }
                     }
                 },
@@ -78,7 +78,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         set_valign: gtk::Align::Center,
                         connect_changed => move |entry| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTerminalFont(entry.text().to_string()));
+                                let _ = s.send(AppMsg::Terminal(TerminalMsg::SetTerminalFont(entry.text().to_string())));
                             }
                         }
                     }
@@ -91,7 +91,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         set_valign: gtk::Align::Center,
                         connect_changed => move |entry| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTerminalFgColor(entry.text().to_string()));
+                                let _ = s.send(AppMsg::Terminal(TerminalMsg::SetTerminalFgColor(entry.text().to_string())));
                             }
                         }
                     }
@@ -104,7 +104,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         set_valign: gtk::Align::Center,
                         connect_changed => move |entry| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTerminalBgColor(entry.text().to_string()));
+                                let _ = s.send(AppMsg::Terminal(TerminalMsg::SetTerminalBgColor(entry.text().to_string())));
                             }
                         }
                     }

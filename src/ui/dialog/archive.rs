@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, NavigationMsg, TasksMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::Path;
@@ -66,16 +66,16 @@ impl FluxApp {
                 let password = entry_clone.text().to_string();
                 if !password.is_empty() {
                     let save_to_keyring = save_clone.is_active();
-                    s.input(AppMsg::LoadArchiveWithPassword {
+                    s.input(AppMsg::Archive(ArchiveMsg::LoadArchiveWithPassword {
                         archive_path: archive_path.clone(),
                         prefix: prefix.clone(),
                         password: password.clone(),
-                    });
+                    }));
                     if save_to_keyring {
-                        s.input(AppMsg::SaveArchivePasswordToKeyring {
+                        s.input(AppMsg::Archive(ArchiveMsg::SaveArchivePasswordToKeyring {
                             archive_path: archive_path.clone(),
                             password,
-                        });
+                        }));
                     }
                 }
             }
@@ -118,10 +118,10 @@ impl FluxApp {
 
         dialog.connect_response(None, move |_, resp| {
             if resp == "yes" {
-                s.input(AppMsg::ExtractNestedArchive {
+                s.input(AppMsg::Archive(ArchiveMsg::ExtractNestedArchive {
                     archive_path: archive_path.clone(),
                     inner_path: inner_path.clone(),
-                });
+                }));
             }
         });
 
@@ -176,15 +176,15 @@ impl FluxApp {
                     let label = format!("Deleting {}", file_name_clone);
 
                     if show_progress {
-                        s_clone.input(AppMsg::TaskProgress {
+                        s_clone.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                             id: task_id,
                             label: label.clone(),
                             current: 0,
                             total: total_bytes,
                             total_items: 1,
                             cancellable: cancellable.clone(),
-                        });
-                        s_clone.input(AppMsg::TaskQueueTick);
+                        }));
+                        s_clone.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                     }
 
                     let mut copied_bytes = 0u64;
@@ -195,15 +195,15 @@ impl FluxApp {
                     let mut progress_cb = move |chunk: u64| {
                         copied_bytes += chunk;
                         if show_progress {
-                            s_cb.input(AppMsg::TaskProgress {
+                            s_cb.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                                 id: task_id,
                                 label: label_cb.clone(),
                                 current: copied_bytes.min(total_bytes),
                                 total: total_bytes,
                                 total_items: 1,
                                 cancellable: cancellable_cb.clone(),
-                            });
-                            s_cb.input(AppMsg::TaskQueueTick);
+                            }));
+                            s_cb.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                         }
                     };
 
@@ -217,22 +217,22 @@ impl FluxApp {
                     );
 
                     if show_progress {
-                        s_clone.input(AppMsg::TaskCompleted(task_id));
-                        s_clone.input(AppMsg::TaskQueueTick);
+                        s_clone.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
+                        s_clone.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                     }
 
                     match result {
                         Ok(()) => {
-                            s_clone.input(AppMsg::Refresh);
+                            s_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
                             if was_encrypted && !crate::infra::archive::zip_is_encrypted(&a_path)
                             {
-                                s_clone.input(AppMsg::ShowToast(crate::i18n::tr(
+                                s_clone.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                                     "No encrypted files left: this archive is no longer password-protected, and files you add next will not be encrypted.",
-                                )));
+                                ))));
                             }
                         }
                         Err(e) => {
-                            s_clone.input(AppMsg::ShowToast(format!("Archive error: {e}")));
+                            s_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!("Archive error: {e}"))));
                         }
                     }
                 });

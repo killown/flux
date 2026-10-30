@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, LoadingMsg, NavigationMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::io::ErrorKind;
@@ -120,7 +120,7 @@ async fn create_network(kind: Kind, uri: &str) -> Created {
 }
 
 fn toast(s: &AsyncComponentSender<FluxApp>, text: String) {
-    s.input(AppMsg::ShowToast(text));
+    s.input(AppMsg::Window(WindowMsg::ShowToast(text)));
 }
 
 fn failure_text(kind: Kind, is_archive: bool, detail: &str) -> String {
@@ -188,12 +188,12 @@ async fn create_entries(
     if let Some((status, target)) = single {
         match status {
             Created::Ok => match kind {
-                Kind::Folder if is_archive => s.input(AppMsg::Refresh),
-                Kind::Folder if is_network => s.input(AppMsg::Navigate(target)),
-                Kind::Folder => s.input(AppMsg::InvalidateCacheAndNavigate(target)),
+                Kind::Folder if is_archive => s.input(AppMsg::Navigation(NavigationMsg::Refresh)),
+                Kind::Folder if is_network => s.input(AppMsg::Navigation(NavigationMsg::Navigate(target))),
+                Kind::Folder => s.input(AppMsg::Loading(LoadingMsg::InvalidateCacheAndNavigate(target))),
                 Kind::File => {
                     FluxApp::open_file(target);
-                    s.input(AppMsg::Refresh);
+                    s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 }
             },
             Created::Exists => toast(&s, crate::i18n::tr("Directory or file already exists")),
@@ -209,7 +209,7 @@ async fn create_entries(
     } else {
         "files"
     };
-    s.input(AppMsg::Refresh);
+    s.input(AppMsg::Navigation(NavigationMsg::Refresh));
     toast(
         &s,
         if created == total {

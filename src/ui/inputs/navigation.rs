@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
 use crate::ui::keymap::KeyMap;
 use gtk::glib;
 use gtk::prelude::*;
@@ -61,7 +61,7 @@ pub fn setup_history(
         history.add_shortcut(gtk::Shortcut::new(
             Some(back_trigger),
             Some(gtk::CallbackAction::new(move |_, _| {
-                sender_back.input(AppMsg::GoBack);
+                sender_back.input(AppMsg::Navigation(NavigationMsg::GoBack));
                 glib::Propagation::Stop
             })),
         ));
@@ -72,7 +72,7 @@ pub fn setup_history(
         history.add_shortcut(gtk::Shortcut::new(
             Some(forward_trigger),
             Some(gtk::CallbackAction::new(move |_, _| {
-                sender_forward.input(AppMsg::GoForward);
+                sender_forward.input(AppMsg::Navigation(NavigationMsg::GoForward));
                 glib::Propagation::Stop
             })),
         ));

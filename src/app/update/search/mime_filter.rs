@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, FluxApp};
 use relm4::prelude::*;
 
 impl FluxApp {
@@ -6,7 +6,7 @@ impl FluxApp {
     pub fn handle_filter_by_selected_mime(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_filter_by_selected_mime");
         if self.mime_filter.is_some() {
-            sender.input(AppMsg::ClearMimeFilter);
+            sender.input(AppMsg::Search(SearchMsg::ClearMimeFilter));
             return;
         }
         // Any explicit toggle (Ctrl+M, header button) claims ownership:
@@ -29,7 +29,7 @@ impl FluxApp {
         };
         self.mime_filter = Some(mime);
         crate::ui::panels::preview::registry::set_mime_filter_active(true);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     /// Drops the ephemeral MIME filter and reloads the current directory.
@@ -38,7 +38,7 @@ impl FluxApp {
         self.mime_filter_from_space = false;
         if self.mime_filter.take().is_some() {
             crate::ui::panels::preview::registry::set_mime_filter_active(false);
-            sender.input(AppMsg::Refresh);
+            sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, FluxApp};
 use crate::utils;
 use crate::utils::search::{fuzzy_match_compiled, parse_size_filter, SizeOp};
 use gtk::glib;
@@ -19,12 +19,12 @@ impl FluxApp {
         if query_lc.is_empty() {
             if self.is_content_searching {
                 self.reset_from_content_search();
-                sender.input(AppMsg::Refresh);
+                sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             } else {
                 if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
                     tab.files.clear_filters();
                 }
-                sender.input(AppMsg::Refresh);
+                sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
             return;
         }
@@ -73,13 +73,13 @@ impl FluxApp {
                 crate::infra::search::indexer::request_delta_scan();
             }
 
-            sender.input(AppMsg::StartAdvancedSearch(
+            sender.input(AppMsg::Search(SearchMsg::StartAdvancedSearch(
                 crate::infra::search::AdvancedSearchParams {
                     patterns: vec![query_target],
                     include_hidden: self.show_hidden,
                     ..Default::default()
                 },
-            ));
+            )));
             return;
         } else if has_wildcard {
             // Just filter current view or wait while they finish typing the extension (e.g., user typed "*.p")

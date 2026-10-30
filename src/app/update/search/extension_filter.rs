@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
 use relm4::prelude::*;
 
 impl FluxApp {
@@ -19,7 +19,7 @@ impl FluxApp {
             Some(expanded.clone())
         };
         self.extension_globset = crate::utils::glob::compile_patterns(&expanded);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     #[allow(dead_code)]
@@ -27,6 +27,6 @@ impl FluxApp {
         crate::hit!("handle_clear_extension_filter");
         self.extension_filter = None;
         self.extension_globset = None;
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 }

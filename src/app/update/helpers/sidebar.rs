@@ -1,6 +1,6 @@
 //! Sidebar rebuilding and the right-side panel toggle.
 
-use crate::domain::model::{AppMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, DeviceMsg, NavigationMsg, QuickListMsg, SearchMsg, FluxApp, RightPanelType};
 use crate::ui::{constants, SidebarPlace};
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -148,7 +148,7 @@ impl FluxApp {
         if let Some(sender) = crate::domain::model::SENDER.get().cloned() {
             relm4::spawn_blocking(move || {
                 let mounts = crate::infra::mounts::get_system_mounts();
-                let _ = sender.send(AppMsg::SystemMountsReady(mounts));
+                let _ = sender.send(AppMsg::Device(DeviceMsg::SystemMountsReady(mounts)));
             });
         }
     }
@@ -415,7 +415,7 @@ impl FluxApp {
                 // The rows are drawn by `RebuildQuickPanel`, queued here so it
                 // runs once the panel is attached.
                 RightPanelType::QuickList => {
-                    sender.input(AppMsg::RebuildQuickPanel);
+                    sender.input(AppMsg::QuickList(QuickListMsg::RebuildQuickPanel));
                     crate::ui::panels::build_quick_list_panel(0, sender.clone())
                 }
                 // ── SIDEBAR TERMINAL ─────────────────────────────────────
@@ -606,15 +606,15 @@ impl FluxApp {
         } else if is_search {
             if self.is_content_searching || self.last_search_was_advanced {
                 self.last_search_was_advanced = false;
-                sender.input(AppMsg::CancelContentSearch);
-                sender.input(AppMsg::ClearExtensionFilter);
-                sender.input(AppMsg::Refresh);
+                sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                sender.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
+                sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
         } else if panel_type == RightPanelType::Diff {
             self.active_diff_target = None;
         } else if panel_type == RightPanelType::Tag {
-            sender.input(AppMsg::CancelContentSearch);
-            sender.input(AppMsg::Refresh);
+            sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+            sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         }
 
         // Previews own live media (video/audio), stop it on close so nothing

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config};
+use crate::domain::model::{AppMsg, LoadingMsg, NavigationMsg, SearchMsg, ThumbnailsMsg, Config};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -27,7 +27,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetLoaderBatchSize(spin.value() as usize));
+                            let _ = s.send(AppMsg::Loading(LoadingMsg::SetLoaderBatchSize(spin.value() as usize)));
                         }
                     }
                 },
@@ -45,7 +45,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailThreads(spin.value() as usize));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailThreads(spin.value() as usize)));
                         }
                     }
                 },
@@ -65,7 +65,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         crate::utils::save_config(&cfg);
 
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetEnableFileIndexing(state));
+                            let _ = s.send(AppMsg::Search(SearchMsg::SetEnableFileIndexing(state)));
                         }
 
                         if state {
@@ -87,7 +87,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetFolderCacheCapacity(spin.value() as usize));
+                            let _ = s.send(AppMsg::Loading(LoadingMsg::SetFolderCacheCapacity(spin.value() as usize)));
                         }
                     }
                 },
@@ -105,7 +105,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetMaxSearchResults(spin.value() as usize));
+                            let _ = s.send(AppMsg::Search(SearchMsg::SetMaxSearchResults(spin.value() as usize)));
                         }
                     }
                 },
@@ -119,7 +119,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetMaxContentSearchResults(spin.value() as usize));
+                            let _ = s.send(AppMsg::Search(SearchMsg::SetMaxContentSearchResults(spin.value() as usize)));
                         }
                     }
                 },
@@ -137,7 +137,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetMaxHistory(spin.value() as usize));
+                            let _ = s.send(AppMsg::Navigation(NavigationMsg::SetMaxHistory(spin.value() as usize)));
                         }
                     }
                 },
@@ -161,7 +161,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetFfmpegSeekSeconds(spin.value()));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetFfmpegSeekSeconds(spin.value())));
                         }
                     }
                 },
@@ -179,7 +179,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_numeric: true,
                     connect_value_notify => move |spin| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetFfmpegThreads(spin.value() as usize));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetFfmpegThreads(spin.value() as usize)));
                         }
                     }
                 },
@@ -189,7 +189,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.ffmpeg_auto_rotate,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetFfmpegAutoRotate(switch.is_active()));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetFfmpegAutoRotate(switch.is_active())));
                         }
                     }
                 },

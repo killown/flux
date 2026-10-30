@@ -110,9 +110,9 @@ pub fn show_template_editor(
             let text = buf.text(&start, &end, false).to_string();
             match std::fs::write(&path, text.as_bytes()) {
                 Ok(()) => {
-                    s.input(crate::domain::model::AppMsg::ReloadActionsTemplate {
+                    s.input(crate::domain::model::AppMsg::Actions(crate::domain::model::ActionsMsg::ReloadActionsTemplate {
                         path: path.clone(),
-                    });
+                    }));
                     d.close();
                 }
                 Err(e) => {

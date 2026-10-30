@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use crate::infra::inspector::scan_directory_native;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -208,7 +208,7 @@ impl FluxApp {
                         .build();
 
                     jump_btn.connect_clicked(move |_| {
-                        s_action.input(AppMsg::Navigate(parent_dir.clone()));
+                        s_action.input(AppMsg::Navigation(NavigationMsg::Navigate(parent_dir.clone())));
                         d_action.close();
                     });
 
@@ -231,10 +231,10 @@ impl FluxApp {
                     trash_btn.connect_clicked(move |_| {
                         let gfile = gio::File::for_path(&target_file);
                         if let Err(e) = gfile.trash(gio::Cancellable::NONE) {
-                            s_action.input(AppMsg::ShowToast(format!("Trash error: {}", e)));
+                            s_action.input(AppMsg::Window(WindowMsg::ShowToast(format!("Trash error: {}", e))));
                         } else {
                             s_action
-                                .input(AppMsg::ShowToast(crate::i18n::tr("Item moved to trash.")));
+                                .input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Item moved to trash."))));
                             files_group_clone.remove(&row_clone);
                         }
                     });

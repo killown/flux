@@ -4,7 +4,7 @@ use super::pages::header::{
     build_recents_button, build_sort_indicator, icon_row,
 };
 use super::pages::panels::{panel_revealer, PANEL_TRANSITION_MS};
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, FileOpsMsg, NavigationMsg, SearchMsg, TasksMsg, ThumbnailsMsg, TransferMsg, ViewMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::gdk;
@@ -27,7 +27,7 @@ impl FluxApp {
 
         vadj.connect_value_changed(move |adj| {
             let at_bottom = adj.value() >= adj.upper() - adj.page_size() - 5.0;
-            s_scroll.input(AppMsg::SetScrolledToBottom(at_bottom));
+            s_scroll.input(AppMsg::View(ViewMsg::SetScrolledToBottom(at_bottom)));
 
             if let Some(source_id) = scroll_debounce.take() {
                 source_id.remove();
@@ -50,10 +50,10 @@ impl FluxApp {
                     let progress_top = ((val - lower) / max_scroll).clamp(0.0, 1.0);
                     let progress_bottom = ((val + page_size - lower) / max_scroll).clamp(0.0, 1.0);
 
-                    sender_clone.input(AppMsg::UpdateVisibleThumbnailsViewport {
+                    sender_clone.input(AppMsg::Thumbnails(ThumbnailsMsg::UpdateVisibleThumbnailsViewport {
                         progress_top,
                         progress_bottom,
-                    });
+                    }));
                 });
 
             scroll_debounce.set(Some(timeout_id));
@@ -160,13 +160,13 @@ impl SimpleAsyncComponent for FluxApp {
 
                         pack_start = &gtk::Button {
                             set_icon_name: constants::ICON_BACK,
-                            connect_clicked => AppMsg::GoBack,
+                            connect_clicked => AppMsg::Navigation(NavigationMsg::GoBack),
                             #[watch] set_sensitive: !model.history.is_empty(),
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                         },
                         pack_start = &gtk::Button {
                             set_icon_name: constants::ICON_FORWARD,
-                            connect_clicked => AppMsg::GoForward,
+                            connect_clicked => AppMsg::Navigation(NavigationMsg::GoForward),
                             #[watch] set_sensitive: !model.forward_stack.is_empty(),
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
                         },
@@ -254,7 +254,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         set_propagation_phase: gtk::PropagationPhase::Capture,
                                         connect_pressed[sender] => move |_, n_press, _, _| {
                                             if n_press == 2 {
-                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
+                                                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_ENTRY.to_string())));
                                             }
                                         }
                                     },
@@ -298,7 +298,7 @@ impl SimpleAsyncComponent for FluxApp {
                                 add_controller = gtk::EventControllerKey {
                                     connect_key_pressed[sender] => move |_, keyval, _, _| {
                                         if keyval == gdk::Key::Escape {
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                            sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                             return glib::Propagation::Stop;
                                         }
                                         glib::Propagation::Proceed
@@ -308,9 +308,9 @@ impl SimpleAsyncComponent for FluxApp {
                                     let path_str = entry.text().to_string();
                                     if !path_str.is_empty() {
                                         let normalized_path = Self::expand_path(&path_str);
-                                        sender.input(AppMsg::Navigate(normalized_path));
+                                        sender.input(AppMsg::Navigation(NavigationMsg::Navigate(normalized_path)));
                                     }
-                                    sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                    sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                 },
                             } -> { set_name: constants::VIEW_ENTRY },
 
@@ -329,8 +329,8 @@ impl SimpleAsyncComponent for FluxApp {
                                     add_controller = gtk::EventControllerKey {
                                         connect_key_pressed[sender] => move |_, keyval, _, _| {
                                             if keyval == gdk::Key::Escape {
-                                                sender.input(AppMsg::CancelContentSearch);
-                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                                sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                                                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                                 return glib::Propagation::Stop;
                                             }
                                             glib::Propagation::Proceed
@@ -341,17 +341,17 @@ impl SimpleAsyncComponent for FluxApp {
                                         let raw_text = entry.text().to_string();
                                         if raw_text.starts_with(':') {
                                             if let Some((term, ext_filter)) = crate::utils::search::parse_content_search_query(&raw_text) {
-                                                sender.input(AppMsg::StartContentSearch(term, ext_filter));
+                                                sender.input(AppMsg::Search(SearchMsg::StartContentSearch(term, ext_filter)));
                                             }
                                         } else {
-                                            sender.input(AppMsg::UpdateFilter(raw_text));
+                                            sender.input(AppMsg::Search(SearchMsg::UpdateFilter(raw_text)));
                                         }
                                     },
                                     // Live search for standard filters (size, time, filenames)
                                     connect_search_changed[sender] => move |entry| {
                                         let text = entry.text().to_string();
                                         if !text.starts_with(':') {
-                                            sender.input(AppMsg::UpdateFilter(text));
+                                            sender.input(AppMsg::Search(SearchMsg::UpdateFilter(text)));
                                         }
                                     },
                                     connect_map[sender] => move |e| {
@@ -362,16 +362,16 @@ impl SimpleAsyncComponent for FluxApp {
                                             let pos = e_ptr.text().chars().count() as i32;
                                             e_ptr.set_position(pos);
                                             e_ptr.select_region(pos, pos);
-                                            s_clone.input(AppMsg::CloseSearchSync);
+                                            s_clone.input(AppMsg::Search(SearchMsg::CloseSearchSync));
                                         });
                                     },
                                     connect_stop_search[sender] => move |_| {
-                                        sender.input(AppMsg::CancelContentSearch);
-                                        sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                        sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                                        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                     },
                                     add_controller = gtk::GestureClick {
                                         connect_pressed[sender] => move |_, _, _, _| {
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_ENTRY.to_string()));
+                                            sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_ENTRY.to_string())));
                                         }
                                     },
                                 },
@@ -389,7 +389,7 @@ impl SimpleAsyncComponent for FluxApp {
                                     add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                                     #[watch]
                                     set_visible: model.is_content_searching,
-                                    connect_clicked => AppMsg::CancelContentSearch,
+                                    connect_clicked => AppMsg::Search(SearchMsg::CancelContentSearch),
                                 },
                             } -> { set_name: constants::VIEW_SEARCH },
 
@@ -412,8 +412,8 @@ impl SimpleAsyncComponent for FluxApp {
 
                                     connect_icon_press[sender] => move |_, pos| {
                                         if pos == gtk::EntryIconPosition::Secondary {
-                                            sender.input(AppMsg::ClearExtensionFilter);
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                            sender.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
+                                            sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                         }
                                     },
 
@@ -425,20 +425,20 @@ impl SimpleAsyncComponent for FluxApp {
                                             .filter(|p| !p.is_empty())
                                             .collect();
                                         if patterns.is_empty() {
-                                            sender.input(AppMsg::ClearExtensionFilter);
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                            sender.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
+                                            sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                         } else {
                                             // Recursive search: walk the current directory tree and
                                             // present every file whose name matches the glob pattern(s).
-                                            sender.input(AppMsg::SetExtensionFilter(patterns));
-                                            sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                            sender.input(AppMsg::Search(SearchMsg::SetExtensionFilter(patterns)));
+                                            sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                         }
                                     },
 
                                     add_controller = gtk::EventControllerKey {
                                         connect_key_pressed[sender] => move |_, keyval, _, _| {
                                             if keyval == gdk::Key::Escape {
-                                                sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+                                                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
                                                 return glib::Propagation::Stop;
                                             }
                                             glib::Propagation::Proceed
@@ -614,7 +614,7 @@ impl SimpleAsyncComponent for FluxApp {
                                             connect_scroll[sender] => move |ctrl, _, dy| {
                                                 let modifiers = ctrl.current_event_state();
                                                 if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
-                                                    sender.input(AppMsg::Zoom(dy));
+                                                    sender.input(AppMsg::View(ViewMsg::Zoom(dy)));
                                                     return glib::Propagation::Stop;
                                                 }
                                                 glib::Propagation::Proceed
@@ -636,7 +636,7 @@ impl SimpleAsyncComponent for FluxApp {
                                                             current = w.parent();
                                                         }
                                                     }
-                                                    sender.input(AppMsg::PrepareContextMenu(x, y, None));
+                                                    sender.input(AppMsg::Actions(ActionsMsg::PrepareContextMenu(x, y, None)));
                                                 }
                                             }
                                         },
@@ -745,7 +745,7 @@ impl SimpleAsyncComponent for FluxApp {
                                         }
                                     }
 
-                                    sender.input(AppMsg::HandleExternalDrop { source_paths, dest_path });
+                                    sender.input(AppMsg::FileOps(FileOpsMsg::HandleExternalDrop { source_paths, dest_path }));
                                     return true;
                                 }
                                 false
@@ -782,7 +782,7 @@ impl SimpleAsyncComponent for FluxApp {
                             add_css_class: "navigate-chip",
                             set_valign: gtk::Align::Center,
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-                            connect_clicked => AppMsg::ToggleNavigateMode,
+                            connect_clicked => AppMsg::Navigation(NavigationMsg::ToggleNavigateMode),
                         },
 
                         /// Visual indicator for background task completion
@@ -804,7 +804,7 @@ impl SimpleAsyncComponent for FluxApp {
                             set_label: crate::i18n::tr(" Show Progress").as_str(),
                             set_tooltip_text: Some(crate::i18n::tr("Open transfer progress dialog").as_str()),
                             add_css_class: "flat",
-                            connect_clicked => AppMsg::ShowTransferDialog,
+                            connect_clicked => AppMsg::Transfer(TransferMsg::ShowTransferDialog),
                         },
 
                         /// Cancel button, visible only while transfers are in flight.
@@ -816,7 +816,7 @@ impl SimpleAsyncComponent for FluxApp {
                             add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                             set_valign: gtk::Align::Center,
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),
-                            connect_clicked => AppMsg::CancelAllTasks,
+                            connect_clicked => AppMsg::Tasks(TasksMsg::CancelAllTasks),
                         },
 
                         /// Filter & Volume free disk space
@@ -959,7 +959,7 @@ impl SimpleAsyncComponent for FluxApp {
         if preview {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(crate::domain::model::AppMsg::StartupPreview);
+                s.input(crate::domain::model::AppMsg::Preview(crate::domain::model::PreviewMsg::StartupPreview));
             });
         }
 
@@ -968,7 +968,7 @@ impl SimpleAsyncComponent for FluxApp {
         if quick_list_from_cli {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(crate::domain::model::AppMsg::ToggleQuickListPanel);
+                s.input(crate::domain::model::AppMsg::QuickList(crate::domain::model::QuickListMsg::ToggleQuickListPanel));
             });
         }
 

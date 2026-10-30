@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, TagsMsg, FluxApp};
 use crate::i18n::tr;
 
 /// Constructs and presents the tag editor dialog centered on the application window.
@@ -200,7 +200,7 @@ pub fn show_tag_picker(
                         all_known_tags.borrow_mut().remove(&tag_name);
                         current_selected.borrow_mut().remove(&tag_name);
                         flow_box.remove(&chip_box);
-                        s.input(AppMsg::DeleteTagGlobally(tag_name.clone()));
+                        s.input(AppMsg::Tags(TagsMsg::DeleteTagGlobally(tag_name.clone())));
                     });
                 }
 
@@ -271,10 +271,10 @@ pub fn show_tag_picker(
             submitted.set(true);
             let tags: Vec<String> = current_selected.borrow().iter().cloned().collect();
             for path in &paths {
-                s.input(AppMsg::SetFileTags {
+                s.input(AppMsg::Tags(TagsMsg::SetFileTags {
                     path: path.clone(),
                     tags: tags.clone(),
-                });
+                }));
             }
             d.close();
         });
@@ -297,8 +297,8 @@ pub fn show_tag_picker(
         dialog.connect_closed(move |_| {
             if !submitted.get() {
                 if let Some(target) = fallback_parent.as_ref() {
-                    sender.input(AppMsg::CancelContentSearch);
-                    sender.input(AppMsg::Navigate(target.clone()));
+                    sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                    sender.input(AppMsg::Navigation(NavigationMsg::Navigate(target.clone())));
                 }
             }
         });

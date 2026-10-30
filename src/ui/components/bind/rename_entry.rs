@@ -18,7 +18,7 @@
 //! - [`remove`] is shared with `unbind` so a recycled cell never carries an
 //!   entry over to the next item.
 
-use crate::domain::model::{AppMsg, SENDER};
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, SENDER};
 use crate::ui::components::widgets::FileWidgets;
 use crate::ui::components::FileItem;
 use crate::ui::constants;
@@ -122,7 +122,7 @@ fn build_entry() -> gtk::Entry {
     let submitted_focus = submitted.clone();
     focus_ctrl.connect_leave(move |_| {
         if !submitted_focus.get() {
-            send(AppMsg::Refresh);
+            send(AppMsg::Navigation(NavigationMsg::Refresh));
         }
     });
     entry.add_controller(focus_ctrl);
@@ -139,7 +139,7 @@ fn build_entry() -> gtk::Entry {
         move |_, keyval, _, _| {
             if keyval == gdk::Key::Escape {
                 submitted_key.set(true);
-                if send(AppMsg::Refresh) {
+                if send(AppMsg::Navigation(NavigationMsg::Refresh)) {
                     return glib::Propagation::Stop;
                 }
             } else if keyval == gdk::Key::Return || keyval == gdk::Key::KP_Enter {
@@ -152,7 +152,7 @@ fn build_entry() -> gtk::Entry {
 
                 if let Some(old_path) = target_path {
                     let new_name = entry.text().to_string();
-                    if send(AppMsg::PerformRename(old_path, new_name)) {
+                    if send(AppMsg::FileOps(FileOpsMsg::PerformRename(old_path, new_name))) {
                         return glib::Propagation::Stop;
                     }
                 }

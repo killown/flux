@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -10,9 +10,9 @@ impl FluxApp {
     pub fn handle_create_link(&self, hard: bool, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_create_link");
         let Some(display) = gtk::gdk::Display::default() else {
-            sender.input(AppMsg::ShowToast(crate::i18n::tr(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                 "No clipboard available.",
-            )));
+            ))));
             return;
         };
 
@@ -24,9 +24,9 @@ impl FluxApp {
             let text: String = match res {
                 Ok(Some(t)) => t.to_string(),
                 _ => {
-                    s.input(AppMsg::ShowToast(crate::i18n::tr(
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                         "Clipboard does not contain text.",
-                    )));
+                    ))));
                     return;
                 }
             };
@@ -87,9 +87,9 @@ impl FluxApp {
             }
 
             if targets.is_empty() {
-                s.input(AppMsg::ShowToast(crate::i18n::tr(
+                s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                     "No valid paths found in clipboard.",
-                )));
+                ))));
                 return;
             }
 
@@ -101,10 +101,10 @@ impl FluxApp {
                 let current_canon = match current_dir.canonicalize() {
                     Ok(c) => c,
                     Err(e) => {
-                        s.input(AppMsg::ShowToast(format!(
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                             "Cannot resolve current directory: {}",
                             e
-                        )));
+                        ))));
                         return;
                     }
                 };
@@ -203,15 +203,15 @@ impl FluxApp {
                     } else {
                         format!("{} {} links", crate::i18n::tr("Created"), created.len())
                     };
-                    s.input(AppMsg::ShowToast(msg));
-                    s.input(AppMsg::Refresh);
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
+                    s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 }
                 if !errors.is_empty() {
-                    s.input(AppMsg::ShowToast(format!(
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                         "{}: {}",
                         crate::i18n::tr("Errors"),
                         errors.join("; ")
-                    )));
+                    ))));
                 }
             });
         });

@@ -1,6 +1,6 @@
 //! "New Action" dialog of the Contextual Actions panel.
 
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::menu::secondary::{category_mime_pattern, secondary_template_filename, split_mime};
 use adw::prelude::*;
@@ -245,7 +245,7 @@ impl FluxApp {
                     let v = e.text().trim().to_string();
                     (!v.is_empty()).then_some(v)
                 };
-                s.input(AppMsg::SaveContextualAction {
+                s.input(AppMsg::Actions(ActionsMsg::SaveContextualAction {
                     mime: mime.clone(),
                     category_scope: scope_row.is_visible() && scope_row.selected() == 1,
                     label: label_entry.text().trim().to_string(),
@@ -254,7 +254,7 @@ impl FluxApp {
                     command: cmd_entry.text().trim().to_string(),
                     toast: opt(&toast_entry),
                     no_command_dialog: no_transfer_switch.is_active(),
-                });
+                }));
                 d.close();
             });
         }

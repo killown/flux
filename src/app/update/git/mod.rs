@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FileLoadContext, FluxApp};
+use crate::domain::model::{AppMsg, GitMsg, LoadingMsg, NavigationMsg, WindowMsg, FileLoadContext, FluxApp};
 use crate::infra::git::{
     find_git_repo_root, query_git_status, query_git_status_paths, GitFileStatus, StatusFilter,
 };
@@ -28,10 +28,10 @@ impl FluxApp {
             if let Some(repo_root) = crate::infra::git::find_git_repo_root(&current_dir) {
                 if let Ok(diff) = crate::infra::git::query_file_diff(&repo_root, &target_file).await
                 {
-                    s_clone.input(AppMsg::DiffLoaded {
+                    s_clone.input(AppMsg::Git(GitMsg::DiffLoaded {
                         path: target_file,
                         diff,
-                    });
+                    }));
                 }
             }
         });
@@ -91,10 +91,10 @@ impl FluxApp {
         crate::hit!("handle_git_discard_selected");
         let selection = self.get_selection();
         if selection.is_empty() {
-            sender.input(AppMsg::ShowToast("Nothing selected".to_string()));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast("Nothing selected".to_string())));
             return;
         }
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
+        self.spawn_git_action(sender, AppMsg::Navigation(NavigationMsg::Refresh), move |root| {
             Box::pin(async move {
                 let rel = crate::infra::git::repo_relative(&root, selection);
                 crate::infra::git::discard_selected(&root, &rel).await
@@ -104,7 +104,7 @@ impl FluxApp {
 
     pub fn handle_git_restore_last_discard(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_restore_last_discard");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
+        self.spawn_git_action(sender, AppMsg::Navigation(NavigationMsg::Refresh), move |root| {
             Box::pin(async move { crate::infra::git::restore_last_discard(&root).await })
         });
     }
@@ -114,24 +114,24 @@ impl FluxApp {
         self.spawn_git_query(sender, move |root| {
             Box::pin(async move {
                 let list = crate::infra::git::list_branches(&root).await?;
-                Ok::<AppMsg, String>(AppMsg::GitBranchesReady {
+                Ok::<AppMsg, String>(AppMsg::Git(GitMsg::GitBranchesReady {
                     current: list.current,
                     branches: list.branches,
-                })
+                }))
             })
         });
     }
 
     pub fn handle_git_switch_branch(&mut self, name: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_switch_branch");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
+        self.spawn_git_action(sender, AppMsg::Navigation(NavigationMsg::Refresh), move |root| {
             Box::pin(async move { crate::infra::git::switch_branch(&root, name).await })
         });
     }
 
     pub fn handle_git_create_branch(&mut self, name: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_create_branch");
-        self.spawn_git_action(sender, AppMsg::Refresh, move |root| {
+        self.spawn_git_action(sender, AppMsg::Navigation(NavigationMsg::Refresh), move |root| {
             Box::pin(async move { crate::infra::git::create_branch(&root, name).await })
         });
     }
@@ -142,7 +142,7 @@ impl FluxApp {
             Box::pin(async move {
                 crate::infra::git::diff_head(&root)
                     .await
-                    .map(AppMsg::GitCopyDiffReady)
+                    .map(|v| AppMsg::Git(GitMsg::GitCopyDiffReady(v)))
             })
         });
     }
@@ -151,16 +151,16 @@ impl FluxApp {
     pub fn handle_git_copy_diff_ready(&self, text: String, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_git_copy_diff_ready");
         let Some(display) = gtk::gdk::Display::default() else {
-            sender.input(AppMsg::ShowToast(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(
                 "No display for the clipboard".to_string(),
-            ));
+            )));
             return;
         };
         display.clipboard().set_text(&text);
-        sender.input(AppMsg::ShowToast(format!(
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
             "Diff copied ({} lines)",
             text.lines().count()
-        )));
+        ))));
     }
 
     /// Selected paths, or the current directory when nothing is selected.
@@ -185,7 +185,7 @@ impl FluxApp {
                     many => format!("Git Log: {} paths", many.len()),
                 };
                 let text = crate::infra::git::log_paths(&root, &rel).await?;
-                Ok::<AppMsg, String>(AppMsg::GitOutputReady { title, text })
+                Ok::<AppMsg, String>(AppMsg::Git(GitMsg::GitOutputReady { title, text }))
             })
         });
     }
@@ -202,7 +202,7 @@ impl FluxApp {
                 });
                 crate::infra::git::open_remote(&root, rel.as_deref())
                     .await
-                    .map(AppMsg::ShowToast)
+                    .map(|v| AppMsg::Window(WindowMsg::ShowToast(v)))
             })
         });
     }
@@ -219,9 +219,9 @@ impl FluxApp {
     {
         crate::hit!("spawn_git_query");
         let Some(root) = crate::infra::git::find_git_repo_root(&self.current_path) else {
-            let _ = sender.input_sender().send(AppMsg::GitActionFinished(Err(
+            let _ = sender.input_sender().send(AppMsg::Git(GitMsg::GitActionFinished(Err(
                 "Not inside a git repository".to_string(),
-            )));
+            ))));
             return;
         };
 
@@ -229,7 +229,7 @@ impl FluxApp {
         relm4::spawn(async move {
             let msg = match job(root).await {
                 Ok(msg) => msg,
-                Err(e) => AppMsg::GitActionFinished(Err(e)),
+                Err(e) => AppMsg::Git(GitMsg::GitActionFinished(Err(e))),
             };
             let _ = s.input_sender().send(msg);
         });
@@ -247,9 +247,9 @@ impl FluxApp {
     {
         crate::hit!("spawn_git_action");
         let Some(root) = crate::infra::git::find_git_repo_root(&self.current_path) else {
-            let _ = sender.input_sender().send(AppMsg::GitActionFinished(Err(
+            let _ = sender.input_sender().send(AppMsg::Git(GitMsg::GitActionFinished(Err(
                 "Not inside a git repository".to_string(),
-            )));
+            ))));
             return;
         };
 
@@ -257,7 +257,7 @@ impl FluxApp {
         relm4::spawn(async move {
             let result = job(root).await;
             let success = result.is_ok();
-            let _ = s.input_sender().send(AppMsg::GitActionFinished(result));
+            let _ = s.input_sender().send(AppMsg::Git(GitMsg::GitActionFinished(result)));
             if success {
                 let _ = s.input_sender().send(on_success);
             }
@@ -273,16 +273,16 @@ impl FluxApp {
         // Toasts are meant for short labels, anything long goes to a dialog that can be closed.
         match result {
             Ok(msg) if msg.len() <= 100 && !msg.contains('\n') => {
-                sender.input(AppMsg::ShowToast(msg))
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(msg)))
             }
-            Ok(text) => sender.input(AppMsg::GitOutputReady {
+            Ok(text) => sender.input(AppMsg::Git(GitMsg::GitOutputReady {
                 title: "Git".to_string(),
                 text,
-            }),
-            Err(text) => sender.input(AppMsg::GitOutputReady {
+            })),
+            Err(text) => sender.input(AppMsg::Git(GitMsg::GitOutputReady {
                 title: "Git Error".to_string(),
                 text,
-            }),
+            })),
         }
     }
 
@@ -321,7 +321,7 @@ impl FluxApp {
 
         relm4::spawn(async move {
             let Ok(status_map) = query_git_status(&repo_root, &target_dir).await else {
-                s_clone.input(AppMsg::ShowToast("Failed to query git status".into()));
+                s_clone.input(AppMsg::Window(WindowMsg::ShowToast("Failed to query git status".into())));
                 return;
             };
 
@@ -333,7 +333,7 @@ impl FluxApp {
                         .filter(|(path, _)| keep.contains(path))
                         .collect(),
                     Err(e) => {
-                        s_clone.input(AppMsg::ShowToast(e));
+                        s_clone.input(AppMsg::Window(WindowMsg::ShowToast(e)));
                         return;
                     }
                 },
@@ -389,10 +389,10 @@ impl FluxApp {
             if contexts.is_empty() {
                 match filter {
                     Some(StatusFilter::Staged) => {
-                        s_clone.input(AppMsg::ShowToast("No staged changes".into()))
+                        s_clone.input(AppMsg::Window(WindowMsg::ShowToast("No staged changes".into())))
                     }
                     Some(StatusFilter::Unstaged) => {
-                        s_clone.input(AppMsg::ShowToast("No unstaged changes".into()))
+                        s_clone.input(AppMsg::Window(WindowMsg::ShowToast("No unstaged changes".into())))
                     }
                     None => {}
                 }
@@ -404,19 +404,19 @@ impl FluxApp {
                 current_list_mode
             };
 
-            s_clone.input(AppMsg::FolderLoaded {
+            s_clone.input(AppMsg::Loading(LoadingMsg::FolderLoaded {
                 path: target_dir.clone(),
                 load_id: current_load_id,
                 items: contexts,
                 media_tasks: Vec::new(),
                 list_mode,
-            });
+            }));
 
-            s_clone.input(AppMsg::GitStatusReady {
+            s_clone.input(AppMsg::Git(GitMsg::GitStatusReady {
                 path: target_dir,
                 load_id: current_load_id,
                 updates: status_updates,
-            });
+            }));
         });
     }
 }
@@ -428,7 +428,7 @@ pub(super) fn handle(
 ) -> Result<(), AppMsg> {
     crate::hit!("handle");
     match msg {
-        AppMsg::OpenActiveDiffLine { line, query } => {
+        AppMsg::Git(GitMsg::OpenActiveDiffLine { line, query }) => {
             if let Some(ref path) = app.active_diff_target {
                 if let Err(e) = crate::utils::helpers::launch_editor_at_line(
                     &app.config.ui.diff_editor,
@@ -436,33 +436,33 @@ pub(super) fn handle(
                     line,
                     query.as_deref(),
                 ) {
-                    sender.input(AppMsg::ShowToast(format!("Failed to open editor: {}", e)));
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Failed to open editor: {}", e))));
                 }
             } else {
-                sender.input(AppMsg::ShowToast(
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(
                     "No active diff target selected".to_string(),
-                ));
+                )));
             }
         }
-        AppMsg::ToggleDiffPanel => {
+        AppMsg::Git(GitMsg::ToggleDiffPanel) => {
             app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Diff, sender)
         }
-        AppMsg::ShowFileDiff(path) => app.handle_show_file_diff(path, sender),
-        AppMsg::DiffLoaded { path, diff } => {
+        AppMsg::Git(GitMsg::ShowFileDiff(path)) => app.handle_show_file_diff(path, sender),
+        AppMsg::Git(GitMsg::DiffLoaded { path, diff }) => {
             if let Some(ref buffer) = app.diff_text_buffer {
                 crate::ui::panels::apply_diff_markup(buffer, &diff);
             }
             app.active_diff_target = Some(path);
         }
-        AppMsg::SetDiffPanelWidth(val) => app.handle_set_diff_panel_width(val),
-        AppMsg::SetAutoShowDiff(val) => app.handle_set_auto_show_diff(val),
-        AppMsg::ShowGitStatusView => app.handle_show_git_status_view(sender.clone()),
-        AppMsg::SetGitRepoActive(is_active) => app.is_in_git_repo = is_active,
-        AppMsg::GitActionFinished(result) => app.handle_git_action_finished(result, sender),
-        AppMsg::GitDiscardSelected => app.handle_git_discard_selected(sender),
-        AppMsg::GitRestoreLastDiscard => app.handle_git_restore_last_discard(sender),
-        AppMsg::PromptGitSwitchBranch => app.handle_prompt_git_switch_branch(sender),
-        AppMsg::GitBranchesReady { current, branches } => {
+        AppMsg::Git(GitMsg::SetDiffPanelWidth(val)) => app.handle_set_diff_panel_width(val),
+        AppMsg::Git(GitMsg::SetAutoShowDiff(val)) => app.handle_set_auto_show_diff(val),
+        AppMsg::Git(GitMsg::ShowGitStatusView) => app.handle_show_git_status_view(sender.clone()),
+        AppMsg::Git(GitMsg::SetGitRepoActive(is_active)) => app.is_in_git_repo = is_active,
+        AppMsg::Git(GitMsg::GitActionFinished(result)) => app.handle_git_action_finished(result, sender),
+        AppMsg::Git(GitMsg::GitDiscardSelected) => app.handle_git_discard_selected(sender),
+        AppMsg::Git(GitMsg::GitRestoreLastDiscard) => app.handle_git_restore_last_discard(sender),
+        AppMsg::Git(GitMsg::PromptGitSwitchBranch) => app.handle_prompt_git_switch_branch(sender),
+        AppMsg::Git(GitMsg::GitBranchesReady { current, branches }) => {
             if let Some(parent) = app.root_window.as_ref() {
                 crate::ui::dialog::git_switch_branch::show_switch_branch_dialog(
                     Some(parent.upcast_ref()),
@@ -472,12 +472,12 @@ pub(super) fn handle(
                 );
             }
         }
-        AppMsg::GitSwitchBranch(name) => app.handle_git_switch_branch(name, sender),
-        AppMsg::GitCreateBranch(name) => app.handle_git_create_branch(name, sender),
-        AppMsg::GitCopyDiff => app.handle_git_copy_diff(sender),
-        AppMsg::GitCopyDiffReady(text) => app.handle_git_copy_diff_ready(text, sender),
-        AppMsg::GitShowLog => app.handle_git_show_log(sender),
-        AppMsg::GitOutputReady { title, text } => {
+        AppMsg::Git(GitMsg::GitSwitchBranch(name)) => app.handle_git_switch_branch(name, sender),
+        AppMsg::Git(GitMsg::GitCreateBranch(name)) => app.handle_git_create_branch(name, sender),
+        AppMsg::Git(GitMsg::GitCopyDiff) => app.handle_git_copy_diff(sender),
+        AppMsg::Git(GitMsg::GitCopyDiffReady(text)) => app.handle_git_copy_diff_ready(text, sender),
+        AppMsg::Git(GitMsg::GitShowLog) => app.handle_git_show_log(sender),
+        AppMsg::Git(GitMsg::GitOutputReady { title, text }) => {
             if let Some(parent) = app.root_window.as_ref() {
                 crate::ui::dialog::git_output::show_git_output_dialog(
                     Some(parent.upcast_ref()),
@@ -486,20 +486,20 @@ pub(super) fn handle(
                 );
             }
         }
-        AppMsg::GitOpenRemote => app.handle_git_open_remote(sender),
-        AppMsg::ShowGitStatusStaged => app.handle_show_git_status_filtered(
+        AppMsg::Git(GitMsg::GitOpenRemote) => app.handle_git_open_remote(sender),
+        AppMsg::Git(GitMsg::ShowGitStatusStaged) => app.handle_show_git_status_filtered(
             crate::infra::git::StatusFilter::Staged,
             sender.clone(),
         ),
-        AppMsg::ShowGitStatusUnstaged => app.handle_show_git_status_filtered(
+        AppMsg::Git(GitMsg::ShowGitStatusUnstaged) => app.handle_show_git_status_filtered(
             crate::infra::git::StatusFilter::Unstaged,
             sender.clone(),
         ),
-        AppMsg::GitStatusReady {
+        AppMsg::Git(GitMsg::GitStatusReady {
             path,
             load_id,
             updates,
-        } => app.handle_git_status_ready(path, load_id, updates),
+        }) => app.handle_git_status_ready(path, load_id, updates),
         other => return Err(other),
     }
     Ok(())

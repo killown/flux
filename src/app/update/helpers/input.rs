@@ -1,6 +1,6 @@
 //! Keyboard, mouse and action wiring for the main window.
 
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, FileOpsMsg, NavigationMsg, PreviewMsg, QuickListMsg, SearchMsg, TabsMsg, ViewMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;
@@ -73,30 +73,30 @@ impl FluxApp {
 
         // System Keys
         if keyval == gdk::Key::F1 {
-            sender.input(AppMsg::ShowHelp);
+            sender.input(AppMsg::Window(WindowMsg::ShowHelp));
             return glib::Propagation::Stop;
         }
 
         if keyval == gdk::Key::F2 {
-            sender.input(AppMsg::TriggerRenameSelection);
+            sender.input(AppMsg::FileOps(FileOpsMsg::TriggerRenameSelection));
             return glib::Propagation::Stop;
         }
 
         if modifiers.contains(gdk::ModifierType::CONTROL_MASK) {
             match keyval {
                 gdk::Key::t | gdk::Key::T => {
-                    sender.input(AppMsg::NewTab(None));
+                    sender.input(AppMsg::Tabs(TabsMsg::NewTab(None)));
                     return glib::Propagation::Stop;
                 }
                 gdk::Key::w | gdk::Key::W => {
-                    sender.input(AppMsg::CloseTab(None));
+                    sender.input(AppMsg::Tabs(TabsMsg::CloseTab(None)));
                     return glib::Propagation::Stop;
                 }
                 gdk::Key::Tab => {
                     if modifiers.contains(gdk::ModifierType::SHIFT_MASK) {
-                        sender.input(AppMsg::PrevTab);
+                        sender.input(AppMsg::Tabs(TabsMsg::PrevTab));
                     } else {
-                        sender.input(AppMsg::NextTab);
+                        sender.input(AppMsg::Tabs(TabsMsg::NextTab));
                     }
                     return glib::Propagation::Stop;
                 }
@@ -105,7 +105,7 @@ impl FluxApp {
         }
 
         if modifiers == gdk::ModifierType::CONTROL_MASK && keyval == gdk::Key::Delete {
-            sender.input(AppMsg::ClearExclusive);
+            sender.input(AppMsg::QuickList(QuickListMsg::ClearExclusive));
             return glib::Propagation::Stop;
         }
 
@@ -114,9 +114,9 @@ impl FluxApp {
         // clipboard-copy meaning Ctrl+Insert has inside a text entry.
         if keyval == gdk::Key::Insert && modifiers != gdk::ModifierType::CONTROL_MASK {
             if modifiers == gdk::ModifierType::CONTROL_MASK | gdk::ModifierType::SHIFT_MASK {
-                sender.input(AppMsg::AddToSidebarPermanent);
+                sender.input(AppMsg::Sidebar(AppSidebarMsg::AddToSidebarPermanent));
             } else {
-                sender.input(AppMsg::AddCurrentFolderExclusive);
+                sender.input(AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive));
             }
             return glib::Propagation::Stop;
         }
@@ -141,16 +141,16 @@ impl FluxApp {
         // do not steal Return, Escape, or typing!
         if is_editable {
             if (header_view == "search" || header_view == "entry") && keyval == gdk::Key::Escape {
-                sender.input(AppMsg::CancelContentSearch);
-                sender.input(AppMsg::UpdateFilter(String::new()));
-                sender.input(AppMsg::SwitchHeader("path".to_string()));
+                sender.input(AppMsg::Search(SearchMsg::CancelContentSearch));
+                sender.input(AppMsg::Search(SearchMsg::UpdateFilter(String::new())));
+                sender.input(AppMsg::Search(SearchMsg::SwitchHeader("path".to_string())));
                 return glib::Propagation::Stop;
             }
             return glib::Propagation::Proceed;
         }
 
         if keyval == gdk::Key::Insert && modifiers == gdk::ModifierType::CONTROL_MASK {
-            sender.input(AppMsg::ToggleNavigateMode);
+            sender.input(AppMsg::Navigation(NavigationMsg::ToggleNavigateMode));
             return glib::Propagation::Stop;
         }
 
@@ -162,7 +162,7 @@ impl FluxApp {
         // own Space (Page Down in less/man/vim). Placed before type-to-search
         // because Space is not a search-starting character.
         if should_trigger_preview(keyval, modifiers, is_editable, terminal_focused) {
-            sender.input(AppMsg::TogglePreview);
+            sender.input(AppMsg::Preview(PreviewMsg::TogglePreview));
             return glib::Propagation::Stop;
         }
 
@@ -170,7 +170,7 @@ impl FluxApp {
         // item's MIME filter. Only fires when nothing is already filtered
         // by MIME, so pressing Space again does not clear it.
         if should_trigger_preview_and_mime(keyval, modifiers, is_editable, terminal_focused) {
-            sender.input(AppMsg::TogglePreviewAndFilterBySelectedMime);
+            sender.input(AppMsg::Search(SearchMsg::TogglePreviewAndFilterBySelectedMime));
             return glib::Propagation::Stop;
         }
         // ─────────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ impl FluxApp {
                 if c.is_ascii_alphanumeric() || c == ':' || c == '<' || c == '#' {
                     // Type-to-search, or a Navigate-mode prefix jump: the update
                     // handler knows which, so the key controller stays stateless.
-                    sender.input(AppMsg::KeyChar(c));
+                    sender.input(AppMsg::Navigation(NavigationMsg::KeyChar(c)));
                     return glib::Propagation::Stop;
                 }
             }
@@ -199,19 +199,19 @@ impl FluxApp {
         match keyval {
             // Triggers batch activation for the current selection
             gdk::Key::Return | gdk::Key::KP_Enter => {
-                sender.input(AppMsg::KeyEnter);
+                sender.input(AppMsg::Navigation(NavigationMsg::KeyEnter));
                 glib::Propagation::Stop
             }
             gdk::Key::F2 => {
-                sender.input(AppMsg::TriggerRenameSelection);
+                sender.input(AppMsg::FileOps(FileOpsMsg::TriggerRenameSelection));
                 glib::Propagation::Stop
             }
             gdk::Key::Escape => {
-                sender.input(AppMsg::KeyEscape);
+                sender.input(AppMsg::Navigation(NavigationMsg::KeyEscape));
                 glib::Propagation::Stop
             }
             gdk::Key::BackSpace => {
-                sender.input(AppMsg::KeyBackspace);
+                sender.input(AppMsg::Navigation(NavigationMsg::KeyBackspace));
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,
@@ -263,8 +263,8 @@ impl FluxApp {
     ) {
         crate::hit!("setup_shortcuts");
         let shortcuts = [
-            ("F1", AppMsg::ShowHelp),
-            ("<Shift>s", AppMsg::CycleFolderPriority),
+            ("F1", AppMsg::Window(WindowMsg::ShowHelp)),
+            ("<Shift>s", AppMsg::View(ViewMsg::CycleFolderPriority)),
         ];
 
         for (trigger_str, msg) in shortcuts {
@@ -283,7 +283,7 @@ impl FluxApp {
         controller.add_shortcut(gtk::Shortcut::new(
             Some(gtk::ShortcutTrigger::parse_string("<Control>f").unwrap()),
             Some(gtk::CallbackAction::new(move |_, _| {
-                f_sender.input(AppMsg::ToggleSearchPanel);
+                f_sender.input(AppMsg::Search(SearchMsg::ToggleSearchPanel));
                 glib::Propagation::Stop
             })),
         ));
@@ -302,7 +302,7 @@ impl FluxApp {
         let prio_action = gio::SimpleAction::new("cycle-priority", None);
         let prio_sender = sender.clone();
         prio_action.connect_activate(move |_, _| {
-            prio_sender.input(AppMsg::CycleFolderPriority);
+            prio_sender.input(AppMsg::View(ViewMsg::CycleFolderPriority));
         });
         self.action_group.add_action(&prio_action);
 
@@ -310,7 +310,7 @@ impl FluxApp {
         let copy_action = gio::SimpleAction::new("copy", None);
         let c_sender = sender.clone();
         copy_action.connect_activate(move |_, _| {
-            c_sender.input(AppMsg::Copy);
+            c_sender.input(AppMsg::FileOps(FileOpsMsg::Copy));
         });
         self.action_group.add_action(&copy_action);
 
@@ -318,7 +318,7 @@ impl FluxApp {
         let cut_action = gio::SimpleAction::new("cut", None);
         let x_sender = sender.clone();
         cut_action.connect_activate(move |_, _| {
-            x_sender.input(AppMsg::Cut);
+            x_sender.input(AppMsg::FileOps(FileOpsMsg::Cut));
         });
         self.action_group.add_action(&cut_action);
 
@@ -326,7 +326,7 @@ impl FluxApp {
         let paste_action = gio::SimpleAction::new("paste", None);
         let v_sender = sender.clone();
         paste_action.connect_activate(move |_, _| {
-            v_sender.input(AppMsg::Paste);
+            v_sender.input(AppMsg::FileOps(FileOpsMsg::Paste));
         });
         self.action_group.add_action(&paste_action);
 
@@ -336,7 +336,7 @@ impl FluxApp {
         let launch_sender = sender.clone();
         launch_action.connect_activate(move |_, parameter| {
             if let Some(app_id) = parameter.and_then(|p| p.get::<String>()) {
-                launch_sender.input(AppMsg::LaunchWithApp(app_id));
+                launch_sender.input(AppMsg::Actions(ActionsMsg::LaunchWithApp(app_id)));
             }
         });
         self.action_group.add_action(&launch_action);
@@ -355,7 +355,7 @@ impl FluxApp {
             let sender_clone = sender.clone();
             let action = gio::SimpleAction::new(&action_def.action_name, None);
             action.connect_activate(move |_, _| {
-                sender_clone.input(AppMsg::ExecuteCommand(cmd_clone.clone()));
+                sender_clone.input(AppMsg::Actions(ActionsMsg::ExecuteCommand(cmd_clone.clone())));
             });
             self.action_group.add_action(&action);
         }

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FileOpsMsg, NavigationMsg, QuickListMsg, TerminalMsg, WindowMsg, FluxApp};
 use crate::ui::SidebarPlace;
 use crate::utils;
 use adw::gio;
@@ -320,10 +320,10 @@ impl FluxApp {
                     )
                     .is_ok()
                 {
-                    sender_clone.input(AppMsg::ItemMoved {
+                    sender_clone.input(AppMsg::FileOps(FileOpsMsg::ItemMoved {
                         old_path: source_path,
                         new_path: final_dest,
-                    });
+                    }));
                 } else {
                     eprintln!(
                         "[Sidebar DnD] Failed to move {:?} → {:?}",
@@ -332,7 +332,7 @@ impl FluxApp {
                 }
             }
 
-            sender_clone.input(AppMsg::Refresh);
+            sender_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
         });
     }
 
@@ -343,7 +343,7 @@ impl FluxApp {
             // restore the sidebar, rather than trying to toggle a sidebar
             // that was intentionally hidden.
             if let Some(s) = crate::domain::model::SENDER.get() {
-                let _ = s.send(AppMsg::ToggleTerminalPanel);
+                let _ = s.send(AppMsg::Terminal(TerminalMsg::ToggleTerminalPanel));
             }
             return;
         }
@@ -372,8 +372,8 @@ impl FluxApp {
                 gio::MountOperation::NONE,
                 gio::Cancellable::NONE,
                 move |res| match res {
-                    Ok(_) => sender.input(AppMsg::RefreshSidebar),
-                    Err(e) => sender.input(AppMsg::ShowToast(format!("Unmount failed: {}", e))),
+                    Ok(_) => sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar)),
+                    Err(e) => sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Unmount failed: {}", e)))),
                 },
             );
         }
@@ -418,72 +418,72 @@ pub(super) fn handle(
 ) -> Result<(), AppMsg> {
     crate::hit!("handle");
     match msg {
-        AppMsg::RefreshSidebar => app.handle_refresh_sidebar(),
-        AppMsg::RemoveFromSidebar(path) => app.handle_remove_from_sidebar(path),
-        AppMsg::AddToSidebarPermanent => app.handle_add_to_sidebar_permanent(),
-        AppMsg::ReorderSidebar { from, to } => app.handle_reorder_sidebar(from, to),
-        AppMsg::PromptSidebarRename { path, current_name } => {
+        AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar) => app.handle_refresh_sidebar(),
+        AppMsg::Sidebar(AppSidebarMsg::RemoveFromSidebar(path)) => app.handle_remove_from_sidebar(path),
+        AppMsg::Sidebar(AppSidebarMsg::AddToSidebarPermanent) => app.handle_add_to_sidebar_permanent(),
+        AppMsg::Sidebar(AppSidebarMsg::ReorderSidebar { from, to }) => app.handle_reorder_sidebar(from, to),
+        AppMsg::Sidebar(AppSidebarMsg::PromptSidebarRename { path, current_name }) => {
             app.handle_prompt_sidebar_rename(path, current_name, sender)
         }
-        AppMsg::RenameSidebarPlace { path, new_name } => {
+        AppMsg::Sidebar(AppSidebarMsg::RenameSidebarPlace { path, new_name }) => {
             app.handle_rename_sidebar_place(path, new_name, sender)
         }
-        AppMsg::PromptSidebarRenameSection {
+        AppMsg::Sidebar(AppSidebarMsg::PromptSidebarRenameSection {
             old_name,
             current_name,
-        } => app.show_prompt_sidebar_rename_section(old_name, current_name, sender),
-        AppMsg::RenameSidebarSection { old_name, new_name } => {
+        }) => app.show_prompt_sidebar_rename_section(old_name, current_name, sender),
+        AppMsg::Sidebar(AppSidebarMsg::RenameSidebarSection { old_name, new_name }) => {
             app.handle_rename_sidebar_section(old_name, new_name)
         }
-        AppMsg::RemoveSidebarSection(name) => app.handle_remove_sidebar_section(name),
-        AppMsg::PromptNewSidebarSection => app.show_prompt_new_sidebar_section(sender),
-        AppMsg::AddSidebarSection(title) => app.handle_add_sidebar_section(title),
-        AppMsg::SidebarDropMove {
+        AppMsg::Sidebar(AppSidebarMsg::RemoveSidebarSection(name)) => app.handle_remove_sidebar_section(name),
+        AppMsg::Sidebar(AppSidebarMsg::PromptNewSidebarSection) => app.show_prompt_new_sidebar_section(sender),
+        AppMsg::Sidebar(AppSidebarMsg::AddSidebarSection(title)) => app.handle_add_sidebar_section(title),
+        AppMsg::Sidebar(AppSidebarMsg::SidebarDropMove {
             source_paths,
             dest_path,
-        } => app.handle_sidebar_drop_move(source_paths, dest_path, sender),
-        AppMsg::PinFolderAt {
+        }) => app.handle_sidebar_drop_move(source_paths, dest_path, sender),
+        AppMsg::Sidebar(AppSidebarMsg::PinFolderAt {
             path,
             before,
             label_name,
-        } => app.handle_pin_folder_at(path, before, label_name),
-        AppMsg::ShowSidebarPinZone(_) => {}
-        AppMsg::ToggleSidebar => app.handle_toggle_sidebar(),
-        AppMsg::ToggleWidePreview => app.handle_toggle_wide_preview(sender),
-        AppMsg::SetWidePreviewDefault(on) => app.handle_set_wide_preview_default(on),
-        AppMsg::SetSidebarWidth(val) => app.handle_set_sidebar_width(val),
-        AppMsg::ShowSidebarIconPicker(path) => app.show_sidebar_icon_picker(path, sender),
+        }) => app.handle_pin_folder_at(path, before, label_name),
+        AppMsg::Sidebar(AppSidebarMsg::ShowSidebarPinZone(_)) => {}
+        AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar) => app.handle_toggle_sidebar(),
+        AppMsg::Sidebar(AppSidebarMsg::ToggleWidePreview) => app.handle_toggle_wide_preview(sender),
+        AppMsg::Sidebar(AppSidebarMsg::SetWidePreviewDefault(on)) => app.handle_set_wide_preview_default(on),
+        AppMsg::Sidebar(AppSidebarMsg::SetSidebarWidth(val)) => app.handle_set_sidebar_width(val),
+        AppMsg::Sidebar(AppSidebarMsg::ShowSidebarIconPicker(path)) => app.show_sidebar_icon_picker(path, sender),
 
-        AppMsg::AddExclusive(p) => app.handle_add_exclusive(p, sender),
-        AppMsg::AddCurrentFolderExclusive => app.handle_add_current_folder_exclusive(sender),
-        AppMsg::ClearExclusive => app.handle_clear_exclusive(sender),
-        AppMsg::RebuildQuickPanel => app.handle_rebuild_quick_panel(sender),
-        AppMsg::NextExclusive => app.handle_next_exclusive(sender),
-        AppMsg::PrevExclusive => app.handle_prev_exclusive(sender),
-        AppMsg::QuickListTab => app.handle_quick_list_tab(sender),
-        AppMsg::QuickListJump(n) => app.handle_quick_list_jump(n, sender),
-        AppMsg::ToggleQuickListPanel => app.handle_toggle_quick_list_panel(sender),
-        AppMsg::QuickListSelect(list) => app.handle_quick_list_select(list, sender),
-        AppMsg::QuickListOpen { list, path } => app.handle_quick_list_open(list, path, sender),
-        AppMsg::QuickListNew(name) => app.handle_quick_list_new(name, sender),
-        AppMsg::QuickListRename { list, name } => app.handle_quick_list_rename(list, name, sender),
-        AppMsg::QuickListDelete(list) => app.handle_quick_list_delete(list, sender),
-        AppMsg::QuickListClearList(list) => app.handle_quick_list_clear_list(list, sender),
-        AppMsg::QuickListAddCurrent(list) => app.handle_quick_list_add_current(list, sender),
-        AppMsg::QuickListRemove { list, path } => app.handle_quick_list_remove(list, path, sender),
-        AppMsg::QuickListMove { path, from, to } => {
+        AppMsg::QuickList(QuickListMsg::AddExclusive(p)) => app.handle_add_exclusive(p, sender),
+        AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive) => app.handle_add_current_folder_exclusive(sender),
+        AppMsg::QuickList(QuickListMsg::ClearExclusive) => app.handle_clear_exclusive(sender),
+        AppMsg::QuickList(QuickListMsg::RebuildQuickPanel) => app.handle_rebuild_quick_panel(sender),
+        AppMsg::QuickList(QuickListMsg::NextExclusive) => app.handle_next_exclusive(sender),
+        AppMsg::QuickList(QuickListMsg::PrevExclusive) => app.handle_prev_exclusive(sender),
+        AppMsg::QuickList(QuickListMsg::QuickListTab) => app.handle_quick_list_tab(sender),
+        AppMsg::QuickList(QuickListMsg::QuickListJump(n)) => app.handle_quick_list_jump(n, sender),
+        AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel) => app.handle_toggle_quick_list_panel(sender),
+        AppMsg::QuickList(QuickListMsg::QuickListSelect(list)) => app.handle_quick_list_select(list, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }) => app.handle_quick_list_open(list, path, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListNew(name)) => app.handle_quick_list_new(name, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListRename { list, name }) => app.handle_quick_list_rename(list, name, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListDelete(list)) => app.handle_quick_list_delete(list, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListClearList(list)) => app.handle_quick_list_clear_list(list, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)) => app.handle_quick_list_add_current(list, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListRemove { list, path }) => app.handle_quick_list_remove(list, path, sender),
+        AppMsg::QuickList(QuickListMsg::QuickListMove { path, from, to }) => {
             app.handle_quick_list_move(path, from, to, sender)
         }
-        AppMsg::QuickListSetSlot { list, slot } => {
+        AppMsg::QuickList(QuickListMsg::QuickListSetSlot { list, slot }) => {
             app.handle_quick_list_set_slot(list, slot, sender)
         }
-        AppMsg::AddPanelSidebarEntry { name, path, icon } => {
+        AppMsg::Sidebar(AppSidebarMsg::AddPanelSidebarEntry { name, path, icon }) => {
             app.handle_add_panel_sidebar_entry(name, path, icon, sender)
         }
-        AppMsg::MoveFilesToTarget {
+        AppMsg::QuickList(QuickListMsg::MoveFilesToTarget {
             sources,
             destination,
-        } => app.handle_move_files_to_target(sources, destination, sender),
+        }) => app.handle_move_files_to_target(sources, destination, sender),
         other => return Err(other),
     }
     Ok(())

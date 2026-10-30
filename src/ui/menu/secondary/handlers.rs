@@ -1,6 +1,6 @@
 use super::matching::action_matches_mime;
 use super::template::{parse_secondary_template, resolve_secondary_menu_template};
-use crate::domain::model::{AppMsg, CustomAction, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, ArchiveMsg, WindowMsg, CustomAction, FluxApp};
 use crate::ui::constants;
 use crate::utils;
 use adw::gdk;
@@ -69,13 +69,13 @@ impl FluxApp {
                 None => Vec::new(),
             };
 
-            sender_bg.input(AppMsg::ShowSecondaryMenu {
+            sender_bg.input(AppMsg::Actions(ActionsMsg::ShowSecondaryMenu {
                 x,
                 y,
                 path: target_path_bg,
                 mime,
                 actions,
-            });
+            }));
         });
     }
 
@@ -90,9 +90,9 @@ impl FluxApp {
     ) {
         crate::hit!("secondary_menu::build_and_show");
         if actions.is_empty() {
-            sender.input(AppMsg::ShowToast(crate::i18n::tr(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                 "No contextual actions for this type",
-            )));
+            ))));
             return;
         }
 
@@ -137,13 +137,13 @@ impl FluxApp {
             gio_action.connect_activate(move |_, _| {
                 match (cmd_template.as_str(), &target_path) {
                     ("builtin::forget_archive_password", Some(target)) => {
-                        sender_click.input(AppMsg::ForgetArchivePassword(target.clone()));
+                        sender_click.input(AppMsg::Archive(ArchiveMsg::ForgetArchivePassword(target.clone())));
                     }
                     ("builtin::forget_archive_password", None) => {}
-                    _ => sender_click.input(AppMsg::ExecuteCommand(cmd_template.clone())),
+                    _ => sender_click.input(AppMsg::Actions(ActionsMsg::ExecuteCommand(cmd_template.clone()))),
                 }
                 if let Some(ref msg) = toast_msg {
-                    sender_click.input(AppMsg::ShowToast(msg.clone()));
+                    sender_click.input(AppMsg::Window(WindowMsg::ShowToast(msg.clone())));
                 }
             });
 

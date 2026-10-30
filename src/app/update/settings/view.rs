@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp, SortBy};
 use crate::utils;
 use relm4::prelude::*;
 
@@ -19,7 +19,7 @@ impl FluxApp {
             self.current_icon_size as u32,
             self.config.ui.folders_first,
         );
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_show_hidden(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
@@ -30,19 +30,19 @@ impl FluxApp {
         //WARNING: DO NOT REMOVE THE clear(). The folder cache stores pre-filtered items (dotfiles excluded at load time),
         // so toggling visibility without clearing it causes Ctrl+H to have no effect.
         self.folder_cache.clear();
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_grid_spacing(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
         self.config.ui.grid_spacing = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_max_width_chars(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
         self.config.ui.max_width_chars = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     /// Persists how many path segments the header breadcrumbs show and rebuilds them.
@@ -64,20 +64,20 @@ impl FluxApp {
     pub fn handle_set_expand_labels(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.expand_labels = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_folders_first(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.folders_first = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_icon_size(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
         self.config.ui.default_icon_size = val;
         self.current_icon_size = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     /// Persists and applies a new icon size for list mode view.
@@ -85,7 +85,7 @@ impl FluxApp {
         self.config.ui.list_icon_size = val;
         self.current_list_icon_size = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_scale_font_with_icons(
@@ -95,7 +95,7 @@ impl FluxApp {
     ) {
         self.config.ui.scale_font_with_icons = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_hidden_extensions(
@@ -105,7 +105,7 @@ impl FluxApp {
     ) {
         self.config.ui.hidden_extensions = exts;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_default_sort(&mut self, sort: SortBy, sender: &AsyncComponentSender<Self>) {
@@ -126,7 +126,7 @@ impl FluxApp {
             self.current_icon_size as u32,
             self.config.ui.folders_first,
         );
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_show_empty_dir_emblem(&mut self, val: bool) {
@@ -179,6 +179,6 @@ impl FluxApp {
     ) {
         self.config.ui.show_symlink_emblem = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 }

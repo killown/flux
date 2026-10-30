@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, ViewMsg, FluxApp};
 use crate::ui::FileItem;
 use crate::utils;
 use adw::gio::prelude::*;
@@ -51,7 +51,7 @@ pub(crate) fn debounce_path_event(path: PathBuf, sender: relm4::AsyncComponentSe
             PENDING_CHANGED.with(|map| {
                 map.borrow_mut().remove(&path_for_timeout);
             });
-            sender.input(AppMsg::FileChanged(path_for_timeout));
+            sender.input(AppMsg::FileOps(FileOpsMsg::FileChanged(path_for_timeout)));
         });
         map.insert(path, id);
     });
@@ -301,7 +301,7 @@ impl FluxApp {
             );
         }
 
-        sender.input(AppMsg::SelectionChanged { tab_id: None });
+        sender.input(AppMsg::View(ViewMsg::SelectionChanged { tab_id: None }));
     }
 
     pub fn handle_start_rename(&mut self, path: PathBuf) {
@@ -331,7 +331,7 @@ impl FluxApp {
     pub fn handle_trigger_rename_selection(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_trigger_rename_selection");
         if let Some(path) = self.get_selected_path() {
-            sender.input(AppMsg::StartRename(path));
+            sender.input(AppMsg::FileOps(FileOpsMsg::StartRename(path)));
         }
     }
 
@@ -388,6 +388,6 @@ impl FluxApp {
         if files_changed || folders_changed {
             utils::save_config(&self.config);
         }
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 }

@@ -1,6 +1,6 @@
 use super::shortcuts::setup_shortcuts;
 use super::watcher::setup_config_watcher;
-use crate::domain::model::{AppInit, AppMsg, FluxApp, WindowOptions};
+use crate::domain::model::{AppInit, AppMsg, NavigationMsg, FluxApp, WindowOptions};
 use adw::prelude::*;
 use adw::{gio, glib};
 use relm4::prelude::*;
@@ -115,7 +115,7 @@ fn forward_ipc_to_app(rx: Receiver<PathBuf>) {
     glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
         while let Ok(path) = rx.try_recv() {
             if let Some(sender) = crate::domain::model::SENDER.get() {
-                let _ = sender.send(AppMsg::Navigate(path));
+                let _ = sender.send(AppMsg::Navigation(NavigationMsg::Navigate(path)));
             }
         }
         glib::ControlFlow::Continue

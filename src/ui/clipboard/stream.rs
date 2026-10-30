@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use gtk::gio;
 use gtk::gio::prelude::InputStreamExt;
 use gtk::glib;
@@ -31,9 +31,9 @@ fn read_stream_chunk(
         move |res| match res {
             Ok(bytes) if bytes.is_empty() => {
                 if acc.is_empty() {
-                    sender.input(AppMsg::ShowToast(crate::i18n::tr(
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                         "Could not read HTML from clipboard",
-                    )));
+                    ))));
                     return;
                 }
                 let html = String::from_utf8_lossy(&acc).into_owned();
@@ -42,15 +42,15 @@ fn read_stream_chunk(
                 let s = sender.clone();
                 relm4::spawn_blocking(move || match std::fs::write(&dest, html.as_bytes()) {
                     Ok(()) => {
-                        s.input(AppMsg::ShowToast(crate::i18n::tr("HTML pasted as file")));
-                        s.input(AppMsg::Refresh);
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("HTML pasted as file"))));
+                        s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                     }
                     Err(e) => {
-                        s.input(AppMsg::ShowToast(format!(
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                             "{}: {}",
                             crate::i18n::tr("Failed to save HTML"),
                             e
-                        )));
+                        ))));
                     }
                 });
             }
@@ -59,11 +59,11 @@ fn read_stream_chunk(
                 read_stream_chunk(stream_for_closure, acc, dest_dir, sender);
             }
             Err(e) => {
-                sender.input(AppMsg::ShowToast(format!(
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                     "{}: {}",
                     crate::i18n::tr("Clipboard read error"),
                     e
-                )));
+                ))));
             }
         },
     );

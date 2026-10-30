@@ -1,6 +1,6 @@
 use super::transfer::{archive_inner_path, remove_cut_source, resolve_gio_files, scan_total_bytes};
 use super::{DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg, FluxApp};
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::gio::prelude::*;
 use gtk::gio;
@@ -66,23 +66,23 @@ impl FluxApp {
                     cancellable.clone(),
                 );
 
-                sender.input(AppMsg::TaskProgress {
+                sender.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                     id: task_id,
                     label: batch_label.clone(),
                     current: 0,
                     total: total_bytes,
                     total_items: total_files,
                     cancellable: cancellable.clone(),
-                });
-                sender.input(AppMsg::TaskQueueTick);
+                }));
+                sender.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
                 if total_files >= DIALOG_FILE_THRESHOLD {
-                    sender.input(AppMsg::ShowTransferDialog);
+                    sender.input(AppMsg::Transfer(TransferMsg::ShowTransferDialog));
                 } else {
                     let s_delay = sender.clone();
                     relm4::spawn(async move {
                         tokio::time::sleep(DIALOG_DELAY).await;
-                        s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id));
+                        s_delay.input(AppMsg::Transfer(TransferMsg::ShowTransferDialogIfActive(task_id)));
                     });
                 }
 
@@ -125,15 +125,15 @@ impl FluxApp {
                                 total_files,
                                 cancellable_cb.clone(),
                             );
-                            s_cb.input(AppMsg::TaskProgress {
+                            s_cb.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                                 id: task_id,
                                 label: label_cb.clone(),
                                 current: overall,
                                 total: total_bytes,
                                 total_items: total_files,
                                 cancellable: cancellable_cb.clone(),
-                            });
-                            s_cb.input(AppMsg::TaskQueueTick);
+                            }));
+                            s_cb.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                         };
 
                         if let Err(e) = crate::infra::archive::write_archive_entry(
@@ -143,16 +143,16 @@ impl FluxApp {
                             password.as_deref(),
                             Some(&mut progress_cb),
                         ) {
-                            s.input(AppMsg::ShowToast(format!("Archive error: {e}")));
+                            s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Archive error: {e}"))));
                             break;
                         }
 
                         if is_cut {
                             if let Err(e) = remove_cut_source(src, &archive_path) {
-                                s.input(AppMsg::ShowToast(format!(
+                                s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                                     "Could not remove '{}' after moving: {e}",
                                     name
-                                )));
+                                ))));
                             }
                         }
 
@@ -160,9 +160,9 @@ impl FluxApp {
                     }
 
                     t_queue.remove(task_id);
-                    s.input(AppMsg::TaskCompleted(task_id));
-                    s.input(AppMsg::TaskQueueTick);
-                    s.input(AppMsg::Refresh);
+                    s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
+                    s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
+                    s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 });
             }
             return;
@@ -224,11 +224,11 @@ impl FluxApp {
                 .map(|(p, _, _)| gio::File::for_path(p))
                 .collect();
 
-            sender.input(AppMsg::ConfirmReplacePaste {
+            sender.input(AppMsg::FileOps(FileOpsMsg::ConfirmReplacePaste {
                 files: gfiles,
                 conflicts: dir_conflicts,
                 is_cut,
-            });
+            }));
             return;
         }
 

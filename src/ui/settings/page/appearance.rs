@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config};
+use crate::domain::model::{AppMsg, IconsMsg, NavigationMsg, SettingsMsg, WindowMsg, Config};
 use crate::i18n::tr;
 use adw::gdk;
 use adw::prelude::*;
@@ -112,7 +112,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                         let idx = drop.selected() as usize;
                         if let Some(&scale) = SCALES.get(idx) {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetUiScale(scale));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetUiScale(scale)));
                             }
                         }
                     }
@@ -125,7 +125,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetIconSize(spin.value() as i32));
+                        let _ = s.send(AppMsg::Icons(IconsMsg::SetIconSize(spin.value() as i32)));
                     }
                 }
             },
@@ -136,7 +136,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetListIconSize(spin.value() as i32));
+                        let _ = s.send(AppMsg::Icons(IconsMsg::SetListIconSize(spin.value() as i32)));
                     }
                 }
             },
@@ -147,7 +147,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 connect_active_notify => move |row| {
                     let state = row.is_active();
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetScaleFontWithIcons(state));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetScaleFontWithIcons(state)));
                     }
                 }
             },
@@ -158,7 +158,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetGridSpacing(spin.value() as i32));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetGridSpacing(spin.value() as i32)));
                     }
                 }
             },
@@ -169,7 +169,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetMaxWidthChars(spin.value() as i32));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetMaxWidthChars(spin.value() as i32)));
                     }
                 }
             },
@@ -180,7 +180,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetBreadcrumbCount(spin.value() as usize));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetBreadcrumbCount(spin.value() as usize)));
                     }
                 }
             },
@@ -191,7 +191,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetBreadcrumbMaxChars(spin.value() as i32));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetBreadcrumbMaxChars(spin.value() as i32)));
                     }
                 }
             },
@@ -202,7 +202,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 connect_active_notify => move |row| {
                     let state = row.is_active();
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetExpandLabels(state));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetExpandLabels(state)));
                     }
                 }
             },
@@ -233,10 +233,10 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetBackgroundAlpha {
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetBackgroundAlpha {
                             slot: crate::domain::model::BackgroundSlot::Window,
                             alpha: spin.value(),
-                        });
+                        }));
                     }
                 }
             },
@@ -255,10 +255,10 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetBackgroundAlpha {
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetBackgroundAlpha {
                             slot: crate::domain::model::BackgroundSlot::SidebarLeft,
                             alpha: spin.value(),
-                        });
+                        }));
                     }
                 }
             },
@@ -277,10 +277,10 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetBackgroundAlpha {
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetBackgroundAlpha {
                             slot: crate::domain::model::BackgroundSlot::SidebarRight,
                             alpha: spin.value(),
-                        });
+                        }));
                     }
                 }
             },
@@ -302,7 +302,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.start_maximized,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetMaximized(switch.is_active()));
+                        let _ = s.send(AppMsg::Window(WindowMsg::SetMaximized(switch.is_active())));
                     }
                 }
             },
@@ -312,7 +312,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.show_csd,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetShowCsd(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetShowCsd(switch.is_active())));
                     }
                 }
             },
@@ -323,7 +323,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.window_controls_left,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetWindowControlsLeft(switch.is_active()));
+                        let _ = s.send(AppMsg::Window(WindowMsg::SetWindowControlsLeft(switch.is_active())));
                     }
                 }
             },
@@ -334,7 +334,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetWindowWidth(spin.value() as i32));
+                        let _ = s.send(AppMsg::Window(WindowMsg::SetWindowWidth(spin.value() as i32)));
                     }
                 }
             },
@@ -345,7 +345,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetWindowHeight(spin.value() as i32));
+                        let _ = s.send(AppMsg::Window(WindowMsg::SetWindowHeight(spin.value() as i32)));
                     }
                 }
             },
@@ -367,7 +367,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.header_show_filter,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetHeaderShowFilter(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowFilter(switch.is_active())));
                     }
                 }
             },
@@ -377,7 +377,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.header_show_sort,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetHeaderShowSort(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowSort(switch.is_active())));
                     }
                 }
             },
@@ -387,7 +387,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.header_show_view,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetHeaderShowView(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowView(switch.is_active())));
                     }
                 }
             },
@@ -397,7 +397,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.header_show_preview,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetHeaderShowPreview(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowPreview(switch.is_active())));
                     }
                 }
             },
@@ -444,7 +444,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                         if let Some(item) = drop.selected_item().and_downcast::<gtk::StringObject>() {
                             let val = item.string().to_string();
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetTheme(if val == "default" { None } else { Some(val) }));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetTheme(if val == "default" { None } else { Some(val) })));
                             }
                         }
                     }
@@ -458,7 +458,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.fish_theme,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetFishTheme(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetFishTheme(switch.is_active())));
                     }
                 }
             },
@@ -468,7 +468,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.show_recents,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetShowRecents(switch.is_active()));
+                        let _ = s.send(AppMsg::Navigation(NavigationMsg::SetShowRecents(switch.is_active())));
                     }
                 }
             },
@@ -479,7 +479,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetRecentsRow(spin.value() as usize));
+                        let _ = s.send(AppMsg::Navigation(NavigationMsg::SetRecentsRow(spin.value() as usize)));
                     }
                 }
             },
@@ -489,7 +489,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.show_xdg_dirs,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetShowXdgDirs(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetShowXdgDirs(switch.is_active())));
                     }
                 }
             },
@@ -499,7 +499,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.sidebar_menu_requires_ctrl,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetSidebarMenuRequiresCtrl(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetSidebarMenuRequiresCtrl(switch.is_active())));
                     }
                 }
             },
@@ -509,7 +509,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.panel_menu_requires_ctrl,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetPanelMenuRequiresCtrl(switch.is_active()));
+                        let _ = s.send(AppMsg::Settings(SettingsMsg::SetPanelMenuRequiresCtrl(switch.is_active())));
                     }
                 }
             },
@@ -532,7 +532,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.auto_generate_mime_icons,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetAutoGenerateMimeIcons(switch.is_active()));
+                        let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoGenerateMimeIcons(switch.is_active())));
                     }
                 }
             },
@@ -546,7 +546,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                     set_rgba: &parse_color(&config.ui.auto_mime_accent_color, "#1273b2"),
                     connect_rgba_notify => move |btn| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetAutoMimeAccentColor(rgba_to_hex(&btn.rgba())));
+                            let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeAccentColor(rgba_to_hex(&btn.rgba()))));
                         }
                     }
                 }
@@ -561,7 +561,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                     set_rgba: &parse_color(&config.ui.auto_mime_body_color, "#e4e4e4"),
                     connect_rgba_notify => move |btn| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetAutoMimeBodyColor(rgba_to_hex(&btn.rgba())));
+                            let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeBodyColor(rgba_to_hex(&btn.rgba()))));
                         }
                     }
                 }
@@ -576,7 +576,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                     set_rgba: &parse_color(&config.ui.auto_mime_font_color, "#ffffff"),
                     connect_rgba_notify => move |btn| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetAutoMimeFontColor(rgba_to_hex(&btn.rgba())));
+                            let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeFontColor(rgba_to_hex(&btn.rgba()))));
                         }
                     }
                 }
@@ -597,7 +597,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::SetAutoMimeFontSize(spin.value()));
+                        let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeFontSize(spin.value())));
                     }
                 }
             },

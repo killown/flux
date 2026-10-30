@@ -5,10 +5,10 @@
 //! The state is [`crate::domain::model::NavigateMode`] on `FluxApp`. The mode is
 //! entered and left by a chord (or Esc) and never auto-entered by focus.
 //! Text entries and the terminal are filtered out before a key becomes
-//! `AppMsg::KeyChar` / `KeyBackspace` / `KeyEscape`, so typing into the search
+//! `NavigationMsg::KeyChar` / `KeyBackspace` / `KeyEscape`, so typing into the search
 //! panel, rename entry, location panel or terminal is unaffected.
 
-use crate::domain::model::{AppMsg, FluxApp, NavigateMode};
+use crate::domain::model::{AppMsg, NavigationMsg, QuickListMsg, SearchMsg, FluxApp, NavigateMode};
 use crate::i18n::tr;
 use crate::ui::constants;
 use gtk::glib;
@@ -121,7 +121,7 @@ impl FluxApp {
             if self.filter.is_empty() && !filter.is_empty() {
                 self.header_view = constants::VIEW_SEARCH.to_string();
                 self.filter = filter.clone();
-                sender.input(AppMsg::UpdateFilter(filter));
+                sender.input(AppMsg::Search(SearchMsg::UpdateFilter(filter)));
             }
         }
     }
@@ -136,8 +136,8 @@ impl FluxApp {
             }
             return;
         }
-        sender.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
-        sender.input(AppMsg::SearchInput(c));
+        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
+        sender.input(AppMsg::Search(SearchMsg::SearchInput(c)));
     }
 
     /// Enter on the grid. In Navigate mode, while inside a folder reached by
@@ -157,7 +157,7 @@ impl FluxApp {
             }
             return;
         }
-        sender.input(AppMsg::Activate);
+        sender.input(AppMsg::Navigation(NavigationMsg::Activate));
     }
 
     /// Backspace on the grid. In Navigate mode it first abandons a running
@@ -176,11 +176,11 @@ impl FluxApp {
                 .and_then(|state| state.anchors.pop())
                 .or_else(|| Self::navigate_parent(&self.current_path));
             if let Some(path) = previous {
-                sender.input(AppMsg::Navigate(path));
+                sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
             }
             return;
         }
-        sender.input(AppMsg::SearchBackspace);
+        sender.input(AppMsg::Search(SearchMsg::SearchBackspace));
     }
 
     /// Esc on the grid.
@@ -188,15 +188,15 @@ impl FluxApp {
         crate::hit!("handle_key_escape");
         // Esc closes the Quick List panel. The lists are kept.
         if self.quick_list_panel_visible {
-            sender.input(AppMsg::ToggleQuickListPanel);
+            sender.input(AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel));
         }
         if self.navigate.is_some() {
             self.exit_navigate_mode(sender);
             return;
         }
-        sender.input(AppMsg::UpdateFilter(String::new()));
-        sender.input(AppMsg::ClearMimeFilter);
-        sender.input(AppMsg::SwitchHeader(constants::VIEW_PATH.to_string()));
+        sender.input(AppMsg::Search(SearchMsg::UpdateFilter(String::new())));
+        sender.input(AppMsg::Search(SearchMsg::ClearMimeFilter));
+        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
     }
 
     /// The folder one level up from `current`.

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::prelude::*;
@@ -65,7 +65,7 @@ impl FluxApp {
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let breadcrumbs = FactoryVecDeque::builder()
             .launch(breadcrumb_box.clone())
-            .forward(sender.input_sender(), AppMsg::Navigate);
+            .forward(sender.input_sender(), |v| AppMsg::Navigation(NavigationMsg::Navigate(v)));
 
         // Terminal setup using custom terminal implementation from services
         let terminal = Self::build_terminal(&config, root, &sender);

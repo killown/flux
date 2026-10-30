@@ -1,5 +1,5 @@
 use super::media::is_visual_media_by_ext;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ThumbnailsMsg, FluxApp};
 use crate::ui::FileItem;
 use crate::utils;
 use crate::utils::media::is_audio_file;
@@ -181,7 +181,7 @@ impl FluxApp {
                 sender.clone(),
             );
         } else {
-            sender.input(AppMsg::CheckVisibleThumbnails);
+            sender.input(AppMsg::Thumbnails(ThumbnailsMsg::CheckVisibleThumbnails));
         }
         self.is_loading = false;
     }

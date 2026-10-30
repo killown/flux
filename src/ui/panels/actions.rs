@@ -13,7 +13,7 @@ use super::actions_registry;
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, CustomAction, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, WindowMsg, CustomAction, FluxApp};
 use crate::i18n::tr;
 use crate::ui::constants;
 use crate::ui::menu::secondary::action_matches_mime;
@@ -81,9 +81,9 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             .build();
         let s = sender.clone();
         add_btn.connect_clicked(move |_| {
-            s.input(AppMsg::PromptNewContextualAction {
+            s.input(AppMsg::Actions(ActionsMsg::PromptNewContextualAction {
                 mime: actions_registry::mime(),
-            });
+            }));
         });
 
         let s = sender.clone();
@@ -91,7 +91,7 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             Some("system-run-symbolic"),
             &tr("Contextual Actions"),
             &[edit_btn.upcast(), add_btn.upcast()],
-            move || s.input(AppMsg::ToggleActionsPanel),
+            move || s.input(AppMsg::Actions(ActionsMsg::ToggleActionsPanel)),
         );
         panel.append(&header);
     }
@@ -144,9 +144,9 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     {
         let s = sender.clone();
         empty_add_btn.connect_clicked(move |_| {
-            s.input(AppMsg::PromptNewContextualAction {
+            s.input(AppMsg::Actions(ActionsMsg::PromptNewContextualAction {
                 mime: actions_registry::mime(),
-            });
+            }));
         });
     }
     empty_page.set_child(Some(&empty_add_btn));
@@ -168,7 +168,7 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
 
     let sender_for_resize = sender.clone();
     resizable_panel(&spec, &panel, move |w| {
-        sender_for_resize.input(AppMsg::SetActionsPanelWidth(w));
+        sender_for_resize.input(AppMsg::Actions(ActionsMsg::SetActionsPanelWidth(w)));
     })
 }
 
@@ -260,12 +260,12 @@ fn build_row(action: &CustomAction, sender: &AsyncComponentSender<FluxApp>) -> a
         let toast = action.toast.clone();
         let no_command_dialog = action.no_command_dialog;
         run_btn.connect_clicked(move |_| {
-            s.input(AppMsg::ExecuteSecondaryAction {
+            s.input(AppMsg::Actions(ActionsMsg::ExecuteSecondaryAction {
                 command: cmd.clone(),
                 no_command_dialog,
-            });
+            }));
             if let Some(ref msg) = toast {
-                s.input(AppMsg::ShowToast(msg.clone()));
+                s.input(AppMsg::Window(WindowMsg::ShowToast(msg.clone())));
             }
         });
     }
@@ -292,7 +292,7 @@ impl FluxApp {
     /// Called when the panel opens and on every `SelectionChanged` while it is visible.
     pub(crate) fn request_actions_panel_load(&self, sender: &AsyncComponentSender<Self>) {
         let session = self.actions_panel_session.fetch_add(1, Ordering::SeqCst) + 1;
-        sender.input(AppMsg::ActionsPanelLoad { session });
+        sender.input(AppMsg::Actions(ActionsMsg::ActionsPanelLoad { session }));
     }
 
     /// Invalidates in-flight loads and empties the panel, called whenever it is hidden.
@@ -358,12 +358,12 @@ impl FluxApp {
                 return;
             }
             if let Some(s) = sender {
-                let _ = s.send(AppMsg::ActionsPanelReady {
+                let _ = s.send(AppMsg::Actions(ActionsMsg::ActionsPanelReady {
                     session,
                     mime,
                     actions,
                     template_path,
-                });
+                }));
             }
         });
     }
@@ -442,7 +442,7 @@ impl FluxApp {
             let result =
                 crate::ui::menu::secondary::append_secondary_action(&mime, category_scope, &action);
             if let Some(s) = sender {
-                let _ = s.send(AppMsg::ContextualActionSaved(result));
+                let _ = s.send(AppMsg::Actions(ActionsMsg::ContextualActionSaved(result)));
             }
         });
     }
@@ -460,19 +460,19 @@ impl FluxApp {
                     .file_name()
                     .map(|n| n.to_string_lossy().into_owned())
                     .unwrap_or_default();
-                sender.input(AppMsg::ShowToast(format!(
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                     "{} {}",
                     tr("Action saved to"),
                     name
-                )));
+                ))));
                 if self.actions_panel_visible {
                     self.request_actions_panel_load(sender);
                 }
             }
-            Err(e) => sender.input(AppMsg::ShowToast(format!(
+            Err(e) => sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                 "{}: {e}",
                 tr("Could not save action")
-            ))),
+            )))),
         }
     }
 }

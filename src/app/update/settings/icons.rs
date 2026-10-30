@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, IconsMsg, NavigationMsg, FluxApp};
 use crate::utils;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -34,7 +34,7 @@ impl FluxApp {
                 }
             }
         }
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_reset_file_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
@@ -57,7 +57,7 @@ impl FluxApp {
                 }
             }
         }
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_auto_mime_body_color(
@@ -92,7 +92,7 @@ impl FluxApp {
         self.config.ui.auto_generate_mime_icons = enabled;
         utils::save_config(&self.config);
         crate::infra::loader::invalidate_extension_icon_cache();
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_auto_mime_accent_color(
@@ -103,7 +103,7 @@ impl FluxApp {
         self.config.ui.auto_mime_accent_color = color;
         utils::save_config(&self.config);
         crate::infra::loader::invalidate_extension_icon_cache();
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_auto_mime_font_size(
@@ -114,7 +114,7 @@ impl FluxApp {
         self.config.ui.auto_mime_font_size = size;
         utils::save_config(&self.config);
         crate::infra::loader::invalidate_extension_icon_cache();
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_reset_extension_icon(
@@ -145,10 +145,10 @@ impl FluxApp {
             .get_selected_path()
             .unwrap_or_else(|| self.current_path.clone());
         if target.is_dir() {
-            sender.input(AppMsg::ResetFolderIcon(target.clone()));
-            sender.input(AppMsg::ResetFileIcon(target));
+            sender.input(AppMsg::Icons(IconsMsg::ResetFolderIcon(target.clone())));
+            sender.input(AppMsg::Icons(IconsMsg::ResetFileIcon(target)));
         } else {
-            sender.input(AppMsg::ResetFileIcon(target));
+            sender.input(AppMsg::Icons(IconsMsg::ResetFileIcon(target)));
         }
     }
 
@@ -210,7 +210,7 @@ impl FluxApp {
         }
         // Keep the in-memory cache in sync so the current session sees the change.
         self.config.ui.folder_icons.insert(path_str, icon_name);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_reset_folder_icon(&mut self, path: PathBuf, sender: &AsyncComponentSender<Self>) {
@@ -219,6 +219,6 @@ impl FluxApp {
             eprintln!("[flux] Failed to remove folder icon: {e}");
         }
         self.config.ui.folder_icons.remove(&path_str);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 }

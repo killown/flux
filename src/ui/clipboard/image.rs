@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use gtk::gdk;
 use gtk::gdk::prelude::TextureExt;
 use gtk::gio;
@@ -24,29 +24,29 @@ impl FluxApp {
 
                 match texture.save_to_png(dest.to_string_lossy().as_ref()) {
                     Ok(()) => {
-                        s.input(AppMsg::ShowToast(crate::i18n::tr("Image pasted as file")));
-                        s.input(AppMsg::Refresh);
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Image pasted as file"))));
+                        s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                     }
                     Err(e) => {
-                        s.input(AppMsg::ShowToast(format!(
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                             "{}: {}",
                             crate::i18n::tr("Failed to save image"),
                             e
-                        )));
+                        ))));
                     }
                 }
             }
             Ok(None) => {
-                s.input(AppMsg::ShowToast(crate::i18n::tr(
+                s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                     "Could not read image from clipboard",
-                )));
+                ))));
             }
             Err(e) => {
-                s.input(AppMsg::ShowToast(format!(
+                s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                     "{}: {}",
                     crate::i18n::tr("Clipboard read error"),
                     e
-                )));
+                ))));
             }
         });
     }

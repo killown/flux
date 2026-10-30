@@ -1,6 +1,6 @@
 use super::transfer::{is_cancelled_error, perform_file_op_with_progress, scan_total_bytes};
 use super::{is_same_entry, CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg, FluxApp};
 use crate::ui::conflict_policy::{
     auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
 };
@@ -50,24 +50,24 @@ impl FluxApp {
             cancellable.clone(),
         );
 
-        sender.input(AppMsg::TaskProgress {
+        sender.input(AppMsg::Tasks(TasksMsg::TaskProgress {
             id: task_id,
             label: batch_label.clone(),
             current: 0,
             total: 0,
             total_items: total_files,
             cancellable: cancellable.clone(),
-        });
-        sender.input(AppMsg::TaskQueueTick);
+        }));
+        sender.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
         // Trigger progress dialog if file count or byte threshold is met
         if total_files >= DIALOG_FILE_THRESHOLD {
-            sender.input(AppMsg::ShowTransferDialog);
+            sender.input(AppMsg::Transfer(TransferMsg::ShowTransferDialog));
         } else {
             let s_delay = sender.clone();
             relm4::spawn(async move {
                 tokio::time::sleep(DIALOG_DELAY).await;
-                s_delay.input(AppMsg::ShowTransferDialogIfActive(task_id));
+                s_delay.input(AppMsg::Transfer(TransferMsg::ShowTransferDialogIfActive(task_id)));
             });
         }
 
@@ -95,7 +95,7 @@ impl FluxApp {
                 total_files,
                 cancellable.clone(),
             );
-            s.input(AppMsg::TaskQueueTick);
+            s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
             let mut copied_bytes: u64 = 0;
             let mut successful_ops = Vec::new();
@@ -129,15 +129,15 @@ impl FluxApp {
                     cancellable.clone(),
                 );
 
-                s.input(AppMsg::TaskProgress {
+                s.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                     id: task_id,
                     label: current_label.clone(),
                     current: copied_bytes,
                     total: total_bytes,
                     total_items: total_files,
                     cancellable: cancellable.clone(),
-                });
-                s.input(AppMsg::TaskQueueTick);
+                }));
+                s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
                 // Conflict Resolution
                 let dest = if !is_dir && dest_initial.exists() {
@@ -170,10 +170,10 @@ impl FluxApp {
                                         batch_index: batch_index + 1,
                                     };
 
-                                    s.input(AppMsg::FileConflictDetected {
+                                    s.input(AppMsg::Transfer(TransferMsg::FileConflictDetected {
                                         context: ctx,
                                         resolver: Arc::new(Mutex::new(Some(tx))),
-                                    });
+                                    }));
 
                                     let (choice, apply_all) = tokio::runtime::Handle::current()
                                         .block_on(rx)
@@ -240,15 +240,15 @@ impl FluxApp {
                         total_files,
                         cancellable_cb.clone(),
                     );
-                    s_cb.input(AppMsg::TaskProgress {
+                    s_cb.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                         id: task_id,
                         label: label_cb.clone(),
                         current: overall,
                         total: total_bytes,
                         total_items: total_files,
                         cancellable: cancellable_cb.clone(),
-                    });
-                    s_cb.input(AppMsg::TaskQueueTick);
+                    }));
+                    s_cb.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                 };
                 let result = perform_file_op_with_progress(
                     &src_path,
@@ -272,51 +272,51 @@ impl FluxApp {
                         total_files,
                         cancellable.clone(),
                     );
-                    s.input(AppMsg::TaskProgress {
+                    s.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                         id: task_id,
                         label: batch_label.clone(),
                         current: copied_bytes,
                         total: total_bytes,
                         total_items: total_files,
                         cancellable: cancellable.clone(),
-                    });
-                    s.input(AppMsg::TaskQueueTick);
+                    }));
+                    s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
                     if is_cut {
-                        s.input(AppMsg::ItemMoved {
+                        s.input(AppMsg::FileOps(FileOpsMsg::ItemMoved {
                             old_path: src_path,
                             new_path: dest,
-                        });
+                        }));
                     }
                 } else if let Err(ref e) = result {
                     if !is_cancelled_error(&cancellable, e) {
-                        s.input(AppMsg::ShowToast(format!("Operation failed: {}", e)));
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Operation failed: {}", e))));
                     }
                 }
             }
 
             t_queue.remove(task_id);
-            s.input(AppMsg::TaskCompleted(task_id));
-            s.input(AppMsg::TaskQueueTick);
+            s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
+            s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
             let any_done = !successful_ops.is_empty();
 
             if is_cut {
                 if any_done {
-                    s.input(AppMsg::MoveSucceeded {
+                    s.input(AppMsg::FileOps(FileOpsMsg::MoveSucceeded {
                         items: successful_ops,
                         dest_dir: target_dir,
-                    });
+                    }));
                 }
             } else if !undoable_copies.is_empty() {
-                s.input(AppMsg::CopySucceeded {
+                s.input(AppMsg::FileOps(FileOpsMsg::CopySucceeded {
                     copies: undoable_copies,
                     dest_dir: target_dir,
-                });
+                }));
             }
 
             if any_done {
-                s.input(AppMsg::Refresh);
+                s.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
         });
     }

@@ -4,7 +4,7 @@
 use super::content::FolderEntry;
 use super::handle::PreviewPanelHandle;
 use super::registry;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg, FluxApp};
 use crate::ui::FileItem;
 use adw::prelude::*;
 use relm4::typed_view::grid::TypedGridView;
@@ -65,13 +65,13 @@ pub(super) fn build_folder_grid(
                 (item.path.clone(), item.is_dir)
             });
             match target {
-                Some((path, true)) => s.input(AppMsg::Navigate(path)),
+                Some((path, true)) => s.input(AppMsg::Navigation(NavigationMsg::Navigate(path))),
                 Some((path, false))
                     if path
                         .to_string_lossy()
                         .starts_with(crate::infra::archive::ARCHIVE_URI) =>
                 {
-                    s.input(AppMsg::ActivateItems(vec![(path, false)]))
+                    s.input(AppMsg::Navigation(NavigationMsg::ActivateItems(vec![(path, false)])))
                 }
                 Some((path, false)) => FluxApp::open_file(path),
                 None => {}
@@ -85,7 +85,7 @@ pub(super) fn build_folder_grid(
         let keys = gtk::EventControllerKey::new();
         keys.connect_key_pressed(move |_, key, _, _| {
             if key == gtk::gdk::Key::Escape || key == gtk::gdk::Key::Tab {
-                s.input(AppMsg::TogglePreviewGridFocus);
+                s.input(AppMsg::Preview(PreviewMsg::TogglePreviewGridFocus));
                 return gtk::glib::Propagation::Stop;
             }
             glib::Propagation::Proceed

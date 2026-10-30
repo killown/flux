@@ -106,10 +106,10 @@ pub(super) fn paintable_for_gicon(
                 return;
             };
             if let Some(pixbuf) = crate::utils::media::decode_to_pixbuf(&path_clone, 256) {
-                let _ = sender.send(crate::domain::model::AppMsg::FileIconTextureReady {
+                let _ = sender.send(crate::domain::model::AppMsg::Thumbnails(crate::domain::model::ThumbnailsMsg::FileIconTextureReady {
                     path: path_clone,
                     texture: gdk::Texture::for_pixbuf(&pixbuf),
-                });
+                }));
                 decode_guard.disarm();
             }
         });

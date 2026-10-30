@@ -1,7 +1,7 @@
 //! File actions: item activation, moves and clipboard export.
 
 use crate::app::update::file_ops::paste::{is_same_entry, paste_name_for};
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, DeviceMsg, NavigationMsg, WindowMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::prelude::*;
@@ -86,7 +86,7 @@ impl FluxApp {
 
     /// Dispatches the correct action for each `(path, is_dir)` item pair.
     ///
-    /// Centralises the routing logic shared by `AppMsg::Open` and `AppMsg::Activate`
+    /// Centralises the routing logic shared by `NavigationMsg::Open` and `NavigationMsg::Activate`
     /// so that both code paths behave identically regardless of how the items were
     /// resolved (by grid position or by selection model).
     ///
@@ -111,9 +111,9 @@ impl FluxApp {
             {
                 if is_dir {
                     // Navigating deeper into a virtual archive folder
-                    sender.input(AppMsg::Navigate(path));
+                    sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
                 } else if crate::infra::archive::is_browsable_archive(Path::new(&inner)) {
-                    sender.input(AppMsg::EnterArchive(path));
+                    sender.input(AppMsg::Archive(ArchiveMsg::EnterArchive(path)));
                 } else {
                     // Extracting and launching a file from inside the archive
                     let sender_clone = sender.clone();
@@ -137,21 +137,21 @@ impl FluxApp {
                                 }
                             }
                             Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
-                                sender_clone.input(AppMsg::PromptArchivePassword {
+                                sender_clone.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                                     archive_path,
                                     prefix: parent_prefix,
                                     wrong_password: false,
-                                });
+                                }));
                             }
                             Err(crate::infra::archive::ArchiveError::WrongPassword) => {
-                                sender_clone.input(AppMsg::PromptArchivePassword {
+                                sender_clone.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                                     archive_path,
                                     prefix: parent_prefix,
                                     wrong_password: true,
-                                });
+                                }));
                             }
                             Err(e) => {
-                                sender_clone.input(AppMsg::ShowToast(e.to_string()));
+                                sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(e.to_string())));
                             }
                         }
                     });
@@ -160,12 +160,12 @@ impl FluxApp {
             }
             // Regular filesystem directory navigation
             else if is_dir {
-                sender.input(AppMsg::Navigate(path));
+                sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
                 break;
             }
             // Opening a physical archive file from disk (.7z, .zip, etc.)
             else if crate::infra::archive::is_browsable_archive(&path) {
-                sender.input(AppMsg::EnterArchive(path));
+                sender.input(AppMsg::Archive(ArchiveMsg::EnterArchive(path)));
                 break;
             }
             // LUKS encrypted image, AppImage, .desktop entry, or standard file open
@@ -174,12 +174,12 @@ impl FluxApp {
                 let path_clone = path.clone();
                 relm4::spawn_blocking(move || {
                     if crate::infra::luks::is_luks_image(&path_clone) {
-                        sender_clone.input(AppMsg::UnlockLuksImage { path: path_clone });
+                        sender_clone.input(AppMsg::Device(DeviceMsg::UnlockLuksImage { path: path_clone }));
                     } else if crate::utils::media::is_appimage(&path_clone) {
                         if let Err(e) = Self::launch_appimage(&path_clone) {
                             let msg =
                                 tr("Failed to launch AppImage: {}").replace("{}", &e.to_string());
-                            sender_clone.input(AppMsg::ShowToast(msg));
+                            sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
                         }
                     } else if path_clone.extension().and_then(|e| e.to_str()) == Some("desktop") {
                         if let Some(desktop_app) =
@@ -190,14 +190,14 @@ impl FluxApp {
                             match desktop_app.launch(&[], context.as_ref()) {
                                 Ok(_) => {
                                     let msg = tr("Opening {}").replace("{}", &app_name);
-                                    sender_clone.input(AppMsg::ShowToast(msg));
+                                    sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
                                 }
                                 Err(e) => {
                                     eprintln!("[flux] Failed to launch desktop file: {e}");
                                     let msg = tr("Failed to open {}: {}")
                                         .replacen("{}", &app_name, 1)
                                         .replacen("{}", &e.to_string(), 1);
-                                    sender_clone.input(AppMsg::ShowToast(msg));
+                                    sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
                                 }
                             }
                         } else {
@@ -250,9 +250,9 @@ impl FluxApp {
             .collect();
 
         if skipped_dirs {
-            sender.input(AppMsg::ShowToast(tr(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr(
                 "Skipped folders that already exist in the destination",
-            )));
+            ))));
         }
 
         self.run_paste_batch(

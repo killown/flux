@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -266,14 +266,14 @@ impl FluxApp {
 
                         if set_default_exec.is_active() {
                             if let Err(e) = app.set_as_default_for_type(&mime_type_str) {
-                                s_exec.input(AppMsg::ShowToast(format!(
+                                s_exec.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                                     "Failed to set default: {e}"
-                                )));
+                                ))));
                             }
                         }
 
                         if let Err(e) = app.launch(&[gfile], gtk::gio::AppLaunchContext::NONE) {
-                            s_exec.input(AppMsg::ShowToast(format!("Failed to launch: {e}")));
+                            s_exec.input(AppMsg::Window(WindowMsg::ShowToast(format!("Failed to launch: {e}"))));
                         }
                     }
                 }

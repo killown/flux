@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp, RightPanelType, TerminalPosition};
+use crate::domain::model::{AppMsg, NavigationMsg, TerminalMsg, FluxApp, RightPanelType, TerminalPosition};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;
@@ -27,7 +27,7 @@ impl FluxApp {
             let new_canon = path.canonicalize().unwrap_or_else(|_| path.clone());
 
             if curr_canon != new_canon {
-                sender.input(AppMsg::Navigate(path));
+                sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
             }
         }
     }
@@ -204,7 +204,7 @@ impl FluxApp {
             {
                 let s = sender.clone();
                 term.set_cwd_callback(move |path| {
-                    s.input(AppMsg::TerminalCwdChanged(path));
+                    s.input(AppMsg::Terminal(TerminalMsg::TerminalCwdChanged(path)));
                 });
             }
 
@@ -215,7 +215,7 @@ impl FluxApp {
             crate::ui::startup::attach_terminal_key_controller(
                 &term,
                 sender,
-                AppMsg::ToggleTerminalFullscreen,
+                AppMsg::Terminal(TerminalMsg::ToggleTerminalFullscreen),
             );
             crate::ui::startup::attach_terminal_mouse_controllers(&term);
             crate::ui::startup::register_terminal_shutdown(&term, &stack);

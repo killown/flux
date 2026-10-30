@@ -2,7 +2,7 @@
 //!
 //! Shows a tabbed Libadwaita window with one tab per active file operation.
 
-use crate::domain::model::AppMsg;
+use crate::domain::model::{AppMsg, TasksMsg, TransferMsg};
 use crate::infra::tasks::TaskQueue;
 use adw::prelude::*;
 use gtk::glib;
@@ -98,7 +98,7 @@ pub fn create_transfer_dialog(
 
     let s = sender.clone();
     window.connect_close_request(move |_win| {
-        let _ = s.send(AppMsg::TransferDialogClosed);
+        let _ = s.send(AppMsg::Transfer(TransferMsg::TransferDialogClosed));
         glib::Propagation::Proceed
     });
 
@@ -119,7 +119,7 @@ pub fn create_transfer_dialog(
             };
             let snapshot = queue_clone.snapshot();
             if snapshot.is_empty() {
-                let _ = sender_clone.send(AppMsg::TransferDialogClosed);
+                let _ = sender_clone.send(AppMsg::Transfer(TransferMsg::TransferDialogClosed));
                 return glib::ControlFlow::Break;
             }
             rebuild_tabs(&nb, &snapshot, &queue_clone, &sender_clone);
@@ -300,7 +300,7 @@ fn build_task_tab(
 
     let sender_btn = sender.clone();
     cancel_btn.connect_clicked(move |_| {
-        let _ = sender_btn.send(AppMsg::CancelTask(id));
+        let _ = sender_btn.send(AppMsg::Tasks(TasksMsg::CancelTask(id)));
     });
 
     container.append(&cancel_btn);

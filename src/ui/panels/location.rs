@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
 use crate::i18n::tr;
 use crate::infra::db::StateManager;
 use adw::prelude::*;
@@ -88,7 +88,7 @@ pub fn build_location_panel(
             Some("folder-open-symbolic"),
             &tr("Enter Location"),
             &[go_btn.clone().upcast::<gtk::Widget>()],
-            move || s.input(AppMsg::ToggleLocationPanel),
+            move || s.input(AppMsg::Navigation(NavigationMsg::ToggleLocationPanel)),
         );
         panel.append(&header);
     }
@@ -186,8 +186,8 @@ pub fn build_location_panel(
                 FluxApp::expand_path(trimmed)
             };
 
-            s.input(AppMsg::ToggleLocationPanel);
-            s.input(AppMsg::Navigate(target));
+            s.input(AppMsg::Navigation(NavigationMsg::ToggleLocationPanel));
+            s.input(AppMsg::Navigation(NavigationMsg::Navigate(target)));
         })
     };
 
@@ -267,7 +267,7 @@ pub fn build_location_panel(
         let s = sender.clone();
         esc_ctrl.connect_key_pressed(move |_, keyval, _, _| {
             if keyval == adw::gdk::Key::Escape {
-                s.input(AppMsg::ToggleLocationPanel);
+                s.input(AppMsg::Navigation(NavigationMsg::ToggleLocationPanel));
                 return gtk::glib::Propagation::Stop;
             }
             gtk::glib::Propagation::Proceed

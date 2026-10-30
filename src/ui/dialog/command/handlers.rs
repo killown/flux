@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, TasksMsg, WindowMsg, FluxApp};
 use relm4::prelude::*;
 
 impl FluxApp {
@@ -61,7 +61,7 @@ impl FluxApp {
             } else {
                 "Command was terminated".to_string()
             };
-            sender.input(AppMsg::ShowToast(msg));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
         }
 
         if let Some(dialog) = &self.command_dialog {
@@ -70,6 +70,6 @@ impl FluxApp {
             }
         }
 
-        sender.input(AppMsg::TaskCompleted(id));
+        sender.input(AppMsg::Tasks(TasksMsg::TaskCompleted(id)));
     }
 }

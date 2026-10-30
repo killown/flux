@@ -1,7 +1,7 @@
 use super::forbidden::forbidden_matcher;
 use super::types::{AdvancedSearchParams, ExtensionMatch};
 use crate::app::update::file_ops::paste::NEXT_TASK_ID;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, SearchMsg, FluxApp};
 use crate::infra::constants::{
     SEARCH_BATCH_SIZE as BATCH_SIZE, SEARCH_FLUSH_INTERVAL_MS as FLUSH_INTERVAL_MS,
 };
@@ -33,7 +33,7 @@ macro_rules! search_debug {
 /// Launch a recursive filename search from `app.current_path` using `ignore`'s
 /// synchronous traversal.
 ///
-/// Matched files are delivered in batches via [`AppMsg::ExtensionSearchBatch`]
+/// Matched files are delivered in batches via [`SearchMsg::ExtensionSearchBatch`]
 /// so the GTK main loop is never saturated, even for patterns like `*.png`
 /// that can match thousands of files. Each batch is appended to the grid in a
 /// single update cycle.
@@ -205,10 +205,10 @@ fn start_walk(
                         {
                             let chunk =
                                 std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
-                            sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                            sender_for_collector.input(AppMsg::Search(SearchMsg::ExtensionSearchBatch {
                                 results: chunk,
                                 session: session_id,
-                            });
+                            }));
                             last_flush = std::time::Instant::now();
                         }
                     }
@@ -222,10 +222,10 @@ fn start_walk(
                         if !batch.is_empty() {
                             let chunk =
                                 std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
-                            sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                            sender_for_collector.input(AppMsg::Search(SearchMsg::ExtensionSearchBatch {
                                 results: chunk,
                                 session: session_id,
-                            });
+                            }));
                             last_flush = std::time::Instant::now();
                         }
                     }
@@ -238,10 +238,10 @@ fn start_walk(
                 && !cancellable_for_collector.is_cancelled()
                 && load_id_for_collector.load(Ordering::Acquire) == session_id
             {
-                sender_for_collector.input(AppMsg::ExtensionSearchBatch {
+                sender_for_collector.input(AppMsg::Search(SearchMsg::ExtensionSearchBatch {
                     results: batch,
                     session: session_id,
-                });
+                }));
             }
         });
 
@@ -715,9 +715,9 @@ fn start_walk(
         let _ = collector_handle.join();
 
         if !cancellable.is_cancelled() && load_id.load(Ordering::Acquire) == session_id {
-            sender.input(AppMsg::ContentSearchDone {
+            sender.input(AppMsg::Search(SearchMsg::ContentSearchDone {
                 session: session_id,
-            });
+            }));
         }
     });
 }

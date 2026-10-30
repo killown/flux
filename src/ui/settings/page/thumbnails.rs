@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, Config};
+use crate::domain::model::{AppMsg, ThumbnailsMsg, Config};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -19,7 +19,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetShowThumbnails(switch.is_active()));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetShowThumbnails(switch.is_active())));
                         }
                     }
                 },
@@ -47,7 +47,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             let idx = drop.selected() as usize;
                             if let Some(&size) = SIZES.get(idx) {
                                 if let Some(s) = crate::domain::model::SENDER.get() {
-                                    let _ = s.send(AppMsg::SetThumbnailSize(size));
+                                    let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailSize(size)));
                                 }
                             }
                         }
@@ -60,7 +60,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.lazy_thumbnails && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetLazyThumbnails(switch.is_active()));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetLazyThumbnails(switch.is_active())));
                         }
                     }
                 },
@@ -71,7 +71,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.archive_thumbnail_cache,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetArchiveThumbnailCache(switch.is_active()));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetArchiveThumbnailCache(switch.is_active())));
                         }
                     }
                 },
@@ -83,7 +83,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     connect_active_notify => move |row| {
                         let state = row.is_active();
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetAutoplayVideoPreviews(state));
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetAutoplayVideoPreviews(state)));
                         }
                     }
                 },
@@ -94,10 +94,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.thumbnail_types.images && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailType {
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailType {
                                 type_name: "images".to_string(),
                                 enabled: switch.is_active()
-                            });
+                            }));
                         }
                     }
                 },
@@ -108,10 +108,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.thumbnail_types.videos && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailType {
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailType {
                                 type_name: "videos".to_string(),
                                 enabled: switch.is_active()
-                            });
+                            }));
                         }
                     }
                 },
@@ -122,10 +122,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.thumbnail_types.fonts && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailType {
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailType {
                                 type_name: "fonts".to_string(),
                                 enabled: switch.is_active()
-                            });
+                            }));
                         }
                     }
                 },
@@ -136,10 +136,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.thumbnail_types.pdfs && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailType {
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailType {
                                 type_name: "pdfs".to_string(),
                                 enabled: switch.is_active()
-                            });
+                            }));
                         }
                     }
                 },
@@ -150,10 +150,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.thumbnail_types.executables && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailType {
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailType {
                                 type_name: "executables".to_string(),
                                 enabled: switch.is_active()
-                            });
+                            }));
                         }
                     }
                 },
@@ -164,10 +164,10 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     set_active: config.ui.thumbnail_types.audio && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::domain::model::SENDER.get() {
-                            let _ = s.send(AppMsg::SetThumbnailType {
+                            let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetThumbnailType {
                                 type_name: "audio".to_string(),
                                 enabled: switch.is_active()
-                            });
+                            }));
                         }
                     }
                 },

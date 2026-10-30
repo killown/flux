@@ -1,5 +1,5 @@
 use super::shortcut_picker::ShortcutPicker;
-use crate::domain::model::{AppMsg, Config};
+use crate::domain::model::{AppMsg, SettingsMsg, Config};
 use crate::i18n::tr;
 use crate::ui::keymap::constants;
 use adw::prelude::*;
@@ -23,7 +23,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::BACK,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("back".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("back".to_string(), val)));
                             }
                         },
                     ),
@@ -36,7 +36,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::FORWARD,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("forward".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("forward".to_string(), val)));
                             }
                         },
                     ),
@@ -49,7 +49,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::HOME,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("home".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("home".to_string(), val)));
                             }
                         },
                     ),
@@ -62,7 +62,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::ROOT,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("root".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("root".to_string(), val)));
                             }
                         },
                     ),
@@ -75,7 +75,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::OPEN,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("open".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("open".to_string(), val)));
                             }
                         },
                     ),
@@ -88,7 +88,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CYCLE_BY_LETTER_REANCHOR,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("cycle_by_letter_reanchor".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("cycle_by_letter_reanchor".to_string(), val)));
                             }
                         },
                     ),
@@ -101,7 +101,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CYCLE_BY_LETTER_CANCEL,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("cycle_by_letter_cancel".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("cycle_by_letter_cancel".to_string(), val)));
                             }
                         },
                     ),
@@ -114,7 +114,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::FOCUS_PANE_LEFT,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("focus_pane_left".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("focus_pane_left".to_string(), val)));
                             }
                         },
                     ),
@@ -127,7 +127,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::FOCUS_PANE_RIGHT,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("focus_pane_right".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("focus_pane_right".to_string(), val)));
                             }
                         },
                     ),
@@ -145,7 +145,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::NEW_TAB,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("new_tab".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("new_tab".to_string(), val)));
                             }
                         },
                     ),
@@ -158,7 +158,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CLOSE_TAB,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("close_tab".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("close_tab".to_string(), val)));
                             }
                         },
                     ),
@@ -171,7 +171,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::NEXT_TAB,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("next_tab".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("next_tab".to_string(), val)));
                             }
                         },
                     ),
@@ -184,7 +184,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::PREV_TAB,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("prev_tab".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("prev_tab".to_string(), val)));
                             }
                         },
                     ),
@@ -202,7 +202,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::DELETE,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("delete".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("delete".to_string(), val)));
                             }
                         },
                     ),
@@ -215,7 +215,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         "F2",
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("rename".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("rename".to_string(), val)));
                             }
                         },
                     ),
@@ -228,7 +228,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::PROPERTIES,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("open_properties".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("open_properties".to_string(), val)));
                             }
                         },
                     ),
@@ -241,7 +241,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         "<Primary><Shift>c",
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("copy_path".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("copy_path".to_string(), val)));
                             }
                         },
                     ),
@@ -254,7 +254,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         "<Primary><Shift>v",
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("create_symlink".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("create_symlink".to_string(), val)));
                             }
                         },
                     ),
@@ -267,7 +267,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         "<Primary><Alt><Shift>v",
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("create_hardlink".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("create_hardlink".to_string(), val)));
                             }
                         },
                     ),
@@ -280,7 +280,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::COPY,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("copy".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("copy".to_string(), val)));
                             }
                         },
                     ),
@@ -293,7 +293,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CUT,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("cut".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("cut".to_string(), val)));
                             }
                         },
                     ),
@@ -306,7 +306,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::PASTE,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("paste".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("paste".to_string(), val)));
                             }
                         },
                     ),
@@ -319,7 +319,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::UNDO,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("undo".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("undo".to_string(), val)));
                             }
                         },
                     ),
@@ -332,7 +332,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::REDO,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("redo".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("redo".to_string(), val)));
                             }
                         },
                     ),
@@ -350,7 +350,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_HEADER,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_header".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_header".to_string(), val)));
                             }
                         },
                     ),
@@ -363,7 +363,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::REFRESH,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("refresh".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("refresh".to_string(), val)));
                             }
                         },
                     ),
@@ -376,7 +376,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::SEARCH,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("search".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("search".to_string(), val)));
                             }
                         },
                     ),
@@ -389,7 +389,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_HIDDEN,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_hidden".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_hidden".to_string(), val)));
                             }
                         },
                     ),
@@ -402,7 +402,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_FOLDERS_FIRST,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_folders_first".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_folders_first".to_string(), val)));
                             }
                         },
                     ),
@@ -415,7 +415,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CYCLE_SORT,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("cycle_sort".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("cycle_sort".to_string(), val)));
                             }
                         },
                     ),
@@ -428,7 +428,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_SORT_ORDER,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_sort_order".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_sort_order".to_string(), val)));
                             }
                         },
                     ),
@@ -441,7 +441,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CHANGE_ICON,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("change_icon".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("change_icon".to_string(), val)));
                             }
                         },
                     ),
@@ -454,7 +454,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::RESET_ICON,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("reset_icon".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("reset_icon".to_string(), val)));
                             }
                         },
                     ),
@@ -467,7 +467,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_STATUSBAR,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_statusbar".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_statusbar".to_string(), val)));
                             }
                         },
                     ),
@@ -480,7 +480,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_SIDEBAR,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_sidebar".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_sidebar".to_string(), val)));
                             }
                         },
                     ),
@@ -493,7 +493,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_TERMINAL,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_terminal".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_terminal".to_string(), val)));
                             }
                         },
                     ),
@@ -506,7 +506,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_LIST_MODE,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_list_mode".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_list_mode".to_string(), val)));
                             }
                         },
                     ),
@@ -519,7 +519,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_WIDE_PREVIEW,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_wide_preview".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_wide_preview".to_string(), val)));
                             }
                         },
                     ),
@@ -532,7 +532,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_FILTER_BAR,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_filter_bar".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_filter_bar".to_string(), val)));
                             }
                         },
                     ),
@@ -545,7 +545,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::CYCLE_FILTER_MODE,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("cycle_filter_mode".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("cycle_filter_mode".to_string(), val)));
                             }
                         },
                     ),
@@ -558,7 +558,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::FILTER_BY_MIME,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("filter_by_mime".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("filter_by_mime".to_string(), val)));
                             }
                         },
                     ),
@@ -576,7 +576,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::SETTINGS,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("settings".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("settings".to_string(), val)));
                             }
                         },
                     ),
@@ -589,7 +589,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::MENU_EDITOR,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("menu_editor".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("menu_editor".to_string(), val)));
                             }
                         },
                     ),
@@ -602,7 +602,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::QUIT,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("quit".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("quit".to_string(), val)));
                             }
                         },
                     ),
@@ -615,7 +615,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::OPEN_DEBUG_WINDOW,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("open_debug_window".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("open_debug_window".to_string(), val)));
                             }
                         },
                     ),
@@ -633,7 +633,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_TAG_PANEL,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_tag_panel".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_tag_panel".to_string(), val)));
                             }
                         },
                     ),
@@ -646,7 +646,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_ACTIONS_PANEL,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_actions_panel".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_actions_panel".to_string(), val)));
                             }
                         },
                     ),
@@ -659,7 +659,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_CONNECT_PANEL,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_connect_panel".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_connect_panel".to_string(), val)));
                             }
                         },
                     ),
@@ -672,7 +672,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                         constants::TOGGLE_LOCATION_PANEL,
                         move |val| {
                             if let Some(s) = crate::domain::model::SENDER.get() {
-                                let _ = s.send(AppMsg::SetShortcut("toggle_location_panel".to_string(), val));
+                                let _ = s.send(AppMsg::Settings(SettingsMsg::SetShortcut("toggle_location_panel".to_string(), val)));
                             }
                         },
                     ),

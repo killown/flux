@@ -1,5 +1,5 @@
 use super::component::FluxAppWidgets;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, ArchiveMsg, GitMsg, NavigationMsg, TerminalMsg, FluxApp};
 use crate::i18n::tr;
 use adw::gdk;
 use adw::prelude::*;
@@ -77,20 +77,20 @@ impl FluxApp {
             let s = sender.clone();
             let a = gtk::gio::SimpleAction::new("status", None);
             a.connect_activate(move |_, _| {
-                let _ = s.input_sender().send(AppMsg::ShowGitStatusView);
+                let _ = s.input_sender().send(AppMsg::Git(GitMsg::ShowGitStatusView));
             });
             git_actions.add_action(&a);
         }
 
         let simple_git_actions: [GitActionEntry; 8] = [
-            ("status-staged", || AppMsg::ShowGitStatusStaged),
-            ("status-unstaged", || AppMsg::ShowGitStatusUnstaged),
-            ("log", || AppMsg::GitShowLog),
-            ("copy-diff", || AppMsg::GitCopyDiff),
-            ("switch-branch", || AppMsg::PromptGitSwitchBranch),
-            ("open-remote", || AppMsg::GitOpenRemote),
-            ("discard-selected", || AppMsg::GitDiscardSelected),
-            ("restore-discard", || AppMsg::GitRestoreLastDiscard),
+            ("status-staged", || AppMsg::Git(GitMsg::ShowGitStatusStaged)),
+            ("status-unstaged", || AppMsg::Git(GitMsg::ShowGitStatusUnstaged)),
+            ("log", || AppMsg::Git(GitMsg::GitShowLog)),
+            ("copy-diff", || AppMsg::Git(GitMsg::GitCopyDiff)),
+            ("switch-branch", || AppMsg::Git(GitMsg::PromptGitSwitchBranch)),
+            ("open-remote", || AppMsg::Git(GitMsg::GitOpenRemote)),
+            ("discard-selected", || AppMsg::Git(GitMsg::GitDiscardSelected)),
+            ("restore-discard", || AppMsg::Git(GitMsg::GitRestoreLastDiscard)),
         ];
         for (name, make_msg) in simple_git_actions {
             let s = sender.clone();
@@ -271,7 +271,7 @@ impl FluxApp {
                             .unwrap_or(160);
                         let final_width = s.width().clamp(min_w, 500.max(min_w));
                         s.set_width_request(final_width);
-                        s_sender.input(AppMsg::SetSidebarWidth(final_width));
+                        s_sender.input(AppMsg::Sidebar(AppSidebarMsg::SetSidebarWidth(final_width)));
                     }
                     if let Some(widget) = gesture.widget() {
                         widget.set_cursor(None);
@@ -400,11 +400,11 @@ impl FluxApp {
                         .filter(|p| p.is_dir())
                         .collect();
                     for folder in paths {
-                        s_pin.input(AppMsg::PinFolderAt {
+                        s_pin.input(AppMsg::Sidebar(AppSidebarMsg::PinFolderAt {
                             path: folder,
                             before: std::path::PathBuf::new(),
                             label_name: None,
-                        });
+                        }));
                     }
                     return true;
                 }
@@ -493,7 +493,7 @@ impl FluxApp {
                 let new_action = gio::SimpleAction::new("new_section", None);
                 let s2 = s_ns.clone();
                 new_action.connect_activate(move |_, _| {
-                    s2.input(AppMsg::PromptNewSidebarSection);
+                    s2.input(AppMsg::Sidebar(AppSidebarMsg::PromptNewSidebarSection));
                 });
                 ag.add_action(&new_action);
 
@@ -518,11 +518,11 @@ impl FluxApp {
                     let path = path.to_string();
                     let icon = icon.to_string();
                     act.connect_activate(move |_, _| {
-                        s3.input(AppMsg::AddPanelSidebarEntry {
+                        s3.input(AppMsg::Sidebar(AppSidebarMsg::AddPanelSidebarEntry {
                             name: name.clone(),
                             path: path.clone(),
                             icon: icon.clone(),
-                        });
+                        }));
                     });
                     ag.add_action(&act);
                 }
@@ -567,7 +567,7 @@ impl FluxApp {
                 }
                 let terminal_px = total_height - paned.position();
                 if terminal_px > 50 {
-                    sender_clone.input(AppMsg::SetTerminalHeight(terminal_px));
+                    sender_clone.input(AppMsg::Terminal(TerminalMsg::SetTerminalHeight(terminal_px)));
                 }
             });
         }
@@ -616,10 +616,10 @@ impl FluxApp {
                 let btn = gesture.current_button();
                 if btn == back_btn {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                    s_back.input(AppMsg::GoBack);
+                    s_back.input(AppMsg::Navigation(NavigationMsg::GoBack));
                 } else if btn == forward_btn {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                    s_forward.input(AppMsg::GoForward);
+                    s_forward.input(AppMsg::Navigation(NavigationMsg::GoForward));
                 }
             });
 
@@ -669,7 +669,7 @@ impl FluxApp {
         if let Some(archive_path) = open_archive {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(AppMsg::EnterArchive(archive_path));
+                s.input(AppMsg::Archive(ArchiveMsg::EnterArchive(archive_path)));
             });
         }
 

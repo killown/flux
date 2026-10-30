@@ -1,5 +1,5 @@
 use super::state::TabState;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, ViewMsg, FluxApp};
 use gtk::prelude::*;
 use relm4::prelude::*;
 
@@ -40,19 +40,19 @@ impl FluxApp {
 
         let s_open = sender.clone();
         tab.files.view.connect_activate(move |_, pos| {
-            s_open.input(AppMsg::Open {
+            s_open.input(AppMsg::Navigation(NavigationMsg::Open {
                 position: Some(pos),
                 tab_id: Some(tab_id),
-            });
+            }));
         });
 
         let s_sel = sender.clone();
         if let Some(selection_model) = tab.files.view.model().and_downcast::<gtk::MultiSelection>()
         {
             selection_model.connect_selection_changed(move |_, _, _| {
-                s_sel.input(AppMsg::SelectionChanged {
+                s_sel.input(AppMsg::View(ViewMsg::SelectionChanged {
                     tab_id: Some(tab_id),
-                });
+                }));
             });
         }
 

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, WindowMsg, FluxApp};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -38,12 +38,12 @@ impl FluxApp {
                                 password.as_deref(),
                                 None,
                             ) {
-                                s_clone.input(AppMsg::ShowToast(format!("Archive error: {e}")));
+                                s_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!("Archive error: {e}"))));
                                 return;
                             }
                         }
                     }
-                    s_clone.input(AppMsg::Refresh);
+                    s_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 });
             }
             return;
@@ -105,23 +105,23 @@ impl FluxApp {
                     .is_ok()
                 {
                     completed_moves.push((source_canon.clone(), final_dest.clone()));
-                    sender_clone.input(AppMsg::ItemMoved {
+                    sender_clone.input(AppMsg::FileOps(FileOpsMsg::ItemMoved {
                         old_path: source_canon,
                         new_path: final_dest,
-                    });
+                    }));
                 } else {
                     eprintln!("[DnD Error] Failed to move {:?}", source_canon);
                 }
             }
 
             if !completed_moves.is_empty() {
-                sender_clone.input(AppMsg::MoveSucceeded {
+                sender_clone.input(AppMsg::FileOps(FileOpsMsg::MoveSucceeded {
                     items: completed_moves,
                     dest_dir: dest_canon,
-                });
+                }));
             }
 
-            sender_clone.input(AppMsg::Refresh);
+            sender_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
         });
     }
 
@@ -193,23 +193,23 @@ impl FluxApp {
                     .is_ok()
                 {
                     completed_moves.push((source_canon.clone(), final_dest.clone()));
-                    sender_clone.input(AppMsg::ItemMoved {
+                    sender_clone.input(AppMsg::FileOps(FileOpsMsg::ItemMoved {
                         old_path: source_canon,
                         new_path: final_dest,
-                    });
+                    }));
                 } else {
                     eprintln!("[File Error] External move failed");
                 }
             }
 
             if !completed_moves.is_empty() {
-                sender_clone.input(AppMsg::MoveSucceeded {
+                sender_clone.input(AppMsg::FileOps(FileOpsMsg::MoveSucceeded {
                     items: completed_moves,
                     dest_dir: dest_canon,
-                });
+                }));
             }
 
-            sender_clone.input(AppMsg::Refresh);
+            sender_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
         });
     }
 }

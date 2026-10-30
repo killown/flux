@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, WindowMsg, FluxApp};
 use gtk::gdk;
 use gtk::gdk::prelude::DisplayExt;
 use relm4::prelude::*;
@@ -8,9 +8,9 @@ impl FluxApp {
     pub fn handle_paste_from_clipboard(&self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_paste_from_clipboard");
         let Some(display) = gdk::Display::default() else {
-            sender.input(AppMsg::ShowToast(crate::i18n::tr(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
                 "No display available for clipboard operation",
-            )));
+            ))));
             return;
         };
 
@@ -44,8 +44,8 @@ impl FluxApp {
             return;
         }
 
-        sender.input(AppMsg::ShowToast(crate::i18n::tr(
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
             "Nothing pasteable in clipboard",
-        )));
+        ))));
     }
 }

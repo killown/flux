@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, CommandMsg, FileOpsMsg, NavigationMsg, TasksMsg, WindowMsg, FluxApp};
 use crate::ui::constants;
 use crate::utils::helpers::shell::{expand_template, shell_safe, Placeholder};
 use adw::gio::prelude::*;
@@ -173,7 +173,7 @@ impl FluxApp {
                 .filter(|p| crate::infra::fonts::is_font_path(p))
                 .collect();
             if !fonts.is_empty() {
-                sender.input(AppMsg::InstallFonts(fonts));
+                sender.input(AppMsg::FileOps(FileOpsMsg::InstallFonts(fonts)));
             }
             return;
         }
@@ -204,9 +204,9 @@ impl FluxApp {
         );
 
         if final_cmd.is_empty() {
-            sender.input(AppMsg::ShowToast(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(
                 "Cannot run command: filename contains unsafe characters".into(),
-            ));
+            )));
             return;
         }
 
@@ -240,7 +240,7 @@ impl FluxApp {
             let task_id_delay = id;
             relm4::spawn(async move {
                 sleep(Duration::from_secs(2)).await;
-                s_delay.input(AppMsg::ShowCommandDialogIfActive(task_id_delay));
+                s_delay.input(AppMsg::Command(CommandMsg::ShowCommandDialogIfActive(task_id_delay)));
             });
 
             Some(id)
@@ -270,9 +270,9 @@ impl FluxApp {
             let mut child = match child {
                 Ok(c) => c,
                 Err(e) => {
-                    sender_cmd.input(AppMsg::ShowToast(format!("Failed to spawn command: {}", e)));
+                    sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast(format!("Failed to spawn command: {}", e))));
                     if let Some(id) = task_id {
-                        sender_cmd.input(AppMsg::TaskCompleted(id));
+                        sender_cmd.input(AppMsg::Tasks(TasksMsg::TaskCompleted(id)));
                     }
                     return;
                 }
@@ -291,11 +291,11 @@ impl FluxApp {
                 let mut reader = BufReader::new(stdout).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
                     if let Some(id) = task_id {
-                        sender_out.input(AppMsg::CommandOutput {
+                        sender_out.input(AppMsg::Command(CommandMsg::CommandOutput {
                             id,
                             line,
                             is_stderr: false,
-                        });
+                        }));
                     }
                 }
             });
@@ -305,11 +305,11 @@ impl FluxApp {
                 let mut reader = BufReader::new(stderr).lines();
                 while let Ok(Some(line)) = reader.next_line().await {
                     if let Some(id) = task_id {
-                        sender_err.input(AppMsg::CommandOutput {
+                        sender_err.input(AppMsg::Command(CommandMsg::CommandOutput {
                             id,
                             line,
                             is_stderr: true,
-                        });
+                        }));
                     }
                 }
             });
@@ -322,21 +322,21 @@ impl FluxApp {
             stderr_task.abort();
 
             if let Some(id) = task_id {
-                sender_cmd.input(AppMsg::CommandFinished {
+                sender_cmd.input(AppMsg::Command(CommandMsg::CommandFinished {
                     id,
                     success,
                     exit_code,
-                });
+                }));
             }
 
             if let Some(msg) = toast_msg {
-                sender_cmd.input(AppMsg::ShowToast(msg));
+                sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
             } else if !success {
-                sender_cmd.input(AppMsg::ShowToast("Command failed".to_string()));
+                sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast("Command failed".to_string())));
             }
 
             if needs_refresh {
-                sender_cmd.input(AppMsg::Refresh);
+                sender_cmd.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
         });
     }

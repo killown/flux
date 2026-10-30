@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, UndoMsg, WindowMsg, FluxApp};
 use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
 use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;
@@ -76,7 +76,7 @@ impl FluxApp {
             items: redo_items,
             dest_dir,
         });
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_undo_move_failed(&mut self, op: FileOp) {
@@ -90,7 +90,7 @@ impl FluxApp {
     ) {
         crate::hit!("handle_undo_trash_complete");
         self.file_op_history.push_redo(FileOp::Trash { items });
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_undo_trash_failed(&mut self, op: FileOp) {
@@ -106,7 +106,7 @@ impl FluxApp {
         crate::hit!("handle_redo_move_complete");
         self.file_op_history
             .push_undo(FileOp::Move { items, dest_dir });
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_redo_move_failed(&mut self, op: FileOp) {
@@ -120,7 +120,7 @@ impl FluxApp {
     ) {
         crate::hit!("handle_redo_trash_complete");
         self.file_op_history.push_undo(FileOp::Trash { items });
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_redo_trash_failed(&mut self, op: FileOp) {
@@ -132,7 +132,7 @@ impl FluxApp {
         match op {
             op @ FileOp::Rename { .. } => {
                 if Self::undo_rename(&mut self.file_op_history, op).is_ok() {
-                    sender.input(AppMsg::Refresh);
+                    sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 }
             }
             FileOp::Move { items, dest_dir } => {
@@ -160,12 +160,12 @@ impl FluxApp {
                         redo_items.push((src, dst));
                     }
                     if success {
-                        sender_clone.input(AppMsg::UndoMoveComplete {
+                        sender_clone.input(AppMsg::Undo(UndoMsg::UndoMoveComplete {
                             redo_items,
                             dest_dir,
-                        });
+                        }));
                     } else {
-                        sender_clone.input(AppMsg::UndoMoveFailed(move_op));
+                        sender_clone.input(AppMsg::Undo(UndoMsg::UndoMoveFailed(move_op)));
                     }
                 });
             }
@@ -184,14 +184,14 @@ impl FluxApp {
                             continue;
                         }
                         if let Err(e) = gio::File::for_path(&path).trash(gio::Cancellable::NONE) {
-                            sender_clone.input(AppMsg::ShowToast(format!(
+                            sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                                 "{}: {}",
                                 crate::i18n::tr("Could not move to trash"),
                                 e.message()
-                            )));
+                            ))));
                         }
                     }
-                    sender_clone.input(AppMsg::Refresh);
+                    sender_clone.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 });
             }
             FileOp::Trash { items } => {
@@ -206,10 +206,10 @@ impl FluxApp {
                     // redo entry for the restored items has to come after it.
                     if !failed.is_empty() {
                         sender_clone
-                            .input(AppMsg::UndoTrashFailed(FileOp::Trash { items: failed }));
+                            .input(AppMsg::Undo(UndoMsg::UndoTrashFailed(FileOp::Trash { items: failed })));
                     }
                     if !restored.is_empty() {
-                        sender_clone.input(AppMsg::UndoTrashComplete { items: restored });
+                        sender_clone.input(AppMsg::Undo(UndoMsg::UndoTrashComplete { items: restored }));
                     }
                 });
             }
@@ -221,7 +221,7 @@ impl FluxApp {
         match op {
             op @ FileOp::Rename { .. } => {
                 if Self::redo_rename(&mut self.file_op_history, op).is_ok() {
-                    sender.input(AppMsg::Refresh);
+                    sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
                 }
             }
             FileOp::Move { items, dest_dir } => {
@@ -249,12 +249,12 @@ impl FluxApp {
                         undo_items.push((src, dst));
                     }
                     if success {
-                        sender_clone.input(AppMsg::RedoMoveComplete {
+                        sender_clone.input(AppMsg::Undo(UndoMsg::RedoMoveComplete {
                             items: undo_items,
                             dest_dir,
-                        });
+                        }));
                     } else {
-                        sender_clone.input(AppMsg::RedoMoveFailed(move_op));
+                        sender_clone.input(AppMsg::Undo(UndoMsg::RedoMoveFailed(move_op)));
                     }
                 });
             }
@@ -276,11 +276,11 @@ impl FluxApp {
                     // Complete first: `push_undo` clears the redo stack, so
                     // the failed remainder has to be pushed to redo after it.
                     if !re_trashed.is_empty() {
-                        sender_clone.input(AppMsg::RedoTrashComplete { items: re_trashed });
+                        sender_clone.input(AppMsg::Undo(UndoMsg::RedoTrashComplete { items: re_trashed }));
                     }
                     if !failed.is_empty() {
                         sender_clone
-                            .input(AppMsg::RedoTrashFailed(FileOp::Trash { items: failed }));
+                            .input(AppMsg::Undo(UndoMsg::RedoTrashFailed(FileOp::Trash { items: failed })));
                     }
                 });
             }

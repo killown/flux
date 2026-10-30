@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp};
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -36,7 +36,7 @@ impl FluxApp {
         dialog.connect_response(None, move |_, resp| {
             if resp == "ok" {
                 let title = entry_clone.text().trim().to_string();
-                s.input(AppMsg::AddSidebarSection(title));
+                s.input(AppMsg::Sidebar(AppSidebarMsg::AddSidebarSection(title)));
             }
         });
     }
@@ -78,10 +78,10 @@ impl FluxApp {
             if resp == "ok" {
                 let new_name = entry_clone.text().trim().to_string();
                 if new_name != old_name {
-                    s.input(AppMsg::RenameSidebarSection {
+                    s.input(AppMsg::Sidebar(AppSidebarMsg::RenameSidebarSection {
                         old_name: old_name.clone(),
                         new_name,
-                    });
+                    }));
                 }
             }
         });
@@ -128,10 +128,10 @@ impl FluxApp {
             if resp == "ok" {
                 let new_name = entry_clone.text().trim().to_string();
                 if !new_name.is_empty() {
-                    s.input(AppMsg::RenameSidebarPlace {
+                    s.input(AppMsg::Sidebar(AppSidebarMsg::RenameSidebarPlace {
                         path: target_path.clone(),
                         new_name,
-                    });
+                    }));
                 }
             }
         });
@@ -237,7 +237,7 @@ impl FluxApp {
                                 }
 
                                 crate::utils::save_config(&config);
-                                sender_clone.input(AppMsg::RefreshSidebar);
+                                sender_clone.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
                             }
                         }
                     }

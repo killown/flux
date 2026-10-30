@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, FluxApp};
 use relm4::prelude::*;
 
 #[allow(clippy::result_large_err)]
@@ -9,22 +9,22 @@ pub(super) fn handle(
 ) -> Result<(), AppMsg> {
     crate::hit!("handle");
     match msg {
-        AppMsg::PrepareContextMenu(x, y, path) => {
+        AppMsg::Actions(ActionsMsg::PrepareContextMenu(x, y, path)) => {
             app.handle_prepare_context_menu(x, y, path, sender)
         }
-        AppMsg::PrepareSecondaryMenu { x, y, path } => {
+        AppMsg::Actions(ActionsMsg::PrepareSecondaryMenu { x, y, path }) => {
             app.handle_prepare_secondary_menu(x, y, path, sender)
         }
-        AppMsg::ShowContextMenu { x, y, path, mime } => {
+        AppMsg::Actions(ActionsMsg::ShowContextMenu { x, y, path, mime }) => {
             app.build_and_show_context_menu(x, y, path, mime, sender)
         }
-        AppMsg::ShowSecondaryMenu {
+        AppMsg::Actions(ActionsMsg::ShowSecondaryMenu {
             x,
             y,
             path,
             mime,
             actions,
-        } => app.build_and_show_secondary_menu(x, y, path, mime, actions, sender),
+        }) => app.build_and_show_secondary_menu(x, y, path, mime, actions, sender),
         other => return Err(other),
     }
     Ok(())

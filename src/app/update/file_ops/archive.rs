@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, LoadingMsg, TasksMsg, WindowMsg, FluxApp};
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -41,7 +41,7 @@ impl FluxApp {
                     counter += 1;
                 }
                 Err(e) => {
-                    sender.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Extract failed: {e}"))));
                     return;
                 }
             }
@@ -58,14 +58,14 @@ impl FluxApp {
                 .to_string_lossy()
         );
 
-        sender.input(AppMsg::TaskProgress {
+        sender.input(AppMsg::Tasks(TasksMsg::TaskProgress {
             id: task_id,
             label: label.clone(),
             current: 0,
             total: 0,
             total_items: 1,
             cancellable: cancellable.clone(),
-        });
+        }));
 
         let password = self.cached_archive_passwords.get(&archive_path).cloned();
         let s = sender.clone();
@@ -97,14 +97,14 @@ impl FluxApp {
                     break;
                 }
                 let current = dir_size(&dest_poll);
-                s_poll.input(AppMsg::TaskProgress {
+                s_poll.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                     id: task_id,
                     label: label_poll.clone(),
                     current,
                     total: total_poll.load(std::sync::atomic::Ordering::Relaxed),
                     total_items: 1,
                     cancellable: cancellable_poll.clone(),
-                });
+                }));
                 std::thread::sleep(std::time::Duration::from_millis(150));
             }
         });
@@ -126,27 +126,27 @@ impl FluxApp {
             // Stop the poller before reporting completion.
             drop(done);
 
-            s.input(AppMsg::TaskProgress {
+            s.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                 id: task_id,
                 label: label.clone(),
                 current: total_bytes,
                 total: total_bytes,
                 total_items: 1,
                 cancellable: cancellable.clone(),
-            });
-            s.input(AppMsg::TaskCompleted(task_id));
+            }));
+            s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
 
             match result {
                 Ok(()) => {
-                    s.input(AppMsg::ShowToast(format!(
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                         "Extracted to {}",
                         dest.display()
-                    )));
-                    s.input(AppMsg::InvalidateCacheAndNavigate(dest));
+                    ))));
+                    s.input(AppMsg::Loading(LoadingMsg::InvalidateCacheAndNavigate(dest)));
                 }
                 Err(e) => {
                     let _ = std::fs::remove_dir_all(&dest);
-                    s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Extract failed: {e}"))));
                 }
             }
         });
@@ -183,14 +183,14 @@ impl FluxApp {
             crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
         let cancellable = gtk::gio::Cancellable::new();
         let label = format!("Extracting {entry_name}");
-        sender.input(AppMsg::TaskProgress {
+        sender.input(AppMsg::Tasks(TasksMsg::TaskProgress {
             id: task_id,
             label: label.clone(),
             current: 0,
             total: 0,
             total_items: 1,
             cancellable: cancellable.clone(),
-        });
+        }));
 
         let password = self.cached_archive_passwords.get(&archive_path).cloned();
         let s = sender.clone();
@@ -203,40 +203,40 @@ impl FluxApp {
                 &dest_dir,
             );
 
-            s.input(AppMsg::TaskProgress {
+            s.input(AppMsg::Tasks(TasksMsg::TaskProgress {
                 id: task_id,
                 label,
                 current: 1,
                 total: 1,
                 total_items: 1,
                 cancellable,
-            });
-            s.input(AppMsg::TaskCompleted(task_id));
+            }));
+            s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
 
             match result {
                 Ok(dest) => {
-                    s.input(AppMsg::ShowToast(format!(
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                         "Extracted to {}",
                         dest.display()
-                    )));
-                    s.input(AppMsg::EnterArchive(dest));
+                    ))));
+                    s.input(AppMsg::Archive(ArchiveMsg::EnterArchive(dest)));
                 }
                 Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
-                    s.input(AppMsg::PromptArchivePassword {
+                    s.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                         archive_path,
                         prefix: parent_prefix,
                         wrong_password: false,
-                    });
+                    }));
                 }
                 Err(crate::infra::archive::ArchiveError::WrongPassword) => {
-                    s.input(AppMsg::PromptArchivePassword {
+                    s.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                         archive_path,
                         prefix: parent_prefix,
                         wrong_password: true,
-                    });
+                    }));
                 }
                 Err(e) => {
-                    s.input(AppMsg::ShowToast(format!("Extract failed: {e}")));
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Extract failed: {e}"))));
                 }
             }
         });

@@ -1,5 +1,5 @@
 use super::tracked::trash_tracked_batch;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, WindowMsg, FluxApp};
 use gtk::gio;
 use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;
@@ -38,16 +38,16 @@ pub(super) fn delete_batch_via_trash(
                 trash_err.kind::<gio::IOErrorEnum>(),
                 trash_err.message()
             );
-            sender.input(AppMsg::ShowToast(format!(
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                 "{}: {}",
                 crate::i18n::tr("Could not move to trash"),
                 trash_err.message()
-            )));
+            ))));
         }
 
         if !trashed.is_empty() {
-            sender.input(AppMsg::TrashSucceeded(trashed));
-            sender.input(AppMsg::Refresh);
+            sender.input(AppMsg::FileOps(FileOpsMsg::TrashSucceeded(trashed)));
+            sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         }
     });
 }

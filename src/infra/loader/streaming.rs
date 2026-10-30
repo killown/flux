@@ -1,5 +1,5 @@
 use super::icons::get_custom_extension_icon_path;
-use crate::domain::model::{AppMsg, FileLoadContext, FluxApp};
+use crate::domain::model::{AppMsg, GitMsg, LoadingMsg, NavigationMsg, ThumbnailsMsg, FileLoadContext, FluxApp};
 use crate::ui::FileItem;
 use crate::utils;
 use adw::prelude::*;
@@ -60,7 +60,7 @@ impl FluxApp {
         }
         self.folder_cache
             .remove(&self.cache_key(&self.current_path));
-        sender.input(AppMsg::Navigate(path));
+        sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
     }
 
     /// construct and append a slice of FileLoadContext items directly to self.files.
@@ -257,7 +257,7 @@ impl FluxApp {
                     sender.clone(),
                 );
             } else {
-                sender.input(AppMsg::CheckVisibleThumbnails);
+                sender.input(AppMsg::Thumbnails(ThumbnailsMsg::CheckVisibleThumbnails));
             }
         }
     }
@@ -368,19 +368,19 @@ impl FluxApp {
 
             relm4::spawn(async move {
                 if let Some(repo_root) = crate::infra::git::find_git_repo_root(&target_dir) {
-                    s_clone.input(AppMsg::SetGitRepoActive(true));
+                    s_clone.input(AppMsg::Git(GitMsg::SetGitRepoActive(true)));
 
                     if let Ok(raw_status) =
                         crate::infra::git::query_git_status_for_view(&repo_root, &target_dir).await
                     {
-                        s_clone.input(AppMsg::GitStatusReady {
+                        s_clone.input(AppMsg::Git(GitMsg::GitStatusReady {
                             path: target_dir,
                             load_id: current_load_id,
                             updates: raw_status,
-                        });
+                        }));
                     }
                 } else {
-                    s_clone.input(AppMsg::SetGitRepoActive(false));
+                    s_clone.input(AppMsg::Git(GitMsg::SetGitRepoActive(false)));
                 }
             });
         } else {
@@ -428,14 +428,14 @@ impl FluxApp {
                 }
 
                 if let Some(chunk) = chunks.as_mut().and_then(|v| v.pop()) {
-                    sender_clone.input(AppMsg::FolderLoadedChunk {
+                    sender_clone.input(AppMsg::Loading(LoadingMsg::FolderLoadedChunk {
                         load_id,
                         chunk,
                         is_cached,
-                    });
+                    }));
 
                     if chunks.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
-                        sender_clone.input(AppMsg::FolderLoadedFinish { load_id });
+                        sender_clone.input(AppMsg::Loading(LoadingMsg::FolderLoadedFinish { load_id }));
                         glib::ControlFlow::Break
                     } else {
                         glib::ControlFlow::Continue

@@ -1,7 +1,7 @@
 use super::icons::get_custom_extension_icon_path;
 use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
-use crate::domain::model::{AppMsg, FileLoadContext, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, ArchiveMsg, FileOpsMsg, LoadingMsg, SearchMsg, TagsMsg, FileLoadContext, FluxApp, SortBy};
 use crate::utils::media::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
@@ -64,20 +64,20 @@ impl FluxApp {
             self.is_loading = false;
             let clean_tag = path_str.trim_start_matches("tags://");
             if clean_tag.is_empty() {
-                sender.input(AppMsg::ToggleTagPanel);
+                sender.input(AppMsg::Tags(TagsMsg::ToggleTagPanel));
             } else {
                 let tag_query = format!("#{}", clean_tag);
-                sender.input(AppMsg::SwitchHeader(
+                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(
                     crate::ui::constants::VIEW_SEARCH.to_string(),
-                ));
-                sender.input(AppMsg::UpdateFilter(tag_query));
+                )));
+                sender.input(AppMsg::Search(SearchMsg::UpdateFilter(tag_query)));
             }
             return;
         }
 
         if path_str.starts_with("search://") {
             self.is_loading = false;
-            sender.input(AppMsg::ToggleSearchPanel);
+            sender.input(AppMsg::Search(SearchMsg::ToggleSearchPanel));
             return;
         }
 
@@ -130,12 +130,12 @@ impl FluxApp {
                     match event {
                         gio::FileMonitorEvent::Deleted | gio::FileMonitorEvent::MovedOut => {
                             // Deletions are terminal, dispatch immediately.
-                            sender_clone.input(AppMsg::FileDeleted(path));
+                            sender_clone.input(AppMsg::FileOps(FileOpsMsg::FileDeleted(path)));
                         }
                         gio::FileMonitorEvent::ChangesDoneHint => {
                             // Writer closed the file after a batch of writes. This
                             // is the signal we trust, dispatch without debouncing.
-                            sender_clone.input(AppMsg::FileChanged(path));
+                            sender_clone.input(AppMsg::FileOps(FileOpsMsg::FileChanged(path)));
                         }
                         gio::FileMonitorEvent::Created
                         | gio::FileMonitorEvent::MovedIn
@@ -152,9 +152,9 @@ impl FluxApp {
                             );
                         }
                         gio::FileMonitorEvent::Moved | gio::FileMonitorEvent::Renamed => {
-                            sender_clone.input(AppMsg::FileDeleted(path));
+                            sender_clone.input(AppMsg::FileOps(FileOpsMsg::FileDeleted(path)));
                             if let Some(other) = other_file.and_then(|f| f.path()) {
-                                sender_clone.input(AppMsg::FileChanged(other));
+                                sender_clone.input(AppMsg::FileOps(FileOpsMsg::FileChanged(other)));
                             }
                         }
                         _ => {}
@@ -195,7 +195,7 @@ impl FluxApp {
         let sender_debounce = sender.clone();
         let session = current_session;
         glib::timeout_add_local_once(std::time::Duration::from_millis(150), move || {
-            sender_debounce.input(AppMsg::ShowLoadingSpinner(session));
+            sender_debounce.input(AppMsg::Loading(LoadingMsg::ShowLoadingSpinner(session)));
         });
 
         if !is_trash
@@ -287,13 +287,13 @@ impl FluxApp {
                         };
 
                     let zip_probe = lock_snapshot.zip_probe_candidates(&cached_items);
-                    sender_clone.input(AppMsg::FolderLoaded {
+                    sender_clone.input(AppMsg::Loading(LoadingMsg::FolderLoaded {
                         path: path_clone,
                         load_id: current_session,
                         items: cached_items,
                         media_tasks,
                         list_mode,
-                    });
+                    }));
                     spawn_zip_lock_probe(zip_probe, current_session, sender_clone);
                 });
                 return;
@@ -614,13 +614,13 @@ impl FluxApp {
             };
 
             let zip_probe = lock_snapshot.zip_probe_candidates(&items);
-            sender_clone.input(AppMsg::FolderLoaded {
+            sender_clone.input(AppMsg::Loading(LoadingMsg::FolderLoaded {
                 path: path_clone,
                 load_id: current_session,
                 items,
                 media_tasks,
                 list_mode,
-            });
+            }));
             spawn_zip_lock_probe(zip_probe, current_session, sender_clone);
         });
     }
@@ -647,7 +647,7 @@ fn spawn_zip_lock_probe(
                 .collect()
         });
         if !encrypted.is_empty() {
-            sender.input(AppMsg::ArchiveLocksProbed { load_id, encrypted });
+            sender.input(AppMsg::Archive(ArchiveMsg::ArchiveLocksProbed { load_id, encrypted }));
         }
     });
 }

@@ -1,6 +1,6 @@
 //! Leaf widgets of the main header bar.
 
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, FileOpsMsg, NavigationMsg, PreviewMsg, SearchMsg, ViewMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::prelude::*;
@@ -35,7 +35,7 @@ pub(in crate::ui::view) fn build_sort_indicator(
     let s = sender.clone();
     click.connect_pressed(move |gesture, _, _, _| {
         gesture.set_state(gtk::EventSequenceState::Claimed);
-        s.input(AppMsg::CycleSort);
+        s.input(AppMsg::View(ViewMsg::CycleSort));
     });
     container.add_controller(click);
 
@@ -72,7 +72,7 @@ pub(in crate::ui::view) fn build_empty_trash_button(
     button.add_css_class(constants::DESTRUCTIVE_ACTION_CLASS);
     pointer_cursor(&button);
     let s = sender.clone();
-    button.connect_clicked(move |_| s.input(AppMsg::EmptyTrash));
+    button.connect_clicked(move |_| s.input(AppMsg::FileOps(FileOpsMsg::EmptyTrash)));
     button.set_child(Some(&icon_label_row(
         constants::ICON_TRASH,
         &tr("Empty Trash"),
@@ -88,7 +88,7 @@ pub(in crate::ui::view) fn build_extract_archive_button(
     button.add_css_class("suggested-action");
     pointer_cursor(&button);
     let s = sender.clone();
-    button.connect_clicked(move |_| s.input(AppMsg::ExtractArchive));
+    button.connect_clicked(move |_| s.input(AppMsg::Archive(ArchiveMsg::ExtractArchive)));
     button.set_child(Some(&icon_label_row(
         "archive-extract-symbolic",
         &tr("Extract"),
@@ -103,7 +103,7 @@ pub(in crate::ui::view) fn build_recents_button(
     button.add_css_class(constants::DESTRUCTIVE_ACTION_CLASS);
     pointer_cursor(&button);
     let s = sender.clone();
-    button.connect_clicked(move |_| s.input(AppMsg::ClearRecents));
+    button.connect_clicked(move |_| s.input(AppMsg::Navigation(NavigationMsg::ClearRecents)));
     button
 }
 
@@ -116,7 +116,7 @@ pub(in crate::ui::view) fn build_list_toggle(
     button.add_css_class("flat");
     pointer_cursor(&button);
     let s = sender.clone();
-    button.connect_clicked(move |_| s.input(AppMsg::ToggleListMode));
+    button.connect_clicked(move |_| s.input(AppMsg::View(ViewMsg::ToggleListMode)));
     button
 }
 
@@ -131,7 +131,7 @@ pub(in crate::ui::view) fn build_filter_toggle(
         &gtk::gio::ThemedIcon::from_names(&["view-filter-symbolic", "filter-symbolic"]),
     )));
     let s = sender.clone();
-    button.connect_clicked(move |_| s.input(AppMsg::ToggleFilterBar));
+    button.connect_clicked(move |_| s.input(AppMsg::Search(SearchMsg::ToggleFilterBar)));
     button
 }
 
@@ -144,6 +144,6 @@ pub(in crate::ui::view) fn build_preview_toggle(
     button.add_css_class("flat");
     pointer_cursor(&button);
     let s = sender.clone();
-    button.connect_clicked(move |_| s.input(AppMsg::TogglePreview));
+    button.connect_clicked(move |_| s.input(AppMsg::Preview(PreviewMsg::TogglePreview)));
     button
 }

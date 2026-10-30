@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, WindowMsg, FluxApp};
 use gtk::gdk;
 use gtk::gio;
 use relm4::prelude::*;
@@ -30,9 +30,9 @@ impl FluxApp {
                     .collect();
 
                 if !files.is_empty() {
-                    s.input(AppMsg::PerformPaste { files, is_cut });
+                    s.input(AppMsg::FileOps(FileOpsMsg::PerformPaste { files, is_cut }));
                     if let Some(toast) = paste_toast {
-                        s.input(AppMsg::ShowToast(toast));
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(toast)));
                     }
                 }
             }

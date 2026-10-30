@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
 use crate::utils::path::PathExt;
 use adw::gio::prelude::*;
 use gtk::gio;
@@ -100,10 +100,10 @@ impl FluxApp {
         match result {
             Ok(()) => {
                 self.recents_has_selection = false;
-                sender.input(AppMsg::Refresh);
+                sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
             Err(e) => {
-                sender.input(AppMsg::ShowToast(format!("Failed to clear recents: {}", e)));
+                sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Failed to clear recents: {}", e))));
             }
         }
     }

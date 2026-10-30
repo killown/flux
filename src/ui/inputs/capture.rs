@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, NavigationMsg, NetworkMsg, PreviewMsg, PropertiesMsg, QuickListMsg, SearchMsg, TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg, FluxApp};
 use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::glib;
@@ -67,40 +67,40 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
         // ShortcutController (Ctrl+W = close tab, etc.) never sees the chord.
         bind(
             &keymap.cycle_by_letter_cancel,
-            AppMsg::CycleByLetterCancel,
+            AppMsg::Navigation(NavigationMsg::CycleByLetterCancel),
             Yield::TerminalOrEditable,
         ),
         bind(
             &keymap.cycle_by_letter_reanchor,
-            AppMsg::CycleByLetterReanchor,
+            AppMsg::Navigation(NavigationMsg::CycleByLetterReanchor),
             Yield::TerminalOrEditable,
         ),
         bind(
             &keymap.focus_pane_left,
-            AppMsg::FocusPaneLeft,
+            AppMsg::Preview(PreviewMsg::FocusPaneLeft),
             Yield::Terminal,
         ),
         bind(
             &keymap.focus_pane_right,
-            AppMsg::FocusPaneRight,
+            AppMsg::Preview(PreviewMsg::FocusPaneRight),
             Yield::Terminal,
         ),
         bind(
             &keymap.cycle_filter_mode,
-            AppMsg::CycleFilterMode,
+            AppMsg::Search(SearchMsg::CycleFilterMode),
             Yield::Terminal,
         ),
         // Ctrl+Shift+A: toggle contextual-actions panel. Capture phase
         // so a focused widget inside the panel cannot pre-empt the chord.
         bind(
             &keymap.toggle_actions_panel,
-            AppMsg::ToggleActionsPanel,
+            AppMsg::Actions(ActionsMsg::ToggleActionsPanel),
             Yield::Terminal,
         ),
         // Ctrl+Shift+L: toggle connect-to-server panel.
         bind(
             &keymap.toggle_connect_panel,
-            AppMsg::ToggleConnectPanel,
+            AppMsg::Network(NetworkMsg::ToggleConnectPanel),
             Yield::Terminal,
         ),
         // Ctrl+Shift+F: toggle the glob-pattern filter bar. Capture phase so
@@ -108,7 +108,7 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
         // one place a user is most likely to press it to dismiss the bar.
         bind(
             &keymap.toggle_filter_bar,
-            AppMsg::ToggleFilterBar,
+            AppMsg::Search(SearchMsg::ToggleFilterBar),
             Yield::Terminal,
         ),
         // Ctrl+M: toggle ephemeral MIME filter on the selection. Moved
@@ -116,44 +116,44 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
         // the peek-preview panel (or any other focused panel) is open.
         bind(
             &keymap.filter_by_mime,
-            AppMsg::FilterBySelectedMime,
+            AppMsg::Search(SearchMsg::FilterBySelectedMime),
             Yield::TerminalOrEditable,
         ),
-        bind(&keymap.toggle_header, AppMsg::ToggleHeaderBar, Yield::Never),
+        bind(&keymap.toggle_header, AppMsg::Window(WindowMsg::ToggleHeaderBar), Yield::Never),
         bind(
             &keymap.toggle_folders_first,
-            AppMsg::ToggleCurrentFoldersFirst,
+            AppMsg::View(ViewMsg::ToggleCurrentFoldersFirst),
             Yield::Never,
         ),
         bind(
             &keymap.toggle_statusbar,
-            AppMsg::ToggleStatusBar,
+            AppMsg::View(ViewMsg::ToggleStatusBar),
             Yield::Never,
         ),
-        bind(&keymap.toggle_sidebar, AppMsg::ToggleSidebar, Yield::Never),
+        bind(&keymap.toggle_sidebar, AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar), Yield::Never),
         // F4 toggles the terminal panel. When either terminal has focus,
         // the terminal's own key controller fires first and handles this
         // key, so we yield there to avoid a double fire.
         bind(
             &keymap.toggle_terminal,
-            AppMsg::ToggleTerminal,
+            AppMsg::Terminal(TerminalMsg::ToggleTerminal),
             Yield::Terminal,
         ),
         // Wide preview: F11 is left to the shell when the terminal has focus.
         bind(
             &keymap.toggle_wide_preview,
-            AppMsg::ToggleWidePreview,
+            AppMsg::Sidebar(AppSidebarMsg::ToggleWidePreview),
             Yield::Terminal,
         ),
         // Tags: Ctrl + Shift + T
         bind(
             &keymap.toggle_tag_panel,
-            AppMsg::ToggleTagPanel,
+            AppMsg::Tags(TagsMsg::ToggleTagPanel),
             Yield::Terminal,
         ),
         // Let the terminal shell handle Ctrl+Z (job control) if it has focus.
-        bind(&keymap.undo, AppMsg::Undo, Yield::Terminal),
-        bind(&keymap.redo, AppMsg::Redo, Yield::Terminal),
+        bind(&keymap.undo, AppMsg::Undo(UndoMsg::Undo), Yield::Terminal),
+        bind(&keymap.redo, AppMsg::Undo(UndoMsg::Redo), Yield::Terminal),
     ]
     .into_iter()
     .flatten()
@@ -204,11 +204,11 @@ pub fn setup_capture(
         if !is_editable && !terminal_focused && is_shift && !is_ctrl && !is_alt {
             match keyval {
                 gdk::Key::L => {
-                    sender.input(AppMsg::NextTab);
+                    sender.input(AppMsg::Tabs(TabsMsg::NextTab));
                     return glib::Propagation::Stop;
                 }
                 gdk::Key::H => {
-                    sender.input(AppMsg::PrevTab);
+                    sender.input(AppMsg::Tabs(TabsMsg::PrevTab));
                     return glib::Propagation::Stop;
                 }
                 _ => {}
@@ -237,7 +237,7 @@ pub fn setup_capture(
             if let Some(c) = keyval.to_unicode() {
                 let c = c.to_ascii_lowercase();
                 if c.is_ascii_lowercase() {
-                    sender.input(AppMsg::CycleByLetter(c));
+                    sender.input(AppMsg::Navigation(NavigationMsg::CycleByLetter(c)));
                     return glib::Propagation::Stop;
                 }
             }
@@ -255,15 +255,15 @@ pub fn setup_capture(
         ) {
             use crate::domain::model::quick_list::QuickKey;
             match chord {
-                QuickKey::AddCurrent => sender.input(AppMsg::AddCurrentFolderExclusive),
-                QuickKey::Clear => sender.input(AppMsg::ClearExclusive),
-                QuickKey::Prev => sender.input(AppMsg::PrevExclusive),
-                QuickKey::Next => sender.input(AppMsg::NextExclusive),
-                QuickKey::Jump(n) => sender.input(AppMsg::QuickListJump(n)),
-                QuickKey::TogglePanel => sender.input(AppMsg::ToggleQuickListPanel),
+                QuickKey::AddCurrent => sender.input(AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive)),
+                QuickKey::Clear => sender.input(AppMsg::QuickList(QuickListMsg::ClearExclusive)),
+                QuickKey::Prev => sender.input(AppMsg::QuickList(QuickListMsg::PrevExclusive)),
+                QuickKey::Next => sender.input(AppMsg::QuickList(QuickListMsg::NextExclusive)),
+                QuickKey::Jump(n) => sender.input(AppMsg::QuickList(QuickListMsg::QuickListJump(n))),
+                QuickKey::TogglePanel => sender.input(AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel)),
                 QuickKey::Tab => {
-                    sender.input(AppMsg::QuickListTab);
-                    sender.input(AppMsg::TogglePreviewGridFocus);
+                    sender.input(AppMsg::QuickList(QuickListMsg::QuickListTab));
+                    sender.input(AppMsg::Preview(PreviewMsg::TogglePreviewGridFocus));
                 }
             }
             return glib::Propagation::Stop;
@@ -271,7 +271,7 @@ pub fn setup_capture(
 
         match keyval {
             gdk::Key::Insert if is_ctrl && is_shift => {
-                sender.input(AppMsg::AddToSidebarPermanent);
+                sender.input(AppMsg::Sidebar(AppSidebarMsg::AddToSidebarPermanent));
                 glib::Propagation::Stop
             }
             // Ctrl+Insert toggles Navigate mode. Text entries and the terminal
@@ -280,7 +280,7 @@ pub fn setup_capture(
                 if terminal_focused || is_editable {
                     return glib::Propagation::Proceed;
                 }
-                sender.input(AppMsg::ToggleNavigateMode);
+                sender.input(AppMsg::Navigation(NavigationMsg::ToggleNavigateMode));
                 glib::Propagation::Stop
             }
             gdk::Key::Home if is_ctrl => {
@@ -288,7 +288,7 @@ pub fn setup_capture(
                     return glib::Propagation::Proceed;
                 }
                 let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"));
-                sender.input(AppMsg::Navigate(home_dir));
+                sender.input(AppMsg::Navigation(NavigationMsg::Navigate(home_dir)));
                 glib::Propagation::Stop
             }
             gdk::Key::Tab if is_ctrl => {
@@ -301,16 +301,16 @@ pub fn setup_capture(
                     return glib::Propagation::Proceed;
                 }
                 if is_shift {
-                    sender.input(AppMsg::PrevTab);
+                    sender.input(AppMsg::Tabs(TabsMsg::PrevTab));
                 } else {
-                    sender.input(AppMsg::NextTab);
+                    sender.input(AppMsg::Tabs(TabsMsg::NextTab));
                 }
                 glib::Propagation::Stop
             }
             // Full-screen preview: Esc leaves it. The handler is a no-op otherwise and the key
             // is not consumed, so every other Esc behaviour keeps working.
             gdk::Key::Escape if !is_ctrl && !is_shift && !is_alt && !terminal_focused => {
-                sender.input(AppMsg::ExitPreviewFullscreen);
+                sender.input(AppMsg::Preview(PreviewMsg::ExitPreviewFullscreen));
                 glib::Propagation::Proceed
             }
             // F12 toggles the file Properties panel. Fixed like the other panel
@@ -319,7 +319,7 @@ pub fn setup_capture(
                 if terminal_focused {
                     return glib::Propagation::Proceed;
                 }
-                sender.input(AppMsg::ToggleFilePropertiesPanel);
+                sender.input(AppMsg::Properties(PropertiesMsg::ToggleFilePropertiesPanel));
                 glib::Propagation::Stop
             }
             _ => glib::Propagation::Proceed,

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NetworkMsg, WindowMsg, FluxApp};
 
 impl FluxApp {
     /// Asynchronously lists a network location via GVFS and dispatches the result.
@@ -21,24 +21,24 @@ impl FluxApp {
             .await
             {
                 Ok(contexts) => {
-                    sender.input(AppMsg::NetworkLoaded {
+                    sender.input(AppMsg::Network(NetworkMsg::NetworkLoaded {
                         uri: uri_str,
                         contexts,
-                    });
+                    }));
                 }
                 Err(crate::infra::network::NetworkError::CredentialsRequired {
                     message,
                     flags,
                 }) => {
-                    sender.input(AppMsg::PromptNetworkCredentials {
+                    sender.input(AppMsg::Network(NetworkMsg::PromptNetworkCredentials {
                         uri: uri_str,
                         message,
                         flags,
                         auth_failed: false,
-                    });
+                    }));
                 }
                 Err(crate::infra::network::NetworkError::AuthFailed) => {
-                    sender.input(AppMsg::PromptNetworkCredentials {
+                    sender.input(AppMsg::Network(NetworkMsg::PromptNetworkCredentials {
                         uri: uri_str,
                         message: crate::i18n::tr(
                             "Authentication failed. Please check your credentials.",
@@ -46,10 +46,10 @@ impl FluxApp {
                         flags: crate::infra::network::NetworkAuthFlags::USERNAME
                             | crate::infra::network::NetworkAuthFlags::PASSWORD,
                         auth_failed: true,
-                    });
+                    }));
                 }
                 Err(e) => {
-                    sender.input(AppMsg::ShowToast(e.to_string()));
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(e.to_string())));
                 }
             }
         });

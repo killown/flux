@@ -1,4 +1,4 @@
-/// A single matched file, carried inside [`AppMsg::ExtensionSearchBatch`].
+/// A single matched file, carried inside [`SearchMsg::ExtensionSearchBatch`].
 #[derive(Debug, Clone)]
 pub struct ExtensionMatch {
     pub path: std::path::PathBuf,

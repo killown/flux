@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, TagsMsg, WindowMsg, FluxApp};
 use relm4::prelude::*;
 
 impl FluxApp {
@@ -15,7 +15,7 @@ impl FluxApp {
                 .set_tags(&path, &tags, chrono::Utc::now().timestamp());
             let _ = crate::utils::xattr::write_tags(&path, &tags);
         }
-        sender.input(AppMsg::ShowToast(crate::i18n::tr("Tags updated")));
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Tags updated"))));
     }
 
     pub fn handle_remove_tag_from_selection(
@@ -38,8 +38,8 @@ impl FluxApp {
                 .unwrap_or(0);
             let _ = self.state_db.set_tags(&path, &tags, mtime);
         }
-        sender.input(AppMsg::ShowToast(crate::i18n::tr("Tag removed")));
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Tag removed"))));
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_open_tag_picker(&self, sender: &AsyncComponentSender<Self>) {
@@ -60,11 +60,11 @@ impl FluxApp {
             let initial_tags = crate::utils::xattr::read_tags(first_path);
             let available_tags = state_db.list_all_tags().unwrap_or_default();
 
-            sender_tag.input(AppMsg::TagsReady {
+            sender_tag.input(AppMsg::Tags(TagsMsg::TagsReady {
                 paths: paths_clone,
                 tags: initial_tags,
                 available_tags,
-            });
+            }));
         });
     }
 
@@ -108,7 +108,7 @@ impl FluxApp {
                 .unwrap_or(0);
 
             let _ = state_db.set_tags(&path_clone, &tags_clone, mtime);
-            sender_refresh.input(AppMsg::Refresh);
+            sender_refresh.input(AppMsg::Navigation(NavigationMsg::Refresh));
         });
     }
 
@@ -118,7 +118,7 @@ impl FluxApp {
         let sender_refresh = sender.clone();
         std::thread::spawn(move || {
             let _ = state_db.delete_tag_globally(&tag);
-            sender_refresh.input(AppMsg::Refresh);
+            sender_refresh.input(AppMsg::Navigation(NavigationMsg::Refresh));
         });
     }
 
@@ -127,6 +127,6 @@ impl FluxApp {
         let filter_str = format!(":tag:{}", tag);
         self.search_just_opened = false;
         self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
-        sender.input(AppMsg::UpdateFilter(filter_str));
+        sender.input(AppMsg::Search(SearchMsg::UpdateFilter(filter_str)));
     }
 }

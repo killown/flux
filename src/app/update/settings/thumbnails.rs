@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
 use crate::utils;
 use relm4::prelude::*;
 
@@ -17,7 +17,7 @@ impl FluxApp {
     pub fn handle_set_thumbnail_size(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
         self.config.ui.thumbnail_size = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_autoplay_video_previews(&mut self, val: bool) {
@@ -34,7 +34,7 @@ impl FluxApp {
     pub fn handle_set_show_thumbnails(&mut self, val: bool, sender: &AsyncComponentSender<Self>) {
         self.config.ui.show_thumbnails = val;
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_thumbnail_type(
@@ -53,7 +53,7 @@ impl FluxApp {
             _ => {}
         }
         utils::save_config(&self.config);
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_set_ffmpeg_threads(&mut self, val: usize) {

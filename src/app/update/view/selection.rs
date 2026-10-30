@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, GitMsg, PreviewMsg, PropertiesMsg, FluxApp};
 use crate::i18n::tr;
 use crate::ui::constants;
 use crate::utils;
@@ -26,7 +26,7 @@ impl FluxApp {
         if self.preview_panel_visible {
             if let Some(path) = self.get_selected_path() {
                 let session = self.preview_session.fetch_add(1, Ordering::SeqCst) + 1;
-                sender.input(AppMsg::PreviewLoad { path, session });
+                sender.input(AppMsg::Preview(PreviewMsg::PreviewLoad { path, session }));
             }
         }
 
@@ -200,11 +200,11 @@ impl FluxApp {
                             let s_c = s.clone();
                             relm4::spawn(async move {
                                 let dur = crate::utils::media::probe_media_duration(&path_c).await;
-                                s_c.input(AppMsg::MediaDurationReady(dur));
+                                s_c.input(AppMsg::Properties(PropertiesMsg::MediaDurationReady(dur)));
                             });
                         }
 
-                        s.input(AppMsg::FileMetaReady { mime, dimensions });
+                        s.input(AppMsg::Properties(PropertiesMsg::FileMetaReady { mime, dimensions }));
                     });
 
                     // Build the base status string (name/path, size, date)
@@ -315,7 +315,7 @@ impl FluxApp {
 
                         if has_diff {
                             diff_triggered = true;
-                            sender.input(AppMsg::ShowFileDiff(target_path.clone()));
+                            sender.input(AppMsg::Git(GitMsg::ShowFileDiff(target_path.clone())));
                         }
                     }
                 }

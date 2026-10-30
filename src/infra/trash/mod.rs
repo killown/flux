@@ -6,7 +6,7 @@ pub mod tracked;
 
 pub use recursive::delete_recursive;
 
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, WindowMsg, FluxApp};
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -45,10 +45,10 @@ pub fn delete_items(
                 "[Delete] Blocked attempt to delete protected system path: {:?}",
                 canon_path
             );
-            sender_clone.input(AppMsg::ShowToast(format!(
+            sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!(
                 "Cannot delete protected path: {}",
                 canon_path.display()
-            )));
+            ))));
             continue;
         }
 
@@ -62,10 +62,10 @@ pub fn delete_items(
             if let Some((archive_path, inner_path)) =
                 crate::infra::archive::parse_archive_uri(&path_str)
             {
-                sender_clone.input(AppMsg::PromptArchiveDeletion {
+                sender_clone.input(AppMsg::Archive(ArchiveMsg::PromptArchiveDeletion {
                     archive_path,
                     inner_path,
-                });
+                }));
             }
             continue;
         }

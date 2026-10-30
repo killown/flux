@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, DeviceMsg, WindowMsg, FluxApp};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -30,25 +30,25 @@ impl FluxApp {
         relm4::spawn(async move {
             let Some(saved) = crate::infra::keyring::lookup_luks_passphrase(&image_path).await
             else {
-                sender_c.input(AppMsg::PromptLuksPassphrase {
+                sender_c.input(AppMsg::Device(DeviceMsg::PromptLuksPassphrase {
                     path: image_path,
                     wrong_passphrase: false,
-                });
+                }));
                 return;
             };
 
             match unlock_off_thread(image_path.clone(), saved).await {
-                Ok(mount_point) => sender_c.input(AppMsg::LuksMounted {
+                Ok(mount_point) => sender_c.input(AppMsg::Device(DeviceMsg::LuksMounted {
                     image_path,
                     mount_point,
-                }),
+                })),
                 Err(e) if e == crate::i18n::tr("Wrong passphrase.") => {
-                    sender_c.input(AppMsg::PromptLuksPassphrase {
+                    sender_c.input(AppMsg::Device(DeviceMsg::PromptLuksPassphrase {
                         path: image_path,
                         wrong_passphrase: true,
-                    });
+                    }));
                 }
-                Err(e) => sender_c.input(AppMsg::ShowToast(e)),
+                Err(e) => sender_c.input(AppMsg::Window(WindowMsg::ShowToast(e))),
             }
         });
     }
@@ -114,10 +114,10 @@ impl FluxApp {
                     relm4::spawn(async move {
                         match unlock_off_thread(path.clone(), passphrase.clone()).await {
                             Ok(mount_point) => {
-                                s.input(AppMsg::LuksMounted {
+                                s.input(AppMsg::Device(DeviceMsg::LuksMounted {
                                     image_path: path.clone(),
                                     mount_point,
-                                });
+                                }));
                                 if save_to_keyring {
                                     let saved = crate::infra::keyring::save_luks_passphrase(
                                         &path,
@@ -131,11 +131,11 @@ impl FluxApp {
                                             "Could not save the password to the system keyring",
                                         )
                                     };
-                                    s.input(AppMsg::ShowToast(toast));
+                                    s.input(AppMsg::Window(WindowMsg::ShowToast(toast)));
                                 }
                             }
                             Err(e) => {
-                                s.input(AppMsg::ShowToast(e));
+                                s.input(AppMsg::Window(WindowMsg::ShowToast(e)));
                             }
                         }
                     });

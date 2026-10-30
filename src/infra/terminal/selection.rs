@@ -6,7 +6,7 @@
 //! matches the grid. `flux-fm --selection` is the client behind
 //! `flux_selection` in fish.
 
-use crate::domain::model::AppMsg;
+use crate::domain::model::{AppMsg, ViewMsg};
 use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::PermissionsExt;
@@ -67,7 +67,7 @@ fn serve(mut stream: UnixStream) {
         return;
     };
     let (reply, paths) = mpsc::channel();
-    if sender.send(AppMsg::QuerySelection { reply }).is_err() {
+    if sender.send(AppMsg::View(ViewMsg::QuerySelection { reply })).is_err() {
         return;
     }
     let Ok(paths) = paths.recv_timeout(REPLY_TIMEOUT) else {

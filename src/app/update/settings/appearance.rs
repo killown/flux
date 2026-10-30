@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, BackgroundSlot, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, BackgroundSlot, FluxApp};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -80,7 +80,7 @@ impl FluxApp {
 
     pub fn handle_clear_flux_backgrounds(&self, sender: &AsyncComponentSender<Self>) {
         crate::utils::helpers::clear_custom_background_images();
-        sender.input(AppMsg::Refresh);
+        sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
     pub fn handle_toggle_header_bar(&mut self) {

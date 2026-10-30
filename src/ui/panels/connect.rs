@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NetworkMsg, FluxApp};
 use crate::i18n::tr;
 use crate::infra::network::ConnectToServerParams;
 use adw::prelude::*;
@@ -118,7 +118,7 @@ pub fn build_connect_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
             Some("network-server-symbolic"),
             &tr("Connect to Server"),
             &[connect_btn.clone().upcast::<gtk::Widget>()],
-            move || s.input(AppMsg::ToggleConnectPanel),
+            move || s.input(AppMsg::Network(NetworkMsg::ToggleConnectPanel)),
         );
         panel.append(&header);
     }
@@ -233,11 +233,11 @@ pub fn build_connect_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
             };
 
             if let Some(uri) = params.build_uri() {
-                s.input(AppMsg::ToggleConnectPanel);
-                s.input(AppMsg::ConnectToServer {
+                s.input(AppMsg::Network(NetworkMsg::ToggleConnectPanel));
+                s.input(AppMsg::Network(NetworkMsg::ConnectToServer {
                     uri,
                     credentials: None,
-                });
+                }));
             }
         })
     };
@@ -267,7 +267,7 @@ pub fn build_connect_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
         let s = sender.clone();
         esc_ctrl.connect_key_pressed(move |_, keyval, _, _| {
             if keyval == adw::gdk::Key::Escape {
-                s.input(AppMsg::ToggleConnectPanel);
+                s.input(AppMsg::Network(NetworkMsg::ToggleConnectPanel));
                 return gtk::glib::Propagation::Stop;
             }
             gtk::glib::Propagation::Proceed

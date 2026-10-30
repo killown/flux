@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, FluxApp};
 use crate::i18n::tr;
 use crate::infra::search::AdvancedSearchParams;
 use adw::prelude::*;
@@ -30,7 +30,7 @@ fn apply_flat_filters(
     }
 
     if !parts.is_empty() {
-        sender.input(AppMsg::UpdateFilter(parts.join(" ")));
+        sender.input(AppMsg::Search(SearchMsg::UpdateFilter(parts.join(" "))));
     }
 }
 
@@ -69,7 +69,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 reset_btn.clone().upcast::<gtk::Widget>(),
                 search_btn.clone().upcast::<gtk::Widget>(),
             ],
-            move || s.input(AppMsg::ToggleSearchPanel),
+            move || s.input(AppMsg::Search(SearchMsg::ToggleSearchPanel)),
         );
         panel.append(&header);
     }
@@ -364,7 +364,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 };
                 error_box_c.set_visible(false);
                 apply_flat_filters(&s, date_seconds, size_bytes);
-                s.input(AppMsg::StartContentSearch(content_text, ext_filter));
+                s.input(AppMsg::Search(SearchMsg::StartContentSearch(content_text, ext_filter)));
                 return;
             }
 
@@ -473,21 +473,21 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 if patterns.is_empty() {
                     patterns.push("*".to_string());
                 }
-                s.input(AppMsg::StartAdvancedSearch(AdvancedSearchParams {
+                s.input(AppMsg::Search(SearchMsg::StartAdvancedSearch(AdvancedSearchParams {
                     patterns,
                     date_seconds,
                     size_bytes,
                     include_hidden,
                     only_folders,
                     max_results: 0,
-                }));
+                })));
                 return;
             }
 
             if !patterns.is_empty() {
-                s.input(AppMsg::SetExtensionFilter(patterns));
+                s.input(AppMsg::Search(SearchMsg::SetExtensionFilter(patterns)));
             } else {
-                s.input(AppMsg::ClearExtensionFilter);
+                s.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
             }
 
             apply_flat_filters(&s, date_seconds, size_bytes);
@@ -523,9 +523,9 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             size_op_r.set_selected(0);
             error_box_c.set_visible(false);
 
-            s.input(AppMsg::ClearExtensionFilter);
-            s.input(AppMsg::UpdateFilter(String::new()));
-            s.input(AppMsg::Refresh);
+            s.input(AppMsg::Search(SearchMsg::ClearExtensionFilter));
+            s.input(AppMsg::Search(SearchMsg::UpdateFilter(String::new())));
+            s.input(AppMsg::Navigation(NavigationMsg::Refresh));
             name_e.grab_focus();
         });
     }
@@ -563,7 +563,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
     let root = {
         let sender_for_resize = sender.clone();
         resizable_panel(&spec, &panel, move |w| {
-            sender_for_resize.input(AppMsg::SetSearchPanelWidth(w));
+            sender_for_resize.input(AppMsg::Search(SearchMsg::SetSearchPanelWidth(w)));
         })
     };
 
@@ -572,7 +572,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         let s = sender.clone();
         esc_controller.connect_key_pressed(move |_, keyval, _, _| {
             if keyval == adw::gdk::Key::Escape {
-                s.input(AppMsg::ToggleSearchPanel);
+                s.input(AppMsg::Search(SearchMsg::ToggleSearchPanel));
                 return gtk::glib::Propagation::Stop;
             }
             gtk::glib::Propagation::Proceed

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, ActionsMsg, FluxApp};
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -122,11 +122,11 @@ pub fn setup_secondary_menu_gesture(
             }
         }
 
-        sender_g.input(AppMsg::PrepareSecondaryMenu {
+        sender_g.input(AppMsg::Actions(ActionsMsg::PrepareSecondaryMenu {
             x: rel_x,
             y: rel_y,
             path,
-        });
+        }));
     });
 
     widget.as_ref().add_controller(gesture);

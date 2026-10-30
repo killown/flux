@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, TerminalMsg, FluxApp};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
@@ -34,7 +34,7 @@ pub fn build_terminal_panel(
             Some("utilities-terminal-symbolic"),
             &tr("Terminal"),
             &[],
-            move || s.input(AppMsg::ToggleTerminalPanel),
+            move || s.input(AppMsg::Terminal(TerminalMsg::ToggleTerminalPanel)),
         );
         panel.append(&header);
     }

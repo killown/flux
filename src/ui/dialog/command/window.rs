@@ -2,7 +2,7 @@ use super::procfs::{
     count_fds, format_bytes, format_duration, get_cmdline, get_cwd, get_io_stats, parse_stat,
     parse_statm, state_name,
 };
-use crate::domain::model::AppMsg;
+use crate::domain::model::{AppMsg, CommandMsg, TasksMsg};
 use crate::infra::tasks::TaskQueue;
 use adw::prelude::*;
 use gtk::glib;
@@ -267,7 +267,7 @@ pub fn create_command_dialog(
     let s_cancel = sender.clone();
     let dialog_cancel = dialog.clone();
     cancel_btn.connect_clicked(move |_| {
-        let _ = s_cancel.send(AppMsg::CancelTask(task_id));
+        let _ = s_cancel.send(AppMsg::Tasks(TasksMsg::CancelTask(task_id)));
         dialog_cancel.close();
     });
 
@@ -279,10 +279,10 @@ pub fn create_command_dialog(
     let suppressed_closed = suppressed.clone();
     no_dialog_switch.connect_state_set(move |_switch, state| {
         if let Some(ref name) = action_name_switch {
-            let _ = sender_switch.send(AppMsg::ToggleNoCommandDialog(name.clone()));
+            let _ = sender_switch.send(AppMsg::Command(CommandMsg::ToggleNoCommandDialog(name.clone())));
             if state {
                 // Dismiss the dialog without cancelling the task, so it keeps running
-                let _ = sender_switch.send(AppMsg::CommandDialogClosed);
+                let _ = sender_switch.send(AppMsg::Command(CommandMsg::CommandDialogClosed));
                 suppressed.set(true);
                 dialog_switch.force_close();
             }
@@ -379,7 +379,7 @@ pub fn create_command_dialog(
 
         if !still_active {
             state_label_timer.set_text(&crate::i18n::tr("State: Completed / Terminated"));
-            let _ = sender_timer.send(AppMsg::CommandDialogClosed);
+            let _ = sender_timer.send(AppMsg::Command(CommandMsg::CommandDialogClosed));
             win.close();
             return glib::ControlFlow::Break;
         }
@@ -466,8 +466,8 @@ pub fn create_command_dialog(
         if suppressed_closed.get() {
             return;
         }
-        let _ = s_close.send(AppMsg::CommandDialogClosed);
-        let _ = s_close.send(AppMsg::CancelTask(task_id));
+        let _ = s_close.send(AppMsg::Command(CommandMsg::CommandDialogClosed));
+        let _ = s_close.send(AppMsg::Tasks(TasksMsg::CancelTask(task_id)));
     });
 
     dialog.present(window.as_ref());

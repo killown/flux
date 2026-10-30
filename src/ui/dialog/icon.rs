@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, IconsMsg, NavigationMsg, WindowMsg, FluxApp};
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -62,10 +62,10 @@ impl FluxApp {
                             if let Some(name) =
                                 button.data::<String>("icon-name").map(|p| p.as_ref())
                             {
-                                sender_clone.input(AppMsg::SetFolderIcon {
+                                sender_clone.input(AppMsg::Icons(IconsMsg::SetFolderIcon {
                                     path: target_path_clone.clone(),
                                     icon_name: name.to_string(),
-                                });
+                                }));
                             }
                         }
                     }
@@ -177,12 +177,12 @@ impl FluxApp {
             move |result| {
                 if let Ok(file) = result {
                     if let Some(image_path) = file.path() {
-                        sender.input(AppMsg::SetFileIcon {
+                        sender.input(AppMsg::Icons(IconsMsg::SetFileIcon {
                             path: target_path.clone(),
                             image_path,
-                        });
+                        }));
                         if let Some(ref msg) = toast {
-                            sender.input(AppMsg::ShowToast(msg.clone()));
+                            sender.input(AppMsg::Window(WindowMsg::ShowToast(msg.clone())));
                         }
                     }
                 }
@@ -244,10 +244,10 @@ impl FluxApp {
                 if std::fs::copy(&src_path, &dest_path).is_ok() {
                     crate::infra::loader::invalidate_extension_icon_cache();
                     crate::utils::icon::invalidate_themed_icon_cache();
-                    sender.input(AppMsg::Refresh);
+                    sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
 
                     if let Some(ref msg) = toast {
-                        sender.input(AppMsg::ShowToast(msg.clone()));
+                        sender.input(AppMsg::Window(WindowMsg::ShowToast(msg.clone())));
                     }
                 }
             },

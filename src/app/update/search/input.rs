@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, SearchMsg, FluxApp};
 use crate::ui::constants;
 use relm4::prelude::*;
 
@@ -17,7 +17,7 @@ impl FluxApp {
         if !self.filter.is_empty() {
             self.filter.pop();
             let query = self.filter.clone();
-            sender.input(AppMsg::UpdateFilter(query));
+            sender.input(AppMsg::Search(SearchMsg::UpdateFilter(query)));
         }
     }
 

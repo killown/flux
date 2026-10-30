@@ -3,7 +3,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use tokio::sync::oneshot;
 
-use crate::domain::model::AppMsg;
+use crate::domain::model::{AppMsg, TransferMsg};
 use crate::ui::conflict_policy::{ConflictChoice, ConflictContext};
 use relm4::prelude::*;
 
@@ -99,7 +99,7 @@ pub fn show_conflict_dialog(
             .map(|c| c.is_active())
             .unwrap_or(false);
 
-        s.input(AppMsg::ConflictDialogClosed);
+        s.input(AppMsg::Transfer(TransferMsg::ConflictDialogClosed));
 
         if let Some(tx) = tx_cell.take() {
             let _ = tx.send((choice, apply_all_active));

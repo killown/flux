@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, TabsMsg, FluxApp};
 use crate::ui::constants;
 use crate::ui::inputs::util::find_flux_path_ancestor;
 use adw::gdk;
@@ -34,7 +34,7 @@ pub fn setup_middle_click(
                 gesture.set_state(gtk::EventSequenceState::Claimed);
             }
         } else {
-            sender.input(AppMsg::NewTab(Some(path)));
+            sender.input(AppMsg::Tabs(TabsMsg::NewTab(Some(path))));
             gesture.set_state(gtk::EventSequenceState::Claimed);
         }
     });

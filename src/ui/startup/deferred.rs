@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, SearchMsg, TasksMsg, FluxApp};
 use crate::infra::db::StateManager;
 use crate::ui::constants;
 use gtk::glib;
@@ -14,7 +14,7 @@ impl FluxApp {
         glib::timeout_add_local(std::time::Duration::from_millis(150), move || {
             let sender_inner = tick_sender.clone();
             gtk::glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
-                sender_inner.input(AppMsg::TaskQueueTick);
+                sender_inner.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                 glib::ControlFlow::Continue
             });
             glib::ControlFlow::Break
@@ -45,13 +45,13 @@ impl FluxApp {
 
             crate::infra::archive::purge_stale_scratch_dirs();
 
-            s_init.input(AppMsg::RefreshSidebar);
+            s_init.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
 
             if let Some(tag) = tag_to_apply {
-                s_init.input(AppMsg::SwitchHeader(constants::VIEW_SEARCH.to_string()));
-                s_init.input(AppMsg::UpdateFilter(tag));
+                s_init.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
+                s_init.input(AppMsg::Search(SearchMsg::UpdateFilter(tag)));
             } else {
-                s_init.input(AppMsg::Refresh);
+                s_init.input(AppMsg::Navigation(NavigationMsg::Refresh));
             }
 
             glib::timeout_add_seconds_local(5, || {
