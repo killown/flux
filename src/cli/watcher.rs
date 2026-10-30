@@ -50,7 +50,9 @@ pub(super) fn setup_config_watcher() {
                                 app.activate_action("reload-sidebar", None);
                             }
                             if let Some(sender) = crate::domain::model::SENDER.get() {
-                                let _ = sender.send(crate::domain::model::AppMsg::Navigation(crate::domain::model::NavigationMsg::Refresh));
+                                let _ = sender.send(crate::domain::model::AppMsg::Navigation(
+                                    crate::domain::model::NavigationMsg::Refresh,
+                                ));
                             }
                         });
                     }
@@ -86,7 +88,10 @@ pub(super) fn setup_config_watcher() {
                                 || {
                                     crate::infra::loader::invalidate_extension_icon_cache();
                                     if let Some(sender) = crate::domain::model::SENDER.get() {
-                                        let _ = sender.send(crate::domain::model::AppMsg::Navigation(crate::domain::model::NavigationMsg::Refresh));
+                                        let _ =
+                                            sender.send(crate::domain::model::AppMsg::Navigation(
+                                                crate::domain::model::NavigationMsg::Refresh,
+                                            ));
                                     }
                                 },
                             );

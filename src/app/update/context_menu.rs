@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ActionsMsg, FluxApp};
+use crate::domain::model::{ActionsMsg, AppMsg, FluxApp};
 use relm4::prelude::*;
 
 #[allow(clippy::result_large_err)]

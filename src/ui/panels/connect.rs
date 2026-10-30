@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, NetworkMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NetworkMsg};
 use crate::i18n::tr;
 use crate::infra::network::ConnectToServerParams;
 use adw::prelude::*;

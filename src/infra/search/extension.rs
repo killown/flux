@@ -1,7 +1,7 @@
 use super::forbidden::forbidden_matcher;
 use super::types::{AdvancedSearchParams, ExtensionMatch};
 use crate::app::update::file_ops::paste::NEXT_TASK_ID;
-use crate::domain::model::{AppMsg, SearchMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, SearchMsg};
 use crate::infra::constants::{
     SEARCH_BATCH_SIZE as BATCH_SIZE, SEARCH_FLUSH_INTERVAL_MS as FLUSH_INTERVAL_MS,
 };
@@ -205,10 +205,12 @@ fn start_walk(
                         {
                             let chunk =
                                 std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
-                            sender_for_collector.input(AppMsg::Search(SearchMsg::ExtensionSearchBatch {
-                                results: chunk,
-                                session: session_id,
-                            }));
+                            sender_for_collector.input(AppMsg::Search(
+                                SearchMsg::ExtensionSearchBatch {
+                                    results: chunk,
+                                    session: session_id,
+                                },
+                            ));
                             last_flush = std::time::Instant::now();
                         }
                     }
@@ -222,10 +224,12 @@ fn start_walk(
                         if !batch.is_empty() {
                             let chunk =
                                 std::mem::replace(&mut batch, Vec::with_capacity(BATCH_SIZE));
-                            sender_for_collector.input(AppMsg::Search(SearchMsg::ExtensionSearchBatch {
-                                results: chunk,
-                                session: session_id,
-                            }));
+                            sender_for_collector.input(AppMsg::Search(
+                                SearchMsg::ExtensionSearchBatch {
+                                    results: chunk,
+                                    session: session_id,
+                                },
+                            ));
                             last_flush = std::time::Instant::now();
                         }
                     }

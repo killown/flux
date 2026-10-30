@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg};
 use crate::utils;
 use relm4::prelude::*;
 

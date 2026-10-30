@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, WindowMsg};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;
@@ -136,7 +136,9 @@ impl FluxApp {
     ) {
         crate::hit!("handle_add_panel_sidebar_entry");
         if self.config.sidebar.iter().any(|p| p.path == path) {
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Already in sidebar"))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+                "Already in sidebar",
+            ))));
             return;
         }
         self.config.sidebar.push(crate::domain::model::CustomPlace {

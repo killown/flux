@@ -1,6 +1,9 @@
 //! Keyboard, mouse and action wiring for the main window.
 
-use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, FileOpsMsg, NavigationMsg, PreviewMsg, QuickListMsg, SearchMsg, TabsMsg, ViewMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, NavigationMsg, PreviewMsg,
+    QuickListMsg, SearchMsg, TabsMsg, ViewMsg, WindowMsg,
+};
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;
@@ -170,7 +173,9 @@ impl FluxApp {
         // item's MIME filter. Only fires when nothing is already filtered
         // by MIME, so pressing Space again does not clear it.
         if should_trigger_preview_and_mime(keyval, modifiers, is_editable, terminal_focused) {
-            sender.input(AppMsg::Search(SearchMsg::TogglePreviewAndFilterBySelectedMime));
+            sender.input(AppMsg::Search(
+                SearchMsg::TogglePreviewAndFilterBySelectedMime,
+            ));
             return glib::Propagation::Stop;
         }
         // ─────────────────────────────────────────────────────────────────
@@ -355,7 +360,9 @@ impl FluxApp {
             let sender_clone = sender.clone();
             let action = gio::SimpleAction::new(&action_def.action_name, None);
             action.connect_activate(move |_, _| {
-                sender_clone.input(AppMsg::Actions(ActionsMsg::ExecuteCommand(cmd_clone.clone())));
+                sender_clone.input(AppMsg::Actions(ActionsMsg::ExecuteCommand(
+                    cmd_clone.clone(),
+                )));
             });
             self.action_group.add_action(&action);
         }

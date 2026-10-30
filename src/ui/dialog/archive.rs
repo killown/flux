@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, NavigationMsg, TasksMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, NavigationMsg, TasksMsg, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::Path;

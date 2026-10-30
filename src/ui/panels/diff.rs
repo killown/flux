@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, GitMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, GitMsg, WindowMsg};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
@@ -181,7 +181,9 @@ pub fn build_diff_panel(
             if !diff_text.is_empty() {
                 let display = btn.display();
                 display.clipboard().set_text(&diff_text);
-                s.input(AppMsg::Window(WindowMsg::ShowToast(tr("Diff copied to clipboard"))));
+                s.input(AppMsg::Window(WindowMsg::ShowToast(tr(
+                    "Diff copied to clipboard",
+                ))));
             }
         });
     }

@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, FileOpsMsg, NavigationMsg, QuickListMsg, TerminalMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, NavigationMsg, QuickListMsg, TerminalMsg, WindowMsg,
+};
 use crate::ui::SidebarPlace;
 use crate::utils;
 use adw::gio;
@@ -373,7 +375,10 @@ impl FluxApp {
                 gio::Cancellable::NONE,
                 move |res| match res {
                     Ok(_) => sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar)),
-                    Err(e) => sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Unmount failed: {}", e)))),
+                    Err(e) => sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Unmount failed: {}",
+                        e
+                    )))),
                 },
             );
         }
@@ -419,9 +424,15 @@ pub(super) fn handle(
     crate::hit!("handle");
     match msg {
         AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar) => app.handle_refresh_sidebar(),
-        AppMsg::Sidebar(AppSidebarMsg::RemoveFromSidebar(path)) => app.handle_remove_from_sidebar(path),
-        AppMsg::Sidebar(AppSidebarMsg::AddToSidebarPermanent) => app.handle_add_to_sidebar_permanent(),
-        AppMsg::Sidebar(AppSidebarMsg::ReorderSidebar { from, to }) => app.handle_reorder_sidebar(from, to),
+        AppMsg::Sidebar(AppSidebarMsg::RemoveFromSidebar(path)) => {
+            app.handle_remove_from_sidebar(path)
+        }
+        AppMsg::Sidebar(AppSidebarMsg::AddToSidebarPermanent) => {
+            app.handle_add_to_sidebar_permanent()
+        }
+        AppMsg::Sidebar(AppSidebarMsg::ReorderSidebar { from, to }) => {
+            app.handle_reorder_sidebar(from, to)
+        }
         AppMsg::Sidebar(AppSidebarMsg::PromptSidebarRename { path, current_name }) => {
             app.handle_prompt_sidebar_rename(path, current_name, sender)
         }
@@ -435,9 +446,15 @@ pub(super) fn handle(
         AppMsg::Sidebar(AppSidebarMsg::RenameSidebarSection { old_name, new_name }) => {
             app.handle_rename_sidebar_section(old_name, new_name)
         }
-        AppMsg::Sidebar(AppSidebarMsg::RemoveSidebarSection(name)) => app.handle_remove_sidebar_section(name),
-        AppMsg::Sidebar(AppSidebarMsg::PromptNewSidebarSection) => app.show_prompt_new_sidebar_section(sender),
-        AppMsg::Sidebar(AppSidebarMsg::AddSidebarSection(title)) => app.handle_add_sidebar_section(title),
+        AppMsg::Sidebar(AppSidebarMsg::RemoveSidebarSection(name)) => {
+            app.handle_remove_sidebar_section(name)
+        }
+        AppMsg::Sidebar(AppSidebarMsg::PromptNewSidebarSection) => {
+            app.show_prompt_new_sidebar_section(sender)
+        }
+        AppMsg::Sidebar(AppSidebarMsg::AddSidebarSection(title)) => {
+            app.handle_add_sidebar_section(title)
+        }
         AppMsg::Sidebar(AppSidebarMsg::SidebarDropMove {
             source_paths,
             dest_path,
@@ -450,27 +467,53 @@ pub(super) fn handle(
         AppMsg::Sidebar(AppSidebarMsg::ShowSidebarPinZone(_)) => {}
         AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar) => app.handle_toggle_sidebar(),
         AppMsg::Sidebar(AppSidebarMsg::ToggleWidePreview) => app.handle_toggle_wide_preview(sender),
-        AppMsg::Sidebar(AppSidebarMsg::SetWidePreviewDefault(on)) => app.handle_set_wide_preview_default(on),
+        AppMsg::Sidebar(AppSidebarMsg::SetWidePreviewDefault(on)) => {
+            app.handle_set_wide_preview_default(on)
+        }
         AppMsg::Sidebar(AppSidebarMsg::SetSidebarWidth(val)) => app.handle_set_sidebar_width(val),
-        AppMsg::Sidebar(AppSidebarMsg::ShowSidebarIconPicker(path)) => app.show_sidebar_icon_picker(path, sender),
+        AppMsg::Sidebar(AppSidebarMsg::ShowSidebarIconPicker(path)) => {
+            app.show_sidebar_icon_picker(path, sender)
+        }
 
         AppMsg::QuickList(QuickListMsg::AddExclusive(p)) => app.handle_add_exclusive(p, sender),
-        AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive) => app.handle_add_current_folder_exclusive(sender),
+        AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive) => {
+            app.handle_add_current_folder_exclusive(sender)
+        }
         AppMsg::QuickList(QuickListMsg::ClearExclusive) => app.handle_clear_exclusive(sender),
-        AppMsg::QuickList(QuickListMsg::RebuildQuickPanel) => app.handle_rebuild_quick_panel(sender),
+        AppMsg::QuickList(QuickListMsg::RebuildQuickPanel) => {
+            app.handle_rebuild_quick_panel(sender)
+        }
         AppMsg::QuickList(QuickListMsg::NextExclusive) => app.handle_next_exclusive(sender),
         AppMsg::QuickList(QuickListMsg::PrevExclusive) => app.handle_prev_exclusive(sender),
         AppMsg::QuickList(QuickListMsg::QuickListTab) => app.handle_quick_list_tab(sender),
         AppMsg::QuickList(QuickListMsg::QuickListJump(n)) => app.handle_quick_list_jump(n, sender),
-        AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel) => app.handle_toggle_quick_list_panel(sender),
-        AppMsg::QuickList(QuickListMsg::QuickListSelect(list)) => app.handle_quick_list_select(list, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }) => app.handle_quick_list_open(list, path, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListNew(name)) => app.handle_quick_list_new(name, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListRename { list, name }) => app.handle_quick_list_rename(list, name, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListDelete(list)) => app.handle_quick_list_delete(list, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListClearList(list)) => app.handle_quick_list_clear_list(list, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)) => app.handle_quick_list_add_current(list, sender),
-        AppMsg::QuickList(QuickListMsg::QuickListRemove { list, path }) => app.handle_quick_list_remove(list, path, sender),
+        AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel) => {
+            app.handle_toggle_quick_list_panel(sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListSelect(list)) => {
+            app.handle_quick_list_select(list, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }) => {
+            app.handle_quick_list_open(list, path, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListNew(name)) => {
+            app.handle_quick_list_new(name, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListRename { list, name }) => {
+            app.handle_quick_list_rename(list, name, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListDelete(list)) => {
+            app.handle_quick_list_delete(list, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListClearList(list)) => {
+            app.handle_quick_list_clear_list(list, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)) => {
+            app.handle_quick_list_add_current(list, sender)
+        }
+        AppMsg::QuickList(QuickListMsg::QuickListRemove { list, path }) => {
+            app.handle_quick_list_remove(list, path, sender)
+        }
         AppMsg::QuickList(QuickListMsg::QuickListMove { path, from, to }) => {
             app.handle_quick_list_move(path, from, to, sender)
         }

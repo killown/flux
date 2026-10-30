@@ -1,7 +1,7 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SearchMsg};
 use crate::i18n::tr;
 use crate::infra::search::AdvancedSearchParams;
 use adw::prelude::*;
@@ -364,7 +364,10 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 };
                 error_box_c.set_visible(false);
                 apply_flat_filters(&s, date_seconds, size_bytes);
-                s.input(AppMsg::Search(SearchMsg::StartContentSearch(content_text, ext_filter)));
+                s.input(AppMsg::Search(SearchMsg::StartContentSearch(
+                    content_text,
+                    ext_filter,
+                )));
                 return;
             }
 
@@ -473,14 +476,16 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
                 if patterns.is_empty() {
                     patterns.push("*".to_string());
                 }
-                s.input(AppMsg::Search(SearchMsg::StartAdvancedSearch(AdvancedSearchParams {
-                    patterns,
-                    date_seconds,
-                    size_bytes,
-                    include_hidden,
-                    only_folders,
-                    max_results: 0,
-                })));
+                s.input(AppMsg::Search(SearchMsg::StartAdvancedSearch(
+                    AdvancedSearchParams {
+                        patterns,
+                        date_seconds,
+                        size_bytes,
+                        include_hidden,
+                        only_folders,
+                        max_results: 0,
+                    },
+                )));
                 return;
             }
 

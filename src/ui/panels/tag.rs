@@ -7,7 +7,7 @@ use std::rc::Rc;
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, AppSidebarMsg, SearchMsg, TagsMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, SearchMsg, TagsMsg};
 use crate::i18n::tr;
 
 /// Builds and returns the unified tag panel navigator.
@@ -143,7 +143,9 @@ pub fn build_tag_panel(
                     let pop = popover.clone();
                     apply_item.connect_clicked(move |_| {
                         pop.popdown();
-                        s.input(AppMsg::Tags(TagsMsg::ApplyTagsToSelection(vec![tag_name.clone()])));
+                        s.input(AppMsg::Tags(TagsMsg::ApplyTagsToSelection(vec![
+                            tag_name.clone()
+                        ])));
                     });
                 }
                 menu_box.append(&apply_item);
@@ -159,7 +161,9 @@ pub fn build_tag_panel(
                     let pop = popover.clone();
                     remove_item.connect_clicked(move |_| {
                         pop.popdown();
-                        s.input(AppMsg::Tags(TagsMsg::RemoveTagFromSelection(tag_name.clone())));
+                        s.input(AppMsg::Tags(TagsMsg::RemoveTagFromSelection(
+                            tag_name.clone(),
+                        )));
                     });
                 }
                 menu_box.append(&remove_item);
@@ -175,7 +179,9 @@ pub fn build_tag_panel(
                     let pop = popover.clone();
                     pin_item.connect_clicked(move |_| {
                         pop.popdown();
-                        s.input(AppMsg::Sidebar(AppSidebarMsg::AddTagToSidebar(tag_name.clone())));
+                        s.input(AppMsg::Sidebar(AppSidebarMsg::AddTagToSidebar(
+                            tag_name.clone(),
+                        )));
                     });
                 }
                 menu_box.append(&pin_item);

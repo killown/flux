@@ -1,6 +1,8 @@
 //! Leaf widgets of the main header bar.
 
-use crate::domain::model::{AppMsg, ArchiveMsg, FileOpsMsg, NavigationMsg, PreviewMsg, SearchMsg, ViewMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, ArchiveMsg, FileOpsMsg, FluxApp, NavigationMsg, PreviewMsg, SearchMsg, ViewMsg,
+};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::prelude::*;

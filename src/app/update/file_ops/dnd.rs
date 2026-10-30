@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp, NavigationMsg, WindowMsg};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -38,7 +38,9 @@ impl FluxApp {
                                 password.as_deref(),
                                 None,
                             ) {
-                                s_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!("Archive error: {e}"))));
+                                s_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                                    "Archive error: {e}"
+                                ))));
                                 return;
                             }
                         }

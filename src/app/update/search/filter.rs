@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SearchMsg};
 use crate::utils;
 use crate::utils::search::{fuzzy_match_compiled, parse_size_filter, SizeOp};
 use gtk::glib;

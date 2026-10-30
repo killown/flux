@@ -1,7 +1,7 @@
 //! File actions: item activation, moves and clipboard export.
 
 use crate::app::update::file_ops::paste::{is_same_entry, paste_name_for};
-use crate::domain::model::{AppMsg, ArchiveMsg, DeviceMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, DeviceMsg, FluxApp, NavigationMsg, WindowMsg};
 use crate::i18n::tr;
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::prelude::*;
@@ -137,21 +137,26 @@ impl FluxApp {
                                 }
                             }
                             Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
-                                sender_clone.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
-                                    archive_path,
-                                    prefix: parent_prefix,
-                                    wrong_password: false,
-                                }));
+                                sender_clone.input(AppMsg::Archive(
+                                    ArchiveMsg::PromptArchivePassword {
+                                        archive_path,
+                                        prefix: parent_prefix,
+                                        wrong_password: false,
+                                    },
+                                ));
                             }
                             Err(crate::infra::archive::ArchiveError::WrongPassword) => {
-                                sender_clone.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
-                                    archive_path,
-                                    prefix: parent_prefix,
-                                    wrong_password: true,
-                                }));
+                                sender_clone.input(AppMsg::Archive(
+                                    ArchiveMsg::PromptArchivePassword {
+                                        archive_path,
+                                        prefix: parent_prefix,
+                                        wrong_password: true,
+                                    },
+                                ));
                             }
                             Err(e) => {
-                                sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(e.to_string())));
+                                sender_clone
+                                    .input(AppMsg::Window(WindowMsg::ShowToast(e.to_string())));
                             }
                         }
                     });
@@ -174,7 +179,9 @@ impl FluxApp {
                 let path_clone = path.clone();
                 relm4::spawn_blocking(move || {
                     if crate::infra::luks::is_luks_image(&path_clone) {
-                        sender_clone.input(AppMsg::Device(DeviceMsg::UnlockLuksImage { path: path_clone }));
+                        sender_clone.input(AppMsg::Device(DeviceMsg::UnlockLuksImage {
+                            path: path_clone,
+                        }));
                     } else if crate::utils::media::is_appimage(&path_clone) {
                         if let Err(e) = Self::launch_appimage(&path_clone) {
                             let msg =

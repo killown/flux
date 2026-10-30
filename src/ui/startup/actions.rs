@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, ViewMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, ViewMsg, WindowMsg};
 use adw::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;

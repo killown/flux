@@ -1,6 +1,8 @@
 use crate::domain::model::quick_groups::{NameError, QuickGroups};
 use crate::domain::model::quick_list;
-use crate::domain::model::{AppMsg, NavigationMsg, QuickListMsg, WindowMsg, FluxApp, RightPanelType};
+use crate::domain::model::{
+    AppMsg, FluxApp, NavigationMsg, QuickListMsg, RightPanelType, WindowMsg,
+};
 use crate::i18n::tr;
 use gtk::prelude::*;
 use relm4::prelude::*;
@@ -298,7 +300,9 @@ impl FluxApp {
             }
         });
         if let Some(e) = refused {
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(Self::quick_name_error(e))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(
+                Self::quick_name_error(e),
+            )));
         }
     }
 
@@ -318,7 +322,9 @@ impl FluxApp {
             }
         });
         if let Some(e) = refused {
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(Self::quick_name_error(e))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(
+                Self::quick_name_error(e),
+            )));
         }
     }
 
@@ -387,9 +393,13 @@ impl FluxApp {
         crate::hit!("handle_quick_list_set_slot");
         let current = self.current_path.clone();
         if self.edit_quick_groups(sender, |g| g.replace_slot(list, slot, current)) {
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr("Quick list slot updated"))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr(
+                "Quick list slot updated",
+            ))));
         } else {
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr("That folder is already in this list"))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr(
+                "That folder is already in this list",
+            ))));
         }
     }
 }

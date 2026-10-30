@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, SearchMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, SearchMsg};
 use crate::ui::constants;
 use relm4::prelude::*;
 

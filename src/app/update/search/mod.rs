@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, NavigationMsg, SearchMsg, TagsMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, SearchMsg, TagsMsg,
+};
 use relm4::prelude::*;
 
 mod content;
@@ -16,16 +18,26 @@ pub(super) fn handle(
     crate::hit!("handle");
     match msg {
         AppMsg::Tags(TagsMsg::SetTagPanelWidth(val)) => app.handle_set_tag_panel_width(val),
-        AppMsg::Search(SearchMsg::SetSearchPanelWidth(val)) => app.handle_set_search_panel_width(val),
-        AppMsg::Actions(ActionsMsg::SetActionsPanelWidth(val)) => app.handle_set_actions_panel_width(val),
+        AppMsg::Search(SearchMsg::SetSearchPanelWidth(val)) => {
+            app.handle_set_search_panel_width(val)
+        }
+        AppMsg::Actions(ActionsMsg::SetActionsPanelWidth(val)) => {
+            app.handle_set_actions_panel_width(val)
+        }
         AppMsg::Search(SearchMsg::UpdateFilter(query)) => app.handle_update_filter(query, sender),
         AppMsg::Search(SearchMsg::SearchInput(c)) => app.handle_search_input(c),
         AppMsg::Search(SearchMsg::SearchBackspace) => app.handle_search_backspace(sender),
         AppMsg::Search(SearchMsg::CloseSearchSync) => app.search_just_opened = false,
-        AppMsg::Search(SearchMsg::SetExtensionFilter(patterns)) => app.handle_set_extension_filter(patterns, sender),
-        AppMsg::Search(SearchMsg::FilterBySelectedMime) => app.handle_filter_by_selected_mime(sender),
+        AppMsg::Search(SearchMsg::SetExtensionFilter(patterns)) => {
+            app.handle_set_extension_filter(patterns, sender)
+        }
+        AppMsg::Search(SearchMsg::FilterBySelectedMime) => {
+            app.handle_filter_by_selected_mime(sender)
+        }
         AppMsg::Search(SearchMsg::ClearMimeFilter) => app.handle_clear_mime_filter(sender),
-        AppMsg::Search(SearchMsg::ClearExtensionFilter) => app.handle_clear_extension_filter(sender),
+        AppMsg::Search(SearchMsg::ClearExtensionFilter) => {
+            app.handle_clear_extension_filter(sender)
+        }
         AppMsg::Search(SearchMsg::StartAdvancedSearch(params)) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
             app.last_search_was_advanced = true;
@@ -56,17 +68,25 @@ pub(super) fn handle(
         }) => {
             app.handle_content_search_result(path, line, line_number, session);
         }
-        AppMsg::Search(SearchMsg::ContentSearchDone { session }) => app.handle_content_search_done(session),
+        AppMsg::Search(SearchMsg::ContentSearchDone { session }) => {
+            app.handle_content_search_done(session)
+        }
         AppMsg::Search(SearchMsg::CancelContentSearch) => {
             sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
             app.reset_from_content_search();
         }
-        AppMsg::Search(SearchMsg::SetMaxSearchResults(val)) => app.handle_set_max_search_results(val),
+        AppMsg::Search(SearchMsg::SetMaxSearchResults(val)) => {
+            app.handle_set_max_search_results(val)
+        }
         AppMsg::Search(SearchMsg::SetMaxContentSearchResults(val)) => {
             app.handle_set_max_content_search_results(val, sender)
         }
-        AppMsg::Tags(TagsMsg::ApplyTagsToSelection(tags)) => app.handle_apply_tags_to_selection(tags, sender),
-        AppMsg::Tags(TagsMsg::RemoveTagFromSelection(tag)) => app.handle_remove_tag_from_selection(tag, sender),
+        AppMsg::Tags(TagsMsg::ApplyTagsToSelection(tags)) => {
+            app.handle_apply_tags_to_selection(tags, sender)
+        }
+        AppMsg::Tags(TagsMsg::RemoveTagFromSelection(tag)) => {
+            app.handle_remove_tag_from_selection(tag, sender)
+        }
         AppMsg::Sidebar(AppSidebarMsg::AddTagToSidebar(tag)) => app.handle_add_tag_to_sidebar(tag),
         AppMsg::Tags(TagsMsg::OpenTagPicker) => app.handle_open_tag_picker(sender),
         AppMsg::Tags(TagsMsg::TagsReady {
@@ -74,8 +94,12 @@ pub(super) fn handle(
             tags,
             available_tags,
         }) => app.handle_tags_ready(paths, tags, available_tags, sender),
-        AppMsg::Tags(TagsMsg::SetFileTags { path, tags }) => app.handle_set_file_tags(path, tags, sender),
-        AppMsg::Tags(TagsMsg::DeleteTagGlobally(tag)) => app.handle_delete_tag_globally(tag, sender),
+        AppMsg::Tags(TagsMsg::SetFileTags { path, tags }) => {
+            app.handle_set_file_tags(path, tags, sender)
+        }
+        AppMsg::Tags(TagsMsg::DeleteTagGlobally(tag)) => {
+            app.handle_delete_tag_globally(tag, sender)
+        }
         AppMsg::Tags(TagsMsg::ToggleTagPanel) => {
             app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Tag, sender)
         }

@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, NavigationMsg, TerminalMsg, FluxApp, RightPanelType, TerminalPosition};
+use crate::domain::model::{
+    AppMsg, FluxApp, NavigationMsg, RightPanelType, TerminalMsg, TerminalPosition,
+};
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;

@@ -1,5 +1,7 @@
 //! Main window, toasts and help/about dialogs.
 
+use super::toggle::{ToggleVerb, WindowVisibility};
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum WindowMsg {

@@ -40,7 +40,9 @@ pub fn build_network_section(bookmarks: &[NetworkBookmark], sender: Sender<AppMs
             let uri_unmount = uri.to_string();
             let s_unmount = sender.clone();
             eject_btn.connect_clicked(move |_| {
-                let _ = s_unmount.send(AppMsg::Network(NetworkMsg::UnmountNetwork(uri_unmount.clone())));
+                let _ = s_unmount.send(AppMsg::Network(NetworkMsg::UnmountNetwork(
+                    uri_unmount.clone(),
+                )));
             });
             row.append(&eject_btn);
         }
@@ -50,7 +52,9 @@ pub fn build_network_section(bookmarks: &[NetworkBookmark], sender: Sender<AppMs
         let click = gtk::GestureClick::new();
         click.connect_released(move |gesture, _, _, _| {
             if gesture.current_button() == 1 {
-                let _ = s_nav.send(AppMsg::Navigation(NavigationMsg::Navigate(std::path::PathBuf::from(&uri_nav))));
+                let _ = s_nav.send(AppMsg::Navigation(NavigationMsg::Navigate(
+                    std::path::PathBuf::from(&uri_nav),
+                )));
             }
         });
         row.add_controller(click);

@@ -3,7 +3,7 @@
 
 use super::registry;
 use super::zoom::ZOOM_STEP;
-use crate::domain::model::{AppMsg, ActionsMsg, FluxApp};
+use crate::domain::model::{ActionsMsg, AppMsg, FluxApp};
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 use std::cell::Cell;
@@ -85,7 +85,9 @@ pub(super) fn attach_context_menu(
         g.set_state(gtk::EventSequenceState::Claimed);
         let (rx, ry) = crate::utils::helpers::to_popover_space(&panel, x, y);
         // `None` makes the handler resolve the selected file, which the preview follows.
-        sender.input(AppMsg::Actions(ActionsMsg::PrepareContextMenu(rx, ry, None)));
+        sender.input(AppMsg::Actions(ActionsMsg::PrepareContextMenu(
+            rx, ry, None,
+        )));
     });
     panel.add_controller(gesture);
 }

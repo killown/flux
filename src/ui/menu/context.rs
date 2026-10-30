@@ -1,4 +1,7 @@
-use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, ArchiveMsg, FileOpsMsg, IconsMsg, PropertiesMsg, QuickListMsg, SettingsMsg, TabsMsg, TagsMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, AppSidebarMsg, ArchiveMsg, FileOpsMsg, FluxApp, IconsMsg, PropertiesMsg,
+    QuickListMsg, SettingsMsg, TabsMsg, TagsMsg, WindowMsg,
+};
 use crate::ui::constants;
 use adw::gdk;
 use adw::gio::prelude::*;
@@ -408,7 +411,9 @@ impl FluxApp {
                         sender,
                         target_path,
                         action_toast.clone(),
-                        |s, target, _| s.input(AppMsg::Properties(PropertiesMsg::InspectDirectory(target))),
+                        |s, target, _| {
+                            s.input(AppMsg::Properties(PropertiesMsg::InspectDirectory(target)))
+                        },
                     ),
                     "builtin::open_with_dialog" => register_path_action(
                         &action_group,
@@ -464,7 +469,9 @@ impl FluxApp {
                         sender,
                         target_path,
                         action_toast.clone(),
-                        |s, target, _| s.input(AppMsg::Archive(ArchiveMsg::ForgetArchivePassword(target))),
+                        |s, target, _| {
+                            s.input(AppMsg::Archive(ArchiveMsg::ForgetArchivePassword(target)))
+                        },
                     ),
                     "builtin::add_to_quick_list" => register_simple(
                         &action_group,
@@ -591,7 +598,9 @@ impl FluxApp {
                             "install-fonts",
                             sender,
                             action_toast.clone(),
-                            move |s, _| s.input(AppMsg::FileOps(FileOpsMsg::InstallFonts(targets.clone()))),
+                            move |s, _| {
+                                s.input(AppMsg::FileOps(FileOpsMsg::InstallFonts(targets.clone())))
+                            },
                         )
                     }
 

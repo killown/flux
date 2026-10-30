@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ActionsMsg, NavigationMsg, QuickListMsg, FluxApp};
+use crate::domain::model::{ActionsMsg, AppMsg, FluxApp, NavigationMsg, QuickListMsg};
 use crate::ui::constants;
 use crate::utils;
 use adw::gdk;
@@ -20,7 +20,10 @@ impl FluxApp {
                 let parts: Vec<&str> = dest_str.splitn(2, ':').collect();
                 if parts.len() == 2 {
                     let dest = PathBuf::from(parts[1]);
-                    s_move.input(AppMsg::QuickList(QuickListMsg::PerformQuickTransfer { dest, is_cut: true }));
+                    s_move.input(AppMsg::QuickList(QuickListMsg::PerformQuickTransfer {
+                        dest,
+                        is_cut: true,
+                    }));
                 }
             }
         });
@@ -235,7 +238,9 @@ impl FluxApp {
         let s = sender.clone();
         relm4::spawn_blocking(move || {
             let result = Self::remove_recents(targets).map_err(|e| e.to_string());
-            s.input(AppMsg::Navigation(NavigationMsg::ClearRecentsFinished(result)));
+            s.input(AppMsg::Navigation(NavigationMsg::ClearRecentsFinished(
+                result,
+            )));
         });
     }
 

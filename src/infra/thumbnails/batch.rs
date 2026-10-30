@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ThumbnailsMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg};
 use crate::utils;
 use futures::stream::{self, StreamExt};
 use relm4::prelude::*;
@@ -106,12 +106,14 @@ impl FluxApp {
                         }
 
                         if let Some(texture) = texture {
-                            let _ = inner_sender.input_sender().send(AppMsg::Thumbnails(ThumbnailsMsg::ThumbnailReady {
-                                grid_idx,
-                                texture,
-                                load_id: session_id,
-                                tab_index,
-                            }));
+                            let _ = inner_sender.input_sender().send(AppMsg::Thumbnails(
+                                ThumbnailsMsg::ThumbnailReady {
+                                    grid_idx,
+                                    texture,
+                                    load_id: session_id,
+                                    tab_index,
+                                },
+                            ));
                         }
                     }
                 })

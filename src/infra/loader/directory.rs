@@ -1,7 +1,10 @@
 use super::icons::get_custom_extension_icon_path;
 use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
-use crate::domain::model::{AppMsg, ArchiveMsg, FileOpsMsg, LoadingMsg, SearchMsg, TagsMsg, FileLoadContext, FluxApp, SortBy};
+use crate::domain::model::{
+    AppMsg, ArchiveMsg, FileLoadContext, FileOpsMsg, FluxApp, LoadingMsg, SearchMsg, SortBy,
+    TagsMsg,
+};
 use crate::utils::media::is_audio_file;
 use adw::prelude::*;
 use gtk::gio;
@@ -647,7 +650,10 @@ fn spawn_zip_lock_probe(
                 .collect()
         });
         if !encrypted.is_empty() {
-            sender.input(AppMsg::Archive(ArchiveMsg::ArchiveLocksProbed { load_id, encrypted }));
+            sender.input(AppMsg::Archive(ArchiveMsg::ArchiveLocksProbed {
+                load_id,
+                encrypted,
+            }));
         }
     });
 }

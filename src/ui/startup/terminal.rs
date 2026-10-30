@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, TerminalMsg, Config, FluxApp, TerminalConfig};
+use crate::domain::model::{AppMsg, Config, FluxApp, TerminalConfig, TerminalMsg};
 use crate::infra::terminal::Terminal;
 use adw::prelude::*;
 use gtk::glib;
@@ -133,7 +133,11 @@ impl FluxApp {
             });
         }
 
-        attach_terminal_key_controller(&terminal, sender, AppMsg::Terminal(TerminalMsg::ToggleTerminal));
+        attach_terminal_key_controller(
+            &terminal,
+            sender,
+            AppMsg::Terminal(TerminalMsg::ToggleTerminal),
+        );
         attach_terminal_mouse_controllers(&terminal);
 
         let term_for_shutdown = terminal.clone();

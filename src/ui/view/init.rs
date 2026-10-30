@@ -1,5 +1,7 @@
 use super::component::FluxAppWidgets;
-use crate::domain::model::{AppMsg, AppSidebarMsg, ArchiveMsg, GitMsg, NavigationMsg, TerminalMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, AppSidebarMsg, ArchiveMsg, FluxApp, GitMsg, NavigationMsg, TerminalMsg,
+};
 use crate::i18n::tr;
 use adw::gdk;
 use adw::prelude::*;
@@ -77,20 +79,30 @@ impl FluxApp {
             let s = sender.clone();
             let a = gtk::gio::SimpleAction::new("status", None);
             a.connect_activate(move |_, _| {
-                let _ = s.input_sender().send(AppMsg::Git(GitMsg::ShowGitStatusView));
+                let _ = s
+                    .input_sender()
+                    .send(AppMsg::Git(GitMsg::ShowGitStatusView));
             });
             git_actions.add_action(&a);
         }
 
         let simple_git_actions: [GitActionEntry; 8] = [
             ("status-staged", || AppMsg::Git(GitMsg::ShowGitStatusStaged)),
-            ("status-unstaged", || AppMsg::Git(GitMsg::ShowGitStatusUnstaged)),
+            ("status-unstaged", || {
+                AppMsg::Git(GitMsg::ShowGitStatusUnstaged)
+            }),
             ("log", || AppMsg::Git(GitMsg::GitShowLog)),
             ("copy-diff", || AppMsg::Git(GitMsg::GitCopyDiff)),
-            ("switch-branch", || AppMsg::Git(GitMsg::PromptGitSwitchBranch)),
+            ("switch-branch", || {
+                AppMsg::Git(GitMsg::PromptGitSwitchBranch)
+            }),
             ("open-remote", || AppMsg::Git(GitMsg::GitOpenRemote)),
-            ("discard-selected", || AppMsg::Git(GitMsg::GitDiscardSelected)),
-            ("restore-discard", || AppMsg::Git(GitMsg::GitRestoreLastDiscard)),
+            ("discard-selected", || {
+                AppMsg::Git(GitMsg::GitDiscardSelected)
+            }),
+            ("restore-discard", || {
+                AppMsg::Git(GitMsg::GitRestoreLastDiscard)
+            }),
         ];
         for (name, make_msg) in simple_git_actions {
             let s = sender.clone();
@@ -271,7 +283,8 @@ impl FluxApp {
                             .unwrap_or(160);
                         let final_width = s.width().clamp(min_w, 500.max(min_w));
                         s.set_width_request(final_width);
-                        s_sender.input(AppMsg::Sidebar(AppSidebarMsg::SetSidebarWidth(final_width)));
+                        s_sender
+                            .input(AppMsg::Sidebar(AppSidebarMsg::SetSidebarWidth(final_width)));
                     }
                     if let Some(widget) = gesture.widget() {
                         widget.set_cursor(None);
@@ -567,7 +580,9 @@ impl FluxApp {
                 }
                 let terminal_px = total_height - paned.position();
                 if terminal_px > 50 {
-                    sender_clone.input(AppMsg::Terminal(TerminalMsg::SetTerminalHeight(terminal_px)));
+                    sender_clone.input(AppMsg::Terminal(TerminalMsg::SetTerminalHeight(
+                        terminal_px,
+                    )));
                 }
             });
         }

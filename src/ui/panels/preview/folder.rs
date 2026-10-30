@@ -4,7 +4,7 @@
 use super::content::FolderEntry;
 use super::handle::PreviewPanelHandle;
 use super::registry;
-use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, PreviewMsg};
 use crate::ui::FileItem;
 use adw::prelude::*;
 use relm4::typed_view::grid::TypedGridView;
@@ -71,7 +71,9 @@ pub(super) fn build_folder_grid(
                         .to_string_lossy()
                         .starts_with(crate::infra::archive::ARCHIVE_URI) =>
                 {
-                    s.input(AppMsg::Navigation(NavigationMsg::ActivateItems(vec![(path, false)])))
+                    s.input(AppMsg::Navigation(NavigationMsg::ActivateItems(vec![(
+                        path, false,
+                    )])))
                 }
                 Some((path, false)) => FluxApp::open_file(path),
                 None => {}

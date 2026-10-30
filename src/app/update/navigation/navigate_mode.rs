@@ -8,7 +8,7 @@
 //! `NavigationMsg::KeyChar` / `KeyBackspace` / `KeyEscape`, so typing into the search
 //! panel, rename entry, location panel or terminal is unaffected.
 
-use crate::domain::model::{AppMsg, NavigationMsg, QuickListMsg, SearchMsg, FluxApp, NavigateMode};
+use crate::domain::model::{AppMsg, FluxApp, NavigateMode, NavigationMsg, QuickListMsg, SearchMsg};
 use crate::i18n::tr;
 use crate::ui::constants;
 use gtk::glib;
@@ -136,7 +136,9 @@ impl FluxApp {
             }
             return;
         }
-        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
+        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(
+            constants::VIEW_SEARCH.to_string(),
+        )));
         sender.input(AppMsg::Search(SearchMsg::SearchInput(c)));
     }
 
@@ -196,7 +198,9 @@ impl FluxApp {
         }
         sender.input(AppMsg::Search(SearchMsg::UpdateFilter(String::new())));
         sender.input(AppMsg::Search(SearchMsg::ClearMimeFilter));
-        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_PATH.to_string())));
+        sender.input(AppMsg::Search(SearchMsg::SwitchHeader(
+            constants::VIEW_PATH.to_string(),
+        )));
     }
 
     /// The folder one level up from `current`.

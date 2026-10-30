@@ -6,7 +6,7 @@
 
 use super::section::MetadataSection;
 use super::sections::build_sections;
-use crate::domain::model::{AppMsg, PropertiesMsg, WindowMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, FluxApp, PropertiesMsg, RightPanelType, WindowMsg};
 use crate::i18n::tr;
 use crate::ui::panels::header::panel_header;
 use crate::ui::panels::resize::resizable_panel;
@@ -109,7 +109,9 @@ pub fn build_properties_panel(
     // ── Metadata sections ───────────────────────────────────────────────
     let sections = FactoryVecDeque::<MetadataSection>::builder()
         .launch(gtk::Box::new(gtk::Orientation::Vertical, 18))
-        .forward(sender.input_sender(), |v| AppMsg::Properties(PropertiesMsg::CopyPropertyValue(v)));
+        .forward(sender.input_sender(), |v| {
+            AppMsg::Properties(PropertiesMsg::CopyPropertyValue(v))
+        });
 
     // ── "Open With" row ─────────────────────────────────────────────────
     let open_with_row = adw::ActionRow::builder()
@@ -119,7 +121,9 @@ pub fn build_properties_panel(
     open_with_row.add_suffix(&gtk::Image::from_icon_name("go-next-symbolic"));
     {
         let s = sender.clone();
-        open_with_row.connect_activated(move |_| s.input(AppMsg::Properties(PropertiesMsg::OpenPropertiesTargetWith)));
+        open_with_row.connect_activated(move |_| {
+            s.input(AppMsg::Properties(PropertiesMsg::OpenPropertiesTargetWith))
+        });
     }
     let open_with_group = adw::PreferencesGroup::new();
     open_with_group.add(&open_with_row);
@@ -288,7 +292,9 @@ impl FluxApp {
     ) {
         if let Some(display) = adw::gdk::Display::default() {
             display.clipboard().set_text(&text);
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr("Copied to clipboard"))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(tr(
+                "Copied to clipboard",
+            ))));
         }
     }
 }

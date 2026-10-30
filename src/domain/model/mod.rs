@@ -21,7 +21,12 @@ pub use config::{
 // used by `src/lib.rs` for `gen-docs`, not linked by the `flux-fm` binary alone
 pub use doc_config::render_config_markdown;
 pub use file_load::{set_now_unix, CellLabels, FileLoadContext};
-pub use msg::{AppMsg, ActionsMsg, ArchiveMsg, CommandMsg, DeviceMsg, FileOpsMsg, GitMsg, IconsMsg, LoadingMsg, NavigationMsg, NetworkMsg, PreviewMsg, PropertiesMsg, QuickListMsg, SearchMsg, SettingsMsg, AppSidebarMsg, TabsMsg, TagsMsg, TasksMsg, TerminalMsg, ThumbnailsMsg, TransferMsg, UndoMsg, ViewMsg, WindowMsg, ToggleVerb, WindowVisibility};
+pub use msg::{
+    ActionsMsg, AppMsg, AppSidebarMsg, ArchiveMsg, CommandMsg, DeviceMsg, FileOpsMsg, GitMsg,
+    IconsMsg, LoadingMsg, NavigationMsg, NetworkMsg, PreviewMsg, PropertiesMsg, QuickListMsg,
+    SearchMsg, SettingsMsg, TabsMsg, TagsMsg, TasksMsg, TerminalMsg, ThumbnailsMsg, ToggleVerb,
+    TransferMsg, UndoMsg, ViewMsg, WindowMsg, WindowVisibility,
+};
 #[allow(unused_imports)]
 pub use types::ConflictResolver;
 pub use types::{

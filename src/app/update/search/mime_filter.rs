@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SearchMsg};
 use relm4::prelude::*;
 
 impl FluxApp {

@@ -6,7 +6,7 @@
 //! keyed on `(path, mtime)`. The LRU is consulted by `handle_preview_load`,
 //! on a hit, the panel is populated without touching the blocking pool.
 
-use crate::domain::model::{AppMsg, PreviewMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, PreviewMsg};
 use crate::ui::panels::preview::PreviewContent;
 use parking_lot::Mutex;
 use relm4::prelude::*;
@@ -134,10 +134,12 @@ impl FluxApp {
                 }
                 let content = crate::app::update::view::preview::compute_preview(&neighbour);
                 cache.insert(neighbour.clone(), mt, content.clone());
-                let _ = sender_clone.input_sender().send(AppMsg::Preview(PreviewMsg::PreviewPrefetched {
-                    path: neighbour,
-                    content: Arc::new(content),
-                }));
+                let _ = sender_clone.input_sender().send(AppMsg::Preview(
+                    PreviewMsg::PreviewPrefetched {
+                        path: neighbour,
+                        content: Arc::new(content),
+                    },
+                ));
             }
         });
     }

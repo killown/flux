@@ -1,4 +1,8 @@
-use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, NavigationMsg, NetworkMsg, PreviewMsg, PropertiesMsg, QuickListMsg, SearchMsg, TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, NetworkMsg, PreviewMsg,
+    PropertiesMsg, QuickListMsg, SearchMsg, TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg,
+    WindowMsg,
+};
 use crate::ui::keymap::KeyMap;
 use adw::gdk;
 use gtk::glib;
@@ -119,7 +123,11 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
             AppMsg::Search(SearchMsg::FilterBySelectedMime),
             Yield::TerminalOrEditable,
         ),
-        bind(&keymap.toggle_header, AppMsg::Window(WindowMsg::ToggleHeaderBar), Yield::Never),
+        bind(
+            &keymap.toggle_header,
+            AppMsg::Window(WindowMsg::ToggleHeaderBar),
+            Yield::Never,
+        ),
         bind(
             &keymap.toggle_folders_first,
             AppMsg::View(ViewMsg::ToggleCurrentFoldersFirst),
@@ -130,7 +138,11 @@ fn capture_bindings(keymap: &KeyMap) -> Vec<CaptureBinding> {
             AppMsg::View(ViewMsg::ToggleStatusBar),
             Yield::Never,
         ),
-        bind(&keymap.toggle_sidebar, AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar), Yield::Never),
+        bind(
+            &keymap.toggle_sidebar,
+            AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar),
+            Yield::Never,
+        ),
         // F4 toggles the terminal panel. When either terminal has focus,
         // the terminal's own key controller fires first and handles this
         // key, so we yield there to avoid a double fire.
@@ -255,12 +267,18 @@ pub fn setup_capture(
         ) {
             use crate::domain::model::quick_list::QuickKey;
             match chord {
-                QuickKey::AddCurrent => sender.input(AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive)),
+                QuickKey::AddCurrent => {
+                    sender.input(AppMsg::QuickList(QuickListMsg::AddCurrentFolderExclusive))
+                }
                 QuickKey::Clear => sender.input(AppMsg::QuickList(QuickListMsg::ClearExclusive)),
                 QuickKey::Prev => sender.input(AppMsg::QuickList(QuickListMsg::PrevExclusive)),
                 QuickKey::Next => sender.input(AppMsg::QuickList(QuickListMsg::NextExclusive)),
-                QuickKey::Jump(n) => sender.input(AppMsg::QuickList(QuickListMsg::QuickListJump(n))),
-                QuickKey::TogglePanel => sender.input(AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel)),
+                QuickKey::Jump(n) => {
+                    sender.input(AppMsg::QuickList(QuickListMsg::QuickListJump(n)))
+                }
+                QuickKey::TogglePanel => {
+                    sender.input(AppMsg::QuickList(QuickListMsg::ToggleQuickListPanel))
+                }
                 QuickKey::Tab => {
                     sender.input(AppMsg::QuickList(QuickListMsg::QuickListTab));
                     sender.input(AppMsg::Preview(PreviewMsg::TogglePreviewGridFocus));

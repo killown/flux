@@ -22,7 +22,7 @@ use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
 use crate::domain::model::quick_groups::{GroupView, QuickGroups};
-use crate::domain::model::{AppMsg, QuickListMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, QuickListMsg};
 use crate::i18n::tr;
 use crate::utils::search::fuzzy_match_compiled;
 use adw::prelude::*;
@@ -187,9 +187,14 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
             };
             let action = actions.borrow().get(idx).cloned();
             match action {
-                Some(RowAction::Group { list, .. }) => s.input(AppMsg::QuickList(QuickListMsg::QuickListSelect(list))),
+                Some(RowAction::Group { list, .. }) => {
+                    s.input(AppMsg::QuickList(QuickListMsg::QuickListSelect(list)))
+                }
                 Some(RowAction::Item { list, path }) => {
-                    s.input(AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }))
+                    s.input(AppMsg::QuickList(QuickListMsg::QuickListOpen {
+                        list,
+                        path,
+                    }))
                 }
                 Some(RowAction::Hint) | None => {}
             }
@@ -231,7 +236,10 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
                     gtk::gdk::Key::Delete | gtk::gdk::Key::KP_Delete,
                     Some(RowAction::Item { list, path }),
                 ) => {
-                    s.input(AppMsg::QuickList(QuickListMsg::QuickListRemove { list, path }));
+                    s.input(AppMsg::QuickList(QuickListMsg::QuickListRemove {
+                        list,
+                        path,
+                    }));
                     glib::Propagation::Stop
                 }
                 _ => glib::Propagation::Proceed,
@@ -255,7 +263,10 @@ pub fn build_quick_list_panel(initial_width: i32, sender: Sender) -> gtk::Box {
                 _ => None,
             });
             if let Some((list, path)) = first {
-                s.input(AppMsg::QuickList(QuickListMsg::QuickListOpen { list, path }));
+                s.input(AppMsg::QuickList(QuickListMsg::QuickListOpen {
+                    list,
+                    path,
+                }));
             }
         });
     }
@@ -499,7 +510,9 @@ fn group_row(
     {
         let list = v.list;
         let s = sender.clone();
-        add_btn.connect_clicked(move |_| s.input(AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list))));
+        add_btn.connect_clicked(move |_| {
+            s.input(AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)))
+        });
     }
     line.append(&add_btn);
 
@@ -554,7 +567,10 @@ fn group_row(
                         &n1,
                         &tr("Rename"),
                         move |name| {
-                            s2.input(AppMsg::QuickList(QuickListMsg::QuickListRename { list, name }));
+                            s2.input(AppMsg::QuickList(QuickListMsg::QuickListRename {
+                                list,
+                                name,
+                            }));
                         },
                     );
                 }),
@@ -563,14 +579,18 @@ fn group_row(
             let s1 = s.clone();
             items.push(MenuItem::Action(
                 tr("Add Current Folder"),
-                Box::new(move || s1.input(AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)))),
+                Box::new(move || {
+                    s1.input(AppMsg::QuickList(QuickListMsg::QuickListAddCurrent(list)))
+                }),
             ));
 
             if total > 0 {
                 let s1 = s.clone();
                 items.push(MenuItem::Action(
                     tr("Clear List"),
-                    Box::new(move || s1.input(AppMsg::QuickList(QuickListMsg::QuickListClearList(list)))),
+                    Box::new(move || {
+                        s1.input(AppMsg::QuickList(QuickListMsg::QuickListClearList(list)))
+                    }),
                 ));
             }
 
@@ -593,7 +613,9 @@ fn group_row(
                                 tr("The folders themselves are not touched.")
                             ),
                             &tr("Delete"),
-                            move || s2.input(AppMsg::QuickList(QuickListMsg::QuickListDelete(list))),
+                            move || {
+                                s2.input(AppMsg::QuickList(QuickListMsg::QuickListDelete(list)))
+                            },
                         );
                     }),
                 ));
@@ -684,7 +706,12 @@ fn item_row(
             let s1 = s.clone();
             items.push(MenuItem::Action(
                 tr("Set to Current Folder"),
-                Box::new(move || s1.input(AppMsg::QuickList(QuickListMsg::QuickListSetSlot { list, slot }))),
+                Box::new(move || {
+                    s1.input(AppMsg::QuickList(QuickListMsg::QuickListSetSlot {
+                        list,
+                        slot,
+                    }))
+                }),
             ));
 
             let p1 = path.clone();

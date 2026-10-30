@@ -1,6 +1,8 @@
 //! Sidebar rebuilding and the right-side panel toggle.
 
-use crate::domain::model::{AppMsg, DeviceMsg, NavigationMsg, QuickListMsg, SearchMsg, FluxApp, RightPanelType};
+use crate::domain::model::{
+    AppMsg, DeviceMsg, FluxApp, NavigationMsg, QuickListMsg, RightPanelType, SearchMsg,
+};
 use crate::ui::{constants, SidebarPlace};
 use adw::prelude::*;
 use relm4::prelude::*;

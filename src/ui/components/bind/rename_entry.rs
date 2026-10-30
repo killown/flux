@@ -152,7 +152,9 @@ fn build_entry() -> gtk::Entry {
 
                 if let Some(old_path) = target_path {
                     let new_name = entry.text().to_string();
-                    if send(AppMsg::FileOps(FileOpsMsg::PerformRename(old_path, new_name))) {
+                    if send(AppMsg::FileOps(FileOpsMsg::PerformRename(
+                        old_path, new_name,
+                    ))) {
                         return glib::Propagation::Stop;
                     }
                 }

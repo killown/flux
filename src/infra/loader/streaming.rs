@@ -1,5 +1,7 @@
 use super::icons::get_custom_extension_icon_path;
-use crate::domain::model::{AppMsg, GitMsg, LoadingMsg, NavigationMsg, ThumbnailsMsg, FileLoadContext, FluxApp};
+use crate::domain::model::{
+    AppMsg, FileLoadContext, FluxApp, GitMsg, LoadingMsg, NavigationMsg, ThumbnailsMsg,
+};
 use crate::ui::FileItem;
 use crate::utils;
 use adw::prelude::*;
@@ -435,7 +437,8 @@ impl FluxApp {
                     }));
 
                     if chunks.as_ref().map(|v| v.is_empty()).unwrap_or(true) {
-                        sender_clone.input(AppMsg::Loading(LoadingMsg::FolderLoadedFinish { load_id }));
+                        sender_clone
+                            .input(AppMsg::Loading(LoadingMsg::FolderLoadedFinish { load_id }));
                         glib::ControlFlow::Break
                     } else {
                         glib::ControlFlow::Continue

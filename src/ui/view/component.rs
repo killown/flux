@@ -4,7 +4,10 @@ use super::pages::header::{
     build_recents_button, build_sort_indicator, icon_row,
 };
 use super::pages::panels::{panel_revealer, PANEL_TRANSITION_MS};
-use crate::domain::model::{AppMsg, ActionsMsg, FileOpsMsg, NavigationMsg, SearchMsg, TasksMsg, ThumbnailsMsg, TransferMsg, ViewMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, FileOpsMsg, FluxApp, NavigationMsg, SearchMsg, TasksMsg, ThumbnailsMsg,
+    TransferMsg, ViewMsg,
+};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::gdk;
@@ -50,10 +53,12 @@ impl FluxApp {
                     let progress_top = ((val - lower) / max_scroll).clamp(0.0, 1.0);
                     let progress_bottom = ((val + page_size - lower) / max_scroll).clamp(0.0, 1.0);
 
-                    sender_clone.input(AppMsg::Thumbnails(ThumbnailsMsg::UpdateVisibleThumbnailsViewport {
-                        progress_top,
-                        progress_bottom,
-                    }));
+                    sender_clone.input(AppMsg::Thumbnails(
+                        ThumbnailsMsg::UpdateVisibleThumbnailsViewport {
+                            progress_top,
+                            progress_bottom,
+                        },
+                    ));
                 });
 
             scroll_debounce.set(Some(timeout_id));
@@ -959,7 +964,9 @@ impl SimpleAsyncComponent for FluxApp {
         if preview {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(crate::domain::model::AppMsg::Preview(crate::domain::model::PreviewMsg::StartupPreview));
+                s.input(crate::domain::model::AppMsg::Preview(
+                    crate::domain::model::PreviewMsg::StartupPreview,
+                ));
             });
         }
 
@@ -968,7 +975,9 @@ impl SimpleAsyncComponent for FluxApp {
         if quick_list_from_cli {
             let s = sender.clone();
             gtk::glib::idle_add_local_once(move || {
-                s.input(crate::domain::model::AppMsg::QuickList(crate::domain::model::QuickListMsg::ToggleQuickListPanel));
+                s.input(crate::domain::model::AppMsg::QuickList(
+                    crate::domain::model::QuickListMsg::ToggleQuickListPanel,
+                ));
             });
         }
 

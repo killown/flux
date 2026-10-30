@@ -1,5 +1,5 @@
 use super::tracked::trash_tracked_batch;
-use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp, NavigationMsg, WindowMsg};
 use gtk::gio;
 use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;

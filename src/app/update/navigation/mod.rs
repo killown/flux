@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, NavigationMsg, NetworkMsg, SearchMsg, TabsMsg, TagsMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, ArchiveMsg, FluxApp, NavigationMsg, NetworkMsg, SearchMsg, TabsMsg, TagsMsg,
+};
 use relm4::prelude::*;
 
 mod history;
@@ -26,14 +28,22 @@ pub(super) fn handle(
             app.handle_go_forward(sender);
             sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
         }
-        AppMsg::Navigation(NavigationMsg::ToggleNavigateMode) => app.handle_toggle_navigate_mode(sender),
+        AppMsg::Navigation(NavigationMsg::ToggleNavigateMode) => {
+            app.handle_toggle_navigate_mode(sender)
+        }
         AppMsg::Navigation(NavigationMsg::KeyChar(c)) => app.handle_key_char(c, sender),
         AppMsg::Navigation(NavigationMsg::KeyEnter) => app.handle_key_enter(sender),
         AppMsg::Navigation(NavigationMsg::KeyBackspace) => app.handle_key_backspace(sender),
         AppMsg::Navigation(NavigationMsg::KeyEscape) => app.handle_key_escape(sender),
-        AppMsg::Navigation(NavigationMsg::CycleByLetter(c)) => app.handle_cycle_by_letter(c, sender),
-        AppMsg::Navigation(NavigationMsg::CycleByLetterCancel) => app.handle_cycle_by_letter_cancel(sender),
-        AppMsg::Navigation(NavigationMsg::CycleByLetterReanchor) => app.handle_cycle_by_letter_reanchor(sender),
+        AppMsg::Navigation(NavigationMsg::CycleByLetter(c)) => {
+            app.handle_cycle_by_letter(c, sender)
+        }
+        AppMsg::Navigation(NavigationMsg::CycleByLetterCancel) => {
+            app.handle_cycle_by_letter_cancel(sender)
+        }
+        AppMsg::Navigation(NavigationMsg::CycleByLetterReanchor) => {
+            app.handle_cycle_by_letter_reanchor(sender)
+        }
         AppMsg::Search(SearchMsg::SyncPathEntry) => {}
         AppMsg::Navigation(NavigationMsg::ToggleLocationPanel) => {
             app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Location, sender)
@@ -51,11 +61,17 @@ pub(super) fn handle(
             }
         }
         AppMsg::Navigation(NavigationMsg::ClearRecents) => app.handle_clear_recents(sender),
-        AppMsg::Navigation(NavigationMsg::ClearRecentsFinished(result)) => app.handle_clear_recents_finished(result, sender),
+        AppMsg::Navigation(NavigationMsg::ClearRecentsFinished(result)) => {
+            app.handle_clear_recents_finished(result, sender)
+        }
         AppMsg::Tabs(TabsMsg::NewTab(target_path)) => app.handle_new_tab(target_path, sender),
         AppMsg::Tabs(TabsMsg::OpenTabs(targets)) => app.handle_open_tabs(targets, sender),
-        AppMsg::Navigation(NavigationMsg::Open { position, tab_id }) => app.handle_open(position, tab_id, sender),
-        AppMsg::Navigation(NavigationMsg::ActivateItems(items)) => app.activate_items(items, sender),
+        AppMsg::Navigation(NavigationMsg::Open { position, tab_id }) => {
+            app.handle_open(position, tab_id, sender)
+        }
+        AppMsg::Navigation(NavigationMsg::ActivateItems(items)) => {
+            app.activate_items(items, sender)
+        }
         AppMsg::Tabs(TabsMsg::SwitchTab(index)) => app.handle_switch_tab(index, sender),
         AppMsg::Tabs(TabsMsg::TabReordered {
             moved_id,

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, GitMsg, PreviewMsg, PropertiesMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, GitMsg, PreviewMsg, PropertiesMsg};
 use crate::i18n::tr;
 use crate::ui::constants;
 use crate::utils;
@@ -200,11 +200,16 @@ impl FluxApp {
                             let s_c = s.clone();
                             relm4::spawn(async move {
                                 let dur = crate::utils::media::probe_media_duration(&path_c).await;
-                                s_c.input(AppMsg::Properties(PropertiesMsg::MediaDurationReady(dur)));
+                                s_c.input(AppMsg::Properties(PropertiesMsg::MediaDurationReady(
+                                    dur,
+                                )));
                             });
                         }
 
-                        s.input(AppMsg::Properties(PropertiesMsg::FileMetaReady { mime, dimensions }));
+                        s.input(AppMsg::Properties(PropertiesMsg::FileMetaReady {
+                            mime,
+                            dimensions,
+                        }));
                     });
 
                     // Build the base status string (name/path, size, date)

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, LoadingMsg, TasksMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, LoadingMsg, TasksMsg, WindowMsg};
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -41,7 +41,9 @@ impl FluxApp {
                     counter += 1;
                 }
                 Err(e) => {
-                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Extract failed: {e}"))));
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Extract failed: {e}"
+                    ))));
                     return;
                 }
             }
@@ -142,11 +144,15 @@ impl FluxApp {
                         "Extracted to {}",
                         dest.display()
                     ))));
-                    s.input(AppMsg::Loading(LoadingMsg::InvalidateCacheAndNavigate(dest)));
+                    s.input(AppMsg::Loading(LoadingMsg::InvalidateCacheAndNavigate(
+                        dest,
+                    )));
                 }
                 Err(e) => {
                     let _ = std::fs::remove_dir_all(&dest);
-                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Extract failed: {e}"))));
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Extract failed: {e}"
+                    ))));
                 }
             }
         });
@@ -236,7 +242,9 @@ impl FluxApp {
                     }));
                 }
                 Err(e) => {
-                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Extract failed: {e}"))));
+                    s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Extract failed: {e}"
+                    ))));
                 }
             }
         });

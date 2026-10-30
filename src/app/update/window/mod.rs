@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, NavigationMsg, SettingsMsg, WindowMsg, FluxApp, ToggleVerb, WindowVisibility};
+use crate::domain::model::{
+    AppMsg, FluxApp, NavigationMsg, SettingsMsg, ToggleVerb, WindowMsg, WindowVisibility,
+};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -30,18 +32,34 @@ pub(super) fn handle(
     crate::hit!("handle");
     match msg {
         AppMsg::Settings(SettingsMsg::SetUiScale(scale)) => app.handle_set_ui_scale(scale),
-        AppMsg::Settings(SettingsMsg::SetBackgroundAlpha { slot, alpha }) => app.handle_set_background_alpha(slot, alpha),
-        AppMsg::Settings(SettingsMsg::SetFluxBackground { target, slot }) => app.handle_set_flux_background(target, slot),
-        AppMsg::Settings(SettingsMsg::ClearFluxBackgrounds) => app.handle_clear_flux_backgrounds(sender),
-        AppMsg::Settings(SettingsMsg::SetScaleFontWithIcons(val)) => app.handle_set_scale_font_with_icons(val, sender),
+        AppMsg::Settings(SettingsMsg::SetBackgroundAlpha { slot, alpha }) => {
+            app.handle_set_background_alpha(slot, alpha)
+        }
+        AppMsg::Settings(SettingsMsg::SetFluxBackground { target, slot }) => {
+            app.handle_set_flux_background(target, slot)
+        }
+        AppMsg::Settings(SettingsMsg::ClearFluxBackgrounds) => {
+            app.handle_clear_flux_backgrounds(sender)
+        }
+        AppMsg::Settings(SettingsMsg::SetScaleFontWithIcons(val)) => {
+            app.handle_set_scale_font_with_icons(val, sender)
+        }
         AppMsg::Window(WindowMsg::ToggleHeaderBar) => app.handle_toggle_header_bar(),
         AppMsg::Settings(SettingsMsg::SetTheme(theme)) => app.handle_set_theme(theme),
         AppMsg::Settings(SettingsMsg::SetShortcut(key, val)) => app.handle_set_shortcut(key, val),
         AppMsg::Window(WindowMsg::SetMaximized(max)) => app.handle_set_maximized(max),
-        AppMsg::Window(WindowMsg::SetWindowWidth(val)) => app.handle_set_window_size(Some(val), None),
-        AppMsg::Window(WindowMsg::SetWindowHeight(val)) => app.handle_set_window_size(None, Some(val)),
-        AppMsg::Navigation(NavigationMsg::SetShowRecents(val)) => app.handle_set_show_recents(val, sender),
-        AppMsg::Navigation(NavigationMsg::SetRecentsRow(val)) => app.handle_set_recents_row(val, sender),
+        AppMsg::Window(WindowMsg::SetWindowWidth(val)) => {
+            app.handle_set_window_size(Some(val), None)
+        }
+        AppMsg::Window(WindowMsg::SetWindowHeight(val)) => {
+            app.handle_set_window_size(None, Some(val))
+        }
+        AppMsg::Navigation(NavigationMsg::SetShowRecents(val)) => {
+            app.handle_set_show_recents(val, sender)
+        }
+        AppMsg::Navigation(NavigationMsg::SetRecentsRow(val)) => {
+            app.handle_set_recents_row(val, sender)
+        }
         AppMsg::Settings(SettingsMsg::SetFishTheme(val)) => app.handle_set_fish_theme(val),
         AppMsg::Navigation(NavigationMsg::SetMaxHistory(val)) => app.handle_set_max_history(val),
         AppMsg::Window(WindowMsg::ShowAbout) => FluxApp::show_about_window(),

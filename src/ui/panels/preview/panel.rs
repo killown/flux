@@ -17,7 +17,9 @@ use super::state::{Mode, State};
 use super::text::body_font_family;
 use super::widgets::{first_available_icon, flat_icon_button, info_clamp, install_css};
 use super::zoom::ZOOM_STEP;
-use crate::domain::model::{AppMsg, AppSidebarMsg, FileOpsMsg, PreviewMsg, SearchMsg, ViewMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, PreviewMsg, SearchMsg, ViewMsg,
+};
 use crate::i18n::tr;
 use crate::ui::panels::header::panel_header;
 use crate::ui::panels::resize::resizable_panel;
@@ -498,11 +500,17 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     };
     {
         let s = sender.clone();
-        wide_btn.connect_toggled(move |b| s.input(AppMsg::Sidebar(AppSidebarMsg::SetWidePreviewDefault(b.is_active()))));
+        wide_btn.connect_toggled(move |b| {
+            s.input(AppMsg::Sidebar(AppSidebarMsg::SetWidePreviewDefault(
+                b.is_active(),
+            )))
+        });
     }
     {
         let s = sender.clone();
-        fullscreen_btn.connect_clicked(move |_| s.input(AppMsg::Preview(PreviewMsg::TogglePreviewFullscreen)));
+        fullscreen_btn.connect_clicked(move |_| {
+            s.input(AppMsg::Preview(PreviewMsg::TogglePreviewFullscreen))
+        });
     }
     {
         let s = sender.clone();

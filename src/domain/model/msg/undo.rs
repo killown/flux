@@ -1,7 +1,5 @@
 //! Undo and redo.
 
-use std::path::PathBuf;
-
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum UndoMsg {

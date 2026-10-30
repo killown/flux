@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ThumbnailsMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg, WindowMsg};
 use crate::i18n::tr;
 use crate::utils;
 use adw::gio::prelude::*;
@@ -136,7 +136,9 @@ impl FluxApp {
             let source_id =
                 glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
                     if let Some(s) = crate::domain::model::SENDER.get() {
-                        let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::TriggerVideoPreview(target_path)));
+                        let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::TriggerVideoPreview(
+                            target_path,
+                        )));
                     }
                 });
             self.video_preview_source = Some(source_id);

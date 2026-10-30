@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg};
 use crate::ui::constants;
 use adw::gdk;
 use gtk::prelude::*;

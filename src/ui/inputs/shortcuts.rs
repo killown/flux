@@ -1,4 +1,7 @@
-use crate::domain::model::{AppMsg, ActionsMsg, AppSidebarMsg, FileOpsMsg, IconsMsg, NavigationMsg, SearchMsg, TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, IconsMsg, NavigationMsg, SearchMsg,
+    TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg,
+};
 use crate::ui::constants;
 use crate::ui::keymap::KeyMap;
 use gtk::glib;
@@ -39,14 +42,35 @@ pub fn setup_global_shortcuts(
     }
 
     // ── KeyMap-driven ─────────────────────────────────────────────────────
-    bind_msg!(keymap.refresh.clone(), AppMsg::Navigation(NavigationMsg::Refresh));
-    bind_msg!(keymap.copy_path.clone(), AppMsg::FileOps(FileOpsMsg::CopyPath));
-    bind_msg!(keymap.create_symlink.clone(), AppMsg::FileOps(FileOpsMsg::CreateSymlink));
-    bind_msg!(keymap.create_hardlink.clone(), AppMsg::FileOps(FileOpsMsg::CreateHardlink));
-    bind_msg!(keymap.toggle_header.clone(), AppMsg::Window(WindowMsg::ToggleHeaderBar));
-    bind_msg!(keymap.toggle_hidden.clone(), AppMsg::View(ViewMsg::ToggleHidden));
+    bind_msg!(
+        keymap.refresh.clone(),
+        AppMsg::Navigation(NavigationMsg::Refresh)
+    );
+    bind_msg!(
+        keymap.copy_path.clone(),
+        AppMsg::FileOps(FileOpsMsg::CopyPath)
+    );
+    bind_msg!(
+        keymap.create_symlink.clone(),
+        AppMsg::FileOps(FileOpsMsg::CreateSymlink)
+    );
+    bind_msg!(
+        keymap.create_hardlink.clone(),
+        AppMsg::FileOps(FileOpsMsg::CreateHardlink)
+    );
+    bind_msg!(
+        keymap.toggle_header.clone(),
+        AppMsg::Window(WindowMsg::ToggleHeaderBar)
+    );
+    bind_msg!(
+        keymap.toggle_hidden.clone(),
+        AppMsg::View(ViewMsg::ToggleHidden)
+    );
     bind_msg!(keymap.delete.clone(), AppMsg::FileOps(FileOpsMsg::Delete));
-    bind_msg!(keymap.properties.clone(), AppMsg::FileOps(FileOpsMsg::TriggerRenameSelection));
+    bind_msg!(
+        keymap.properties.clone(),
+        AppMsg::FileOps(FileOpsMsg::TriggerRenameSelection)
+    );
     bind_msg!(
         keymap.open.clone(),
         AppMsg::Navigation(NavigationMsg::Open {
@@ -54,21 +78,48 @@ pub fn setup_global_shortcuts(
             tab_id: None,
         })
     );
-    bind_msg!(keymap.root.clone(), AppMsg::Navigation(NavigationMsg::Navigate(PathBuf::from("/"))));
-    bind_msg!(keymap.change_icon.clone(), AppMsg::Icons(IconsMsg::TriggerIconPicker));
-    bind_msg!(keymap.reset_icon.clone(), AppMsg::Icons(IconsMsg::TriggerResetIcon));
+    bind_msg!(
+        keymap.root.clone(),
+        AppMsg::Navigation(NavigationMsg::Navigate(PathBuf::from("/")))
+    );
+    bind_msg!(
+        keymap.change_icon.clone(),
+        AppMsg::Icons(IconsMsg::TriggerIconPicker)
+    );
+    bind_msg!(
+        keymap.reset_icon.clone(),
+        AppMsg::Icons(IconsMsg::TriggerResetIcon)
+    );
     bind_msg!(keymap.new_tab.clone(), AppMsg::Tabs(TabsMsg::NewTab(None)));
-    bind_msg!(keymap.close_tab.clone(), AppMsg::Tabs(TabsMsg::CloseTab(None)));
+    bind_msg!(
+        keymap.close_tab.clone(),
+        AppMsg::Tabs(TabsMsg::CloseTab(None))
+    );
     bind_msg!(keymap.next_tab.clone(), AppMsg::Tabs(TabsMsg::NextTab));
     bind_msg!(keymap.prev_tab.clone(), AppMsg::Tabs(TabsMsg::PrevTab));
 
-    bind_msg!(keymap.open_debug_window.clone(), AppMsg::Window(WindowMsg::OpenDebugWindow));
-    bind_msg!(keymap.toggle_statusbar.clone(), AppMsg::View(ViewMsg::ToggleStatusBar));
-    bind_msg!(keymap.toggle_sidebar.clone(), AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar));
-    bind_msg!(keymap.toggle_terminal.clone(), AppMsg::Terminal(TerminalMsg::ToggleTerminal));
+    bind_msg!(
+        keymap.open_debug_window.clone(),
+        AppMsg::Window(WindowMsg::OpenDebugWindow)
+    );
+    bind_msg!(
+        keymap.toggle_statusbar.clone(),
+        AppMsg::View(ViewMsg::ToggleStatusBar)
+    );
+    bind_msg!(
+        keymap.toggle_sidebar.clone(),
+        AppMsg::Sidebar(AppSidebarMsg::ToggleSidebar)
+    );
+    bind_msg!(
+        keymap.toggle_terminal.clone(),
+        AppMsg::Terminal(TerminalMsg::ToggleTerminal)
+    );
     bind_msg!(keymap.undo.clone(), AppMsg::Undo(UndoMsg::Undo));
     bind_msg!(keymap.redo.clone(), AppMsg::Undo(UndoMsg::Redo));
-    bind_msg!(keymap.toggle_tag_panel.clone(), AppMsg::Tags(TagsMsg::ToggleTagPanel));
+    bind_msg!(
+        keymap.toggle_tag_panel.clone(),
+        AppMsg::Tags(TagsMsg::ToggleTagPanel)
+    );
     bind_msg!(
         keymap.toggle_actions_panel.clone(),
         AppMsg::Actions(ActionsMsg::ToggleActionsPanel)
@@ -81,7 +132,10 @@ pub fn setup_global_shortcuts(
         AppMsg::Navigation(NavigationMsg::ToggleLocationPanel)
     );
     bind_msg!(keymap.cycle_sort.clone(), AppMsg::View(ViewMsg::CycleSort));
-    bind_msg!(keymap.toggle_sort_order.clone(), AppMsg::View(ViewMsg::ToggleSortOrder));
+    bind_msg!(
+        keymap.toggle_sort_order.clone(),
+        AppMsg::View(ViewMsg::ToggleSortOrder)
+    );
 
     window.add_controller(sc);
 
@@ -143,7 +197,9 @@ pub fn setup_global_shortcuts(
                 }
 
                 s_search.input(AppMsg::Search(SearchMsg::ToggleSearchPanel));
-                s_search.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
+                s_search.input(AppMsg::Search(SearchMsg::SwitchHeader(
+                    constants::VIEW_SEARCH.to_string(),
+                )));
                 glib::Propagation::Stop
             })),
         ));

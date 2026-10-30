@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, LoadingMsg, NavigationMsg, SearchMsg, ThumbnailsMsg, Config};
+use crate::domain::model::{AppMsg, Config, LoadingMsg, NavigationMsg, SearchMsg, ThumbnailsMsg};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;

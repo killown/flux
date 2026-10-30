@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FileOpsMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -48,7 +48,9 @@ impl FluxApp {
         crate::hit!("handle_copy_path");
         let selection = self.get_selection();
         if selection.is_empty() {
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("No items selected."))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+                "No items selected.",
+            ))));
             return;
         }
 

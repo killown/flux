@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, UndoMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, UndoMsg, WindowMsg};
 use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
 use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;
@@ -205,11 +205,13 @@ impl FluxApp {
                     // Failed first: `push_undo` clears the redo stack, so the
                     // redo entry for the restored items has to come after it.
                     if !failed.is_empty() {
-                        sender_clone
-                            .input(AppMsg::Undo(UndoMsg::UndoTrashFailed(FileOp::Trash { items: failed })));
+                        sender_clone.input(AppMsg::Undo(UndoMsg::UndoTrashFailed(FileOp::Trash {
+                            items: failed,
+                        })));
                     }
                     if !restored.is_empty() {
-                        sender_clone.input(AppMsg::Undo(UndoMsg::UndoTrashComplete { items: restored }));
+                        sender_clone
+                            .input(AppMsg::Undo(UndoMsg::UndoTrashComplete { items: restored }));
                     }
                 });
             }
@@ -276,11 +278,14 @@ impl FluxApp {
                     // Complete first: `push_undo` clears the redo stack, so
                     // the failed remainder has to be pushed to redo after it.
                     if !re_trashed.is_empty() {
-                        sender_clone.input(AppMsg::Undo(UndoMsg::RedoTrashComplete { items: re_trashed }));
+                        sender_clone.input(AppMsg::Undo(UndoMsg::RedoTrashComplete {
+                            items: re_trashed,
+                        }));
                     }
                     if !failed.is_empty() {
-                        sender_clone
-                            .input(AppMsg::Undo(UndoMsg::RedoTrashFailed(FileOp::Trash { items: failed })));
+                        sender_clone.input(AppMsg::Undo(UndoMsg::RedoTrashFailed(FileOp::Trash {
+                            items: failed,
+                        })));
                     }
                 });
             }

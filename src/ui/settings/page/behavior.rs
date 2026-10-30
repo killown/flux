@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, FileOpsMsg, GitMsg, IconsMsg, SettingsMsg, ViewMsg, Config};
+use crate::domain::model::{
+    AppMsg, ArchiveMsg, Config, FileOpsMsg, GitMsg, IconsMsg, SettingsMsg, ViewMsg,
+};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;

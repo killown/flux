@@ -1,6 +1,6 @@
 use super::matching::action_matches_mime;
 use super::template::{parse_secondary_template, resolve_secondary_menu_template};
-use crate::domain::model::{AppMsg, ActionsMsg, ArchiveMsg, WindowMsg, CustomAction, FluxApp};
+use crate::domain::model::{ActionsMsg, AppMsg, ArchiveMsg, CustomAction, FluxApp, WindowMsg};
 use crate::ui::constants;
 use crate::utils;
 use adw::gdk;
@@ -137,10 +137,14 @@ impl FluxApp {
             gio_action.connect_activate(move |_, _| {
                 match (cmd_template.as_str(), &target_path) {
                     ("builtin::forget_archive_password", Some(target)) => {
-                        sender_click.input(AppMsg::Archive(ArchiveMsg::ForgetArchivePassword(target.clone())));
+                        sender_click.input(AppMsg::Archive(ArchiveMsg::ForgetArchivePassword(
+                            target.clone(),
+                        )));
                     }
                     ("builtin::forget_archive_password", None) => {}
-                    _ => sender_click.input(AppMsg::Actions(ActionsMsg::ExecuteCommand(cmd_template.clone()))),
+                    _ => sender_click.input(AppMsg::Actions(ActionsMsg::ExecuteCommand(
+                        cmd_template.clone(),
+                    ))),
                 }
                 if let Some(ref msg) = toast_msg {
                     sender_click.input(AppMsg::Window(WindowMsg::ShowToast(msg.clone())));

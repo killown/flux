@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, WindowMsg};
 use gtk::gdk;
 use gtk::gdk::prelude::TextureExt;
 use gtk::gio;
@@ -24,7 +24,9 @@ impl FluxApp {
 
                 match texture.save_to_png(dest.to_string_lossy().as_ref()) {
                     Ok(()) => {
-                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Image pasted as file"))));
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+                            "Image pasted as file",
+                        ))));
                         s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                     }
                     Err(e) => {

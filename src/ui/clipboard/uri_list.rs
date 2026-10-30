@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, FileOpsMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp, WindowMsg};
 use gtk::gdk;
 use gtk::gio;
 use relm4::prelude::*;

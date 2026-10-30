@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, WindowMsg};
 use gtk::gio;
 use gtk::gio::prelude::InputStreamExt;
 use gtk::glib;
@@ -42,7 +42,9 @@ fn read_stream_chunk(
                 let s = sender.clone();
                 relm4::spawn_blocking(move || match std::fs::write(&dest, html.as_bytes()) {
                     Ok(()) => {
-                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("HTML pasted as file"))));
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+                            "HTML pasted as file",
+                        ))));
                         s.input(AppMsg::Navigation(NavigationMsg::Refresh));
                     }
                     Err(e) => {

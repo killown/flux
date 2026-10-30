@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, PropertiesMsg, QuickListMsg, UndoMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, FileOpsMsg, FluxApp, NavigationMsg, PropertiesMsg, QuickListMsg, UndoMsg, WindowMsg,
+};
 use relm4::prelude::*;
 
 mod archive;
@@ -23,7 +25,9 @@ pub(super) fn handle(
     crate::hit!("handle");
     match msg {
         AppMsg::FileOps(FileOpsMsg::CopyPath) => app.handle_copy_path(sender),
-        AppMsg::FileOps(FileOpsMsg::CopyPathReady(text)) => app.handle_copy_path_ready(text, sender),
+        AppMsg::FileOps(FileOpsMsg::CopyPathReady(text)) => {
+            app.handle_copy_path_ready(text, sender)
+        }
         AppMsg::FileOps(FileOpsMsg::CreateSymlink) => app.handle_create_link(false, sender),
         AppMsg::FileOps(FileOpsMsg::CreateHardlink) => app.handle_create_link(true, sender),
         AppMsg::FileOps(FileOpsMsg::Copy) => app.handle_copy_or_cut(false, sender),
@@ -37,7 +41,9 @@ pub(super) fn handle(
             conflicts,
             is_cut,
         }) => app.show_confirm_replace_paste(files, conflicts, is_cut, sender),
-        AppMsg::FileOps(FileOpsMsg::PerformPaste { files, is_cut }) => app.perform_paste(files, is_cut, sender.clone()),
+        AppMsg::FileOps(FileOpsMsg::PerformPaste { files, is_cut }) => {
+            app.perform_paste(files, is_cut, sender.clone())
+        }
         AppMsg::FileOps(FileOpsMsg::PerformPasteForced { files, is_cut }) => {
             app.perform_paste_inner(files, is_cut, true, sender.clone())
         }
@@ -76,7 +82,9 @@ pub(super) fn handle(
         }
         AppMsg::FileOps(FileOpsMsg::PromptNewFolder) => app.show_prompt_new_folder(sender),
         AppMsg::FileOps(FileOpsMsg::PromptNewFile) => app.show_prompt_new_file(sender),
-        AppMsg::Properties(PropertiesMsg::OpenFileProperties(path)) => app.handle_open_file_properties(path, sender),
+        AppMsg::Properties(PropertiesMsg::OpenFileProperties(path)) => {
+            app.handle_open_file_properties(path, sender)
+        }
         AppMsg::Properties(PropertiesMsg::ToggleFilePropertiesPanel) => {
             app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Properties, sender)
         }
@@ -85,9 +93,15 @@ pub(super) fn handle(
             sections,
             open_with,
         }) => app.handle_file_properties_ready(session, sections, open_with),
-        AppMsg::Properties(PropertiesMsg::CopyPropertyValue(text)) => app.handle_copy_property_value(text, sender),
-        AppMsg::Properties(PropertiesMsg::OpenPropertiesTargetWith) => app.handle_open_properties_target_with(sender),
-        AppMsg::FileOps(FileOpsMsg::SetDisableDragAndDrop(val)) => app.handle_set_disable_drag_and_drop(val),
+        AppMsg::Properties(PropertiesMsg::CopyPropertyValue(text)) => {
+            app.handle_copy_property_value(text, sender)
+        }
+        AppMsg::Properties(PropertiesMsg::OpenPropertiesTargetWith) => {
+            app.handle_open_properties_target_with(sender)
+        }
+        AppMsg::FileOps(FileOpsMsg::SetDisableDragAndDrop(val)) => {
+            app.handle_set_disable_drag_and_drop(val)
+        }
         AppMsg::FileOps(FileOpsMsg::HandleDrop {
             source_paths,
             dest_path,
@@ -154,9 +168,13 @@ pub(super) fn handle(
         AppMsg::Undo(UndoMsg::RedoTrashFailed(op)) => app.handle_redo_trash_failed(op),
 
         AppMsg::FileOps(FileOpsMsg::FileDeleted(path)) => app.handle_file_deleted_dispatch(path),
-        AppMsg::FileOps(FileOpsMsg::FileChanged(path)) => app.handle_file_changed_dispatch(path, sender),
+        AppMsg::FileOps(FileOpsMsg::FileChanged(path)) => {
+            app.handle_file_changed_dispatch(path, sender)
+        }
         AppMsg::FileOps(FileOpsMsg::StartRename(path)) => app.handle_start_rename(path),
-        AppMsg::FileOps(FileOpsMsg::TriggerRenameSelection) => app.handle_trigger_rename_selection(sender),
+        AppMsg::FileOps(FileOpsMsg::TriggerRenameSelection) => {
+            app.handle_trigger_rename_selection(sender)
+        }
         AppMsg::FileOps(FileOpsMsg::ItemMoved { old_path, new_path }) => {
             app.handle_item_moved(old_path, new_path, sender)
         }

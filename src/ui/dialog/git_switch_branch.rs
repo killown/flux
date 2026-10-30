@@ -147,7 +147,9 @@ pub fn show_switch_branch_dialog(
             else {
                 return;
             };
-            let _ = s.input_sender().send(AppMsg::Git(GitMsg::GitSwitchBranch(name.clone())));
+            let _ = s
+                .input_sender()
+                .send(AppMsg::Git(GitMsg::GitSwitchBranch(name.clone())));
             d.close();
         })
     };
@@ -174,7 +176,9 @@ pub fn show_switch_branch_dialog(
             if name.is_empty() {
                 return;
             }
-            let _ = s.input_sender().send(AppMsg::Git(GitMsg::GitCreateBranch(name)));
+            let _ = s
+                .input_sender()
+                .send(AppMsg::Git(GitMsg::GitCreateBranch(name)));
             d.close();
         });
     }

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -273,7 +273,9 @@ impl FluxApp {
                         }
 
                         if let Err(e) = app.launch(&[gfile], gtk::gio::AppLaunchContext::NONE) {
-                            s_exec.input(AppMsg::Window(WindowMsg::ShowToast(format!("Failed to launch: {e}"))));
+                            s_exec.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                                "Failed to launch: {e}"
+                            ))));
                         }
                     }
                 }

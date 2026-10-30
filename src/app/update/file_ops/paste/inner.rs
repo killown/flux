@@ -1,6 +1,8 @@
 use super::transfer::{archive_inner_path, remove_cut_source, resolve_gio_files, scan_total_bytes};
 use super::{DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, FileOpsMsg, FluxApp, NavigationMsg, TasksMsg, TransferMsg, WindowMsg,
+};
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::gio::prelude::*;
 use gtk::gio;
@@ -82,7 +84,9 @@ impl FluxApp {
                     let s_delay = sender.clone();
                     relm4::spawn(async move {
                         tokio::time::sleep(DIALOG_DELAY).await;
-                        s_delay.input(AppMsg::Transfer(TransferMsg::ShowTransferDialogIfActive(task_id)));
+                        s_delay.input(AppMsg::Transfer(TransferMsg::ShowTransferDialogIfActive(
+                            task_id,
+                        )));
                     });
                 }
 
@@ -143,7 +147,9 @@ impl FluxApp {
                             password.as_deref(),
                             Some(&mut progress_cb),
                         ) {
-                            s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Archive error: {e}"))));
+                            s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                                "Archive error: {e}"
+                            ))));
                             break;
                         }
 

@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, CommandMsg, FileOpsMsg, NavigationMsg, TasksMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, CommandMsg, FileOpsMsg, FluxApp, NavigationMsg, TasksMsg, WindowMsg,
+};
 use crate::ui::constants;
 use crate::utils::helpers::shell::{expand_template, shell_safe, Placeholder};
 use adw::gio::prelude::*;
@@ -240,7 +242,9 @@ impl FluxApp {
             let task_id_delay = id;
             relm4::spawn(async move {
                 sleep(Duration::from_secs(2)).await;
-                s_delay.input(AppMsg::Command(CommandMsg::ShowCommandDialogIfActive(task_id_delay)));
+                s_delay.input(AppMsg::Command(CommandMsg::ShowCommandDialogIfActive(
+                    task_id_delay,
+                )));
             });
 
             Some(id)
@@ -270,7 +274,10 @@ impl FluxApp {
             let mut child = match child {
                 Ok(c) => c,
                 Err(e) => {
-                    sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast(format!("Failed to spawn command: {}", e))));
+                    sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Failed to spawn command: {}",
+                        e
+                    ))));
                     if let Some(id) = task_id {
                         sender_cmd.input(AppMsg::Tasks(TasksMsg::TaskCompleted(id)));
                     }
@@ -332,7 +339,9 @@ impl FluxApp {
             if let Some(msg) = toast_msg {
                 sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
             } else if !success {
-                sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast("Command failed".to_string())));
+                sender_cmd.input(AppMsg::Window(WindowMsg::ShowToast(
+                    "Command failed".to_string(),
+                )));
             }
 
             if needs_refresh {

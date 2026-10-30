@@ -289,10 +289,12 @@ impl FileItem {
 
             if let (Some(dest), Some(s)) = (dest_path_opt, sender) {
                 if !source_paths.is_empty() {
-                    s.send(crate::domain::model::AppMsg::FileOps(crate::domain::model::FileOpsMsg::HandleDrop {
-                        source_paths,
-                        dest_path: dest,
-                    }))
+                    s.send(crate::domain::model::AppMsg::FileOps(
+                        crate::domain::model::FileOpsMsg::HandleDrop {
+                            source_paths,
+                            dest_path: dest,
+                        },
+                    ))
                     .ok();
                     return true;
                 }

@@ -13,7 +13,7 @@ use super::actions_registry;
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, ActionsMsg, WindowMsg, CustomAction, FluxApp};
+use crate::domain::model::{ActionsMsg, AppMsg, CustomAction, FluxApp, WindowMsg};
 use crate::i18n::tr;
 use crate::ui::constants;
 use crate::ui::menu::secondary::action_matches_mime;

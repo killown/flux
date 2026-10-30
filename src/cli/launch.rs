@@ -1,6 +1,6 @@
 use super::shortcuts::setup_shortcuts;
 use super::watcher::setup_config_watcher;
-use crate::domain::model::{AppInit, AppMsg, NavigationMsg, FluxApp, WindowOptions};
+use crate::domain::model::{AppInit, AppMsg, FluxApp, NavigationMsg, WindowOptions};
 use adw::prelude::*;
 use adw::{gio, glib};
 use relm4::prelude::*;

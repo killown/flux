@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, WindowMsg};
 use crate::utils;
 use relm4::prelude::*;
 use std::fs;
@@ -81,7 +81,9 @@ impl FluxApp {
                         new_name: new_name.clone(),
                     });
 
-                sender.input(AppMsg::Navigation(NavigationMsg::Navigate(self.current_path.clone())));
+                sender.input(AppMsg::Navigation(NavigationMsg::Navigate(
+                    self.current_path.clone(),
+                )));
             }
             Err(e) => {
                 let msg = e.to_string();
@@ -90,7 +92,10 @@ impl FluxApp {
                         "Permission denied: Cannot rename item.".into(),
                     )));
                 } else {
-                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Rename error: {}", e))));
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Rename error: {}",
+                        e
+                    ))));
                 }
             }
         }

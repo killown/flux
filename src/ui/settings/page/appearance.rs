@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, IconsMsg, NavigationMsg, SettingsMsg, WindowMsg, Config};
+use crate::domain::model::{AppMsg, Config, IconsMsg, NavigationMsg, SettingsMsg, WindowMsg};
 use crate::i18n::tr;
 use adw::gdk;
 use adw::prelude::*;

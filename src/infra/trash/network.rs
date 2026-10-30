@@ -1,5 +1,5 @@
 use super::recursive::delete_recursive;
-use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, WindowMsg};
 use gtk::gio;
 use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;
@@ -31,7 +31,9 @@ pub(super) fn delete_via_recursive(file: gio::File, sender: AsyncComponentSender
                         "Permission denied: Cannot delete item.".into(),
                     )));
                 } else {
-                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!("Deletion error: {e}"))));
+                    sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "Deletion error: {e}"
+                    ))));
                 }
             }
         }

@@ -136,7 +136,9 @@ pub fn show_debug_window(app: &FluxApp) {
             }
             overlay_trim.add_toast(adw::Toast::new("Memory purged and released to OS"));
             if let Some(chan) = crate::domain::model::SENDER.get() {
-                let _ = chan.send(crate::domain::model::AppMsg::Window(crate::domain::model::WindowMsg::OpenDebugWindow));
+                let _ = chan.send(crate::domain::model::AppMsg::Window(
+                    crate::domain::model::WindowMsg::OpenDebugWindow,
+                ));
             }
         });
     }
@@ -144,7 +146,9 @@ pub fn show_debug_window(app: &FluxApp) {
     // Refresh action
     refresh_button.connect_clicked(move |_| {
         if let Some(chan) = crate::domain::model::SENDER.get() {
-            let _ = chan.send(crate::domain::model::AppMsg::Window(crate::domain::model::WindowMsg::OpenDebugWindow));
+            let _ = chan.send(crate::domain::model::AppMsg::Window(
+                crate::domain::model::WindowMsg::OpenDebugWindow,
+            ));
         }
     });
 

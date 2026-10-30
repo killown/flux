@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, ThumbnailsMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg};
 use crate::utils;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -70,12 +70,15 @@ impl FluxApp {
             manager.complete_task(grid_idx);
 
             if let Some(texture) = texture {
-                let _ = sender.input_sender().send(AppMsg::Thumbnails(ThumbnailsMsg::ThumbnailReady {
-                    grid_idx,
-                    texture,
-                    load_id: current_session,
-                    tab_index,
-                }));
+                let _ =
+                    sender
+                        .input_sender()
+                        .send(AppMsg::Thumbnails(ThumbnailsMsg::ThumbnailReady {
+                            grid_idx,
+                            texture,
+                            load_id: current_session,
+                            tab_index,
+                        }));
             }
         });
     }

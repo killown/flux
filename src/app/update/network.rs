@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, DeviceMsg, NavigationMsg, NetworkMsg, TerminalMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, AppSidebarMsg, DeviceMsg, FluxApp, NavigationMsg, NetworkMsg, TerminalMsg, WindowMsg,
+};
 use crate::ui::FileItem;
 use adw::gio;
 use adw::prelude::*;
@@ -12,7 +14,9 @@ pub(super) fn handle(
 ) -> Result<(), AppMsg> {
     crate::hit!("handle");
     match msg {
-        AppMsg::Network(NetworkMsg::NetworkLoaded { uri, contexts }) => app.handle_network_loaded(uri, contexts),
+        AppMsg::Network(NetworkMsg::NetworkLoaded { uri, contexts }) => {
+            app.handle_network_loaded(uri, contexts)
+        }
         AppMsg::Network(NetworkMsg::ConnectToServer { uri, credentials }) => {
             app.handle_connect_to_server(uri, credentials, sender)
         }
@@ -20,20 +24,32 @@ pub(super) fn handle(
         AppMsg::Network(NetworkMsg::AddNetworkBookmark { name, uri }) => {
             app.handle_add_network_bookmark(name, uri, sender)
         }
-        AppMsg::Network(NetworkMsg::RemoveNetworkBookmark(uri)) => app.handle_remove_network_bookmark(uri, sender),
-        AppMsg::Network(NetworkMsg::RefreshNetworkSidebar) => app.handle_refresh_network_sidebar(sender),
-        AppMsg::Device(DeviceMsg::SystemMountsReady(mounts)) => app.handle_system_mounts_ready(mounts),
+        AppMsg::Network(NetworkMsg::RemoveNetworkBookmark(uri)) => {
+            app.handle_remove_network_bookmark(uri, sender)
+        }
+        AppMsg::Network(NetworkMsg::RefreshNetworkSidebar) => {
+            app.handle_refresh_network_sidebar(sender)
+        }
+        AppMsg::Device(DeviceMsg::SystemMountsReady(mounts)) => {
+            app.handle_system_mounts_ready(mounts)
+        }
         AppMsg::Device(DeviceMsg::UnmountDevice(path)) => app.handle_unmount_device(path, sender),
-        AppMsg::Device(DeviceMsg::UnlockLuksImage { path }) => app.handle_unlock_luks_image(path, sender),
+        AppMsg::Device(DeviceMsg::UnlockLuksImage { path }) => {
+            app.handle_unlock_luks_image(path, sender)
+        }
         AppMsg::Device(DeviceMsg::PromptLuksPassphrase {
             path,
             wrong_passphrase,
         }) => app.show_luks_passphrase_dialog(path, wrong_passphrase, sender),
         AppMsg::Device(DeviceMsg::LuksMounted { mount_point, .. }) => {
             sender.input(AppMsg::Navigation(NavigationMsg::Navigate(mount_point)));
-            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Volume mounted."))));
+            sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+                "Volume mounted.",
+            ))));
         }
-        AppMsg::Terminal(TerminalMsg::TerminalCwdChanged(path)) => app.handle_terminal_cwd_changed(path, sender),
+        AppMsg::Terminal(TerminalMsg::TerminalCwdChanged(path)) => {
+            app.handle_terminal_cwd_changed(path, sender)
+        }
         AppMsg::Terminal(TerminalMsg::SetTerminalShell(shell)) => {
             app.config.ui.terminal.shell = shell;
             crate::utils::save_config(&app.config);
@@ -51,12 +67,24 @@ pub(super) fn handle(
                 app.handle_toggle_terminal_fullscreen(sender);
             }
         },
-        AppMsg::Terminal(TerminalMsg::ToggleTerminalFullscreen) => app.handle_toggle_terminal_fullscreen(sender),
-        AppMsg::Terminal(TerminalMsg::SetTerminalPosition(pos)) => app.handle_set_terminal_position(pos, sender),
-        AppMsg::Terminal(TerminalMsg::SetTerminalHeight(h)) => app.handle_set_terminal_config(Some(h), None, None, None),
-        AppMsg::Terminal(TerminalMsg::SetTerminalFont(f)) => app.handle_set_terminal_config(None, Some(f), None, None),
-        AppMsg::Terminal(TerminalMsg::SetTerminalFgColor(c)) => app.handle_set_terminal_config(None, None, Some(c), None),
-        AppMsg::Terminal(TerminalMsg::SetTerminalBgColor(c)) => app.handle_set_terminal_config(None, None, None, Some(c)),
+        AppMsg::Terminal(TerminalMsg::ToggleTerminalFullscreen) => {
+            app.handle_toggle_terminal_fullscreen(sender)
+        }
+        AppMsg::Terminal(TerminalMsg::SetTerminalPosition(pos)) => {
+            app.handle_set_terminal_position(pos, sender)
+        }
+        AppMsg::Terminal(TerminalMsg::SetTerminalHeight(h)) => {
+            app.handle_set_terminal_config(Some(h), None, None, None)
+        }
+        AppMsg::Terminal(TerminalMsg::SetTerminalFont(f)) => {
+            app.handle_set_terminal_config(None, Some(f), None, None)
+        }
+        AppMsg::Terminal(TerminalMsg::SetTerminalFgColor(c)) => {
+            app.handle_set_terminal_config(None, None, Some(c), None)
+        }
+        AppMsg::Terminal(TerminalMsg::SetTerminalBgColor(c)) => {
+            app.handle_set_terminal_config(None, None, None, Some(c))
+        }
         other => return Err(other),
     }
     Ok(())

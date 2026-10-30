@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, TagsMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SearchMsg, TagsMsg, WindowMsg};
 use relm4::prelude::*;
 
 impl FluxApp {
@@ -15,7 +15,9 @@ impl FluxApp {
                 .set_tags(&path, &tags, chrono::Utc::now().timestamp());
             let _ = crate::utils::xattr::write_tags(&path, &tags);
         }
-        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Tags updated"))));
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+            "Tags updated",
+        ))));
     }
 
     pub fn handle_remove_tag_from_selection(
@@ -38,7 +40,9 @@ impl FluxApp {
                 .unwrap_or(0);
             let _ = self.state_db.set_tags(&path, &tags, mtime);
         }
-        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Tag removed"))));
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+            "Tag removed",
+        ))));
         sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 

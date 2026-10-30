@@ -1,6 +1,6 @@
 use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
-use crate::domain::model::{AppMsg, ArchiveMsg, ThumbnailsMsg, WindowMsg, FluxApp, SortBy};
+use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, SortBy, ThumbnailsMsg, WindowMsg};
 use crate::infra::archive;
 use crate::ui::FileItem;
 use crate::utils;

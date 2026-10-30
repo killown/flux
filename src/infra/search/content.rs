@@ -1,7 +1,7 @@
 use super::forbidden::forbidden_matcher;
 use super::scan::scan_file;
 use crate::app::update::file_ops::paste::NEXT_TASK_ID;
-use crate::domain::model::{AppMsg, SearchMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, SearchMsg};
 use crate::infra::constants::MAX_CONTENT_SEARCH_RESULTS;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
@@ -196,12 +196,13 @@ pub fn start_content_search(
                 if self.term_lc.is_empty() {
                     let curr = self.count.fetch_add(1, Ordering::Relaxed);
                     if curr < MAX_CONTENT_SEARCH_RESULTS {
-                        self.sender.input(AppMsg::Search(SearchMsg::ContentSearchResult {
-                            path,
-                            line: "Matched Filter".to_string(),
-                            line_number: 0,
-                            session: self.session_id,
-                        }));
+                        self.sender
+                            .input(AppMsg::Search(SearchMsg::ContentSearchResult {
+                                path,
+                                line: "Matched Filter".to_string(),
+                                line_number: 0,
+                                session: self.session_id,
+                            }));
                     }
                     return WalkState::Continue;
                 }
@@ -242,12 +243,13 @@ pub fn start_content_search(
                 {
                     let curr = self.count.fetch_add(1, Ordering::Relaxed);
                     if curr < MAX_CONTENT_SEARCH_RESULTS {
-                        self.sender.input(AppMsg::Search(SearchMsg::ContentSearchResult {
-                            path,
-                            line: hit.line,
-                            line_number: hit.line_number,
-                            session: self.session_id,
-                        }));
+                        self.sender
+                            .input(AppMsg::Search(SearchMsg::ContentSearchResult {
+                                path,
+                                line: hit.line,
+                                line_number: hit.line_number,
+                                session: self.session_id,
+                            }));
                     }
                 }
 

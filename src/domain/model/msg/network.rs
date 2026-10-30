@@ -1,7 +1,5 @@
 //! Network locations and bookmarks.
 
-use crate::domain::model::FileLoadContext;
-
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum NetworkMsg {

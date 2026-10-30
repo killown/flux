@@ -1,5 +1,8 @@
 use crate::domain::model::AltCycle;
-use crate::domain::model::{AppMsg, ActionsMsg, ArchiveMsg, NavigationMsg, QuickListMsg, SearchMsg, TagsMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    ActionsMsg, AppMsg, ArchiveMsg, FluxApp, NavigationMsg, QuickListMsg, SearchMsg, TagsMsg,
+    WindowMsg,
+};
 use crate::ui::constants;
 use gtk::glib;
 use gtk::prelude::*;
@@ -102,8 +105,13 @@ impl FluxApp {
             if clean_tag.is_empty() {
                 sender.input(AppMsg::Tags(TagsMsg::ToggleTagPanel));
             } else {
-                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
-                sender.input(AppMsg::Search(SearchMsg::UpdateFilter(format!("#{}", clean_tag))));
+                sender.input(AppMsg::Search(SearchMsg::SwitchHeader(
+                    constants::VIEW_SEARCH.to_string(),
+                )));
+                sender.input(AppMsg::Search(SearchMsg::UpdateFilter(format!(
+                    "#{}",
+                    clean_tag
+                ))));
 
                 if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
                     let title = format!("#{}", clean_tag);
@@ -488,7 +496,9 @@ impl FluxApp {
         if inside_candidate {
             sender.input(AppMsg::Navigation(NavigationMsg::Navigate(cycle.anchor)));
         }
-        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr("Cycle cancelled"))));
+        sender.input(AppMsg::Window(WindowMsg::ShowToast(crate::i18n::tr(
+            "Cycle cancelled",
+        ))));
     }
 
     /// Forget the cycle without navigating. The next letter press builds

@@ -67,7 +67,10 @@ fn serve(mut stream: UnixStream) {
         return;
     };
     let (reply, paths) = mpsc::channel();
-    if sender.send(AppMsg::View(ViewMsg::QuerySelection { reply })).is_err() {
+    if sender
+        .send(AppMsg::View(ViewMsg::QuerySelection { reply }))
+        .is_err()
+    {
         return;
     }
     let Ok(paths) = paths.recv_timeout(REPLY_TIMEOUT) else {

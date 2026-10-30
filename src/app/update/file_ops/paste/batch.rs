@@ -1,6 +1,8 @@
 use super::transfer::{is_cancelled_error, perform_file_op_with_progress, scan_total_bytes};
 use super::{is_same_entry, CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg, FluxApp};
+use crate::domain::model::{
+    AppMsg, FileOpsMsg, FluxApp, NavigationMsg, TasksMsg, TransferMsg, WindowMsg,
+};
 use crate::ui::conflict_policy::{
     auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
 };
@@ -67,7 +69,9 @@ impl FluxApp {
             let s_delay = sender.clone();
             relm4::spawn(async move {
                 tokio::time::sleep(DIALOG_DELAY).await;
-                s_delay.input(AppMsg::Transfer(TransferMsg::ShowTransferDialogIfActive(task_id)));
+                s_delay.input(AppMsg::Transfer(TransferMsg::ShowTransferDialogIfActive(
+                    task_id,
+                )));
             });
         }
 
@@ -290,7 +294,10 @@ impl FluxApp {
                     }
                 } else if let Err(ref e) = result {
                     if !is_cancelled_error(&cancellable, e) {
-                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!("Operation failed: {}", e))));
+                        s.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                            "Operation failed: {}",
+                            e
+                        ))));
                     }
                 }
             }

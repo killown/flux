@@ -5,7 +5,7 @@ use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, TagsMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SearchMsg, TagsMsg};
 use crate::i18n::tr;
 
 /// Constructs and presents the tag editor dialog centered on the application window.

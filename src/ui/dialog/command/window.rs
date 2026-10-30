@@ -279,7 +279,9 @@ pub fn create_command_dialog(
     let suppressed_closed = suppressed.clone();
     no_dialog_switch.connect_state_set(move |_switch, state| {
         if let Some(ref name) = action_name_switch {
-            let _ = sender_switch.send(AppMsg::Command(CommandMsg::ToggleNoCommandDialog(name.clone())));
+            let _ = sender_switch.send(AppMsg::Command(CommandMsg::ToggleNoCommandDialog(
+                name.clone(),
+            )));
             if state {
                 // Dismiss the dialog without cancelling the task, so it keeps running
                 let _ = sender_switch.send(AppMsg::Command(CommandMsg::CommandDialogClosed));

@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, LoadingMsg, NavigationMsg, WindowMsg, FluxApp};
+use crate::domain::model::{AppMsg, FluxApp, LoadingMsg, NavigationMsg, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::io::ErrorKind;
@@ -189,8 +189,12 @@ async fn create_entries(
         match status {
             Created::Ok => match kind {
                 Kind::Folder if is_archive => s.input(AppMsg::Navigation(NavigationMsg::Refresh)),
-                Kind::Folder if is_network => s.input(AppMsg::Navigation(NavigationMsg::Navigate(target))),
-                Kind::Folder => s.input(AppMsg::Loading(LoadingMsg::InvalidateCacheAndNavigate(target))),
+                Kind::Folder if is_network => {
+                    s.input(AppMsg::Navigation(NavigationMsg::Navigate(target)))
+                }
+                Kind::Folder => s.input(AppMsg::Loading(LoadingMsg::InvalidateCacheAndNavigate(
+                    target,
+                ))),
                 Kind::File => {
                     FluxApp::open_file(target);
                     s.input(AppMsg::Navigation(NavigationMsg::Refresh));

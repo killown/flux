@@ -1,4 +1,4 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, SearchMsg, TasksMsg, FluxApp};
+use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, SearchMsg, TasksMsg};
 use crate::infra::db::StateManager;
 use crate::ui::constants;
 use gtk::glib;
@@ -48,7 +48,9 @@ impl FluxApp {
             s_init.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
 
             if let Some(tag) = tag_to_apply {
-                s_init.input(AppMsg::Search(SearchMsg::SwitchHeader(constants::VIEW_SEARCH.to_string())));
+                s_init.input(AppMsg::Search(SearchMsg::SwitchHeader(
+                    constants::VIEW_SEARCH.to_string(),
+                )));
                 s_init.input(AppMsg::Search(SearchMsg::UpdateFilter(tag)));
             } else {
                 s_init.input(AppMsg::Navigation(NavigationMsg::Refresh));

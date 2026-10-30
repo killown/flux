@@ -7,7 +7,7 @@
 //! drawer.
 
 use super::text_encoding;
-use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg, SearchMsg, FluxApp, RightPanelType};
+use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, PreviewMsg, RightPanelType, SearchMsg};
 use crate::ui::panels::preview::{
     binary, markdown, office, registry, syntax, table, FileInfo, FolderEntry, PreviewContent,
 };
