@@ -244,6 +244,7 @@ fn start_walk(
         });
 
         let mut index_hit = false;
+        let mut index_consulted = false;
         let indexer_ready = crate::infra::search::indexer::is_ready();
 
         // The index only does fuzzy name lookups, so extension and MIME patterns
@@ -268,6 +269,7 @@ fn start_walk(
                 if clean.len() >= 3 {
                     match crate::infra::search::indexer::SearchIndex::open_or_create() {
                         Ok(index) => {
+                            index_consulted = true;
                             let query_limit = if max_results == 0 { 500 } else { max_results };
 
                             let words: Vec<&str> = clean.split_whitespace().collect();
@@ -419,7 +421,7 @@ fn start_walk(
             search_debug!("[Search Debug] Falling back to WalkBuilder filesystem crawl...");
 
             let indexed_dir_mtimes: std::collections::HashMap<std::path::PathBuf, i64> =
-                if indexer_ready && is_simple_name_search {
+                if indexer_ready && is_simple_name_search && index_consulted {
                     let mut map = std::collections::HashMap::new();
                     let db_path = crate::infra::search::indexer::SearchIndex::db_path();
                     if let Ok(conn) = rusqlite::Connection::open_with_flags(
