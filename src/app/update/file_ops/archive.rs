@@ -50,8 +50,7 @@ impl FluxApp {
             }
         }
 
-        let task_id =
-            crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+        let task_id = crate::infra::tasks::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
         let cancellable = gtk::gio::Cancellable::new();
         let label = format!(
             "Extracting {}",
@@ -185,8 +184,7 @@ impl FluxApp {
             .unwrap_or("")
             .to_string();
 
-        let task_id =
-            crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+        let task_id = crate::infra::tasks::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
         let cancellable = gtk::gio::Cancellable::new();
         let label = format!("Extracting {entry_name}");
         sender.input(AppMsg::Tasks(TasksMsg::TaskProgress {

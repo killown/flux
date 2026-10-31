@@ -1,5 +1,3 @@
-use std::sync::atomic::AtomicU64;
-
 mod batch;
 mod inner;
 mod transfer;
@@ -9,8 +7,6 @@ pub use transfer::{
     archive_inner_path, clean_tmp_basename, is_same_entry, paste_name_for, perform_file_op,
     remove_cut_source,
 };
-
-pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
 /// Mutex to serialise conflict-resolution dialogs so only one is shown at a time.
 static CONFLICT_MUTEX: parking_lot::Mutex<()> = parking_lot::Mutex::new(());

@@ -223,8 +223,7 @@ impl FluxApp {
         let bypass_tracking = no_command_dialog || !should_track_in_transfer_dialog(&cmd_template);
 
         let task_id = if !bypass_tracking {
-            let id =
-                crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
+            let id = crate::infra::tasks::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
             let action_name = self
                 .menu_actions
                 .iter()

@@ -2,7 +2,12 @@ use super::speed::SpeedWindow;
 use crate::domain::model::CancelHandle;
 use gtk::gio;
 use gtk::gio::prelude::CancellableExt;
+use std::sync::atomic::AtomicU64;
 use std::time::Instant;
+
+/// Process-wide counter that hands out ids for tasks and for search sessions.
+/// Take one with `fetch_add(1, Ordering::Relaxed)`.
+pub(crate) static NEXT_TASK_ID: AtomicU64 = AtomicU64::new(1);
 
 /// A single in-flight background operation.
 #[derive(Debug, Clone)]
