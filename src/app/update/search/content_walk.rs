@@ -1,8 +1,7 @@
-use super::forbidden::forbidden_matcher;
-use super::scan::scan_file;
 use crate::app::state::FluxApp;
 use crate::domain::model::MAX_CONTENT_SEARCH_RESULTS;
 use crate::domain::model::{AppMsg, SearchMsg};
+use crate::infra::search::{forbidden_matcher, scan_file};
 use crate::infra::tasks::NEXT_TASK_ID;
 use crate::utils::search::{parse_size_filter, SizeOp};
 use aho_corasick::AhoCorasick;
@@ -17,7 +16,7 @@ use std::os::unix::fs::MetadataExt;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::Arc;
 
-pub fn start_content_search(
+pub(super) fn start_content_search(
     app: &mut FluxApp,
     term: String,
     ext_filter: Option<String>,

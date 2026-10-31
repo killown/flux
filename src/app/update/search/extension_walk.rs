@@ -1,10 +1,10 @@
-use super::forbidden::forbidden_matcher;
 use crate::app::state::FluxApp;
 use crate::domain::model::{AdvancedSearchParams, ExtensionMatch};
 use crate::domain::model::{AppMsg, SearchMsg};
 use crate::infra::constants::{
     SEARCH_BATCH_SIZE as BATCH_SIZE, SEARCH_FLUSH_INTERVAL_MS as FLUSH_INTERVAL_MS,
 };
+use crate::infra::search::forbidden_matcher;
 use crate::infra::tasks::NEXT_TASK_ID;
 use gtk::gio::prelude::*;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
@@ -41,7 +41,7 @@ macro_rules! search_debug {
 ///
 /// Cancellation, session IDs, and list-mode layout reuse the existing
 /// content-search infrastructure so navigation away cleans up automatically.
-pub fn start_extension_search(
+pub(super) fn start_extension_search(
     app: &mut FluxApp,
     patterns: Vec<String>,
     sender: AsyncComponentSender<FluxApp>,
@@ -59,7 +59,7 @@ pub fn start_extension_search(
 
 /// Launch a recursive search with the full set of constraints from the
 /// Advanced Search dialog.
-pub fn start_advanced_search(
+pub(super) fn start_advanced_search(
     app: &mut FluxApp,
     params: AdvancedSearchParams,
     sender: AsyncComponentSender<FluxApp>,

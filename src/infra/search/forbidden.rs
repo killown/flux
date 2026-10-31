@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 /// Static AhoCorasick matcher for forbidden system and virtual paths.
 static FORBIDDEN_PATHS: OnceLock<AhoCorasick> = OnceLock::new();
 
-pub(super) fn forbidden_matcher() -> &'static AhoCorasick {
+pub(crate) fn forbidden_matcher() -> &'static AhoCorasick {
     crate::hit!("forbidden_matcher");
     FORBIDDEN_PATHS.get_or_init(|| {
         AhoCorasick::builder()

@@ -3,7 +3,9 @@ use crate::domain::model::{ActionsMsg, AppMsg, AppSidebarMsg, NavigationMsg, Sea
 use relm4::prelude::*;
 
 mod content;
+mod content_walk;
 mod extension_filter;
+mod extension_walk;
 mod filter;
 mod input;
 mod mime_filter;
@@ -40,17 +42,17 @@ pub(super) fn handle(
         AppMsg::Search(SearchMsg::StartAdvancedSearch(params)) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
             app.search.last_was_advanced = true;
-            crate::infra::search::start_advanced_search(app, params, sender.clone());
+            extension_walk::start_advanced_search(app, params, sender.clone());
         }
         AppMsg::Search(SearchMsg::StartExtensionSearch(patterns)) => {
-            crate::infra::search::start_extension_search(app, patterns, sender.clone());
+            extension_walk::start_extension_search(app, patterns, sender.clone());
         }
         AppMsg::Search(SearchMsg::ExtensionSearchBatch { results, session }) => {
             app.handle_extension_search_batch(results, session)
         }
         AppMsg::Search(SearchMsg::StartContentSearch(term, ext_filter)) => {
             app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
-            crate::infra::search::start_content_search(app, term, ext_filter, sender.clone());
+            content_walk::start_content_search(app, term, ext_filter, sender.clone());
         }
         AppMsg::Search(SearchMsg::SetEnableFileIndexing(enabled)) => {
             app.config.ui.enable_file_indexing = enabled;

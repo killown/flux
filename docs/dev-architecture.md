@@ -73,7 +73,7 @@ GTK objects belong to the main thread. Everything that can block runs elsewhere 
 | `src/ui/debug/` | The debug window. |
 | `src/infra/loader/` | Directory, archive, network and Recents loading. |
 | `src/infra/archive/` | The `ArchiveBackend` trait and one backend per format. |
-| `src/infra/search/` | Content search, the file indexer and the recursive walk. |
+| `src/infra/search/` | The file indexer, per-file content scanning and the forbidden-path filter. The recursive filename and content walks are in `src/app/update/search/`. |
 | `src/infra/thumbnails/`, `src/infra/tasks/` | Thumbnail generation and the file-operation task queue. |
 | `src/infra/terminal/` | The embedded terminal: PTY, emulator, drawing, and the shell bridge. |
 | `src/infra/` (others) | `db`, `git`, `inspector`, `luks`, `mounts`, `network`, `trash`, `fonts.rs`, `window_control.rs`. `src/services/` only re-exports it. |
