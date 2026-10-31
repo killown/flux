@@ -74,7 +74,6 @@ pub fn create_command_dialog(
         .show_end_title_buttons(false)
         .build();
 
-    // Get action_name from task for the switch
     let action_name = queue
         .snapshot()
         .iter()
@@ -132,7 +131,6 @@ pub fn create_command_dialog(
         .build();
     content_box.append(&header);
 
-    // Info panel
     let info_box = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(4)
@@ -228,7 +226,6 @@ pub fn create_command_dialog(
 
     content_box.append(&info_box);
 
-    // Output text view
     let text_view = gtk::TextView::builder()
         .editable(false)
         .monospace(true)
@@ -263,7 +260,6 @@ pub fn create_command_dialog(
 
     // ─── Signals ────────────────────────────────────────────────────────────
 
-    // Cancel button
     let s_cancel = sender.clone();
     let dialog_cancel = dialog.clone();
     cancel_btn.connect_clicked(move |_| {
@@ -292,7 +288,6 @@ pub fn create_command_dialog(
         glib::Propagation::Proceed
     });
 
-    // Copy button
     let queue_for_copy = queue.clone();
     let task_id_copy = task_id;
     copy_button.connect_clicked(move |_| {
@@ -352,7 +347,6 @@ pub fn create_command_dialog(
         }
     });
 
-    // Timer
     let queue_clone = queue.clone();
     let task_id_clone = task_id;
     let dialog_weak = dialog.downgrade();
@@ -462,7 +456,6 @@ pub fn create_command_dialog(
         glib::ControlFlow::Continue
     });
 
-    // Close request
     let s_close = sender.clone();
     dialog.connect_closed(move |_| {
         if suppressed_closed.get() {

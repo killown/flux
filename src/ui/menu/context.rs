@@ -128,7 +128,6 @@ impl FluxApp {
         for action in &self.menu_actions {
             let mut matches = false;
 
-            // --- MIME & TRASH MATCHING LOGIC ---
             if is_in_trash {
                 if action
                     .mime_types
@@ -199,7 +198,6 @@ impl FluxApp {
                 }
             }
 
-            // --- MENU ASSEMBLY & BUILTIN MAPPING ---
             if matches {
                 if action.command.contains("%l") && self.active_item_line == 0 {
                     continue;
@@ -298,12 +296,12 @@ impl FluxApp {
                     .unwrap_or_else(|| self.current_path.clone());
 
                 let reg = match action.command.as_str() {
-                    // ── Static action names, no per-invocation target ────────
+                    // Static action names, no per-invocation target
                     "builtin::copy" => ("win.copy".to_string(), "copy"),
                     "builtin::cut" => ("win.cut".to_string(), "cut"),
                     "builtin::paste" => ("win.paste".to_string(), "paste"),
 
-                    // ── Selection-based, structurally different ───────────────
+                    // Selection-based, structurally different
                     "builtin::open_new_tab" => {
                         let selected_dirs: Vec<PathBuf> = self
                             .get_selection_with_meta()
@@ -340,7 +338,7 @@ impl FluxApp {
                         )
                     }
 
-                    // ── Path-bearing builtins, uniform shape ──────────────────
+                    // Path-bearing builtins, uniform shape
                     "builtin::rename" => register_path_action(
                         &action_group,
                         "rename-item",
@@ -452,7 +450,7 @@ impl FluxApp {
                         },
                     ),
 
-                    // ── Stateless, no target, optional toast ─────────────────
+                    // Stateless, no target, optional toast
                     "builtin::clear_backgrounds" => register_simple(
                         &action_group,
                         "clear-backgrounds",
@@ -536,7 +534,7 @@ impl FluxApp {
                         },
                     ),
 
-                    // ── Extension-scoped: skip when target has no extension ──
+                    // Extension-scoped: skip when target has no extension
                     "builtin::set_extension_icon" => {
                         let Some(ext) = resolved_path.as_ref().and_then(|p| {
                             p.extension().and_then(|e| e.to_str()).map(str::to_owned)
@@ -575,7 +573,7 @@ impl FluxApp {
                         )
                     }
 
-                    // ── Font install: every selected font, else the clicked one ──
+                    // Font install: every selected font, else the clicked one
                     "builtin::install_fonts" => {
                         let mut targets: Vec<PathBuf> = self
                             .get_selection()
@@ -604,7 +602,7 @@ impl FluxApp {
                         )
                     }
 
-                    // ── File-only builtins ────────────────────────────────────
+                    // File-only builtins
                     "builtin::tagfile" => {
                         if mime == constants::MIME_DIR {
                             continue;
@@ -621,7 +619,7 @@ impl FluxApp {
                         )
                     }
 
-                    // ── User-defined shell action from menu.rs ────────────────
+                    // User-defined shell action from menu.rs
                     _ => (
                         format!("win.{}", action.action_name),
                         action.action_name.as_str(),
@@ -630,7 +628,6 @@ impl FluxApp {
 
                 let (full_action_name, _lookup_name) = reg;
 
-                // Route to Submenu or Main Section
                 if let Some(group_name) = &action.submenu {
                     let menu = submenu_map.entry(group_name.clone()).or_default();
                     menu.append(Some(&action.label), Some(&full_action_name));

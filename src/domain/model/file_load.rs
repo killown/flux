@@ -306,7 +306,6 @@ impl FileLoadContext {
         let size = self.size();
         let mtime = self.mtime();
 
-        // ── Size string ────────────────────────────────────────────────────
         let size_label = if self.is_dir {
             if size == 1 {
                 "1 item".to_string()
@@ -319,7 +318,6 @@ impl FileLoadContext {
             String::new()
         };
 
-        // ── Date strings ───────────────────────────────────────────────────
         let mut mtime_short = String::new();
         let mut mtime_tooltip = String::new();
 
@@ -371,7 +369,6 @@ impl FileLoadContext {
             }
         }
 
-        // ── Combined info string ───────────────────────────────────────────
         let info_combined = match (size_label.is_empty(), mtime_short.is_empty()) {
             (false, false) => format!("{} · {}", size_label, mtime_short),
             (false, true) => size_label.clone(),

@@ -11,32 +11,11 @@
 //!
 //! # Layout
 //!
-//! The panel is split by responsibility. Everything outside this directory only
-//! sees the re-exports below.
-//!
-//! | Module        | Responsibility                                                     |
-//! |---------------|--------------------------------------------------------------------|
-//! | `content`     | `PreviewContent`, `FileInfo`, `FolderEntry`: what the panel renders |
-//! | `state`       | `State` and `Mode`: mutable view state shared by handle clones      |
-//! | `handle`      | `PreviewPanelHandle`, header-strip reflection, the Details tab      |
-//! | `panel`       | `build_preview_panel`: widget tree and signal wiring                |
-//! | `apply`       | `PreviewPanelHandle::apply`: content to widgets                     |
-//! | `text`        | syntect / Markdown tag tables, byte to char offsets                 |
-//! | `zoom`        | zoom handling and image layout                                      |
-//! | `pdf`         | PDF paging and off-thread Poppler rasterisation                     |
-//! | `audio`       | `mpv` child process and its IPC socket                              |
-//! | `media`       | mute, stop and playlist mode for video and audio                    |
-//! | `folder`      | folder icon grid, chunked fill and zoom                             |
-//! | `widgets`     | small widget constructors and list helpers                          |
-//! | `controllers` | event-controller helpers (menus, scroll, pan, double-click)         |
-//! | `syntax`      | syntect highlighting and the dark / light tag palette               |
-//! | `markdown`    | Markdown to styled ranges                                           |
-//! | `table`       | CSV / TSV parsing and column / store construction                   |
-//! | `gutter`      | line-number gutter `DrawingArea` for the text view                  |
-//! | `binary`      | icon and metadata rows for PE / AppImage files                      |
-//! | `office`      | office document to PDF conversion through `soffice`                 |
-//! | `folder_thumbs` | lazy thumbnails for the folder grid                               |
-//! | `registry`    | thread-local handle to the live panel                               |
+//! The panel is split by responsibility. `content`, `state` and `handle` hold
+//! what is rendered, the mutable view state and the public handle; `panel` and
+//! `apply` build the widgets and fill them; and each viewer (`text`, `markdown`,
+//! `table`, `pdf`, `audio`, `media`, `folder`, ...) owns its own format.
+//! Everything outside this directory only sees the re-exports below.
 //!
 //! The format helpers are public (except `folder_thumbs` and `registry`,
 //! which are crate-private) so the preview loader can call them as

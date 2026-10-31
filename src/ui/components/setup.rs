@@ -473,7 +473,6 @@ impl FileItem {
                                     std::time::Duration::from_millis(300),
                                     move || {
                                         timer_clone.set(None);
-                                        // Ensure the gesture is still active and the pointer button is still pressed
                                         let is_still_holding = gesture_weak
                                             .upgrade()
                                             .map(|g| g.is_recognized())
@@ -538,7 +537,6 @@ impl FileItem {
                         // Only claim or handle long press on touch input, preventing mouse drag conflicts
                         connect_pressed[sender = crate::domain::model::SENDER.clone()] => move |gesture, x, y| {
                             if let Some(event) = gesture.current_event() {
-                                // Reject any event originating from a mouse button press
                                 if let Some(btn_event) = event.downcast_ref::<gdk::ButtonEvent>() {
                                     if btn_event.button() != 0 {
                                         gesture.set_state(gtk::EventSequenceState::Denied);
@@ -546,7 +544,6 @@ impl FileItem {
                                     }
                                 }
 
-                                // Strictly require touchscreen input source
                                 if let Some(device) = event.device() {
                                     if device.source() != gdk::InputSource::Touchscreen {
                                         gesture.set_state(gtk::EventSequenceState::Denied);

@@ -60,7 +60,6 @@ fn snippet(file: &File, m_start: u64, m_end: u64) -> Option<String> {
     }
     let rel_end = ((m_end - win_start) as usize).min(win.len());
 
-    // Expand outwards to the nearest newline on either side of the match.
     let mut line_start = win[..rel_start]
         .iter()
         .rposition(|&b| b == b'\n')

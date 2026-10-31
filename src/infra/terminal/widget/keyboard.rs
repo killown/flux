@@ -35,7 +35,6 @@ impl Terminal {
             let is_shift = modifiers.contains(gtk::gdk::ModifierType::SHIFT_MASK);
             let is_alt = modifiers.contains(gtk::gdk::ModifierType::ALT_MASK);
 
-            // Ctrl+Shift+C - copy selection to clipboard.
             if is_ctrl && is_shift && (keyval == gtk::gdk::Key::c || keyval == gtk::gdk::Key::C) {
                 let state = state_for_keys.lock().unwrap();
                 let text = state.get_selected_text();
@@ -102,7 +101,7 @@ impl Terminal {
             };
 
             match keyval {
-                // ── Scrollback ────────────────────────────────────────────────
+                // Scrollback
                 gtk::gdk::Key::Page_Up if is_shift => {
                     state_for_keys.lock().unwrap().scroll_lines(20);
                     drawing_area_for_keys.queue_draw();
@@ -114,7 +113,7 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
 
-                // ── Basic editing keys ────────────────────────────────────────
+                // Basic editing keys
                 gtk::gdk::Key::BackSpace => {
                     if is_ctrl {
                         pty_write(fd, b"\x17");
@@ -148,7 +147,7 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
 
-                // ── Line / word navigation ────────────────────────────────────
+                // Line / word navigation
                 gtk::gdk::Key::Home => {
                     if is_ctrl {
                         let max = state_for_keys.lock().unwrap().scrollback.len();
@@ -197,7 +196,7 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
 
-                // ── Arrow keys ────────────────────────────────────────────────
+                // Arrow keys
                 gtk::gdk::Key::Up => {
                     let app = state_for_keys.lock().unwrap().application_cursor_keys;
                     let seq: &[u8] = if is_ctrl {
@@ -251,7 +250,7 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
 
-                // ── Function keys ─────────────────────────────────────────────
+                // Function keys
                 gtk::gdk::Key::F1 => {
                     pty_write(fd, b"\x1bOP");
                     glib::Propagation::Stop
@@ -305,7 +304,7 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
 
-                // ── Ctrl + letter ─────────────────────────────────────────────
+                // Ctrl + letter
                 _ if is_ctrl && !is_shift => {
                     if let Some(ch) = keyval.to_unicode() {
                         let lower = ch.to_ascii_lowercase();
@@ -340,7 +339,7 @@ impl Terminal {
                     glib::Propagation::Proceed
                 }
 
-                // ── Printable / UTF-8 input ───────────────────────────────────
+                // Printable / UTF-8 input
                 _ => {
                     if is_alt {
                         if let Some(ch) = keyval.to_unicode() {

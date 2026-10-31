@@ -72,7 +72,7 @@ impl FluxApp {
         let password = self.archive.passwords.get(&archive_path).cloned();
         let s = sender.clone();
 
-        // ── Polling thread: reads dest dir size every 150 ms ─────────────────
+        // Polls the destination size every 150 ms.
         let dest_poll = dest.clone();
         let label_poll = label.clone();
         let cancellable_poll = cancellable.clone();
@@ -111,7 +111,6 @@ impl FluxApp {
             }
         });
 
-        // ── Extraction thread ─────────────────────────────────────────────────
         relm4::spawn_blocking(move || {
             // Raises the flag on any exit from this closure, panics included.
             let done = ExtractDone(done_flag_extractor);

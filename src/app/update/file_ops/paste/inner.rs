@@ -21,7 +21,6 @@ impl FluxApp {
         crate::hit!("perform_paste_inner");
         let current_str = self.current_path.to_string_lossy();
 
-        // ── Archive Paste Intercept ──────────────────────────────────────────
         if current_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             || current_str.starts_with("/archive:/")
             || current_str.starts_with("archive://")
@@ -224,7 +223,6 @@ impl FluxApp {
         }
 
         if !dir_conflicts.is_empty() {
-            // Legacy folder-conflict dialog - kept as-is.
             let gfiles = resolved_files
                 .iter()
                 .map(|(p, _, _)| gio::File::for_path(p))

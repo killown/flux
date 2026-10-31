@@ -34,7 +34,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         .title(tr("Action").as_str())
         .build();
 
-    // ── Stacked Entry Row helper ──────────────────────────────────────────────
     let make_stacked_entry_row = |title: &str, value: &str| -> (adw::PreferencesRow, gtk::Entry) {
         let entry = gtk::Entry::builder()
             .text(value)
@@ -76,7 +75,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
 
     let initial_line = replace.map(|idx| idx + 1).unwrap_or(max_line);
 
-    // ── Line Position Spinner Row ─────────────────────────────────────────────
     let menu_name_val = shared.current_menu.borrow().clone();
     let spin_btn = gtk::SpinButton::builder()
         .adjustment(&gtk::Adjustment::new(
@@ -239,7 +237,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         .css_classes(["property"])
         .build();
 
-    // ── Command Row with Pick Built-in Button ─────────────────────────────────
     let cmd_entry = gtk::Entry::builder()
         .text(&entry.command)
         .hexpand(true)
@@ -302,7 +299,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         entry.toast.as_deref().unwrap_or(""),
     );
 
-    // ── Checkbox / Switch for no_command_dialog ──────────────────────────────
     let no_transfer_switch = gtk::Switch::builder()
         .active(entry.no_command_dialog)
         .valign(gtk::Align::Center)
@@ -329,7 +325,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
     scroller.set_child(Some(&page));
     outer.append(&scroller);
 
-    // ── Buttons ───────────────────────────────────────────────────────────────
     let btn_bar = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .halign(gtk::Align::End)
@@ -354,7 +349,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
 
     dialog.set_child(Some(&outer));
 
-    // ── Cancel ────────────────────────────────────────────────────────────────
     {
         let d = dialog.clone();
         cancel_btn.connect_clicked(move |_| {
@@ -362,7 +356,6 @@ pub(super) fn show_dialog(shared: &Shared, replace: Option<usize>, entry: &MenuE
         });
     }
 
-    // ── Commit ────────────────────────────────────────────────────────────────
     {
         let d = dialog.clone();
         let sender = shared.sender.clone();

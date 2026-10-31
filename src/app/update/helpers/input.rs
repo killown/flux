@@ -74,7 +74,6 @@ impl FluxApp {
         crate::hit!("handle_key_event");
         let modifiers = state & gtk::accelerator_get_default_mod_mask();
 
-        // System Keys
         if keyval == gdk::Key::F1 {
             sender.input(AppMsg::Window(WindowMsg::ShowHelp));
             return glib::Propagation::Stop;
@@ -132,7 +131,6 @@ impl FluxApp {
             return glib::Propagation::Proceed;
         }
 
-        // Focus Bypass Check (The Search Logic)
         let is_editable = ctrl
             .widget()
             .and_then(|w| w.root())
@@ -200,9 +198,7 @@ impl FluxApp {
             }
         }
 
-        // Context Keys & Batch Execution
         match keyval {
-            // Triggers batch activation for the current selection
             gdk::Key::Return | gdk::Key::KP_Enter => {
                 sender.input(AppMsg::Navigation(NavigationMsg::KeyEnter));
                 glib::Propagation::Stop
@@ -283,7 +279,6 @@ impl FluxApp {
             ));
         }
 
-        // Handle specific string-argument messages separately
         let f_sender = sender.clone();
         controller.add_shortcut(gtk::Shortcut::new(
             Some(gtk::ShortcutTrigger::parse_string("<Control>f").unwrap()),
@@ -303,7 +298,6 @@ impl FluxApp {
     /// Registers GIO actions to the application's internal action group.
     pub fn setup_actions(&self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("setup_actions");
-        // Folder Priority Action
         let prio_action = gio::SimpleAction::new("cycle-priority", None);
         let prio_sender = sender.clone();
         prio_action.connect_activate(move |_, _| {
@@ -311,7 +305,6 @@ impl FluxApp {
         });
         self.action_group.add_action(&prio_action);
 
-        // Clipboard: Copy Action
         let copy_action = gio::SimpleAction::new("copy", None);
         let c_sender = sender.clone();
         copy_action.connect_activate(move |_, _| {
@@ -319,7 +312,6 @@ impl FluxApp {
         });
         self.action_group.add_action(&copy_action);
 
-        // Clipboard: Cut Action
         let cut_action = gio::SimpleAction::new("cut", None);
         let x_sender = sender.clone();
         cut_action.connect_activate(move |_, _| {
@@ -327,7 +319,6 @@ impl FluxApp {
         });
         self.action_group.add_action(&cut_action);
 
-        // Clipboard: Paste Action
         let paste_action = gio::SimpleAction::new("paste", None);
         let v_sender = sender.clone();
         paste_action.connect_activate(move |_, _| {
@@ -335,7 +326,6 @@ impl FluxApp {
         });
         self.action_group.add_action(&paste_action);
 
-        // Parameterized "Open With..." Action
         let launch_action =
             gio::SimpleAction::new("launch-with", Some(glib::VariantTy::new("s").unwrap()));
         let launch_sender = sender.clone();
@@ -346,10 +336,8 @@ impl FluxApp {
         });
         self.action_group.add_action(&launch_action);
 
-        // Quick List Direct Transfers (Move and Copy Actions)
         self.setup_quick_transfer_actions(sender);
 
-        // Dynamic Context Menu Actions (Shell Commands)
         for action_def in &self.menu_actions {
             // Skip builtins as they are handled by the explicit actions above
             if action_def.command.starts_with("builtin::") {

@@ -79,7 +79,6 @@ fn hide(widgets: &FileWidgets) {
     crate::hit!("bind_rename_teardown");
     // Reclaim memory if a temporary Entry was previously instantiated
     remove(widgets);
-    // Ensure the label is visible when not editing.
     widgets.stack.set_visible_child_name(constants::VIEW_LABEL);
 }
 

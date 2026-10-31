@@ -142,12 +142,11 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         info.mime = "text/x-typescript".to_string();
     }
 
-    // ── PDF ─────────────────────────────────────────────────────────────────
     if ext == "pdf" {
         return pdf_preview(path, info);
     }
 
-    // ── Office: convert to PDF, then render that PDF ────────────────────────
+    // Office documents: convert to PDF, then render that.
     if office::OFFICE_EXTS.contains(&ext) && office::soffice_binary().is_some() {
         if let Some(pdf_path) = office::convert_to_pdf(path) {
             info.extra.push((
@@ -160,7 +159,7 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         }
     }
 
-    // ── Executables: icon + embedded metadata ───────────────────────────────
+    // Executables: icon plus embedded metadata.
     if let Some(icon) = binary::inspect(path, ext, &mut info) {
         return match icon {
             Some(tex) => PreviewContent::Image { tex, info },
@@ -168,14 +167,12 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         };
     }
 
-    // ── Archives ────────────────────────────────────────────────────────────
     if crate::infra::archive::is_supported_archive(path) {
         if let Some(listing) = archive_listing(path, &mut info) {
             return listing;
         }
     }
 
-    // ── CSV / TSV ───────────────────────────────────────────────────────────
     if TABLE_EXTS.contains(&ext) {
         if let Some(data) = table::parse(path, ext) {
             info.extra.push((tr("Rows"), data.rows.len().to_string()));
@@ -191,7 +188,6 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         }
     }
 
-    // ── Images ──────────────────────────────────────────────────────────────
     if IMAGE_EXTS.contains(&ext) || info.mime.starts_with("image/") {
         if let Some((tex, extra)) = load_image_full(path) {
             info.extra.extend(extra);
@@ -199,7 +195,6 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         }
     }
 
-    // ── Audio ───────────────────────────────────────────────────────────────
     if AUDIO_EXTS.contains(&ext) || info.mime.starts_with("audio/") {
         info.extra.extend(audio_info(path));
         let cover = crate::utils::media::generate_thumbnail_sync(path);
@@ -211,7 +206,6 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         };
     }
 
-    // ── Video ───────────────────────────────────────────────────────────────
     if (VIDEO_EXTS.contains(&ext) && !ts_source) || info.mime.starts_with("video/") {
         info.extra.extend(video_info(path));
         return PreviewContent::Media {
@@ -222,7 +216,6 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         };
     }
 
-    // ── Fonts ───────────────────────────────────────────────────────────────
     let is_font = matches!(ext, "ttf" | "otf" | "woff" | "woff2" | "ttc")
         || info.mime.starts_with("font/")
         || info.mime == "application/x-font-ttf"
@@ -237,12 +230,12 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         }
     }
 
-    // ── Thumbnailer (fonts, executables, RAW) ───────────────────────────────
+    // Thumbnailer: fonts, executables, RAW.
     if let Some(tex) = crate::utils::media::generate_thumbnail_sync(path) {
         return PreviewContent::Image { tex, info };
     }
 
-    // ── Text / Markdown / hex ───────────────────────────────────────────────
+    // Text, Markdown, or a hex dump.
     let Ok(head) = read_head(path, TEXT_HEAD_BYTES) else {
         return PreviewContent::Metadata { info };
     };
@@ -319,7 +312,6 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         };
     }
 
-    // Binary hex fallback.
     let n = head.len().min(HEX_BYTES);
     PreviewContent::Text {
         head: hex_dump(&head[..n]),

@@ -29,7 +29,6 @@ impl FluxApp {
     ) -> (Self, gtk::Box) {
         crate::hit!("init_components");
 
-        // Static and Global Configuration
         let _ = crate::domain::model::SENDER.set(sender.input_sender().clone());
         {
             crate::hit!("init_components:css");
@@ -43,28 +42,23 @@ impl FluxApp {
 
         crate::utils::helpers::apply_ui_scale(config.ui.ui_scale);
 
-        // Action and Input Controllers
         let action_group = Self::register_window_actions(root, &sender);
 
-        // Grid View Configuration
         let files = {
             crate::hit!("init_components:grid");
             Self::build_file_grid(&config, &sender)
         };
 
-        // Tab Container Initialization
         let (tab_view, tab_bar, initial_tab) = {
             crate::hit!("init_components:tabs");
             Self::build_tabs(start_path.clone(), &config, &sender)
         };
 
-        // Sidebar and Volume Monitoring
         let (sidebar, volume_monitor, network_section, sidebar_root) = {
             crate::hit!("init_components:sidebar");
             Self::build_sidebar(&config, &sender)
         };
 
-        // Breadcrumb Setup (Returned for local_ref)
         let breadcrumb_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let breadcrumbs = FactoryVecDeque::builder()
             .launch(breadcrumb_box.clone())
@@ -72,7 +66,6 @@ impl FluxApp {
                 AppMsg::Navigation(NavigationMsg::Navigate(v))
             });
 
-        // Terminal setup using custom terminal implementation from services
         let terminal = Self::build_terminal(&config, root, &sender);
 
         // The DB has been opening in parallel with the UI construction above.
@@ -104,7 +97,6 @@ impl FluxApp {
         let initial_exclusive_list = initial_quick_groups.selected_list().items.clone();
         let initial_exclusive_index = initial_quick_groups.selected_list().index;
 
-        // Model Assembly
         let initial_icon_size = dirs::home_dir()
             .and_then(|home| state_db.get_view(&home).ok().flatten())
             .map(|(_, _, size, _)| size as i32)
@@ -241,7 +233,6 @@ impl FluxApp {
             thumbnail_manager: Arc::new(crate::infra::thumbnails::ThumbnailTaskManager::default()),
         };
 
-        // Apply initial list/grid mode to the view
         if model.is_list_mode {
             model.files.view.set_max_columns(1);
             model.files.view.set_min_columns(1);
@@ -251,7 +242,6 @@ impl FluxApp {
         }
         model.search.saved_list_mode = model.is_list_mode;
 
-        // Initial State Population
         {
             crate::hit!("init_components:actions");
             model.setup_actions(&sender);
@@ -262,7 +252,6 @@ impl FluxApp {
 
         Self::start_task_queue_tick(&sender);
 
-        // Global Action Registration + 9.5. Icon Theme Change Listeners
         Self::register_app_actions(&model, &sender);
 
         // Defer background maintenance and initial data fetching to unblock window presentation

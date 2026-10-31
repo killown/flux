@@ -84,7 +84,6 @@ pub fn show_tag_picker(
         .vexpand(true)
         .build();
 
-    // ── Search & Creation Entry ──────────────────────────────────────────────
     let search_entry = gtk::SearchEntry::builder()
         .placeholder_text(tr("Search or type new tag…").as_str())
         .hexpand(true)
@@ -92,7 +91,6 @@ pub fn show_tag_picker(
 
     content_box.append(&search_entry);
 
-    // ── Tag Flow List ────────────────────────────────────────────────────────
     let flow_box = gtk::FlowBox::builder()
         .selection_mode(gtk::SelectionMode::None)
         .max_children_per_line(3)
@@ -130,7 +128,6 @@ pub fn show_tag_picker(
     main_box.append(&content_box);
     dialog.set_child(Some(&main_box));
 
-    // ── Tag Chip Renderer ───────────────────────────────────────────────────
     let populate_tags = {
         let all_known_tags = all_known_tags.clone();
         let current_selected = current_selected.clone();
@@ -153,7 +150,6 @@ pub fn show_tag_picker(
                 }
                 visible_count += 1;
 
-                // GNOME HIG-style pill with attached close icon
                 let chip_box = gtk::Box::builder()
                     .orientation(gtk::Orientation::Horizontal)
                     .spacing(0)
@@ -219,7 +215,6 @@ pub fn show_tag_picker(
 
     populate_tags("");
 
-    // Live search filter trigger
     {
         let populate_tags = populate_tags.clone();
         search_entry.connect_search_changed(move |entry| {
@@ -227,7 +222,6 @@ pub fn show_tag_picker(
         });
     }
 
-    // Creating new tag on Enter
     {
         let all_known_tags = all_known_tags.clone();
         let current_selected = current_selected.clone();
@@ -252,7 +246,6 @@ pub fn show_tag_picker(
 
     let tags_submitted = std::rc::Rc::new(std::cell::Cell::new(false));
 
-    // Header buttons bindings
     {
         let d = dialog.clone();
         cancel_btn.connect_clicked(move |_| {

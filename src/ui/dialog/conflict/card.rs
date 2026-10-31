@@ -17,7 +17,6 @@ pub(super) fn build_extra_child(
         .css_classes(["conflict-extra"])
         .build();
 
-    // File comparison card
     let card = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
         .spacing(0)
@@ -51,7 +50,6 @@ pub(super) fn build_extra_child(
     card.append(&dest_side);
     root.append(&card);
 
-    // Auto-rename hint
     let rename_dest = auto_rename_dest(&ctx.dest);
     let rename_name = rename_dest
         .file_name()
@@ -87,14 +85,12 @@ pub(super) fn build_extra_child(
     rename_row.append(&rename_label);
     root.append(&rename_row);
 
-    // Separator
     let sep = gtk::Separator::builder()
         .orientation(gtk::Orientation::Horizontal)
         .css_classes(["conflict-sep"])
         .build();
     root.append(&sep);
 
-    // "Apply to all" checkbox
     let apply_all = gtk::CheckButton::builder()
         .label(crate::i18n::tr("Apply to all remaining conflicts"))
         .css_classes(["conflict-apply-all"])
@@ -125,7 +121,6 @@ fn build_file_side(
         })
         .build();
 
-    // Role label
     let role = gtk::Label::builder()
         .label(role_label)
         .css_classes(["caption", "dim-label"])
@@ -133,7 +128,6 @@ fn build_file_side(
         .build();
     side.append(&role);
 
-    // File icon
     let icon_name = resolve_icon_name(path);
     let icon = gtk::Image::builder()
         .icon_name(&icon_name)
@@ -142,7 +136,6 @@ fn build_file_side(
         .build();
     side.append(&icon);
 
-    // File name
     let name_label = gtk::Label::builder()
         .label(display_name)
         .css_classes(["conflict-file-name"])
@@ -153,7 +146,6 @@ fn build_file_side(
         .build();
     side.append(&name_label);
 
-    // Parent directory
     let parent_str = path
         .parent()
         .map(|p| p.to_string_lossy().to_string())
@@ -168,7 +160,6 @@ fn build_file_side(
         .build();
     side.append(&dir_label);
 
-    // Size + mtime
     if let Ok(meta) = std::fs::metadata(path) {
         let size_str = format_size(meta.len());
         let mtime_str = format_mtime(&meta);

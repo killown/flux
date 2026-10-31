@@ -119,7 +119,6 @@ pub struct FluxApp {
     pub command_dialog: Option<crate::ui::dialog::command::CommandDialogHandle>,
     /// Weak reference to the inline header path entry for live text sync.
     pub header_path_entry: glib::WeakRef<gtk::Entry>,
-    // Search state for content search mode.
     pub network_section: gtk::Box,
     /// The current label for the contextual Recents button.
     pub recents_label: String,

@@ -145,7 +145,6 @@ impl FluxApp {
         let in_folder_grid = registry::with(|h| h.folder_grid_has_focus()).unwrap_or(false);
 
         if in_folder_grid {
-            // Return to the main grid.
             if let Some(tab) = self.tabs.get(self.active_tab_index) {
                 tab.files.view.grab_focus();
             }

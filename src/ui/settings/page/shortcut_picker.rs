@@ -38,11 +38,6 @@ impl ShortcutPicker {
     ///   label and tooltip.
     /// * `on_changed` - Invoked with the new accelerator, `Some(DISABLED)`
     ///   to disable, or `None` to fall back to the default.
-    ///
-    /// # Returns
-    ///
-    /// A horizontal [`gtk::Box`] holding both buttons, ready to be used as a
-    /// row suffix.
     #[allow(clippy::new_ret_no_self)]
     pub fn new(
         accel: Option<String>,

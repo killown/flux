@@ -95,7 +95,6 @@ impl FluxApp {
         let initial_sidebar_width = config.ui.sidebar_width.clamp(160, 500);
         sidebar_container.set_width_request(initial_sidebar_width);
 
-        // ── Drag Handle (Right Edge) ─────────────────────────────────────────
         let sidebar_resize_handle = gtk::Separator::builder()
             .orientation(gtk::Orientation::Vertical)
             .css_classes(["sidebar-resize-handle"])
@@ -141,7 +140,6 @@ impl FluxApp {
                                         &handle, &root, curr_x, 0.0,
                                     )
                                 {
-                                    // Moving to the right expands the left sidebar
                                     let delta_x = curr_root_x - start_rx.get();
                                     let new_w = (start_w.get() + delta_x as i32).clamp(160, 500);
 

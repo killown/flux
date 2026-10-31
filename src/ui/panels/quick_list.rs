@@ -695,7 +695,6 @@ fn item_row(
         row.add_controller(middle);
     }
 
-    // Right click menu.
     {
         let path = path.to_path_buf();
         let others = others.to_vec();

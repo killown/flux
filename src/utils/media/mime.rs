@@ -188,7 +188,6 @@ pub fn is_visual_media(path: &Path) -> (bool, bool) {
             "jpg" | "jpeg" | "png" | "gif" | "webp" | "avif" | "heic" | "heif" | "bmp" | "tiff"
             | "tif" | "jxl" | "svg",
         ) => (true, false),
-        // RAW camera formats.
         Some(
             "cr2" | "cr3" | "nef" | "nrw" | "arw" | "srf" | "sr2" | "dng" | "orf" | "rw2" | "raf"
             | "pef" | "raw" | "rwl" | "x3f" | "3fr" | "fff" | "iiq" | "k25" | "kdc" | "mef" | "mos"

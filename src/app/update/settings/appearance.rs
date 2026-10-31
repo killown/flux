@@ -49,7 +49,6 @@ impl FluxApp {
                 BackgroundSlot::SidebarRight => "sidebar-right",
             };
 
-            // Remove any previous images for this slot
             if let Ok(entries) = std::fs::read_dir(&img_dir) {
                 for entry in entries.flatten() {
                     let p = entry.path();

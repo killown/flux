@@ -273,7 +273,6 @@ impl ArchiveBackend for ZipBackend {
             for i in 0..zip_in.len() {
                 let name = entry_name(&zip_in, i)?;
 
-                // Skip the entry being deleted (or any child if deleting a directory)
                 if name == target || name.starts_with(&target_dir_prefix) {
                     continue;
                 }
@@ -321,7 +320,6 @@ impl ArchiveBackend for ZipBackend {
             .tempfile_in(parent_dir)
             .map_err(|e| ArchiveError::Other(format!("create tempfile: {e}")))?;
 
-        // Normalise: strip leading slash, ensure trailing slash
         let target = inner_path.trim_start_matches('/');
         let dir_entry_name = if target.ends_with('/') {
             target.to_string()
@@ -332,11 +330,9 @@ impl ArchiveBackend for ZipBackend {
         {
             let mut zip_out = zip::ZipWriter::new(&mut tmp);
 
-            // Copy all existing entries, skipping a duplicate if it already exists
             for i in 0..zip_in.len() {
                 let name = entry_name(&zip_in, i)?;
                 if name == dir_entry_name {
-                    // Directory already exists, just copy it and we're done
                     copy_entry(&mut zip_in, i, &mut zip_out, plan.as_ref())?;
                     continue;
                 }
@@ -402,7 +398,6 @@ impl ArchiveBackend for ZipBackend {
         {
             let mut zip_out = zip::ZipWriter::new(&mut tmp);
 
-            // Copy entries that do not collide with the target path (file or dir)
             for i in 0..zip_in.len() {
                 let name = entry_name(&zip_in, i)?;
 
@@ -422,7 +417,6 @@ impl ArchiveBackend for ZipBackend {
                 copy_entry(&mut zip_in, i, &mut zip_out, plan.as_ref())?;
             }
 
-            // Write the source (file or directory tree) at inner_path
             fn write_recursive(
                 writer: &mut zip::ZipWriter<&mut tempfile::NamedTempFile>,
                 src: &Path,
@@ -726,7 +720,6 @@ fn extract_zip(
     }
 
     if let Some(pwd) = password {
-        // Password supplied: try decrypting
         match zip.by_index_decrypt(idx, pwd.as_bytes()) {
             Ok(mut entry) => {
                 copy_limited(&mut entry, &mut tmp, MAX_ENTRY_BYTES)
@@ -740,7 +733,6 @@ fn extract_zip(
             Err(e) => Err(ArchiveError::Other(format!("ZIP decrypt read: {e}"))),
         }
     } else {
-        // No password supplied: try standard read and catch password requirements
         match zip.by_index(idx) {
             Ok(mut entry) => {
                 if entry.encrypted() {

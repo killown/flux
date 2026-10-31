@@ -45,7 +45,6 @@ enum Msg {
     CreateNewMenu(String),
 }
 
-// ─── Shared imperative state ──────────────────────────────────────────────────
 struct Shared {
     entries: Rc<RefCell<Vec<MenuEntry>>>,
     current_menu: Rc<RefCell<String>>,
@@ -58,7 +57,6 @@ struct Shared {
     menu_dropdown: gtk::DropDown,
 }
 
-// ─── Component ───────────────────────────────────────────────────────────────
 struct MenuEditor {
     shared: Rc<RefCell<Shared>>,
 }
@@ -87,7 +85,6 @@ impl SimpleComponent for MenuEditor {
         let toast_overlay = adw::ToastOverlay::new();
         let search_query = Rc::new(RefCell::new(String::new()));
 
-        // ── Layout ───────────────────────────────────────────────────────────
         let outer_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
             .build();
@@ -107,7 +104,6 @@ impl SimpleComponent for MenuEditor {
             .css_classes(["suggested-action"])
             .build();
 
-        // ── Menu Selection ComboBox / DropDown ────────────────────────────────
         let available_menus = get_available_menus();
         let default_idx = available_menus
             .iter()
@@ -123,11 +119,9 @@ impl SimpleComponent for MenuEditor {
             .tooltip_text(tr("Select menu configuration file to edit").as_str())
             .build();
 
-        // Pack elements into HeaderBar
         header.pack_start(&add_btn);
         header.pack_start(&new_menu_btn);
 
-        // ── Search bar in header title position ───────────────────────────────
         let search_entry = gtk::SearchEntry::builder()
             .placeholder_text(tr("Search entries…").as_str())
             .hexpand(true)
@@ -136,7 +130,6 @@ impl SimpleComponent for MenuEditor {
             .build();
         header.set_title_widget(Some(&search_entry));
 
-        // Pack menu selection dropdown and save button on the right side
         header.pack_end(&save_btn);
         header.pack_end(&menu_dropdown);
         outer_box.append(&header);
@@ -193,7 +186,6 @@ impl SimpleComponent for MenuEditor {
             save_btn.connect_clicked(move |_| s.input(Msg::Save));
         }
 
-        // ── Live search filtering ─────────────────────────────────────────────
         {
             let s = sender.clone();
             search_entry.connect_search_changed(move |entry| {
@@ -201,7 +193,6 @@ impl SimpleComponent for MenuEditor {
             });
         }
 
-        // ── Global keyboard shortcuts ─────────────────────────────────────────
         let ksc = gtk::ShortcutController::new();
         ksc.set_scope(gtk::ShortcutScope::Global);
         {
@@ -271,7 +262,6 @@ impl SimpleComponent for MenuEditor {
                     let _ = write_to_disk(&filename, &[]);
                 }
 
-                // Update dropdown list
                 let available = get_available_menus();
                 let menu_strings: Vec<&str> = available.iter().map(|s| s.as_str()).collect();
                 shared

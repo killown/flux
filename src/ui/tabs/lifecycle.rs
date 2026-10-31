@@ -22,7 +22,6 @@ impl FluxApp {
             self.config.ui.default_sort,
         );
 
-        // Do not mark initialized yet, let load_path or SwitchTab do it
         new_tab.is_initialized = true;
 
         self.wire_tab_signals(&mut new_tab, sender);
@@ -77,7 +76,6 @@ impl FluxApp {
 
             self.tabs.push(new_tab);
 
-            // Only activate and load the last tab
             if is_last {
                 self.active_tab_index = self.tabs.len() - 1;
                 self.tab_view.set_selected_page(&page);

@@ -98,7 +98,6 @@ impl FluxApp {
         if self.conflict_dialog_active {
             return;
         }
-        // Don't open while a command dialog is active.
         if self.command_dialog.is_some() {
             return;
         }
@@ -190,7 +189,6 @@ impl FluxApp {
         let p = self.current_path.clone();
         let path_str = p.to_string_lossy();
 
-        // Check both the virtual URI and active tag filter
         if path_str.starts_with("tags://")
             || self.filter.starts_with('#')
             || self.filter.starts_with(":tag:")

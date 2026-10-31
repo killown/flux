@@ -126,7 +126,6 @@ window.csd {{
             }
         });
 
-        // Trigger immediate style recalculation across active windows
         let toplevels = gtk::Window::toplevels();
         for i in 0..toplevels.n_items() {
             if let Some(window) = toplevels.item(i).and_downcast::<gtk::Window>() {

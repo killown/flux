@@ -38,7 +38,6 @@ impl ArchiveBackend for DebBackend {
     }
 }
 
-// ─── .deb helpers ─────────────────────────────────────────────────────────────
 fn extract_deb_data(deb_path: &Path) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
     crate::hit!("extract_deb_data");
     let tmp = tempfile::tempdir().map_err(|e| ArchiveError::Other(format!("tempdir: {e}")))?;
@@ -57,7 +56,6 @@ fn extract_deb_data(deb_path: &Path) -> Result<(tempfile::TempDir, PathBuf), Arc
         )));
     }
 
-    // Find the data tarball (data.tar.gz / data.tar.xz / data.tar.zst / …)
     let data_tar = std::fs::read_dir(tmp.path())
         .map_err(|e| ArchiveError::Other(format!("readdir: {e}")))?
         .flatten()

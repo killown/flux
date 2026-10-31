@@ -605,7 +605,7 @@ impl FluxApp {
             &model.term.widget.drawing_area,
         );
 
-        // ── Mouse Navigation (Side Buttons 8 & 9) ──
+        // Mouse Navigation (Side Buttons 8 & 9)
         {
             let mouse_nav = gtk::GestureClick::new();
             mouse_nav.set_button(0);

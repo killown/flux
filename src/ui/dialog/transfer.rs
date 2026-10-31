@@ -181,7 +181,6 @@ fn build_task_tab(
         .margin_end(20)
         .build();
 
-    // Operation label
     let op_label = gtk::Label::builder()
         .label(&task.label)
         .xalign(0.0)
@@ -210,7 +209,6 @@ fn build_task_tab(
             .build();
         container.append(&scrolled);
     } else {
-        // File operation: progress bar and stats
         let fraction = if task.total > 0 {
             (task.current as f64 / task.total as f64).clamp(0.0, 1.0)
         } else {

@@ -86,7 +86,6 @@ pub fn show_debug_window(app: &FluxApp) {
     toast_overlay.set_child(Some(&layout_root));
     window.set_content(Some(&toast_overlay));
 
-    // Export button with FileDialog and visual Toast feedback
     {
         let report_payload = output.clone();
         let toast_overlay_clone = toast_overlay.clone();
@@ -143,7 +142,6 @@ pub fn show_debug_window(app: &FluxApp) {
         });
     }
 
-    // Refresh action
     refresh_button.connect_clicked(move |_| {
         if let Some(chan) = crate::domain::model::SENDER.get() {
             let _ = chan.send(crate::domain::model::AppMsg::Window(

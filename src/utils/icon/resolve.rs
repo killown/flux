@@ -45,7 +45,7 @@ pub fn get_icon_for_path_with_override(
 ) -> adw::gio::Icon {
     crate::hit!("get_icon_for_path");
 
-    // ── Explicit custom override ────────────────────────────────────────────
+    // Explicit custom override
     if let Some(icon_name) = custom_icon {
         if let Ok(icon) = gio::Icon::for_string(icon_name) {
             return icon;
@@ -72,7 +72,7 @@ pub fn get_icon_for_path_with_override(
 
     let path_str = path.to_string_lossy();
 
-    // ── Directories (and virtual dirs: folder overrides only) ───────────────
+    // Directories (and virtual dirs: folder overrides only)
     if is_dir || is_virtual_dir {
         let (folder_icons, _, _, _, _, _, _) = &*get_icon_config_lazy();
 
@@ -104,7 +104,7 @@ pub fn get_icon_for_path_with_override(
         return gio::Icon::for_string("folder").unwrap();
     }
 
-    // ── Files: per-path custom icon ─────────────────────────────────────────
+    // Files: per-path custom icon
     let (_, file_icons, _, _, _, _, _) = &*get_icon_config_lazy();
 
     let mut file_match = file_icons.get(path_str.as_ref());
@@ -121,7 +121,7 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
-    // ── Filename / extension (computed once) ────────────────────────────────
+    // Filename / extension (computed once)
     let filename = if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
         path_str.rsplit('/').next().unwrap_or("").to_string()
     } else {
@@ -136,7 +136,6 @@ pub fn get_icon_for_path_with_override(
         .and_then(|e| e.to_str())
         .unwrap_or("");
 
-    // `.desktop` file: read the embedded Icon= key.
     if ext.eq_ignore_ascii_case("desktop") {
         let keyfile = glib::KeyFile::new();
         if keyfile
@@ -156,7 +155,7 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
-    // Per-extension custom icon (only place this lookup happens now).
+    // Per-extension custom icon.
     if !ext.is_empty() {
         if let Some(icon_path) = crate::infra::loader::get_custom_extension_icon_path(ext) {
             if let Ok(icon) = gio::Icon::for_string(&icon_path.to_string_lossy()) {
@@ -173,7 +172,7 @@ pub fn get_icon_for_path_with_override(
         }
     }
 
-    // ── MIME resolution ─────────────────────────────────────────────────────
+    // MIME resolution
     let content_type = if let Some(mime) = crate::utils::media::guess_mime_from_extension(&filename)
     {
         mime

@@ -52,25 +52,6 @@ impl Terminal {
         }
     }
 
-    /// Registers a callback invoked on the PTY reader thread whenever fish
-    /// reports a working-directory change via OSC 7.
-    ///
-    /// The callback receives the decoded, absolute path of the new directory.
-    /// Register this before the widget is realized to avoid missing the first
-    /// prompt. The callback must be `Send` because it is called from the PTY
-    /// reader thread, use a channel (e.g. `relm4::Sender`) rather than touching
-    /// GTK objects directly.
-    ///
-    /// # Example
-    ///
-    /// ```ignore
-    /// terminal.set_cwd_callback({
-    ///     let sender = app_sender.clone(),
-    ///     move |path| {
-    ///         let _ = sender.send(AppMsg::NavigateTo(path)),
-    ///     }
-    /// }),
-    /// ```
     /// Resolves terminal colors and font from the active GTK/libadwaita theme,
     /// then applies them, but only for config fields that are empty/default,
     /// preserving any explicit user overrides in `config.toml`.
@@ -89,7 +70,6 @@ impl Terminal {
         crate::hit!("apply_theme");
         let widget = self.drawing_area.upcast_ref::<gtk::Widget>();
 
-        // --- colors -------------------------------------------------------
         let style = widget.style_context();
 
         let theme_fg = style.lookup_color("theme_fg_color");

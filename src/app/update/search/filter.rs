@@ -29,7 +29,6 @@ impl FluxApp {
             return;
         }
 
-        // Check for content search trigger: starts with ':'
         if query_lc.starts_with(':')
             && !query_lc.starts_with(":tag:")
             && !query_lc.starts_with(":t:")
@@ -149,7 +148,6 @@ impl FluxApp {
                             continue;
                         }
 
-                        // Check if file matches all requested tags
                         let file_tags = crate::utils::xattr::read_tags(&path);
                         let file_tags_lc: Vec<String> =
                             file_tags.into_iter().map(|t| t.to_lowercase()).collect();
@@ -253,7 +251,6 @@ impl FluxApp {
             return;
         }
 
-        // Check for size filter
         if let Some((size_op, rest_query)) = parse_size_filter(&query_lc) {
             self.filter = query.clone();
             let tab = &mut self.tabs[self.active_tab_index];
@@ -290,7 +287,6 @@ impl FluxApp {
             return;
         }
 
-        // Normal filename filtering
         self.filter = query.clone();
         let tab = &mut self.tabs[self.active_tab_index];
         tab.files.clear_filters();

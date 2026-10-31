@@ -12,7 +12,7 @@ mod thumbnail;
 mod tiers;
 mod video;
 
-// Public API surface (preserves original `pub` items).
+// Public API.
 pub use appimage::{extract_appimage_icon, seven_zip_available};
 pub use exe::extract_exe_icon;
 pub use font::{font_specimen, font_thumbnail};
@@ -34,7 +34,7 @@ pub use thumbnail::get_or_create_thumbnail;
 pub use tiers::{find_cached_thumbnail, thumbnail_lookup_tiers, tier_for_size};
 pub use video::probe_media_duration;
 
-// Crate-internal API surface (preserves original `pub(crate)` items).
+// Crate-internal API.
 pub use audio::audio_thumbnail;
 pub(crate) use thumbnail::{generate_thumbnail_sync, may_have_thumbnail};
 pub(crate) use video::extract_video_frame;

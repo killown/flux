@@ -11,25 +11,14 @@ use super::tiers::{find_cached_thumbnail, tier_for_size};
 /// and caching it on first access.
 ///
 /// Cache entries follow the [FreeDesktop Thumbnail Managing Standard], stored under
-/// `$XDG_CACHE_HOME/thumbnails/<size-tier>/` as `MD5("file://<path>").hex + ".png"`.
-/// This makes cache hits session-persistent: a thumbnail written in a previous
-/// session is reused without regeneration as long as the source file's `mtime` and
-/// size have not changed.
-///
-/// Stale entries (source modified after thumbnail was written, or zero-byte files)
-/// are evicted and regenerated atomically.
+/// `$XDG_CACHE_HOME/thumbnails/<size-tier>/` as `MD5("file://<path>").hex + ".png"`,
+/// so hits persist across sessions as long as the source's `mtime` and size are
+/// unchanged. Stale or zero-byte entries are evicted and regenerated atomically.
 ///
 /// [FreeDesktop Thumbnail Managing Standard]: https://specifications.freedesktop.org/thumbnail-spec/
 ///
-/// # Arguments
-///
-/// * `path` - Absolute path to an image or video file.
-///
-/// # Returns
-///
-/// `Some(texture)` on success, `None` if the file is not visual media, if any
-/// required external tool (`ffmpeg`, `raw-thumbnailer`) is unavailable, or if
-/// I/O fails.
+/// Returns `None` if the file is not visual media, a required external tool
+/// (`ffmpeg`, `raw-thumbnailer`) is missing, or I/O fails.
 pub async fn get_or_create_thumbnail(path: &std::path::Path) -> Option<gtk::gdk::Texture> {
     crate::hit!("get_or_create_thumbnail");
     let path = path.to_path_buf();

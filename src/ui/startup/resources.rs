@@ -19,7 +19,6 @@ impl PendingDb {
 impl FluxApp {
     /// Loads config and menu actions, and starts opening the state DB in the background.
     pub(super) async fn load_resources() -> (PendingDb, Config, Vec<CustomAction>) {
-        // Resource Loading (asynchronous, parallel)
         let (config_tx, config_rx) = tokio::sync::oneshot::channel();
         let (menu_tx, menu_rx) = tokio::sync::oneshot::channel();
         let (db_tx, db_rx) = tokio::sync::oneshot::channel();

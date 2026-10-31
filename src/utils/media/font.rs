@@ -81,25 +81,6 @@ fn font_family_available(pango_cx: &gtk::pango::Context, family: &str) -> bool {
     font_map.list_families().iter().any(|f| f.name() == family)
 }
 
-/// Renders a font preview thumbnail using PangoCairo and writes it to `cache_path`.
-///
-/// Loads the font file directly into a temporary [`pango::FontMap`] override via
-/// `fc-cache`-free [`fontconfig`] font loading, then lays out a two-line sample:
-/// the font family name on top and the pangram `"AaBbCc 123"` below in the target
-/// font at a size scaled to fill [`constants::CACHED_THUMBNAIL_SIZE`].
-///
-/// The background is white with dark text so thumbnails are legible on both light
-/// and dark file-manager themes.
-///
-/// # Arguments
-///
-/// * `path`       - Absolute path to the source font file.
-/// * `cache_path` - Destination `.png` path inside the XDG thumbnail store.
-///
-/// # Returns
-///
-/// `Some(texture)` on success, `None` if the font cannot be loaded or the Cairo
-/// surface cannot be read back.
 /// Reads the font family name from a TrueType/OpenType `name` table (nameID 1).
 ///
 /// Parses just enough of the binary `name` table to extract the English family
@@ -175,7 +156,6 @@ fn read_font_family(path: &Path) -> Option<String> {
         let raw = data.get(start..end)?;
 
         if platform_id == 3 && encoding_id == 1 && family_win.is_none() {
-            // UTF-16 BE
             #[allow(clippy::chunks_exact_to_as_chunks)]
             let chars: Vec<u16> = raw
                 .chunks_exact(2)
@@ -193,6 +173,15 @@ fn read_font_family(path: &Path) -> Option<String> {
     family_win.or(family_mac)
 }
 
+/// Renders a font preview thumbnail with PangoCairo and writes it to `cache_path`.
+///
+/// Loads the font into a private fontconfig map, then lays out a two-line
+/// sample: the family name on top and the pangram `"AaBbCc 123"` below in the
+/// target font, scaled to fill [`constants::CACHED_THUMBNAIL_SIZE`]. The
+/// background is white with dark text so it reads on light and dark themes.
+///
+/// Returns `None` if the font cannot be loaded or the Cairo surface cannot be
+/// read back.
 pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Option<gdk::Texture> {
     crate::hit!("font_thumbnail");
     // Private config under a mutex: never mutate the global fontconfig from worker threads.
@@ -218,7 +207,6 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
     let pango_cx = private.map.create_context();
     pangocairo::functions::update_context(&cx, &pango_cx);
 
-    // Sample lines: family name hint at top, pangram below.
     let sample_body = "AaBbCc 123\nThe quick fox";
     let body_pt = (size_f * 0.22) as i32;
     let mut body_desc = gtk::pango::FontDescription::new();
@@ -233,7 +221,6 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
 
     let margin = size_f * 0.06;
 
-    // Draw the family name label.
     cx.set_source_rgb(0.4, 0.4, 0.4);
     cx.move_to(margin, margin);
     let label_layout = gtk::pango::Layout::new(&pango_cx);
@@ -243,7 +230,6 @@ pub fn font_thumbnail(path: &Path, cache_path: &Path, target_size: i32) -> Optio
     label_layout.set_ellipsize(gtk::pango::EllipsizeMode::End);
     pangocairo::functions::show_layout(&cx, &label_layout);
 
-    // Draw the pangram sample in the target font.
     cx.set_source_rgb(0.05, 0.05, 0.05);
     let (_, label_h) = label_layout.pixel_size();
     cx.move_to(margin, margin + label_h as f64 + margin * 0.25);
@@ -359,7 +345,6 @@ pub fn font_specimen(path: &Path, target_size: i32) -> Option<gdk::Texture> {
 
     let (_, label_h) = label_layout.pixel_size();
 
-    // Body: alphabet + numerals at the largest readable size.
     let body_pt = (size_f * 0.085).max(10.0) as i32;
     let mut body_desc = gtk::pango::FontDescription::new();
     body_desc.set_family(&body_family);
@@ -376,7 +361,6 @@ pub fn font_specimen(path: &Path, target_size: i32) -> Option<gdk::Texture> {
 
     let (_, body_h) = body_layout.pixel_size();
 
-    // Punctuation / accents at a smaller body size.
     let accent_pt = (size_f * 0.055).max(9.0) as i32;
     let mut accent_desc = gtk::pango::FontDescription::new();
     accent_desc.set_family(&body_family);

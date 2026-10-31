@@ -15,7 +15,6 @@ pub fn lookup_system_extension_mime(ext: &str) -> Option<String> {
     let table = EXT_MIME_CACHE.get_or_init(|| {
         let mut map = HashMap::with_capacity(4096);
 
-        // Standard Freedesktop shared-mime-info globs locations.
         let candidate_paths = [
             "/usr/share/mime/globs2",
             "/usr/local/share/mime/globs2",
@@ -54,7 +53,6 @@ pub fn lookup_system_extension_mime(ext: &str) -> Option<String> {
             }
         }
 
-        // Add user-specific local definitions if present (~/.local/share/mime/globs2).
         if let Some(user_globs) = dirs::data_local_dir().map(|d| d.join("mime/globs2")) {
             if let Ok(content) = std::fs::read_to_string(user_globs) {
                 for line in content.lines() {

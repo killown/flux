@@ -8,7 +8,25 @@ impl Terminal {
         state.write_pty(data);
     }
 
-    /// Registers a callback invoked whenever the shell's CWD changes.
+    /// Registers a callback invoked on the PTY reader thread whenever fish
+    /// reports a working-directory change via OSC 7.
+    ///
+    /// The callback receives the decoded, absolute path of the new directory.
+    /// Register it before the widget is realized so the first prompt isn't
+    /// missed. It runs on the PTY reader thread, so it must be `Send`: send a
+    /// message through a channel (e.g. `relm4::Sender`) instead of touching GTK
+    /// objects directly.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// terminal.set_cwd_callback({
+    ///     let sender = app_sender.clone();
+    ///     move |path| {
+    ///         let _ = sender.send(AppMsg::NavigateTo(path));
+    ///     }
+    /// });
+    /// ```
     pub fn set_cwd_callback<F>(&self, f: F)
     where
         F: Fn(std::path::PathBuf) + Send + 'static,

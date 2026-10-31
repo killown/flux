@@ -41,7 +41,6 @@ impl FluxApp {
                 .unwrap_or_else(|| p.to_string_lossy().to_string())
         };
 
-        //Core XDG Directories - Conditioned on show_xdg_dirs config
         if self.config.ui.show_xdg_dirs {
             if let Some(p) = dirs::home_dir() {
                 guard.push_back(SidebarPlace {
@@ -99,7 +98,6 @@ impl FluxApp {
             }
         }
 
-        // Custom Sidebar logic
         let show_recents = self.config.ui.show_recents;
         let recents_row = self.config.ui.recents_row;
         for (idx, custom) in self.config.sidebar.iter().enumerate() {
@@ -126,7 +124,6 @@ impl FluxApp {
             };
 
             let mut name = custom.name.clone();
-            // Translate Trash if it's the default English name
             if custom.path == constants::TRASH_URI && name == "Trash" {
                 name = crate::i18n::tr("Trash");
             } else if custom.path == "tags://" && name == "Tags" {

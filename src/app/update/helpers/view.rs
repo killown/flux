@@ -43,7 +43,6 @@ impl FluxApp {
         for i in 0..self.files.len() {
             if let Some(wrapper) = self.files.get(i) {
                 let mut item = wrapper.borrow().clone();
-                // Update both mode and icon size if either changed
                 if item.is_list_mode != mode || item.icon_size != size {
                     item.is_list_mode = mode;
                     item.icon_size = size;

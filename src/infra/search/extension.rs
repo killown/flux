@@ -93,7 +93,6 @@ fn start_walk(
         return;
     }
 
-    // Separate regex patterns from standard glob/extension patterns.
     let (regex_patterns, glob_patterns): (Vec<String>, Vec<String>) = params
         .patterns
         .into_iter()
@@ -114,7 +113,6 @@ fn start_walk(
         None
     };
 
-    // Expand MIME shorthands and compile into a GlobSet.
     let expanded: Vec<String> = glob_patterns
         .iter()
         .flat_map(|p| crate::utils::glob::expand_mime_category(p))
@@ -130,7 +128,6 @@ fn start_walk(
         return;
     }
 
-    // Cancel any previous search.
     if let Some(cancellable) = app.search.cancellable.take() {
         cancellable.cancel();
     }
@@ -234,7 +231,6 @@ fn start_walk(
                 }
             }
 
-            // Flush any remaining results.
             if !batch.is_empty()
                 && !cancellable_for_collector.is_cancelled()
                 && load_id_for_collector.load(Ordering::Acquire) == session_id
@@ -532,7 +528,6 @@ fn start_walk(
                         Err(_) => return WalkState::Continue,
                     };
 
-                    // Check directory vs file requirements
                     let is_symlink = entry.path_is_symlink();
                     let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
                         || (is_symlink && entry.path().is_dir());

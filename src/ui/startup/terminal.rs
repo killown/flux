@@ -47,12 +47,10 @@ pub(crate) fn attach_terminal_key_controller(
                     term_sender.input(f4_msg.clone());
                     return glib::Propagation::Stop;
                 }
-                // Ctrl+Shift+C → copy selection to clipboard
                 Key::c | Key::C if modifiers == ctrl_shift => {
                     terminal_ref.emit_copy_clipboard();
                     return glib::Propagation::Stop;
                 }
-                // Ctrl+Shift+V → paste from clipboard into terminal
                 Key::v | Key::V if modifiers == ctrl_shift => {
                     terminal_ref.emit_paste_clipboard();
                     return glib::Propagation::Stop;
@@ -74,7 +72,6 @@ pub(crate) fn attach_terminal_key_controller(
 /// Suppresses the right-click menu and pastes the primary selection on middle click.
 pub(crate) fn attach_terminal_mouse_controllers(terminal: &Terminal) {
     crate::hit!("attach_terminal_mouse_controllers");
-    // Suppress right-click menu.
     let right_click = gtk::GestureClick::new();
     right_click.set_button(3);
     right_click.set_propagation_phase(gtk::PropagationPhase::Capture);

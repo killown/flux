@@ -12,7 +12,6 @@ impl FluxApp {
         crate::hit!("build_main_menu");
         let menu = gtk::gio::Menu::new();
 
-        // ── Sort ─────────────────────────────────────────────────────────────
         let sort_submenu = gtk::gio::Menu::new();
 
         let sort_fields = gtk::gio::Menu::new();
@@ -44,7 +43,6 @@ impl FluxApp {
 
         menu.append_submenu(Some(&tr("Sort By")), &sort_submenu);
 
-        // ── View & Preferences ───────────────────────────────────────────────
         let view_section = gtk::gio::Menu::new();
         view_section.append(Some(&tr("Preferences")), Some("app.open-settings"));
 
@@ -62,7 +60,6 @@ impl FluxApp {
 
         menu.append_section(None, &view_section);
 
-        // ── Tools ────────────────────────────────────────────────────────────
         let tools_section = gtk::gio::Menu::new();
         tools_section.append(
             Some(&tr("Context Menu Editor")),
@@ -71,7 +68,6 @@ impl FluxApp {
         tools_section.append(Some(&tr("New Window")), Some("app.new-window"));
         menu.append_section(None, &tools_section);
 
-        // ── About ─────────────────────────────────────────────────────────────
         let about_section = gtk::gio::Menu::new();
         about_section.append(Some(&tr("About Flux")), Some("app.show-about"));
         menu.append_section(None, &about_section);

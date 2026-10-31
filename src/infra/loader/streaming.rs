@@ -298,7 +298,6 @@ impl FluxApp {
 
         let cache_cap = self.config.ui.folder_cache_capacity;
 
-        // If caching is disabled, drop any previously cached folders immediately.
         if cache_cap == 0 {
             self.folder_cache.clear();
         }
@@ -390,7 +389,6 @@ impl FluxApp {
             self.git.in_repo = false;
         }
 
-        // Sync active tab so SwitchTab restores the correct path
         if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
             tab.current_path = self.current_path.clone();
             let title = self
@@ -412,7 +410,6 @@ impl FluxApp {
         } else {
             let mut remaining = items;
             let first_batch: Vec<FileLoadContext> = remaining.drain(..batch_size).collect();
-            // Append and immediately trigger thumbnails for the initial visible batch
             self.append_context_batch(first_batch, load_id, is_cached, sender);
 
             let session_arc = self.load_id.clone();

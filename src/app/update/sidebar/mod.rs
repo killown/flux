@@ -261,7 +261,6 @@ impl FluxApp {
         };
 
         let insert_at = if let Some(label_name) = label_name {
-            // Look for a label entry with matching name
             self.config
                 .sidebar
                 .iter()
@@ -393,7 +392,6 @@ impl FluxApp {
         crate::hit!("handle_prompt_sidebar_rename");
         let path_str = path.to_string_lossy();
         if let Some(section_name) = path_str.strip_prefix("__section__:") {
-            // Rename a section label rather than a pinned path.
             self.show_prompt_sidebar_rename_section(section_name.to_string(), current_name, sender);
         } else {
             self.show_prompt_sidebar_rename(path, current_name, sender);

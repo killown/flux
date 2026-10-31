@@ -59,7 +59,6 @@ pub(super) fn rebuild_list(shared: &Shared) {
     }
 }
 
-// ─── Row builder ─────────────────────────────────────────────────────────────
 fn build_row(
     idx: usize,
     entry: &MenuEntry,
@@ -84,14 +83,12 @@ fn build_row(
         .subtitle(safe_subtitle.as_str())
         .build();
 
-    // ── Dedicated Prefix Column Box (Line Numbers & Submenu Status) ───────────
     let prefix_grid = gtk::Grid::builder()
         .column_spacing(10)
         .valign(gtk::Align::Center)
         .margin_end(8)
         .build();
 
-    // Column 0: Line Number (fixed width, right-aligned)
     let line_label = gtk::Label::builder()
         .label(format!("L{:02}", idx + 1))
         .css_classes(["caption", "dim-label", "numeric"])
@@ -100,7 +97,6 @@ fn build_row(
         .build();
     prefix_grid.attach(&line_label, 0, 0, 1, 1);
 
-    // Column 1: Submenu Column (fixed width, left-aligned)
     let sub_badge = if entry.submenu.is_some() {
         gtk::Label::builder()
             .label("sub")

@@ -37,7 +37,6 @@ pub fn start_content_search(
         return;
     }
 
-    // Cancel any previous search
     if let Some(cancellable) = app.search.cancellable.take() {
         cancellable.cancel();
     }
@@ -85,7 +84,6 @@ pub fn start_content_search(
 
     let visited_inodes: Arc<Mutex<HashSet<(u64, u64)>>> = Arc::new(Mutex::new(HashSet::new()));
 
-    // Parse extension filter once, outside the walk.
     let allowed_exts: Option<Arc<Vec<String>>> = ext_filter.as_ref().map(|s| {
         Arc::new(
             s.split(',')
@@ -145,12 +143,10 @@ pub fn start_content_search(
                     Err(_) => return WalkState::Continue,
                 };
 
-                // Only inspect regular files
                 if !entry.file_type().is_some_and(|ft| ft.is_file()) {
                     return WalkState::Continue;
                 }
 
-                // ---- Extension filter ----
                 if let Some(ref exts) = self.allowed_exts {
                     let file_ext = entry
                         .path()
@@ -165,7 +161,6 @@ pub fn start_content_search(
 
                 let path = entry.into_path();
 
-                // ---- Size Filter ----
                 if let Some(ref op) = self.size_op {
                     let metadata = match std::fs::metadata(&path) {
                         Ok(m) => m,

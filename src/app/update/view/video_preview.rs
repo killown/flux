@@ -190,12 +190,10 @@ impl FluxApp {
             return;
         }
 
-        // Ensure any active preview is fully torn down first
         self.stop_video_preview();
 
         self.preview.active_video = Some(path.clone());
 
-        // Resolve real disk path: if it's an archive virtual path, extract to a tempfile first
         let resolved_file = if let Some((archive_path, inner_path)) =
             crate::infra::archive::parse_archive_uri(&path.to_string_lossy())
         {

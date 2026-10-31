@@ -20,7 +20,6 @@ impl FluxApp {
 
         self.evict_folder_cache(&path);
 
-        // Live-update matching grid items instantly
         let new_icon = gtk::gio::Icon::for_string(&image_path.to_string_lossy())
             .unwrap_or_else(|_| utils::icon::get_icon_for_path(&path, false));
 
@@ -45,7 +44,6 @@ impl FluxApp {
 
         self.evict_folder_cache(&path);
 
-        // Live-update matching grid items instantly back to default
         let default_icon = utils::icon::get_icon_for_path(&path, false);
         for i in 0..self.files.len() {
             if let Some(wrapper) = self.files.get(i) {

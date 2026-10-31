@@ -231,7 +231,6 @@ impl FluxApp {
         crate::hit!("handle_archive_loaded");
         self.is_loading = false;
 
-        // Discard results from superseded navigation sessions.
         if load_id != self.load_id.load(Ordering::SeqCst) {
             return;
         }
@@ -318,7 +317,6 @@ impl FluxApp {
                     });
                 }
 
-                // Sort entries
                 loader_pool().install(|| {
                     items.par_sort_unstable_by(move |a, b| {
                         let group = a.cmp_folder_group(b, folders_first);
@@ -326,7 +324,6 @@ impl FluxApp {
                             return group;
                         }
 
-                        // In directory scan sort comparator:
                         let primary_order = match sort_strategy {
                             SortBy::Name => a.sort_name.cmp(&b.sort_name),
                             SortBy::Size => a.size().cmp(&b.size()),
@@ -348,7 +345,6 @@ impl FluxApp {
                     });
                 });
 
-                // Clear the active tab's grid before populating virtual archive items
                 self.tabs[self.active_tab_index].files.clear();
 
                 let active_tab = &mut self.tabs[self.active_tab_index];
@@ -384,7 +380,6 @@ impl FluxApp {
                         None
                     };
 
-                    // Collect visual media files for thumbnail generation
                     if !item.is_dir {
                         let (is_img, is_vid) = is_visual_media_by_ext(&item.target_path);
                         let is_audio = is_audio_file(&item.target_path);

@@ -22,9 +22,7 @@ impl FactoryComponent for PathSegment {
             add_css_class: constants::BREADCRUMB_BTN_CLASS,
             // Header widgets never take keyboard focus (see lock_header_focus).
             set_focusable: false,
-            // Header widgets never take keyboard focus (see lock_header_focus).
             set_focusable: false,
-            // Header widgets never take keyboard focus (see lock_header_focus).
             set_focusable: false,
             #[wrap(Some)]
             set_child = &gtk::Label {
@@ -35,7 +33,6 @@ impl FactoryComponent for PathSegment {
                 set_wrap: false,
             },
 
-            // Left-click: standard navigation
             connect_clicked[sender, path = self.path.clone()] => move |_| {
                 let _ = sender.output(path.clone());
             },

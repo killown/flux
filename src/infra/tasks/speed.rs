@@ -58,7 +58,6 @@ impl SpeedWindow {
         let now = Instant::now();
         let cutoff = SPEED_WINDOW_SECS;
 
-        // Collect samples within the window (in insertion order).
         let mut window: Vec<(Instant, u64)> = self
             .samples
             .iter()

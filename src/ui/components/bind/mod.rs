@@ -139,7 +139,6 @@ impl FileItem {
         widgets.lock_badge_closed.set_visible(false);
         widgets.lock_badge_open.set_visible(false);
 
-        // Release the texture on both the widget and the item model
         widgets
             .icon_widget
             .set_paintable(None::<&gtk::gdk::Paintable>);

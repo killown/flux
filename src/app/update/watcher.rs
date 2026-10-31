@@ -207,7 +207,6 @@ impl FluxApp {
             gio::FileQueryInfoFlags::NONE,
             gio::Cancellable::NONE,
         ) else {
-            // File vanished. Remove the row if it's there.
             crate::infra::search::indexer::notify_deleted(&path);
             if let Some(idx) = self.find_file_index_by_name(&name) {
                 self.tabs[self.active_tab_index].files.remove(idx);
@@ -254,7 +253,6 @@ impl FluxApp {
             return;
         }
 
-        // Item doesn't exist yet. Append it.
         crate::infra::search::indexer::notify_created(&path);
 
         let is_empty = if is_dir && self.config.ui.show_empty_dir_emblem {

@@ -212,7 +212,6 @@ impl FluxApp {
             return;
         }
 
-        // Resolve the no_command_dialog flag from the matching menu action.
         let no_command_dialog = no_command_dialog_override.unwrap_or_else(|| {
             self.menu_actions
                 .iter()
@@ -224,11 +223,9 @@ impl FluxApp {
         // Check if this command should be completely untracked (e.g. file properties)
         let bypass_tracking = no_command_dialog || !should_track_in_transfer_dialog(&cmd_template);
 
-        // Generate task ID only if tracking is needed – defined OUTSIDE the condition
         let task_id = if !bypass_tracking {
             let id =
                 crate::app::update::file_ops::paste::NEXT_TASK_ID.fetch_add(1, Ordering::Relaxed);
-            // Insert into queue – note the full_command parameter
             let action_name = self
                 .menu_actions
                 .iter()
@@ -252,7 +249,6 @@ impl FluxApp {
             None
         };
 
-        // Spawn command asynchronously
         let sender_cmd = sender.clone();
         let task_queue = self.task_queue.clone();
 

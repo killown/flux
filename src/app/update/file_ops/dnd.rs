@@ -15,7 +15,6 @@ impl FluxApp {
         crate::hit!("handle_drop_items");
         let dest_str = dest_path.to_string_lossy();
 
-        // ── Archive Drop Intercept ───────────────────────────────────────────
         if dest_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             if let Some((archive_path, prefix)) =
                 crate::infra::archive::parse_archive_uri(&dest_str)
@@ -74,7 +73,7 @@ impl FluxApp {
                     continue;
                 };
 
-                // HARD GUARD: If the file's parent directory is the exact same as the destination, skip!
+                // If the file's parent directory is the exact same as the destination, skip!
                 if let Some(parent) = source_canon.parent() {
                     if parent == dest_canon {
                         continue;
@@ -161,7 +160,7 @@ impl FluxApp {
                     continue;
                 };
 
-                // HARD GUARD: If the file is already in the current folder, do not move it!
+                // If the file is already in the current folder, do not move it!
                 if let Some(parent) = source_canon.parent() {
                     if parent == dest_canon {
                         continue;

@@ -12,7 +12,6 @@ mod util;
 
 use card::build_extra_child;
 
-// Standard Response IDs
 const RESP_CANCEL: &str = "cancel";
 const RESP_SKIP: &str = "skip";
 const RESP_RENAME: &str = "rename";
@@ -39,7 +38,6 @@ pub fn show_conflict_dialog(
         crate::i18n::tr("copy")
     };
 
-    // Heading & body
     let heading = crate::i18n::tr("Replace existing file?");
 
     let body = if ctx.batch_total > 1 {
@@ -57,10 +55,8 @@ pub fn show_conflict_dialog(
         )
     };
 
-    // Create dialog
     let dialog = adw::AlertDialog::new(Some(&heading), Some(&body));
 
-    // Add buttons in desired order
     dialog.add_response(RESP_CANCEL, &crate::i18n::tr("Cancel"));
     dialog.add_response(RESP_SKIP, &crate::i18n::tr("Skip"));
     dialog.add_response(RESP_RENAME, &crate::i18n::tr("Auto-Rename"));
@@ -70,15 +66,12 @@ pub fn show_conflict_dialog(
     dialog.set_response_appearance(RESP_REPLACE, adw::ResponseAppearance::Destructive);
     dialog.set_response_appearance(RESP_RENAME, adw::ResponseAppearance::Suggested);
 
-    // Default response
     dialog.set_default_response(Some(RESP_SKIP));
     dialog.set_close_response(RESP_CANCEL);
 
-    // ── Extra child: file preview card ──────────────────────────────────────
     let (extra, apply_all) = build_extra_child(&ctx, &file_name, &op_word);
     dialog.set_extra_child(Some(&extra));
 
-    // ── Response handler ────────────────────────────────────────────────────
     #[allow(clippy::type_complexity)]
     let tx_cell: Rc<Cell<Option<oneshot::Sender<(ConflictChoice, bool)>>>> =
         Rc::new(Cell::new(Some(tx)));

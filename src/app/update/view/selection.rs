@@ -60,7 +60,6 @@ impl FluxApp {
         {
             let bitset = selection_model.selection();
 
-            // Collect the visual (filtered-view) indices from the bitset.
             let mut visual_indices: Vec<u32> = Vec::new();
             if let Some((mut iter, first_idx)) = gtk::BitsetIter::init_first(&bitset) {
                 let mut current = Some(first_idx);
@@ -107,7 +106,6 @@ impl FluxApp {
                 }
                 out
             } else {
-                // Normal fuzzy / size / extension filter.
                 let mut match_count = 0u32;
                 let mut out = Vec::new();
                 for i in 0..active_files.len() {
@@ -146,7 +144,6 @@ impl FluxApp {
 
         let total_selected = count + dir_count;
 
-        // Update recents selection flag
         if self.current_path.to_string_lossy() == constants::RECENT_URI {
             self.recents_has_selection = total_selected > 0;
             if self.recents_has_selection {
@@ -171,7 +168,6 @@ impl FluxApp {
                 format!("{} ({} items)", name, child_count)
             }
 
-            // Single file
             (1, true, _) => {
                 let size_str = glib::format_size(total_size);
                 if let Some(ref item) = single_item {
@@ -191,7 +187,6 @@ impl FluxApp {
                         item.name.clone()
                     };
 
-                    // Spawn async tasks for MIME, dimensions, media duration
                     let path_for_async = path.clone();
                     relm4::spawn_blocking(move || {
                         let mime = utils::media::get_mime_type(&path_for_async);
@@ -218,7 +213,6 @@ impl FluxApp {
                         }));
                     });
 
-                    // Build the base status string (name/path, size, date)
                     let date_str = if item.mtime > 0 {
                         use chrono::TimeZone;
                         match chrono::Local.timestamp_opt(item.mtime, 0) {
@@ -241,7 +235,6 @@ impl FluxApp {
                 }
             }
 
-            // Single folder
             (1, _, true) => {
                 if let Some(borrowed) = single_item.as_ref() {
                     let path = borrowed.path.clone();
@@ -279,16 +272,13 @@ impl FluxApp {
                 }
             }
 
-            // Multiple files only
             (n, true, _) => {
                 let size_str = glib::format_size(total_size);
                 format!("{} items ({})", n, size_str)
             }
 
-            // Multiple folders only
             (_, _, true) => format!("{} folders", dir_count),
 
-            // Mixed files + folders
             (_, false, false) => {
                 let size_str = glib::format_size(total_size);
                 format!("{} folders, {} files ({})", dir_count, count, size_str)
@@ -374,7 +364,6 @@ impl FluxApp {
             return;
         }
 
-        // Avoid duplicate appending if the MIME type is already part of the status string
         if self.selection_status.contains(&mime) {
             return;
         }
@@ -384,7 +373,6 @@ impl FluxApp {
             format!(" - {}×{} ({})", w, h, ratio)
         });
         if let Some(d) = dim_str {
-            // Avoid duplicate dimensions string if already present
             if !self.selection_status.contains(&d) {
                 self.selection_status.push_str(&d);
             }

@@ -86,7 +86,6 @@ impl FluxApp {
         app.add_action(&action_about);
         app.set_accels_for_action("app.show-about", &[]);
 
-        // Icon Theme Change Listeners
         if let Some(display) = gtk::gdk::Display::default() {
             let icon_theme = gtk::IconTheme::for_display(&display);
             let s_icon = sender.clone();

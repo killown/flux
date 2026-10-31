@@ -130,7 +130,6 @@ impl Terminal {
         im_context: &gtk::IMMulticontext,
     ) {
         crate::hit!("setup_im_context");
-        // Commit handler.
         {
             let state_for_im = state.clone();
             im_context.connect_commit(move |_, text| {
@@ -155,7 +154,6 @@ impl Terminal {
             });
         }
 
-        // Focus in/out notifications.
         {
             let im_focus = im_context.clone();
             drawing_area.connect_has_focus_notify(move |w| {

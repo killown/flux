@@ -38,7 +38,6 @@ pub(super) fn build_sections(
         ],
     ));
 
-    // ── Symlink ─────────────────────────────────────────────────────────────
     if path.is_symlink() {
         if let Ok(target) = fs::read_link(path) {
             sections_data.push((
@@ -58,7 +57,6 @@ pub(super) fn build_sections(
         }
     }
 
-    // ── Extended attributes ────────────────────────────────────────────────
     if let Ok(attrs) = xattr::list(path) {
         let mut xattrs_list = Vec::new();
         for attr in attrs {
@@ -74,7 +72,6 @@ pub(super) fn build_sections(
         }
     }
 
-    // ── System & disk, temporal, security ──────────────────────────────────
     if let Ok(meta) = path.metadata() {
         let system_disk = vec![
             (tr("Full Path"), path.to_string_lossy().to_string()),
@@ -127,14 +124,12 @@ pub(super) fn build_sections(
         }
     }
 
-    // ── ELF analysis ────────────────────────────────────────────────────────
     if mime_type.contains("executable") || mime_type.contains("sharedlib") {
         if let Some(elf) = get_elf_info(path) {
             sections_data.push((tr("Executable Analysis"), elf));
         }
     }
 
-    // ── Text content metrics ───────────────────────────────────────────────
     let is_text = mime_type.contains("text")
         || mime_type.contains("javascript")
         || mime_type.contains("json")
@@ -150,7 +145,6 @@ pub(super) fn build_sections(
         }
     }
 
-    // ── Image dimensions ────────────────────────────────────────────────────
     if mime_type.starts_with("image/") {
         if let Ok(dim) = imagesize::size(path) {
             sections_data.push((
@@ -166,7 +160,6 @@ pub(super) fn build_sections(
         }
     }
 
-    // ── Git history ─────────────────────────────────────────────────────────
     if let Some(git) = get_git_info(path) {
         sections_data.push((tr("Git History"), git));
     }

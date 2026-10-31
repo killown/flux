@@ -1,6 +1,6 @@
 use gtk::glib;
 
-// 1. Declare the gettext functions that are missing from the `libc` crate
+// Declare the gettext functions that are missing from the `libc` crate
 extern "C" {
     fn bindtextdomain(
         domainname: *const libc::c_char,
@@ -22,10 +22,8 @@ extern "C" {
 pub fn init() {
     crate::hit!("init");
     unsafe {
-        // Set locale based on environment variables (LANG, LC_ALL, etc.)
         libc::setlocale(libc::LC_ALL, c"".as_ptr());
 
-        // Dynamically resolve ~/.local/share/locale
         let home = std::env::var("HOME").unwrap_or_else(|_| "/root".to_string());
         let locale_path = format!("{}/.local/share/locale", home);
         let c_locale_path = std::ffi::CString::new(locale_path).unwrap();
@@ -35,7 +33,6 @@ pub fn init() {
         bindtextdomain(c"flux".as_ptr(), c_locale_path.as_ptr());
         bind_textdomain_codeset(c"flux".as_ptr(), c"UTF-8".as_ptr());
 
-        // Set "flux" as the default text domain
         textdomain(c"flux".as_ptr());
     }
 }
@@ -65,6 +62,5 @@ pub fn ntr(singular: &str, plural: &str, n: u64) -> String {
 #[allow(dead_code)]
 #[inline]
 pub fn ptr(ctx: &str, s: &str) -> String {
-    // Explicitly specify the "flux" domain here as well
     glib::dpgettext2(Some("flux"), ctx, s).to_string()
 }

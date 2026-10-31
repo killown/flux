@@ -234,7 +234,6 @@ pub fn extract_entry_to_unique_file(
         .filter(|n| !n.is_empty())
         .ok_or_else(|| ArchiveError::Other(format!("invalid entry name: {inner_path}")))?;
 
-    // Split the base name from the extension, keeping `.tar.*` intact.
     let name_lc = name.to_ascii_lowercase();
     let split = name_lc
         .rfind(".tar.")

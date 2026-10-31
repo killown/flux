@@ -20,50 +20,32 @@ pub(super) fn paintable_for_gicon(
     root: &gtk::Overlay,
     icon: &gtk::gio::Icon,
 ) -> gdk::Paintable {
-    // Custom file-path icons must be loaded as textures and scaled ourselves,
-    // because GtkIconTheme::lookup_by_gicon returns a paintable at the file's
-    // natural size for GFileIcon, which the Image widget then paints verbatim
-    // (stretching the grid cell's width).
-    // NOTE: This is necessary, otherwise the grid layout will be inconsistent and the icon will
-    // not match the requested size.
+    // GFileIcon paintables come back at the file's natural size, which would
+    // stretch the grid cell, so custom file icons are loaded as textures and
+    // scaled by hand.
     let custom_path = icon
         .downcast_ref::<gtk::gio::FileIcon>()
         .and_then(|fi| fi.file().path());
 
-    // ── Custom file-icon painting: keep the decode OFF the main thread ────────
+    // Custom icon painting. The decode has to stay off the main thread: decoding
+    // at full source resolution inside `bind` once cost tens of milliseconds per
+    // call, and a single 4K PNG was enough to drop frames.
     //
-    // NOTE: History: this used to be the single worst main-thread stall in folder
-    // loading. Back then we called `gdk::Texture::from_filename(&path)` right
-    // here, inside `bind`, once per grid cell. That decodes the icon at its
-    // full source resolution on the GTK thread. `hwga` flagged it at ~42ms
-    // total, with a 40.7ms single-call max and 1/22 calls blowing the 16ms
-    // frame budget, all inside `append_context_batch` while populating a
-    // folder. A single 4K PNG custom icon was enough to drop frames.
+    //   * `peek_cached_file_icon_texture` returns `None` on a miss and never
+    //     decodes.
+    //   * The cache key includes `mtime`, so editing an icon file takes effect
+    //     without a restart.
+    //   * Raster decode goes through `decode_to_pixbuf` (progressive downscale).
+    //     Don't inline `from_file_at_scale`, it decodes at source resolution.
+    //   * Decodes run through the thumbnail semaphore, so a folder full of large
+    //     custom icons can't starve thumbnails and file ops on the shared pool.
+    //   * The handler forces a rebind (remove + insert). `queue_draw()` re-runs
+    //     draw, not bind, so the fallback icon would stay on screen.
+    //   * Decodes are deduplicated per path (`begin_file_icon_decode`), since every
+    //     file with the same extension shares one icon.
     //
-    // What the shape of this block is protecting:
-    //
-    //   * `peek_cached_file_icon_texture` must return `None` on a miss. It
-    //     must NOT decode. Decoding on a miss puts the 40ms stall back into
-    //     every bind.
-    //   * The cache key must include `mtime`. Without it, editing a custom
-    //     icon file has no visible effect until the app restarts.
-    //   * Raster decode goes through `decode_to_pixbuf` (image crate,
-    //     progressive downscale). Do not inline `from_file_at_scale` - it
-    //     decodes at source resolution (~20ms for a 4K PNG) and is what the
-    //     256px bound was papering over.
-    //   * The decode must be throttled through the thumbnail semaphore. A
-    //     folder with hundreds of >1MB custom icons will otherwise starve
-    //     thumbnails and file-ops on the shared blocking pool.
-    //   * The handler must force a rebind (remove + insert). `queue_draw()`
-    //     re-runs draw, not bind, so the fallback icon stays on screen.
-    //   * Decodes are deduplicated per path (`begin_file_icon_decode`). Every
-    //     file with the same extension shares one icon, so without it a folder
-    //     of N such files decodes the image N times and rebinds O(N^2) cells.
-    //
-    // If you touch this block, verify with:
-    //   FLUX_HWGA_OUT=1 flux-fm <dir-with-custom-icons>
-    // and check `bind::bind_icon_paint` - total sub-millisecond, `Main>16ms`
-    // reads `0/N`.
+    // To verify: `FLUX_HWGA_OUT=1 flux-fm <dir-with-custom-icons>`, then check that
+    // `bind::bind_icon_paint` stays sub-millisecond with `Main>16ms` at `0/N`.
     let Some(path) = custom_path else {
         return lookup_theme_icon(item, root, icon);
     };

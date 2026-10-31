@@ -179,10 +179,8 @@ path = "actions://"
             }
         };
 
-        // 1. Home
         add_entry(home.clone(), "user-home-symbolic", Some("Home"));
 
-        // 2. Localized XDG Folders with correct icons
         if let Some(p) = dirs::download_dir() {
             add_entry(p, "folder-download-symbolic", None);
         }
@@ -199,7 +197,6 @@ path = "actions://"
             add_entry(p, "folder-music-symbolic", None);
         }
 
-        // 3. Trash
         add_entry(
             PathBuf::from("trash:///"),
             "user-trash-symbolic",
@@ -318,7 +315,6 @@ path = "actions://"
         invalidate_config_cache();
     }
 
-    // Translate standard sidebar headers and items dynamically
     for item in &mut config.sidebar {
         item.name = match item.name.as_str() {
             "Default" => tr("Default"),

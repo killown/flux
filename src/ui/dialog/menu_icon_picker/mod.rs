@@ -22,7 +22,6 @@ pub fn show_menu_icon_picker(
         .content_height(560)
         .build();
 
-    // ── Model Setup ──────────────────────────────────────────────────────────
     let store = gio::ListStore::new::<NerdIconObject>();
     let parsed_items = load_installed_json_entries();
     store.extend_from_slice(&parsed_items);
@@ -45,7 +44,6 @@ pub fn show_menu_icon_picker(
     let filter_model = gtk::FilterListModel::new(Some(store), Some(custom_filter.clone()));
     let selection_model = gtk::SingleSelection::new(Some(filter_model));
 
-    // ── Item Factory ─────────────────────────────────────────────────────────
     let factory = gtk::SignalListItemFactory::new();
     let on_select = Rc::new(on_select);
     let dialog_ref = dialog.clone();
@@ -95,7 +93,6 @@ pub fn show_menu_icon_picker(
         vbox.set_tooltip_text(Some(&icon_obj.name()));
     });
 
-    // ── Grid View ────────────────────────────────────────────────────────────
     let grid_view = gtk::GridView::builder()
         .model(&selection_model)
         .factory(&factory)
@@ -124,7 +121,6 @@ pub fn show_menu_icon_picker(
         .hexpand(true)
         .build();
 
-    // ── Search Bar & Layout ──────────────────────────────────────────────────
     let search_entry = gtk::SearchEntry::builder()
         .placeholder_text(tr("Search icons (copy, folder, file, rust)...").as_str())
         .margin_start(12)

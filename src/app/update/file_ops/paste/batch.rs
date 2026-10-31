@@ -42,7 +42,6 @@ impl FluxApp {
             )
         };
 
-        // Register a single task representing the whole operation
         self.task_queue.update(
             task_id,
             batch_label.clone(),
@@ -62,7 +61,6 @@ impl FluxApp {
         }));
         sender.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
-        // Trigger progress dialog if file count or byte threshold is met
         if total_files >= DIALOG_FILE_THRESHOLD {
             sender.input(AppMsg::Transfer(TransferMsg::ShowTransferDialog));
         } else {
@@ -117,7 +115,6 @@ impl FluxApp {
 
                 let dest_initial = target_dir.join(&clean_name);
 
-                // Update current item label and progress
                 let current_label = if total_files > 1 {
                     format!("({}/{}) {}", batch_index + 1, total_files, clean_name)
                 } else {
@@ -143,7 +140,6 @@ impl FluxApp {
                 }));
                 s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
-                // Conflict Resolution
                 let dest = if !is_dir && dest_initial.exists() {
                     let current_policy = { policy.lock().unwrap().clone() };
                     match current_policy {
@@ -227,7 +223,6 @@ impl FluxApp {
 
                 let dest_existed = dest.symlink_metadata().is_ok();
 
-                // Perform copy/move with byte-level progress reporting
                 let bytes_before = copied_bytes;
                 let s_cb = s.clone();
                 let label_cb = current_label.clone();

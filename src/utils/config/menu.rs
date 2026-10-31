@@ -159,7 +159,6 @@ pub fn load_menu_config() -> Vec<CustomAction> {
         if let Some((left, right)) = line.split_once("=>") {
             let raw_label = left.trim().trim_matches('"');
 
-            // Separate icon/spacing prefix from the actual text content
             let (main_icon_prefix, text_content) = if let Some(idx) =
                 raw_label.find(|c: char| c.is_alphanumeric() || c == '(' || c == '>')
             {
@@ -313,7 +312,6 @@ pub fn save_menu_config(actions: &[CustomAction]) -> std::io::Result<()> {
 
     let mut content = String::new();
     for action in actions {
-        // Convert CustomAction to MenuEntry for consistent serialization
         let entry = MenuEntry {
             label: action.label.clone(),
             submenu: action.submenu.clone(),

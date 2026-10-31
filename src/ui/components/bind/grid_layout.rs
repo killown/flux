@@ -73,7 +73,6 @@ pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets) {
         }
     }
 
-    // Always hide the info label in grid mode.
     widgets.info_label.set_visible(false);
 }
 

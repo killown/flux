@@ -147,6 +147,5 @@ pub fn expand_mime_category(pattern: &str) -> Vec<String> {
         return vec![format!("__unknown_mime__{}", lc)];
     }
 
-    // Plain glob (*.zip, *.rs) - pass through as-is.
     vec![pattern.to_string()]
 }

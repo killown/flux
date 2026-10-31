@@ -41,7 +41,6 @@ pub fn setup_global_shortcuts(
         }};
     }
 
-    // ── KeyMap-driven ─────────────────────────────────────────────────────
     bind_msg!(
         keymap.refresh.clone(),
         AppMsg::Navigation(NavigationMsg::Refresh)

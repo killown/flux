@@ -38,7 +38,7 @@ impl FluxApp {
         crate::hit!("load_path");
         let path_str = path.to_string_lossy().to_string();
 
-        // ── Virtual / special paths - delegate and return immediately ────────────
+        // Virtual and special paths are delegated and return immediately.
         if crate::infra::network::is_network_uri(&path) {
             self.archive.locked = false;
             self.current_path = path.clone();
@@ -55,7 +55,6 @@ impl FluxApp {
             return;
         }
 
-        // Exiting or not inside an archive: clear the lock state
         self.archive.locked = false;
 
         if path_str.starts_with("recent:///") {
@@ -84,7 +83,7 @@ impl FluxApp {
             return;
         }
 
-        // ── Persistent per-folder view state ─────────────────────────────────────
+        // Per-folder view state.
         let mut folders_first = self
             .config
             .ui
@@ -114,7 +113,6 @@ impl FluxApp {
             self.current_icon_size = self.config.ui.default_icon_size;
         }
 
-        // ── Folder monitor ────────────────────────────────────────────────────────
         if let Some(old_mon) = self.directory_monitor.take() {
             old_mon.cancel();
         }
@@ -244,7 +242,6 @@ impl FluxApp {
                                 return group;
                             }
 
-                            // In cached folder sort comparator:
                             let primary_order = match sort_strategy {
                                 SortBy::Name => a.sort_name.cmp(&b.sort_name),
                                 SortBy::Size => a.size().cmp(&b.size()),
@@ -305,7 +302,6 @@ impl FluxApp {
 
         let filter_mode = self.filters.mode;
 
-        // ── Fast asynchronous item loader ─────────────────────────────────────────
         relm4::spawn_blocking(move || {
             // Resolve "now" once per load batch. `FileLoadContext::labels()`
             // reads this instead of calling `glib::DateTime::now_local()`
@@ -416,7 +412,6 @@ impl FluxApp {
                             return None;
                         }
 
-                        // Apply Folder/File filter
                         if filter_mode == crate::domain::model::FilterMode::OnlyFolders && !is_dir {
                             return None;
                         }

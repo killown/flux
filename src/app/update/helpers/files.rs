@@ -106,16 +106,13 @@ impl FluxApp {
         for (path, is_dir) in items {
             let path_str = path.to_string_lossy();
 
-            // Check if this is an archive URI (/archive://... or archive://... or /archive:/...)
             if let Some((archive_path, inner)) = crate::infra::archive::parse_archive_uri(&path_str)
             {
                 if is_dir {
-                    // Navigating deeper into a virtual archive folder
                     sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
                 } else if crate::infra::archive::is_browsable_archive(Path::new(&inner)) {
                     sender.input(AppMsg::Archive(ArchiveMsg::EnterArchive(path)));
                 } else {
-                    // Extracting and launching a file from inside the archive
                     let sender_clone = sender.clone();
                     let cached_pwd = self.archive.passwords.get(&archive_path).cloned();
 
@@ -163,12 +160,10 @@ impl FluxApp {
                 }
                 break;
             }
-            // Regular filesystem directory navigation
             else if is_dir {
                 sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
                 break;
             }
-            // Opening a physical archive file from disk (.7z, .zip, etc.)
             else if crate::infra::archive::is_browsable_archive(&path) {
                 sender.input(AppMsg::Archive(ArchiveMsg::EnterArchive(path)));
                 break;
@@ -337,7 +332,6 @@ impl FluxApp {
             return;
         }
 
-        // Build the Flux-internal metadata protocol
         let prefix = if is_cut { "cut" } else { "copy" };
         let mut text_rep = String::from(prefix);
         text_rep.push('\n');
@@ -353,7 +347,6 @@ impl FluxApp {
         // text/plain for our internal "cut" vs "copy" detection
         let text_provider = gdk::ContentProvider::for_value(&text_rep.to_value());
 
-        // Combine in a Union
         let content = gdk::ContentProvider::new_union(&[uri_provider, text_provider]);
 
         clipboard.set_content(Some(&content)).unwrap();

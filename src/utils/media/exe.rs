@@ -17,7 +17,6 @@ pub fn extract_exe_icon(
 
     let ico_path = temp_dir.path().join("icon.ico");
 
-    // Extract default group icon (type 14) directly to .ico
     let status = std::process::Command::new("wrestool")
         .args(["-x", "-t14", "-o"])
         .arg(&ico_path)

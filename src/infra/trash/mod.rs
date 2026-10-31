@@ -54,7 +54,6 @@ pub fn delete_items(
 
         let path_str = raw_path.to_string_lossy().into_owned();
 
-        // ── Archive virtual URI ──────────────────────────────────────────────
         if path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
             || path_str.starts_with("/archive:/")
             || path_str.starts_with("archive://")

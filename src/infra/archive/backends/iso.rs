@@ -171,7 +171,6 @@ fn list_iso(archive_path: &Path, prefix: &str) -> Result<Vec<ArchiveEntry>, Arch
         return list_iso_udf(archive_path, prefix);
     }
 
-    // Pure ISO 9660 path.
     let mut iso = iso9660_simple::ISO9660::from_device(IsoFileDevice(file))
         .ok_or_else(|| ArchiveError::Other(crate::i18n::tr("failed to parse ISO image")))?;
 
@@ -360,7 +359,6 @@ fn extract_iso_udf(
         .args(["e", "-y"])
         .arg(archive_path)
         .arg(format!("-o{}", tmp_dir.path().display()))
-        // Pass the full inner path so 7z targets the exact file.
         .arg(inner_path)
         .output()
         .map_err(|e| ArchiveError::Other(format!("7z spawn: {e}")))?;

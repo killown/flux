@@ -126,14 +126,13 @@ pub fn extract_archive_entry_for_playback(
 pub fn parse_archive_uri(uri: &str) -> Option<(PathBuf, String)> {
     crate::hit!("parse_archive_uri");
 
-    // Strip all possible URI prefixes that GTK / GIO / PathBuf might produce.
     let mut rest = uri
         .strip_prefix(ARCHIVE_URI)
         .or_else(|| uri.strip_prefix("archive://"))
         .or_else(|| uri.strip_prefix("/archive:/"))
         .or_else(|| uri.strip_prefix("archive:/"))?;
 
-    // CRITICAL: Strip any leftover leading slashes so rest doesn't start with '/'
+    // Strip any leftover leading slashes so rest doesn't start with '/'
     rest = rest.trim_start_matches('/');
 
     let (host, inner) = match rest.find('/') {

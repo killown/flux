@@ -21,7 +21,6 @@ impl FluxApp {
             .vexpand(true)
             .build();
 
-        // ── Header Bar ────────────────────────────────────────────────────────
         let header = adw::HeaderBar::builder()
             .show_end_title_buttons(false)
             .show_start_title_buttons(false)
@@ -45,7 +44,6 @@ impl FluxApp {
 
         root.append(&header);
 
-        // ── Content Area ──────────────────────────────────────────────────────
         let content_box = gtk::Box::builder()
             .orientation(gtk::Orientation::Vertical)
             .spacing(10)
@@ -56,7 +54,6 @@ impl FluxApp {
             .vexpand(true)
             .build();
 
-        // Header info displaying file name and detected MIME type
         let file_name = target_file
             .file_name()
             .map(|n| n.to_string_lossy().to_string())
@@ -76,13 +73,11 @@ impl FluxApp {
             .build();
         content_box.append(&mime_label);
 
-        // Live Search Entry
         let search_entry = gtk::SearchEntry::builder()
             .placeholder_text(crate::i18n::tr("Search applications…"))
             .build();
         content_box.append(&search_entry);
 
-        // Scrolled ListBox for Apps
         let list_box = gtk::ListBox::builder()
             .selection_mode(gtk::SelectionMode::Single)
             .css_classes(["boxed-list"])
@@ -96,16 +91,13 @@ impl FluxApp {
             .build();
         content_box.append(&scrolled);
 
-        // Query the single true system default application
         let default_app = gtk::gio::AppInfo::default_for_type(&mime_type, false);
 
-        // Gather recommended and all installed desktop applications
         let recommended = gtk::gio::AppInfo::recommended_for_type(&mime_type);
         let all_apps = gtk::gio::AppInfo::all();
 
         let mut seen_ids = std::collections::HashSet::new();
 
-        // Helper to construct a row
         let make_row = |app: &gtk::gio::AppInfo, is_default: bool| -> gtk::ListBoxRow {
             let row = gtk::ListBoxRow::new();
             let hbox = gtk::Box::builder()
@@ -161,7 +153,6 @@ impl FluxApp {
 
             row.set_child(Some(&hbox));
 
-            // Attach search text metadata
             let searchable = format!(
                 "{} {} {}",
                 app.display_name(),
@@ -178,7 +169,6 @@ impl FluxApp {
             row
         };
 
-        // Insert the default application first if available
         if let Some(ref def_app) = default_app {
             if let Some(id) = def_app.id() {
                 seen_ids.insert(id.to_string());
@@ -186,7 +176,6 @@ impl FluxApp {
             list_box.append(&make_row(def_app, true));
         }
 
-        // Populate remaining recommended apps
         for app in recommended {
             let app_id_str = app.id().map(|id| id.to_string());
             if let Some(ref id) = app_id_str {
@@ -198,7 +187,6 @@ impl FluxApp {
             list_box.append(&make_row(&app, false));
         }
 
-        // Populate remaining installed applications
         for app in all_apps {
             if !app.should_show() {
                 continue;
@@ -212,12 +200,10 @@ impl FluxApp {
             list_box.append(&make_row(&app, false));
         }
 
-        // Select the first item (default app) automatically
         if let Some(first_row) = list_box.row_at_index(0) {
             list_box.select_row(Some(&first_row));
         }
 
-        // Search filtering logic
         let list_box_filter = list_box.clone();
         search_entry.connect_search_changed(move |entry| {
             let query = entry.text().to_lowercase();
@@ -234,7 +220,6 @@ impl FluxApp {
             }
         });
 
-        // "Always use for this file type" CheckButton
         let set_default_check = gtk::CheckButton::builder()
             .label(crate::i18n::tr("Always use for this file type"))
             .active(false)
@@ -247,7 +232,6 @@ impl FluxApp {
         root.append(&content_box);
         dialog.set_child(Some(&root));
 
-        // ── Execution Closure ─────────────────────────────────────────────────
         let target_clone = target_file.clone();
         let mime_type_str = mime_type.to_string();
         let list_box_exec = list_box.clone();
@@ -283,25 +267,21 @@ impl FluxApp {
             d_exec.close();
         };
 
-        // Open button click
         let exec_on_btn = execute_launch.clone();
         open_btn.connect_clicked(move |_| {
             exec_on_btn();
         });
 
-        // Double-click or Enter on row
         let exec_on_row = execute_launch;
         list_box.connect_row_activated(move |_, _| {
             exec_on_row();
         });
 
-        // Cancel button click
         let d_cancel = dialog.clone();
         cancel_btn.connect_clicked(move |_| {
             d_cancel.close();
         });
 
-        // Autofocus search entry on map
         let search_focus = search_entry.clone();
         dialog.connect_map(move |_| {
             search_focus.grab_focus();

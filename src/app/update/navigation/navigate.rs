@@ -27,13 +27,11 @@ impl FluxApp {
             return;
         }
 
-        // Intercept Search panel shortcut URI
         if path_str == "search://" || path_str == "search:///" {
             sender.input(AppMsg::Search(SearchMsg::ToggleSearchPanel));
             return;
         }
 
-        // Intercept Contextual Actions panel shortcut entry
         if path_str == "actions://" || path_str == "actions:///" {
             sender.input(AppMsg::Actions(ActionsMsg::ToggleActionsPanel));
             return;
@@ -85,12 +83,7 @@ impl FluxApp {
         self.search.last_was_advanced = false;
         self.navigate_owe_first_selection();
 
-        //--------------------------------------------------------------------------------------//
-        //NOTE: this block of code is where in can intercept and handle special URIs or commands before
-        // proceeding with normal navigation.
-
-        //--------------------------------------------------------------------------------------//
-
+        // Special URIs and commands are intercepted here, before normal navigation.
         if path_str.starts_with('#')
             || path_str.starts_with(":tag:")
             || path_str.starts_with(":t:")
@@ -125,7 +118,6 @@ impl FluxApp {
             return;
         }
 
-        // Intercept Network URIs
         if crate::infra::network::is_network_uri(&path) {
             let old_path = std::mem::replace(&mut self.current_path, path.clone());
 
@@ -178,7 +170,6 @@ impl FluxApp {
             return;
         }
 
-        // Intercept Virtual Archive URIs
         if path_str.starts_with(crate::infra::archive::ARCHIVE_URI) {
             if let Some((archive_path, prefix)) =
                 crate::infra::archive::parse_archive_uri(&path_str)
@@ -231,7 +222,6 @@ impl FluxApp {
             return;
         }
 
-        // Local filesystem validation
         let path_valid = path_str == "/"
             || path.exists()
             || path_str.starts_with(constants::TRASH_URI)
@@ -366,7 +356,6 @@ impl FluxApp {
         self.history.push(old_path);
         self.forward_stack.clear();
 
-        // Synchronize active tab navigation and header page title
         if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
             tab.current_path = self.current_path.clone();
             tab.history = self.history.clone();

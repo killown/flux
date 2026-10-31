@@ -135,7 +135,6 @@ impl Terminal {
                 "/bin/bash".to_string()
             });
 
-        // Spawn the shell directly on the PTY slave
         let mut command = Command::new(&target_shell);
         command.arg("-l");
         command.env("TERM", "xterm-256color");

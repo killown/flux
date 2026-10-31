@@ -102,14 +102,12 @@ pub fn build_properties_panel(
         panel.append(&header);
     }
 
-    // ── Metadata sections ───────────────────────────────────────────────
     let sections = FactoryVecDeque::<MetadataSection>::builder()
         .launch(gtk::Box::new(gtk::Orientation::Vertical, 18))
         .forward(sender.input_sender(), |v| {
             AppMsg::Properties(PropertiesMsg::CopyPropertyValue(v))
         });
 
-    // ── "Open With" row ─────────────────────────────────────────────────
     let open_with_row = adw::ActionRow::builder()
         .title(tr("Open With"))
         .activatable(true)
@@ -125,7 +123,6 @@ pub fn build_properties_panel(
     open_with_group.add(&open_with_row);
     open_with_group.set_visible(false);
 
-    // ── Layout ──────────────────────────────────────────────────────────
     let content = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(18)

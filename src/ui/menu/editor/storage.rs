@@ -49,7 +49,6 @@ pub(super) fn get_available_menus() -> Vec<String> {
     let mut menus = vec!["menu.rs".to_string()];
     let base = flux_base_dir();
 
-    // Check root config dir
     if let Ok(entries) = fs::read_dir(&base) {
         for entry in entries.flatten() {
             let path = entry.path();
@@ -63,7 +62,6 @@ pub(super) fn get_available_menus() -> Vec<String> {
         }
     }
 
-    // Check menus/ subdirectory
     let sub = base.join("menus");
     if let Ok(entries) = fs::read_dir(sub) {
         for entry in entries.flatten() {

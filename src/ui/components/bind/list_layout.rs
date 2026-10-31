@@ -74,12 +74,10 @@ pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets, root: &gtk::Over
     widgets.label_scroller.set_valign(gtk::Align::Center);
     widgets.label_scroller.set_hexpand(true);
 
-    // Stack and its label-box fill the scroller's viewport.
     widgets.stack.set_halign(gtk::Align::Fill);
     widgets.stack.set_valign(gtk::Align::Center);
     widgets.stack.set_hexpand(true);
 
-    // Get the label container (the Box inside the Stack) and make it start-aligned.
     if let Some(label_box) = widgets.stack.child_by_name(constants::VIEW_LABEL) {
         if let Some(box_widget) = label_box.downcast_ref::<gtk::Box>() {
             box_widget.set_halign(gtk::Align::Start);

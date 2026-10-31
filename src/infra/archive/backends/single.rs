@@ -43,7 +43,6 @@ impl ArchiveBackend for SingleFileBackend {
         _password: Option<&str>,
     ) -> Result<Vec<u8>, ArchiveError> {
         crate::hit!("extract_entry_bytes");
-        // Extract the whole file (the only entry) to bytes.
         let name_lc = lc_name(archive_path);
         let reader: Box<dyn Read> = if name_lc.ends_with(".gz") {
             Box::new(flate2::read::GzDecoder::new(open_buf(archive_path)?))

@@ -3,7 +3,6 @@
 //! This module groups all GTK/Relm4 widget definitions and view-related
 //! logic to separate the presentation layer from the core application state.
 
-// --- 1. Submodule Declarations ---
 pub mod debug;
 pub mod inputs;
 pub mod keymap;
@@ -21,7 +20,6 @@ pub mod tabs;
 pub mod undo_redo;
 pub use tabs::TabState;
 
-// --- 2. Existing Submodules ---
 mod components;
 mod doc_css_variables;
 mod help;

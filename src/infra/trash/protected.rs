@@ -22,7 +22,6 @@ pub fn is_protected_target(path: &Path) -> bool {
     crate::hit!("is_protected_target");
     let path_str = path.to_string_lossy();
 
-    // Check raw URI root targets.
     if path_str.contains("://") {
         if let Some((_, after_scheme)) = path_str.split_once("://") {
             let inner_path = after_scheme

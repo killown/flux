@@ -151,7 +151,6 @@ pub(super) fn draw_terminal(
             let fill_x = x_pos.round();
             let fill_w = (x_pos + run_width).round() - fill_x;
 
-            // Draw background cell fill.
             let effective_bg = if first_cell.reverse {
                 first_cell.fg.as_ref().unwrap_or(&state.fg_color)
             } else {
@@ -311,12 +310,10 @@ fn draw_scrollbar(cr: &Context, state: &TerminalState, width: i32, height: i32) 
 
     let track_x = width as f64 - SCROLLBAR_WIDTH;
 
-    // Track.
     cr.set_source_rgba(1.0, 1.0, 1.0, 0.06);
     cr.rectangle(track_x, 0.0, SCROLLBAR_WIDTH, h);
     cr.fill().unwrap();
 
-    // Thumb.
     let radius = SCROLLBAR_WIDTH / 2.0;
     cr.set_source_rgba(1.0, 1.0, 1.0, 0.35);
     cr.arc(

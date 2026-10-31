@@ -16,7 +16,6 @@ pub fn format_right_status(
     crate::hit!("format_right_status");
     let mut parts = Vec::new();
 
-    // Add filter mode indicator
     match filter_mode {
         crate::domain::model::FilterMode::OnlyFolders => parts.push(tr("[Folders Only]")),
         crate::domain::model::FilterMode::OnlyFiles => parts.push(tr("[Files Only]")),
