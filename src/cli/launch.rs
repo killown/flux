@@ -13,7 +13,7 @@ pub(super) fn launch_main_app(
     open_archive: Option<PathBuf>,
     quick_list: Option<Vec<PathBuf>>,
     tag_search: Option<String>,
-    opts: flux::args::WindowOptions,
+    opts: WindowOptions,
     cwd_rx: Option<Receiver<PathBuf>>,
 ) {
     std::thread::spawn(|| {
@@ -99,14 +99,7 @@ pub(super) fn launch_main_app(
         open_archive,
         quick_list,
         tag_search,
-        // `flux::args::WindowOptions` is the library crate's type, this binary compiles
-        // its own copy of `model`, so the options are carried over field by field.
-        opts: WindowOptions {
-            no_sidebar: opts.no_sidebar,
-            no_header: opts.no_header,
-            no_statusbar: opts.no_statusbar,
-            preview: opts.preview,
-        },
+        opts,
     });
 }
 

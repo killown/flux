@@ -18,7 +18,7 @@ The script stops at the first failing step (`set -e`):
 
 Formatting is checked first, so a formatting failure hides lint and test failures until it is fixed. Run `cargo fmt` before you start.
 
-Each crate reports its own problems, so the same formatting or lint message can appear twice. The reason is in [Architecture](dev-architecture.md#crates-and-entry-points).
+The application is compiled once, as the `flux` library, so each formatting or lint message appears once. See [Architecture](dev-architecture.md#crates-and-entry-points).
 
 Tests run on one thread because several of them set process-wide environment variables such as `HOME` and `XDG_*`, and because GTK may only be used from one thread.
 

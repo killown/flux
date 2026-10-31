@@ -8,6 +8,7 @@
 
 pub mod app;
 pub mod args;
+pub mod cli;
 mod doc_cli;
 mod doc_fish;
 pub mod domain;

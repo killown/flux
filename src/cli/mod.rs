@@ -3,9 +3,9 @@ mod launch;
 mod shortcuts;
 mod watcher;
 
+use crate::args::{parse_icon_pair, resolve_startup_action, StartupAction};
 use crate::domain::model::Config;
 use crate::infra::window_control;
-use flux::args::{parse_icon_pair, resolve_startup_action, StartupAction};
 use std::ffi::{OsStr, OsString};
 use std::io::BufRead;
 use std::os::unix::ffi::OsStrExt;
@@ -101,7 +101,7 @@ pub fn run() {
             println!("  [PATH]  Directory or archive file to open on startup");
             println!();
             println!("Options:");
-            for (flags, description) in flux::args::CLI_OPTIONS {
+            for (flags, description) in crate::args::CLI_OPTIONS {
                 println!("  {flags:<28}{description}");
             }
         }
@@ -114,7 +114,7 @@ pub fn run() {
                 None,
                 None,
                 None,
-                flux::args::WindowOptions::default(),
+                crate::args::WindowOptions::default(),
                 cwd_rx,
             );
         }
@@ -140,7 +140,7 @@ pub fn run() {
                 Some(archive_path),
                 None,
                 None,
-                flux::args::WindowOptions::default(),
+                crate::args::WindowOptions::default(),
                 cwd_rx,
             );
         }
@@ -157,7 +157,7 @@ pub fn run() {
                 None,
                 None,
                 None,
-                flux::args::WindowOptions::default(),
+                crate::args::WindowOptions::default(),
                 cwd_rx,
             );
         }

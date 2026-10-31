@@ -8,15 +8,11 @@ A map of the codebase for contributors. Read it before the how-to guides: [Addin
 
 | Target | Entry point | Purpose |
 |---|---|---|
-| library `flux` | `src/lib.rs` | Argument parsing, the doc generators, and the code that the integration tests link against. |
-| binary `flux-fm` | `src/main.rs`, which calls `cli::run()` | The application. |
+| library `flux` | `src/lib.rs` | The whole application (`app`, `cli`, `domain`, `infra`, `ui`, `utils`), argument parsing and the doc generators. |
+| binary `flux-fm` | `src/main.rs`, which calls `flux::cli::run()` | A thin wrapper that installs the global allocator and starts the library. |
 | binary `gen-docs` | `src/bin/gen-docs.rs` | Regenerates the derived documentation. |
 
-`src/main.rs` declares its own `mod app`, `mod cli`, `mod domain`, `mod i18n`, `mod infra`, `mod ipc`, `mod model`, `mod services`, `mod shell_functions`, `mod ui` and `mod utils`. The same files are therefore compiled twice, once into the library and once into the binary. This has consequences:
-
-- `cargo fmt --check` and `cargo clippy` report a problem once per crate.
-- A crate-level lint such as `#![allow(clippy::result_large_err)]` must appear in both `lib.rs` and `main.rs`.
-- A type that lives in `model` exists in both crates and the two are not interchangeable. `flux::args::WindowOptions` is the library's type, and `cli/launch.rs` copies it field by field into the binary's own.
+Every module, `cli` included, is compiled once, into the library, and the binaries link against it. The integration tests, the fuzz targets and `gen-docs` therefore exercise the same code the application runs, and a formatting or lint problem is reported once. A crate-level lint such as `#![allow(clippy::result_large_err)]` only has to appear in `lib.rs`.
 
 ## Startup
 

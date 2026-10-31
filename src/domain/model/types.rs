@@ -31,9 +31,8 @@ pub enum BackgroundSlot {
 
 /// Per-session window switches parsed from the command line.
 ///
-/// Lives here rather than in `args.rs` because `AppInit` is compiled into both the
-/// `flux` library and the `flux-fm` binary, and only `model` exists in both.
-/// `flux::args` re-exports it.
+/// Lives here rather than in `args.rs` because `AppInit` carries it and `domain` does
+/// not import from other layers. `flux::args` re-exports it.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct WindowOptions {
     /// Temporary CLI override to hide the sidebar without persisting to config.
