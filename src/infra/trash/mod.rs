@@ -1,28 +1,44 @@
+//! Deleting files: classifying a selection and the blocking filesystem work.
+
 mod local;
 mod network;
 mod protected;
 mod recursive;
 pub mod tracked;
 
+pub use local::trash_local_batch;
+pub use network::delete_network_uri;
 pub use recursive::delete_recursive;
 
-use crate::app::state::FluxApp;
-use crate::domain::model::{AppMsg, ArchiveMsg, WindowMsg};
 use gtk::gio;
-use relm4::prelude::*;
+use gtk::gio::prelude::FileExt;
 use std::path::PathBuf;
 
-/// Deletes (trashes, or recursively removes) the given selection.
+/// URI of the virtual trash folder.
+pub const TRASH_URI: &str = "trash:///";
+
+/// A selection split by how each entry has to be deleted.
+#[derive(Debug, Default)]
+pub struct DeletePlan {
+    /// Resolved paths that were rejected because deleting them is never allowed.
+    pub protected: Vec<PathBuf>,
+    /// Entries inside an archive, as `(archive_path, inner_path)`. They are
+    /// never touched on disk and need a confirmation prompt instead.
+    pub archives: Vec<(PathBuf, String)>,
+    /// URIs on network filesystems, which have no trash and are deleted recursively.
+    pub network: Vec<String>,
+    /// Local entries as `(uri, original_path)`, moved to the trash as one batch.
+    /// URIs are used because `gio::File` is not `Send`.
+    pub local: Vec<(String, PathBuf)>,
+}
+
+/// Splits `selection` into a [`DeletePlan`].
 ///
 /// If `selection` is empty, falls back to `active_item_path`. Protected paths
-/// are rejected with a toast and skipped. Archive virtual URIs are routed to
-/// the archive deletion prompt instead of being touched on disk.
-pub fn delete_items(
-    selection: Vec<PathBuf>,
-    active_item_path: Option<PathBuf>,
-    sender: AsyncComponentSender<FluxApp>,
-) {
-    crate::hit!("delete_items");
+/// and archive virtual URIs are separated out instead of being scheduled for
+/// deletion. Does no deletion itself.
+pub fn plan_deletion(selection: Vec<PathBuf>, active_item_path: Option<PathBuf>) -> DeletePlan {
+    crate::hit!("plan_deletion");
     let mut selection = selection;
     if selection.is_empty() {
         if let Some(active) = active_item_path {
@@ -30,12 +46,7 @@ pub fn delete_items(
         }
     }
 
-    if selection.is_empty() {
-        return;
-    }
-
-    let sender_clone = sender.clone();
-    let mut local_batch: Vec<(gio::File, PathBuf)> = Vec::new();
+    let mut plan = DeletePlan::default();
     for raw_path in selection {
         // Resolve only for protection checks, use raw_path for deletion. A symlink
         // in the last component is not followed: trashing it removes the link.
@@ -46,10 +57,7 @@ pub fn delete_items(
                 "[Delete] Blocked attempt to delete protected system path: {:?}",
                 canon_path
             );
-            sender_clone.input(AppMsg::Window(WindowMsg::ShowToast(format!(
-                "Cannot delete protected path: {}",
-                canon_path.display()
-            ))));
+            plan.protected.push(canon_path);
             continue;
         }
 
@@ -59,13 +67,8 @@ pub fn delete_items(
             || path_str.starts_with("/archive:/")
             || path_str.starts_with("archive://")
         {
-            if let Some((archive_path, inner_path)) =
-                crate::infra::archive::parse_archive_uri(&path_str)
-            {
-                sender_clone.input(AppMsg::Archive(ArchiveMsg::PromptArchiveDeletion {
-                    archive_path,
-                    inner_path,
-                }));
+            if let Some(target) = crate::infra::archive::parse_archive_uri(&path_str) {
+                plan.archives.push(target);
             }
             continue;
         }
@@ -84,15 +87,13 @@ pub fn delete_items(
         } else {
             gio::File::for_path(&raw_path)
         };
+        let uri = file.uri().to_string();
 
         if is_network {
-            network::delete_via_recursive(file, sender_clone.clone());
+            plan.network.push(uri);
         } else {
-            local_batch.push((file, raw_path));
+            plan.local.push((uri, raw_path));
         }
     }
-
-    if !local_batch.is_empty() {
-        local::delete_batch_via_trash(local_batch, sender_clone);
-    }
+    plan
 }

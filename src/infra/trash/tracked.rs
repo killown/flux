@@ -5,8 +5,8 @@
 //! recreate it, delete it again), so undo must restore the specific entry a
 //! deletion produced instead of every entry with a matching `orig-path`.
 
+use super::TRASH_URI;
 use crate::domain::model::TrashedItem;
-use crate::ui::constants::TRASH_URI;
 use gtk::gio::prelude::*;
 use gtk::{gio, glib};
 use std::collections::HashSet;

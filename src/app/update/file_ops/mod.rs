@@ -63,15 +63,11 @@ pub(super) fn handle(
             if app.search.content_searching {
                 app.remove_search_results_for_paths(&selection);
             }
-            crate::infra::trash::delete_items(
-                selection,
-                app.active_item_path.clone(),
-                sender.clone(),
-            );
+            app.handle_delete_items(selection, sender);
         }
         AppMsg::FileOps(FileOpsMsg::EmptyTrash) => {
             app.folder_cache
-                .remove(&app.cache_key(&std::path::PathBuf::from(crate::ui::constants::TRASH_URI)));
+                .remove(&app.cache_key(&std::path::PathBuf::from(crate::infra::trash::TRASH_URI)));
             app.handle_empty_trash(sender);
         }
         AppMsg::FileOps(FileOpsMsg::RestoreItem(path)) => {

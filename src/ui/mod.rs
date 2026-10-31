@@ -102,7 +102,7 @@ pub mod constants {
     pub const ICON_FORWARD: &str = "go-next-symbolic";
     pub const ICON_TRASH: &str = "user-trash-full-symbolic";
     pub const ICON_SORT_INDICATOR: &str = "view-sort-ascending-symbolic";
-    pub const TRASH_URI: &str = "trash:///";
+    pub use crate::infra::trash::TRASH_URI;
     pub const RECENT_URI: &str = "recent:///";
     pub const CRISP_ICON_SIZES: &[i32] = &[
         16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768,
