@@ -16,17 +16,14 @@ mod debug;
 
 mod bookmark;
 mod browse;
-mod credentials;
 mod entry;
 mod error;
 mod location;
 mod mount;
 mod protocol;
 
-pub use bookmark::NetworkBookmark;
 pub use browse::{create_network_directory, list_network_contexts};
-pub use credentials::NetworkCredentials;
-pub use error::{NetworkAuthFlags, NetworkError};
+pub use error::NetworkError;
 pub use location::ConnectToServerParams;
 pub use mount::{active_mounts, unmount_network_location};
 pub use protocol::*;

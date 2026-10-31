@@ -26,7 +26,6 @@
 mod backend;
 mod backends;
 mod entry;
-mod error;
 mod format;
 mod lock_hint;
 mod temp;
@@ -37,8 +36,7 @@ mod util;
 pub use backend::{get_backend, ArchiveBackend};
 #[allow(unused_imports)]
 pub use backends::{read_cached_thumbnail, write_thumbnails_to_archive};
-pub use entry::{entries_to_load_contexts, ArchiveEntry};
-pub use error::ArchiveError;
+pub use entry::entries_to_load_contexts;
 #[allow(unused_imports)]
 pub use format::{is_browsable_archive, is_supported_archive, BROWSABLE_ARCHIVE_EXTENSIONS};
 #[allow(unused_imports)]
@@ -54,6 +52,7 @@ pub use uri::{
     extract_archive_entry_for_playback, get_archive_thumbnail, parse_archive_uri, ARCHIVE_URI,
 };
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use backends::{extract_dir_7z_at, extract_dir_tar_at, extract_dir_zip_at};
 use std::io::Write;
 use std::path::Path;

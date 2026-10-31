@@ -3,8 +3,7 @@ use std::cell::Cell;
 use std::rc::Rc;
 use tokio::sync::oneshot;
 
-use crate::domain::model::{AppMsg, TransferMsg};
-use crate::ui::conflict_policy::{ConflictChoice, ConflictContext};
+use crate::domain::model::{AppMsg, ConflictChoice, ConflictContext, TransferMsg};
 use relm4::prelude::*;
 
 mod card;

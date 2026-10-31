@@ -182,7 +182,7 @@ impl FluxApp {
     /// Appends a batch of extension/glob search results to the grid.
     pub fn handle_extension_search_batch(
         &mut self,
-        results: Vec<crate::infra::search::ExtensionMatch>,
+        results: Vec<crate::domain::model::ExtensionMatch>,
         session: u64,
     ) {
         crate::hit!("handle_extension_search_batch");

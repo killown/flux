@@ -1,4 +1,5 @@
-use crate::ui::conflict_policy::{auto_rename_dest, ConflictContext};
+use crate::domain::model::ConflictContext;
+use crate::ui::conflict_policy::auto_rename_dest;
 use adw::prelude::*;
 
 use super::util::{format_mtime, format_size, resolve_icon_name};

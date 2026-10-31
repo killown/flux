@@ -1,6 +1,7 @@
+use flux::domain::model::{ArchiveEntry, ArchiveError};
 use flux::infra::archive::{
     extract_dir_to_tempdir_with_backend, extract_entry_to_tempfile_with_backend,
-    list_archive_entries_with_backend, ArchiveBackend, ArchiveEntry, ArchiveError,
+    list_archive_entries_with_backend, ArchiveBackend,
 };
 use std::path::Path;
 use std::path::PathBuf;

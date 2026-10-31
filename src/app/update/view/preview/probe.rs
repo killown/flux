@@ -1,7 +1,7 @@
 //! Per-file probes behind the preview: the Details card, PDF and image
 //! loading, media tags, folder and archive listings, and raw byte reads.
 
-use crate::ui::panels::preview::{FileInfo, FolderEntry, PreviewContent};
+use crate::domain::model::{FileInfo, FolderEntry, PreviewContent};
 use std::path::{Path, PathBuf};
 
 const IMAGE_MAX_DIM: i32 = 2560;

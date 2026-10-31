@@ -1,11 +1,12 @@
 //! ISO 9660 and UDF backend.
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive::entry::collect_entry;
 use crate::infra::archive::util::{
     copy_limited, extract_bytes_via_tempfile, find_file_recursive, open_no_follow, reject_tool_arg,
     MAX_ENTRY_BYTES,
 };
-use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::ArchiveBackend;
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};

@@ -1,5 +1,4 @@
-use crate::domain::model::CellLabels;
-use crate::infra::git::GitFileStatus;
+use crate::domain::model::{CellLabels, GitFileStatus};
 use adw::gdk;
 use std::cell::RefCell;
 use std::path::PathBuf;

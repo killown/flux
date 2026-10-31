@@ -4,14 +4,13 @@
 //! [`crate::infra::archive::thumb_cache`] for the on-disk layout.
 //! A `.flux-cache/` without the sentinel is treated as foreign and left alone.
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive::entry::collect_entry;
 use crate::infra::archive::util::{
     copy_limited, create_no_follow, extract_bytes_via_tempfile, make_dest_dir_at, safe_join,
     MAX_ENTRY_BYTES, MAX_EXTRACT_BYTES,
 };
-use crate::infra::archive::{
-    register_temp_dir, zip_is_encrypted, ArchiveBackend, ArchiveEntry, ArchiveError,
-};
+use crate::infra::archive::{register_temp_dir, zip_is_encrypted, ArchiveBackend};
 use std::collections::{HashMap, HashSet};
 use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};

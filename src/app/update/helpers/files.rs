@@ -2,9 +2,10 @@
 
 use crate::app::state::FluxApp;
 use crate::app::update::file_ops::paste::{is_same_entry, paste_name_for};
-use crate::domain::model::{AppMsg, ArchiveMsg, DeviceMsg, NavigationMsg, WindowMsg};
+use crate::domain::model::{
+    AppMsg, ArchiveMsg, ConflictPolicy, DeviceMsg, NavigationMsg, WindowMsg,
+};
 use crate::i18n::tr;
-use crate::ui::conflict_policy::ConflictPolicy;
 use adw::prelude::*;
 use gtk::gdk;
 use gtk::gio;
@@ -134,7 +135,7 @@ impl FluxApp {
                                     Self::open_file(path_buf);
                                 }
                             }
-                            Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
+                            Err(crate::domain::model::ArchiveError::PasswordRequired) => {
                                 sender_clone.input(AppMsg::Archive(
                                     ArchiveMsg::PromptArchivePassword {
                                         archive_path,
@@ -143,7 +144,7 @@ impl FluxApp {
                                     },
                                 ));
                             }
-                            Err(crate::infra::archive::ArchiveError::WrongPassword) => {
+                            Err(crate::domain::model::ArchiveError::WrongPassword) => {
                                 sender_clone.input(AppMsg::Archive(
                                     ArchiveMsg::PromptArchivePassword {
                                         archive_path,

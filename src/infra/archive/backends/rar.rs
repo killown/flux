@@ -1,11 +1,12 @@
 //! RAR backend, shells out to `unar` or `unrar`.
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive::entry::collect_entry;
 use crate::infra::archive::util::{
     copy_limited, extract_bytes_via_tempfile, find_file_recursive, make_dest_dir, open_no_follow,
     reject_tool_arg, MAX_ENTRY_BYTES,
 };
-use crate::infra::archive::{register_temp_dir, ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::{register_temp_dir, ArchiveBackend};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};

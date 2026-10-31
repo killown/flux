@@ -2,6 +2,7 @@ use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
 use crate::app::state::FluxApp;
 use crate::domain::model::{AppMsg, ArchiveMsg, SortBy, ThumbnailsMsg, WindowMsg};
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive;
 use crate::ui::FileItem;
 use crate::utils;
@@ -17,7 +18,7 @@ async fn list_off_thread(
     archive_path: &std::path::Path,
     prefix: &str,
     password: Option<String>,
-) -> Result<Vec<archive::ArchiveEntry>, archive::ArchiveError> {
+) -> Result<Vec<ArchiveEntry>, ArchiveError> {
     crate::hit!("list_off_thread");
     let archive_path = archive_path.to_path_buf();
     let prefix = prefix.to_string();
@@ -27,7 +28,7 @@ async fn list_off_thread(
     .await
     {
         Ok(result) => result,
-        Err(e) => Err(archive::ArchiveError::Other(format!(
+        Err(e) => Err(ArchiveError::Other(format!(
             "archive listing task failed: {e}"
         ))),
     }
@@ -77,7 +78,7 @@ impl FluxApp {
             let mut password_c = known_password;
             let mut result = list_off_thread(&archive_path_c, &prefix_c, password_c.clone()).await;
 
-            let needs_password = matches!(result, Err(archive::ArchiveError::PasswordRequired));
+            let needs_password = matches!(result, Err(ArchiveError::PasswordRequired));
             if password_c.is_none() && needs_password {
                 if let Some(saved) =
                     crate::infra::keyring::lookup_archive_password(&archive_path_c).await
@@ -226,7 +227,7 @@ impl FluxApp {
         prefix: String,
         password: Option<String>,
         load_id: u64,
-        result: Result<Vec<archive::ArchiveEntry>, archive::ArchiveError>,
+        result: Result<Vec<ArchiveEntry>, ArchiveError>,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_archive_loaded");
@@ -245,7 +246,7 @@ impl FluxApp {
         let extension_globset = self.filters.extension_globset.clone();
 
         match result {
-            Err(archive::ArchiveError::PasswordRequired) => {
+            Err(ArchiveError::PasswordRequired) => {
                 self.archive.passwords.remove(&archive_path);
                 self.archive.pending_keyring_saves.discard(&archive_path);
                 self.archive.known_encrypted.insert(archive_path.clone());
@@ -256,7 +257,7 @@ impl FluxApp {
                     wrong_password: false,
                 }));
             }
-            Err(archive::ArchiveError::WrongPassword) => {
+            Err(ArchiveError::WrongPassword) => {
                 self.archive.passwords.remove(&archive_path);
                 self.archive.pending_keyring_saves.discard(&archive_path);
                 self.archive.known_encrypted.insert(archive_path.clone());
@@ -267,7 +268,7 @@ impl FluxApp {
                     wrong_password: true,
                 }));
             }
-            Err(archive::ArchiveError::Other(e)) => {
+            Err(ArchiveError::Other(e)) => {
                 sender.input(AppMsg::Window(WindowMsg::ShowToast(e)));
             }
             Ok(entries) => {

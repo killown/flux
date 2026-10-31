@@ -1,6 +1,6 @@
+use flux::domain::model::{NetworkAuthFlags, NetworkBookmark, NetworkCredentials};
 use flux::infra::network::{
-    is_network_uri, protocol_for_uri, ConnectToServerParams, NetworkAuthFlags, NetworkBookmark,
-    NetworkCredentials, NetworkProtocol,
+    is_network_uri, protocol_for_uri, ConnectToServerParams, NetworkProtocol,
 };
 use std::path::PathBuf;
 

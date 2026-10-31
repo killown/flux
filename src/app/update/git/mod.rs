@@ -1,7 +1,9 @@
 use crate::app::state::FluxApp;
-use crate::domain::model::{AppMsg, FileLoadContext, GitMsg, LoadingMsg, NavigationMsg, WindowMsg};
+use crate::domain::model::{
+    AppMsg, FileLoadContext, GitFileStatus, GitMsg, LoadingMsg, NavigationMsg, WindowMsg,
+};
 use crate::infra::git::{
-    find_git_repo_root, query_git_status, query_git_status_paths, GitFileStatus, StatusFilter,
+    find_git_repo_root, query_git_status, query_git_status_paths, StatusFilter,
 };
 use gtk::prelude::*;
 use relm4::AsyncComponentSender;

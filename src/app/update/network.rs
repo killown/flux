@@ -196,7 +196,7 @@ impl FluxApp {
     pub fn handle_connect_to_server(
         &mut self,
         uri: String,
-        credentials: Option<crate::infra::network::NetworkCredentials>,
+        credentials: Option<crate::domain::model::NetworkCredentials>,
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_connect_to_server");
@@ -224,7 +224,7 @@ impl FluxApp {
         sender: &AsyncComponentSender<Self>,
     ) {
         crate::hit!("handle_add_network_bookmark");
-        let bookmark = crate::infra::network::NetworkBookmark::new(name, uri);
+        let bookmark = crate::domain::model::NetworkBookmark::new(name, uri);
         if !self
             .config
             .network_bookmarks

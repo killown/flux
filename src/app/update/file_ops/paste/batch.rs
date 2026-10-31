@@ -2,9 +2,8 @@ use super::transfer::{is_cancelled_error, perform_file_op_with_progress, scan_to
 use super::{is_same_entry, CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
 use crate::app::state::FluxApp;
 use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg};
-use crate::ui::conflict_policy::{
-    auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
-};
+use crate::domain::model::{ConflictChoice, ConflictContext, ConflictPolicy};
+use crate::ui::conflict_policy::auto_rename_dest;
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;

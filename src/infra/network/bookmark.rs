@@ -1,5 +1,5 @@
 use super::protocol::protocol_for_uri;
-pub use crate::domain::model::NetworkBookmark;
+use crate::domain::model::NetworkBookmark;
 
 impl NetworkBookmark {
     pub fn new(name: impl Into<String>, uri: impl Into<String>) -> Self {

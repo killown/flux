@@ -2,8 +2,8 @@
 //! panel handle through an `Rc`.
 
 use super::folder_thumbs::FolderThumbs;
-use super::markdown::StyledRange;
 use crate::domain::model::FolderEntry;
+use crate::domain::model::StyledRange;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 

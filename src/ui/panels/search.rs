@@ -2,9 +2,9 @@ use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
 use crate::app::state::FluxApp;
+use crate::domain::model::AdvancedSearchParams;
 use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg};
 use crate::i18n::tr;
-use crate::infra::search::AdvancedSearchParams;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
 

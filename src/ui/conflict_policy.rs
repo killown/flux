@@ -1,7 +1,5 @@
 use std::path::{Path, PathBuf};
 
-pub use crate::domain::model::{ConflictChoice, ConflictContext, ConflictPolicy};
-
 /// Derives an auto-renamed destination path that does not yet exist.
 ///
 /// Given `/dest/file.txt` returns `/dest/file (1).txt`, `/dest/file (2).txt`, …

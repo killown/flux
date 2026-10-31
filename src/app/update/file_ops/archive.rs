@@ -227,14 +227,14 @@ impl FluxApp {
                     ))));
                     s.input(AppMsg::Archive(ArchiveMsg::EnterArchive(dest)));
                 }
-                Err(crate::infra::archive::ArchiveError::PasswordRequired) => {
+                Err(crate::domain::model::ArchiveError::PasswordRequired) => {
                     s.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                         archive_path,
                         prefix: parent_prefix,
                         wrong_password: false,
                     }));
                 }
-                Err(crate::infra::archive::ArchiveError::WrongPassword) => {
+                Err(crate::domain::model::ArchiveError::WrongPassword) => {
                     s.input(AppMsg::Archive(ArchiveMsg::PromptArchivePassword {
                         archive_path,
                         prefix: parent_prefix,

@@ -1,4 +1,4 @@
-use super::status::GitFileStatus;
+use crate::domain::model::GitFileStatus;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;

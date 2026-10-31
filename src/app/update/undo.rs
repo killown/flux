@@ -1,7 +1,8 @@
 use crate::app::state::FluxApp;
 use crate::domain::model::{AppMsg, NavigationMsg, UndoMsg, WindowMsg};
+use crate::domain::model::{FileOp, TrashedItem};
 use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
-use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
+use crate::ui::undo_redo::FileOpHistory;
 use gtk::gio;
 use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;

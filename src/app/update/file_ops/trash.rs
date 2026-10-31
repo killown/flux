@@ -1,7 +1,6 @@
 use crate::app::state::FluxApp;
-use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg};
+use crate::domain::model::{AppMsg, FileOp, NavigationMsg, TrashedItem, WindowMsg};
 use crate::ui::constants;
-use crate::ui::undo_redo::{FileOp, TrashedItem};
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;

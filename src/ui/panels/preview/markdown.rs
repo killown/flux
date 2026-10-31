@@ -2,7 +2,7 @@
 
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
-pub use crate::domain::model::{MdStyle, StyledRange};
+use crate::domain::model::{MdStyle, StyledRange};
 
 #[derive(Debug, Clone, Default)]
 pub struct MarkdownRender {

@@ -2,8 +2,8 @@
 //! byte to char offset map that `GtkTextBuffer` needs.
 
 use super::handle::PreviewPanelHandle;
-use super::markdown::{MdStyle, StyledRange};
-use super::syntax::{self, HighlightedRange};
+use super::syntax;
+use crate::domain::model::{HighlightedRange, MdStyle, StyledRange};
 use adw::prelude::*;
 use std::collections::HashMap;
 use std::ops::Range;

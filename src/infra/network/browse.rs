@@ -1,13 +1,12 @@
 use gtk::gio;
 use gtk::prelude::*;
 
-use super::credentials::NetworkCredentials;
 use super::debug::net_debug;
 use super::entry::{entries_to_load_contexts, themed_icon_name, NetworkEntry};
 use super::error::{classify_enum_error, NetworkError};
 use super::mount::{build_mount_op, is_already_mounted, mount_enclosing_volume};
 use super::protocol::protocol_for_uri;
-use crate::domain::model::FileLoadContext;
+use crate::domain::model::{FileLoadContext, NetworkCredentials};
 
 async fn off_thread<T: Send + 'static>(
     job: impl FnOnce() -> Result<T, NetworkError> + Send + 'static,

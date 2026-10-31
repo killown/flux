@@ -1,6 +1,7 @@
+use flux::domain::model::PendingSaves;
 use flux::infra::keyring::{
     forget_archive_password, lookup_archive_password, save_archive_password, ArchiveKey,
-    PendingSaves, APPLICATION_ID, KIND_ARCHIVE_PASSWORD,
+    APPLICATION_ID, KIND_ARCHIVE_PASSWORD,
 };
 use std::fs::OpenOptions;
 use std::future::Future;

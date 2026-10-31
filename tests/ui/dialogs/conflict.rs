@@ -1,6 +1,5 @@
-use flux::ui::conflict_policy::{
-    auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
-};
+use flux::domain::model::{ConflictChoice, ConflictContext, ConflictPolicy};
+use flux::ui::conflict_policy::auto_rename_dest;
 use std::fs::File;
 use std::path::PathBuf;
 use tempfile::tempdir;

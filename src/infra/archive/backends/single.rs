@@ -1,7 +1,8 @@
 //! Standalone single-file compressed archive backend.
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive::util::{copy_limited, lc_name, open_buf, strip_ext, MAX_ENTRY_BYTES};
-use crate::infra::archive::{ArchiveBackend, ArchiveEntry, ArchiveError};
+use crate::infra::archive::ArchiveBackend;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 

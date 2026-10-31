@@ -216,7 +216,7 @@ impl FluxApp {
                 locked: false,
                 passwords: std::collections::HashMap::new(),
                 known_encrypted: std::collections::HashSet::new(),
-                pending_keyring_saves: crate::infra::keyring::PendingSaves::default(),
+                pending_keyring_saves: crate::domain::model::PendingSaves::default(),
             },
             network_section,
             transfer_dialog: None,

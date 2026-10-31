@@ -2,7 +2,7 @@
 
 const HISTORY_LIMIT: usize = 64;
 
-pub use crate::domain::model::{FileOp, TrashedItem};
+use crate::domain::model::FileOp;
 
 #[derive(Debug, Default)]
 pub struct FileOpHistory {

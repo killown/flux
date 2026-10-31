@@ -1,5 +1,6 @@
 use flux::app::state::FluxApp;
-use flux::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
+use flux::domain::model::{FileOp, TrashedItem};
+use flux::ui::undo_redo::FileOpHistory;
 use std::fs;
 use std::path::{Path, PathBuf};
 

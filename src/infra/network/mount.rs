@@ -4,10 +4,10 @@ use std::path::PathBuf;
 use gtk::gio;
 use gtk::prelude::*;
 
-use super::credentials::NetworkCredentials;
 use super::debug::net_debug;
 use super::error::NetworkError;
 use super::protocol::is_network_uri;
+use crate::domain::model::NetworkCredentials;
 
 /// True when the error is `G_IO_ERROR_ALREADY_MOUNTED`. That is not a real
 /// failure: the volume is attached and the subsequent `enumerate_children`

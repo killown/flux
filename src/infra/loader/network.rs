@@ -6,7 +6,7 @@ impl FluxApp {
     pub fn load_network(
         &mut self,
         uri: &str,
-        credentials: Option<crate::infra::network::NetworkCredentials>,
+        credentials: Option<crate::domain::model::NetworkCredentials>,
         sender: relm4::AsyncComponentSender<Self>,
     ) {
         crate::hit!("load_network");
@@ -44,8 +44,8 @@ impl FluxApp {
                         message: crate::i18n::tr(
                             "Authentication failed. Please check your credentials.",
                         ),
-                        flags: crate::infra::network::NetworkAuthFlags::USERNAME
-                            | crate::infra::network::NetworkAuthFlags::PASSWORD,
+                        flags: crate::domain::model::NetworkAuthFlags::USERNAME
+                            | crate::domain::model::NetworkAuthFlags::PASSWORD,
                         auth_failed: true,
                     }));
                 }

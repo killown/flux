@@ -1,4 +1,5 @@
-use flux::infra::network::{ConnectToServerParams, NetworkAuthFlags, NetworkCredentials};
+use flux::domain::model::{NetworkAuthFlags, NetworkCredentials};
+use flux::infra::network::ConnectToServerParams;
 
 #[test]
 fn test_connect_to_server_uri_builder() {

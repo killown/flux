@@ -1,7 +1,7 @@
+use flux::domain::model::ArchiveEntry;
 use flux::infra::archive::{
     build_archive_uri, decode_archive_host, encode_archive_host, entries_to_load_contexts,
     extract_entry_to_tempfile, is_browsable_archive, list_archive_entries, parse_archive_uri,
-    ArchiveEntry,
 };
 use std::fs::{self, File};
 use std::io::Write;
@@ -412,7 +412,7 @@ Attributes = D
 
         ";
 
-    let mut seen: HashMap<String, flux::infra::archive::ArchiveEntry> = HashMap::new();
+    let mut seen: HashMap<String, flux::domain::model::ArchiveEntry> = HashMap::new();
     let mut cur_path = String::new();
     let mut cur_size: u64 = 0;
     let mut cur_is_dir = false;
@@ -431,7 +431,7 @@ Attributes = D
             if !cur_path.is_empty() {
                 seen.insert(
                     cur_path.clone(),
-                    flux::infra::archive::ArchiveEntry {
+                    flux::domain::model::ArchiveEntry {
                         name: cur_path.clone(),
                         is_dir: cur_is_dir,
                         size: cur_size,

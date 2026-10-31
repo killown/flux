@@ -1,11 +1,11 @@
 //! The `ArchiveBackend` trait and the backend factory.
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive::backends::{
     DebBackend, IsoBackend, RarBackend, SevenZBackend, SingleFileBackend, TarBackend,
     UnsupportedBackend, ZipBackend,
 };
 use crate::infra::archive::util::lc_name;
-use crate::infra::archive::{ArchiveEntry, ArchiveError};
 use std::path::{Path, PathBuf};
 
 // ─── ArchiveBackend trait ────────────────────────────────────────────────────

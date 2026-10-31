@@ -72,7 +72,7 @@ impl FluxApp {
                 let canon_old = canon_join(&old_path);
                 let canon_new = canon_join(&new_path);
                 self.file_op_history
-                    .push_undo(crate::ui::undo_redo::FileOp::Rename {
+                    .push_undo(crate::domain::model::FileOp::Rename {
                         old_path: canon_old,
                         new_path: canon_new,
                         old_name: old_path

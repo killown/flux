@@ -1,6 +1,7 @@
+use flux::domain::model::ArchiveError;
 use flux::infra::archive::{
     create_archive_directory, list_archive_entries, remove_archive_entry, write_archive_entry,
-    zip_is_encrypted, ArchiveError,
+    zip_is_encrypted,
 };
 use std::fs::File;
 use std::io::{Read, Write};

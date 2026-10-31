@@ -1,6 +1,5 @@
+use crate::domain::model::NetworkAuthFlags;
 use gtk::gio;
-
-pub use crate::domain::model::NetworkAuthFlags;
 
 #[derive(Debug)]
 pub enum NetworkError {

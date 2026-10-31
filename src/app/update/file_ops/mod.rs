@@ -122,13 +122,13 @@ pub(super) fn handle(
         AppMsg::FileOps(FileOpsMsg::MoveSucceeded { items, dest_dir }) => {
             app.folder_cache.remove(&app.cache_key(&dest_dir));
             app.file_op_history
-                .push_undo(crate::ui::undo_redo::FileOp::Move { items, dest_dir });
+                .push_undo(crate::domain::model::FileOp::Move { items, dest_dir });
         }
         AppMsg::FileOps(FileOpsMsg::CopySucceeded { copies, dest_dir }) => {
             let copy_dests = copies.into_iter().map(|(_, dest)| dest).collect();
             app.folder_cache.remove(&app.cache_key(&dest_dir));
             app.file_op_history
-                .push_undo(crate::ui::undo_redo::FileOp::Copy {
+                .push_undo(crate::domain::model::FileOp::Copy {
                     copies: copy_dests,
                     dest_dir,
                 });

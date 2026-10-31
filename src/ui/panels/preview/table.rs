@@ -5,7 +5,7 @@ use gtk::gio;
 use gtk::prelude::*;
 use std::path::Path;
 
-pub use crate::domain::model::TableData;
+use crate::domain::model::TableData;
 
 const MAX_ROWS: usize = 10_000;
 const MAX_COLS: usize = 256;

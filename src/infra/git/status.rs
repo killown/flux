@@ -1,6 +1,5 @@
 use super::font::is_nerd_font_available;
-
-pub use crate::domain::model::GitFileStatus;
+use crate::domain::model::GitFileStatus;
 
 impl GitFileStatus {
     /// Returns display badge emblem and CSS class name.

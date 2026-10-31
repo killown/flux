@@ -71,7 +71,7 @@ impl FluxApp {
             }
 
             sender.input(AppMsg::Search(SearchMsg::StartAdvancedSearch(
-                crate::infra::search::AdvancedSearchParams {
+                crate::domain::model::AdvancedSearchParams {
                     patterns: vec![query_target],
                     include_hidden: self.show_hidden,
                     ..Default::default()

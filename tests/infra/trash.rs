@@ -1,5 +1,5 @@
+use flux::domain::model::TrashedItem;
 use flux::infra::trash::tracked::{assign_new_entries, find_entry, pick_new_entry, TrashEntry};
-use flux::ui::undo_redo::TrashedItem;
 use std::collections::HashSet;
 use std::path::PathBuf;
 

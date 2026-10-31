@@ -1,5 +1,5 @@
 use super::query::query_git_status;
-use super::status::GitFileStatus;
+use crate::domain::model::GitFileStatus;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 

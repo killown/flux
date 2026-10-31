@@ -1,5 +1,5 @@
-use crate::domain::model::{AppMsg, NavigationMsg, NetworkMsg};
-use crate::infra::network::{self, NetworkBookmark};
+use crate::domain::model::{AppMsg, NavigationMsg, NetworkBookmark, NetworkMsg};
+use crate::infra::network;
 use gtk::gio::prelude::*;
 use gtk::prelude::*;
 use relm4::Sender;

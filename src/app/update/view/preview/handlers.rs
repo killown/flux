@@ -1,7 +1,8 @@
 use super::compute::compute_preview_guarded;
 use crate::app::state::FluxApp;
+use crate::domain::model::PreviewContent;
 use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg, RightPanelType, SearchMsg};
-use crate::ui::panels::preview::{registry, PreviewContent};
+use crate::ui::panels::preview::registry;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
