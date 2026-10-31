@@ -11,6 +11,7 @@ pub(crate) mod prefetch;
 pub(crate) mod preview;
 mod selection;
 mod text_encoding;
+mod thumbnail_tasks;
 mod thumbnails;
 mod video_preview;
 

@@ -1,12 +1,13 @@
 use crate::app::state::FluxApp;
 use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, ViewMsg};
+use crate::infra::downloads::is_download_temp;
 use crate::ui::FileItem;
 use crate::utils;
 use adw::gio::prelude::*;
 use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 
 thread_local! {
@@ -18,17 +19,6 @@ thread_local! {
         std::collections::HashMap<PathBuf, glib::SourceId>,
     > = std::cell::RefCell::new(std::collections::HashMap::new());
 }
-
-/// Suffixes used by download tools while a file is still being written.
-///
-/// Firefox: `<name>.<random>.RW2.part`
-/// Chromium: `<name>.crdownload`
-/// wget: `<name>.tmp`
-///
-/// Watcher events for paths with these suffixes are ignored entirely,
-/// they are internal scratch files, never visible to the user, and
-/// thumbnailing them wastes cycles on partial data.
-const DOWNLOAD_TEMP_SUFFIXES: &[&str] = &["part", "crdownload", "download", "partial", "tmp"];
 
 /// Coalesces rapid-fire `Changed` events for the same path into a single
 /// dispatch after the writer stops.
@@ -56,71 +46,6 @@ pub(crate) fn debounce_path_event(path: PathBuf, sender: relm4::AsyncComponentSe
         });
         map.insert(path, id);
     });
-}
-
-/// Returns `true` when `path` is a download scratch file that the user
-/// should never see.
-fn is_download_temp(path: &Path) -> bool {
-    path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
-        let lower = e.to_ascii_lowercase();
-        DOWNLOAD_TEMP_SUFFIXES.contains(&lower.as_str())
-    })
-}
-
-/// Returns `true` when a sibling `.part` (or `.crdownload` etc.) file exists
-/// in the same directory that appears to belong to `path`.
-///
-/// Download tools create the final path as an empty placeholder, then write
-/// to `<name>.<random>.<ext>.part` next to it, and rename on completion. As
-/// long as that sibling exists, the download is still in progress and the
-/// final file is not safe to thumbnail.
-///
-/// Matching is done on the file stem: `DSC_4207.NEF` matches
-/// `DSC_4207.L8Koxwkl.NEF.part` because both start with `DSC_4207`.
-///
-/// This reads the entire parent directory with blocking I/O, so it must not
-/// run on the GTK thread. The watcher reaches it through
-/// `spawn_thumbnail_loader_unless_downloading`, which runs it on the blocking pool.
-pub(crate) fn has_active_download_sibling(path: &Path) -> bool {
-    crate::hit!("has_active_download_sibling");
-    let Some(parent) = path.parent() else {
-        return false;
-    };
-    let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
-        return false;
-    };
-    if stem.is_empty() {
-        return false;
-    }
-
-    let Ok(entries) = std::fs::read_dir(parent) else {
-        return false;
-    };
-
-    for entry in entries.flatten() {
-        let name = entry.file_name();
-        let name_str = name.to_string_lossy();
-
-        // Only consider siblings that look like download scratch files.
-        let is_temp = Path::new(name_str.as_ref())
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| {
-                let lower = e.to_ascii_lowercase();
-                DOWNLOAD_TEMP_SUFFIXES.contains(&lower.as_str())
-            });
-        if !is_temp {
-            continue;
-        }
-
-        // The scratch file must share the target's stem prefix. This avoids
-        // false positives from unrelated downloads in the same directory.
-        if name_str.starts_with(stem) {
-            return true;
-        }
-    }
-
-    false
 }
 
 impl FluxApp {
