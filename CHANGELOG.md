@@ -6,6 +6,111 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-31
+
+# Changelog
+
+## [0.7.0] - 2026-10-31
+
+### Added
+- **Search**: Add "Save as tag" to label search results with a tag from the Search panel header.
+- **Grid**: Drag the whole selection when dragging a selected item.
+- **Grid**: Rubber-band select from an item with Ctrl+Shift.
+- **Archive**: Offer to extract nested archives before entering them.
+- **Properties**: Replace the Properties window with a right sidebar panel.
+- **HWGA**: Add `hit!` probes to I/O, IPC, keyring, trash, archive and startup paths.
+
+### Changed
+- **Refactor**: Compile the application once, as the `flux` library.
+- **Refactor**: Finish removing upward imports from `utils` and add a layering test.
+- **Refactor**: Move `SENDER` to `infra` so `infra` no longer imports `app`.
+- **Refactor**: Move the search launchers from `infra::search` to `app::update::search`.
+- **Refactor**: Move `NEXT_TASK_ID` to `infra::tasks`.
+- **Refactor**: Move loader `FluxApp` handlers to `app::update::loader`.
+- **Refactor**: Invert `infra→app` dependency in thumbnails and trash.
+- **Refactor**: Move toolkit-owning state to `app::state`, make `domain` GTK-free.
+- **Refactor**: Group `FluxApp` session state into typed sub-structs.
+- **Refactor**: Extract right-panel state into `Panels`.
+- **Refactor**: Split `AppMsg` into per-topic sub-enums under `msg/`.
+- **Refactor**: Extract header leaf widgets and panel revealers from `view!`.
+- **Refactor**: Split `bind.rs` into focused submodules.
+- **Refactor**: Split monolithic `preview.rs` into `preview/`.
+- **Refactor**: Extract preview handlers, compute and probes into submodules.
+- **Trash**: Delete top-level entry directly, stop recursing into trashed dirs.
+- **UI**: Simplify `flux-card` border and hover styling.
+- **Themes**: Make selection-status bar transparent.
+- **Settings**: Open preferences as a non-modal window.
+
+### Fixed
+- **Search**: Stop pruning subfolders when the index wasn't queried.
+- **Search**: Keep requesting an index delta scan on wildcard queries.
+- **Search**: Drop UI-thread index query, reuse fuzzy matcher, fix `/run/user` check.
+- **Search**: End the search layout stash on every reset.
+- **Archive**: Fail zip writes when a directory entry cannot be read.
+- **Archive**: Serialize zip rewrites with a per-archive lock.
+- **Archive**: Refuse to overwrite existing zip entries on write.
+- **Archive**: Refuse writes that would silently drop an existing folder's contents.
+- **Archive**: Only purge scratch dirs matching `flux-<pid>-<random>` exactly.
+- **Archive**: Harden extraction paths and cap entry sizes.
+- **Undo**: Trash copies on undo instead of deleting permanently.
+- **Undo**: Record rename paths without resolving the item symlink.
+- **Undo**: Refuse move undo/redo when target path is occupied.
+- **Paste**: Keep xattrs when a cut falls back to copy and delete.
+- **Config**: Serialize saves and detect invalidation during load.
+- **Build**: Install assets without stale binary, harden rerun and docs paths.
+- **Cache**: Evict `folder_cache` by canonical key.
+- **Rename**: Correct error toasts, detect dangling symlinks, evict cache.
+- **Trash**: Empty trash on a worker thread and report failures.
+- **Trash**: Allow deleting symlinks that point at protected folders.
+- **Settings**: Apply the single-click setting to open tabs.
+- **Inputs**: Make Ctrl/Shift+click not open files in single-click mode.
+- **Inputs**: Attach background-click deselect per tab grid.
+- **Recents**: Populate the active tab's grid instead of a detached one.
+- **Recents**: Remove whole xbel bookmark blocks and write atomically.
+- **Recents**: Rewrite `recently-used.xbel` off the GTK thread.
+- **DnD**: Move symlinks as links instead of their targets.
+- **DnD**: Stop drag-and-drop moves from overwriting existing files.
+- **DnD**: Route drag-move through paste batch with conflict handling.
+- **DnD**: Start drag when a single item is selected.
+- **Quick-List**: Stop quick-transfer copy from overwriting existing files.
+- **Clipboard**: Canonicalize copied paths off the GTK thread.
+- **Preview**: Sniff `.ts`, decode UTF-16/Latin-1, highlight extensionless files.
+- **Loader**: Show loading spinner on cache-hit folder loads.
+- **Files**: Handle non-UTF-8 paths in CLI args and `--cwd` IPC.
+- **UI**: Stop grid reflow when selecting a card.
+- **UI**: Keep keyboard focus out of the header bar.
+- **Sidebar**: Stop section headers from taking keyboard focus.
+- **Sidebar**: Delay DnD drop-zone activation and shrink pin zone.
+- **Shortcuts**: Make grid/list toggle work from any focus.
+- **Grid**: Suspend rubberband selection while dragging an item.
+- **LUKS**: Unescape octal sequences in mount points from `/proc/mounts`.
+- **HWGA**: Skip exit report for crates with too few probes.
+
+### Performance
+- **Startup**: Split GTK init and add hwga probes to startup hot paths.
+- **Startup**: Warm font and volume monitor early, drop duplicate sidebar build.
+- **Startup**: Defer `StyleManager` init to avoid blocking startup.
+- **Config**: Cache `Config` in an `Arc`, add `config_snapshot()`.
+- **Network**: List network folders off the GTK thread.
+- **Icon**: Preload icon theme files on a worker thread.
+- **Search**: Speed up delta scan with a covering index and off-thread root collection.
+
+### Documentation
+- **Readme**: Add startup time and icon theme troubleshooting.
+- **Testing**: Enforce layering rule via source scan.
+- **Fuzz**: Fix target imports and add coverage for new modules.
+- **Args**: Drop tests for removed `--file-properties` flag.
+
+### Removed
+- Remove compatibility re-exports left by the domain split.
+- Remove unused `ui::search` compatibility shim.
+- Remove unused `ui::config_handlers` compatibility shim.
+- Remove unused `ui::navigation` compatibility shim.
+- Remove unused `crate::model` re-export shim.
+- Drop unused `SettingsWindow` re-export.
+- Drop archive-drawn-as-folder icon swap.
+
+
 ## [0.6.0] - 2026-10-26
 
 # Flux 0.6.0
