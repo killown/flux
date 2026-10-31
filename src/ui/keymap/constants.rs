@@ -10,7 +10,8 @@ pub const DELETE: &str = "Delete";
 pub const BACK: &str = "<alt>Left";
 pub const FORWARD: &str = "<alt>Right";
 pub const REFRESH: &str = "F5";
-pub const SEARCH: &str = "<ctrl>f";
+// Defined in `domain` because `utils::search::doc` must not import `ui`.
+pub use crate::domain::model::constants::SEARCH_SHORTCUT as SEARCH;
 pub const PROPERTIES: &str = "<ctrl>i";
 pub const TOGGLE_HIDDEN: &str = "<ctrl>h";
 pub const SETTINGS: &str = "F10";

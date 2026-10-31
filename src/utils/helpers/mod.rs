@@ -2,18 +2,10 @@
 
 mod background;
 mod format;
+mod input;
 pub mod shell;
 mod system;
 mod theme;
-#[allow(unused_imports)]
-pub use crate::app::update::helpers::files;
-pub use crate::app::update::helpers::input;
-#[allow(unused_imports)]
-pub use crate::app::update::helpers::selection;
-#[allow(unused_imports)]
-pub use crate::app::update::helpers::sidebar;
-#[allow(unused_imports)]
-pub use crate::app::update::helpers::view;
 
 /// Converts `(x, y)` from `from`'s coordinate space into `to`'s.
 ///
@@ -66,7 +58,7 @@ pub use format::{
     effective_hidden_extensions, format_display_label, format_right_status, is_recursive_paste,
 };
 #[allow(unused_imports)]
-pub use input::{parse_mouse_button, should_trigger_preview};
+pub use input::{parse_mouse_button, should_trigger_preview, should_trigger_preview_and_mime};
 #[allow(unused_imports)]
 pub use system::{
     editor_shell_command, launch_editor_at_line, open_new_instance, register_resources,

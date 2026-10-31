@@ -24,6 +24,9 @@ pub const TEMPLATE_PATHS: &str = "%p";
 /// Command-template placeholder that expands to the current directory.
 pub const TEMPLATE_CWD: &str = "%d";
 
+/// Default accelerator that focuses the search entry.
+pub const SEARCH_SHORTCUT: &str = "<ctrl>f";
+
 /// URI of the virtual Recents folder.
 pub const RECENT_URI: &str = "recent:///";
 /// Icon sizes, in pixels, that the zoom steps snap to.
