@@ -319,7 +319,7 @@ impl FactoryComponent for SidebarPlace {
                         std::time::Duration::from_millis(constants::SIDEBAR_AUTONAV_DELAY_MS),
                         move || {
                             ROW_DND_TIMERS.with(|t| t.borrow_mut().navigate = None);
-                            if let Some(s) = crate::app::state::SENDER.get() {
+                            if let Some(s) = crate::infra::SENDER.get() {
                                 let _ = s.send(crate::domain::model::AppMsg::Navigation(crate::domain::model::NavigationMsg::Navigate(nav_path.clone())));
                             }
                         },
@@ -421,7 +421,7 @@ impl FactoryComponent for SidebarPlace {
                         set_visible: self.is_mount,
                         add_css_class: "eject-button",
                         connect_clicked[path = self.path.clone()] => move |_| {
-                            if let Some(s) = crate::app::state::SENDER.get() {
+                            if let Some(s) = crate::infra::SENDER.get() {
                                 let _ = s.send(crate::domain::model::AppMsg::Device(crate::domain::model::DeviceMsg::UnmountDevice(path.clone())));
                             }
                         }

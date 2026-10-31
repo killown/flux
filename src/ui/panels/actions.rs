@@ -353,7 +353,7 @@ impl FluxApp {
         self.active_item_line = 0;
 
         let session_arc = self.panels.actions.extras.actions_panel_session.clone();
-        let sender = crate::app::state::SENDER.get().cloned();
+        let sender = crate::infra::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
                 return;
@@ -462,7 +462,7 @@ impl FluxApp {
         action: crate::ui::menu::secondary::NewSecondaryAction,
     ) {
         crate::hit!("handle_save_contextual_action");
-        let sender = crate::app::state::SENDER.get().cloned();
+        let sender = crate::infra::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             let result =
                 crate::ui::menu::secondary::append_secondary_action(&mime, category_scope, &action);

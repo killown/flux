@@ -76,8 +76,7 @@ pub(super) fn paintable_for_gicon(
     let fallback = lookup_theme_icon(item, root, icon);
 
     let decode_guard = crate::utils::icon::begin_file_icon_decode(&path);
-    if let (Some(sender), Some(decode_guard)) =
-        (crate::app::state::SENDER.get().cloned(), decode_guard)
+    if let (Some(sender), Some(decode_guard)) = (crate::infra::SENDER.get().cloned(), decode_guard)
     {
         let path_clone = path.clone();
         let thumbnail_manager = item.thumbnail_manager.clone();

@@ -9,9 +9,9 @@
 //! panel, rename entry, location panel or terminal is unaffected.
 
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{AppMsg, NavigateMode, NavigationMsg, QuickListMsg, SearchMsg};
 use crate::i18n::tr;
-use crate::ui::constants;
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;

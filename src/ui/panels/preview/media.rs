@@ -45,7 +45,7 @@ impl PreviewPanelHandle {
         self.state
             .playlist_skip_until
             .set(glib::monotonic_time() + PLAYLIST_SKIP_WINDOW_US);
-        if let Some(s) = crate::app::state::SENDER.get() {
+        if let Some(s) = crate::infra::SENDER.get() {
             let _ = s.send(AppMsg::View(ViewMsg::SelectionStep(1)));
         }
     }

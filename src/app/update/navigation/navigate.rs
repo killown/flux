@@ -1,9 +1,9 @@
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::AltCycle;
 use crate::domain::model::{
     ActionsMsg, AppMsg, ArchiveMsg, NavigationMsg, QuickListMsg, SearchMsg, TagsMsg, WindowMsg,
 };
-use crate::ui::constants;
 use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
@@ -69,7 +69,7 @@ impl FluxApp {
         if !has_filter
             && !crate::infra::network::is_network_uri(&path)
             && !path_str.starts_with(crate::infra::archive::ARCHIVE_URI)
-            && !path_str.starts_with(constants::TRASH_URI)
+            && !path_str.starts_with(crate::infra::trash::TRASH_URI)
             && !path_str.starts_with(constants::RECENT_URI)
         {
             if let (Ok(p1), Ok(p2)) = (path.canonicalize(), self.current_path.canonicalize()) {
@@ -224,7 +224,7 @@ impl FluxApp {
 
         let path_valid = path_str == "/"
             || path.exists()
-            || path_str.starts_with(constants::TRASH_URI)
+            || path_str.starts_with(crate::infra::trash::TRASH_URI)
             || path_str.starts_with(constants::RECENT_URI)
             || path_str.starts_with("tags://");
 
@@ -246,7 +246,7 @@ impl FluxApp {
         }
 
         if path.is_dir()
-            || path_str.starts_with(constants::TRASH_URI)
+            || path_str.starts_with(crate::infra::trash::TRASH_URI)
             || path_str.starts_with(constants::RECENT_URI)
         {
             self.archive.locked = false;

@@ -137,7 +137,7 @@ impl FluxApp {
             let target_path = selected_path;
             let source_id =
                 glib::timeout_add_local_once(std::time::Duration::from_millis(100), move || {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::TriggerVideoPreview(
                             target_path,
                         )));
@@ -175,7 +175,7 @@ impl FluxApp {
             self.preview.video_launches.clear();
             self.stop_video_preview();
 
-            if let Some(s) = crate::app::state::SENDER.get() {
+            if let Some(s) = crate::infra::SENDER.get() {
                 let msg = tr("Video preview throttled: too many quick selections, waiting {}s")
                     .replace("{}", &VIDEO_PREVIEW_COOLDOWN.as_secs().to_string());
                 let _ = s.send(AppMsg::Window(WindowMsg::ShowToast(msg)));

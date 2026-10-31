@@ -8,6 +8,7 @@ mod archive;
 mod cancel;
 mod config;
 mod conflict;
+pub mod constants;
 mod defaults;
 mod doc_config;
 mod file_load;

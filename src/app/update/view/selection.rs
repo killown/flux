@@ -1,7 +1,7 @@
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{AppMsg, GitMsg, PreviewMsg, PropertiesMsg};
 use crate::i18n::tr;
-use crate::ui::constants;
 use crate::utils;
 use adw::gio::prelude::*;
 use adw::prelude::*;

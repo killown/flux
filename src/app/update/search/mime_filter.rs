@@ -24,7 +24,7 @@ impl FluxApp {
             return;
         };
         let mime = if path.is_dir() {
-            crate::ui::constants::MIME_DIR.to_string()
+            crate::domain::model::constants::MIME_DIR.to_string()
         } else {
             crate::utils::media::get_mime_type(&path)
         };

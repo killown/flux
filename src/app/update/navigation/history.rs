@@ -1,5 +1,5 @@
 use crate::app::state::FluxApp;
-use crate::ui::constants;
+use crate::domain::model::constants;
 use gtk::prelude::*;
 use relm4::prelude::*;
 

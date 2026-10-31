@@ -115,7 +115,7 @@ fn forward_ipc_to_app(rx: Receiver<PathBuf>) {
     crate::hit!("forward_ipc_to_app");
     glib::timeout_add_local(std::time::Duration::from_millis(50), move || {
         while let Ok(path) = rx.try_recv() {
-            if let Some(sender) = crate::app::state::SENDER.get() {
+            if let Some(sender) = crate::infra::SENDER.get() {
                 let _ = sender.send(AppMsg::Navigation(NavigationMsg::Navigate(path)));
             }
         }

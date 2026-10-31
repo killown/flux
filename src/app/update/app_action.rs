@@ -1,6 +1,6 @@
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{ActionsMsg, AppMsg, NavigationMsg, QuickListMsg};
-use crate::ui::constants;
 use crate::utils;
 use adw::gdk;
 use adw::gio::prelude::*;

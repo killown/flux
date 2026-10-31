@@ -70,7 +70,7 @@ impl FluxApp {
             } else {
                 let tag_query = format!("#{}", clean_tag);
                 sender.input(AppMsg::Search(SearchMsg::SwitchHeader(
-                    crate::ui::constants::VIEW_SEARCH.to_string(),
+                    crate::domain::model::constants::VIEW_SEARCH.to_string(),
                 )));
                 sender.input(AppMsg::Search(SearchMsg::UpdateFilter(tag_query)));
             }
@@ -434,7 +434,7 @@ impl FluxApp {
                         };
 
                         if let Some(ref want) = mime_filter {
-                            let is_dir_filter = want == crate::ui::constants::MIME_DIR;
+                            let is_dir_filter = want == crate::domain::model::constants::MIME_DIR;
                             if is_dir_filter {
                                 if !is_dir {
                                     return None;

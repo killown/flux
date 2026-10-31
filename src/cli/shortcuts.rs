@@ -54,7 +54,7 @@ pub(super) fn setup_shortcuts(app: &adw::Application) {
     );
 
     bind_accel(app, "open-help", &None, "F1", || {
-        if let Some(s) = crate::app::state::SENDER.get() {
+        if let Some(s) = crate::infra::SENDER.get() {
             let _ = s.send(crate::domain::model::AppMsg::Window(
                 crate::domain::model::WindowMsg::ShowHelp,
             ));

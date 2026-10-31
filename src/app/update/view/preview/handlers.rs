@@ -250,7 +250,7 @@ impl FluxApp {
         }
 
         let session_arc = self.panels.preview.extras.preview_session.clone();
-        let sender = crate::app::state::SENDER.get().cloned();
+        let sender = crate::infra::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
                 return;

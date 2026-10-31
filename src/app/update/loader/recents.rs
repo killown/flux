@@ -32,7 +32,7 @@ impl FluxApp {
         self.pending_thumbnails.clear();
         self.thumbnail_manager.clear_and_cancel_all();
 
-        self.current_path = std::path::PathBuf::from(crate::ui::constants::RECENT_URI);
+        self.current_path = std::path::PathBuf::from(crate::domain::model::constants::RECENT_URI);
 
         let xbel_path = dirs::data_local_dir()
             .unwrap_or_else(|| PathBuf::from(".local/share"))
@@ -71,7 +71,7 @@ impl FluxApp {
 
         // RFC 3339 timestamps sort lexicographically, so string comparison is correct.
         entries.sort_by(|a, b| b.0.cmp(&a.0));
-        entries.truncate(crate::ui::constants::MAX_RECENT_ITEMS);
+        entries.truncate(crate::domain::model::constants::MAX_RECENT_ITEMS);
 
         if self.is_list_mode {
             self.tabs[self.active_tab_index]

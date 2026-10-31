@@ -107,7 +107,7 @@ impl FluxApp {
 
         let dialog = crate::ui::dialog::transfer::create_transfer_dialog(
             self.task_queue.clone(),
-            crate::app::state::SENDER
+            crate::infra::SENDER
                 .get()
                 .expect("SENDER not initialised")
                 .clone(),
@@ -144,7 +144,7 @@ impl FluxApp {
         let dialog = crate::ui::dialog::command::create_command_dialog(
             id,
             self.task_queue.clone(),
-            crate::app::state::SENDER
+            crate::infra::SENDER
                 .get()
                 .expect("SENDER not initialised")
                 .clone(),

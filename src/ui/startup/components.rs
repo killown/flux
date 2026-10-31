@@ -27,7 +27,7 @@ impl FluxApp {
     ) -> (Self, gtk::Box) {
         crate::hit!("init_components");
 
-        let _ = crate::app::state::SENDER.set(sender.input_sender().clone());
+        let _ = crate::infra::SENDER.set(sender.input_sender().clone());
         {
             crate::hit!("init_components:css");
             relm4::set_global_css(include_str!("../style.css"));

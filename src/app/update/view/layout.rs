@@ -1,6 +1,6 @@
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{AppMsg, NavigationMsg, SortBy};
-use crate::ui::constants;
 use crate::utils;
 use gtk::prelude::WidgetExt;
 use relm4::prelude::*;

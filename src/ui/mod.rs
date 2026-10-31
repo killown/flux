@@ -34,8 +34,13 @@ pub use help::HelpWindow;
 
 /// Groups UI-specific constants such as default window dimensions or CSS class names.
 pub mod constants {
-    pub const DEFAULT_WIDTH: i32 = 1100;
-    pub const DEFAULT_HEIGHT: i32 = 750;
+    // Defined in `domain` so that `app` and `utils` need not import `ui`; re-exported
+    // here so `ui::constants::*` paths keep working. Not every name is used by `ui` itself.
+    #[allow(unused_imports)]
+    pub use crate::domain::model::constants::{
+        CRISP_ICON_SIZES, DEFAULT_HEIGHT, DEFAULT_WIDTH, MAX_HISTORY, MAX_RECENT_ITEMS, MIME_DIR,
+        RECENT_URI, TEMPLATE_CWD, TEMPLATE_PATHS, VIEW_FILTER, VIEW_PATH, VIEW_SEARCH,
+    };
 
     // CSS Classes
     pub const CARD_CSS_CLASS: &str = "flux-card";
@@ -54,20 +59,15 @@ pub mod constants {
     pub const SORT_LABEL_CLASS: &str = "sort-status-label";
 
     // View Names (Stack/Navigation children)
-    pub const VIEW_PATH: &str = "path";
     pub const VIEW_ENTRY: &str = "entry";
-    pub const VIEW_SEARCH: &str = "search";
     pub const VIEW_LABEL: &str = "label";
-    pub const VIEW_FILTER: &str = "filter";
     pub const FILTER_BAR_CSS_CLASS: &str = "flux-filter-bar";
-    pub const MAX_HISTORY: usize = 100;
 
     // Layout Constraints
     pub const SCROLLED_WINDOW_MIN_WIDTH: i32 = 480;
     pub const LOCATION_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const SEARCH_ENTRY_WIDTH_REQUEST: i32 = 450;
     pub const RECENT_STACK_CAPACITY: usize = 10;
-    pub const MAX_RECENT_ITEMS: usize = 9;
     pub const SIDEBAR_SPACING: i32 = 18;
     /// How long a drag must stay over the sidebar before the pin zone appears.
     pub const SIDEBAR_PIN_ZONE_DELAY_MS: u64 = 400;
@@ -83,7 +83,6 @@ pub mod constants {
     pub const STATUS_ICON_SIZE: i32 = 16;
 
     // MIME Types
-    pub const MIME_DIR: &str = "inode/directory";
     pub const MIME_TEXT: &str = "text/plain";
     pub const MIME_EMPTY: &str = "inode/x-empty";
 
@@ -94,8 +93,6 @@ pub mod constants {
     pub const FILTER_FILE: &str = "file";
 
     // Shell & Command Templates
-    pub const TEMPLATE_PATHS: &str = "%p";
-    pub const TEMPLATE_CWD: &str = "%d";
 
     // Icons & URIs
     pub const ICON_BACK: &str = "go-previous-symbolic";
@@ -103,10 +100,6 @@ pub mod constants {
     pub const ICON_TRASH: &str = "user-trash-full-symbolic";
     pub const ICON_SORT_INDICATOR: &str = "view-sort-ascending-symbolic";
     pub use crate::infra::trash::TRASH_URI;
-    pub const RECENT_URI: &str = "recent:///";
-    pub const CRISP_ICON_SIZES: &[i32] = &[
-        16, 24, 32, 48, 64, 96, 128, 144, 160, 192, 256, 384, 512, 768,
-    ];
 
     // Mouse Buttons
     pub const MOUSE_BACK: u32 = 8;

@@ -131,7 +131,7 @@ impl FluxApp {
         crate::hit!("handle_navigate_tag");
         let filter_str = format!(":tag:{}", tag);
         self.search.just_opened = false;
-        self.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
+        self.header_view = crate::domain::model::constants::VIEW_SEARCH.to_string();
         sender.input(AppMsg::Search(SearchMsg::UpdateFilter(filter_str)));
     }
 }

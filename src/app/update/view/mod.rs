@@ -1,9 +1,9 @@
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{
     AppMsg, ArchiveMsg, IconsMsg, NavigationMsg, PreviewMsg, PropertiesMsg, SearchMsg, SettingsMsg,
     ViewMsg, WindowMsg,
 };
-use crate::ui::constants;
 use relm4::prelude::*;
 
 mod layout;

@@ -1,10 +1,11 @@
 //! Sidebar rebuilding and the right-side panel toggle.
 
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{
     AppMsg, DeviceMsg, NavigationMsg, QuickListMsg, RightPanelType, SearchMsg,
 };
-use crate::ui::{constants, SidebarPlace};
+use crate::ui::SidebarPlace;
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -31,7 +32,7 @@ impl FluxApp {
         let recents_place = || crate::ui::SidebarPlace {
             name: crate::i18n::tr("Recents"),
             icon: "document-open-recent-symbolic".to_string(),
-            path: std::path::PathBuf::from(crate::ui::constants::RECENT_URI),
+            path: std::path::PathBuf::from(constants::RECENT_URI),
             is_mount: false,
             is_section_label: false,
         };
@@ -125,7 +126,7 @@ impl FluxApp {
             };
 
             let mut name = custom.name.clone();
-            if custom.path == constants::TRASH_URI && name == "Trash" {
+            if custom.path == crate::infra::trash::TRASH_URI && name == "Trash" {
                 name = crate::i18n::tr("Trash");
             } else if custom.path == "tags://" && name == "Tags" {
                 name = crate::i18n::tr("Tags");
@@ -145,7 +146,7 @@ impl FluxApp {
         }
 
         // Mounts - Offloaded to background thread to prevent blocking the UI loop
-        if let Some(sender) = crate::app::state::SENDER.get().cloned() {
+        if let Some(sender) = crate::infra::SENDER.get().cloned() {
             relm4::spawn_blocking(move || {
                 let mounts = crate::infra::mounts::get_system_mounts();
                 let _ = sender.send(AppMsg::Device(DeviceMsg::SystemMountsReady(mounts)));

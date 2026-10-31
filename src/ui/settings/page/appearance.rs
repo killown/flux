@@ -111,7 +111,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                         const SCALES: &[f64] = &[1.0, 1.10, 1.25, 1.50, 1.75, 2.0];
                         let idx = drop.selected() as usize;
                         if let Some(&scale) = SCALES.get(idx) {
-                            if let Some(s) = crate::app::state::SENDER.get() {
+                            if let Some(s) = crate::infra::SENDER.get() {
                                 let _ = s.send(AppMsg::Settings(SettingsMsg::SetUiScale(scale)));
                             }
                         }
@@ -124,7 +124,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.default_icon_size as f64, 16.0, 512.0, 16.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Icons(IconsMsg::SetIconSize(spin.value() as i32)));
                     }
                 }
@@ -135,7 +135,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.list_icon_size as f64, 16.0, 128.0, 8.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Icons(IconsMsg::SetListIconSize(spin.value() as i32)));
                     }
                 }
@@ -146,7 +146,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.scale_font_with_icons,
                 connect_active_notify => move |row| {
                     let state = row.is_active();
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetScaleFontWithIcons(state)));
                     }
                 }
@@ -157,7 +157,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetGridSpacing(spin.value() as i32)));
                     }
                 }
@@ -168,7 +168,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.max_width_chars as f64, 8.0, 128.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetMaxWidthChars(spin.value() as i32)));
                     }
                 }
@@ -179,7 +179,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 1.0, 20.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetBreadcrumbCount(spin.value() as usize)));
                     }
                 }
@@ -190,7 +190,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 4.0, 64.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetBreadcrumbMaxChars(spin.value() as i32)));
                     }
                 }
@@ -201,7 +201,7 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 set_active: config.ui.expand_labels,
                 connect_active_notify => move |row| {
                     let state = row.is_active();
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetExpandLabels(state)));
                     }
                 }
@@ -232,7 +232,7 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 set_digits: 2,
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetBackgroundAlpha {
                             slot: crate::domain::model::BackgroundSlot::Window,
                             alpha: spin.value(),
@@ -254,7 +254,7 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 set_digits: 2,
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetBackgroundAlpha {
                             slot: crate::domain::model::BackgroundSlot::SidebarLeft,
                             alpha: spin.value(),
@@ -276,7 +276,7 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 set_digits: 2,
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetBackgroundAlpha {
                             slot: crate::domain::model::BackgroundSlot::SidebarRight,
                             alpha: spin.value(),
@@ -301,7 +301,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Open the application in maximized state"),
                 set_active: config.ui.start_maximized,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Window(WindowMsg::SetMaximized(switch.is_active())));
                     }
                 }
@@ -311,7 +311,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show window controls in the header bar"),
                 set_active: config.ui.show_csd,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetShowCsd(switch.is_active())));
                     }
                 }
@@ -322,7 +322,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_sensitive: config.ui.show_csd,
                 set_active: config.ui.window_controls_left,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Window(WindowMsg::SetWindowControlsLeft(switch.is_active())));
                     }
                 }
@@ -333,7 +333,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Window(WindowMsg::SetWindowWidth(spin.value() as i32)));
                     }
                 }
@@ -344,7 +344,7 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Window(WindowMsg::SetWindowHeight(spin.value() as i32)));
                     }
                 }
@@ -366,7 +366,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show the filter-by-pattern button"),
                 set_active: config.ui.header_show_filter,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowFilter(switch.is_active())));
                     }
                 }
@@ -376,7 +376,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show the current sort mode and its cycle control"),
                 set_active: config.ui.header_show_sort,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowSort(switch.is_active())));
                     }
                 }
@@ -386,7 +386,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show the button that switches between list and grid layout"),
                 set_active: config.ui.header_show_view,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowView(switch.is_active())));
                     }
                 }
@@ -396,7 +396,7 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show the button that toggles the preview panel"),
                 set_active: config.ui.header_show_preview,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetHeaderShowPreview(switch.is_active())));
                     }
                 }
@@ -443,7 +443,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                     connect_selected_notify => move |drop| {
                         if let Some(item) = drop.selected_item().and_downcast::<gtk::StringObject>() {
                             let val = item.string().to_string();
-                            if let Some(s) = crate::app::state::SENDER.get() {
+                            if let Some(s) = crate::infra::SENDER.get() {
                                 let _ = s.send(AppMsg::Settings(SettingsMsg::SetTheme(if val == "default" { None } else { Some(val) })));
                             }
                         }
@@ -457,7 +457,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 ),
                 set_active: config.ui.fish_theme,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetFishTheme(switch.is_active())));
                     }
                 }
@@ -467,7 +467,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show recently visited files in the sidebar"),
                 set_active: config.ui.show_recents,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Navigation(NavigationMsg::SetShowRecents(switch.is_active())));
                     }
                 }
@@ -478,7 +478,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.recents_row as f64, 0.0, 999.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Navigation(NavigationMsg::SetRecentsRow(spin.value() as usize)));
                     }
                 }
@@ -488,7 +488,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Show standard user directories in sidebar"),
                 set_active: config.ui.show_xdg_dirs,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetShowXdgDirs(switch.is_active())));
                     }
                 }
@@ -498,7 +498,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Open sidebar context menus only with Ctrl + right-click"),
                 set_active: config.ui.sidebar_menu_requires_ctrl,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetSidebarMenuRequiresCtrl(switch.is_active())));
                     }
                 }
@@ -508,7 +508,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"),
                 set_active: config.ui.panel_menu_requires_ctrl,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Settings(SettingsMsg::SetPanelMenuRequiresCtrl(switch.is_active())));
                     }
                 }
@@ -531,7 +531,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 set_subtitle: &tr("Synthesize SVG icons for unknown file extensions using template.svg"),
                 set_active: config.ui.auto_generate_mime_icons,
                 connect_active_notify => move |switch| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoGenerateMimeIcons(switch.is_active())));
                     }
                 }
@@ -545,7 +545,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                     set_dialog: &gtk::ColorDialog::builder().with_alpha(false).build(),
                     set_rgba: &parse_color(&config.ui.auto_mime_accent_color, "#1273b2"),
                     connect_rgba_notify => move |btn| {
-                        if let Some(s) = crate::app::state::SENDER.get() {
+                        if let Some(s) = crate::infra::SENDER.get() {
                             let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeAccentColor(rgba_to_hex(&btn.rgba()))));
                         }
                     }
@@ -560,7 +560,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                     set_dialog: &gtk::ColorDialog::builder().with_alpha(false).build(),
                     set_rgba: &parse_color(&config.ui.auto_mime_body_color, "#e4e4e4"),
                     connect_rgba_notify => move |btn| {
-                        if let Some(s) = crate::app::state::SENDER.get() {
+                        if let Some(s) = crate::infra::SENDER.get() {
                             let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeBodyColor(rgba_to_hex(&btn.rgba()))));
                         }
                     }
@@ -575,7 +575,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                     set_dialog: &gtk::ColorDialog::builder().with_alpha(false).build(),
                     set_rgba: &parse_color(&config.ui.auto_mime_font_color, "#ffffff"),
                     connect_rgba_notify => move |btn| {
-                        if let Some(s) = crate::app::state::SENDER.get() {
+                        if let Some(s) = crate::infra::SENDER.get() {
                             let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeFontColor(rgba_to_hex(&btn.rgba()))));
                         }
                     }
@@ -596,7 +596,7 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 set_digits: 1,
                 set_numeric: true,
                 connect_value_notify => move |spin| {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(AppMsg::Icons(IconsMsg::SetAutoMimeFontSize(spin.value())));
                     }
                 }

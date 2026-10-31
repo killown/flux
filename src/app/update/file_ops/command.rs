@@ -1,6 +1,6 @@
 use crate::app::state::FluxApp;
+use crate::domain::model::constants;
 use crate::domain::model::{AppMsg, CommandMsg, FileOpsMsg, NavigationMsg, TasksMsg, WindowMsg};
-use crate::ui::constants;
 use crate::utils::helpers::shell::{expand_template, shell_safe, Placeholder};
 use adw::gio::prelude::*;
 use adw::prelude::*;
@@ -194,7 +194,7 @@ impl FluxApp {
         let is_in_trash = self
             .current_path
             .to_string_lossy()
-            .starts_with(constants::TRASH_URI);
+            .starts_with(crate::infra::trash::TRASH_URI);
         let needs_refresh = is_in_trash || is_restore;
 
         let (final_cmd, label) = build_execution_command(

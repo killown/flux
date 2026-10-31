@@ -49,7 +49,7 @@ pub(super) fn setup_config_watcher() {
                             if let Some(app) = gio::Application::default() {
                                 app.activate_action("reload-sidebar", None);
                             }
-                            if let Some(sender) = crate::app::state::SENDER.get() {
+                            if let Some(sender) = crate::infra::SENDER.get() {
                                 let _ = sender.send(crate::domain::model::AppMsg::Navigation(
                                     crate::domain::model::NavigationMsg::Refresh,
                                 ));
@@ -87,7 +87,7 @@ pub(super) fn setup_config_watcher() {
                                 std::time::Duration::from_millis(50),
                                 || {
                                     crate::infra::loader::invalidate_extension_icon_cache();
-                                    if let Some(sender) = crate::app::state::SENDER.get() {
+                                    if let Some(sender) = crate::infra::SENDER.get() {
                                         let _ =
                                             sender.send(crate::domain::model::AppMsg::Navigation(
                                                 crate::domain::model::NavigationMsg::Refresh,

@@ -40,7 +40,7 @@ pub(super) fn handle(
             app.handle_clear_extension_filter(sender)
         }
         AppMsg::Search(SearchMsg::StartAdvancedSearch(params)) => {
-            app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
+            app.header_view = crate::domain::model::constants::VIEW_SEARCH.to_string();
             app.search.last_was_advanced = true;
             extension_walk::start_advanced_search(app, params, sender.clone());
         }
@@ -51,7 +51,7 @@ pub(super) fn handle(
             app.handle_extension_search_batch(results, session)
         }
         AppMsg::Search(SearchMsg::StartContentSearch(term, ext_filter)) => {
-            app.header_view = crate::ui::constants::VIEW_SEARCH.to_string();
+            app.header_view = crate::domain::model::constants::VIEW_SEARCH.to_string();
             content_walk::start_content_search(app, term, ext_filter, sender.clone());
         }
         AppMsg::Search(SearchMsg::SetEnableFileIndexing(enabled)) => {
