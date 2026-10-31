@@ -8,6 +8,7 @@ mod dialogs;
 pub mod file_ops;
 pub mod git;
 pub mod helpers;
+mod loader;
 mod loading;
 pub mod navigation;
 pub mod network;

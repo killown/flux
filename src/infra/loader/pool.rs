@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 /// on the first large directory load.
 static LOADER_POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
 
-pub(super) fn loader_pool() -> &'static rayon::ThreadPool {
+pub fn loader_pool() -> &'static rayon::ThreadPool {
     crate::hit!("loader_pool");
     LOADER_POOL.get_or_init(|| {
         let threads = std::thread::available_parallelism()

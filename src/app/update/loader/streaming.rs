@@ -1,8 +1,8 @@
-use super::icons::get_custom_extension_icon_path;
 use crate::app::state::FluxApp;
 use crate::domain::model::{
     AppMsg, FileLoadContext, GitMsg, LoadingMsg, NavigationMsg, ThumbnailsMsg,
 };
+use crate::infra::loader::get_custom_extension_icon_path;
 use crate::ui::FileItem;
 use crate::utils;
 use adw::prelude::*;

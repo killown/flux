@@ -3,7 +3,7 @@
 /// approximate: false positives are harmless (they go into `media_tasks` and get
 /// filtered again by the full `is_visual_media` check inside `get_or_create_thumbnail`).
 #[inline]
-pub(super) fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
+pub fn is_visual_media_by_ext(path: &std::path::Path) -> (bool, bool) {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
