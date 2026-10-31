@@ -1,7 +1,8 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg};
 use crate::i18n::tr;
 use crate::infra::db::StateManager;
 use adw::prelude::*;

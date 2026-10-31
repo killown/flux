@@ -63,7 +63,7 @@ fn remove_stale_sockets(dir: &Path) {
 /// the request is forwarded to the update loop and awaited with a timeout.
 fn serve(mut stream: UnixStream) {
     crate::hit!("serve");
-    let Some(sender) = crate::domain::model::SENDER.get() else {
+    let Some(sender) = crate::app::state::SENDER.get() else {
         return;
     };
     let (reply, paths) = mpsc::channel();

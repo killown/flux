@@ -6,7 +6,7 @@ use crate::domain::model::defaults::{
     default_folder_cache_capacity, default_loader_batch_size, default_max_history,
     default_max_search_results, default_mime_font_size, default_preview_panel_width,
     default_search_panel_width, default_tag_panel_width, default_thumbnail_size,
-    default_thumbnail_threads, default_true, default_ui_scale,
+    default_thumbnail_threads, default_true, default_ui_scale, MAX_CONTENT_SEARCH_RESULTS,
 };
 use crate::domain::model::{DeviceRename, SortBy, TerminalConfig, ThumbnailTypes};
 use serde::{Deserialize, Serialize};
@@ -79,7 +79,7 @@ pub struct UIConfig {
     /// Show the preview-panel toggle in the header bar.
     #[serde(default = "default_true")]
     pub header_show_preview: bool,
-    /// Sidebar context menus open only on Ctrl+right-click; a plain right-click does nothing.
+    /// Sidebar context menus open only on Ctrl+right-click, a plain right-click does nothing.
     #[serde(default)]
     pub sidebar_menu_requires_ctrl: bool,
     /// Left-sidebar, preview-panel and quick-list context menus open only on Ctrl+right-click.
@@ -262,7 +262,7 @@ pub struct UIConfig {
     /// When true, browsable archives (zip, tar, 7z, ...) are drawn as folders in
     /// the file grid. They stay files semantically (`is_dir` is still false):
     /// only the icon, label and a small badge change. The card shows a folder
-    /// icon (or the one set with the folder-icon picker); selecting it reveals
+    /// icon (or the one set with the folder-icon picker), selecting it reveals
     /// the archive's real icon. Off by default.
     #[serde(default)]
     pub archives_as_folders: bool,
@@ -319,7 +319,7 @@ impl Default for UIConfig {
             show_thumbnails: true,
             thumbnail_types: ThumbnailTypes::default(),
             autoplay_video_previews: true,
-            max_content_search_results: crate::infra::constants::MAX_CONTENT_SEARCH_RESULTS,
+            max_content_search_results: MAX_CONTENT_SEARCH_RESULTS,
             lazy_thumbnails: false,
             disable_drag_and_drop: false,
             loader_batch_size: default_loader_batch_size(),

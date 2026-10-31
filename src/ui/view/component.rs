@@ -4,9 +4,10 @@ use super::pages::header::{
     build_recents_button, build_sort_indicator, icon_row,
 };
 use super::pages::panels::{panel_revealer, PANEL_TRANSITION_MS};
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    ActionsMsg, AppMsg, FileOpsMsg, FluxApp, NavigationMsg, SearchMsg, TasksMsg, ThumbnailsMsg,
-    TransferMsg, ViewMsg,
+    ActionsMsg, AppMsg, FileOpsMsg, NavigationMsg, SearchMsg, TasksMsg, ThumbnailsMsg, TransferMsg,
+    ViewMsg,
 };
 use crate::i18n::tr;
 use crate::ui::constants;

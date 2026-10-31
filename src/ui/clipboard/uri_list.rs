@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, FileOpsMsg, WindowMsg};
 use gtk::gdk;
 use gtk::gio;
 use relm4::prelude::*;
@@ -24,9 +25,9 @@ impl FluxApp {
                 let first_line = lines.next().unwrap_or("");
                 let is_cut = first_line == "cut";
 
-                let files: Vec<gio::File> = lines
+                let files: Vec<String> = lines
                     .filter(|uri| !uri.is_empty())
-                    .map(|uri| gio::File::for_uri(uri.trim_end_matches('\r')))
+                    .map(|uri| uri.trim_end_matches('\r').to_string())
                     .collect();
 
                 if !files.is_empty() {

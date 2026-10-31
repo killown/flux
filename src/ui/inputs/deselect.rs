@@ -1,4 +1,4 @@
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use crate::ui::inputs::util::find_flux_path_ancestor;
 use adw::gdk;
 use gtk::prelude::*;

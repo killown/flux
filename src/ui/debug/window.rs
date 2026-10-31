@@ -1,7 +1,7 @@
 use super::ffi::collect_now;
 use super::format::{fmt_bytes, fmt_kb};
 use super::snapshot::DebugSnapshot;
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use adw::prelude::*;
 use std::fs;
 
@@ -134,7 +134,7 @@ pub fn show_debug_window(app: &FluxApp) {
                 libc::malloc_trim(0);
             }
             overlay_trim.add_toast(adw::Toast::new("Memory purged and released to OS"));
-            if let Some(chan) = crate::domain::model::SENDER.get() {
+            if let Some(chan) = crate::app::state::SENDER.get() {
                 let _ = chan.send(crate::domain::model::AppMsg::Window(
                     crate::domain::model::WindowMsg::OpenDebugWindow,
                 ));
@@ -143,7 +143,7 @@ pub fn show_debug_window(app: &FluxApp) {
     }
 
     refresh_button.connect_clicked(move |_| {
-        if let Some(chan) = crate::domain::model::SENDER.get() {
+        if let Some(chan) = crate::app::state::SENDER.get() {
             let _ = chan.send(crate::domain::model::AppMsg::Window(
                 crate::domain::model::WindowMsg::OpenDebugWindow,
             ));

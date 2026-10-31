@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg};
 use crate::infra::inspector::scan_directory_native;
 use adw::prelude::*;
 use relm4::prelude::*;

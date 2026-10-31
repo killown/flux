@@ -3,7 +3,7 @@
 Every right-side panel in Flux, Tag, Search, Diff, Location, Connect,
 Preview, Actions, QuickList, Terminal, Properties, is wired through the same
 small set of files. Their session state lives in one place,
-`Panels` (`src/domain/model/panels.rs`), held by `FluxApp` as `panels`.
+`Panels` (`src/app/state/panels.rs`), held by `FluxApp` as `panels`.
 The terminal panel (`src/ui/panels/terminal.rs` and the
 `RightPanelType::Terminal` arms in `src/app/update/helpers/sidebar.rs`) is the
 smallest complete example, because it exercises every hook: config flag,
@@ -46,7 +46,7 @@ error or a silent bug.
 2. **`src/domain/model/types.rs`** - add a variant to `RightPanelType`,
    grouped with the other panel variants.
 
-3. **`src/domain/model/panels.rs`** - add a `PanelState` field to `Panels` and
+3. **`src/app/state/panels.rs`** - add a `PanelState` field to `Panels` and
    an arm for it in `get`, `get_mut`, `iter_mut` and `any_visible`. The
    `get`/`get_mut` matches are exhaustive, so the compiler flags a missing
    arm; `iter_mut` and `any_visible` are lists and it does not. `iter_mut` is

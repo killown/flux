@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, NavigationMsg, TasksMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ArchiveMsg, NavigationMsg, TasksMsg, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::Path;
@@ -182,7 +183,7 @@ impl FluxApp {
                             current: 0,
                             total: total_bytes,
                             total_items: 1,
-                            cancellable: cancellable.clone(),
+                            cancellable: cancellable.clone().into(),
                         }));
                         s_clone.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                     }
@@ -201,7 +202,7 @@ impl FluxApp {
                                 current: copied_bytes.min(total_bytes),
                                 total: total_bytes,
                                 total_items: 1,
-                                cancellable: cancellable_cb.clone(),
+                                cancellable: cancellable_cb.clone().into(),
                             }));
                             s_cb.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                         }

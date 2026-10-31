@@ -1,10 +1,11 @@
 //! Folder preview: the interactive icon grid, its chunked fill and Ctrl+scroll
 //! zoom. Lazy thumbnails live in `folder_thumbs`.
 
-use super::content::FolderEntry;
 use super::handle::PreviewPanelHandle;
 use super::registry;
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, PreviewMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::FolderEntry;
+use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg};
 use crate::ui::FileItem;
 use adw::prelude::*;
 use relm4::typed_view::grid::TypedGridView;

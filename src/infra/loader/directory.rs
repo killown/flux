@@ -1,9 +1,9 @@
 use super::icons::get_custom_extension_icon_path;
 use super::media::is_visual_media_by_ext;
 use super::pool::loader_pool;
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    AppMsg, ArchiveMsg, FileLoadContext, FileOpsMsg, FluxApp, LoadingMsg, SearchMsg, SortBy,
-    TagsMsg,
+    AppMsg, ArchiveMsg, FileLoadContext, FileOpsMsg, LoadingMsg, SearchMsg, SortBy, TagsMsg,
 };
 use crate::utils::media::is_audio_file;
 use adw::prelude::*;

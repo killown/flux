@@ -1,5 +1,6 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, NavigationMsg, QuickListMsg, TerminalMsg, WindowMsg,
+    AppMsg, AppSidebarMsg, FileOpsMsg, NavigationMsg, QuickListMsg, TerminalMsg, WindowMsg,
 };
 use crate::ui::SidebarPlace;
 use crate::utils;
@@ -343,7 +344,7 @@ impl FluxApp {
             // F8 while the terminal panel is open: close the panel and
             // restore the sidebar, rather than trying to toggle a sidebar
             // that was intentionally hidden.
-            if let Some(s) = crate::domain::model::SENDER.get() {
+            if let Some(s) = crate::app::state::SENDER.get() {
                 let _ = s.send(AppMsg::Terminal(TerminalMsg::ToggleTerminalPanel));
             }
             return;

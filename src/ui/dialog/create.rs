@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, LoadingMsg, NavigationMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, LoadingMsg, NavigationMsg, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::io::ErrorKind;

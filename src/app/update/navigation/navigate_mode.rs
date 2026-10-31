@@ -8,7 +8,8 @@
 //! `NavigationMsg::KeyChar` / `KeyBackspace` / `KeyEscape`, so typing into the search
 //! panel, rename entry, location panel or terminal is unaffected.
 
-use crate::domain::model::{AppMsg, FluxApp, NavigateMode, NavigationMsg, QuickListMsg, SearchMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigateMode, NavigationMsg, QuickListMsg, SearchMsg};
 use crate::i18n::tr;
 use crate::ui::constants;
 use gtk::glib;

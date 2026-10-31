@@ -16,7 +16,7 @@ use std::path::PathBuf;
 pub fn show_template_editor(
     parent: Option<&gtk::Window>,
     template_path: PathBuf,
-    sender: AsyncComponentSender<crate::domain::model::FluxApp>,
+    sender: AsyncComponentSender<crate::app::state::FluxApp>,
 ) {
     crate::hit!("show_template_editor");
     let dialog = adw::Dialog::builder()

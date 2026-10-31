@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, UndoMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg, UndoMsg, WindowMsg};
 use crate::infra::trash::tracked::{restore_tracked, trash_tracked_batch};
 use crate::ui::undo_redo::{FileOp, FileOpHistory, TrashedItem};
 use gtk::gio;

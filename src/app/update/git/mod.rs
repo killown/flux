@@ -1,6 +1,5 @@
-use crate::domain::model::{
-    AppMsg, FileLoadContext, FluxApp, GitMsg, LoadingMsg, NavigationMsg, WindowMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, FileLoadContext, GitMsg, LoadingMsg, NavigationMsg, WindowMsg};
 use crate::infra::git::{
     find_git_repo_root, query_git_status, query_git_status_paths, GitFileStatus, StatusFilter,
 };

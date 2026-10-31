@@ -31,8 +31,8 @@ A map of the codebase for contributors. Read it before the how-to guides: [Addin
 
 The UI follows Relm4's model, view, update pattern.
 
-- `FluxApp` in `src/domain/model/app.rs` is the model. It owns the state and the widget references.
-- `AppMsg` in `src/domain/model/msg.rs` is every event the app can receive. Each variant is doc-commented.
+- `FluxApp` in `src/app/state/flux_app.rs` is the model. It owns the state and the widget references.
+- `AppMsg` in `src/domain/model/msg.rs` is every event the app can receive. Each variant is doc-commented. `src/domain/` holds only types and logic: it never imports `ui`, `infra`, `app` or a GTK crate, so message payloads are plain data (URIs, `Image` pixels, `CancelHandle`).
 - `FluxApp::handle_update` in `src/app/update/mod.rs` is the single entry point for messages. It passes the message through a chain of routers in this order: `navigation`, `loading`, `view`, `thumbnails`, `search`, `file_ops`, `dialogs`, `context_menu`, `network`, `git`, `window` and `sidebar`.
 - Each router exposes `handle(app, message, sender) -> Result<(), AppMsg>`. `Ok(())` means it consumed the message. `Err(message)` hands the message to the next router.
 - A message that no router claims is logged as `[flux] unhandled AppMsg`. A new `AppMsg` variant that you never routed shows up there, not as a compile error.

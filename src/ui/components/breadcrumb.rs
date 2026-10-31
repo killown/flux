@@ -42,7 +42,7 @@ impl FactoryComponent for PathSegment {
                 set_button: 2, // constants::MOUSE_MIDDLE
                 connect_pressed[path = self.path.clone()] => move |gesture, _, _, _| {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
-                    if let Some(s) = crate::domain::model::SENDER.get() {
+                    if let Some(s) = crate::app::state::SENDER.get() {
                         let _ = s.send(crate::domain::model::AppMsg::QuickList(crate::domain::model::QuickListMsg::AddExclusive(Some(path.clone()))));
                     }
                 }

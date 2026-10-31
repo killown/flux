@@ -1,7 +1,8 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, FluxApp, TerminalMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, TerminalMsg};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;

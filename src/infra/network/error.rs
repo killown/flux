@@ -1,5 +1,7 @@
 use gtk::gio;
 
+pub use crate::domain::model::NetworkAuthFlags;
+
 #[derive(Debug)]
 pub enum NetworkError {
     CredentialsRequired {
@@ -10,16 +12,6 @@ pub enum NetworkError {
     HostUnreachable(String),
     GvfsUnavailable(String),
     Other(String),
-}
-
-bitflags::bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub struct NetworkAuthFlags: u8 {
-        const USERNAME = 0b0001;
-        const PASSWORD = 0b0010;
-        const DOMAIN   = 0b0100;
-        const ANON_OK  = 0b1000;
-    }
 }
 
 impl std::fmt::Display for NetworkError {

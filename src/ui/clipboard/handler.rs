@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, WindowMsg};
 use gtk::gdk;
 use gtk::gdk::prelude::DisplayExt;
 use relm4::prelude::*;

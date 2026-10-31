@@ -1,5 +1,4 @@
-use flux::domain::model::quick_list::{self as ql, QuickKey, Step};
-use gtk::gdk::Key;
+use flux::domain::model::quick_list::{self as ql, Key, QuickKey, Step};
 use std::path::{Path, PathBuf};
 
 fn p(s: &str) -> PathBuf {
@@ -128,8 +127,8 @@ fn classify_table() {
         "Ctrl+Shift+End selects"
     );
     assert_eq!(c(Key::End, false, false, false), None);
-    assert_eq!(c(Key::Page_Up, true, false, false), Some(Prev));
-    assert_eq!(c(Key::Page_Down, true, false, false), Some(Next));
+    assert_eq!(c(Key::PageUp, true, false, false), Some(Prev));
+    assert_eq!(c(Key::PageDown, true, false, false), Some(Next));
     assert_eq!(c(Key::Tab, false, false, false), Some(Tab));
     assert_eq!(
         c(Key::Tab, true, false, false),
@@ -137,16 +136,16 @@ fn classify_table() {
         "Ctrl+Tab switches tabs"
     );
     assert_eq!(c(Key::Insert, true, false, false), None, "Navigate mode");
-    assert_eq!(c(Key::_1, true, false, false), Some(Jump(1)));
-    assert_eq!(c(Key::_9, true, false, false), Some(Jump(9)));
-    assert_eq!(c(Key::_1, true, true, false), None);
-    assert_eq!(c(Key::_1, true, false, true), None);
-    assert_eq!(c(Key::_1, false, false, false), None);
-    assert_eq!(c(Key::_0, true, false, false), None);
-    assert_eq!(c(Key::Q, true, true, false), Some(TogglePanel));
-    assert_eq!(c(Key::q, true, true, false), Some(TogglePanel));
-    assert_eq!(c(Key::q, true, false, false), None, "Ctrl+Q quits");
-    assert_eq!(c(Key::Q, true, true, true), None);
+    assert_eq!(c(Key::Char('1'), true, false, false), Some(Jump(1)));
+    assert_eq!(c(Key::Char('9'), true, false, false), Some(Jump(9)));
+    assert_eq!(c(Key::Char('1'), true, true, false), None);
+    assert_eq!(c(Key::Char('1'), true, false, true), None);
+    assert_eq!(c(Key::Char('1'), false, false, false), None);
+    assert_eq!(c(Key::Char('0'), true, false, false), None);
+    assert_eq!(c(Key::Char('Q'), true, true, false), Some(TogglePanel));
+    assert_eq!(c(Key::Char('q'), true, true, false), Some(TogglePanel));
+    assert_eq!(c(Key::Char('q'), true, false, false), None, "Ctrl+Q quits");
+    assert_eq!(c(Key::Char('Q'), true, true, true), None);
 }
 
 #[test]
@@ -154,12 +153,12 @@ fn terminal_focus_yields_every_quick_list_key() {
     let keys = [
         (Key::Insert, false),
         (Key::End, true),
-        (Key::Page_Up, true),
-        (Key::Page_Down, true),
+        (Key::PageUp, true),
+        (Key::PageDown, true),
         (Key::Tab, false),
-        (Key::_1, true),
-        (Key::_5, true),
-        (Key::_9, true),
+        (Key::Char('1'), true),
+        (Key::Char('5'), true),
+        (Key::Char('9'), true),
     ];
     for (k, ctrl) in keys {
         assert!(

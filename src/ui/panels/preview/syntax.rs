@@ -8,16 +8,7 @@ use syntect::highlighting::{Style, Theme, ThemeSet};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use syntect::util::LinesWithEndings;
 
-/// Byte range inside the joined preview text that shares one visual style.
-#[derive(Debug, Clone, Copy)]
-pub struct HighlightedRange {
-    pub start: usize,
-    pub end: usize,
-    pub fg: (u8, u8, u8),
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
-}
+pub use crate::domain::model::HighlightedRange;
 
 fn syntax_set() -> &'static SyntaxSet {
     static SS: OnceLock<SyntaxSet> = OnceLock::new();

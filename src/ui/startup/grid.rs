@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, Config, FluxApp, NavigationMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, Config, NavigationMsg};
 use crate::ui::FileItem;
 use adw::prelude::*;
 use relm4::prelude::*;

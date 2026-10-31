@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, ViewMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, ViewMsg, WindowMsg};
 use adw::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -43,7 +44,7 @@ impl FluxApp {
         let sort_field_action = gio::SimpleAction::new_stateful(
             "sort-field",
             Some(&String::static_variant_type()),
-            &model.sort_by.as_action_state(),
+            &gtk::glib::Variant::from(model.sort_by.as_action_key()),
         );
         {
             let s = sender.clone();

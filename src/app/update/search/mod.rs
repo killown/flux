@@ -1,6 +1,5 @@
-use crate::domain::model::{
-    ActionsMsg, AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, SearchMsg, TagsMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{ActionsMsg, AppMsg, AppSidebarMsg, NavigationMsg, SearchMsg, TagsMsg};
 use relm4::prelude::*;
 
 mod content;

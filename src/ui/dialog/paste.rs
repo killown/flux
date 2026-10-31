@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FileOpsMsg, FluxApp};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, FileOpsMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -6,7 +7,7 @@ impl FluxApp {
     /// Presents a warning dialog when pasting into a location where target folders already exist.
     pub fn show_confirm_replace_paste(
         &self,
-        files: Vec<gio::File>,
+        files: Vec<String>,
         conflicts: Vec<String>,
         is_cut: bool,
         sender: &AsyncComponentSender<Self>,

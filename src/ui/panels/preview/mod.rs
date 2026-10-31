@@ -23,7 +23,6 @@
 
 mod apply;
 mod audio;
-mod content;
 mod controllers;
 mod folder;
 mod handle;
@@ -44,6 +43,6 @@ pub(crate) mod registry;
 pub mod syntax;
 pub mod table;
 
-pub use content::{FileInfo, FolderEntry, PreviewContent};
+pub use crate::domain::model::{FileInfo, FolderEntry, PreviewContent};
 pub use handle::PreviewPanelHandle;
 pub use panel::build_preview_panel;

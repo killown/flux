@@ -89,7 +89,7 @@ fn serve(mut stream: UnixStream) {
     let Some(verb) = parse_verb(&line) else {
         return;
     };
-    let Some(sender) = crate::domain::model::SENDER.get() else {
+    let Some(sender) = crate::app::state::SENDER.get() else {
         return;
     };
     let (reply, state) = mpsc::channel();

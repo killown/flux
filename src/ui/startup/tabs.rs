@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, Config, FluxApp, NavigationMsg, TabsMsg, ViewMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, Config, NavigationMsg, TabsMsg, ViewMsg};
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;

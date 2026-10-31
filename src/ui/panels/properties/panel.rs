@@ -2,7 +2,8 @@
 
 use super::section::MetadataSection;
 use super::sections::build_sections;
-use crate::domain::model::{AppMsg, FluxApp, PropertiesMsg, RightPanelType, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, PropertiesMsg, RightPanelType, WindowMsg};
 use crate::i18n::tr;
 use crate::ui::panels::header::panel_header;
 use crate::ui::panels::resize::resizable_panel;

@@ -27,7 +27,7 @@ pub struct Config {
     #[serde(default)]
     pub shortcuts: ShortcutsConfig,
     #[serde(default)]
-    pub network_bookmarks: Vec<crate::infra::network::NetworkBookmark>,
+    pub network_bookmarks: Vec<crate::domain::model::NetworkBookmark>,
     #[serde(default)]
     pub default_list_mode: bool,
 }

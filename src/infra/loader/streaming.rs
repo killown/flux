@@ -1,6 +1,7 @@
 use super::icons::get_custom_extension_icon_path;
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    AppMsg, FileLoadContext, FluxApp, GitMsg, LoadingMsg, NavigationMsg, ThumbnailsMsg,
+    AppMsg, FileLoadContext, GitMsg, LoadingMsg, NavigationMsg, ThumbnailsMsg,
 };
 use crate::ui::FileItem;
 use crate::utils;
@@ -328,7 +329,7 @@ impl FluxApp {
 
             self.folder_cache.insert(
                 cache_key,
-                crate::domain::model::CachedFolder {
+                crate::app::state::CachedFolder {
                     items: items.clone(),
                     media_tasks,
                     thumbnails: std::collections::HashMap::new(),

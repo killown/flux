@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, BackgroundSlot, FluxApp, NavigationMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, BackgroundSlot, NavigationMsg};
 use crate::utils;
 use adw::prelude::*;
 use relm4::prelude::*;

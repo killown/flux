@@ -1,6 +1,5 @@
-use crate::domain::model::{
-    AppMsg, CommandMsg, FileOpsMsg, FluxApp, NavigationMsg, TasksMsg, WindowMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, CommandMsg, FileOpsMsg, NavigationMsg, TasksMsg, WindowMsg};
 use crate::ui::constants;
 use crate::utils::helpers::shell::{expand_template, shell_safe, Placeholder};
 use adw::gio::prelude::*;

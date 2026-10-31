@@ -212,8 +212,7 @@ fn test_thumbnail_types_serialization() {
 fn test_sort_by_action_key_roundtrip() {
     let variants = [SortBy::Name, SortBy::Date, SortBy::Size, SortBy::Type];
     for sort in variants {
-        let variant = sort.as_action_state();
-        let key = variant.str().expect("GVariant should be a string");
+        let key = sort.as_action_key();
         let reconstructed = SortBy::from_action_key(key);
         assert_eq!(sort, reconstructed);
     }

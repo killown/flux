@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, TabsMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, TabsMsg};
 use crate::ui::constants;
 use crate::ui::inputs::util::find_flux_path_ancestor;
 use adw::gdk;

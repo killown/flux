@@ -2,8 +2,24 @@
 //!
 //! Invariant Q: `index.is_none() <=> list.is_empty()`, else `index < list.len()`.
 
-use gtk::gdk::Key;
 use std::path::{Path, PathBuf};
+
+/// A key press as the Quick List chords see it, free of any toolkit key type.
+///
+/// The UI maps its own key codes onto this. Only the keys a Quick List chord
+/// can use are named, everything else is [`Key::Other`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Key {
+    Insert,
+    End,
+    PageUp,
+    PageDown,
+    Tab,
+    /// A character key on the main block. Digits are `'0'..='9'` and `q` and
+    /// `Q` are distinct, the same as the shifted and unshifted key.
+    Char(char),
+    Other,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Step {
@@ -41,29 +57,29 @@ pub fn classify_key(key: Key, ctrl: bool, shift: bool, alt: bool) -> Option<Quic
     if key == Key::End && ctrl && !shift && !alt {
         return Some(QuickKey::Clear);
     }
-    if key == Key::Page_Up && ctrl {
+    if key == Key::PageUp && ctrl {
         return Some(QuickKey::Prev);
     }
-    if key == Key::Page_Down && ctrl {
+    if key == Key::PageDown && ctrl {
         return Some(QuickKey::Next);
     }
     if key == Key::Tab && !ctrl {
         return Some(QuickKey::Tab);
     }
-    if ctrl && shift && !alt && (key == Key::q || key == Key::Q) {
+    if ctrl && shift && !alt && (key == Key::Char('q') || key == Key::Char('Q')) {
         return Some(QuickKey::TogglePanel);
     }
     if ctrl && !shift && !alt {
         let n = match key {
-            Key::_1 => 1,
-            Key::_2 => 2,
-            Key::_3 => 3,
-            Key::_4 => 4,
-            Key::_5 => 5,
-            Key::_6 => 6,
-            Key::_7 => 7,
-            Key::_8 => 8,
-            Key::_9 => 9,
+            Key::Char('1') => 1,
+            Key::Char('2') => 2,
+            Key::Char('3') => 3,
+            Key::Char('4') => 4,
+            Key::Char('5') => 5,
+            Key::Char('6') => 6,
+            Key::Char('7') => 7,
+            Key::Char('8') => 8,
+            Key::Char('9') => 9,
             _ => return None,
         };
         return Some(QuickKey::Jump(n));

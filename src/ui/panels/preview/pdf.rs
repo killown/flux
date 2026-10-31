@@ -1,9 +1,9 @@
 //! PDF preview: page navigation, resize-driven re-rendering and the Poppler
 //! rasteriser, which runs on a blocking worker and never on the GTK thread.
 
-use super::content::PreviewContent;
 use super::handle::PreviewPanelHandle;
 use super::state::Mode;
+use crate::domain::model::PreviewContent;
 use crate::i18n::tr;
 use adw::prelude::*;
 use std::path::Path;

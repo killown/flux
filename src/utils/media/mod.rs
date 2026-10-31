@@ -7,6 +7,7 @@ mod image;
 mod mime;
 mod pdf;
 mod png;
+mod raster;
 mod raw;
 mod thumbnail;
 mod tiers;
@@ -27,6 +28,7 @@ pub use mime::{
 };
 #[allow(unused_imports)]
 pub use png::optimize_png_bytes;
+pub use raster::{image_from_texture, texture_from_image};
 pub(crate) use raw::raw_thumbnail;
 pub use raw::raw_thumbnailer_available;
 pub use thumbnail::get_or_create_thumbnail;

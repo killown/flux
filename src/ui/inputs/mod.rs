@@ -7,7 +7,7 @@ mod navigation;
 mod shortcuts;
 mod util;
 
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use crate::ui::keymap::KeyMap;
 use gtk::prelude::*;
 use relm4::prelude::*;

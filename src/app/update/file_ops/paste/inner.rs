@@ -1,8 +1,7 @@
 use super::transfer::{archive_inner_path, remove_cut_source, resolve_gio_files, scan_total_bytes};
 use super::{DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::domain::model::{
-    AppMsg, FileOpsMsg, FluxApp, NavigationMsg, TasksMsg, TransferMsg, WindowMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg};
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::gio::prelude::*;
 use gtk::gio;
@@ -13,7 +12,7 @@ use std::sync::atomic::Ordering;
 impl FluxApp {
     pub fn perform_paste_inner(
         &self,
-        files: Vec<gio::File>,
+        files: Vec<String>,
         is_cut: bool,
         forced: bool,
         sender: AsyncComponentSender<Self>,
@@ -73,7 +72,7 @@ impl FluxApp {
                     current: 0,
                     total: total_bytes,
                     total_items: total_files,
-                    cancellable: cancellable.clone(),
+                    cancellable: cancellable.clone().into(),
                 }));
                 sender.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
@@ -134,7 +133,7 @@ impl FluxApp {
                                 current: overall,
                                 total: total_bytes,
                                 total_items: total_files,
-                                cancellable: cancellable_cb.clone(),
+                                cancellable: cancellable_cb.clone().into(),
                             }));
                             s_cb.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                         };
@@ -194,7 +193,7 @@ impl FluxApp {
 
     pub fn perform_paste(
         &self,
-        files: Vec<gio::File>,
+        files: Vec<String>,
         is_cut: bool,
         sender: AsyncComponentSender<Self>,
     ) {
@@ -204,7 +203,7 @@ impl FluxApp {
     /// Shared dispatch logic for non-conflicting paste operations.
     pub fn dispatch_paste_ops(
         &self,
-        files: Vec<gio::File>,
+        files: Vec<String>,
         is_cut: bool,
         target_dir: PathBuf,
         sender: AsyncComponentSender<Self>,
@@ -225,7 +224,7 @@ impl FluxApp {
         if !dir_conflicts.is_empty() {
             let gfiles = resolved_files
                 .iter()
-                .map(|(p, _, _)| gio::File::for_path(p))
+                .map(|(p, _, _)| gio::File::for_path(p).uri().to_string())
                 .collect();
 
             sender.input(AppMsg::FileOps(FileOpsMsg::ConfirmReplacePaste {

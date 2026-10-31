@@ -1,4 +1,5 @@
-use crate::domain::model::{ActionsMsg, AppMsg, FluxApp, NavigationMsg, QuickListMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{ActionsMsg, AppMsg, NavigationMsg, QuickListMsg};
 use crate::ui::constants;
 use crate::utils;
 use adw::gdk;

@@ -1,5 +1,7 @@
 //! Network locations and bookmarks.
 
+use crate::domain::model::{NetworkAuthFlags, NetworkCredentials};
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum NetworkMsg {
@@ -19,18 +21,18 @@ pub enum NetworkMsg {
     /// Connect to a remote server using the supplied connection parameters.
     ///
     /// Dispatched by the "Connect to Server" dialog. The URI is built from
-    /// [`crate::infra::network::ConnectToServerParams::build_uri`] and then
+    /// `infra::network::ConnectToServerParams::build_uri` and then
     /// handled identically to `Navigate(PathBuf::from(uri))`.
     ConnectToServer {
         /// The canonical GIO URI of the remote location (e.g. `smb://server/share`).
         uri: String,
         /// Optional credentials to pre-populate the GVFS mount operation.
-        credentials: Option<crate::infra::network::NetworkCredentials>,
+        credentials: Option<NetworkCredentials>,
     },
 
     /// The remote server at `uri` requires credentials before the listing can proceed.
     ///
-    /// Dispatched by `load_network` when [`crate::infra::network::NetworkError::CredentialsRequired`]
+    /// Dispatched by `load_network` when `infra::network::NetworkError::CredentialsRequired`
     /// is returned. The update loop shows the GTK credentials dialog and, on
     /// confirmation, re-dispatches [`NetworkMsg::ConnectToServer`] with the filled credentials.
     PromptNetworkCredentials {
@@ -38,7 +40,7 @@ pub enum NetworkMsg {
         /// Human-readable prompt from the GVFS backend.
         message: String,
         /// Which fields the server needs.
-        flags: crate::infra::network::NetworkAuthFlags,
+        flags: NetworkAuthFlags,
         /// `true` when a previous attempt was rejected - the dialog shows an error hint.
         auth_failed: bool,
     },

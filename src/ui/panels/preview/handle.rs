@@ -1,9 +1,9 @@
 //! The panel's widget handle, plus the small operations that reflect app state
 //! onto the header strip and fill the Details tab.
 
-use super::content::FileInfo;
 use super::state::{Mode, State};
 use super::widgets::{clear_list, first_available_icon, push_row};
+use crate::domain::model::FileInfo;
 use crate::i18n::tr;
 use crate::ui::FileItem;
 use adw::prelude::*;

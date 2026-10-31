@@ -1,3 +1,7 @@
+/// Matches kept by one content search before it stops walking. The default of
+/// `UIConfig::max_content_search_results` and the cap the search service enforces.
+pub const MAX_CONTENT_SEARCH_RESULTS: usize = 100;
+
 pub(super) fn default_true() -> bool {
     true
 }

@@ -1,5 +1,7 @@
 //! Background task queue.
 
+use crate::domain::model::CancelHandle;
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum TasksMsg {
@@ -11,7 +13,7 @@ pub enum TasksMsg {
         current: u64,
         total: u64,
         total_items: usize,
-        cancellable: gio::Cancellable,
+        cancellable: CancelHandle,
     },
     /// Signal that a specific background operation has completed.
     TaskCompleted(u64),

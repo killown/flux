@@ -1,6 +1,6 @@
 use super::file_item::FileItem;
 use super::widgets::FileWidgets;
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use crate::ui::constants;
 use crate::ui::constants::MOUSE_RIGHT_CLICK;
 use crate::utils;
@@ -264,7 +264,7 @@ impl FileItem {
 
         drop_target.connect_drop(|target, value, _, _| {
             let widget = target.widget().unwrap();
-            let sender = crate::domain::model::SENDER.get();
+            let sender = crate::app::state::SENDER.get();
 
             let dest_path_opt: Option<PathBuf> = unsafe {
                 widget
@@ -535,7 +535,7 @@ impl FileItem {
 
                     add_controller = gtk::GestureLongPress {
                         // Only claim or handle long press on touch input, preventing mouse drag conflicts
-                        connect_pressed[sender = crate::domain::model::SENDER.clone()] => move |gesture, x, y| {
+                        connect_pressed[sender = crate::app::state::SENDER.clone()] => move |gesture, x, y| {
                             if let Some(event) = gesture.current_event() {
                                 if let Some(btn_event) = event.downcast_ref::<gdk::ButtonEvent>() {
                                     if btn_event.button() != 0 {
@@ -579,7 +579,7 @@ impl FileItem {
                                 gesture.set_state(gtk::EventSequenceState::Claimed);
                             }
                         },
-                        connect_released[sender = crate::domain::model::SENDER.clone()] => move |gesture, _, x, y| {
+                        connect_released[sender = crate::app::state::SENDER.clone()] => move |gesture, _, x, y| {
                             if gesture.current_button() == MOUSE_RIGHT_CLICK {
                                 if let Some(s) = sender.get() {
                                     let widget = gesture.widget().unwrap();

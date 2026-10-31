@@ -1,6 +1,5 @@
-use crate::domain::model::{
-    AppMsg, AppSidebarMsg, Config, FluxApp, NavigationMsg, QuickListMsg, TabsMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, AppSidebarMsg, Config, NavigationMsg, QuickListMsg, TabsMsg};
 use crate::ui::SidebarPlace;
 use adw::prelude::*;
 use gtk::gio;

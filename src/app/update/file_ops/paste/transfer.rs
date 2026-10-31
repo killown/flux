@@ -2,11 +2,12 @@ use adw::gio::prelude::*;
 use gtk::gio;
 use std::path::{Path, PathBuf};
 
-pub(super) fn resolve_gio_files(files: Vec<gio::File>) -> Vec<(PathBuf, String, bool)> {
+pub(super) fn resolve_gio_files(files: Vec<String>) -> Vec<(PathBuf, String, bool)> {
     crate::hit!("resolve_gio_files");
     files
         .into_iter()
-        .filter_map(|file| {
+        .filter_map(|source_uri| {
+            let file = gio::File::for_uri(&source_uri);
             let src_path = file.path().or_else(|| {
                 let uri = file.uri().to_string();
                 let clean_uri = uri.trim_end_matches('/');

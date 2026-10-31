@@ -6,7 +6,7 @@ use super::super::procfs::{
 };
 use super::super::smaps::{read_detailed_smaps, SmapsRegion};
 use super::model::*;
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use std::rc::Rc;
 
 impl DebugSnapshot {

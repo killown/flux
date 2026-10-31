@@ -1,5 +1,6 @@
 //! Search, filters and the header search state.
 
+use crate::domain::model::{AdvancedSearchParams, ExtensionMatch};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -26,13 +27,13 @@ pub enum SearchMsg {
     SetMaxContentSearchResults(usize),
     /// A batch of files matched a recursive extension/glob search.
     ExtensionSearchBatch {
-        results: Vec<crate::infra::search::ExtensionMatch>,
+        results: Vec<ExtensionMatch>,
         session: u64,
     },
     /// Kick off a recursive filename search using glob patterns.
     StartExtensionSearch(Vec<String>),
     /// Recursive search with full advanced constraints.
-    StartAdvancedSearch(crate::infra::search::AdvancedSearchParams),
+    StartAdvancedSearch(AdvancedSearchParams),
     /// Syncs the inline path entry widget text to the current directory.
     SyncPathEntry,
     /// Initiates a deep content search within the current directory.

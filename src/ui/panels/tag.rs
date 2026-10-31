@@ -7,7 +7,8 @@ use std::rc::Rc;
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
-use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, SearchMsg, TagsMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, AppSidebarMsg, SearchMsg, TagsMsg};
 use crate::i18n::tr;
 
 /// Builds and returns the unified tag panel navigator.

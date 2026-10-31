@@ -1,7 +1,7 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    ActionsMsg, AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, NetworkMsg, PreviewMsg,
-    PropertiesMsg, QuickListMsg, SearchMsg, TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg,
-    WindowMsg,
+    ActionsMsg, AppMsg, AppSidebarMsg, NavigationMsg, NetworkMsg, PreviewMsg, PropertiesMsg,
+    QuickListMsg, SearchMsg, TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg,
 };
 use crate::ui::keymap::KeyMap;
 use adw::gdk;
@@ -9,6 +9,42 @@ use gtk::glib;
 use gtk::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
+
+/// Maps a GDK key onto the toolkit-free key the Quick List chords classify.
+///
+/// Only the keys a chord can use are named. Keypad digits map to `Key::Other`
+/// because they never matched the main-block digit keys.
+fn quick_list_key(key: gdk::Key) -> crate::domain::model::quick_list::Key {
+    use crate::domain::model::quick_list::Key;
+    let named = [
+        (gdk::Key::Insert, Key::Insert),
+        (gdk::Key::End, Key::End),
+        (gdk::Key::Page_Up, Key::PageUp),
+        (gdk::Key::Page_Down, Key::PageDown),
+        (gdk::Key::Tab, Key::Tab),
+    ];
+    if let Some((_, mapped)) = named.iter().find(|(k, _)| *k == key) {
+        return *mapped;
+    }
+    let chars = [
+        (gdk::Key::q, 'q'),
+        (gdk::Key::Q, 'Q'),
+        (gdk::Key::_0, '0'),
+        (gdk::Key::_1, '1'),
+        (gdk::Key::_2, '2'),
+        (gdk::Key::_3, '3'),
+        (gdk::Key::_4, '4'),
+        (gdk::Key::_5, '5'),
+        (gdk::Key::_6, '6'),
+        (gdk::Key::_7, '7'),
+        (gdk::Key::_8, '8'),
+        (gdk::Key::_9, '9'),
+    ];
+    chars
+        .iter()
+        .find(|(k, _)| *k == key)
+        .map_or(Key::Other, |&(_, c)| Key::Char(c))
+}
 
 /// When a capture-phase binding must stand aside and let the focused widget
 /// handle the key instead.
@@ -259,7 +295,7 @@ pub fn setup_capture(
         // terminal has focus `dispatch_key` returns `None`, so Tab, Insert,
         // Ctrl+End, Ctrl+PageUp/Down and Ctrl+1..9 all reach the shell.
         if let Some(chord) = crate::domain::model::quick_list::dispatch_key(
-            keyval,
+            quick_list_key(keyval),
             is_ctrl,
             is_shift,
             is_alt,

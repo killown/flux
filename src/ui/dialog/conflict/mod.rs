@@ -20,7 +20,7 @@ const RESP_REPLACE: &str = "replace";
 pub fn show_conflict_dialog(
     ctx: ConflictContext,
     tx: oneshot::Sender<(ConflictChoice, bool)>,
-    sender: AsyncComponentSender<crate::domain::model::FluxApp>,
+    sender: AsyncComponentSender<crate::app::state::FluxApp>,
 ) {
     crate::hit!("show_conflict_dialog");
     let window = gtk::Application::default().active_window();

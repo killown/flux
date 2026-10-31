@@ -5,23 +5,7 @@ use crate::infra::archive::build_archive_uri;
 use std::collections::HashMap;
 use std::path::Path;
 
-/// Describes a single entry within an archive as seen from a specific directory level.
-#[derive(Debug, Clone)]
-pub struct ArchiveEntry {
-    pub name: String,
-    pub is_dir: bool,
-    /// Uncompressed size in bytes, `0` for synthesised directory nodes.
-    pub size: u64,
-    /// Last-modified unix timestamp, `0` when unavailable.
-    pub mtime: i64,
-    /// Full inner path relative to the archive root, used to build child URIs.
-    pub inner_path: String,
-    /// Number of direct children inside this directory at the listed level.
-    /// Always `0` for file entries. Populated by `collect_entry`.
-    pub child_count: u64,
-    #[allow(dead_code)]
-    pub is_encrypted: bool,
-}
+pub use crate::domain::model::ArchiveEntry;
 
 /// Converts [`ArchiveEntry`] items into [`FileLoadContext`] records for the grid model.
 #[allow(dead_code)]

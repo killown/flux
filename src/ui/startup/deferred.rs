@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp, NavigationMsg, SearchMsg, TasksMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, AppSidebarMsg, NavigationMsg, SearchMsg, TasksMsg};
 use crate::infra::db::StateManager;
 use crate::ui::constants;
 use gtk::glib;

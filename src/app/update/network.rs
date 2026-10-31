@@ -1,5 +1,6 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    AppMsg, AppSidebarMsg, DeviceMsg, FluxApp, NavigationMsg, NetworkMsg, TerminalMsg, WindowMsg,
+    AppMsg, AppSidebarMsg, DeviceMsg, NavigationMsg, NetworkMsg, TerminalMsg, WindowMsg,
 };
 use crate::ui::FileItem;
 use adw::gio;

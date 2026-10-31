@@ -1,6 +1,6 @@
 //! Thumbnail and video-preview generation.
 
-use gtk::gdk;
+use crate::domain::model::Image;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -32,13 +32,10 @@ pub enum ThumbnailsMsg {
     /// Check for visible thumbnails in the current viewport and request generation for any missing ones
     CheckVisibleThumbnails,
     /// A custom file-icon image was decoded on a worker thread.
-    FileIconTextureReady {
-        path: PathBuf,
-        texture: gtk::gdk::Texture,
-    },
+    FileIconTextureReady { path: PathBuf, image: Image },
     ThumbnailReady {
         grid_idx: u32,
-        texture: gdk::Texture,
+        image: Image,
         load_id: u64,
         tab_index: usize,
     },

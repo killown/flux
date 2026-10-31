@@ -1,5 +1,6 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    AppMsg, FluxApp, NavigationMsg, SettingsMsg, ToggleVerb, WindowMsg, WindowVisibility,
+    AppMsg, NavigationMsg, SettingsMsg, ToggleVerb, WindowMsg, WindowVisibility,
 };
 use adw::prelude::*;
 use relm4::prelude::*;

@@ -1,8 +1,9 @@
 //! Keyboard, mouse and action wiring for the main window.
 
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    ActionsMsg, AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, NavigationMsg, PreviewMsg,
-    QuickListMsg, SearchMsg, TabsMsg, ViewMsg, WindowMsg,
+    ActionsMsg, AppMsg, AppSidebarMsg, FileOpsMsg, NavigationMsg, PreviewMsg, QuickListMsg,
+    SearchMsg, TabsMsg, ViewMsg, WindowMsg,
 };
 use adw::prelude::*;
 use gtk::gdk;

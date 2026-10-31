@@ -1,5 +1,6 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    AppMsg, FileOpsMsg, FluxApp, NavigationMsg, PropertiesMsg, QuickListMsg, UndoMsg, WindowMsg,
+    AppMsg, FileOpsMsg, NavigationMsg, PropertiesMsg, QuickListMsg, UndoMsg, WindowMsg,
 };
 use relm4::prelude::*;
 

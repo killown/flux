@@ -1,8 +1,7 @@
 //! Archive password and LUKS passphrase storage in the system keyring.
 
 use std::collections::HashMap;
-use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::UNIX_EPOCH;
 
 /// Value of the `application` attribute on every secret Flux stores.
@@ -335,33 +334,4 @@ pub async fn forget_luks_passphrase(image: &Path) -> bool {
     }
 }
 
-/// Passwords the user asked to save but that no archive has accepted yet.
-#[derive(Default)]
-pub struct PendingSaves(HashMap<PathBuf, String>);
-
-impl PendingSaves {
-    /// Queues `password` for `archive`, replacing any earlier request for it.
-    pub fn queue(&mut self, archive: PathBuf, password: String) {
-        self.0.insert(archive, password);
-    }
-
-    /// Resolves the request for `archive` once a load has finished.
-    pub fn confirm(&mut self, archive: &Path, accepted: Option<&str>) -> Option<String> {
-        let queued = self.0.remove(archive)?;
-        (accepted == Some(queued.as_str())).then_some(queued)
-    }
-
-    /// Drops the request for `archive` without saving (the unlock failed).
-    pub fn discard(&mut self, archive: &Path) {
-        self.0.remove(archive);
-    }
-}
-
-// Hand-written so a derived `Debug` on `FluxApp` can never print a password.
-impl fmt::Debug for PendingSaves {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PendingSaves")
-            .field("queued", &self.0.len())
-            .finish()
-    }
-}
+pub use crate::domain::model::PendingSaves;

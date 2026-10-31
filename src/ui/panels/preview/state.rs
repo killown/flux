@@ -1,9 +1,9 @@
 //! Mutable view state of the panel. One `State` is shared by every clone of the
 //! panel handle through an `Rc`.
 
-use super::content::FolderEntry;
 use super::folder_thumbs::FolderThumbs;
 use super::markdown::StyledRange;
+use crate::domain::model::FolderEntry;
 use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 

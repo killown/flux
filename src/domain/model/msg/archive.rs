@@ -1,5 +1,6 @@
 //! Archive browsing, extraction and passwords.
 
+use crate::domain::model::{ArchiveEntry, ArchiveError};
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -32,8 +33,7 @@ pub enum ArchiveMsg {
         /// Session identifier captured at spawn time, used to discard results
         /// from background tasks that were superseded by a subsequent navigation.
         load_id: u64,
-        result:
-            Result<Vec<crate::infra::archive::ArchiveEntry>, crate::infra::archive::ArchiveError>,
+        result: Result<Vec<ArchiveEntry>, ArchiveError>,
     },
     /// Background ZIP header probe result: archives found to be encrypted.
     /// Sent after `FolderLoaded` so the padlock never delays the first paint.

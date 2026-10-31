@@ -1,7 +1,7 @@
 //! Wide-preview and full-screen-preview mode: the state machine on `FluxApp`
 //! plus the GTK layout helpers that resize the panel and hide the main column.
 
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use crate::ui::panels::preview::registry;
 use adw::prelude::*;
 use relm4::prelude::*;

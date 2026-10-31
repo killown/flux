@@ -5,13 +5,7 @@ use gtk::gio;
 use gtk::prelude::*;
 use std::path::Path;
 
-#[derive(Debug, Clone)]
-pub struct TableData {
-    pub headers: Vec<String>,
-    pub rows: Vec<Vec<String>>,
-    pub truncated: bool,
-    pub delimiter: u8,
-}
+pub use crate::domain::model::TableData;
 
 const MAX_ROWS: usize = 10_000;
 const MAX_COLS: usize = 256;

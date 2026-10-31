@@ -1,4 +1,4 @@
-use crate::domain::model::FluxApp;
+use crate::app::state::FluxApp;
 use crate::ui::constants;
 use gtk::prelude::*;
 use relm4::prelude::*;

@@ -1,30 +1,8 @@
 //! Markdown renderer for the peek-preview text viewer.
 
 use pulldown_cmark::{Event, HeadingLevel, Options, Parser, Tag, TagEnd};
-use std::ops::Range;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MdStyle {
-    Heading1,
-    Heading2,
-    Heading3,
-    Heading4,
-    Heading5,
-    Heading6,
-    Bold,
-    Italic,
-    Code,
-    CodeBlock,
-    Link,
-    BlockQuote,
-    ListBullet,
-}
-
-#[derive(Debug, Clone)]
-pub struct StyledRange {
-    pub range: Range<usize>,
-    pub style: MdStyle,
-}
+pub use crate::domain::model::{MdStyle, StyledRange};
 
 #[derive(Debug, Clone, Default)]
 pub struct MarkdownRender {

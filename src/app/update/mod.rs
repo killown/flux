@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp};
+use crate::app::state::FluxApp;
+use crate::domain::model::AppMsg;
 use relm4::prelude::*;
 
 pub mod app_action;

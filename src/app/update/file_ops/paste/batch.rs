@@ -1,8 +1,7 @@
 use super::transfer::{is_cancelled_error, perform_file_op_with_progress, scan_total_bytes};
 use super::{is_same_entry, CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD, NEXT_TASK_ID};
-use crate::domain::model::{
-    AppMsg, FileOpsMsg, FluxApp, NavigationMsg, TasksMsg, TransferMsg, WindowMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg};
 use crate::ui::conflict_policy::{
     auto_rename_dest, ConflictChoice, ConflictContext, ConflictPolicy,
 };
@@ -57,7 +56,7 @@ impl FluxApp {
             current: 0,
             total: 0,
             total_items: total_files,
-            cancellable: cancellable.clone(),
+            cancellable: cancellable.clone().into(),
         }));
         sender.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
@@ -136,7 +135,7 @@ impl FluxApp {
                     current: copied_bytes,
                     total: total_bytes,
                     total_items: total_files,
-                    cancellable: cancellable.clone(),
+                    cancellable: cancellable.clone().into(),
                 }));
                 s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 
@@ -245,7 +244,7 @@ impl FluxApp {
                         current: overall,
                         total: total_bytes,
                         total_items: total_files,
-                        cancellable: cancellable_cb.clone(),
+                        cancellable: cancellable_cb.clone().into(),
                     }));
                     s_cb.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
                 };
@@ -277,7 +276,7 @@ impl FluxApp {
                         current: copied_bytes,
                         total: total_bytes,
                         total_items: total_files,
-                        cancellable: cancellable.clone(),
+                        cancellable: cancellable.clone().into(),
                     }));
                     s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
 

@@ -18,7 +18,8 @@
 //! - [`remove`] is shared with `unbind` so a recycled cell never carries an
 //!   entry over to the next item.
 
-use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, SENDER};
+use crate::app::state::SENDER;
+use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg};
 use crate::ui::components::widgets::FileWidgets;
 use crate::ui::components::FileItem;
 use crate::ui::constants;

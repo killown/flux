@@ -1,6 +1,7 @@
 use super::matching::action_matches_mime;
 use super::template::{parse_secondary_template, resolve_secondary_menu_template};
-use crate::domain::model::{ActionsMsg, AppMsg, ArchiveMsg, CustomAction, FluxApp, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{ActionsMsg, AppMsg, ArchiveMsg, CustomAction, WindowMsg};
 use crate::ui::constants;
 use crate::utils;
 use adw::gdk;

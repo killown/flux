@@ -1,7 +1,5 @@
-use crate::domain::model::{
-    AppMsg, ArchiveState, Filters, FluxApp, GitState, NavigationMsg, Panels, PreviewState,
-    QuickState, SearchState, TerminalState,
-};
+use crate::app::state::{FluxApp, Panels, PreviewState, SearchState, TerminalState};
+use crate::domain::model::{AppMsg, ArchiveState, Filters, GitState, NavigationMsg, QuickState};
 use crate::i18n::tr;
 use crate::ui::constants;
 use adw::prelude::*;
@@ -29,7 +27,7 @@ impl FluxApp {
     ) -> (Self, gtk::Box) {
         crate::hit!("init_components");
 
-        let _ = crate::domain::model::SENDER.set(sender.input_sender().clone());
+        let _ = crate::app::state::SENDER.set(sender.input_sender().clone());
         {
             crate::hit!("init_components:css");
             relm4::set_global_css(include_str!("../style.css"));

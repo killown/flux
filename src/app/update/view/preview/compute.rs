@@ -5,9 +5,9 @@ use super::probe::{
     archive_listing, audio_info, build_info, dir_listing, hex_dump, is_texty_mime, load_image_full,
     pdf_summary, read_head, video_info,
 };
-use crate::ui::panels::preview::{
-    binary, markdown, office, syntax, table, FileInfo, PreviewContent,
-};
+use crate::domain::model::{FileInfo, PreviewContent};
+use crate::ui::panels::preview::{binary, markdown, office, syntax, table};
+use crate::utils::media::image_from_texture;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::RecvTimeoutError;
 use std::time::Duration;
@@ -162,7 +162,10 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     // Executables: icon plus embedded metadata.
     if let Some(icon) = binary::inspect(path, ext, &mut info) {
         return match icon {
-            Some(tex) => PreviewContent::Image { tex, info },
+            Some(tex) => PreviewContent::Image {
+                image: image_from_texture(&tex),
+                info,
+            },
             None => PreviewContent::Metadata { info },
         };
     }
@@ -191,13 +194,17 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
     if IMAGE_EXTS.contains(&ext) || info.mime.starts_with("image/") {
         if let Some((tex, extra)) = load_image_full(path) {
             info.extra.extend(extra);
-            return PreviewContent::Image { tex, info };
+            return PreviewContent::Image {
+                image: image_from_texture(&tex),
+                info,
+            };
         }
     }
 
     if AUDIO_EXTS.contains(&ext) || info.mime.starts_with("audio/") {
         info.extra.extend(audio_info(path));
-        let cover = crate::utils::media::generate_thumbnail_sync(path);
+        let cover =
+            crate::utils::media::generate_thumbnail_sync(path).map(|tex| image_from_texture(&tex));
         return PreviewContent::Media {
             path: path.to_path_buf(),
             video: false,
@@ -226,13 +233,19 @@ pub(crate) fn compute_preview(path: &Path) -> PreviewContent {
         // The path is already a real on-disk file (extracted from the archive
         // above if this was a virtual path), so fontconfig can open it directly.
         if let Some(tex) = crate::utils::media::font_specimen(path, 1024) {
-            return PreviewContent::Image { tex, info };
+            return PreviewContent::Image {
+                image: image_from_texture(&tex),
+                info,
+            };
         }
     }
 
     // Thumbnailer: fonts, executables, RAW.
     if let Some(tex) = crate::utils::media::generate_thumbnail_sync(path) {
-        return PreviewContent::Image { tex, info };
+        return PreviewContent::Image {
+            image: image_from_texture(&tex),
+            info,
+        };
     }
 
     // Text, Markdown, or a hex dump.

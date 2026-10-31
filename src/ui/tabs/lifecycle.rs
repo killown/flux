@@ -1,5 +1,6 @@
 use super::state::TabState;
-use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ThumbnailsMsg};
 use gtk::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;

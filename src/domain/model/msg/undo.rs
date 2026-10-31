@@ -1,5 +1,7 @@
 //! Undo and redo.
 
+use crate::domain::model::{FileOp, TrashedItem};
+
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum UndoMsg {
@@ -13,24 +15,20 @@ pub enum UndoMsg {
         dest_dir: std::path::PathBuf,
     },
     /// Internal: background undo-move failed, restore op on the undo stack.
-    UndoMoveFailed(crate::ui::undo_redo::FileOp),
+    UndoMoveFailed(FileOp),
     /// Internal: background undo-trash succeeded, record the inverse redo op.
-    UndoTrashComplete {
-        items: Vec<crate::ui::undo_redo::TrashedItem>,
-    },
+    UndoTrashComplete { items: Vec<TrashedItem> },
     /// Internal: background undo-trash failed, restore op on the undo stack.
-    UndoTrashFailed(crate::ui::undo_redo::FileOp),
+    UndoTrashFailed(FileOp),
     /// Internal: background redo-move succeeded, record the inverse undo op.
     RedoMoveComplete {
         items: Vec<(std::path::PathBuf, std::path::PathBuf)>,
         dest_dir: std::path::PathBuf,
     },
     /// Internal: background redo-move failed, restore op on the redo stack.
-    RedoMoveFailed(crate::ui::undo_redo::FileOp),
+    RedoMoveFailed(FileOp),
     /// Internal: background redo-trash succeeded, record the inverse undo op.
-    RedoTrashComplete {
-        items: Vec<crate::ui::undo_redo::TrashedItem>,
-    },
+    RedoTrashComplete { items: Vec<TrashedItem> },
     /// Internal: background redo-trash failed, restore op on the redo stack.
-    RedoTrashFailed(crate::ui::undo_redo::FileOp),
+    RedoTrashFailed(FileOp),
 }

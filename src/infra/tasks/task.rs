@@ -1,5 +1,7 @@
 use super::speed::SpeedWindow;
+use crate::domain::model::CancelHandle;
 use gtk::gio;
+use gtk::gio::prelude::CancellableExt;
 use std::time::Instant;
 
 /// A single in-flight background operation.
@@ -18,8 +20,8 @@ pub struct Task {
     pub total: u64,
     /// Number of files within this logical operation.
     pub total_items: usize,
-    /// GIO cancellable token, calling `.cancel()` aborts the underlying I/O.
-    pub cancellable: gio::Cancellable,
+    /// Cancellation handle, calling `.cancel()` aborts the underlying I/O.
+    pub cancellable: CancelHandle,
     /// Wall-clock start time for elapsed display.
     #[allow(dead_code)]
     pub started_at: Instant,
@@ -29,4 +31,11 @@ pub struct Task {
     pub pid: Option<u32>,
     /// Captured output lines (stdout + stderr) for command tasks.
     pub output: Vec<String>,
+}
+
+impl From<gio::Cancellable> for CancelHandle {
+    /// Wraps a `gio::Cancellable` so the queue and messages can carry it without naming GIO.
+    fn from(cancellable: gio::Cancellable) -> Self {
+        CancelHandle::new(move || cancellable.cancel())
+    }
 }

@@ -1,5 +1,6 @@
 //! Preview panel and pane focus.
 
+use crate::domain::model::PreviewContent;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -12,7 +13,7 @@ pub enum PreviewMsg {
     /// Delivers a prefetched payload so the cache stays warm without the user selecting it.
     PreviewPrefetched {
         path: PathBuf,
-        content: std::sync::Arc<crate::ui::panels::preview::PreviewContent>,
+        content: std::sync::Arc<PreviewContent>,
     },
     /// Toggle the peek-preview side panel. Bound to `Space` in the grid.
     TogglePreview,
@@ -24,7 +25,7 @@ pub enum PreviewMsg {
     PreviewReady {
         path: PathBuf,
         session: u64,
-        content: crate::ui::panels::preview::PreviewContent,
+        content: PreviewContent,
     },
     /// Updates and persists the width of the peek-preview panel.
     SetPreviewPanelWidth(i32),

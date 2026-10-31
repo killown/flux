@@ -6,13 +6,13 @@ use std::sync::OnceLock;
 /// Unix timestamp of "now", resolved once per load batch by the loader.
 ///
 /// `FileLoadContext::labels()` reads this instead of calling
-/// `glib::DateTime::now_local()` per item, which would be O(N) `localtime_r`
-/// syscalls on a large directory. The loader stores a fresh value before
+/// `LocalTime::now()` per item, which would be O(N) `localtime_r`
+/// calls on a large directory. The loader stores a fresh value before
 /// priming `labels()` (see `loader/directory.rs`, `loader/archive.rs`,
 /// `loader/streaming.rs`, `search/content.rs`).
 ///
 /// `0` means "not set", `compute_labels` falls back to a per-call
-/// `glib::DateTime::now_local()` in that case (tests, direct callers).
+/// `LocalTime::now()` in that case (tests, direct callers).
 pub static NOW_UNIX: AtomicI64 = AtomicI64::new(0);
 
 /// Returns the shared "now" timestamp, or 0 if not primed.
@@ -294,7 +294,7 @@ impl FileLoadContext {
     /// Computes the label strings from `size()` and `mtime()`.
     ///
     /// `now_unix` is the shared "now" timestamp set once per load batch. If
-    /// `0`, a fresh `glib::DateTime::now_local()` is resolved (test / direct
+    /// `0`, a fresh `LocalTime::now()` is resolved (test / direct
     /// caller fallback).
     ///
     /// Runs exactly once per item, do not call directly on the GTK thread -
@@ -326,24 +326,19 @@ impl FileLoadContext {
             // for tests / direct callers. The fallback is the only path that
             // calls `localtime_r`, and it does so at most once per item.
             let now_dt_owned = if now_unix > 0 {
-                glib::DateTime::from_unix_local(now_unix).ok()
+                LocalTime::from_unix(now_unix)
             } else {
-                glib::DateTime::now_local().ok()
+                LocalTime::now()
             };
 
-            if let (Ok(file_dt), Some(now_dt)) =
-                (glib::DateTime::from_unix_local(mtime), now_dt_owned)
-            {
-                let (f_y, f_m, f_d) = (file_dt.year(), file_dt.month(), file_dt.day_of_month());
-                let (n_y, n_m, n_d) = (now_dt.year(), now_dt.month(), now_dt.day_of_month());
+            if let (Some(file_dt), Some(now_dt)) = (LocalTime::from_unix(mtime), now_dt_owned) {
+                let (f_y, f_m, f_d) = (file_dt.year(), file_dt.month(), file_dt.day());
+                let (n_y, n_m, n_d) = (now_dt.year(), now_dt.month(), now_dt.day());
 
-                let time_str = file_dt
-                    .format("%H:%M")
-                    .map(|g| g.to_string())
-                    .unwrap_or_default();
+                let time_str = file_dt.format("%H:%M").unwrap_or_default();
 
-                if let Ok(exact) = file_dt.format("%x %X") {
-                    mtime_tooltip = exact.to_string();
+                if let Some(exact) = file_dt.format("%x %X") {
+                    mtime_tooltip = exact;
                 }
 
                 if f_y == n_y && f_m == n_m && f_d == n_d {
@@ -362,8 +357,8 @@ impl FileLoadContext {
 
                     if is_yesterday {
                         mtime_short = format!("{}, {}", tr("Yesterday"), time_str);
-                    } else if let Ok(formatted) = file_dt.format("%x %H:%M") {
-                        mtime_short = formatted.to_string();
+                    } else if let Some(formatted) = file_dt.format("%x %H:%M") {
+                        mtime_short = formatted;
                     }
                 }
             }
@@ -385,9 +380,67 @@ impl FileLoadContext {
     }
 }
 
+/// A broken-down local time, resolved with the C library so the labels follow
+/// the process locale and time zone (`%x` and `%X` are locale formats).
+struct LocalTime {
+    tm: libc::tm,
+}
+
+impl LocalTime {
+    /// Local time for a unix timestamp, `None` when it is out of range.
+    fn from_unix(unix: i64) -> Option<Self> {
+        let t = libc::time_t::try_from(unix).ok()?;
+        // SAFETY: `tm` is plain data and `localtime_r` fully initialises it when it
+        // returns non-null. `t` outlives the call.
+        let mut tm: libc::tm = unsafe { std::mem::zeroed() };
+        let resolved = unsafe { !libc::localtime_r(&t, &mut tm).is_null() };
+        resolved.then_some(Self { tm })
+    }
+
+    /// Local time right now.
+    fn now() -> Option<Self> {
+        let secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .ok()?
+            .as_secs();
+        Self::from_unix(i64::try_from(secs).ok()?)
+    }
+
+    fn year(&self) -> i32 {
+        self.tm.tm_year + 1900
+    }
+
+    /// Month of the year, `1..=12`.
+    fn month(&self) -> i32 {
+        self.tm.tm_mon + 1
+    }
+
+    /// Day of the month, `1..=31`.
+    fn day(&self) -> i32 {
+        self.tm.tm_mday
+    }
+
+    /// Formats with `strftime` in the current locale, `None` when it does not fit.
+    fn format(&self, fmt: &str) -> Option<String> {
+        let fmt = std::ffi::CString::new(fmt).ok()?;
+        let mut buf = [0u8; 128];
+        // SAFETY: `buf` is valid for `buf.len()` bytes, `fmt` is NUL terminated and
+        // `self.tm` was initialised by `localtime_r`.
+        let n = unsafe {
+            libc::strftime(
+                buf.as_mut_ptr().cast::<libc::c_char>(),
+                buf.len(),
+                fmt.as_ptr(),
+                &self.tm,
+            )
+        };
+        (n > 0).then(|| String::from_utf8_lossy(&buf[..n]).into_owned())
+    }
+}
+
 /// Returns `(year, month, day)` for the calendar day before `(y, m, d)`.
 ///
-/// Pure field arithmetic - no `glib::DateTime` allocation, no DST, no
+/// Pure field arithmetic - no `LocalTime` resolution, no DST, no
 /// `localtime_r`. Called once per item that isn't "Today", so it must be
 /// cheap.
 #[inline]

@@ -1,5 +1,6 @@
 use super::media::is_visual_media_by_ext;
-use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ThumbnailsMsg};
 use crate::ui::FileItem;
 use crate::utils;
 use crate::utils::media::is_audio_file;

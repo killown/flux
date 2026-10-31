@@ -1,7 +1,8 @@
 //! File actions: item activation, moves and clipboard export.
 
+use crate::app::state::FluxApp;
 use crate::app::update::file_ops::paste::{is_same_entry, paste_name_for};
-use crate::domain::model::{AppMsg, ArchiveMsg, DeviceMsg, FluxApp, NavigationMsg, WindowMsg};
+use crate::domain::model::{AppMsg, ArchiveMsg, DeviceMsg, NavigationMsg, WindowMsg};
 use crate::i18n::tr;
 use crate::ui::conflict_policy::ConflictPolicy;
 use adw::prelude::*;
@@ -159,12 +160,10 @@ impl FluxApp {
                     });
                 }
                 break;
-            }
-            else if is_dir {
+            } else if is_dir {
                 sender.input(AppMsg::Navigation(NavigationMsg::Navigate(path)));
                 break;
-            }
-            else if crate::infra::archive::is_browsable_archive(&path) {
+            } else if crate::infra::archive::is_browsable_archive(&path) {
                 sender.input(AppMsg::Archive(ArchiveMsg::EnterArchive(path)));
                 break;
             }

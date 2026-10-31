@@ -1,8 +1,7 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::quick_groups::{NameError, QuickGroups};
 use crate::domain::model::quick_list;
-use crate::domain::model::{
-    AppMsg, FluxApp, NavigationMsg, QuickListMsg, RightPanelType, WindowMsg,
-};
+use crate::domain::model::{AppMsg, NavigationMsg, QuickListMsg, RightPanelType, WindowMsg};
 use crate::i18n::tr;
 use gtk::prelude::*;
 use relm4::prelude::*;

@@ -1,5 +1,6 @@
 use super::recursive::delete_recursive;
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg};
 use gtk::gio;
 use gtk::gio::prelude::FileExt;
 use relm4::prelude::*;

@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, LoadingMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ArchiveMsg, LoadingMsg};
 use relm4::prelude::*;
 
 pub(super) fn handle(

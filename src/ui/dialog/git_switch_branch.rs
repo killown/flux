@@ -8,7 +8,7 @@ use std::rc::Rc;
 
 pub fn show_switch_branch_dialog(
     parent: Option<&gtk::Window>,
-    sender: AsyncComponentSender<crate::domain::model::FluxApp>,
+    sender: AsyncComponentSender<crate::app::state::FluxApp>,
     current: Option<String>,
     branches: Vec<String>,
 ) {

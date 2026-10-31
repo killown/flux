@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, IconsMsg, NavigationMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, IconsMsg, NavigationMsg};
 use crate::utils;
 use relm4::prelude::*;
 use std::path::PathBuf;

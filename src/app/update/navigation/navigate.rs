@@ -1,7 +1,7 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::AltCycle;
 use crate::domain::model::{
-    ActionsMsg, AppMsg, ArchiveMsg, FluxApp, NavigationMsg, QuickListMsg, SearchMsg, TagsMsg,
-    WindowMsg,
+    ActionsMsg, AppMsg, ArchiveMsg, NavigationMsg, QuickListMsg, SearchMsg, TagsMsg, WindowMsg,
 };
 use crate::ui::constants;
 use gtk::glib;

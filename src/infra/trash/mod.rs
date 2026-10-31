@@ -6,7 +6,8 @@ pub mod tracked;
 
 pub use recursive::delete_recursive;
 
-use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ArchiveMsg, WindowMsg};
 use gtk::gio;
 use relm4::prelude::*;
 use std::path::PathBuf;

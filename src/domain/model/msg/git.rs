@@ -1,5 +1,6 @@
 //! Git actions, status views and the diff panel.
 
+use crate::domain::model::GitFileStatus;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -57,6 +58,6 @@ pub enum GitMsg {
     GitStatusReady {
         path: PathBuf,
         load_id: u64,
-        updates: std::collections::HashMap<PathBuf, crate::infra::git::GitFileStatus>,
+        updates: std::collections::HashMap<PathBuf, GitFileStatus>,
     },
 }

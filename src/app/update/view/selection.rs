@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, GitMsg, PreviewMsg, PropertiesMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, GitMsg, PreviewMsg, PropertiesMsg};
 use crate::i18n::tr;
 use crate::ui::constants;
 use crate::utils;

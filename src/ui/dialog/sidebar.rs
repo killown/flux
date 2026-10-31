@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, AppSidebarMsg, FluxApp};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, AppSidebarMsg};
 use adw::gdk;
 use adw::prelude::*;
 use relm4::prelude::*;

@@ -1,16 +1,5 @@
 use super::protocol::protocol_for_uri;
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
-pub struct NetworkBookmark {
-    pub name: String,
-    pub uri: String,
-    #[serde(default = "default_network_icon")]
-    pub icon: String,
-}
-
-fn default_network_icon() -> String {
-    "folder-remote-symbolic".to_owned()
-}
+pub use crate::domain::model::NetworkBookmark;
 
 impl NetworkBookmark {
     pub fn new(name: impl Into<String>, uri: impl Into<String>) -> Self {

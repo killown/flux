@@ -16,7 +16,7 @@ pub mod trash;
 pub mod window_control;
 
 pub mod constants {
-    pub const MAX_CONTENT_SEARCH_RESULTS: usize = 100;
+    pub use crate::domain::model::MAX_CONTENT_SEARCH_RESULTS;
     /// Recursive filename search flushes a batch to the UI at this many results.
     pub const SEARCH_BATCH_SIZE: usize = 500;
     /// Recursive filename search flushes a non-empty batch after this many milliseconds.

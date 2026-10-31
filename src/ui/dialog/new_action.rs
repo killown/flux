@@ -1,6 +1,7 @@
 //! "New Action" dialog of the Contextual Actions panel.
 
-use crate::domain::model::{ActionsMsg, AppMsg, FluxApp};
+use crate::app::state::FluxApp;
+use crate::domain::model::{ActionsMsg, AppMsg};
 use crate::i18n::tr;
 use crate::ui::menu::secondary::{category_mime_pattern, secondary_template_filename, split_mime};
 use adw::prelude::*;

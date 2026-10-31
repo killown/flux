@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SortBy};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg, SortBy};
 use crate::utils;
 use relm4::prelude::*;
 

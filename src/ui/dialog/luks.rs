@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, DeviceMsg, FluxApp, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, DeviceMsg, WindowMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;

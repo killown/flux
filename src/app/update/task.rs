@@ -1,5 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, ViewMsg};
-use gtk::gio;
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, CancelHandle, ViewMsg};
 use libc;
 use relm4::prelude::*;
 
@@ -11,7 +11,7 @@ impl FluxApp {
         current: u64,
         total: u64,
         total_items: usize,
-        cancellable: gio::Cancellable,
+        cancellable: CancelHandle,
     ) {
         crate::hit!("handle_task_progress");
         self.task_queue
@@ -107,7 +107,7 @@ impl FluxApp {
 
         let dialog = crate::ui::dialog::transfer::create_transfer_dialog(
             self.task_queue.clone(),
-            crate::domain::model::SENDER
+            crate::app::state::SENDER
                 .get()
                 .expect("SENDER not initialised")
                 .clone(),
@@ -144,7 +144,7 @@ impl FluxApp {
         let dialog = crate::ui::dialog::command::create_command_dialog(
             id,
             self.task_queue.clone(),
-            crate::domain::model::SENDER
+            crate::app::state::SENDER
                 .get()
                 .expect("SENDER not initialised")
                 .clone(),

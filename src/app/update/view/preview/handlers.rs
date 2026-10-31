@@ -1,5 +1,6 @@
 use super::compute::compute_preview_guarded;
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, PreviewMsg, RightPanelType, SearchMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg, PreviewMsg, RightPanelType, SearchMsg};
 use crate::ui::panels::preview::{registry, PreviewContent};
 use adw::prelude::*;
 use gtk::glib;
@@ -248,7 +249,7 @@ impl FluxApp {
         }
 
         let session_arc = self.panels.preview.extras.preview_session.clone();
-        let sender = crate::domain::model::SENDER.get().cloned();
+        let sender = crate::app::state::SENDER.get().cloned();
         relm4::spawn_blocking(move || {
             if session_arc.load(Ordering::SeqCst) != session {
                 return;

@@ -1,5 +1,6 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    ActionsMsg, AppMsg, AppSidebarMsg, ArchiveMsg, FileOpsMsg, FluxApp, IconsMsg, PropertiesMsg,
+    ActionsMsg, AppMsg, AppSidebarMsg, ArchiveMsg, FileOpsMsg, IconsMsg, PropertiesMsg,
     QuickListMsg, SettingsMsg, TabsMsg, TagsMsg, WindowMsg,
 };
 use crate::ui::constants;

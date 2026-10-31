@@ -1,7 +1,6 @@
 //! Renders a `PreviewContent` into the panel's widgets.
 
 use super::audio::{stop_audio_mpv, AUDIO_MPV_PID};
-use super::content::PreviewContent;
 use super::handle::PreviewPanelHandle;
 use super::media::{PLAYLIST_END_SLACK_US, PLAYLIST_WRAP_ZONE_US, PREVIEW_MUTED};
 use super::registry;
@@ -9,6 +8,7 @@ use super::state::Mode;
 use super::table;
 use super::text::byte_to_char_map;
 use super::widgets::{clear_list, push_row};
+use crate::domain::model::PreviewContent;
 use crate::i18n::tr;
 use adw::prelude::*;
 use std::cell::Cell;
@@ -58,7 +58,8 @@ impl PreviewPanelHandle {
                 self.stack.set_visible_child_name("loading");
             }
 
-            PreviewContent::Image { tex, info } => {
+            PreviewContent::Image { image, info } => {
+                let tex = &crate::utils::media::texture_from_image(image);
                 self.show_info(info);
                 self.set_mode(Mode::Image);
                 let is_font = crate::infra::fonts::is_font_path(&info.path);
@@ -338,8 +339,9 @@ impl PreviewPanelHandle {
                     self.audio_reset_controls();
                     self.audio_art_stack
                         .set_visible_child_name(if cover.is_some() { "cover" } else { "icon" });
-                    if let Some(tex) = cover {
-                        self.media_cover.set_paintable(Some(tex));
+                    if let Some(image) = cover {
+                        let tex = crate::utils::media::texture_from_image(image);
+                        self.media_cover.set_paintable(Some(&tex));
                     }
 
                     if glib::find_program_in_path("mpv").is_none() {

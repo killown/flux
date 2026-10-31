@@ -6,7 +6,8 @@
 //! keyed on `(path, mtime)`. The LRU is consulted by `handle_preview_load`,
 //! on a hit, the panel is populated without touching the blocking pool.
 
-use crate::domain::model::{AppMsg, FluxApp, PreviewMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, PreviewMsg};
 use crate::ui::panels::preview::PreviewContent;
 use parking_lot::Mutex;
 use relm4::prelude::*;

@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ThumbnailsMsg};
 use crate::utils;
 use relm4::prelude::*;
 use std::path::PathBuf;
@@ -75,7 +76,7 @@ impl FluxApp {
                         .input_sender()
                         .send(AppMsg::Thumbnails(ThumbnailsMsg::ThumbnailReady {
                             grid_idx,
-                            texture,
+                            image: utils::media::image_from_texture(&texture),
                             load_id: current_session,
                             tab_index,
                         }));

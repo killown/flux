@@ -1,7 +1,6 @@
 use super::component::FluxAppWidgets;
-use crate::domain::model::{
-    AppMsg, AppSidebarMsg, ArchiveMsg, FluxApp, GitMsg, NavigationMsg, TerminalMsg,
-};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, AppSidebarMsg, ArchiveMsg, GitMsg, NavigationMsg, TerminalMsg};
 use crate::i18n::tr;
 use adw::gdk;
 use adw::prelude::*;

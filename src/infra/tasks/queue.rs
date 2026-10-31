@@ -1,7 +1,7 @@
 use super::speed::SpeedWindow;
 use super::task::Task;
+use crate::domain::model::CancelHandle;
 use gtk::gio;
-use gtk::gio::prelude::*;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
@@ -26,7 +26,7 @@ impl TaskQueue {
         current: u64,
         total: u64,
         total_items: usize,
-        cancellable: gio::Cancellable,
+        cancellable: impl Into<CancelHandle>,
     ) {
         crate::hit!("update");
         if let Ok(mut map) = self.inner.lock() {
@@ -37,7 +37,7 @@ impl TaskQueue {
                 current: 0,
                 total,
                 total_items,
-                cancellable: cancellable.clone(),
+                cancellable: cancellable.into(),
                 started_at: Instant::now(),
                 speed: SpeedWindow::new(),
                 pid: None,
@@ -79,7 +79,7 @@ impl TaskQueue {
                 current: 0,
                 total: 0,
                 total_items: 0,
-                cancellable: gio::Cancellable::new(),
+                cancellable: gio::Cancellable::new().into(),
                 started_at: Instant::now(),
                 speed: SpeedWindow::new(),
                 pid: Some(pid),
@@ -110,7 +110,7 @@ impl TaskQueue {
     /// Cancels every in-flight task and clears the queue.
     pub fn cancel_all(&self) {
         crate::hit!("cancel_all");
-        let tasks: Vec<(gio::Cancellable, Option<u32>)> = match self.inner.lock() {
+        let tasks: Vec<(CancelHandle, Option<u32>)> = match self.inner.lock() {
             Ok(mut map) => {
                 let collected = map
                     .values()

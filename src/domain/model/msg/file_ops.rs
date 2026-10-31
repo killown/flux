@@ -1,5 +1,6 @@
 //! Clipboard, create/rename/delete, drag and drop and file-change events.
 
+use crate::domain::model::TrashedItem;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
@@ -23,7 +24,7 @@ pub enum FileOpsMsg {
     /// Paste rich text HTML content from the clipboard into a new `.html` file.
     PasteHtmlFromClipboard,
     /// Notification that items were sent to the trash.
-    TrashSucceeded(Vec<crate::ui::undo_redo::TrashedItem>),
+    TrashSucceeded(Vec<TrashedItem>),
     /// Notification that a batch move completed.
     MoveSucceeded {
         items: Vec<(std::path::PathBuf, std::path::PathBuf)>,
@@ -66,7 +67,9 @@ pub enum FileOpsMsg {
     /// Triggers the process to move selected files to the system trash.
     Delete,
     /// Internal message to execute the file operations after clipboard data is retrieved.
-    PerformPaste { files: Vec<gio::File>, is_cut: bool },
+    ///
+    /// `files` are the source locations as URIs.
+    PerformPaste { files: Vec<String>, is_cut: bool },
     /// Finalize a file or directory rename operation.
     PerformRename(PathBuf, String),
     /// Enter inline rename mode for the specified file.
@@ -95,8 +98,9 @@ pub enum FileOpsMsg {
     ///
     /// Carries the full original file list so it can be resumed via `PerformPasteForced`
     /// and the display names of the conflicting items for the dialog body.
+    /// `files` are the source locations as URIs.
     ConfirmReplacePaste {
-        files: Vec<gio::File>,
+        files: Vec<String>,
         conflicts: Vec<String>,
         is_cut: bool,
     },
@@ -104,5 +108,5 @@ pub enum FileOpsMsg {
     ///
     /// Identical to `PerformPaste` but skips conflict detection and always passes
     /// `FileCopyFlags::OVERWRITE` for both copy and move operations.
-    PerformPasteForced { files: Vec<gio::File>, is_cut: bool },
+    PerformPasteForced { files: Vec<String>, is_cut: bool },
 }

@@ -1,6 +1,7 @@
+use crate::app::state::FluxApp;
 use crate::domain::model::{
-    ActionsMsg, AppMsg, AppSidebarMsg, FileOpsMsg, FluxApp, IconsMsg, NavigationMsg, SearchMsg,
-    TabsMsg, TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg,
+    ActionsMsg, AppMsg, AppSidebarMsg, FileOpsMsg, IconsMsg, NavigationMsg, SearchMsg, TabsMsg,
+    TagsMsg, TerminalMsg, UndoMsg, ViewMsg, WindowMsg,
 };
 use crate::ui::constants;
 use crate::ui::keymap::KeyMap;

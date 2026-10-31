@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, ArchiveMsg, FluxApp, LoadingMsg, TasksMsg, WindowMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ArchiveMsg, LoadingMsg, TasksMsg, WindowMsg};
 use relm4::prelude::*;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
@@ -66,7 +67,7 @@ impl FluxApp {
             current: 0,
             total: 0,
             total_items: 1,
-            cancellable: cancellable.clone(),
+            cancellable: cancellable.clone().into(),
         }));
 
         let password = self.archive.passwords.get(&archive_path).cloned();
@@ -105,7 +106,7 @@ impl FluxApp {
                     current,
                     total: total_poll.load(std::sync::atomic::Ordering::Relaxed),
                     total_items: 1,
-                    cancellable: cancellable_poll.clone(),
+                    cancellable: cancellable_poll.clone().into(),
                 }));
                 std::thread::sleep(std::time::Duration::from_millis(150));
             }
@@ -133,7 +134,7 @@ impl FluxApp {
                 current: total_bytes,
                 total: total_bytes,
                 total_items: 1,
-                cancellable: cancellable.clone(),
+                cancellable: cancellable.clone().into(),
             }));
             s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
 
@@ -194,7 +195,7 @@ impl FluxApp {
             current: 0,
             total: 0,
             total_items: 1,
-            cancellable: cancellable.clone(),
+            cancellable: cancellable.clone().into(),
         }));
 
         let password = self.archive.passwords.get(&archive_path).cloned();
@@ -214,7 +215,7 @@ impl FluxApp {
                 current: 1,
                 total: 1,
                 total_items: 1,
-                cancellable,
+                cancellable: cancellable.into(),
             }));
             s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
 

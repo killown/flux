@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, ThumbnailsMsg};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, ThumbnailsMsg};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -8,8 +9,9 @@ pub(super) fn handle(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> Result<(), AppMsg> {
     match msg {
-        AppMsg::Thumbnails(ThumbnailsMsg::FileIconTextureReady { path, texture }) => {
+        AppMsg::Thumbnails(ThumbnailsMsg::FileIconTextureReady { path, image }) => {
             crate::hit!("handle_file_icon_texture_ready");
+            let texture = crate::utils::media::texture_from_image(&image);
             crate::utils::icon::insert_cached_file_icon_texture(&path, texture);
             crate::utils::icon::end_file_icon_decode(&path);
             let files = &mut app.tabs[app.active_tab_index].files;
@@ -67,10 +69,13 @@ pub(super) fn handle(
         }
         AppMsg::Thumbnails(ThumbnailsMsg::ThumbnailReady {
             grid_idx,
-            texture,
+            image,
             load_id,
             tab_index,
-        }) => app.handle_thumbnail_ready(grid_idx, texture, load_id, tab_index),
+        }) => {
+            let texture = crate::utils::media::texture_from_image(&image);
+            app.handle_thumbnail_ready(grid_idx, texture, load_id, tab_index)
+        }
         AppMsg::Thumbnails(ThumbnailsMsg::SetFfmpegThreads(val)) => {
             app.handle_set_ffmpeg_threads(val)
         }

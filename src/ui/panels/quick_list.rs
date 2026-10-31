@@ -21,8 +21,9 @@
 use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
+use crate::app::state::FluxApp;
 use crate::domain::model::quick_groups::{GroupView, QuickGroups};
-use crate::domain::model::{AppMsg, FluxApp, QuickListMsg};
+use crate::domain::model::{AppMsg, QuickListMsg};
 use crate::i18n::tr;
 use crate::utils::search::fuzzy_match_compiled;
 use adw::prelude::*;

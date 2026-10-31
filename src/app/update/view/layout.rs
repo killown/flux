@@ -1,4 +1,5 @@
-use crate::domain::model::{AppMsg, FluxApp, NavigationMsg, SortBy};
+use crate::app::state::FluxApp;
+use crate::domain::model::{AppMsg, NavigationMsg, SortBy};
 use crate::ui::constants;
 use crate::utils;
 use gtk::prelude::WidgetExt;
