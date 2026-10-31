@@ -356,13 +356,16 @@ impl FileItem {
         icon_overlay.add_overlay(&lock_badge_closed);
         icon_overlay.add_overlay(&lock_badge_open);
 
-        let video_widget = gtk::Video::builder()
-            .autoplay(true)
-            .loop_(true)
-            .halign(gtk::Align::Fill)
-            .valign(gtk::Align::Fill)
-            .css_classes([constants::THUMBNAIL_CLASS])
-            .build();
+        let video_widget = {
+            crate::hit!("build_widgets:video");
+            gtk::Video::builder()
+                .autoplay(true)
+                .loop_(true)
+                .halign(gtk::Align::Fill)
+                .valign(gtk::Align::Fill)
+                .css_classes([constants::THUMBNAIL_CLASS])
+                .build()
+        };
 
         // gtk::Video reports the video's intrinsic size as its natural size,
         // which would stretch the grid cell. A ScrolledWindow that does not

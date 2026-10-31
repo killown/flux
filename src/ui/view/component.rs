@@ -946,19 +946,29 @@ impl SimpleAsyncComponent for FluxApp {
         let preview = opts.preview;
         model.preview.startup = preview;
         let toast_overlay = &model.toast_overlay;
-        crate::hit!("view::init:view_output");
+        // No probe here: view_output!() must stay a bare `let` for the macro.
+        // Its cost shows up as the self time of `view::init`.
         let widgets = view_output!();
 
-        Self::attach_tabs_and_header(&mut model, &widgets, &sender);
-        Self::lock_header_focus(root.upcast_ref::<gtk::Widget>());
-        Self::lock_header_focus(widgets.header_bar.upcast_ref::<gtk::Widget>());
-        Self::setup_sidebar_resize(&model, &widgets, &sender);
-        Self::setup_pin_zone(&widgets, &sender);
-        Self::setup_sidebar_context_menu(&widgets, &sender);
-        Self::store_widget_refs(&mut model, &widgets, &sender);
-        Self::setup_input_controllers(&model, &widgets, &root, &sender);
-        Self::setup_window(&model, &widgets, &root);
-        Self::schedule_startup_tasks(&model, &sender, open_archive);
+        {
+            crate::hit!("view::init:post_widgets");
+            Self::attach_tabs_and_header(&mut model, &widgets, &sender);
+            {
+                crate::hit!("view::init:lock_focus_root");
+                Self::lock_header_focus(root.upcast_ref::<gtk::Widget>());
+            }
+            {
+                crate::hit!("view::init:lock_focus_header");
+                Self::lock_header_focus(widgets.header_bar.upcast_ref::<gtk::Widget>());
+            }
+            Self::setup_sidebar_resize(&model, &widgets, &sender);
+            Self::setup_pin_zone(&widgets, &sender);
+            Self::setup_sidebar_context_menu(&widgets, &sender);
+            Self::store_widget_refs(&mut model, &widgets, &sender);
+            Self::setup_input_controllers(&model, &widgets, &root, &sender);
+            Self::setup_window(&model, &widgets, &root);
+            Self::schedule_startup_tasks(&model, &sender, open_archive);
+        }
 
         // CLI `--preview`: open the wide preview panel as soon as the window exists,
         // instead of waiting for the folder to finish loading.

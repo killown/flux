@@ -111,6 +111,11 @@ impl FluxApp {
             config.ui.header_visible
         };
 
+        let keymap = {
+            crate::hit!("init_components:keymap");
+            crate::ui::keymap::KeyMap::new(&config.shortcuts)
+        };
+
         let mut model = FluxApp {
             panels: Panels::default(),
             preview: PreviewState {
@@ -176,7 +181,7 @@ impl FluxApp {
             sort_by: config.ui.default_sort,
             sort_ascending: true,
             show_hidden: config.ui.show_hidden_by_default,
-            keymap: crate::ui::keymap::KeyMap::new(&config.shortcuts),
+            keymap,
             config: config.clone(),
             _volume_monitor: volume_monitor,
             filter: String::new(),

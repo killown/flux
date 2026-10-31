@@ -71,6 +71,12 @@ pub fn run() {
         crate::i18n::init();
     }
     {
+        // `adw::init()` runs `gtk::init()` first. Calling it separately splits the
+        // 46 ms into display/GTK setup and libadwaita's own setup.
+        crate::hit!("run:gtk_init");
+        gtk::init().expect("Failed to initialize GTK");
+    }
+    {
         crate::hit!("run:adw_init");
         adw::init().expect("Failed to initialize Libadwaita");
     }

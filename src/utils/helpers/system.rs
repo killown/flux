@@ -110,9 +110,14 @@ pub fn launch_editor_at_line(
 
 /// Registers the bundled GResource icons with the default icon theme.
 pub fn register_resources() {
-    gio::resources_register_include!("flux.gresource").expect("failed to register resources");
+    crate::hit!("register_resources");
+    {
+        crate::hit!("register_resources:gresource");
+        gio::resources_register_include!("flux.gresource").expect("failed to register resources");
+    }
 
     if let Some(display) = gtk::gdk::Display::default() {
+        crate::hit!("register_resources:icon_theme");
         gtk::IconTheme::for_display(&display).add_resource_path("/io/github/killown/flux/icons");
     }
 }
