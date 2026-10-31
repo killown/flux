@@ -11,7 +11,7 @@
 use super::content_query::{CONTENT_QUERY_SYNTAXES, MIN_CONTENT_TERM_LEN};
 use super::size::ACCEPTED_SIZE_UNITS;
 use super::tag::TAG_PREFIXES;
-use crate::domain::model::constants::SEARCH_SHORTCUT;
+use crate::domain::model::constants::{SAVE_SEARCH_AS_TAG_MAX_FILES, SEARCH_SHORTCUT};
 use crate::infra::constants::{
     CONTENT_SEARCH_BINARY_SNIFF_BYTES, CONTENT_SEARCH_CHUNK_BYTES, SEARCH_BATCH_SIZE,
     SEARCH_FLUSH_INTERVAL_MS,
@@ -203,6 +203,23 @@ pub fn render_search_markdown() -> String {
          | File size | Larger or smaller than a number of KB, MB or GB, in units of 1024. The comparison is strict. Applied by the recursive walk. |\n\n",
         key = accel_label(SEARCH_SHORTCUT),
         min = MIN_CONTENT_TERM_LEN,
+    );
+
+    out.push_str("## Save as tag\n\n");
+    let _ = write!(
+        out,
+        "The **Save as tag** button in the header of the **Search** panel labels \
+         every file in the results on screen with one tag. A dialog asks for the \
+         tag name, which is lowercased and loses its leading `#`, and has a **Pin \
+         to sidebar** switch that adds the tag to the sidebar. The tag is added to \
+         the tags a file already has.\n\n\
+         The button is on only while there are between 1 and {max} results. It \
+         works on the results of a recursive search, a content search, an \
+         extension filter and a tag filter. It stays off while a live filter \
+         hides part of the list, and in archives and other virtual locations.\n\n\
+         The tag is a snapshot. Files that match the same search later are not \
+         tagged automatically.\n\n",
+        max = SAVE_SEARCH_AS_TAG_MAX_FILES,
     );
 
     out

@@ -26,6 +26,8 @@ pub const TEMPLATE_CWD: &str = "%d";
 
 /// Default accelerator that focuses the search entry.
 pub const SEARCH_SHORTCUT: &str = "<ctrl>f";
+/// Largest number of search results that "Save as tag" labels in one go.
+pub const SAVE_SEARCH_AS_TAG_MAX_FILES: usize = 500;
 
 /// URI of the virtual Recents folder.
 pub const RECENT_URI: &str = "recent:///";

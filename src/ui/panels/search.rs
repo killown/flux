@@ -2,11 +2,26 @@ use super::header::panel_header;
 use super::resize::resizable_panel;
 use super::spec::PanelSpec;
 use crate::app::state::FluxApp;
+use crate::domain::model::constants::SAVE_SEARCH_AS_TAG_MAX_FILES;
 use crate::domain::model::AdvancedSearchParams;
-use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg};
+use crate::domain::model::{AppMsg, NavigationMsg, SearchMsg, TagsMsg};
 use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::AsyncComponentSender;
+
+/// Widget name of the "Save as tag" header button. `FluxApp::sync_save_search_tag_button`
+/// looks the button up by it to turn it on or off as the result count changes.
+pub const SAVE_AS_TAG_BUTTON_NAME: &str = "flux-search-save-as-tag";
+
+/// Tooltip of the "Save as tag" button. When the button is off it says why.
+pub fn save_as_tag_tooltip(enabled: bool) -> String {
+    if enabled {
+        tr("Save results as tag")
+    } else {
+        tr("Save as tag needs between 1 and {max} search results")
+            .replace("{max}", &SAVE_SEARCH_AS_TAG_MAX_FILES.to_string())
+    }
+}
 
 fn apply_flat_filters(
     sender: &AsyncComponentSender<FluxApp>,
@@ -55,6 +70,15 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
         .tooltip_text(tr("Clear filter"))
         .build();
 
+    let save_tag_btn = gtk::Button::builder()
+        .icon_name("tag-symbolic")
+        .css_classes(["flat", "circular"])
+        .valign(gtk::Align::Center)
+        .tooltip_text(save_as_tag_tooltip(false))
+        .sensitive(false)
+        .build();
+    save_tag_btn.set_widget_name(SAVE_AS_TAG_BUTTON_NAME);
+
     let search_btn = gtk::Button::builder()
         .label(tr("Search"))
         .css_classes(["suggested-action", "pill"])
@@ -68,6 +92,7 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             &tr("Search"),
             &[
                 reset_btn.clone().upcast::<gtk::Widget>(),
+                save_tag_btn.clone().upcast::<gtk::Widget>(),
                 search_btn.clone().upcast::<gtk::Widget>(),
             ],
             move || s.input(AppMsg::Search(SearchMsg::ToggleSearchPanel)),
@@ -533,6 +558,13 @@ pub fn build_search_panel(initial_width: i32, sender: AsyncComponentSender<FluxA
             s.input(AppMsg::Search(SearchMsg::UpdateFilter(String::new())));
             s.input(AppMsg::Navigation(NavigationMsg::Refresh));
             name_e.grab_focus();
+        });
+    }
+
+    {
+        let s = sender.clone();
+        save_tag_btn.connect_clicked(move |_| {
+            s.input(AppMsg::Tags(TagsMsg::PromptSaveSearchAsTag));
         });
     }
 

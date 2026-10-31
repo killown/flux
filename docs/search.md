@@ -107,3 +107,11 @@ Results are shown in list mode, one row per file, with a path relative to the cu
 | Modified | Any time, last hour, last 24 hours (`Today`), last 7, 30 or 365 days. Applied by the recursive walk. |
 | File size | Larger or smaller than a number of KB, MB or GB, in units of 1024. The comparison is strict. Applied by the recursive walk. |
 
+## Save as tag
+
+The **Save as tag** button in the header of the **Search** panel labels every file in the results on screen with one tag. A dialog asks for the tag name, which is lowercased and loses its leading `#`, and has a **Pin to sidebar** switch that adds the tag to the sidebar. The tag is added to the tags a file already has.
+
+The button is on only while there are between 1 and 500 results. It works on the results of a recursive search, a content search, an extension filter and a tag filter. It stays off while a live filter hides part of the list, and in archives and other virtual locations.
+
+The tag is a snapshot. Files that match the same search later are not tagged automatically.
+

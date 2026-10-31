@@ -115,6 +115,7 @@ impl FluxApp {
         self.search.content_searching = false;
 
         self.search.cancellable = None;
+        self.sync_save_search_tag_button();
 
         let view = self.tabs[self.active_tab_index].files.view.clone();
         glib::idle_add_local_once(move || {

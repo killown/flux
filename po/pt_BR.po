@@ -4716,3 +4716,51 @@ msgstr "Sim"
 
 msgid "No"
 msgstr "Não"
+
+#: src/ui/panels/search.rs:78
+msgid "Save as tag needs between 1 and {max} search results"
+msgstr "Salvar como tag requer entre 1 e {max} resultados de busca"
+
+#: src/ui/panels/search.rs:78
+msgid "Save results as tag"
+msgstr "Salvar resultados como tag"
+
+#: src/app/update/tag.rs:220
+msgid "No search results to tag"
+msgstr "Nenhum resultado de busca para taguear"
+
+#: src/app/update/tag.rs:228
+msgid "Too many results to tag ({count}), the limit is {max}"
+msgstr "Resultados demais para taguear ({count}), o limite é {max}"
+
+#: src/app/update/tag.rs:290
+msgid "Could not tag any files as #{tag}"
+msgstr "Não foi possível taguear nenhum arquivo como #{tag}"
+
+#: src/app/update/tag.rs:294
+msgid "Tagged {count} of {total} files as #{tag}"
+msgstr "{count} de {total} arquivos tagueados como #{tag}"
+
+#: src/ui/dialog/save_search_as_tag.rs:31
+msgid "Save Search as Tag"
+msgstr "Salvar Busca como Tag"
+
+#: src/ui/dialog/save_search_as_tag.rs:41
+msgid "Tag name"
+msgstr "Nome da tag"
+
+#: src/ui/dialog/save_search_as_tag.rs:48
+msgid "Pin to sidebar"
+msgstr "Fixar na barra lateral"
+
+#: src/ui/dialog/save_search_as_tag.rs:21
+msgid "{count} files will be tagged."
+msgstr "{count} arquivos serão tagueados."
+
+#: src/ui/dialog/save_search_as_tag.rs:25
+msgid "{count} files will be tagged #{tag}."
+msgstr "{count} arquivos serão tagueados como #{tag}."
+
+#: src/ui/dialog/save_search_as_tag.rs:33
+msgid "New files matching this search will not be tagged automatically."
+msgstr "Novos arquivos que correspondam a esta busca não serão tagueados automaticamente."

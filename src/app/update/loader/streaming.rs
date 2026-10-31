@@ -35,6 +35,7 @@ impl FluxApp {
         crate::hit!("handle_folder_loaded_finish");
         if self.load_id.load(Ordering::SeqCst) == load_id {
             self.is_loading = false;
+            self.sync_save_search_tag_button();
         }
     }
 

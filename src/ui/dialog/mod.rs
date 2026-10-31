@@ -17,6 +17,7 @@ pub mod menu_icon_picker;
 mod new_action;
 mod open_with;
 mod paste;
+mod save_search_as_tag;
 mod sidebar;
 pub mod tag_picker;
 pub mod template_editor;

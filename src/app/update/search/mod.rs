@@ -101,6 +101,20 @@ pub(super) fn handle(
         AppMsg::Tags(TagsMsg::DeleteTagGlobally(tag)) => {
             app.handle_delete_tag_globally(tag, sender)
         }
+        AppMsg::Tags(TagsMsg::PromptSaveSearchAsTag) => {
+            app.handle_prompt_save_search_as_tag(sender)
+        }
+        AppMsg::Tags(TagsMsg::SaveSearchAsTag {
+            tag,
+            paths,
+            pin_to_sidebar,
+        }) => app.handle_save_search_as_tag(tag, paths, pin_to_sidebar, sender),
+        AppMsg::Tags(TagsMsg::SaveSearchAsTagDone {
+            tag,
+            count,
+            failed,
+            pin_to_sidebar,
+        }) => app.handle_save_search_as_tag_done(tag, count, failed, pin_to_sidebar, sender),
         AppMsg::Tags(TagsMsg::ToggleTagPanel) => {
             app.toggle_sidebar_right_panel(crate::domain::model::RightPanelType::Tag, sender)
         }

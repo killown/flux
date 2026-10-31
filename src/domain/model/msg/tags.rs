@@ -28,4 +28,20 @@ pub enum TagsMsg {
     SetFileTags { path: PathBuf, tags: Vec<String> },
     /// Navigate to a virtual tag view or filter by tag.
     NavigateTag(String),
+    /// Open the "Save search as tag" dialog for the results the active tab shows.
+    PromptSaveSearchAsTag,
+    /// Add `tag` to the tags of every path in `paths`, keeping the tags they already have,
+    /// then report back with [`TagsMsg::SaveSearchAsTagDone`].
+    SaveSearchAsTag {
+        tag: String,
+        paths: Vec<PathBuf>,
+        pin_to_sidebar: bool,
+    },
+    /// Outcome of [`TagsMsg::SaveSearchAsTag`]: `count` files were tagged, `failed` were not.
+    SaveSearchAsTagDone {
+        tag: String,
+        count: usize,
+        failed: usize,
+        pin_to_sidebar: bool,
+    },
 }

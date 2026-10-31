@@ -222,5 +222,6 @@ impl FluxApp {
                     .build(),
             );
         }
+        self.sync_save_search_tag_button();
     }
 }
