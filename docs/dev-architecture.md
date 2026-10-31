@@ -43,7 +43,7 @@ Routers stay thin. The real work lives in `handle_*` methods on `FluxApp` under 
 
 GTK objects belong to the main thread. Everything that can block runs elsewhere and reports back with an `AppMsg`.
 
-- **Background threads** reach the app through `model::SENDER`, a global `relm4::Sender<AppMsg>`. The `--cwd` server, the `goto` watcher and the selection server all use it.
+- **Background threads** reach the app through `infra::SENDER`, a global `relm4::Sender<AppMsg>`. The `--cwd` server, the `goto` watcher and the selection server all use it.
 - **Questions that need the UI** are forwarded as a message with a reply channel. The selection server sends `AppMsg::QuerySelection { reply }` and waits up to two seconds for the main thread to answer.
 - **Directory loading** runs on a dedicated Rayon pool in `src/infra/loader/pool.rs`. It has between 4 and 8 threads with 2 MiB stacks, so the first large folder does not commit the global pool's much larger stacks. Results reach the grid in batches of `ui.loader_batch_size` items.
 - **Subprocesses, network work and transfers** use Tokio, and short blocking jobs use `relm4::spawn_blocking`. A dispatch arm or message handler on the main thread should return in microseconds.

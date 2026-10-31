@@ -57,14 +57,14 @@ file to a switch in the settings window. This guide follows a boolean,
    `SetSingleClick` arm is in `src/app/update/view/mod.rs`).
 
 7. **`src/ui/settings/page/<section>.rs`** - add the row. The widget sends
-   the setter message through `model::SENDER`:
+   the setter message through `infra::SENDER`:
 
    ```rust
    add = &adw::SwitchRow {
        set_title: &tr("Single Click to Open"),
        set_active: config.ui.single_click,
        connect_active_notify => move |switch| {
-           if let Some(s) = crate::model::SENDER.get() {
+           if let Some(s) = crate::infra::SENDER.get() {
                let _ = s.send(AppMsg::SetSingleClick(switch.is_active()));
            }
        }

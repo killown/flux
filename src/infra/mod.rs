@@ -1,3 +1,6 @@
+use crate::domain::model::AppMsg;
+use std::sync::OnceLock;
+
 pub mod archive;
 pub mod db;
 pub mod downloads;
@@ -15,6 +18,9 @@ pub mod terminal;
 pub mod thumbnails;
 pub mod trash;
 pub mod window_control;
+
+/// Global communication channel for sending messages to the main application loop from background threads.
+pub static SENDER: OnceLock<relm4::Sender<AppMsg>> = OnceLock::new();
 
 pub mod constants {
     /// Recursive filename search flushes a batch to the UI at this many results.

@@ -264,7 +264,7 @@ impl Terminal {
                     glib::Propagation::Stop
                 }
                 gtk::gdk::Key::F4 => {
-                    if let Some(s) = crate::app::state::SENDER.get() {
+                    if let Some(s) = crate::infra::SENDER.get() {
                         let _ = s.send(crate::domain::model::AppMsg::Terminal(
                             crate::domain::model::TerminalMsg::ToggleTerminal,
                         ));

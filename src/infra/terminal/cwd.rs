@@ -101,7 +101,7 @@ fn handle_goto(dir: &Path) {
     if !path.is_dir() {
         return;
     }
-    if let Some(sender) = crate::app::state::SENDER.get() {
+    if let Some(sender) = crate::infra::SENDER.get() {
         let _ = sender.send(crate::domain::model::AppMsg::Navigation(
             crate::domain::model::NavigationMsg::Navigate(path),
         ));

@@ -53,7 +53,7 @@ handler together.
 4. **Heavy work** - the handler spawns it (`relm4::spawn_blocking`,
    `tokio::spawn`, or the loader pool) and the worker reports back with a
    second variant through `sender.input(...)`. Background threads without a
-   component sender use `model::SENDER`. For work tied to the current folder,
+   component sender use `infra::SENDER`. For work tied to the current folder,
    capture `load_id` when you spawn and discard the result if
    `self.load_id` has moved on (see `handle_folder_loaded_chunk`).
 
