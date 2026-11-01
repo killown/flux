@@ -152,7 +152,7 @@ const OPTIONAL_KEYS: &[(&str, &str)] = &[
     ),
     (
         "ui.terminal.shell",
-        "Shell started in the terminal pane; the user's login shell when unset.",
+        "Shell started in the terminal pane, `fish` when installed, otherwise the user's login shell.",
     ),
     (
         "ui.theme",

@@ -122,6 +122,11 @@ impl Terminal {
             .filter(|s| !s.trim().is_empty())
             .map(String::from)
             .unwrap_or_else(|| {
+                // fish is the default shell whenever it is installed.
+                if let Some(fish) = find_fish() {
+                    return fish;
+                }
+
                 if std::path::Path::new("/app/bin/fish").exists() {
                     return "/app/bin/fish".to_string();
                 }
@@ -245,4 +250,13 @@ impl Terminal {
             }
         }
     }
+}
+
+/// Looks up `fish` in `PATH`. The embedded terminal prefers it over `$SHELL`.
+fn find_fish() -> Option<String> {
+    let paths = std::env::var_os("PATH")?;
+    std::env::split_paths(&paths)
+        .map(|dir| dir.join("fish"))
+        .find(|candidate| candidate.is_file())
+        .map(|candidate| candidate.to_string_lossy().into_owned())
 }

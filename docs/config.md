@@ -140,7 +140,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `font` | `"JetBrains Mono 13"` | Terminal font as a Pango font description. |
 | `height` | `30` | Terminal pane height. |
 | `position` | `"bottom"` | Where F4 opens the terminal: `bottom` pane, right `sidebar` panel, or `fullscreen` window. |
-| `shell` | `unset` | Shell started in the terminal pane; the user's login shell when unset. |
+| `shell` | `unset` | Shell started in the terminal pane, `fish` when installed, otherwise the user's login shell. |
 
 ### `[ui.thumbnail_types]`
 
