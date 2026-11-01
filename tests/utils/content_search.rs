@@ -16,9 +16,19 @@ fn test_parse_content_search_query() {
         parse_content_search_query(":.rs,py:hello"),
         Some(("hello".to_string(), Some("rs,py".to_string())))
     );
+    // A second `:` only splits off an extension filter after a leading `.`;
+    // otherwise the whole remainder is the term.
     assert_eq!(
         parse_content_search_query(":rs:hello"),
-        Some(("hello".to_string(), None))
+        Some(("rs:hello".to_string(), None))
+    );
+    assert_eq!(
+        parse_content_search_query(":std::io"),
+        Some(("std::io".to_string(), None))
+    );
+    assert_eq!(
+        parse_content_search_query(":http://example.com"),
+        Some(("http://example.com".to_string(), None))
     );
     assert_eq!(parse_content_search_query(":.rs:hi"), None);
     assert_eq!(
