@@ -7,35 +7,135 @@
 use std::fs;
 use std::path::PathBuf;
 
-pub(super) const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 64 64" version="1.1">
-  <!-- Outer soft shadow -->
-  <path style="opacity:0.2" d="M 12.75,5 C 11.2265,5 10,6.2488 10,7.8 v 50.4 c 0,1.55008 1.2265,2.8 2.75,2.8 h 38.5 C 52.7724,61 54,59.75008 54,58.2 V 7.8 C 54,6.2488 52.7724,5 51.25,5 Z"/>
+pub(super) const EMBEDDED_DEFAULT_TEMPLATE: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" version="1.1" viewBox="0 0 64 64">
+  <defs>
+    <!-- Soft, clean drop shadow -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.32"/>
+    </filter>
 
-  <!-- Page body -->
-  <path style="fill:{{BODY_COLOR}}" d="M 12.75,4 C 11.2265,4 10,5.2488 10,6.8 v 50.4 c 0,1.55008 1.2265,2.8 2.75,2.8 h 38.5 C 52.7724,60 54,58.75008 54,57.2 V 6.8 C 54,5.2488 52.7724,4 51.25,4 Z"/>
+    <!-- Deep 3D Chisel & Inset Emboss for Text -->
+    <filter id="chiseledText" x="-20%" y="-20%" width="140%" height="140%">
+      <feOffset dx="0" dy="-0.75" in="SourceAlpha" result="highlightOffset"/>
+      <feFlood flood-color="#000000" flood-opacity="0.6" result="topCavity"/>
+      <feComposite operator="in" in2="highlightOffset" result="topCavityCut"/>
 
-  <!-- Top edge highlight -->
-  <path style="opacity:0.2;fill:#ffffff" d="M 12.75,4 C 11.2265,4 10,5.24958 10,6.80078 L 10,7.80078 C 10,6.24958 11.2265,5 12.75,5 h 38.5 C 52.7724,5 54,6.24958 54,7.80078 L 54,6.80078 C 54,5.24958 52.7724,4 51.25,4 Z"/>
+      <feOffset dx="0" dy="0.8" in="SourceAlpha" result="bounceOffset"/>
+      <feFlood flood-color="#ffffff" flood-opacity="0.5" result="bottomRim"/>
+      <feComposite operator="in" in2="bounceOffset" result="bottomRimCut"/>
 
-  <!-- Content lines (subtle, above the accent) -->
-  <path style="opacity:0.5" d="m 20,20 v 2.5 h 24 v -2.5 z m 0,5 v 2.5 h 24 v -2.5 z m 0,5 v 2.5 h 24 v -2.5 z m 0,5 v 2.5 h 15 v -2.5 z"/>
+      <feMerge>
+        <feMergeNode in="bottomRimCut"/>
+        <feMergeNode in="topCavityCut"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
 
-  <!-- Accent block at the bottom with subtle 3D -->
-  <path style="fill:{{ACCENT_COLOR}}" d="M 10,42 H 54 V 57.2 C 54,58.75008 52.7724,60 51.25,60 H 12.75 C 11.2265,60 10,58.75008 10,57.2 Z"/>
-  <path style="opacity:0.15;fill:#ffffff" d="M 10,42 H 54 V 43.2 H 10 Z"/>
-  <path style="opacity:0.15;fill:#000000" d="M 10,58.8 H 54 V 57.2 C 54,58.75008 52.7724,60 51.25,60 H 12.75 C 11.2265,60 10,58.75008 10,57.2 Z"/>
+    <!-- 3D Convex Curvature for Paper Body -->
+    <linearGradient id="body3DCurvature" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="10%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="70%" stop-color="#000000" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.18"/>
+    </linearGradient>
 
-  <!-- Extension text, nudged below center of the accent block -->
-  <text x="32" y="52"
-        font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-        font-size="{{FONT_SIZE}}"
-        font-weight="700"
-        letter-spacing="0.3"
-        fill="{{FONT_COLOR}}"
-        text-anchor="middle"
-        dominant-baseline="central"
-        textLength="38"
-        lengthAdjust="spacingAndGlyphs">{{EXT}}</text>
+    <!-- Cylindrical Volume for Accent Banner -->
+    <linearGradient id="bannerVolume" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="15%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="60%" stop-color="#000000" stop-opacity="0.0"/>
+      <stop offset="90%" stop-color="#000000" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+
+    <!-- Specular Diagonal Sheen -->
+    <linearGradient id="diagonalGloss" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="30%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="31%" stop-color="#ffffff" stop-opacity="0.0"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0"/>
+    </linearGradient>
+
+    <!-- Clean Vertical Margin Line (Subtle red with smooth falloff) -->
+    <linearGradient id="redMargin" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff3344" stop-opacity="0.65"/>
+      <stop offset="50%" stop-color="#e60012" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#ff3344" stop-opacity="0.2"/>
+    </linearGradient>
+
+    <!-- Shadow cast by paper onto banner -->
+    <linearGradient id="grooveShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.0"/>
+    </linearGradient>
+
+    <!-- Clean Outline Clip Path -->
+    <clipPath id="docClip">
+      <rect x="4" y="4" width="56" height="56" rx="5" ry="5"/>
+    </clipPath>
+  </defs>
+
+  <!-- Ground Shadowed Base -->
+  <g filter="url(#shadow)">
+    <!-- Main Slab Body -->
+    <g clip-path="url(#docClip)">
+      <!-- Base Color Body configured via settings -->
+      <rect x="4" y="4" width="56" height="56" fill="{{BODY_COLOR}}"/>
+
+      <!-- Surface Lighting -->
+      <rect x="4" y="4" width="56" height="56" fill="url(#body3DCurvature)"/>
+
+      <!-- Notebook Lines -->
+      <g stroke="#a3b1c6" stroke-width="0.45" opacity="0.6">
+        <line x1="8" y1="11" x2="56" y2="11"/>
+        <line x1="8" y1="17" x2="56" y2="17"/>
+        <line x1="8" y1="23" x2="56" y2="23"/>
+        <line x1="8" y1="29" x2="56" y2="29"/>
+        <line x1="8" y1="35" x2="56" y2="35"/>
+        <line x1="8" y1="41" x2="56" y2="41"/>
+      </g>
+      <!-- Line Highlights -->
+      <g stroke="#ffffff" stroke-width="0.3" opacity="0.35">
+        <line x1="8" y1="11.4" x2="56" y2="11.4"/>
+        <line x1="8" y1="17.4" x2="56" y2="17.4"/>
+        <line x1="8" y1="23.4" x2="56" y2="23.4"/>
+        <line x1="8" y1="29.4" x2="56" y2="29.4"/>
+        <line x1="8" y1="35.4" x2="56" y2="35.4"/>
+        <line x1="8" y1="41.4" x2="56" y2="41.4"/>
+      </g>
+
+      <!-- Refined Notebook Margin Line -->
+      <line x1="15.5" y1="4" x2="15.5" y2="42" stroke="url(#redMargin)" stroke-width="0.6"/>
+
+      <!-- ================= 3D ACCENT BLOCK ================= -->
+      <rect x="4" y="42" width="56" height="18" fill="{{ACCENT_COLOR}}"/>
+      <rect x="4" y="42" width="56" height="18" fill="url(#bannerVolume)"/>
+
+      <!-- Groove & Highlight separating paper from banner -->
+      <rect x="4" y="42" width="56" height="2" fill="url(#grooveShadow)"/>
+      <line x1="4" y1="42.5" x2="60" y2="42.5" stroke="#ffffff" stroke-width="0.75" opacity="0.55"/>
+
+      <!-- Diagonal Gloss Overlay -->
+      <path d="M 4 4 L 36 4 L 4 36 Z" fill="url(#diagonalGloss)" pointer-events="none"/>
+    </g>
+
+    <!-- Clean Outer Border (No artifacting lines) -->
+    <rect x="4" y="4" width="56" height="56" rx="5" ry="5"
+          fill="none" stroke="#000000" stroke-width="0.8" opacity="0.25"/>
+    <rect x="4.5" y="4.5" width="55" height="55" rx="4.5" ry="4.5"
+          fill="none" stroke="#ffffff" stroke-width="0.6" opacity="0.4"/>
+
+    <!-- Primary Chiseled Typography -->
+    <text x="32" y="52"
+          font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif"
+          font-weight="900"
+          font-size="{{FONT_SIZE}}"
+          fill="{{FONT_COLOR}}"
+          text-anchor="middle"
+          dominant-baseline="central"
+          letter-spacing="0.7"
+          filter="url(#chiseledText)">{{EXT}}</text>
+  </g>
 </svg>"##;
 
 /// Reads `~/.local/share/flux/icons/template.svg`, auto-creating it with the

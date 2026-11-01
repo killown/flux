@@ -71,9 +71,8 @@ install-assets: translations $(if $(UPDATE_THEMES),update-themes)
 	@install -m 644 flux.desktop.tmp $(DESTDIR)$(APPDIR)/io.github.killown.flux.desktop
 	@rm -f flux.desktop.tmp
 
-	# 4. Icon & Template
+	# 4. Icon
 	@install -m 644 flux.svg $(DESTDIR)$(ICONDIR)/io.github.killown.flux.svg
-	@if [ -f template.svg ]; then install -m 644 template.svg $(DESTDIR)$(CONFDIR)/icons/template.svg; fi
 
 	# 4.1 Nerd Font Dataset
 	@if [ -f assets/nerd_fonts.json ]; then install -m 644 assets/nerd_fonts.json $(DESTDIR)$(CONFDIR)/nerd_fonts.json; fi

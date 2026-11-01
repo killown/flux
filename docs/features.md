@@ -251,9 +251,11 @@ follows the DSL documented in [actions](actions.md):
   GTK named colour has a table row with a use count.
 - **Background images.** Set per slot (window, left sidebar, right
   panel). The tint opacity is adjustable per slot.
-- **Generated extension icons.** When the theme has no icon for an
+- **Generated extension icons.** Opt-in (`ui.auto_generate_mime_icons`,
+  off by default). When enabled and the theme has no icon for an
   extension, Flux synthesises one from a user-editable SVG template
-  (`~/.local/share/flux/icons/template.svg`) and caches it under
+  (`~/.local/share/flux/icons/template.svg`, written from the built-in
+  default on first use) and caches it under
   `~/.local/share/flux/icons/extensions/generated/`.
 - **Custom icons.** Files and folders can be given a custom image, or a
   theme icon by name. Extension-wide custom icons are stored under

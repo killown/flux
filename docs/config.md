@@ -55,7 +55,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `archive_thumbnail_cache` | `false` | Store thumbnails of files inside zip archives in a hidden `.flux-cache/` folder in the zip itself. |
 | `archives_as_folders` | `false` | Draw browsable archives (zip, tar, 7z and so on) as folders in the file grid, with a small archive badge. A selected card shows the archive's own icon. Archives remain files for drag and drop, delete and menu actions. Off by default. |
 | `ascending` | `true` | Sort listings in ascending order. |
-| `auto_generate_mime_icons` | `true` | Generate and cache an SVG document icon when the icon theme has none. |
+| `auto_generate_mime_icons` | `false` | Generate and cache an SVG document icon when the icon theme has none. |
 | `auto_list_threshold` | `300` | Folders with more items than this open in list mode. `0` disables the auto-switch. |
 | `auto_mime_accent_color` | `"#1273b2"` | Accent color of auto-generated document icons. |
 | `auto_mime_body_color` | `"#e4e4e4"` | Hex color of the page body of auto-generated document icons. |
@@ -218,7 +218,7 @@ panel_menu_requires_ctrl = false
 auto_mime_body_color = "#e4e4e4"
 auto_mime_font_color = "#ffffff"
 auto_mime_font_size = 13.0
-auto_generate_mime_icons = true
+auto_generate_mime_icons = false
 auto_mime_accent_color = "#1273b2"
 autoplay_video_previews = true
 thumbnail_size = 256

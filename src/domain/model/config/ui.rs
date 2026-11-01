@@ -93,7 +93,8 @@ pub struct UIConfig {
     #[serde(default = "default_mime_font_size")]
     pub auto_mime_font_size: f64,
     /// When true, automatically generates and caches an SVG document icon if the active theme lacks one.
-    #[serde(default = "default_true")]
+    /// Opt-in: off by default.
+    #[serde(default)]
     pub auto_generate_mime_icons: bool,
     /// Default accent color used for auto-generated document icons.
     #[serde(default = "default_accent_color")]
@@ -334,7 +335,7 @@ impl Default for UIConfig {
             ffmpeg_seek_seconds: default_ffmpeg_seek_seconds(),
             ffmpeg_auto_rotate: false,
             window_controls_left: false,
-            auto_generate_mime_icons: true,
+            auto_generate_mime_icons: false,
             auto_mime_accent_color: default_accent_color(),
             auto_mime_font_size: default_mime_font_size(),
             auto_mime_body_color: "#e4e4e4".to_string(),

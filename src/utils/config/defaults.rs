@@ -245,7 +245,7 @@ path = "actions://"
                     panel_menu_requires_ctrl: false,
                     auto_mime_body_color: "#e4e4e4".to_string(),
                     auto_mime_font_color: "#ffffff".to_string(),
-                    auto_generate_mime_icons: true,
+                    auto_generate_mime_icons: false,
                     auto_mime_accent_color: "#1273b2".to_string(),
                     auto_mime_font_size: 9.0,
                     show_empty_dir_emblem: false,
