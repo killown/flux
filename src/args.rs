@@ -64,6 +64,24 @@ fn uri_to_path(s: &OsStr) -> PathBuf {
     }
 }
 
+/// Turns a user-supplied startup path into an absolute one without following
+/// symlinks, so `flux-fm .local/share` behaves like `flux-fm ~/.local/share`.
+///
+/// The breadcrumb bar rebuilds the path from `/`, so a relative path such as
+/// `.local/share` would produce the bogus segments `/.local` and
+/// `/.local/share`. `..` components are resolved through `canonicalize` when
+/// the path exists, and kept as given otherwise.
+fn absolutize(p: PathBuf) -> PathBuf {
+    let abs = std::path::absolute(&p).unwrap_or(p);
+    if abs
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return abs.canonicalize().unwrap_or(abs);
+    }
+    abs
+}
+
 /// Splits shell-style text into words, honouring quotes and backslash escapes.
 fn split_words(line: &str) -> Result<Vec<String>, String> {
     let mut words = Vec::new();
@@ -268,7 +286,7 @@ pub fn resolve_startup_action_with_reader<S: AsRef<OsStr>, R: BufRead>(
         Some("--preview") => match filtered_args.get(1) {
             None => StartupAction::InvalidArgument("--preview requires a folder path".to_string()),
             Some(arg) => {
-                let path = uri_to_path(arg);
+                let path = absolutize(uri_to_path(arg));
                 if path.is_dir() {
                     StartupAction::Preview {
                         path,
@@ -289,7 +307,7 @@ pub fn resolve_startup_action_with_reader<S: AsRef<OsStr>, R: BufRead>(
             let list: Vec<PathBuf> = filtered_args[1..]
                 .iter()
                 .filter(|a| !a.as_bytes().starts_with(b"-"))
-                .map(|p| uri_to_path(p))
+                .map(|p| absolutize(uri_to_path(p)))
                 .collect();
             if list.is_empty() {
                 StartupAction::PrintHelp
@@ -302,7 +320,7 @@ pub fn resolve_startup_action_with_reader<S: AsRef<OsStr>, R: BufRead>(
             for line in reader.split(b'\n').map_while(Result::ok) {
                 let trimmed = line.trim_ascii();
                 if !trimmed.is_empty() && !trimmed.starts_with(b"#") {
-                    list.push(uri_to_path(OsStr::from_bytes(trimmed)));
+                    list.push(absolutize(uri_to_path(OsStr::from_bytes(trimmed))));
                 }
             }
             if list.is_empty() {
@@ -334,7 +352,7 @@ pub fn resolve_startup_action_with_reader<S: AsRef<OsStr>, R: BufRead>(
                     opts,
                 }
             } else {
-                let p = uri_to_path(path);
+                let p = absolutize(uri_to_path(path));
                 if p.is_file() && crate::infra::archive::is_supported_archive(&p) {
                     StartupAction::OpenArchive(p)
                 } else {
