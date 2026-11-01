@@ -1,6 +1,6 @@
 //! `FluxApp::remove_recents` against a sandboxed `recently-used.xbel`.
 //!
-//! GLib writes `href` XML-escaped (`&` as `&amp;`, `'` as `&apos;`), so the
+//! GLib writes `href` XML-escaped (`&` as `&amp,`, `'` as `&apos,`), so the
 //! fixtures below hold the escaped form exactly as GLib stores it.
 
 use flux::app::state::FluxApp;
@@ -21,7 +21,6 @@ const APOSTROPHE_HREF: &str = "file:///home/me/Don&apos;t%20Stop.mp3";
 const FOLDER_PATH: &str = "/home/me/R&D";
 const FOLDER_HREF: &str = "file:///home/me/R&amp;D";
 
-const INSIDE_FOLDER_PATH: &str = "/home/me/R&D/notes.txt";
 const INSIDE_FOLDER_HREF: &str = "file:///home/me/R&amp;D/notes.txt";
 
 const PLAIN_PATH: &str = "/home/me/plain.txt";

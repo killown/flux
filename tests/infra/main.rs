@@ -17,10 +17,8 @@ mod db {
     mod state_manager;
 }
 
-// `delete_ops` (no tests at all, dead code), `loader::sorting`, `search::ops`
-// and `thumbnails` re-implement the logic they assert on instead of calling
-// into `flux`.
 mod delete_ops;
+mod downloads;
 mod keyring;
 
 mod loader {
