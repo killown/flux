@@ -13,9 +13,12 @@ use std::sync::atomic::Ordering;
 impl FluxApp {
     /// Populates the file grid with entries from the GTK recent-files registry.
     ///
-    /// Parses `~/.local/share/recently-used.xbel` with the standard XML reader.
-    /// Each `<bookmark href="file://...">` element carries a `visited` timestamp
-    /// in its `<info><metadata><mime-type>` subtree, which is used to sort newest-first.
+    /// Scans `~/.local/share/recently-used.xbel` line by line. This is not an XML
+    /// parser: it relies on GLib writing each `<bookmark ...>` start tag on a single
+    /// line, and decodes the predefined XML entities in attribute values itself
+    /// (see [`crate::utils::xml::unescape_attr`]).
+    /// Entries are sorted newest-first by the `modified` attribute of the
+    /// `<bookmark>` tag, falling back to `added`. `visited` is not consulted.
     /// Entries whose backing file no longer exists on disk are silently skipped.
     ///
     /// # Arguments
@@ -187,10 +190,13 @@ impl FluxApp {
         self.is_loading = false;
     }
 
-    /// Extracts the value of a named XML attribute from a single-line tag string.
+    /// Extracts the value of a named, double-quoted XML attribute from a single-line
+    /// tag string and decodes its XML entities.
     ///
-    /// Matches the pattern `name="value"` or `name='value'` and returns the value.
-    /// Only intended for the simple flat attributes on XBEL `<bookmark>` elements.
+    /// Matches the pattern `name="value"` and returns the decoded value (GLib escapes
+    /// `&`, `'` and friends in `href`, so `test1%20&amp,%20test2` comes back as
+    /// `test1%20&%20test2`). Only intended for the simple flat attributes on XBEL
+    /// `<bookmark>` elements.
     ///
     /// # Arguments
     /// * `tag` - A single line of XML containing the attribute.
@@ -201,6 +207,6 @@ impl FluxApp {
         let start = tag.find(&needle)? + needle.len();
         let rest = &tag[start..];
         let end = rest.find('"')?;
-        Some(rest[..end].to_owned())
+        Some(crate::utils::xml::unescape_attr(&rest[..end]))
     }
 }

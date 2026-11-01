@@ -1,6 +1,7 @@
 use crate::app::state::FluxApp;
 use crate::domain::model::{AppMsg, NavigationMsg, WindowMsg};
 use crate::utils::path::PathExt;
+use crate::utils::xml::escape_attr;
 use adw::gio::prelude::*;
 use gtk::gio;
 use relm4::prelude::*;
@@ -43,6 +44,8 @@ impl FluxApp {
     ///
     /// If `paths` is `None`, all bookmarks are removed.
     /// If `Some(paths)`, only bookmarks whose `href` matches one of the given paths are removed.
+    /// GLib stores `href` XML-escaped (`&` as `&amp,`, `'` as `&apos,`), so the URI is
+    /// escaped the same way before it is matched against the file's raw text.
     ///
     /// # Errors
     /// Returns an I/O error if the XBEL file cannot be read or written.
@@ -60,7 +63,7 @@ impl FluxApp {
         let hrefs: Option<HashSet<String>> = paths.map(|paths| {
             paths
                 .iter()
-                .map(|p| format!("href=\"{}\"", gio::File::for_path(p).uri()))
+                .map(|p| format!("href=\"{}\"", escape_attr(&gio::File::for_path(p).uri())))
                 .collect()
         });
 

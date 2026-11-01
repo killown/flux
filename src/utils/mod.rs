@@ -14,6 +14,7 @@ pub mod media;
 pub mod path;
 pub mod search;
 pub mod xattr;
+pub mod xml;
 
 pub use config::*;
 pub use path::{osstr_to_bytes, strip_current_dir};
