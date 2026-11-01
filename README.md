@@ -110,7 +110,7 @@ If you see occasional slow startups, try a lighter icon theme such as Adwaita or
 ## Customization
 
 - Settings live in `~/.config/flux/config.toml`, and most are available in Preferences (`F10`).
-- Style the interface with CSS in `~/.config/flux/style.css`; it reloads when you save.
+- Style the interface with CSS in `~/.config/flux/style.css`: every selector Flux uses is listed with a comment, empty, fill in what you want to change. It reloads when you save. For a full replacement look, drop a theme in `~/.local/share/flux/themes/<name>/theme.css`. See [Theme customization](https://github.com/killown/flux/wiki/Theme-customization).
 - Themes go in `~/.local/share/flux/themes`. Community themes are in [flux-themes](https://github.com/killown/flux-themes).
 - Right-click menus are defined in `~/.config/flux/menu.rs`, or edit them with the built-in editor (`F9`). `Ctrl+Right-Click` opens a second, file-type-specific menu.
 - Set or reset icons in bulk, one `TARGET<TAB>IMAGE` pair per line:
