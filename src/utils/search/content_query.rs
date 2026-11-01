@@ -15,6 +15,10 @@ pub const CONTENT_QUERY_SYNTAXES: &[(&str, &str)] = &[
 /// - `:term` → searches all files for `term`
 /// - `:.ext:term` → searches only files with extension `ext`
 ///
+/// A second `:` only separates an extension filter when the text before it
+/// starts with `.`. Otherwise the whole remainder is the term, so `:std::io`
+/// and `:http://example.com` search for those exact strings.
+///
 /// Returns `Some((term, Some(ext)))` or `None` if the query is invalid.
 pub fn parse_content_search_query(query: &str) -> Option<(String, Option<String>)> {
     let query_lc = query.to_lowercase();
@@ -27,7 +31,10 @@ pub fn parse_content_search_query(query: &str) -> Option<(String, Option<String>
         return None;
     }
 
-    if let Some(second_col_pos) = rest.find(':') {
+    let ext_split = rest
+        .find(':')
+        .filter(|&pos| rest[..pos].trim().starts_with('.'));
+    if let Some(second_col_pos) = ext_split {
         let ext_part = rest[..second_col_pos].trim();
         let term_part = rest[second_col_pos + 1..].trim();
 
