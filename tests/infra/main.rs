@@ -42,6 +42,8 @@ mod search {
     mod ops;
 }
 
+mod inspector;
+mod plan_deletion;
 mod tasks;
 mod terminal;
 mod thumbnails;

@@ -9,6 +9,7 @@ mod file_ops {
     mod paste_archive;
     mod paste_tmp_name;
     mod paste_undo;
+    mod recents;
     mod security;
 }
 

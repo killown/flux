@@ -15,6 +15,7 @@ mod search_parser;
 mod thumbnail_tiers;
 mod xattr;
 mod xml;
+mod xml_attr;
 
 /// Single lock that serialises every test in this binary that mutates
 /// process-global env vars (`HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME`,

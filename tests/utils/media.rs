@@ -32,7 +32,7 @@ fn test_aspect_ratio_portrait_2_3() {
 
 #[test]
 fn test_aspect_ratio_non_standard_fallback() {
-    assert_eq!(aspect_ratio_label(700, 300), "7:3");
+    assert_eq!(aspect_ratio_label(700, 400), "7:4");
 }
 
 #[test]
@@ -92,12 +92,39 @@ fn test_gcd_large_common_factor() {
 
 #[test]
 fn aspect_ratio_21_9() {
+    assert_eq!(aspect_ratio_label(2520, 1080), "21:9");
+    assert_eq!(aspect_ratio_label(700, 300), "21:9");
+}
+
+#[test]
+fn aspect_ratio_ultrawide_monitor_resolutions_are_not_exactly_21_9() {
     assert_eq!(aspect_ratio_label(2560, 1080), "64:27");
+    assert_eq!(aspect_ratio_label(3440, 1440), "43:18");
 }
 
 #[test]
 fn aspect_ratio_16_10() {
-    assert_eq!(aspect_ratio_label(1920, 1200), "8:5");
+    assert_eq!(aspect_ratio_label(1920, 1200), "16:10");
+    assert_eq!(aspect_ratio_label(1680, 1050), "16:10");
+    assert_eq!(aspect_ratio_label(2560, 1600), "16:10");
+    assert_eq!(aspect_ratio_label(16, 10), "16:10");
+}
+
+#[test]
+fn aspect_ratio_named_ratios_survive_gcd_reduction() {
+    for (w, h, label) in [
+        (1600, 900, "16:9"),
+        (1600, 1200, "4:3"),
+        (1800, 1200, "3:2"),
+        (1250, 1000, "5:4"),
+        (900, 1600, "9:16"),
+        (1200, 1800, "2:3"),
+        (2100, 900, "21:9"),
+        (1600, 1000, "16:10"),
+        (800, 800, "1:1"),
+    ] {
+        assert_eq!(aspect_ratio_label(w, h), label, "{w}x{h}");
+    }
 }
 
 #[test]

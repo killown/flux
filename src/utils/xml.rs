@@ -61,3 +61,18 @@ fn decode_entity(name: &str) -> Option<char> {
         }
     }
 }
+
+/// Extracts the value of a named, double-quoted attribute from a single-line
+/// XML start tag and decodes its entities.
+///
+/// Matches `name="value"` and returns the decoded value. GLib escapes `&` and
+/// `'` in the `href` of a `<bookmark>`, so `Tom%20&amp;%20Jerry` comes back as
+/// `Tom%20&%20Jerry`. Only meant for the flat attributes of XBEL `<bookmark>`
+/// tags, which GLib always writes double-quoted and on one line.
+pub fn attr_value(tag: &str, name: &str) -> Option<String> {
+    let needle = format!("{name}=\"");
+    let start = tag.find(&needle)? + needle.len();
+    let rest = &tag[start..];
+    let end = rest.find('"')?;
+    Some(unescape_attr(&rest[..end]))
+}

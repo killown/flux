@@ -30,5 +30,6 @@ mod widgets {
     mod init_components;
     mod inputs;
     mod keymap;
+    mod keymap_accel;
     mod ui_components;
 }

@@ -4,6 +4,13 @@ use std::path::{Path, PathBuf};
 /// last component.
 pub fn resolve_entry(path: &Path) -> PathBuf {
     crate::hit!("resolve_entry");
+    // A virtual URI (`trash:///`, `smb://host/`) is not a filesystem path. A
+    // scheme-only root such as `trash:///` parses as the single relative name
+    // `trash:`, so resolving it would join it onto the current directory and
+    // hide the `://` that `is_protected_target` looks for.
+    if path.to_string_lossy().contains("://") {
+        return path.to_path_buf();
+    }
     if let (Some(parent), Some(name)) = (path.parent(), path.file_name()) {
         let parent = if parent.as_os_str().is_empty() {
             Path::new(".")
