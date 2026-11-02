@@ -11,7 +11,9 @@ fn resolve_nerd_fonts_file() -> Option<PathBuf> {
         }
     }
 
-    if let Some(user_cfg) = dirs::config_dir().map(|d| d.join("flux/nerd_fonts.json")) {
+    if let Some(user_cfg) =
+        crate::utils::config::base_config_dir().map(|d| d.join("flux/nerd_fonts.json"))
+    {
         if user_cfg.exists() {
             return Some(user_cfg);
         }

@@ -39,7 +39,7 @@ fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bool)>
 }
 
 fn flux_base_dir() -> PathBuf {
-    dirs::config_dir()
+    crate::utils::config::base_config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux")
 }

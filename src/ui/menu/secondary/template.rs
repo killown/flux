@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 pub fn resolve_secondary_menu_template(mime: &str) -> Option<PathBuf> {
     crate::hit!("resolve_secondary_menu_template");
-    let base_dir = dirs::config_dir()
+    let base_dir = crate::utils::config::base_config_dir()
         .unwrap_or_else(|| PathBuf::from("~/.config"))
         .join("flux");
     let sub_dir = base_dir.join("menus");
@@ -234,7 +234,7 @@ pub fn append_secondary_action(
     crate::hit!("append_secondary_action");
     let line = format_secondary_line(action)?;
 
-    let base_dir = dirs::config_dir()
+    let base_dir = crate::utils::config::base_config_dir()
         .unwrap_or_else(|| PathBuf::from("~/.config"))
         .join("flux");
     let menus_dir = base_dir.join("menus");

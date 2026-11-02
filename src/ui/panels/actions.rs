@@ -53,7 +53,7 @@ pub fn build_actions_panel(initial_width: i32, sender: AsyncComponentSender<Flux
             edit_btn.connect_clicked(move |btn| {
                 let mime = actions_registry::mime();
                 // Mirror append_secondary_action's target selection.
-                let base_dir = dirs::config_dir()
+                let base_dir = crate::utils::config::base_config_dir()
                     .unwrap_or_else(|| PathBuf::from("~/.config"))
                     .join("flux");
                 let menus_dir = base_dir.join("menus");

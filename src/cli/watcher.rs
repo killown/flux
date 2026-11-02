@@ -18,7 +18,9 @@ thread_local! {
 /// or cause a memory leak.
 pub(super) fn setup_config_watcher() {
     crate::hit!("setup_config_watcher");
-    let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
+    let config_dir = crate::utils::config::base_config_dir()
+        .unwrap_or_default()
+        .join("flux");
     let file = gio::File::for_path(&config_dir);
 
     if let Ok(monitor) = file.monitor_directory(

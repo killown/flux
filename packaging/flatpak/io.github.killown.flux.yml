@@ -39,6 +39,9 @@ finish-args:
   # themes
   - --filesystem=xdg-data/flux/themes:ro
 
+  # host config (~/.config/flux)
+  - --filesystem=xdg-config/flux
+
 modules:
   # ── poppler (PDF thumbnails) ────────────────────────────────────────────────
   - name: poppler

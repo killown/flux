@@ -62,7 +62,9 @@ fn host_themes_dir() -> Option<PathBuf> {
 pub fn load_custom_css() {
     crate::hit!("load_custom_css");
     let config = crate::utils::load_config();
-    let config_dir = dirs::config_dir().unwrap_or_default().join("flux");
+    let config_dir = crate::utils::config::base_config_dir()
+        .unwrap_or_default()
+        .join("flux");
 
     let mut theme_css = None;
 
@@ -139,7 +141,9 @@ pub fn list_available_themes() -> std::collections::BTreeSet<String> {
     let mut theme_names = std::collections::BTreeSet::new();
 
     let mut search_dirs = vec![
-        dirs::config_dir().unwrap_or_default().join("flux/themes"),
+        crate::utils::config::base_config_dir()
+            .unwrap_or_default()
+            .join("flux/themes"),
         dirs::data_local_dir()
             .unwrap_or_default()
             .join("flux/themes"),

@@ -65,7 +65,7 @@ pub fn save_config(config: &crate::domain::model::Config) {
         *cache = Some(Arc::new(config.clone()));
     }
 
-    let config_dir = dirs::config_dir()
+    let config_dir = crate::utils::config::base_config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
 

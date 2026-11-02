@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 pub fn ensure_config_file() -> PathBuf {
     crate::hit!("ensure_config_file");
-    let config_dir = dirs::config_dir()
+    let config_dir = crate::utils::config::base_config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
 
@@ -304,7 +304,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
 /// in the same DSL format expected by `load_menu_config`.
 pub fn save_menu_config(actions: &[CustomAction]) -> std::io::Result<()> {
     crate::hit!("save_menu_config");
-    let config_dir = dirs::config_dir()
+    let config_dir = crate::utils::config::base_config_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("flux");
     std::fs::create_dir_all(&config_dir)?;

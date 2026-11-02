@@ -40,7 +40,7 @@ fn get_template_and_config_mtime() -> Option<SystemTime> {
         .and_then(|p| std::fs::metadata(p).ok())
         .and_then(|m| m.modified().ok());
 
-    let config_mtime = dirs::config_dir()
+    let config_mtime = crate::utils::config::base_config_dir()
         .map(|d| d.join("flux/config.toml"))
         .and_then(|p| std::fs::metadata(p).ok())
         .and_then(|m| m.modified().ok());
