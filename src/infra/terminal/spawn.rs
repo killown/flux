@@ -115,37 +115,14 @@ impl Terminal {
             state.needs_initial_sigwinch = spawned_hidden;
         }
 
-        let target_shell = self
+        let configured = self
             .config
             .shell
             .as_deref()
-            .filter(|s| !s.trim().is_empty())
-            .map(String::from)
-            .unwrap_or_else(|| {
-                // fish is the default shell whenever it is installed.
-                if let Some(fish) = find_fish() {
-                    return fish;
-                }
-
-                if std::path::Path::new("/app/bin/fish").exists() {
-                    return "/app/bin/fish".to_string();
-                }
-
-                if let Ok(env_shell) = std::env::var("SHELL") {
-                    if !env_shell.trim().is_empty() && std::path::Path::new(&env_shell).exists() {
-                        return env_shell;
-                    }
-                }
-
-                "/bin/bash".to_string()
-            });
-
-        let mut command = Command::new(&target_shell);
-        command.arg("-l");
-        command.env("TERM", "xterm-256color");
-        command.env("FLUX_PID", std::process::id().to_string());
-        command.env_remove("LD_LIBRARY_PATH");
-        command.env_remove("LD_PRELOAD");
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
+        let host_shell = configured.filter(|s| in_flatpak() && !shell_is_usable(s));
+        let target_shell = resolve_shell(self.config.shell.as_deref());
 
         // ── Theme Injection ──────────────────────────────────────────────
         // Export the resolved GTK theme colours so the fish `conf.d` snippet
@@ -157,21 +134,51 @@ impl Terminal {
         // own `if set -q FLUX_THEME_FG` guard keeps any stale file on disk
         // inert. Without this check, disabling the setting would still leave
         // old shells themed because the file's guard would pass.
+        let mut theme: Vec<(&str, String)> = Vec::new();
         if crate::utils::load_config().ui.fish_theme {
             if let Ok(guard) = self.theme_env.lock() {
                 if let Some(ref env) = *guard {
-                    command.env("FLUX_THEME_FG", &env.fg);
-                    command.env("FLUX_THEME_BG", &env.bg);
-                    command.env("FLUX_THEME_ACCENT", &env.accent);
-                    command.env("FLUX_THEME_MODE", &env.mode);
+                    theme.push(("FLUX_THEME_FG", env.fg.to_string()));
+                    theme.push(("FLUX_THEME_BG", env.bg.to_string()));
+                    theme.push(("FLUX_THEME_ACCENT", env.accent.to_string()));
+                    theme.push(("FLUX_THEME_MODE", env.mode.to_string()));
                     // Palette as a single `,`-separated list of 16 `#rrggbb`
                     // values, indexed 0..15 in xterm order. Keeps the env
                     // small and easy to consume from fish with `string split`.
-                    let joined = env.palette.join(";");
-                    command.env("FLUX_THEME_PALETTE", joined);
+                    theme.push(("FLUX_THEME_PALETTE", env.palette.join(";")));
                 }
             }
         }
+
+        let valid_dir = working_dir
+            .as_deref()
+            .filter(|d| !d.is_empty() && std::path::Path::new(d).is_dir());
+
+        let mut command = if let Some(shell) = host_shell {
+            let mut c = Command::new("flatpak-spawn");
+            c.args(["--host", "--env=TERM=xterm-256color"]);
+            if let Some(dir) = valid_dir {
+                c.arg(format!("--directory={dir}"));
+            }
+            for (key, value) in &theme {
+                c.arg(format!("--env={key}={value}"));
+            }
+            c.args(["script", "-qec"])
+                .arg(format!("{} -l", sh_quote(shell)))
+                .arg("/dev/null");
+            c
+        } else {
+            let mut c = Command::new(&target_shell);
+            c.arg("-l");
+            c.env("TERM", "xterm-256color");
+            for (key, value) in &theme {
+                c.env(key, value);
+            }
+            c
+        };
+        command.env("FLUX_PID", std::process::id().to_string());
+        command.env_remove("LD_LIBRARY_PATH");
+        command.env_remove("LD_PRELOAD");
 
         if let Some(dir) = &working_dir {
             if !dir.is_empty() && std::path::Path::new(dir).is_dir() {
@@ -252,11 +259,63 @@ impl Terminal {
     }
 }
 
-/// Looks up `fish` in `PATH`. The embedded terminal prefers it over `$SHELL`.
-fn find_fish() -> Option<String> {
+/// Looks up an executable by bare name in `PATH`.
+fn find_in_path(name: &str) -> Option<String> {
     let paths = std::env::var_os("PATH")?;
     std::env::split_paths(&paths)
-        .map(|dir| dir.join("fish"))
+        .map(|dir| dir.join(name))
         .find(|candidate| candidate.is_file())
         .map(|candidate| candidate.to_string_lossy().into_owned())
+}
+
+/// True when `shell` can be executed from this process: an existing file for
+/// a path, or a name that resolves through `PATH`.
+fn shell_is_usable(shell: &str) -> bool {
+    if shell.contains('/') {
+        std::path::Path::new(shell).is_file()
+    } else {
+        find_in_path(shell).is_some()
+    }
+}
+
+/// Picks the shell for the embedded terminal.
+fn resolve_shell(configured: Option<&str>) -> String {
+    if let Some(shell) = configured.map(str::trim).filter(|s| !s.is_empty()) {
+        if shell_is_usable(shell) {
+            return shell.to_string();
+        }
+        eprintln!("[terminal] configured shell '{shell}' not found here, falling back");
+    }
+
+    // fish is the default shell whenever it is installed.
+    if let Some(fish) = find_in_path("fish") {
+        return fish;
+    }
+
+    if std::path::Path::new("/app/bin/fish").is_file() {
+        return "/app/bin/fish".to_string();
+    }
+
+    if let Ok(env_shell) = std::env::var("SHELL") {
+        let env_shell = env_shell.trim();
+        if !env_shell.is_empty() && shell_is_usable(env_shell) {
+            return env_shell.to_string();
+        }
+    }
+
+    ["/bin/bash", "/usr/bin/bash", "/bin/sh"]
+        .into_iter()
+        .find(|p| std::path::Path::new(p).is_file())
+        .unwrap_or("/bin/sh")
+        .to_string()
+}
+
+/// True when running inside a Flatpak sandbox.
+fn in_flatpak() -> bool {
+    std::path::Path::new("/.flatpak-info").exists()
+}
+
+/// Quotes `s` for safe use inside a `sh -c` command string.
+fn sh_quote(s: &str) -> String {
+    format!("'{}'", s.replace('\'', r"'\''"))
 }
