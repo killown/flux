@@ -6,6 +6,29 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-01
+
+### Added
+- Flatpak: themes in the host's `~/.local/share/flux/themes` are now found and listed. This needs `--filesystem=xdg-data/flux/themes:ro`, which the manifest now grants.
+- Flatpak: Flux reads and writes its config in the host's `~/.config/flux` (`config.toml`, `style.css`, menus, themes, `nerd_fonts.json`) instead of the sandbox copy. The manifest now grants `--filesystem=xdg-config/flux`.
+- README: documents the `style.css` override file and the themes directory.
+
+### Changed
+- The embedded terminal uses fish as its default shell when fish is installed.
+- Generated extension icons are now opt-in, and the template is embedded in the binary.
+
+### Fixed
+- Flatpak: the app icon is now a square SVG with a corrected `viewBox`, so Flatpak accepts it.
+- Flatpak: a configured shell that is missing in the sandbox now runs on the host.
+- Flatpak: vendored the `oo7` and `zbus` dependency tree so offline builds work.
+- Relative startup paths (e.g. `flux-fm .local/share`) are resolved to absolute paths.
+- Added the missing `viewBox` to the generated extension icon template.
+- Aspect-ratio labels now match reduced ratios.
+- Recent files: XML entities in `recently-used.xbel` hrefs are decoded.
+- Content search only splits the query on `:` after a leading `.`.
+- Deleting the `trash:///` and `network:///` roots is now blocked.
+
+
 ## [0.7.0] - 2026-10-31
 
 # Changelog
