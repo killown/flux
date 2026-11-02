@@ -45,6 +45,19 @@ pub fn apply_ui_scale(scale: f64) {
     }
 }
 
+/// Returns the host's `~/.local/share/flux/themes` when running inside a Flatpak.
+///
+/// The sandbox points `XDG_DATA_HOME` at `~/.var/app/<id>/data`, so
+/// `dirs::data_local_dir()` never sees themes installed on the host. `HOME` is
+/// still the real home directory, but the sandbox needs read access to this
+/// folder (e.g. `--filesystem=xdg-data/flux/themes:ro`) for it to be readable.
+fn host_themes_dir() -> Option<PathBuf> {
+    if !std::path::Path::new("/.flatpak-info").exists() {
+        return None;
+    }
+    dirs::home_dir().map(|home| home.join(".local/share/flux/themes"))
+}
+
 /// Applies the theme CSS, then the user's style.css on top as overrides.
 pub fn load_custom_css() {
     crate::hit!("load_custom_css");
@@ -67,6 +80,10 @@ pub fn load_custom_css() {
             let system_theme = PathBuf::from("/usr/share/flux/themes").join(&theme_filename);
 
             theme_css = fs::read_to_string(&local_theme)
+                .or_else(|_| match host_themes_dir() {
+                    Some(dir) => fs::read_to_string(dir.join(&theme_filename)),
+                    None => Err(std::io::ErrorKind::NotFound.into()),
+                })
                 .or_else(|_| fs::read_to_string(&user_conf_theme))
                 .or_else(|_| fs::read_to_string(&flatpak_theme))
                 .or_else(|_| fs::read_to_string(&system_theme))
@@ -129,6 +146,9 @@ pub fn list_available_themes() -> std::collections::BTreeSet<String> {
         std::path::PathBuf::from("/app/share/flux/themes"),
         std::path::PathBuf::from("/usr/share/flux/themes"),
     ];
+    if let Some(dir) = host_themes_dir() {
+        search_dirs.push(dir);
+    }
 
     for dir in glib::system_data_dirs() {
         search_dirs.push(dir.join("flux/themes"));

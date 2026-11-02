@@ -36,6 +36,9 @@ finish-args:
   # Allow spawning host commands (flatpak-spawn --host)
   - --talk-name=org.freedesktop.Flatpak
 
+  # themes
+  - --filesystem=xdg-data/flux/themes:ro
+
 modules:
   # ── poppler (PDF thumbnails) ────────────────────────────────────────────────
   - name: poppler
