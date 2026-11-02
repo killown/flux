@@ -62,19 +62,45 @@ jobs:
 
           tar -czvf "${DIR_NAME}.tar.gz" "${DIR_NAME}"
 
-      - name: Install AppImage Dependencies
-        if: matrix.arch == 'x86_64'
-        run: sudo apt-get install -y librsvg2-bin libfuse2 imagemagick
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: flux-*-${{ matrix.arch }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Built on Arch Linux so the bundled GTK is recent enough for Flux's stylesheet
+  # (GTK 4.16+); Ubuntu 24.04 ships GTK 4.14.
+  build-appimage:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    env:
+      # No FUSE inside the container: run the AppImage tools by extracting them.
+      APPIMAGE_EXTRACT_AND_RUN: 1
+      # linuxdeploy's bundled strip cannot handle Arch's .relr.dyn sections.
+      NO_STRIP: 1
+    steps:
+      - name: Install Build Dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel git rust wget \
+            gtk4 libadwaita vte4 sqlite openssl fontconfig libarchive xz \
+            poppler-glib gdk-pixbuf2 glib2 \
+            librsvg imagemagick fuse2
+          pacman -S --noconfirm --needed glib2-devel || true
+
+      - uses: actions/checkout@v4
+
+      - name: Mark workspace as a safe git directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Build AppImage
-        if: matrix.arch == 'x86_64'
         run: ./packaging/appimg/build_appimage.sh
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            flux-*-${{ matrix.arch }}.tar.gz
-            ${{ matrix.arch == 'x86_64' && 'packaging/appimg/Flux-x86_64.AppImage' || '' }}
+          files: packaging/appimg/Flux-x86_64.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
