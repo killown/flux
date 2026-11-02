@@ -12,7 +12,41 @@ use gtk::gio;
 use gtk::glib;
 use relm4::prelude::*;
 use std::fs;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
+use std::process::{Child, Stdio};
+use std::time::{Duration, Instant};
+
+/// AppImage crashes this soon after spawn are treated as startup failures.
+const APPIMAGE_STARTUP_WINDOW: Duration = Duration::from_secs(10);
+
+/// Known "wrong display backend" startup failures, as
+/// `(stderr needle, env var, value)`. When an AppImage dies at startup with
+/// the needle on stderr, it is relaunched once with `env var = value`.
+const APPIMAGE_BACKEND_FALLBACKS: &[(&str, &str, &str)] = &[(
+    "Could not find the Qt platform plugin",
+    "QT_QPA_PLATFORM",
+    "xcb",
+)];
+
+/// Spawns an AppImage with stderr captured to an anonymous temp file.
+///
+/// A temp file is used instead of a pipe: if flux exits while the app is still
+/// running, a closed pipe would hand the app EPIPE/SIGPIPE on its next write.
+fn spawn_appimage(
+    path: &Path,
+    workdir: &Path,
+    extra_env: Option<(&str, &str)>,
+) -> std::io::Result<(Child, fs::File)> {
+    let log = tempfile::tempfile()?;
+    let mut cmd = std::process::Command::new(path);
+    cmd.current_dir(workdir)
+        .stderr(Stdio::from(log.try_clone()?));
+    if let Some((key, value)) = extra_env {
+        cmd.env(key, value);
+    }
+    Ok((cmd.spawn()?, log))
+}
 
 impl FluxApp {
     /// Returns true if the current path is inside an archive that supports full extraction.
@@ -78,12 +112,38 @@ impl FluxApp {
             eprintln!("[appimage] granted +x to {}", path.display());
         }
 
-        let workdir = path.parent().unwrap_or_else(|| Path::new("/"));
+        let workdir = path
+            .parent()
+            .unwrap_or_else(|| Path::new("/"))
+            .to_path_buf();
+        let (mut child, mut log) = spawn_appimage(path, &workdir, None)?;
+        let path = path.to_path_buf();
 
-        std::process::Command::new(path)
-            .current_dir(workdir)
-            .spawn()
-            .map(|_| ())
+        std::thread::spawn(move || {
+            let started = Instant::now();
+            let Ok(status) = child.wait() else { return };
+
+            let mut captured = String::new();
+            if log.seek(SeekFrom::Start(0)).is_ok() {
+                let mut buf = Vec::new();
+                let _ = Read::take(&mut log, 64 * 1024).read_to_end(&mut buf);
+                captured = String::from_utf8_lossy(&buf).into_owned();
+            }
+            let _ = std::io::stderr().write_all(captured.as_bytes());
+
+            if status.success() || started.elapsed() > APPIMAGE_STARTUP_WINDOW {
+                return;
+            }
+            for (needle, key, value) in APPIMAGE_BACKEND_FALLBACKS {
+                let already_set = std::env::var(key).is_ok_and(|v| v == *value);
+                if captured.contains(needle) && !already_set {
+                    eprintln!("[appimage] retrying {} with {key}={value}", path.display());
+                    let _ = spawn_appimage(&path, &workdir, Some((key, value)));
+                    return;
+                }
+            }
+        });
+        Ok(())
     }
 
     /// Dispatches the correct action for each `(path, is_dir)` item pair.
