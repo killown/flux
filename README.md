@@ -47,6 +47,17 @@ Flux switches to list mode automatically for folders with more items than the **
 
 Flux needs GTK 4 and libadwaita 1.5 or newer, so Debian 12 and Ubuntu 22.04 are too old.
 
+### Pre-built AppImage (any distro)
+
+For a quick test without installing anything:
+
+Download the latest from the [Releases page](https://github.com/killown/flux/releases). The AppImage bundles GTK 4 and libadwaita, so it runs on any modern x86_64 Linux.
+
+```bash
+chmod +x Flux-x86_64.AppImage
+./Flux-x86_64.AppImage
+```
+
 ### Flatpak (FlatPark)
 
 ```bash
