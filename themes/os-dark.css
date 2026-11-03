@@ -6,15 +6,124 @@
   --color-window-bg: #161618;
   --color-sidebar-bg: #212124;
   --color-headerbar-bg: #212124;
+  --color-card-bg: #2b2b2f;
+  --border-color: rgba(255, 255, 255, 0.08);
+
+  --shadow-3d:
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.4) inset, 0 2px 6px rgba(0, 0, 0, 0.3);
+
+  --card-3d-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.5) inset, 0 4px 12px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 headerbar,
-.selection-status {
+toolbarview > .top-bar,
+.top-bar {
+  background-color: var(--color-headerbar-bg);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06),
+    rgba(0, 0, 0, 0.15)
+  );
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.selection-status,
+toolbarview > .bottom-bar {
   background-color: var(--color-sidebar-bg);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.25)
+  );
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
+  border-top: 1px solid rgba(0, 0, 0, 0.4);
 }
 
 .sidebar,
 .flux-sidebar-root,
 .sidebar-inner {
-  border-right: 1px solid var(--border-color);
+  background-color: var(--color-sidebar-bg);
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.015),
+    rgba(0, 0, 0, 0.08)
+  );
+  border-right: 0.05em solid rgba(0, 0, 0, 0.5);
+  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.03) inset;
+}
+
+.sidebar scrolledwindow,
+.sidebar viewport,
+.sidebar list,
+.sidebar listview {
+  background-color: transparent;
+}
+
+.sidebar-row:not(.sidebar-section):hover:not(:selected) {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar-row:not(.sidebar-section):selected {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08),
+    rgba(0, 0, 0, 0.12)
+  );
+  background-color: #38383d;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+}
+
+.flux-card {
+  background-color: var(--color-card-bg);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06),
+    rgba(0, 0, 0, 0.12)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  border-radius: 10px;
+  box-shadow: var(--card-3d-shadow);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.flux-card:hover {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(0, 0, 0, 0.08)
+  );
+  border-color: rgba(142, 142, 147, 0.6);
+  box-shadow:
+    0 -1px 0 0 rgba(0, 0, 0, 0.5) inset,
+    0 6px 16px rgba(142, 142, 147, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+gridview child:selected .flux-card {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(142, 142, 147, 0.25),
+    rgba(142, 142, 147, 0.12)
+  );
+  border-color: #8e8e93;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.6) inset,
+    0 0 0 1px #8e8e93 inset,
+    0 6px 16px rgba(0, 0, 0, 0.5);
 }

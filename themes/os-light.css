@@ -3,41 +3,64 @@
 @define-color accent_fg_color     #ffffff;
 
 :root {
-  --border-color: alpha(var(--color-fg), 0.1);
+  --border-color: rgba(0, 0, 0, 0.08);
   --disabled-opacity: 0.4;
-  --shadow: rgba(0, 0, 0, 0.15);
-  --shadow-hover: rgba(0, 0, 0, 0.25);
+  --shadow: rgba(0, 0, 0, 0.06);
+  --shadow-hover: rgba(0, 0, 0, 0.12);
   --font-main: "Inter", "Helvetica Neue", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", monospace;
 
   --color-fg: #1a1a1a;
-  --color-window-bg: #fafafa;
+  --color-window-bg: #ececec;
   --color-window-fg: #1a1a1a;
   --color-card-bg: #ffffff;
-  --color-sidebar-bg: #f0f0f0;
-  --color-popover-bg: #ffffff;
-  --color-popover-fg: #1a1a1a;
-  --color-headerbar-bg: #fafafa;
-  --color-headerbar-fg: #1a1a1a;
+  --color-sidebar-bg: #e2e2e5;
+  --color-headerbar-bg: #e2e2e5;
 
-  --color-accent: #8e8e93;
-  --color-accent-fg: #ffffff;
-  --color-accent-text: #8e8e93;
+  --card-3d-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.08) inset, 0 4px 12px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+}
 
-  --color-danger: #c4403a;
-  --color-warn: #b8860b;
-  --color-success: #3d8a3f;
-  --color-git-mod: #2f6fbf;
-  --color-git-staged: #8250df;
-  --color-git-untracked: #6e7781;
-
+headerbar,
+toolbarview > .top-bar,
+.top-bar {
+  background-color: var(--color-headerbar-bg);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.6),
+    rgba(0, 0, 0, 0.03)
+  );
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.06);
+  color: var(--color-headerbar-fg);
+  font-size: 1em;
+  font-family: var(--font-main);
   letter-spacing: 0px;
 }
 
-.sidebar {
-  font-size: 1em;
+.selection-status,
+toolbarview > .bottom-bar {
   background-color: var(--color-sidebar-bg);
-  border-right: 1px solid var(--border-color);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.6) inset;
+  font-size: 1em;
+  padding: 0.1em 0.2em;
+}
+
+.sidebar,
+.flux-sidebar-root,
+.sidebar-inner {
+  background-color: var(--color-sidebar-bg);
+  background-image: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.2),
+    rgba(0, 0, 0, 0.03)
+  );
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 1px 0 0 0 rgba(255, 255, 255, 0.4) inset;
+  font-size: 0.95em;
 }
 
 .sidebar-resize-handle {
@@ -50,24 +73,77 @@
   transition: background-color 150ms ease;
 }
 
-.flux-sidebar-root {
-  font-size: 0.95em;
-  background-color: var(--color-sidebar-bg);
+.sidebar scrolledwindow,
+.sidebar viewport,
+.sidebar list,
+.sidebar listview {
+  background-color: transparent;
 }
 
-.selection-status {
-  font-size: 1em;
-  background-color: var(--color-sidebar-bg);
-  border-top: 1px solid var(--border-color);
-  padding: 0.1em 0.2em;
+.sidebar-row:not(.sidebar-section):hover:not(:selected) {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 
-headerbar {
-  background-color: var(--color-headerbar-bg);
-  border-bottom: 1px solid var(--border-color);
-  color: var(--color-headerbar-fg);
-  font-size: 1em;
-  box-shadow: none;
-  font-family: var(--font-main);
-  letter-spacing: 0px;
+.sidebar-row:not(.sidebar-section):selected {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8),
+    rgba(0, 0, 0, 0.06)
+  );
+  background-color: #c2c2c7;
+  color: #000000;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 6px;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 1px 2px rgba(0, 0, 0, 0.12);
+  font-weight: 700;
+}
+
+.sidebar-row:not(.sidebar-section):selected label,
+.sidebar-row:not(.sidebar-section):selected image {
+  color: #000000;
+}
+
+.flux-card {
+  background-color: var(--color-card-bg);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8),
+    rgba(0, 0, 0, 0.02)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  box-shadow: var(--card-3d-shadow);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.flux-card:hover {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.95),
+    rgba(0, 0, 0, 0.01)
+  );
+  border-color: rgba(142, 142, 147, 0.6);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 1) inset,
+    0 6px 16px rgba(142, 142, 147, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+gridview child:selected .flux-card {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(142, 142, 147, 0.18),
+    rgba(142, 142, 147, 0.06)
+  );
+  border-color: #8e8e93;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.15) inset,
+    0 0 0 1px #8e8e93 inset,
+    0 6px 16px rgba(0, 0, 0, 0.08);
 }
