@@ -35,10 +35,6 @@ window > box,
   color: var(--color-window-fg);
 }
 
-headerbar {
-  background-color: var(--color-headerbar-bg);
-}
-
 toolbarview {
   background-color: transparent;
 }
@@ -46,12 +42,24 @@ toolbarview {
 headerbar {
   font-size: 1em;
   background-color: transparent;
-  padding: 0.3em 0.8em;
-  min-height: 2.4em;
+  padding: 0.1em 0.8em;
+  min-height: 0;
   border: none;
   box-shadow: none;
   font-family: var(--font-main);
   letter-spacing: 0px;
+}
+
+headerbar > windowhandle > box {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+headerbar entry,
+headerbar searchentry {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 headerbar > windowtitle label.title {
@@ -76,6 +84,8 @@ headerbar menubutton {
   min-height: 2em;
   min-width: 2em;
   padding: 0.3em 0.6em;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 headerbar button:hover,
@@ -205,12 +215,7 @@ windowcontrols button.maximize:hover {
   background-color: alpha(var(--color-headerbar-fg), 0.15);
 }
 
-.sidebar {
-  font-size: 1em;
-  background-color: transparent;
-  border: transparent;
-}
-
+.sidebar,
 .flux-sidebar-root {
   font-size: 1em;
   background-color: transparent;
@@ -1348,26 +1353,14 @@ scrollbar slider:hover {
 }
 
 list,
-listview {
-  background: transparent;
-  color: var(--color-fg);
-}
-
-row {
-  background: transparent;
-  color: var(--color-fg);
-}
-
-row:selected {
-  background: alpha(var(--color-accent), 0.08);
-  color: var(--color-accent-text);
-}
-
+listview,
+row,
 .view {
   background: transparent;
   color: var(--color-fg);
 }
 
+row:selected,
 .view:selected {
   background: alpha(var(--color-accent), 0.08);
   color: var(--color-accent-text);
@@ -1490,7 +1483,8 @@ tooltip.background {
   color: var(--color-danger);
 }
 
-.error image {
+.error image,
+.warning image {
   -gtk-icon-size: 1.15em;
   min-width: 1.15em;
   min-height: 1.15em;
@@ -1500,12 +1494,6 @@ tooltip.background {
   border: 1px solid var(--color-warn);
   background: alpha(var(--color-warn), 0.08);
   color: var(--color-warn);
-}
-
-.warning image {
-  -gtk-icon-size: 1.15em;
-  min-width: 1.15em;
-  min-height: 1.15em;
 }
 
 .success {

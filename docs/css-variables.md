@@ -24,16 +24,16 @@ Declared in the built-in stylesheet. **Uses** counts the `var()` reads in that f
 | Variable | Default | Declared in | Uses | Purpose |
 |---|---|---|---|---|
 | `--border-color` | `alpha(var(--color-fg), 0.1)` | `:root` | 16 | Hairline borders on the sidebar, list rows, inputs, tooltips and toasts. |
-| `--color-accent` | `@accent_bg_color` | `:root` | 25 | Primary accent background for selected and active elements. |
+| `--color-accent` | `@accent_bg_color` | `:root` | 24 | Primary accent background for selected and active elements. |
 | `--color-accent-fg` | `@accent_fg_color` | `:root` | 35 | Text and icons drawn on top of `--color-accent`. |
-| `--color-accent-text` | `@accent_color` | `:root` | 51 | Accent color for text, icons and borders on a plain background. |
+| `--color-accent-text` | `@accent_color` | `:root` | 50 | Accent color for text, icons and borders on a plain background. |
 | `--color-card-bg` | `@card_bg_color` | `:root` | 1 | Background color of file cards in the grid view. |
 | `--color-danger` | `@red_3` | `:root` | 22 | Errors and destructive actions. |
-| `--color-fg` | `@theme_fg_color` | `:root` | 62 | Default foreground color used across the UI. |
+| `--color-fg` | `@theme_fg_color` | `:root` | 60 | Default foreground color used across the UI. |
 | `--color-git-mod` | `@blue_3` | `:root` | 2 | Git modified and mixed file states. |
 | `--color-git-staged` | `@purple_3` | `:root` | 2 | Git staged file states. |
 | `--color-git-untracked` | `@dark_2` | `:root` | 2 | Git untracked file states. |
-| `--color-headerbar-bg` | `@headerbar_bg_color` | `:root` | 2 | Background color of the header bar and status bar. |
+| `--color-headerbar-bg` | `@headerbar_bg_color` | `:root` | 1 | Background color of the header bar and status bar. |
 | `--color-headerbar-fg` | `@headerbar_fg_color` | `:root` | 9 | Foreground text and icons in the header bar. |
 | `--color-popover-bg` | `@popover_bg_color` | `:root` | 1 | Background color of popovers and context menus. |
 | `--color-popover-fg` | `@popover_fg_color` | `:root` | 12 | Foreground text and icons in popovers. |
