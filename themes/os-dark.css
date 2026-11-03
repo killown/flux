@@ -17,6 +17,14 @@
     0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.5) inset, 0 4px 12px rgba(0, 0, 0, 0.4),
     0 1px 3px rgba(0, 0, 0, 0.3);
+
+  --sidebar-3d-border:
+    1px 0 0 0 rgba(255, 255, 255, 0.05), 2px 0 0 0 rgba(0, 0, 0, 0.6),
+    4px 0 8px -2px rgba(0, 0, 0, 0.5);
+
+  --sidebar-hover-3d-border:
+    1px 0 0 0 rgba(142, 142, 147, 0.6), 2px 0 0 0 rgba(0, 0, 0, 0.8),
+    6px 0 12px -2px rgba(0, 0, 0, 0.6);
 }
 
 headerbar,
@@ -25,24 +33,65 @@ toolbarview > .top-bar,
   background-color: var(--color-headerbar-bg);
   background-image: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.06),
-    rgba(0, 0, 0, 0.15)
+    rgba(255, 255, 255, 0.04),
+    rgba(0, 0, 0, 0.1)
   );
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.5);
+  border-bottom: 0.01em solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 0 0 rgba(0, 0, 0, 0.2);
+}
+
+headerbar .breadcrumb-btn {
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06),
+    rgba(0, 0, 0, 0.12)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  min-height: 24px;
+  padding: 3px 8px;
+  box-shadow: var(--shadow-3d);
+  transition:
+    background-image 100ms ease,
+    box-shadow 100ms ease;
+}
+
+headerbar button:hover,
+headerbar .path-bar button:hover,
+headerbar .breadcrumb-btn:hover {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(0, 0, 0, 0.06)
+  );
+}
+
+headerbar .breadcrumb-btn:active {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.25),
+    rgba(0, 0, 0, 0.1)
+  );
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) inset;
+}
+
+headerbar box > button:last-child,
+headerbar > box > button:last-child,
+headerbar windowhandle + button,
+headerbar .end button:last-child {
 }
 
 .selection-status,
 toolbarview > .bottom-bar {
-  background-color: var(--color-sidebar-bg);
+  background-color: var(--color-headerbar-bg);
   background-image: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.1),
-    rgba(0, 0, 0, 0.25)
+    rgba(255, 255, 255, 0.04),
+    rgba(0, 0, 0, 0.1)
   );
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset;
-  border-top: 1px solid rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 -1px 0 0 rgba(0, 0, 0, 0.2);
 }
 
 .sidebar,
@@ -50,12 +99,28 @@ toolbarview > .bottom-bar {
 .sidebar-inner {
   background-color: var(--color-sidebar-bg);
   background-image: linear-gradient(
-    to right,
-    rgba(255, 255, 255, 0.015),
-    rgba(0, 0, 0, 0.08)
+    to bottom,
+    rgba(255, 255, 255, 0.04),
+    rgba(0, 0, 0, 0.1)
   );
-  border-right: 0.05em solid rgba(0, 0, 0, 0.5);
-  box-shadow: -1px 0 0 0 rgba(255, 255, 255, 0.03) inset;
+  border-right: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.4) inset,
+    var(--sidebar-3d-border);
+  transition:
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+.sidebar:hover,
+.flux-sidebar-root:hover,
+.sidebar-inner:hover {
+  border-right-color: rgba(0, 0, 0, 0.8);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 -1px 0 0 rgba(0, 0, 0, 0.4) inset,
+    var(--sidebar-hover-3d-border);
 }
 
 .sidebar scrolledwindow,
@@ -75,7 +140,6 @@ toolbarview > .bottom-bar {
     rgba(255, 255, 255, 0.08),
     rgba(0, 0, 0, 0.12)
   );
-  background-color: #38383d;
   border-radius: 6px;
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
