@@ -3,8 +3,8 @@
 use crate::domain::model::{ArchiveEntry, ArchiveError};
 use crate::infra::archive::entry::collect_entry;
 use crate::infra::archive::util::{
-    copy_limited, extract_bytes_via_tempfile, find_file_recursive, make_dest_dir, open_no_follow,
-    reject_tool_arg, MAX_ENTRY_BYTES,
+    copy_limited, extract_bytes_via_tempfile, find_file_recursive, make_dest_dir_at,
+    open_no_follow, reject_tool_arg, MAX_ENTRY_BYTES,
 };
 use crate::infra::archive::{register_temp_dir, ArchiveBackend};
 use std::collections::HashMap;
@@ -41,68 +41,78 @@ impl ArchiveBackend for RarBackend {
         password: Option<&str>,
     ) -> Result<PathBuf, ArchiveError> {
         crate::hit!("extract_dir");
-        reject_tool_arg(inner_dir)?;
-        let (temp_dir, dest_dir) = make_dest_dir(inner_dir)?;
-
-        let tool = rar_tool().ok_or_else(|| {
-            ArchiveError::Other(
-                "RAR support requires 'unar' or 'unrar' (install via your package manager)"
-                    .to_owned(),
-            )
-        })?;
-
-        let mut cmd = std::process::Command::new(tool);
-        match tool {
-            "unar" => {
-                cmd.arg("-no-directory")
-                    .arg("-output-directory")
-                    .arg(&dest_dir);
-                if let Some(pwd) = password {
-                    cmd.arg("-password").arg(pwd);
-                }
-                cmd.arg(archive_path);
-                if !inner_dir.is_empty() {
-                    cmd.arg(inner_dir);
-                }
-            }
-            _ => {
-                cmd.arg("x").arg("-y");
-                if let Some(pwd) = password {
-                    cmd.arg(format!("-p{pwd}"));
-                } else {
-                    cmd.arg("-p-");
-                }
-                cmd.arg(archive_path);
-                if !inner_dir.is_empty() {
-                    cmd.arg(inner_dir);
-                }
-                cmd.arg(format!("{}/", dest_dir.display()));
-            }
-        }
-
-        let output = cmd
-            .output()
-            .map_err(|e| ArchiveError::Other(format!("{tool} spawn: {e}")))?;
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            if stderr.contains("password") || stderr.contains("encrypted") {
-                return Err(if password.is_none() {
-                    ArchiveError::PasswordRequired
-                } else {
-                    ArchiveError::WrongPassword
-                });
-            }
-            return Err(ArchiveError::Other(format!(
-                "{tool} extract failed: {}",
-                stderr.trim()
-            )));
-        }
-
-        let result = dest_dir.clone();
-        register_temp_dir(temp_dir);
-        Ok(result)
+        extract_dir_rar_at(archive_path, inner_dir, password, None)
     }
+}
+
+/// Extracts `inner_dir` (the whole archive when empty) with `unar`/`unrar`.
+pub(in crate::infra::archive) fn extract_dir_rar_at(
+    archive_path: &Path,
+    inner_dir: &str,
+    password: Option<&str>,
+    override_dest: Option<&Path>,
+) -> Result<PathBuf, ArchiveError> {
+    crate::hit!("extract_dir_rar_at");
+    reject_tool_arg(inner_dir)?;
+    let (temp_dir, dest_dir) = make_dest_dir_at(inner_dir, override_dest)?;
+
+    let tool = rar_tool().ok_or_else(|| {
+        ArchiveError::Other(
+            "RAR support requires 'unar' or 'unrar' (install via your package manager)".to_owned(),
+        )
+    })?;
+
+    let mut cmd = std::process::Command::new(tool);
+    match tool {
+        "unar" => {
+            cmd.arg("-no-directory")
+                .arg("-output-directory")
+                .arg(&dest_dir);
+            if let Some(pwd) = password {
+                cmd.arg("-password").arg(pwd);
+            }
+            cmd.arg(archive_path);
+            if !inner_dir.is_empty() {
+                cmd.arg(inner_dir);
+            }
+        }
+        _ => {
+            cmd.arg("x").arg("-y");
+            if let Some(pwd) = password {
+                cmd.arg(format!("-p{pwd}"));
+            } else {
+                cmd.arg("-p-");
+            }
+            cmd.arg(archive_path);
+            if !inner_dir.is_empty() {
+                cmd.arg(inner_dir);
+            }
+            cmd.arg(format!("{}/", dest_dir.display()));
+        }
+    }
+
+    let output = cmd
+        .output()
+        .map_err(|e| ArchiveError::Other(format!("{tool} spawn: {e}")))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        if stderr.contains("password") || stderr.contains("encrypted") {
+            return Err(if password.is_none() {
+                ArchiveError::PasswordRequired
+            } else {
+                ArchiveError::WrongPassword
+            });
+        }
+        return Err(ArchiveError::Other(format!(
+            "{tool} extract failed: {}",
+            stderr.trim()
+        )));
+    }
+
+    let result = dest_dir.clone();
+    register_temp_dir(temp_dir);
+    Ok(result)
 }
 
 // ─── RAR ─────────────────────────────────────────────────────────────────────

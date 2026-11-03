@@ -53,7 +53,7 @@ pub use uri::{
 };
 
 use crate::domain::model::{ArchiveEntry, ArchiveError};
-use backends::{extract_dir_7z_at, extract_dir_tar_at, extract_dir_zip_at};
+use backends::{extract_dir_7z_at, extract_dir_rar_at, extract_dir_tar_at, extract_dir_zip_at};
 use std::io::Write;
 use std::path::Path;
 use util::{copy_dir_recursive, lc_name, open_buf};
@@ -75,6 +75,8 @@ pub fn extract_archive_to_dir(
         extract_dir_zip_at(archive_path, "", password, Some(dest_dir))?;
     } else if name_lc.ends_with(".7z") {
         extract_dir_7z_at(archive_path, "", password, Some(dest_dir))?;
+    } else if name_lc.ends_with(".rar") {
+        extract_dir_rar_at(archive_path, "", password, Some(dest_dir))?;
     } else if name_lc.ends_with(".tar.gz") || name_lc.ends_with(".tgz") {
         extract_dir_tar_at(
             flate2::read::GzDecoder::new(open_buf(archive_path)?),

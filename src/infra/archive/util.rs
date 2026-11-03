@@ -152,10 +152,6 @@ pub(super) fn find_file_recursive(dir: &Path, file_name: &str) -> Result<PathBuf
     )))
 }
 
-pub(super) fn make_dest_dir(inner_dir: &str) -> Result<(tempfile::TempDir, PathBuf), ArchiveError> {
-    make_dest_dir_at(inner_dir, None)
-}
-
 /// Joins an archive entry name onto `base`, or `None` if it could escape `base`.
 pub(super) fn safe_join(base: &Path, relative: &str) -> Option<PathBuf> {
     crate::hit!("safe_join");
