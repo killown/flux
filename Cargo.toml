@@ -49,8 +49,13 @@ poppler = { version = "0.6", features = ["render"] }
 indexmap = "2.14.0"
 zip = { version = "8.6.0", default-features = false, features = [
   "deflate",
+  "deflate64",
   "bzip2",
   "zstd",
+  "lzma",
+  "xz",
+  "ppmd",
+  "legacy-zip",
   "aes-crypto",
 ] }
 tar = "0.4"
