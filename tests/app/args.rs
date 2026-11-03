@@ -83,17 +83,22 @@ fn root_path_arg_launches_root() {
 }
 
 #[test]
-fn relative_path_arg_launches_that_relative_path() {
+fn relative_path_arg_is_resolved_against_cwd() {
+    // Startup paths are made absolute so the breadcrumb bar, which rebuilds
+    // the path from `/`, never sees a relative one.
+    let cwd = std::env::current_dir().unwrap();
     let action = resolve_startup_action(&args(&["flux-fm", "Documents"]), home());
-    assert_eq!(action, launch_action(PathBuf::from("Documents")));
+    assert_eq!(action, launch_action(cwd.join("Documents")));
 }
 
 #[test]
-fn tilde_path_arg_is_passed_through_as_literal() {
+fn tilde_path_arg_is_not_expanded() {
     // resolve_startup_action does NOT expand tildes, that is the caller's
-    // responsibility (utils::expand_path).  This test documents the contract.
+    // responsibility (utils::expand_path).  A literal `~` is therefore just
+    // another relative name and is resolved against the cwd.
+    let cwd = std::env::current_dir().unwrap();
     let action = resolve_startup_action(&args(&["flux-fm", "~"]), home());
-    assert_eq!(action, launch_action(PathBuf::from("~")));
+    assert_eq!(action, launch_action(cwd.join("~")));
 }
 
 #[test]
