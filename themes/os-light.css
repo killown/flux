@@ -21,19 +21,23 @@
   --sidebar-3d-border:
     1px 0 0 0 rgba(255, 255, 255, 0.6), 2px 0 0 0 rgba(0, 0, 0, 0.05),
     4px 0 8px -2px rgba(0, 0, 0, 0.05);
+
+  --sidebar-hover-3d-border:
+    1px 0 0 0 rgba(142, 142, 147, 0.4), 2px 0 0 0 rgba(0, 0, 0, 0.1),
+    6px 0 12px -2px rgba(0, 0, 0, 0.1);
 }
 
 headerbar,
 toolbarview > .top-bar,
 .top-bar {
-  background-color: var(--color-headerbar-bg);
   background-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0.7),
     rgba(0, 0, 0, 0.02)
   );
-  border-bottom: 0.1em solid rgba(0, 0, 0, 0.01);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.9) inset;
+  color: #1a1a1a;
 }
 
 headerbar .breadcrumb-btn {
@@ -51,6 +55,11 @@ headerbar .breadcrumb-btn {
   transition:
     background-image 100ms ease,
     box-shadow 100ms ease;
+  color: #1a1a1a;
+}
+
+headerbar .breadcrumb-btn label {
+  color: #1a1a1a;
 }
 
 headerbar .breadcrumb-btn:last-child {
@@ -85,9 +94,14 @@ headerbar .breadcrumb-btn:active {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) inset;
 }
 
+headerbar box > button:last-child,
+headerbar > box > button:last-child,
+headerbar windowhandle + button,
+headerbar .end button:last-child {
+}
+
 .selection-status,
 toolbarview > .bottom-bar {
-  background-color: var(--color-headerbar-bg);
   background-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0.6),
@@ -95,22 +109,25 @@ toolbarview > .bottom-bar {
   );
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.9) inset;
+  color: #1a1a1a;
 }
 
 .sidebar,
 .flux-sidebar-root,
 .sidebar-inner {
-  background-color: var(--color-sidebar-bg);
   background-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0.5),
     rgba(0, 0, 0, 0.02)
   );
-  border-right: 0.1em solid rgba(0, 0, 0, 0.01);
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
     0 -1px 0 0 rgba(0, 0, 0, 0.02) inset,
     var(--sidebar-3d-border);
+  transition:
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+  color: #1a1a1a;
 }
 
 .sidebar scrolledwindow,
@@ -121,7 +138,20 @@ toolbarview > .bottom-bar {
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
-  background-color: rgba(0, 0, 0, 0.06);
+  background-color: rgba(255, 255, 255, 0.6);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9),
+    rgba(0, 0, 0, 0.03)
+  );
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.1) inset,
+    var(--shadow-3d);
+}
+
+.sidebar-row:not(.sidebar-section):hover:not(:selected) label {
+  color: #1a1a1a;
 }
 
 .sidebar-row:not(.sidebar-section):selected {
@@ -144,19 +174,26 @@ toolbarview > .bottom-bar {
 }
 
 .flux-card {
-  background-color: var(--color-card-bg);
-  background-image: linear-gradient(to bottom, #ffffff, #fbfbfb);
+  background-color: alpha(var(--color-card-bg), 0.75);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.8),
+    rgba(0, 0, 0, 0.02)
+  );
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
   box-shadow: var(--card-3d-shadow);
   transition:
     box-shadow 120ms ease,
-    border-color 120ms ease,
-    background-image 120ms ease;
+    border-color 120ms ease;
 }
 
 .flux-card:hover {
-  background-image: linear-gradient(to bottom, #ffffff, #ffffff);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 1),
+    rgba(0, 0, 0, 0.01)
+  );
   border-color: rgba(142, 142, 147, 0.4);
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.1),
@@ -174,4 +211,69 @@ gridview child:selected .flux-card {
     0 0 0 1px #8e8e93 inset,
     0 4px 12px rgba(142, 142, 147, 0.15),
     0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+tabbar tab {
+  background-color: rgba(255, 255, 255, 0.6);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.9),
+    rgba(0, 0, 0, 0.03)
+  );
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  min-height: 24px;
+  padding: 3px 8px;
+  box-shadow: var(--shadow-3d);
+  transition:
+    background-image 100ms ease,
+    box-shadow 100ms ease;
+  color: #1a1a1a;
+}
+
+tabbar tab label {
+  color: #1a1a1a;
+}
+
+tabbar tab:hover {
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 1),
+    rgba(0, 0, 0, 0.01)
+  );
+}
+
+tabbar tab:checked,
+tabbar tab:selected {
+  background-color: #8e8e93;
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1),
+    rgba(0, 0, 0, 0.05)
+  );
+  border-color: rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
+    0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+tabbar tab:checked label,
+tabbar tab:selected label {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+tabbar tab button.flat {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 100ms ease;
+}
+
+tabbar tab button.flat:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 50%;
 }
