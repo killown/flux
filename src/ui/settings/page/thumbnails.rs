@@ -1,5 +1,4 @@
 use crate::domain::model::{AppMsg, Config, ThumbnailsMsg};
-use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -7,15 +6,15 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
     crate::hit!("build");
     relm4::view! {
         page = adw::PreferencesPage {
-            set_title: &tr("Thumbnails"),
+            set_title: &crate::i18n::markup_tr("Thumbnails"),
             set_icon_name: Some("image-x-generic-symbolic"),
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("Preview Settings"),
-                set_description: Some(&tr("Enable or disable thumbnail generation for different file types")),
+                set_title: &crate::i18n::markup_tr("Preview Settings"),
+                set_description: Some(&crate::i18n::markup_tr("Enable or disable thumbnail generation for different file types")),
                 add = &adw::SwitchRow {
-                    set_title: &tr("Enable Thumbnails"),
-                    set_subtitle: &tr("Show previews for supported file types"),
+                    set_title: &crate::i18n::markup_tr("Enable Thumbnails"),
+                    set_subtitle: &crate::i18n::markup_tr("Show previews for supported file types"),
                     set_active: config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -24,8 +23,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
-                    set_title: &tr("Thumbnail Size"),
-                    set_subtitle: &tr("Target resolution for media previews (higher values increase memory usage)"),
+                    set_title: &crate::i18n::markup_tr("Thumbnail Size"),
+                    set_subtitle: &crate::i18n::markup_tr("Target resolution for media previews (higher values increase memory usage)"),
                     set_sensitive: config.ui.show_thumbnails,
                     add_suffix = &gtk::DropDown {
                         set_valign: gtk::Align::Center,
@@ -54,8 +53,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Lazy Thumbnails"),
-                    set_subtitle: &tr("Generate thumbnails only for items in view"),
+                    set_title: &crate::i18n::markup_tr("Lazy Thumbnails"),
+                    set_subtitle: &crate::i18n::markup_tr("Generate thumbnails only for items in view"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.lazy_thumbnails && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -65,8 +64,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Cache Thumbnails in Zip Files"),
-                    set_subtitle: &tr("Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"),
+                    set_title: &crate::i18n::markup_tr("Cache Thumbnails in Zip Files"),
+                    set_subtitle: &crate::i18n::markup_tr("Store thumbnails in a hidden .flux-cache folder inside each zip you browse, so it opens faster next time. This modifies the zip file"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.archive_thumbnail_cache,
                     connect_active_notify => move |switch| {
@@ -76,8 +75,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Autoplay Video Previews"),
-                    set_subtitle: &tr("Play a muted preview when a single video card is selected"),
+                    set_title: &crate::i18n::markup_tr("Autoplay Video Previews"),
+                    set_subtitle: &crate::i18n::markup_tr("Play a muted preview when a single video card is selected"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.autoplay_video_previews,
                     connect_active_notify => move |row| {
@@ -88,8 +87,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Images"),
-                    set_subtitle: &tr("PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"),
+                    set_title: &crate::i18n::markup_tr("Images"),
+                    set_subtitle: &crate::i18n::markup_tr("PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.thumbnail_types.images && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -102,8 +101,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Videos"),
-                    set_subtitle: &tr("MP4, MKV, WebM, AVI, MOV, FLV, WMV"),
+                    set_title: &crate::i18n::markup_tr("Videos"),
+                    set_subtitle: &crate::i18n::markup_tr("MP4, MKV, WebM, AVI, MOV, FLV, WMV"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.thumbnail_types.videos && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -116,8 +115,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Fonts"),
-                    set_subtitle: &tr("TTF, OTF, WOFF, WOFF2, TTC"),
+                    set_title: &crate::i18n::markup_tr("Fonts"),
+                    set_subtitle: &crate::i18n::markup_tr("TTF, OTF, WOFF, WOFF2, TTC"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.thumbnail_types.fonts && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -130,8 +129,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("PDF Documents"),
-                    set_subtitle: &tr("Portable Document Format files"),
+                    set_title: &crate::i18n::markup_tr("PDF Documents"),
+                    set_subtitle: &crate::i18n::markup_tr("Portable Document Format files"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.thumbnail_types.pdfs && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -144,8 +143,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Windows Executables"),
-                    set_subtitle: &tr("EXE"),
+                    set_title: &crate::i18n::markup_tr("Windows Executables"),
+                    set_subtitle: &crate::i18n::markup_tr("EXE"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.thumbnail_types.executables && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -158,8 +157,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Audio"),
-                    set_subtitle: &tr("MP3, FLAC, M4A, OGG, WAV (embedded album art)"),
+                    set_title: &crate::i18n::markup_tr("Audio"),
+                    set_subtitle: &crate::i18n::markup_tr("MP3, FLAC, M4A, OGG, WAV (embedded album art)"),
                     set_sensitive: config.ui.show_thumbnails,
                     set_active: config.ui.thumbnail_types.audio && config.ui.show_thumbnails,
                     connect_active_notify => move |switch| {
@@ -174,8 +173,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             },
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("Preview Examples"),
-                set_description: Some(&tr("How thumbnails will appear in the file grid")),
+                set_title: &crate::i18n::markup_tr("Preview Examples"),
+                set_description: Some(&crate::i18n::markup_tr("How thumbnails will appear in the file grid")),
                 add = &gtk::Box {
                     set_orientation: gtk::Orientation::Horizontal,
                     set_halign: gtk::Align::Center,
@@ -192,7 +191,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             set_opacity: if config.ui.thumbnail_types.images && config.ui.show_thumbnails { 1.0 } else { 0.3 },
                         },
                         gtk::Label {
-                            set_label: &tr("Image"),
+                            set_label: &crate::i18n::markup_tr("Image"),
                             set_css_classes: &["caption", "dim-label"],
                         },
                         gtk::Label {
@@ -213,7 +212,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             set_opacity: if config.ui.thumbnail_types.videos && config.ui.show_thumbnails { 1.0 } else { 0.3 },
                         },
                         gtk::Label {
-                            set_label: &tr("Video"),
+                            set_label: &crate::i18n::markup_tr("Video"),
                             set_css_classes: &["caption", "dim-label"],
                         },
                         gtk::Label {
@@ -234,7 +233,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             set_opacity: if config.ui.thumbnail_types.fonts && config.ui.show_thumbnails { 1.0 } else { 0.3 },
                         },
                         gtk::Label {
-                            set_label: &tr("Font"),
+                            set_label: &crate::i18n::markup_tr("Font"),
                             set_css_classes: &["caption", "dim-label"],
                         },
                         gtk::Label {
@@ -255,7 +254,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             set_opacity: if config.ui.thumbnail_types.pdfs && config.ui.show_thumbnails { 1.0 } else { 0.3 },
                         },
                         gtk::Label {
-                            set_label: &tr("PDF"),
+                            set_label: &crate::i18n::markup_tr("PDF"),
                             set_css_classes: &["caption", "dim-label"],
                         },
                         gtk::Label {
@@ -276,7 +275,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             set_opacity: if config.ui.thumbnail_types.executables && config.ui.show_thumbnails { 1.0 } else { 0.3 },
                         },
                         gtk::Label {
-                            set_label: &tr("EXE"),
+                            set_label: &crate::i18n::markup_tr("EXE"),
                             set_css_classes: &["caption", "dim-label"],
                         },
                         gtk::Label {
@@ -297,7 +296,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                             set_opacity: if config.ui.thumbnail_types.audio && config.ui.show_thumbnails { 1.0 } else { 0.3 },
                         },
                         gtk::Label {
-                            set_label: &tr("Audio"),
+                            set_label: &crate::i18n::markup_tr("Audio"),
                             set_css_classes: &["caption", "dim-label"],
                         },
                         gtk::Label {

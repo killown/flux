@@ -142,6 +142,146 @@ pub fn split_mime_cmd(input: &str) -> Option<(String, String, Option<String>, bo
     Some((mime.to_string(), cmd.to_string(), toast, no_command_dialog))
 }
 
+fn top_level_pairs() -> Vec<(&'static str, String)> {
+    const KEYS: &[&str] = &[
+        "Open Line in Nvim",
+        "Add to Quick List",
+        "Open in New Tab",
+        "Send to Quick List",
+        "Other Application...",
+        "Inspect Directory",
+        "Copy",
+        "Cut",
+        "Paste",
+        "Rename",
+        "Edit Tags",
+        "Install Font",
+        "Delete",
+        "Restore File",
+        "Shred File (Permanent)",
+        "Open Terminal",
+        "Toggle Pin",
+        "Open in VSCode",
+        "File Properties",
+        "Folder Info",
+        "New Folder",
+        "New File",
+        "Extract Here!",
+        "Convert to PDF",
+    ];
+    KEYS.iter().map(|&k| (k, tr(k))).collect()
+}
+
+/// Submenu category names (the part before ` > `).
+fn submenu_pairs() -> Vec<(&'static str, String)> {
+    const KEYS: &[&str] = &[
+        "Icons",
+        "Compress",
+        "Media Edit",
+        "Media Convert",
+        "Media Extract",
+        "Media Optimize",
+        "Image Wallpaper",
+        "Image Convert",
+        "Flux Background",
+        "Tools",
+    ];
+    KEYS.iter().map(|&k| (k, tr(k))).collect()
+}
+
+/// Submenu action names (the part after ` > `).
+fn submenu_action_pairs() -> Vec<(&'static str, String)> {
+    const KEYS: &[&str] = &[
+        "Select Folder Icon",
+        "Set File Icon",
+        "Reset File Icon",
+        "Set Extension Icon",
+        "Reset Extension Icon",
+        "To ZIP",
+        "To 7Z",
+        "To TAR.GZ",
+        "Join Videos",
+        "Cut Video",
+        "Mix Audio",
+        "Merge Video + Audio",
+        "To MP4",
+        "To MKV",
+        "To WebM",
+        "To MOV",
+        "Audio to MP3",
+        "MP3 from Video",
+        "Reduce Video Size",
+        "Set (swww)",
+        "Set (wbg)",
+        "To PNG",
+        "To AVIF",
+        "To JPG",
+        "Window Background",
+        "Left Sidebar Background",
+        "Right Sidebar Background",
+        "Reset All Backgrounds",
+        "Git Gui",
+        "Download Video (1080p)",
+        "Copy Path",
+        "Copy Name",
+        "Advanced Archive Manager",
+    ];
+    KEYS.iter().map(|&k| (k, tr(k))).collect()
+}
+
+fn label_to_english(label: &str) -> String {
+    let (icon_prefix, text) =
+        match label.find(|c: char| c.is_alphanumeric() || c == '(' || c == '>') {
+            Some(idx) => label.split_at(idx),
+            None => ("", label),
+        };
+
+    let english_text = if let Some((sub, act)) = text.split_once(" > ") {
+        let (sub_icon, sub_pure) = split_icon(sub);
+        let (act_icon, act_pure) = split_icon(act);
+
+        let sub_en = submenu_pairs()
+            .into_iter()
+            .find(|(_, localized)| localized == sub_pure.trim())
+            .map(|(en, _)| en.to_string())
+            .unwrap_or_else(|| sub_pure.trim().to_string());
+
+        let act_en = submenu_action_pairs()
+            .into_iter()
+            .find(|(_, localized)| localized == act_pure.trim())
+            .map(|(en, _)| en.to_string())
+            .unwrap_or_else(|| act_pure.trim().to_string());
+
+        format!("{sub_icon}{sub_en} > {act_icon}{act_en}")
+    } else {
+        let english = top_level_pairs()
+            .into_iter()
+            .find(|(_, localized)| localized == text.trim())
+            .map(|(en, _)| en.to_string())
+            .unwrap_or_else(|| text.trim().to_string());
+        english
+    };
+
+    format!("{icon_prefix}{english_text}")
+}
+
+/// Splits `"󰸉 Set File Icon"` into `("󰸉 ", "Set File Icon")`.
+fn split_icon(s: &str) -> (&str, &str) {
+    match s.find(|c: char| c.is_alphanumeric() || c == '(') {
+        Some(idx) => s.split_at(idx),
+        None => ("", s),
+    }
+}
+
+/// Splits `"󰸉 Icons > Set File Icon"` into `(Some("󰸉 Icons"), "Set File Icon")`,
+/// each part still carrying its icon prefix.
+fn split_label(label: &str) -> (Option<String>, String) {
+    match label.split_once(" > ") {
+        Some((sub, act)) => (Some(sub.to_string()), act.to_string()),
+        None => (None, label.to_string()),
+    }
+}
+
 pub fn load_menu_config() -> Vec<CustomAction> {
     crate::hit!("load_menu_config");
     let config_path = ensure_config_file();
@@ -201,6 +341,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     };
 
                 let act = match act_pure.trim() {
+                    "Select Folder Icon" => tr("Select Folder Icon"),
                     "Set File Icon" => tr("Set File Icon"),
                     "Reset File Icon" => tr("Reset File Icon"),
                     "Set Extension Icon" => tr("Set Extension Icon"),
@@ -242,8 +383,10 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                 format!("{} > {}", full_sub, full_act)
             } else {
                 match text_content.trim() {
+                    "Open Line in Nvim" => tr("Open Line in Nvim"),
                     "Add to Quick List" => tr("Add to Quick List"),
-                    "Open in New Tab" | "Abrir em Nova Aba" => tr("Open in New Tab"),
+                    "Open in New Tab" => tr("Open in New Tab"),
+                    "Send to Quick List" => tr("Send to Quick List"),
                     "Other Application..." => tr("Other Application..."),
                     "Inspect Directory" => tr("Inspect Directory"),
                     "Copy" => tr("Copy"),
@@ -251,6 +394,7 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "Paste" => tr("Paste"),
                     "Rename" => tr("Rename"),
                     "Edit Tags" => tr("Edit Tags"),
+                    "Install Font" => tr("Install Font"),
                     "Delete" => tr("Delete"),
                     "Restore File" => tr("Restore File"),
                     "Shred File (Permanent)" => tr("Shred File (Permanent)"),
@@ -263,22 +407,13 @@ pub fn load_menu_config() -> Vec<CustomAction> {
                     "New File" => tr("New File"),
                     "Extract Here!" => tr("Extract Here!"),
                     "Convert to PDF" => tr("Convert to PDF"),
-                    "Open Line in Nvim" => tr("Open Line in Nvim"),
                     other => other.to_string(),
                 }
             };
 
             let final_full_label = format!("{}{}", main_icon_prefix, translated_text);
 
-            let (submenu, label) = if final_full_label.contains(" > ") {
-                let parts: Vec<&str> = final_full_label.splitn(2, " > ").collect();
-                (
-                    Some(parts[0].trim().to_string()),
-                    parts[1].trim().to_string(),
-                )
-            } else {
-                (None, final_full_label)
-            };
+            let (submenu, label) = split_label(&final_full_label);
             if let Some((mimes_part, cmd_part, toast, no_command_dialog)) = split_mime_cmd(right) {
                 let mime_types: Vec<String> = mimes_part
                     .split(',')
@@ -300,8 +435,10 @@ pub fn load_menu_config() -> Vec<CustomAction> {
     actions
 }
 
-/// Writes the current menu actions to `~/.config/flux/menu.rs`
-/// in the same DSL format expected by `load_menu_config`.
+/// Writes the current menu actions to `~/.config/flux/menu.rs` in the same DSL
+/// format `load_menu_config` expects. Labels are mapped back to their English
+/// `msgid`s first, so the on-disk file is language-independent and gettext
+/// keeps full control over display translation on the next launch.
 pub fn save_menu_config(actions: &[CustomAction]) -> std::io::Result<()> {
     crate::hit!("save_menu_config");
     let config_dir = crate::utils::config::base_config_dir()
@@ -312,9 +449,12 @@ pub fn save_menu_config(actions: &[CustomAction]) -> std::io::Result<()> {
 
     let mut content = String::new();
     for action in actions {
+        let english_label = label_to_english(&action.label);
+        let english_submenu = action.submenu.as_deref().map(label_to_english);
+
         let entry = MenuEntry {
-            label: action.label.clone(),
-            submenu: action.submenu.clone(),
+            label: english_label,
+            submenu: english_submenu,
             mime_types: action.mime_types.join(", "),
             command: action.command.clone(),
             toast: action.toast.clone(),

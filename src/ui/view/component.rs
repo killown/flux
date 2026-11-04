@@ -575,7 +575,7 @@ impl SimpleAsyncComponent for FluxApp {
                             add_css_class: constants::FILTER_BAR_CSS_CLASS,
 
                             gtk::Label {
-                                set_label: &tr("Filter:"),
+                                set_label: &crate::i18n::markup_tr("Filter:"),
                                 add_css_class: "caption",
                                 set_opacity: 0.6,
                             },
@@ -666,12 +666,12 @@ impl SimpleAsyncComponent for FluxApp {
                                         },
 
                                         gtk::Label {
-                                            set_label: &crate::i18n::tr("Archive is password-protected"),
+                                            set_label: &crate::i18n::markup_tr("Archive is password-protected"),
                                             add_css_class: "title-3",
                                         },
 
                                         gtk::Label {
-                                            set_label: &crate::i18n::tr("Enter the password to browse its contents."),
+                                            set_label: &crate::i18n::markup_tr("Enter the password to browse its contents."),
                                             add_css_class: "dim-label",
                                         },
                                     },
@@ -679,8 +679,8 @@ impl SimpleAsyncComponent for FluxApp {
                                     // No Results Found status page shown when search/filter returns nothing.
                                     add_overlay = &adw::StatusPage {
                                         set_icon_name: Some("system-search-symbolic"),
-                                        set_title: &crate::i18n::tr("No Results Found"),
-                                        set_description: Some(&crate::i18n::tr("No matching files found in this location.")),
+                                        set_title: &crate::i18n::markup_tr("No Results Found"),
+                                        set_description: Some(&crate::i18n::markup_tr("No matching files found in this location.")),
                                         set_vexpand: true,
                                         set_hexpand: true,
                                         set_halign: gtk::Align::Fill,
@@ -783,7 +783,7 @@ impl SimpleAsyncComponent for FluxApp {
                             set_visible: model.navigate.is_some(),
                             #[watch]
                             set_label: &model.navigate_chip_label(),
-                            set_tooltip_text: Some(&tr("Navigate mode: type to jump to a folder. Click or press Esc to leave")),
+                            set_tooltip_text: Some(&crate::i18n::markup_tr("Navigate mode: type to jump to a folder. Click or press Esc to leave")),
                             add_css_class: "flat",
                             add_css_class: "navigate-chip",
                             set_valign: gtk::Align::Center,
@@ -818,7 +818,7 @@ impl SimpleAsyncComponent for FluxApp {
                             #[watch]
                             set_visible: model.task_queue.summary().is_some(),
                             set_icon_name: "process-stop-symbolic",
-                            set_tooltip_text: Some(&tr("Cancel all transfers")),
+                            set_tooltip_text: Some(&crate::i18n::markup_tr("Cancel all transfers")),
                             add_css_class: constants::DESTRUCTIVE_ACTION_CLASS,
                             set_valign: gtk::Align::Center,
                             connect_realize => |w| FluxApp::set_cursor_pointer(w.as_ref(), true),

@@ -9,15 +9,15 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
     crate::hit!("build");
     relm4::view! {
         page = adw::PreferencesPage {
-            set_title: &tr("Behavior"),
+            set_title: &crate::i18n::markup_tr("Behavior"),
             set_icon_name: Some("emblem-system-symbolic"),
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("File Operations"),
-                set_description: Some(&tr("How files and directories are opened and managed")),
+                set_title: &crate::i18n::markup_tr("File Operations"),
+                set_description: Some(&crate::i18n::markup_tr("How files and directories are opened and managed")),
                 add = &adw::SwitchRow {
-                    set_title: &tr("Single Click to Open"),
-                    set_subtitle: &tr("Open files with a single click instead of double click"),
+                    set_title: &crate::i18n::markup_tr("Single Click to Open"),
+                    set_subtitle: &crate::i18n::markup_tr("Open files with a single click instead of double click"),
                     set_active: config.ui.single_click,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -26,8 +26,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Disable Drag and Drop"),
-                    set_subtitle: &tr("Prevent moving or copying files via mouse drag"),
+                    set_title: &crate::i18n::markup_tr("Disable Drag and Drop"),
+                    set_subtitle: &crate::i18n::markup_tr("Prevent moving or copying files via mouse drag"),
                     set_active: config.ui.disable_drag_and_drop,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -36,8 +36,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Highlight Empty Folders"),
-                    set_subtitle: &tr("Color the border of folders that contain no items"),
+                    set_title: &crate::i18n::markup_tr("Highlight Empty Folders"),
+                    set_subtitle: &crate::i18n::markup_tr("Color the border of folders that contain no items"),
                     set_active: config.ui.show_empty_dir_emblem,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -46,8 +46,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Highlight Symbolic Links"),
-                    set_subtitle: &tr("Color the border of symbolic links"),
+                    set_title: &crate::i18n::markup_tr("Highlight Symbolic Links"),
+                    set_subtitle: &crate::i18n::markup_tr("Color the border of symbolic links"),
                     set_active: config.ui.show_symlink_emblem,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -56,8 +56,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Archives as Folders"),
-                    set_subtitle: &tr("Draw browsable archives like folders, select one to reveal the archive icon"),
+                    set_title: &crate::i18n::markup_tr("Archives as Folders"),
+                    set_subtitle: &crate::i18n::markup_tr("Draw browsable archives like folders, select one to reveal the archive icon"),
                     set_active: config.ui.archives_as_folders,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -66,8 +66,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Auto-Show Git Diff"),
-                    set_subtitle: &tr("Automatically open the diff panel when selecting a modified file"),
+                    set_title: &crate::i18n::markup_tr("Auto-Show Git Diff"),
+                    set_subtitle: &crate::i18n::markup_tr("Automatically open the diff panel when selecting a modified file"),
                     set_active: config.ui.auto_show_diff,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -76,8 +76,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Default Layout"),
-                    set_subtitle: &tr("Start with grid view (off) or list view (on)"),
+                    set_title: &crate::i18n::markup_tr("Default Layout"),
+                    set_subtitle: &crate::i18n::markup_tr("Start with grid view (off) or list view (on)"),
                     set_active: config.default_list_mode,
                     connect_active_notify => move |_switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -86,8 +86,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("Auto List Mode Threshold"),
-                    set_subtitle: &tr("Folders with more items than this open in list mode. 0 disables."),
+                    set_title: &crate::i18n::markup_tr("Auto List Mode Threshold"),
+                    set_subtitle: &crate::i18n::markup_tr("Folders with more items than this open in list mode. 0 disables."),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.auto_list_threshold as f64,
                         0.0,
@@ -106,11 +106,11 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             },
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("Sorting & Filtering"),
-                set_description: Some(&tr("How files are ordered and displayed")),
+                set_title: &crate::i18n::markup_tr("Sorting & Filtering"),
+                set_description: Some(&crate::i18n::markup_tr("How files are ordered and displayed")),
                 add = &adw::ActionRow {
-                    set_title: &tr("Default Sort"),
-                    set_subtitle: &tr("Primary sorting method"),
+                    set_title: &crate::i18n::markup_tr("Default Sort"),
+                    set_subtitle: &crate::i18n::markup_tr("Primary sorting method"),
                     add_suffix = &gtk::DropDown::from_strings(&[&tr("Name"), &tr("Size"), &tr("Date"), &tr("Type")]) {
                         set_valign: gtk::Align::Center,
                         set_selected: match config.ui.default_sort {
@@ -134,8 +134,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
-                    set_title: &tr("Sort Order"),
-                    set_subtitle: &tr("Direction of the primary sort"),
+                    set_title: &crate::i18n::markup_tr("Sort Order"),
+                    set_subtitle: &crate::i18n::markup_tr("Direction of the primary sort"),
                     add_suffix = &gtk::DropDown::from_strings(&[&tr("Ascending"), &tr("Descending")]) {
                         set_valign: gtk::Align::Center,
                         set_selected: match config.ui.ascending {
@@ -151,8 +151,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::ActionRow {
-                    set_title: &tr("Hide File Extensions"),
-                    set_subtitle: &tr("Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"),
+                    set_title: &crate::i18n::markup_tr("Hide File Extensions"),
+                    set_subtitle: &crate::i18n::markup_tr("Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"),
                     add_suffix = &gtk::Entry {
                         set_valign: gtk::Align::Center,
                         set_width_chars: 20,
@@ -176,8 +176,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                   }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Folders First"),
-                    set_subtitle: &tr("Display folders before files"),
+                    set_title: &crate::i18n::markup_tr("Folders First"),
+                    set_subtitle: &crate::i18n::markup_tr("Display folders before files"),
                     set_active: config.ui.folders_first,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
@@ -186,8 +186,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Show Hidden Files"),
-                    set_subtitle: &tr("Display files and folders starting with a dot"),
+                    set_title: &crate::i18n::markup_tr("Show Hidden Files"),
+                    set_subtitle: &crate::i18n::markup_tr("Display files and folders starting with a dot"),
                     set_active: config.ui.show_hidden_by_default,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {

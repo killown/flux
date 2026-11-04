@@ -86,21 +86,21 @@ impl ShortcutPicker {
                 let disabled = is_disabled();
                 disable_button.set_active(disabled);
                 if disabled {
-                    disable_button.set_label(&tr("Restore"));
-                    disable_button.set_tooltip_text(Some(&tr("Restore the default shortcut")));
+                    disable_button.set_label(&crate::i18n::markup_tr("Restore"));
+                    disable_button.set_tooltip_text(Some(&crate::i18n::markup_tr("Restore the default shortcut")));
                 } else {
-                    disable_button.set_label(&tr("Disable"));
-                    disable_button.set_tooltip_text(Some(&tr("Disable this shortcut")));
+                    disable_button.set_label(&crate::i18n::markup_tr("Disable"));
+                    disable_button.set_tooltip_text(Some(&crate::i18n::markup_tr("Disable this shortcut")));
                 }
 
                 if capturing.get() {
-                    button.set_label(&tr("Press a key…"));
-                    button.set_tooltip_text(Some(&tr("Press Esc to cancel, or Delete to clear")));
+                    button.set_label(&crate::i18n::markup_tr("Press a key…"));
+                    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Press Esc to cancel, or Delete to clear")));
                     return;
                 }
 
                 if disabled {
-                    button.set_label(&tr("Disabled"));
+                    button.set_label(&crate::i18n::markup_tr("Disabled"));
                     button.set_tooltip_text(Some(&format!(
                         "{}\n{}: {}",
                         tr("Click the toggle to restore the default"),

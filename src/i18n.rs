@@ -58,6 +58,11 @@ pub fn ntr(singular: &str, plural: &str, n: u64) -> String {
         .into_owned()
 }
 
+/// Translate and escape for Pango markup.
+pub fn markup_tr(s: &str) -> gtk::glib::GString {
+    gtk::glib::markup_escape_text(&tr(s))
+}
+
 /// Translates a string with a disambiguation context prefix.
 #[allow(dead_code)]
 #[inline]

@@ -1,5 +1,4 @@
 use crate::domain::model::{AppMsg, Config, LoadingMsg, NavigationMsg, SearchMsg, ThumbnailsMsg};
-use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -7,15 +6,15 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
     crate::hit!("build");
     relm4::view! {
         page = adw::PreferencesPage {
-            set_title: &tr("System"),
+            set_title: &crate::i18n::markup_tr("System"),
             set_icon_name: Some("applications-system-symbolic"),
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("Performance & Engine"),
-                set_description: Some(&tr("Configure background worker limits and streaming chunk sizes")),
+                set_title: &crate::i18n::markup_tr("Performance & Engine"),
+                set_description: Some(&crate::i18n::markup_tr("Configure background worker limits and streaming chunk sizes")),
                 add = &adw::SpinRow {
-                    set_title: &tr("UI Batch Streaming Size"),
-                    set_subtitle: &tr("Number of items appended per frame when loading directories"),
+                    set_title: &crate::i18n::markup_tr("UI Batch Streaming Size"),
+                    set_subtitle: &crate::i18n::markup_tr("Number of items appended per frame when loading directories"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.loader_batch_size as f64,
                         10.0,
@@ -32,8 +31,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("Thumbnail Workers"),
-                    set_subtitle: &tr("Concurrent background threads used to render thumbnails"),
+                    set_title: &crate::i18n::markup_tr("Thumbnail Workers"),
+                    set_subtitle: &crate::i18n::markup_tr("Concurrent background threads used to render thumbnails"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.thumbnail_threads as f64,
                         1.0,
@@ -52,11 +51,11 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             },
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("Memory & Limits"),
-                set_description: Some(&tr("Tune caching thresholds and search result cutoffs")),
+                set_title: &crate::i18n::markup_tr("Memory & Limits"),
+                set_description: Some(&crate::i18n::markup_tr("Tune caching thresholds and search result cutoffs")),
                 add = &adw::SwitchRow {
-                    set_title: &tr("Fast File Indexing"),
-                    set_subtitle: &tr("Build an SQLite FTS5 database to enable sub-millisecond filename searches"),
+                    set_title: &crate::i18n::markup_tr("Fast File Indexing"),
+                    set_subtitle: &crate::i18n::markup_tr("Build an SQLite FTS5 database to enable sub-millisecond filename searches"),
                     set_active: config.ui.enable_file_indexing,
                     connect_active_notify => |row| {
                         let state = row.is_active();
@@ -74,8 +73,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("Folder Cache Capacity"),
-                    set_subtitle: &tr("Maximum number of recently visited folders kept in RAM (0 to disable)"),
+                    set_title: &crate::i18n::markup_tr("Folder Cache Capacity"),
+                    set_subtitle: &crate::i18n::markup_tr("Maximum number of recently visited folders kept in RAM (0 to disable)"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.folder_cache_capacity as f64,
                         0.0,
@@ -92,8 +91,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("Max Search Results"),
-                    set_subtitle: &tr("Maximum files indexed per filename/extension search run"),
+                    set_title: &crate::i18n::markup_tr("Max Search Results"),
+                    set_subtitle: &crate::i18n::markup_tr("Maximum files indexed per filename/extension search run"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.max_search_results as f64,
                         50.0,
@@ -110,8 +109,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("Max Content Search Results"),
-                    set_subtitle: &tr("Maximum number of matches to return (higher values may be slower)"),
+                    set_title: &crate::i18n::markup_tr("Max Content Search Results"),
+                    set_subtitle: &crate::i18n::markup_tr("Maximum number of matches to return (higher values may be slower)"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.max_content_search_results as f64,
                         10.0, 5000.0, 10.0, 100.0, 0.0
@@ -124,8 +123,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("Navigation History Depth"),
-                    set_subtitle: &tr("Maximum number of backward/forward directory jumps saved"),
+                    set_title: &crate::i18n::markup_tr("Navigation History Depth"),
+                    set_subtitle: &crate::i18n::markup_tr("Maximum number of backward/forward directory jumps saved"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.max_history as f64,
                         10.0,
@@ -144,11 +143,11 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             },
 
             add = &adw::PreferencesGroup {
-                set_title: &tr("Video Extraction (FFmpeg)"),
-                set_description: Some(&tr("Configure video frame extraction and decoding options")),
+                set_title: &crate::i18n::markup_tr("Video Extraction (FFmpeg)"),
+                set_description: Some(&crate::i18n::markup_tr("Configure video frame extraction and decoding options")),
                 add = &adw::SpinRow {
-                    set_title: &tr("Initial Frame Offset"),
-                    set_subtitle: &tr("Timestamp in seconds into the video to capture thumbnail"),
+                    set_title: &crate::i18n::markup_tr("Initial Frame Offset"),
+                    set_subtitle: &crate::i18n::markup_tr("Timestamp in seconds into the video to capture thumbnail"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.ffmpeg_seek_seconds,
                         0.0,
@@ -166,8 +165,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SpinRow {
-                    set_title: &tr("FFmpeg Decoder Threads"),
-                    set_subtitle: &tr("Threads allocated to each video frame capture task"),
+                    set_title: &crate::i18n::markup_tr("FFmpeg Decoder Threads"),
+                    set_subtitle: &crate::i18n::markup_tr("Threads allocated to each video frame capture task"),
                     set_adjustment: Some(&gtk::Adjustment::new(
                         config.ui.ffmpeg_threads as f64,
                         1.0,
@@ -184,8 +183,8 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
-                    set_title: &tr("Auto-Rotate Videos"),
-                    set_subtitle: &tr("Rotate thumbnails based on container orientation metadata"),
+                    set_title: &crate::i18n::markup_tr("Auto-Rotate Videos"),
+                    set_subtitle: &crate::i18n::markup_tr("Rotate thumbnails based on container orientation metadata"),
                     set_active: config.ui.ffmpeg_auto_rotate,
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
