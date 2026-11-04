@@ -87,11 +87,11 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
     crate::hit!("layout_group");
     relm4::view! {
         group = adw::PreferencesGroup {
-            set_title: &tr("Layout"),
-            set_description: Some(&tr("Adjust the visual layout of the file grid and sidebar")),
+            set_title: &crate::i18n::markup_tr("Layout"),
+            set_description: Some(&crate::i18n::markup_tr("Adjust the visual layout of the file grid and sidebar")),
             add = &adw::ActionRow {
-                set_title: &tr("UI Scale"),
-                set_subtitle: &tr("Adjust interface scaling for high-resolution displays"),
+                set_title: &crate::i18n::markup_tr("UI Scale"),
+                set_subtitle: &crate::i18n::markup_tr("Adjust interface scaling for high-resolution displays"),
                 add_suffix = &gtk::DropDown {
                     set_valign: gtk::Align::Center,
                     set_model: Some(&{
@@ -119,8 +119,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Default Icon Size"),
-                set_subtitle: &tr("Base size of icons in the grid view"),
+                set_title: &crate::i18n::markup_tr("Default Icon Size"),
+                set_subtitle: &crate::i18n::markup_tr("Base size of icons in the grid view"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.default_icon_size as f64, 16.0, 512.0, 16.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -130,8 +130,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("List Icon Size"),
-                set_subtitle: &tr("Icon size used in list mode"),
+                set_title: &crate::i18n::markup_tr("List Icon Size"),
+                set_subtitle: &crate::i18n::markup_tr("Icon size used in list mode"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.list_icon_size as f64, 16.0, 128.0, 8.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -141,8 +141,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Scale Font with Icons"),
-                set_subtitle: &tr("Dynamically adjust label font size when zooming or resizing grid icons"),
+                set_title: &crate::i18n::markup_tr("Scale Font with Icons"),
+                set_subtitle: &crate::i18n::markup_tr("Dynamically adjust label font size when zooming or resizing grid icons"),
                 set_active: config.ui.scale_font_with_icons,
                 connect_active_notify => move |row| {
                     let state = row.is_active();
@@ -152,8 +152,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Grid Spacing"),
-                set_subtitle: &tr("Pixel spacing between items in the grid view"),
+                set_title: &crate::i18n::markup_tr("Grid Spacing"),
+                set_subtitle: &crate::i18n::markup_tr("Pixel spacing between items in the grid view"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.grid_spacing as f64, 0.0, 128.0, 2.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -163,8 +163,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Max Label Length"),
-                set_subtitle: &tr("Characters before truncating filenames"),
+                set_title: &crate::i18n::markup_tr("Max Label Length"),
+                set_subtitle: &crate::i18n::markup_tr("Characters before truncating filenames"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.max_width_chars as f64, 8.0, 128.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -174,8 +174,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Breadcrumbs Shown"),
-                set_subtitle: &tr("Number of path segments shown in the header bar"),
+                set_title: &crate::i18n::markup_tr("Breadcrumbs Shown"),
+                set_subtitle: &crate::i18n::markup_tr("Number of path segments shown in the header bar"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 1.0, 20.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -185,8 +185,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Breadcrumb Label Length"),
-                set_subtitle: &tr("Characters before truncating breadcrumb names"),
+                set_title: &crate::i18n::markup_tr("Breadcrumb Label Length"),
+                set_subtitle: &crate::i18n::markup_tr("Characters before truncating breadcrumb names"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 4.0, 64.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -196,8 +196,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Expand Filenames"),
-                set_subtitle: &tr("Wrap filenames across multiple lines"),
+                set_title: &crate::i18n::markup_tr("Expand Filenames"),
+                set_subtitle: &crate::i18n::markup_tr("Wrap filenames across multiple lines"),
                 set_active: config.ui.expand_labels,
                 connect_active_notify => move |row| {
                     let state = row.is_active();
@@ -216,11 +216,11 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
 fn opacity_group(config: &Config) -> adw::PreferencesGroup {
     relm4::view! {
         group = adw::PreferencesGroup {
-            set_title: &tr("Background Tint Opacity"),
-            set_description: Some(&tr("Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)")),
+            set_title: &crate::i18n::markup_tr("Background Tint Opacity"),
+            set_description: Some(&crate::i18n::markup_tr("Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)")),
             add = &adw::SpinRow {
-                set_title: &tr("Window Background Opacity"),
-                set_subtitle: &tr("Tint overlay for the main background"),
+                set_title: &crate::i18n::markup_tr("Window Background Opacity"),
+                set_subtitle: &crate::i18n::markup_tr("Tint overlay for the main background"),
                 set_adjustment: Some(&gtk::Adjustment::new(
                     config.ui.bg_alpha_window,
                     0.0,
@@ -241,8 +241,8 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Left Sidebar Opacity"),
-                set_subtitle: &tr("Tint overlay for the left sidebar"),
+                set_title: &crate::i18n::markup_tr("Left Sidebar Opacity"),
+                set_subtitle: &crate::i18n::markup_tr("Tint overlay for the left sidebar"),
                 set_adjustment: Some(&gtk::Adjustment::new(
                     config.ui.bg_alpha_sidebar_left,
                     0.0,
@@ -263,8 +263,8 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Right Sidebar Opacity"),
-                set_subtitle: &tr("Tint overlay for the search / tag panel"),
+                set_title: &crate::i18n::markup_tr("Right Sidebar Opacity"),
+                set_subtitle: &crate::i18n::markup_tr("Tint overlay for the search / tag panel"),
                 set_adjustment: Some(&gtk::Adjustment::new(
                     config.ui.bg_alpha_sidebar_right,
                     0.0,
@@ -294,11 +294,11 @@ fn opacity_group(config: &Config) -> adw::PreferencesGroup {
 fn window_group(config: &Config) -> adw::PreferencesGroup {
     relm4::view! {
         group = adw::PreferencesGroup {
-            set_title: &tr("Window"),
-            set_description: Some(&tr("Window behavior and startup settings")),
+            set_title: &crate::i18n::markup_tr("Window"),
+            set_description: Some(&crate::i18n::markup_tr("Window behavior and startup settings")),
             add = &adw::SwitchRow {
-                set_title: &tr("Start Maximized"),
-                set_subtitle: &tr("Open the application in maximized state"),
+                set_title: &crate::i18n::markup_tr("Start Maximized"),
+                set_subtitle: &crate::i18n::markup_tr("Open the application in maximized state"),
                 set_active: config.ui.start_maximized,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -307,8 +307,8 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Client-Side Decorations"),
-                set_subtitle: &tr("Show window controls in the header bar"),
+                set_title: &crate::i18n::markup_tr("Client-Side Decorations"),
+                set_subtitle: &crate::i18n::markup_tr("Show window controls in the header bar"),
                 set_active: config.ui.show_csd,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -317,8 +317,8 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Window Controls on Left"),
-                set_subtitle: &tr("Move close/minimize/maximize buttons to the left"),
+                set_title: &crate::i18n::markup_tr("Window Controls on Left"),
+                set_subtitle: &crate::i18n::markup_tr("Move close/minimize/maximize buttons to the left"),
                 set_sensitive: config.ui.show_csd,
                 set_active: config.ui.window_controls_left,
                 connect_active_notify => move |switch| {
@@ -328,8 +328,8 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Startup Width"),
-                set_subtitle: &tr("Initial window width in pixels"),
+                set_title: &crate::i18n::markup_tr("Startup Width"),
+                set_subtitle: &crate::i18n::markup_tr("Initial window width in pixels"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.startup_window_width as f64, 400.0, 7680.0, 10.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -339,8 +339,8 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Startup Height"),
-                set_subtitle: &tr("Initial window height in pixels"),
+                set_title: &crate::i18n::markup_tr("Startup Height"),
+                set_subtitle: &crate::i18n::markup_tr("Initial window height in pixels"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.startup_window_height as f64, 300.0, 4320.0, 10.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -359,11 +359,11 @@ fn window_group(config: &Config) -> adw::PreferencesGroup {
 fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
     relm4::view! {
         group = adw::PreferencesGroup {
-            set_title: &tr("Header Buttons"),
-            set_description: Some(&tr("Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+,.")),
+            set_title: &crate::i18n::markup_tr("Header Buttons"),
+            set_description: Some(&crate::i18n::markup_tr("Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+,.")),
             add = &adw::SwitchRow {
-                set_title: &tr("Filter Button"),
-                set_subtitle: &tr("Show the filter-by-pattern button"),
+                set_title: &crate::i18n::markup_tr("Filter Button"),
+                set_subtitle: &crate::i18n::markup_tr("Show the filter-by-pattern button"),
                 set_active: config.ui.header_show_filter,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -372,8 +372,8 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Sort Indicator"),
-                set_subtitle: &tr("Show the current sort mode and its cycle control"),
+                set_title: &crate::i18n::markup_tr("Sort Indicator"),
+                set_subtitle: &crate::i18n::markup_tr("Show the current sort mode and its cycle control"),
                 set_active: config.ui.header_show_sort,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -382,8 +382,8 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("List/Grid Toggle"),
-                set_subtitle: &tr("Show the button that switches between list and grid layout"),
+                set_title: &crate::i18n::markup_tr("List/Grid Toggle"),
+                set_subtitle: &crate::i18n::markup_tr("Show the button that switches between list and grid layout"),
                 set_active: config.ui.header_show_view,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -392,8 +392,8 @@ fn header_buttons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Preview Button"),
-                set_subtitle: &tr("Show the button that toggles the preview panel"),
+                set_title: &crate::i18n::markup_tr("Preview Button"),
+                set_subtitle: &crate::i18n::markup_tr("Show the button that toggles the preview panel"),
                 set_active: config.ui.header_show_preview,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -412,11 +412,11 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
     crate::hit!("theme_group");
     relm4::view! {
         group = adw::PreferencesGroup {
-            set_title: &tr("Theme"),
-            set_description: Some(&tr("Customize the visual appearance with CSS themes")),
+            set_title: &crate::i18n::markup_tr("Theme"),
+            set_description: Some(&crate::i18n::markup_tr("Customize the visual appearance with CSS themes")),
             add = &adw::ActionRow {
-                set_title: &tr("Theme"),
-                set_subtitle: &tr("Select a custom CSS theme"),
+                set_title: &crate::i18n::markup_tr("Theme"),
+                set_subtitle: &crate::i18n::markup_tr("Select a custom CSS theme"),
                 add_suffix = &gtk::DropDown {
                     set_valign: gtk::Align::Center,
                     set_model: Some(&{
@@ -451,8 +451,8 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Fish Shell Integration"),
-                set_subtitle: &tr(
+                set_title: &crate::i18n::markup_tr("Fish Shell Integration"),
+                set_subtitle: &crate::i18n::markup_tr(
                     "Generate ~/.config/fish/conf.d/flux-theme.fish so the embedded fish shell's colors and prompt follow the Flux theme"
                 ),
                 set_active: config.ui.fish_theme,
@@ -463,8 +463,8 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Show Recents"),
-                set_subtitle: &tr("Show recently visited files in the sidebar"),
+                set_title: &crate::i18n::markup_tr("Show Recents"),
+                set_subtitle: &crate::i18n::markup_tr("Show recently visited files in the sidebar"),
                 set_active: config.ui.show_recents,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -473,8 +473,8 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Recents Position"),
-                set_subtitle: &tr("Row index of Recents in the sidebar (0 = top)"),
+                set_title: &crate::i18n::markup_tr("Recents Position"),
+                set_subtitle: &crate::i18n::markup_tr("Row index of Recents in the sidebar (0 = top)"),
                 set_adjustment: Some(&gtk::Adjustment::new(config.ui.recents_row as f64, 0.0, 999.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
@@ -484,8 +484,8 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("XDG Directories"),
-                set_subtitle: &tr("Show standard user directories in sidebar"),
+                set_title: &crate::i18n::markup_tr("XDG Directories"),
+                set_subtitle: &crate::i18n::markup_tr("Show standard user directories in sidebar"),
                 set_active: config.ui.show_xdg_dirs,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -494,8 +494,8 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Sidebar Menu Needs Ctrl"),
-                set_subtitle: &tr("Open sidebar context menus only with Ctrl + right-click"),
+                set_title: &crate::i18n::markup_tr("Sidebar Menu Needs Ctrl"),
+                set_subtitle: &crate::i18n::markup_tr("Open sidebar context menus only with Ctrl + right-click"),
                 set_active: config.ui.sidebar_menu_requires_ctrl,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -504,8 +504,8 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SwitchRow {
-                set_title: &tr("Panel Menu Needs Ctrl"),
-                set_subtitle: &tr("Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"),
+                set_title: &crate::i18n::markup_tr("Panel Menu Needs Ctrl"),
+                set_subtitle: &crate::i18n::markup_tr("Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"),
                 set_active: config.ui.panel_menu_requires_ctrl,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -524,11 +524,11 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
     crate::hit!("icons_group");
     relm4::view! {
         group = adw::PreferencesGroup {
-            set_title: &tr("Generated Extension Icons"),
-            set_description: Some(&tr("Settings for dynamically generated icons when system themes lack a dedicated icon")),
+            set_title: &crate::i18n::markup_tr("Generated Extension Icons"),
+            set_description: Some(&crate::i18n::markup_tr("Settings for dynamically generated icons when system themes lack a dedicated icon")),
             add = &adw::SwitchRow {
-                set_title: &tr("Auto-Generate Icons"),
-                set_subtitle: &tr("Synthesize SVG icons for unknown file extensions using template.svg"),
+                set_title: &crate::i18n::markup_tr("Auto-Generate Icons"),
+                set_subtitle: &crate::i18n::markup_tr("Synthesize SVG icons for unknown file extensions using template.svg"),
                 set_active: config.ui.auto_generate_mime_icons,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -537,8 +537,8 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::ActionRow {
-                set_title: &tr("Accent Color"),
-                set_subtitle: &tr("Color of the extension badge"),
+                set_title: &crate::i18n::markup_tr("Accent Color"),
+                set_subtitle: &crate::i18n::markup_tr("Color of the extension badge"),
                 set_sensitive: config.ui.auto_generate_mime_icons,
                 add_suffix = &gtk::ColorDialogButton {
                     set_valign: gtk::Align::Center,
@@ -552,8 +552,8 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::ActionRow {
-                set_title: &tr("Body Color"),
-                set_subtitle: &tr("Color of the icon body"),
+                set_title: &crate::i18n::markup_tr("Body Color"),
+                set_subtitle: &crate::i18n::markup_tr("Color of the icon body"),
                 set_sensitive: config.ui.auto_generate_mime_icons,
                 add_suffix = &gtk::ColorDialogButton {
                     set_valign: gtk::Align::Center,
@@ -567,8 +567,8 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::ActionRow {
-                set_title: &tr("Font Color"),
-                set_subtitle: &tr("Color of the extension text"),
+                set_title: &crate::i18n::markup_tr("Font Color"),
+                set_subtitle: &crate::i18n::markup_tr("Color of the extension text"),
                 set_sensitive: config.ui.auto_generate_mime_icons,
                 add_suffix = &gtk::ColorDialogButton {
                     set_valign: gtk::Align::Center,
@@ -582,8 +582,8 @@ fn icons_group(config: &Config) -> adw::PreferencesGroup {
                 }
             },
             add = &adw::SpinRow {
-                set_title: &tr("Base Font Size"),
-                set_subtitle: &tr("Base font scale for extension labels inside generated badges"),
+                set_title: &crate::i18n::markup_tr("Base Font Size"),
+                set_subtitle: &crate::i18n::markup_tr("Base font scale for extension labels inside generated badges"),
                 set_sensitive: config.ui.auto_generate_mime_icons,
                 set_adjustment: Some(&gtk::Adjustment::new(
                     config.ui.auto_mime_font_size,

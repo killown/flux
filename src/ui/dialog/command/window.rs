@@ -98,7 +98,7 @@ pub fn create_command_dialog(
     switch_label.set_tooltip_text(Some(
         &crate::i18n::tr("When enabled, this command will not show the output dialog again. This setting is saved in your menu configuration."),
     ));
-    no_dialog_switch.set_tooltip_text(Some(&crate::i18n::tr(
+    no_dialog_switch.set_tooltip_text(Some(&crate::i18n::markup_tr(
         "Toggle to suppress the dialog for this specific command.",
     )));
 

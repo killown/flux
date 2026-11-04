@@ -250,7 +250,7 @@ impl PreviewPanelHandle {
         self.audio_seek.set_value(0.0);
         self.audio_time.set_label("0:00");
         self.audio_dur.set_label("0:00");
-        self.audio_btn.set_label(&tr("Play"));
+        self.audio_btn.set_label(&crate::i18n::markup_tr("Play"));
     }
 
     /// Applies one observed mpv property to the controls.
@@ -304,12 +304,12 @@ impl PreviewPanelHandle {
         match spawn_audio_mpv(&path) {
             Ok(pid) => {
                 AUDIO_MPV_PID.store(pid, Ordering::SeqCst);
-                self.audio_btn.set_label(&tr("Pause"));
+                self.audio_btn.set_label(&crate::i18n::markup_tr("Pause"));
                 self.audio_status.set_label("");
             }
             Err(msg) => {
                 eprintln!("[flux][preview] audio: {msg}");
-                self.audio_status.set_label(&tr(
+                self.audio_status.set_label(&crate::i18n::markup_tr(
                     "Audio preview requires mpv. Install it with your package manager.",
                 ));
                 self.audio_btn.set_sensitive(false);

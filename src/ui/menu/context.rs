@@ -3,6 +3,7 @@ use crate::domain::model::{
     ActionsMsg, AppMsg, AppSidebarMsg, ArchiveMsg, FileOpsMsg, IconsMsg, PropertiesMsg,
     QuickListMsg, SettingsMsg, TabsMsg, TagsMsg, WindowMsg,
 };
+use crate::i18n::tr;
 use crate::ui::constants;
 use adw::gdk;
 use adw::gio::prelude::*;
@@ -251,10 +252,10 @@ impl FluxApp {
                         copy_menu.append_item(&copy_item);
                     }
 
-                    transfer_menu.append_submenu(Some(&crate::i18n::tr("Move to")), &move_menu);
-                    transfer_menu.append_submenu(Some(&crate::i18n::tr("Copy to")), &copy_menu);
+                    transfer_menu.append_submenu(Some(&tr("Move to")), &move_menu);
+                    transfer_menu.append_submenu(Some(&tr("Copy to")), &copy_menu);
 
-                    let menu_label = format!("󰪶   {}", crate::i18n::tr("Send to Quick List"));
+                    let menu_label = format!("󰪶   {}", tr("Send to Quick List"));
                     quick_list_transfer_item = Some(gio::MenuItem::new_submenu(
                         Some(&menu_label),
                         &transfer_menu,
@@ -280,7 +281,7 @@ impl FluxApp {
                     }
 
                     let menu_item =
-                        gio::MenuItem::new_submenu(Some(&action.label), &open_with_menu);
+                        gio::MenuItem::new_submenu(Some(&tr(&action.label)), &open_with_menu);
 
                     if let Some(group_name) = &action.submenu {
                         let menu = submenu_map.entry(group_name.clone()).or_default();
@@ -631,9 +632,9 @@ impl FluxApp {
 
                 if let Some(group_name) = &action.submenu {
                     let menu = submenu_map.entry(group_name.clone()).or_default();
-                    menu.append(Some(&action.label), Some(&full_action_name));
+                    menu.append(Some(&tr(&action.label)), Some(&full_action_name));
                 } else {
-                    main_section.append(Some(&action.label), Some(&full_action_name));
+                    main_section.append(Some(&tr(&action.label)), Some(&full_action_name));
                 }
             }
         }

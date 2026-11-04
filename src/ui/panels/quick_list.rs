@@ -443,7 +443,7 @@ fn group_row(
     crate::hit!("group_row");
     let row = gtk::ListBoxRow::builder().activatable(true).build();
     if v.selected {
-        row.set_tooltip_text(Some(&tr("Tab walks this list")));
+        row.set_tooltip_text(Some(&crate::i18n::markup_tr("Tab walks this list")));
     }
 
     let line = gtk::Box::builder()

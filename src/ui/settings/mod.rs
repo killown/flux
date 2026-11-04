@@ -1,5 +1,4 @@
 use crate::domain::model::Config;
-use crate::i18n::tr;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;
@@ -24,7 +23,7 @@ impl SimpleComponent for SettingsWindow {
 
     view! {
         adw::PreferencesWindow {
-            set_title: Some(&tr("Preferences")),
+            set_title: Some(&crate::i18n::markup_tr("Preferences")),
             set_default_size: (800, 700),
             set_modal: false,
             set_search_enabled: true,

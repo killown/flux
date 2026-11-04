@@ -2,7 +2,6 @@ pub(crate) mod format;
 mod page;
 
 use crate::domain::model::Config;
-use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -21,7 +20,7 @@ impl SimpleComponent for HelpWindow {
 
     view! {
         adw::PreferencesWindow {
-            set_title: Some(&tr("flux - Keyboard Shortcuts")),
+            set_title: Some(&crate::i18n::markup_tr("flux - Keyboard Shortcuts")),
             set_default_size: (600, 700),
             set_modal: true,
             set_search_enabled: true,

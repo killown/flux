@@ -151,11 +151,11 @@ impl PreviewPanelHandle {
 
                 if *hex {
                     self.banner
-                        .set_title(&tr("Binary file - showing the first bytes as hex."));
+                        .set_title(&crate::i18n::markup_tr("Binary file - showing the first bytes as hex."));
                     self.banner.set_revealed(true);
                 } else if *truncated {
                     self.banner
-                        .set_title(&tr("Preview truncated - showing the start of the file."));
+                        .set_title(&crate::i18n::markup_tr("Preview truncated - showing the start of the file."));
                     self.banner.set_revealed(true);
                 } else if let Some(lang) = language {
                     self.banner
@@ -197,7 +197,7 @@ impl PreviewPanelHandle {
                 table::build_columns(&self.table_view, data);
                 if data.truncated {
                     self.banner
-                        .set_title(&tr("Table truncated - showing the first rows/columns."));
+                        .set_title(&crate::i18n::markup_tr("Table truncated - showing the first rows/columns."));
                     self.banner.set_revealed(true);
                 }
                 self.stack.set_visible_child_name("table");
@@ -213,7 +213,7 @@ impl PreviewPanelHandle {
                 self.fill_folder_grid(entries);
                 if *more > 0 {
                     self.banner
-                        .set_title(&tr("Folder truncated - showing the first items only."));
+                        .set_title(&crate::i18n::markup_tr("Folder truncated - showing the first items only."));
                     self.banner.set_revealed(true);
                 }
                 self.stack.set_visible_child_name("folder");
@@ -345,15 +345,15 @@ impl PreviewPanelHandle {
                     }
 
                     if glib::find_program_in_path("mpv").is_none() {
-                        self.audio_status.set_label(&tr(
+                        self.audio_status.set_label(&crate::i18n::markup_tr(
                             "mpv is not installed. Install it to enable audio preview, or use Open.",
                         ));
                         self.audio_btn.set_sensitive(false);
                     } else {
-                        self.audio_status.set_label(&tr("Ready."));
+                        self.audio_status.set_label(&crate::i18n::markup_tr("Ready."));
                         self.audio_btn.set_sensitive(true);
                     }
-                    self.audio_btn.set_label(&tr("Play"));
+                    self.audio_btn.set_label(&crate::i18n::markup_tr("Play"));
 
                     self.stack.set_visible_child_name("media-audio");
 
@@ -375,7 +375,7 @@ impl PreviewPanelHandle {
                 if info.extra.is_empty() {
                     self.nopreview
                         .set_icon_name(Some("text-x-generic-symbolic"));
-                    self.nopreview.set_title(&tr("No preview available"));
+                    self.nopreview.set_title(&crate::i18n::markup_tr("No preview available"));
                     self.nopreview.set_description(Some(&info.mime));
                     self.stack.set_visible_child_name("nopreview");
                 } else {
@@ -393,7 +393,7 @@ impl PreviewPanelHandle {
                 self.switcher.set_visible(false);
                 self.view_stack.set_visible_child_name("preview");
                 self.nopreview.set_icon_name(Some("dialog-error-symbolic"));
-                self.nopreview.set_title(&tr("Preview failed"));
+                self.nopreview.set_title(&crate::i18n::markup_tr("Preview failed"));
                 self.nopreview.set_description(Some(msg));
                 self.stack.set_visible_child_name("nopreview");
             }

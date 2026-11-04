@@ -26,7 +26,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             ),
         ],
     );
-    filter_group.set_description(Some(&tr(
+    filter_group.set_description(Some(&crate::i18n::markup_tr(
         "Select a file, then press Space or Ctrl+M to preview it and hide other files. \
         Pressing Space or Esc again closes the preview and removes the filter.",
     )));
@@ -46,7 +46,7 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
             ),
         ],
     );
-    content_group.set_description(Some(&tr(
+    content_group.set_description(Some(&crate::i18n::markup_tr(
         "Search inside file contents (not just filenames)",
     )));
 
