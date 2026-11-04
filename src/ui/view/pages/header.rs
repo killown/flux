@@ -52,7 +52,7 @@ pub(in crate::ui::view) fn build_sort_indicator(
 pub(in crate::ui::view) fn build_main_menu_button() -> gtk::MenuButton {
     let button = gtk::MenuButton::new();
     button.set_icon_name("open-menu-symbolic");
-    button.set_tooltip_text(Some(&tr("Main Menu")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Main Menu")));
     button.add_css_class("flat");
     pointer_cursor(&button);
     button
@@ -61,7 +61,7 @@ pub(in crate::ui::view) fn build_main_menu_button() -> gtk::MenuButton {
 pub(in crate::ui::view) fn build_git_menu_button() -> gtk::MenuButton {
     let button = gtk::MenuButton::new();
     button.set_icon_name("git-symbolic");
-    button.set_tooltip_text(Some(&tr("Git Actions")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Git Actions")));
     button.add_css_class("flat");
     pointer_cursor(&button);
     button
@@ -71,7 +71,7 @@ pub(in crate::ui::view) fn build_empty_trash_button(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> gtk::Button {
     let button = gtk::Button::new();
-    button.set_tooltip_text(Some(&tr("Empty Trash")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Empty Trash")));
     button.add_css_class(constants::DESTRUCTIVE_ACTION_CLASS);
     pointer_cursor(&button);
     let s = sender.clone();
@@ -87,7 +87,7 @@ pub(in crate::ui::view) fn build_extract_archive_button(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> gtk::Button {
     let button = gtk::Button::new();
-    button.set_tooltip_text(Some(&tr("Extract Archive")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Extract Archive")));
     button.add_css_class("suggested-action");
     pointer_cursor(&button);
     let s = sender.clone();
@@ -115,7 +115,7 @@ pub(in crate::ui::view) fn build_list_toggle(
 ) -> gtk::ToggleButton {
     let button = gtk::ToggleButton::new();
     button.set_icon_name("view-list-symbolic");
-    button.set_tooltip_text(Some(&tr("Toggle List Mode")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Toggle List Mode")));
     button.add_css_class("flat");
     pointer_cursor(&button);
     let s = sender.clone();
@@ -127,7 +127,7 @@ pub(in crate::ui::view) fn build_filter_toggle(
     sender: &AsyncComponentSender<FluxApp>,
 ) -> gtk::ToggleButton {
     let button = gtk::ToggleButton::new();
-    button.set_tooltip_text(Some(&tr("Filter by Pattern")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Filter by Pattern")));
     button.add_css_class("flat");
     pointer_cursor(&button);
     button.set_child(Some(&gtk::Image::from_gicon(
@@ -143,7 +143,7 @@ pub(in crate::ui::view) fn build_preview_toggle(
 ) -> gtk::ToggleButton {
     let button = gtk::ToggleButton::new();
     button.set_icon_name("view-reveal-symbolic");
-    button.set_tooltip_text(Some(&tr("Toggle Preview Panel")));
+    button.set_tooltip_text(Some(&crate::i18n::markup_tr("Toggle Preview Panel")));
     button.add_css_class("flat");
     pointer_cursor(&button);
     let s = sender.clone();

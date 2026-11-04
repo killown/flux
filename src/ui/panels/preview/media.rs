@@ -66,7 +66,7 @@ impl PreviewPanelHandle {
         if AUDIO_MPV_PID.load(Ordering::SeqCst) != 0 {
             stop_audio_mpv();
             self.audio_reset_controls();
-            self.audio_status.set_label(&tr("Stopped."));
+            self.audio_status.set_label(&crate::i18n::markup_tr("Stopped."));
         }
     }
 

@@ -136,7 +136,7 @@ pub fn build_connect_panel(sender: AsyncComponentSender<FluxApp>) -> gtk::Box {
     let group = adw::PreferencesGroup::new();
 
     let protocol_row = adw::ComboRow::new();
-    protocol_row.set_title(&tr("Protocol"));
+    protocol_row.set_title(&crate::i18n::markup_tr("Protocol"));
     let labels: Vec<&str> = PROTOCOLS.iter().map(|p| p.label).collect();
     protocol_row.set_model(Some(&gtk::StringList::new(&labels)));
     group.add(&protocol_row);

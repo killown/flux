@@ -233,7 +233,7 @@ pub fn build_preview_panel(initial_width: i32, sender: AsyncComponentSender<Flux
     let audio_vol = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 100.0, 1.0);
     audio_vol.set_draw_value(false);
     audio_vol.set_width_request(96);
-    audio_vol.set_tooltip_text(Some(&tr("Volume")));
+    audio_vol.set_tooltip_text(Some(&crate::i18n::markup_tr("Volume")));
 
     let audio_seek_row = gtk::Box::builder()
         .orientation(gtk::Orientation::Horizontal)
