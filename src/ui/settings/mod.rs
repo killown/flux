@@ -1,5 +1,4 @@
 use crate::domain::model::Config;
-use crate::i18n::tr;
 use adw::prelude::*;
 use gtk::glib;
 use relm4::prelude::*;

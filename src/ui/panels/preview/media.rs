@@ -4,7 +4,6 @@
 use super::audio::{ipc_send, stop_audio_mpv, AUDIO_MPV_PID};
 use super::handle::PreviewPanelHandle;
 use crate::domain::model::{AppMsg, ViewMsg};
-use crate::i18n::tr;
 use adw::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 

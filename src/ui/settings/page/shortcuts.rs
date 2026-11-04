@@ -1,6 +1,5 @@
 use super::shortcut_picker::ShortcutPicker;
 use crate::domain::model::{AppMsg, Config, SettingsMsg};
-use crate::i18n::tr;
 use crate::ui::keymap::constants;
 use adw::prelude::*;
 use relm4::prelude::*;

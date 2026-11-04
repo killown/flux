@@ -2,7 +2,6 @@ pub(crate) mod format;
 mod page;
 
 use crate::domain::model::Config;
-use crate::i18n::tr;
 use adw::prelude::*;
 use relm4::prelude::*;
 
