@@ -4,7 +4,8 @@
 # 翻訳方法: msgid(英語原文)を見て msgstr "" に日本語を入れるだけ。
 # 空欄のままだと英語が表示される。
 msgid ""
-msgstr "Project-Id-Version: flux\n"
+msgstr ""
+"Project-Id-Version: flux\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-06-03 00:42-0300\n"
 "PO-Revision-Date: 2026-11-04 00:00+0900\n"
@@ -16,79 +17,114 @@ msgstr "Project-Id-Version: flux\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 
-#: src/infra/archive/error.rs:20 src/ui/dialog/archive.rs:23 src/ui/view/component.rs:745
+#: src/infra/archive/error.rs:20 src/ui/dialog/archive.rs:23
+#: src/ui/view/component.rs:745
 msgid "Archive is password-protected"
 msgstr "アーカイブはパスワードで保護されています"
 
-#: src/ui/dialog/archive.rs:35 src/ui/dialog/archive.rs:109 src/ui/dialog/command/window.rs:120 src/ui/dialog/conflict/mod.rs:64 src/ui/dialog/create.rs:242 src/ui/dialog/create.rs:290 src/ui/dialog/git_switch_branch.rs:105 src/ui/dialog/luks.rs:77 src/ui/dialog/new_action.rs:210 src/ui/dialog/open_with.rs:36 src/ui/dialog/sidebar.rs:19 src/ui/dialog/sidebar.rs:59 src/ui/dialog/sidebar.rs:107 src/ui/dialog/sidebar.rs:178 src/ui/dialog/tag_picker.rs:67 src/ui/dialog/template_editor.rs:52 src/ui/dialog/transfer.rs:295 src/ui/menu/editor/entry_dialog.rs:340 src/ui/menu/editor/new_menu_dialog.rs:46 src/ui/panels/quick_list.rs:854 src/ui/panels/quick_list.rs:882 src/ui/panels/tag.rs:213
+#: src/ui/dialog/archive.rs:35 src/ui/dialog/archive.rs:109
+#: src/ui/dialog/command/window.rs:120 src/ui/dialog/conflict/mod.rs:64
+#: src/ui/dialog/create.rs:242 src/ui/dialog/create.rs:290
+#: src/ui/dialog/git_switch_branch.rs:105 src/ui/dialog/luks.rs:77
+#: src/ui/dialog/new_action.rs:210 src/ui/dialog/open_with.rs:36
+#: src/ui/dialog/sidebar.rs:19 src/ui/dialog/sidebar.rs:59
+#: src/ui/dialog/sidebar.rs:107 src/ui/dialog/sidebar.rs:178
+#: src/ui/dialog/tag_picker.rs:67 src/ui/dialog/template_editor.rs:52
+#: src/ui/dialog/transfer.rs:295 src/ui/menu/editor/entry_dialog.rs:340
+#: src/ui/menu/editor/new_menu_dialog.rs:46 src/ui/panels/quick_list.rs:854
+#: src/ui/panels/quick_list.rs:882 src/ui/panels/tag.rs:213
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: src/ui/clipboard/html.rs:30 src/ui/clipboard/image.rs:47 src/ui/clipboard/stream.rs:64
+#: src/ui/clipboard/html.rs:30 src/ui/clipboard/image.rs:47
+#: src/ui/clipboard/stream.rs:64
 msgid "Clipboard read error"
 msgstr "クリップボードの読み取りエラー"
 
-#: src/ui/dialog/git_output.rs:55 src/ui/dialog/inspector.rs:46 src/ui/panels/header.rs:38
+#: src/ui/dialog/git_output.rs:55 src/ui/dialog/inspector.rs:46
+#: src/ui/panels/header.rs:38
 msgid "Close"
 msgstr "閉じる"
 
-#: src/ui/dialog/git_output.rs:54 src/ui/settings/page/shortcuts.rs:276 src/utils/config/menu.rs:250
+#: src/ui/dialog/git_output.rs:54 src/ui/settings/page/shortcuts.rs:276
+#: src/utils/config/menu.rs:250
 msgid "Copy"
 msgstr "コピー"
 
-#: src/ui/dialog/create.rs:243 src/ui/dialog/create.rs:291 src/ui/dialog/sidebar.rs:20 src/ui/menu/editor/new_menu_dialog.rs:48 src/ui/panels/quick_list.rs:839
+#: src/ui/dialog/create.rs:243 src/ui/dialog/create.rs:291
+#: src/ui/dialog/sidebar.rs:20 src/ui/menu/editor/new_menu_dialog.rs:48
+#: src/ui/panels/quick_list.rs:839
 msgid "Create"
 msgstr "作成"
 
-#: src/app/update/helpers/view.rs:18 src/ui/properties/probes.rs:63 src/ui/settings/page/behavior.rs:112
+#: src/app/update/helpers/view.rs:18 src/ui/properties/probes.rs:63
+#: src/ui/settings/page/behavior.rs:112
 msgid "Date"
 msgstr "日付"
 
-#: src/ui/dialog/open_with.rs:155 src/ui/settings/page/shortcut_picker.rs:112 src/ui/settings/page/shortcut_picker.rs:125 src/ui/settings/page/shortcut_picker.rs:135 src/utils/config/defaults.rs:325
+#: src/ui/dialog/open_with.rs:155 src/ui/settings/page/shortcut_picker.rs:112
+#: src/ui/settings/page/shortcut_picker.rs:125
+#: src/ui/settings/page/shortcut_picker.rs:135 src/utils/config/defaults.rs:325
 msgid "Default"
 msgstr "デフォルト"
 
-#: src/ui/dialog/archive.rs:110 src/ui/menu/editor/rows.rs:133 src/ui/panels/quick_list.rs:528 src/ui/panels/quick_list.rs:594 src/ui/panels/tag.rs:214 src/ui/settings/page/shortcuts.rs:198 src/utils/config/menu.rs:255
+#: src/ui/dialog/archive.rs:110 src/ui/menu/editor/rows.rs:133
+#: src/ui/panels/quick_list.rs:528 src/ui/panels/quick_list.rs:594
+#: src/ui/panels/tag.rs:214 src/ui/settings/page/shortcuts.rs:198
+#: src/utils/config/menu.rs:255
 msgid "Delete"
 msgstr "削除"
 
-#: src/ui/dialog/new_action.rs:158 src/ui/menu/editor/entry_dialog.rs:156 src/ui/menu/secondary/template.rs:198
+#: src/ui/dialog/new_action.rs:158 src/ui/menu/editor/entry_dialog.rs:156
+#: src/ui/menu/secondary/template.rs:198
 msgid "Label"
 msgstr "ラベル"
 
-#: src/ui/dialog/new_action.rs:160 src/ui/menu/editor/entry_dialog.rs:235 src/ui/menu/secondary/template.rs:202
+#: src/ui/dialog/new_action.rs:160 src/ui/menu/editor/entry_dialog.rs:235
+#: src/ui/menu/secondary/template.rs:202
 msgid "MIME Types"
 msgstr "MIMEタイプ"
 
-#: src/ui/panels/preview.rs:2186 src/ui/panels/search.rs:219 src/ui/properties/sections.rs:121
+#: src/ui/panels/preview.rs:2186 src/ui/panels/search.rs:219
+#: src/ui/properties/sections.rs:121
 msgid "Modified"
 msgstr "更新日時"
 
-#: src/app/update/helpers/view.rs:17 src/ui/panels/preview.rs:2170 src/ui/panels/preview_binary.rs:112 src/ui/settings/page/behavior.rs:112
+#: src/app/update/helpers/view.rs:17 src/ui/panels/preview.rs:2170
+#: src/ui/panels/preview_binary.rs:112 src/ui/settings/page/behavior.rs:112
 msgid "Name"
 msgstr "名前"
 
-#: src/ui/help/page/quick_list.rs:28 src/ui/panels/quick_list.rs:130 src/ui/startup/components.rs:82
+#: src/ui/help/page/quick_list.rs:28 src/ui/panels/quick_list.rs:130
+#: src/ui/startup/components.rs:82
 msgid "Quick List"
 msgstr "クイックリスト"
 
-#: src/ui/components/sidebar.rs:131 src/ui/components/sidebar.rs:151 src/ui/dialog/sidebar.rs:60 src/ui/dialog/sidebar.rs:108 src/ui/panels/quick_list.rs:554 src/ui/settings/page/shortcuts.rs:211 src/utils/config/menu.rs:253
+#: src/ui/components/sidebar.rs:131 src/ui/components/sidebar.rs:151
+#: src/ui/dialog/sidebar.rs:60 src/ui/dialog/sidebar.rs:108
+#: src/ui/panels/quick_list.rs:554 src/ui/settings/page/shortcuts.rs:211
+#: src/utils/config/menu.rs:253
 msgid "Rename"
 msgstr "名前を変更"
 
-#: src/ui/dialog/template_editor.rs:54 src/ui/menu/editor/entry_dialog.rs:342 src/ui/menu/editor/mod.rs:104
+#: src/ui/dialog/template_editor.rs:54 src/ui/menu/editor/entry_dialog.rs:342
+#: src/ui/menu/editor/mod.rs:104
 msgid "Save"
 msgstr "保存"
 
-#: src/ui/help/page/search.rs:54 src/ui/panels/search.rs:57 src/ui/panels/search.rs:66 src/ui/settings/page/shortcuts.rs:372 src/utils/config/defaults.rs:328
+#: src/ui/help/page/search.rs:54 src/ui/panels/search.rs:57
+#: src/ui/panels/search.rs:66 src/ui/settings/page/shortcuts.rs:372
+#: src/utils/config/defaults.rs:328
 msgid "Search"
 msgstr "検索"
 
-#: src/app/update/helpers/view.rs:19 src/ui/panels/preview.rs:2179 src/ui/properties/sections.rs:88 src/ui/settings/page/behavior.rs:112
+#: src/app/update/helpers/view.rs:19 src/ui/panels/preview.rs:2179
+#: src/ui/properties/sections.rs:88 src/ui/settings/page/behavior.rs:112
 msgid "Size"
 msgstr "サイズ"
 
-#: src/app/update/helpers/view.rs:20 src/ui/panels/preview.rs:2171 src/ui/properties/probes.rs:115 src/ui/settings/page/behavior.rs:112
+#: src/app/update/helpers/view.rs:20 src/ui/panels/preview.rs:2171
+#: src/ui/properties/probes.rs:115 src/ui/settings/page/behavior.rs:112
 msgid "Type"
 msgstr "種類"
 
@@ -172,7 +208,8 @@ msgstr "サイクルをキャンセルしました"
 msgid "Cycle anchored to current folder"
 msgstr "サイクルを現在のフォルダーに固定しました"
 
-#: src/app/update/navigation/navigate_mode.rs:221 src/app/update/navigation/navigate_mode.rs:222
+#: src/app/update/navigation/navigate_mode.rs:221
+#: src/app/update/navigation/navigate_mode.rs:222
 msgid "Navigate"
 msgstr "移動"
 
@@ -214,11 +251,14 @@ msgstr "プレビューに失敗しました。"
 
 #: src/app/update/view/preview.rs:557
 msgid "Preview timed out. Use Open to view this file."
-msgstr "プレビューがタイムアウトしました。「開く」を使用してこのファイルを表示してください。"
+msgstr ""
+"プレビューがタイムアウトしました。「開く」を使用してこのファイルを表示してく"
+"ださい。"
 
 #: src/app/update/view/preview.rs:561
 msgid "Preview failed. Use Open to view this file."
-msgstr "プレビューに失敗しました。「開く」を使用してこのファイルを表示してください。"
+msgstr ""
+"プレビューに失敗しました。「開く」を使用してこのファイルを表示してください。"
 
 #: src/app/update/view/preview.rs:578 src/app/update/view/preview.rs:860
 msgid "Note"
@@ -382,7 +422,9 @@ msgstr "すべての最近の項目を消去します"
 
 #: src/app/update/view/video_preview.rs:172
 msgid "Video preview throttled: too many quick selections, waiting {}s"
-msgstr "動画プレビューが抑制されました: 選択の切り替えが速すぎるため {} 秒待機しています"
+msgstr ""
+"動画プレビューが抑制されました: 選択の切り替えが速すぎるため {} 秒待機してい"
+"ます"
 
 #: src/domain/model/file_load.rs:314 src/utils/helpers/format.rs:32
 msgid "items"
@@ -402,11 +444,16 @@ msgstr "ISOイメージの解析に失敗しました"
 
 #: src/infra/archive/backends/iso.rs:238
 msgid "7z spawn error. Install p7zip-full (apt) or p7zip (pacman)."
-msgstr "7z の起動エラーです。p7zip-full (apt) または p7zip (pacman) をインストールしてください。"
+msgstr ""
+"7z の起動エラーです。p7zip-full (apt) または p7zip (pacman) をインストールし"
+"てください。"
 
 #: src/infra/archive/backends/rar.rs:131
-msgid "RAR support requires 'unar' or 'unrar' (install via your package manager)"
-msgstr "RAR をサポートするには 'unar' または 'unrar' が必要です(パッケージマネージャーでインストールしてください)"
+msgid ""
+"RAR support requires 'unar' or 'unrar' (install via your package manager)"
+msgstr ""
+"RAR をサポートするには 'unar' または 'unrar' が必要です(パッケージマネー"
+"ジャーでインストールしてください)"
 
 #: src/infra/archive/error.rs:22
 msgid "Incorrect password"
@@ -619,7 +666,9 @@ msgstr "ソースコード"
 
 #: src/ui/dialog/about.rs:14
 msgid "A fast, keyboard-driven file manager built with GTK4 and Libadwaita."
-msgstr "GTK4 と Libadwaita で構築された、高速でキーボード中心のファイルマネージャーです。"
+msgstr ""
+"GTK4 と Libadwaita で構築された、高速でキーボード中心のファイルマネージャーで"
+"す。"
 
 #: src/ui/dialog/archive.rs:21 src/ui/dialog/luks.rs:66
 msgid "Wrong Password"
@@ -631,7 +680,9 @@ msgstr "入力したパスワードが正しくありません。もう一度お
 
 #: src/ui/dialog/archive.rs:31
 msgid "This archive is encrypted. Enter the password to browse its contents."
-msgstr "このアーカイブは暗号化されています。内容を参照するにはパスワードを入力してください。"
+msgstr ""
+"このアーカイブは暗号化されています。内容を参照するにはパスワードを入力してく"
+"ださい。"
 
 #: src/ui/dialog/archive.rs:36 src/ui/dialog/luks.rs:78
 msgid "Unlock"
@@ -646,12 +697,18 @@ msgid "Permanently delete \"{}\"?"
 msgstr "\"{}\" を完全に削除しますか？"
 
 #: src/ui/dialog/archive.rs:104
-msgid "This item will be permanently deleted from the archive. This action is irreversible and cannot be undone."
+msgid ""
+"This item will be permanently deleted from the archive. This action is "
+"irreversible and cannot be undone."
 msgstr "この項目はアーカイブから完全に削除されます。この操作は元に戻せません。"
 
 #: src/ui/dialog/archive.rs:182
-msgid "No encrypted files left: this archive is no longer password-protected, and files you add next will not be encrypted."
-msgstr "暗号化されたファイルが残っていません。このアーカイブはパスワード保護がなくなり、これから追加するファイルは暗号化されません。"
+msgid ""
+"No encrypted files left: this archive is no longer password-protected, and "
+"files you add next will not be encrypted."
+msgstr ""
+"暗号化されたファイルが残っていません。このアーカイブはパスワード保護がなくな"
+"り、これから追加するファイルは暗号化されません。"
 
 #: src/ui/dialog/command/procfs.rs:101
 msgid "Running"
@@ -694,8 +751,12 @@ msgid "Suppress dialog"
 msgstr "ダイアログを表示しない"
 
 #: src/ui/dialog/command/window.rs:100
-msgid "When enabled, this command will not show the output dialog again. This setting is saved in your menu configuration."
-msgstr "有効にすると、このコマンドは出力ダイアログを再度表示しなくなります。この設定はメニュー設定に保存されます。"
+msgid ""
+"When enabled, this command will not show the output dialog again. This "
+"setting is saved in your menu configuration."
+msgstr ""
+"有効にすると、このコマンドは出力ダイアログを再度表示しなくなります。この設定"
+"はメニュー設定に保存されます。"
 
 #: src/ui/dialog/command/window.rs:102
 msgid "Toggle to suppress the dialog for this specific command."
@@ -705,7 +766,8 @@ msgstr "このコマンドについてダイアログを表示しないように
 msgid "Copy all info to clipboard"
 msgstr "すべての情報をクリップボードにコピー"
 
-#: src/ui/dialog/command/window.rs:249 src/ui/dialog/command/window.rs:330 src/ui/dialog/command/window.rs:425 src/ui/dialog/command/window.rs:452
+#: src/ui/dialog/command/window.rs:249 src/ui/dialog/command/window.rs:330
+#: src/ui/dialog/command/window.rs:425 src/ui/dialog/command/window.rs:452
 msgid "PID:"
 msgstr "PID:"
 
@@ -713,7 +775,9 @@ msgstr "PID:"
 msgid "I/O: (unavailable)"
 msgstr "I/O: (利用不可)"
 
-#: src/ui/dialog/command/window.rs:308 src/ui/dialog/command/window.rs:320 src/ui/dialog/command/window.rs:321 src/ui/dialog/command/window.rs:322 src/ui/dialog/command/window.rs:326 src/ui/dialog/command/window.rs:404
+#: src/ui/dialog/command/window.rs:308 src/ui/dialog/command/window.rs:320
+#: src/ui/dialog/command/window.rs:321 src/ui/dialog/command/window.rs:322
+#: src/ui/dialog/command/window.rs:326 src/ui/dialog/command/window.rs:404
 msgid "N/A"
 msgstr "N/A"
 
@@ -799,7 +863,8 @@ msgstr "競合"
 
 #: src/ui/dialog/conflict/mod.rs:51
 msgid "A file with this name already exists. Choose what to do with it."
-msgstr "同名のファイルがすでに存在します。どのように処理するか選択してください。"
+msgstr ""
+"同名のファイルがすでに存在します。どのように処理するか選択してください。"
 
 #: src/ui/dialog/conflict/mod.rs:65
 msgid "Skip"
@@ -961,11 +1026,13 @@ msgstr "Nerd Font アイコンを選択"
 msgid "Search icons (copy, folder, file, rust)..."
 msgstr "アイコンを検索 (copy、folder、file、rust)..."
 
-#: src/ui/dialog/new_action.rs:49 src/ui/menu/editor/entry_dialog.rs:108 src/ui/menu/editor/entry_dialog.rs:174
+#: src/ui/dialog/new_action.rs:49 src/ui/menu/editor/entry_dialog.rs:108
+#: src/ui/menu/editor/entry_dialog.rs:174
 msgid "Pick Icon"
 msgstr "アイコンを選択"
 
-#: src/ui/dialog/new_action.rs:119 src/ui/panels/actions.rs:80 src/ui/panels/actions.rs:140
+#: src/ui/dialog/new_action.rs:119 src/ui/panels/actions.rs:80
+#: src/ui/panels/actions.rs:140
 msgid "New Action"
 msgstr "新しいアクション"
 
@@ -983,7 +1050,8 @@ msgstr "保存先"
 
 #: src/ui/dialog/new_action.rs:147
 msgid "A type-specific file replaces broader templates for that type"
-msgstr "タイプ固有のファイルは、そのタイプに対する広範なテンプレートに優先します"
+msgstr ""
+"タイプ固有のファイルは、そのタイプに対する広範なテンプレートに優先します"
 
 #: src/ui/dialog/new_action.rs:159 src/ui/menu/editor/entry_dialog.rs:222
 msgid "Submenu (blank = top-level)"
@@ -1065,7 +1133,8 @@ msgstr "サイドバーアイコンを選択"
 msgid "Select"
 msgstr "選択"
 
-#: src/ui/dialog/tag_picker.rs:27 src/ui/dialog/tag_picker.rs:62 src/utils/config/menu.rs:254
+#: src/ui/dialog/tag_picker.rs:27 src/ui/dialog/tag_picker.rs:62
+#: src/utils/config/menu.rs:254
 msgid "Edit Tags"
 msgstr "タグを編集"
 
@@ -1283,7 +1352,9 @@ msgstr "コンテンツ検索を開始"
 
 #: src/ui/help/page/search.rs:39
 msgid "Type :term to search all files, or :.ext:term to filter by extension"
-msgstr ":term と入力するとすべてのファイルを検索、:.ext:term と入力すると拡張子で絞り込みます"
+msgstr ""
+":term と入力するとすべてのファイルを検索、:.ext:term と入力すると拡張子で絞り"
+"込みます"
 
 #: src/ui/help/page/search.rs:43
 msgid "Cancel content search"
@@ -1310,8 +1381,12 @@ msgid "Toggle folders first in current directory"
 msgstr "現在のディレクトリでフォルダーを先頭に表示するか切り替え"
 
 #: src/ui/help/page/system_view.rs:19
-msgid "Toggle embedded terminal (bottom pane, sidebar, or full window - see Settings → Terminal)"
-msgstr "埋め込み端末の表示を切り替え (下部ペイン、サイドバー、または全ウィンドウ - 設定 → 端末 を参照)"
+msgid ""
+"Toggle embedded terminal (bottom pane, sidebar, or full window - see "
+"Settings → Terminal)"
+msgstr ""
+"埋め込み端末の表示を切り替え (下部ペイン、サイドバー、または全ウィンドウ - 設"
+"定 → 端末 を参照)"
 
 #: src/ui/help/page/system_view.rs:23
 msgid "Refresh current directory"
@@ -1478,8 +1553,12 @@ msgid "Menu File Name"
 msgstr "メニューファイル名"
 
 #: src/ui/menu/editor/new_menu_dialog.rs:19
-msgid "Enter a menu name (e.g. 'menu-application-all.rs' for 'application/all' MIME type)"
-msgstr "メニュー名を入力します (例: MIME タイプ 'application/all' の場合は 'menu-application-all.rs')"
+msgid ""
+"Enter a menu name (e.g. 'menu-application-all.rs' for 'application/all' MIME "
+"type)"
+msgstr ""
+"メニュー名を入力します (例: MIME タイプ 'application/all' の場合は 'menu-"
+"application-all.rs')"
 
 #: src/ui/menu/editor/rows.rs:38
 msgid "No entries yet"
@@ -1558,8 +1637,12 @@ msgid "Filter actions…"
 msgstr "アクションを絞り込む…"
 
 #: src/ui/panels/actions.rs:129
-msgid "Create ~/.config/flux/menus/menu-<category>-<subtype>.rs to add actions for this file type."
-msgstr "このファイルタイプにアクションを追加するには ~/.config/flux/menus/menu-<category>-<subtype>.rs を作成します。"
+msgid ""
+"Create ~/.config/flux/menus/menu-<category>-<subtype>.rs to add actions for "
+"this file type."
+msgstr ""
+"このファイルタイプにアクションを追加するには ~/.config/flux/menus/menu-"
+"<category>-<subtype>.rs を作成します。"
 
 #: src/ui/panels/actions.rs:134
 msgid "No contextual actions"
@@ -1597,7 +1680,8 @@ msgstr "サーバーアドレス"
 msgid "Port"
 msgstr "ポート"
 
-#: src/ui/panels/connect.rs:152 src/ui/panels/connect.rs:158 src/ui/panels/connect.rs:164
+#: src/ui/panels/connect.rs:152 src/ui/panels/connect.rs:158
+#: src/ui/panels/connect.rs:164
 msgid "optional"
 msgstr "任意"
 
@@ -1626,8 +1710,12 @@ msgid "Enter Location"
 msgstr "場所を入力"
 
 #: src/ui/panels/location.rs:107
-msgid "Type a local path or network URI (e.g., smb://server/share, sftp://host, /home):"
-msgstr "ローカルパスまたはネットワーク URI を入力してください (例: smb://server/share、sftp://host、/home):"
+msgid ""
+"Type a local path or network URI (e.g., smb://server/share, sftp://host, /"
+"home):"
+msgstr ""
+"ローカルパスまたはネットワーク URI を入力してください (例: smb://server/"
+"share、sftp://host、/home):"
 
 #: src/ui/panels/location.rs:131
 msgid "Clear History"
@@ -1713,7 +1801,8 @@ msgstr "プレビューする項目を選択してください。"
 msgid "No preview available"
 msgstr "プレビューできません"
 
-#: src/ui/panels/preview.rs:757 src/ui/panels/preview.rs:1942 src/ui/panels/preview.rs:2051 src/ui/panels/preview.rs:2069
+#: src/ui/panels/preview.rs:757 src/ui/panels/preview.rs:1942
+#: src/ui/panels/preview.rs:2051 src/ui/panels/preview.rs:2069
 msgid "Play"
 msgstr "再生"
 
@@ -1779,7 +1868,9 @@ msgstr "フォルダーが省略されています - 先頭の項目のみを表
 
 #: src/ui/panels/preview.rs:1934
 msgid "mpv is not installed. Install it to enable audio preview, or use Open."
-msgstr "mpv がインストールされていません。音声プレビューを有効にするには mpv をインストールするか、「開く」を使用してください。"
+msgstr ""
+"mpv がインストールされていません。音声プレビューを有効にするには mpv をインス"
+"トールするか、「開く」を使用してください。"
 
 #: src/ui/panels/preview.rs:1939
 msgid "Ready."
@@ -1795,7 +1886,9 @@ msgstr "一時停止"
 
 #: src/ui/panels/preview.rs:2109
 msgid "Audio preview requires mpv. Install it with your package manager."
-msgstr "音声プレビューには mpv が必要です。パッケージマネージャーでインストールしてください。"
+msgstr ""
+"音声プレビューには mpv が必要です。パッケージマネージャーでインストールしてく"
+"ださい。"
 
 #: src/ui/panels/preview.rs:2132
 msgid "Stopped."
@@ -1869,7 +1962,8 @@ msgstr "現在のフォルダーをこのリストに追加"
 msgid "Delete this list"
 msgstr "このリストを削除"
 
-#: src/ui/panels/quick_list.rs:518 src/ui/panels/quick_list.rs:522 src/ui/panels/quick_list.rs:590
+#: src/ui/panels/quick_list.rs:518 src/ui/panels/quick_list.rs:522
+#: src/ui/panels/quick_list.rs:590
 msgid "This removes the list"
 msgstr "これによりリストが削除されます"
 
@@ -1877,7 +1971,8 @@ msgstr "これによりリストが削除されます"
 msgid "The folders themselves are not touched."
 msgstr "フォルダー自体は変更されません。"
 
-#: src/ui/panels/quick_list.rs:528 src/ui/panels/quick_list.rs:579 src/ui/panels/quick_list.rs:587
+#: src/ui/panels/quick_list.rs:528 src/ui/panels/quick_list.rs:579
+#: src/ui/panels/quick_list.rs:587
 msgid "Delete List"
 msgstr "リストを削除"
 
@@ -2257,7 +2352,8 @@ msgstr "不透明度"
 msgid "Window"
 msgstr "ウィンドウ"
 
-#: src/ui/settings/page/appearance.rs:52 src/ui/settings/page/appearance.rs:413 src/ui/settings/page/appearance.rs:416
+#: src/ui/settings/page/appearance.rs:52 src/ui/settings/page/appearance.rs:413
+#: src/ui/settings/page/appearance.rs:416
 msgid "Theme"
 msgstr "テーマ"
 
@@ -2303,7 +2399,9 @@ msgstr "アイコンに合わせてフォントをスケール"
 
 #: src/ui/settings/page/appearance.rs:144
 msgid "Dynamically adjust label font size when zooming or resizing grid icons"
-msgstr "グリッドアイコンのズームやサイズ変更時にラベルのフォントサイズを動的に調整します"
+msgstr ""
+"グリッドアイコンのズームやサイズ変更時にラベルのフォントサイズを動的に調整し"
+"ます"
 
 #: src/ui/settings/page/appearance.rs:154
 msgid "Grid Spacing"
@@ -2350,8 +2448,12 @@ msgid "Background Tint Opacity"
 msgstr "背景の色付けの不透明度"
 
 #: src/ui/settings/page/appearance.rs:219
-msgid "Adjust the dark gradient overlay opacity for custom background images (0.0 = transparent, 1.0 = solid)"
-msgstr "カスタム背景画像の暗いグラデーションオーバーレイの不透明度を調整します (0.0 = 透明、1.0 = 不透明)"
+msgid ""
+"Adjust the dark gradient overlay opacity for custom background images (0.0 = "
+"transparent, 1.0 = solid)"
+msgstr ""
+"カスタム背景画像の暗いグラデーションオーバーレイの不透明度を調整します (0.0 "
+"= 透明、1.0 = 不透明)"
 
 #: src/ui/settings/page/appearance.rs:221
 msgid "Window Background Opacity"
@@ -2426,8 +2528,12 @@ msgid "Header Buttons"
 msgstr "ヘッダーボタン"
 
 #: src/ui/settings/page/appearance.rs:362
-msgid "Choose which buttons the header bar shows. The main menu is always visible. If the list/grid toggle is hidden, press Ctrl+Shift+,."
-msgstr "ヘッダーバーに表示するボタンを選択します。メインメニューは常に表示されます。一覧/グリッド切り替えが非表示の場合は Ctrl+Shift+, を押してください。"
+msgid ""
+"Choose which buttons the header bar shows. The main menu is always visible. "
+"If the list/grid toggle is hidden, press Ctrl+Shift+,."
+msgstr ""
+"ヘッダーバーに表示するボタンを選択します。メインメニューは常に表示されます。"
+"一覧/グリッド切り替えが非表示の場合は Ctrl+Shift+, を押してください。"
 
 #: src/ui/settings/page/appearance.rs:364
 msgid "Filter Button"
@@ -2474,8 +2580,12 @@ msgid "Fish Shell Integration"
 msgstr "Fish シェル統合"
 
 #: src/ui/settings/page/appearance.rs:453
-msgid "Generate ~/.config/fish/conf.d/flux-theme.fish so the embedded fish shell's colors and prompt follow the Flux theme"
-msgstr "内蔵 Fish シェルの配色とプロンプトを Flux テーマに合わせるために ~/.config/fish/conf.d/flux-theme.fish を生成します"
+msgid ""
+"Generate ~/.config/fish/conf.d/flux-theme.fish so the embedded fish shell's "
+"colors and prompt follow the Flux theme"
+msgstr ""
+"内蔵 Fish シェルの配色とプロンプトを Flux テーマに合わせるために ~/.config/"
+"fish/conf.d/flux-theme.fish を生成します"
 
 #: src/ui/settings/page/appearance.rs:464
 msgid "Show Recents"
@@ -2514,15 +2624,21 @@ msgid "Panel Menu Needs Ctrl"
 msgstr "パネルのメニューには Ctrl が必要"
 
 #: src/ui/settings/page/appearance.rs:506
-msgid "Open left sidebar, preview panel and quick list menus only with Ctrl + right-click"
-msgstr "左サイドバー、プレビューパネル、クイックリストのメニューを Ctrl + 右クリックでのみ開く"
+msgid ""
+"Open left sidebar, preview panel and quick list menus only with Ctrl + right-"
+"click"
+msgstr ""
+"左サイドバー、プレビューパネル、クイックリストのメニューを Ctrl + 右クリック"
+"でのみ開く"
 
 #: src/ui/settings/page/appearance.rs:524
 msgid "Generated Extension Icons"
 msgstr "生成される拡張子アイコン"
 
 #: src/ui/settings/page/appearance.rs:525
-msgid "Settings for dynamically generated icons when system themes lack a dedicated icon"
+msgid ""
+"Settings for dynamically generated icons when system themes lack a dedicated "
+"icon"
 msgstr "システムテーマに専用アイコンがない場合に動的に生成されるアイコンの設定"
 
 #: src/ui/settings/page/appearance.rs:527
@@ -2614,8 +2730,11 @@ msgid "Archives as Folders"
 msgstr "フォルダーとしてのアーカイブ"
 
 #: src/ui/settings/page/behavior.rs:58
-msgid "Draw browsable archives like folders, select one to reveal the archive icon"
-msgstr "参照可能なアーカイブをフォルダーのように表示します。選択するとアーカイブアイコンが表示されます"
+msgid ""
+"Draw browsable archives like folders, select one to reveal the archive icon"
+msgstr ""
+"参照可能なアーカイブをフォルダーのように表示します。選択するとアーカイブアイ"
+"コンが表示されます"
 
 #: src/ui/settings/page/behavior.rs:67
 msgid "Auto-Show Git Diff"
@@ -2639,7 +2758,8 @@ msgstr "自動一覧モードのしきい値"
 
 #: src/ui/settings/page/behavior.rs:88
 msgid "Folders with more items than this open in list mode. 0 disables."
-msgstr "これより項目数が多いフォルダーは一覧モードで開きます。0 で無効になります。"
+msgstr ""
+"これより項目数が多いフォルダーは一覧モードで開きます。0 で無効になります。"
 
 #: src/ui/settings/page/behavior.rs:107
 msgid "Sorting & Filtering"
@@ -2678,8 +2798,12 @@ msgid "Hide File Extensions"
 msgstr "ファイル拡張子を隠す"
 
 #: src/ui/settings/page/behavior.rs:153
-msgid "Comma-separated extensions to hide from labels, or * for all (e.g. desktop, AppImage, tar.*)"
-msgstr "ラベルから隠す拡張子をカンマ区切りで指定します。すべて隠す場合は * (例: desktop, AppImage, tar.*)"
+msgid ""
+"Comma-separated extensions to hide from labels, or * for all (e.g. desktop, "
+"AppImage, tar.*)"
+msgstr ""
+"ラベルから隠す拡張子をカンマ区切りで指定します。すべて隠す場合は * (例: "
+"desktop, AppImage, tar.*)"
 
 #: src/ui/settings/page/behavior.rs:177
 msgid "Folders First"
@@ -2697,11 +2821,13 @@ msgstr "隠しファイルを表示"
 msgid "Display files and folders starting with a dot"
 msgstr "ドットで始まるファイルとフォルダーを表示"
 
-#: src/ui/settings/page/shortcut_picker.rs:72 src/ui/settings/page/shortcut_picker.rs:97
+#: src/ui/settings/page/shortcut_picker.rs:72
+#: src/ui/settings/page/shortcut_picker.rs:97
 msgid "Disable"
 msgstr "無効化"
 
-#: src/ui/settings/page/shortcut_picker.rs:73 src/ui/settings/page/shortcut_picker.rs:98
+#: src/ui/settings/page/shortcut_picker.rs:73
+#: src/ui/settings/page/shortcut_picker.rs:98
 msgid "Disable this shortcut"
 msgstr "このショートカットを無効化"
 
@@ -2725,7 +2851,8 @@ msgstr "Esc を押すとキャンセル、Delete を押すとクリアします"
 msgid "Click the toggle to restore the default"
 msgstr "トグルをクリックするとデフォルトに戻ります"
 
-#: src/ui/settings/page/shortcut_picker.rs:124 src/ui/settings/page/shortcut_picker.rs:134
+#: src/ui/settings/page/shortcut_picker.rs:124
+#: src/ui/settings/page/shortcut_picker.rs:134
 msgid "Click to change"
 msgstr "クリックして変更"
 
@@ -3012,3 +3139,1469 @@ msgstr "グリッド表示とリスト表示を切り替えます"
 #: src/ui/settings/page/shortcuts.rs:515
 msgid "Toggle Wide Preview"
 msgstr "ワイドプレビューの切り替え"
+
+#: src/ui/settings/page/shortcuts.rs:516
+msgid "Toggle the wide preview layout"
+msgstr "ワイドプレビューのレイアウトを切り替えます"
+
+#: src/ui/settings/page/shortcuts.rs:528
+msgid "Toggle Filter Bar"
+msgstr "フィルターバーの切り替え"
+
+#: src/ui/settings/page/shortcuts.rs:529
+msgid "Show or hide the glob-pattern filter bar"
+msgstr "glob パターンによるフィルターバーを表示または非表示にします"
+
+#: src/ui/settings/page/shortcuts.rs:541
+msgid "Cycle Filter Mode"
+msgstr "フィルターモードの切り替え"
+
+#: src/ui/settings/page/shortcuts.rs:542
+msgid "Cycle through the filter modes"
+msgstr "フィルターモードを順番に切り替えます"
+
+#: src/ui/settings/page/shortcuts.rs:554
+msgid "Filter by MIME Type"
+msgstr "MIME タイプで絞り込み"
+
+#: src/ui/settings/page/shortcuts.rs:555
+msgid "Toggle MIME filter on the selected item"
+msgstr "選択項目に対する MIME フィルターの切り替え"
+
+#: src/ui/settings/page/shortcuts.rs:570
+msgid "Shortcuts for opening preferences and application tools"
+msgstr "設定とアプリケーションツールを開くショートカット"
+
+#: src/ui/settings/page/shortcuts.rs:572
+msgid "Settings"
+msgstr "設定"
+
+#: src/ui/settings/page/shortcuts.rs:573
+msgid "Open preferences window"
+msgstr "設定ウィンドウを開きます"
+
+#: src/ui/settings/page/shortcuts.rs:585
+msgid "Menu Editor"
+msgstr "メニューエディター"
+
+#: src/ui/settings/page/shortcuts.rs:598
+msgid "Quit"
+msgstr "終了"
+
+#: src/ui/settings/page/shortcuts.rs:599
+msgid "Exit the application"
+msgstr "アプリケーションを終了します"
+
+#: src/ui/settings/page/shortcuts.rs:611
+msgid "Debug Window"
+msgstr "デバッグウィンドウ"
+
+#: src/ui/settings/page/shortcuts.rs:612
+msgid "Open the debug window"
+msgstr "デバッグウィンドウを開きます"
+
+#: src/ui/settings/page/shortcuts.rs:626
+msgid "Panels"
+msgstr "パネル"
+
+#: src/ui/settings/page/shortcuts.rs:627
+msgid "Shortcuts for toggling side panels"
+msgstr "サイドパネルの表示を切り替えるショートカット"
+
+#: src/ui/settings/page/shortcuts.rs:629
+msgid "Tag Panel"
+msgstr "タグパネル"
+
+#: src/ui/settings/page/shortcuts.rs:630
+msgid "Show or hide the tag panel"
+msgstr "タグパネルを表示または非表示にします"
+
+#: src/ui/settings/page/shortcuts.rs:642
+msgid "Actions Panel"
+msgstr "アクションパネル"
+
+#: src/ui/settings/page/shortcuts.rs:643
+msgid "Show or hide the contextual actions panel"
+msgstr "コンテキストアクションパネルを表示または非表示にします"
+
+#: src/ui/settings/page/shortcuts.rs:655
+msgid "Connect Panel"
+msgstr "接続パネル"
+
+#: src/ui/settings/page/shortcuts.rs:656
+msgid "Show or hide the connect-to-server panel"
+msgstr "サーバー接続パネルを表示または非表示にします"
+
+#: src/ui/settings/page/shortcuts.rs:668
+msgid "Location Panel"
+msgstr "場所パネル"
+
+#: src/ui/settings/page/shortcuts.rs:669
+msgid "Show or hide the location panel"
+msgstr "場所パネルを表示または非表示にします"
+
+# ============================================================
+# src/ui/settings/page/system.rs
+# ============================================================
+#: src/ui/settings/page/system.rs:10
+msgid "System"
+msgstr "システム"
+
+#: src/ui/settings/page/system.rs:14
+msgid "Performance & Engine"
+msgstr "パフォーマンスとエンジン"
+
+#: src/ui/settings/page/system.rs:15
+msgid "Configure background worker limits and streaming chunk sizes"
+msgstr ""
+"バックグラウンドワーカーの上限とストリーミングのチャンクサイズを設定します"
+
+#: src/ui/settings/page/system.rs:17
+msgid "UI Batch Streaming Size"
+msgstr "UI バッチストリーミングサイズ"
+
+#: src/ui/settings/page/system.rs:18
+msgid "Number of items appended per frame when loading directories"
+msgstr "ディレクトリ読み込み時に 1 フレームあたりに追加する項目数"
+
+#: src/ui/settings/page/system.rs:35
+msgid "Thumbnail Workers"
+msgstr "サムネイルワーカー数"
+
+#: src/ui/settings/page/system.rs:36
+msgid "Concurrent background threads used to render thumbnails"
+msgstr "サムネイルのレンダリングに使用する同時バックグラウンドスレッド数"
+
+#: src/ui/settings/page/system.rs:55
+msgid "Memory & Limits"
+msgstr "メモリーと制限"
+
+#: src/ui/settings/page/system.rs:56
+msgid "Tune caching thresholds and search result cutoffs"
+msgstr "キャッシュのしきい値と検索結果の上限を調整します"
+
+#: src/ui/settings/page/system.rs:58
+msgid "Fast File Indexing"
+msgstr "高速ファイルインデックス化"
+
+#: src/ui/settings/page/system.rs:59
+msgid ""
+"Build an SQLite FTS5 database to enable sub-millisecond filename searches"
+msgstr ""
+"SQLite FTS5 データベースを構築し、1 ミリ秒未満のファイル名検索を有効にします"
+
+#: src/ui/settings/page/system.rs:77
+msgid "Folder Cache Capacity"
+msgstr "フォルダーキャッシュ容量"
+
+#: src/ui/settings/page/system.rs:78
+msgid "Maximum number of recently visited folders kept in RAM (0 to disable)"
+msgstr "RAM に保持する最近アクセスしたフォルダーの最大数 (0 で無効化)"
+
+#: src/ui/settings/page/system.rs:95
+msgid "Max Search Results"
+msgstr "検索結果の最大数"
+
+#: src/ui/settings/page/system.rs:96
+msgid "Maximum files indexed per filename/extension search run"
+msgstr "ファイル名 / 拡張子検索 1 回あたりにインデックスする最大ファイル数"
+
+#: src/ui/settings/page/system.rs:113
+msgid "Max Content Search Results"
+msgstr "コンテンツ検索結果の最大数"
+
+#: src/ui/settings/page/system.rs:114
+msgid "Maximum number of matches to return (higher values may be slower)"
+msgstr "返す一致件数の最大値 (値を大きくすると遅くなる場合があります)"
+
+#: src/ui/settings/page/system.rs:127
+msgid "Navigation History Depth"
+msgstr "ナビゲーション履歴の深さ"
+
+#: src/ui/settings/page/system.rs:128
+msgid "Maximum number of backward/forward directory jumps saved"
+msgstr "保存する戻る / 進むディレクトリジャンプの最大数"
+
+#: src/ui/settings/page/system.rs:147
+msgid "Video Extraction (FFmpeg)"
+msgstr "動画抽出 (FFmpeg)"
+
+#: src/ui/settings/page/system.rs:148
+msgid "Configure video frame extraction and decoding options"
+msgstr "動画フレームの抽出とデコードのオプションを設定します"
+
+#: src/ui/settings/page/system.rs:150
+msgid "Initial Frame Offset"
+msgstr "初期フレームオフセット"
+
+#: src/ui/settings/page/system.rs:151
+msgid "Timestamp in seconds into the video to capture thumbnail"
+msgstr "サムネイルを取得する動画内のタイムスタンプ (秒)"
+
+#: src/ui/settings/page/system.rs:169
+msgid "FFmpeg Decoder Threads"
+msgstr "FFmpeg デコーダースレッド数"
+
+#: src/ui/settings/page/system.rs:170
+msgid "Threads allocated to each video frame capture task"
+msgstr "各動画フレーム取得タスクに割り当てるスレッド数"
+
+#: src/ui/settings/page/system.rs:187
+msgid "Auto-Rotate Videos"
+msgstr "動画の自動回転"
+
+#: src/ui/settings/page/system.rs:188
+msgid "Rotate thumbnails based on container orientation metadata"
+msgstr "コンテナの向きメタデータに基づいてサムネイルを回転します"
+
+# ============================================================
+# src/ui/settings/page/terminal.rs
+# ============================================================
+#: src/ui/settings/page/terminal.rs:14
+msgid "Appearance & Execution"
+msgstr "外観と実行"
+
+#: src/ui/settings/page/terminal.rs:15
+msgid "Customize the embedded terminal look, feel, and executable"
+msgstr "埋め込み端末の見た目と実行ファイルをカスタマイズします"
+
+#: src/ui/settings/page/terminal.rs:17
+msgid "Terminal Position"
+msgstr "端末の位置"
+
+#: src/ui/settings/page/terminal.rs:18
+msgid "Where the terminal opens when toggled with F4"
+msgstr "F4 で切り替えたときに端末を開く位置"
+
+#: src/ui/settings/page/terminal.rs:20
+msgid "Bottom"
+msgstr "下部"
+
+#: src/ui/settings/page/terminal.rs:21
+msgid "Sidebar"
+msgstr "サイドバー"
+
+#: src/ui/settings/page/terminal.rs:22
+msgid "Fullscreen"
+msgstr "全画面"
+
+#: src/ui/settings/page/terminal.rs:44
+msgid "Shell Executable"
+msgstr "シェル実行ファイル"
+
+#: src/ui/settings/page/terminal.rs:45
+msgid "Custom shell path (e.g., '/bin/zsh'). Leave blank for default"
+msgstr "カスタムシェルパス (例: '/bin/zsh')。空欄で既定値を使用します"
+
+#: src/ui/settings/page/terminal.rs:60
+msgid "Height (lines)"
+msgstr "高さ (行数)"
+
+#: src/ui/settings/page/terminal.rs:61
+msgid "Number of character lines in the terminal"
+msgstr "端末内の文字行数"
+
+#: src/ui/settings/page/terminal.rs:74
+msgid "Font"
+msgstr "フォント"
+
+#: src/ui/settings/page/terminal.rs:75
+msgid "Pango font description"
+msgstr "Pango フォント記述"
+
+#: src/ui/settings/page/terminal.rs:87
+msgid "Foreground Color"
+msgstr "前景色"
+
+#: src/ui/settings/page/terminal.rs:88
+msgid "Text color (hex, e.g., '#E5E5E5')"
+msgstr "テキスト色 (16 進数、例: '#E5E5E5')"
+
+#: src/ui/settings/page/terminal.rs:100
+msgid "Background Color"
+msgstr "背景色"
+
+#: src/ui/settings/page/terminal.rs:101
+msgid "Background color (hex, e.g., '#1A1A1A')"
+msgstr "背景色 (16 進数、例: '#1A1A1A')"
+
+# ============================================================
+# src/ui/settings/page/thumbnails.rs
+# ============================================================
+#: src/ui/settings/page/thumbnails.rs:10
+msgid "Thumbnails"
+msgstr "サムネイル"
+
+#: src/ui/settings/page/thumbnails.rs:14
+msgid "Preview Settings"
+msgstr "プレビュー設定"
+
+#: src/ui/settings/page/thumbnails.rs:15
+msgid "Enable or disable thumbnail generation for different file types"
+msgstr "ファイルタイプごとにサムネイル生成を有効または無効にします"
+
+#: src/ui/settings/page/thumbnails.rs:17
+msgid "Enable Thumbnails"
+msgstr "サムネイルを有効化"
+
+#: src/ui/settings/page/thumbnails.rs:18
+msgid "Show previews for supported file types"
+msgstr "対応するファイルタイプのプレビューを表示します"
+
+#: src/ui/settings/page/thumbnails.rs:27
+msgid "Thumbnail Size"
+msgstr "サムネイルサイズ"
+
+#: src/ui/settings/page/thumbnails.rs:28
+msgid ""
+"Target resolution for media previews (higher values increase memory usage)"
+msgstr ""
+"メディアプレビューの目標解像度 (値を大きくするとメモリー使用量が増えます)"
+
+#: src/ui/settings/page/thumbnails.rs:57
+msgid "Lazy Thumbnails"
+msgstr "遅延サムネイル"
+
+#: src/ui/settings/page/thumbnails.rs:58
+msgid "Generate thumbnails only for items in view"
+msgstr "表示中の項目のみサムネイルを生成します"
+
+#: src/ui/settings/page/thumbnails.rs:68
+msgid "Cache Thumbnails in Zip Files"
+msgstr "ZIP ファイル内のサムネイルをキャッシュ"
+
+#: src/ui/settings/page/thumbnails.rs:69
+msgid ""
+"Store thumbnails in a hidden .flux-cache folder inside each zip you browse, "
+"so it opens faster next time. This modifies the zip file"
+msgstr ""
+"参照した各 ZIP 内の隠しフォルダー .flux-cache にサムネイルを保存し、次回の"
+"オープンを高速化します。ZIP ファイルが変更されます"
+
+#: src/ui/settings/page/thumbnails.rs:79
+msgid "Autoplay Video Previews"
+msgstr "動画プレビューの自動再生"
+
+#: src/ui/settings/page/thumbnails.rs:80
+msgid "Play a muted preview when a single video card is selected"
+msgstr "動画カードを 1 つ選択したときにミュートでプレビューを再生します"
+
+#: src/ui/settings/page/thumbnails.rs:91
+msgid "Images"
+msgstr "画像"
+
+#: src/ui/settings/page/thumbnails.rs:92
+msgid "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
+msgstr "PNG, JPG, GIF, WebP, AVIF, HEIC, BMP, TIFF, SVG"
+
+#: src/ui/settings/page/thumbnails.rs:105
+msgid "Videos"
+msgstr "動画"
+
+#: src/ui/settings/page/thumbnails.rs:106
+msgid "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
+msgstr "MP4, MKV, WebM, AVI, MOV, FLV, WMV"
+
+#: src/ui/settings/page/thumbnails.rs:119
+msgid "Fonts"
+msgstr "フォント"
+
+#: src/ui/settings/page/thumbnails.rs:120
+msgid "TTF, OTF, WOFF, WOFF2, TTC"
+msgstr "TTF, OTF, WOFF, WOFF2, TTC"
+
+#: src/ui/settings/page/thumbnails.rs:133
+msgid "PDF Documents"
+msgstr "PDF ドキュメント"
+
+#: src/ui/settings/page/thumbnails.rs:134
+msgid "Portable Document Format files"
+msgstr "Portable Document Format ファイル"
+
+#: src/ui/settings/page/thumbnails.rs:147
+msgid "Windows Executables"
+msgstr "Windows 実行ファイル"
+
+#: src/ui/settings/page/thumbnails.rs:148
+msgid "EXE"
+msgstr "EXE"
+
+#: src/ui/settings/page/thumbnails.rs:161
+msgid "Audio"
+msgstr "オーディオ"
+
+#: src/ui/settings/page/thumbnails.rs:162
+msgid "MP3, FLAC, M4A, OGG, WAV (embedded album art)"
+msgstr "MP3, FLAC, M4A, OGG, WAV (埋め込みアルバムアート)"
+
+#: src/ui/settings/page/thumbnails.rs:177
+msgid "Preview Examples"
+msgstr "プレビュー例"
+
+#: src/ui/settings/page/thumbnails.rs:178
+msgid "How thumbnails will appear in the file grid"
+msgstr "ファイルグリッドでサムネイルがどのように表示されるか"
+
+#: src/ui/settings/page/thumbnails.rs:195
+msgid "Image"
+msgstr "画像"
+
+#: src/ui/settings/page/thumbnails.rs:216
+msgid "Video"
+msgstr "動画"
+
+#: src/ui/settings/page/thumbnails.rs:258
+msgid "PDF"
+msgstr "PDF"
+
+# ============================================================
+# src/ui/sidebar_network.rs
+# ============================================================
+#: src/ui/sidebar_network.rs:67
+msgid "Connected Servers"
+msgstr "接続中のサーバー"
+
+# ============================================================
+# src/ui/startup/menu.rs
+# ============================================================
+#: src/ui/startup/menu.rs:20
+msgid "By Name"
+msgstr "名前順"
+
+#: src/ui/startup/menu.rs:21
+msgid "By Date"
+msgstr "日付順"
+
+#: src/ui/startup/menu.rs:22
+msgid "By Size"
+msgstr "サイズ順"
+
+#: src/ui/startup/menu.rs:23
+msgid "By Type"
+msgstr "種類順"
+
+#: src/ui/startup/menu.rs:45
+msgid "Sort By"
+msgstr "並べ替え"
+
+#: src/ui/startup/menu.rs:53
+msgid "Keyboard Shortcuts"
+msgstr "キーボードショートカット"
+
+#: src/ui/startup/menu.rs:68
+msgid "Context Menu Editor"
+msgstr "コンテキストメニューエディター"
+
+#: src/ui/startup/menu.rs:71
+msgid "New Window"
+msgstr "新しいウィンドウ"
+
+#: src/ui/startup/menu.rs:76
+msgid "About Flux"
+msgstr "Flux について"
+
+# ============================================================
+# src/ui/view/component.rs
+# ============================================================
+#: src/ui/view/component.rs:400
+msgid "Patterns: *.py, image/*, audio/*"
+msgstr "パターン: *.py, image/*, audio/*"
+
+#: src/ui/view/component.rs:463 src/ui/view/component.rs:475
+msgid "Empty Trash"
+msgstr "ごみ箱を空にする"
+
+#: src/ui/view/component.rs:484
+msgid "Extract Archive"
+msgstr "アーカイブを展開"
+
+#: src/ui/view/component.rs:496
+msgid "Extract"
+msgstr "展開"
+
+#: src/ui/view/component.rs:506
+msgid "Git Actions"
+msgstr "Git アクション"
+
+#: src/ui/view/component.rs:543
+msgid "Main Menu"
+msgstr "メインメニュー"
+
+#: src/ui/view/component.rs:570
+msgid "Filter by Pattern"
+msgstr "パターンで絞り込み"
+
+#: src/ui/view/component.rs:596
+msgid "Toggle Preview Panel"
+msgstr "プレビューパネルの切り替え"
+
+#: src/ui/view/component.rs:654
+msgid "Filter:"
+msgstr "フィルター:"
+
+#: src/ui/view/component.rs:750
+msgid "Enter the password to browse its contents."
+msgstr "内容を参照するにはパスワードを入力してください。"
+
+#: src/ui/view/component.rs:758
+msgid "No Results Found"
+msgstr "結果が見つかりません"
+
+#: src/ui/view/component.rs:759
+msgid "No matching files found in this location."
+msgstr "この場所に一致するファイルは見つかりませんでした。"
+
+#: src/ui/view/component.rs:862
+msgid "Navigate mode: type to jump to a folder. Click or press Esc to leave"
+msgstr ""
+"ナビゲートモード: 文字を入力してフォルダーへ移動します。クリックまたは Esc で"
+"終了"
+
+#: src/ui/view/component.rs:886
+msgid " Show Progress"
+msgstr " 進行状況を表示"
+
+#: src/ui/view/component.rs:887
+msgid "Open transfer progress dialog"
+msgstr "転送の進行状況ダイアログを開く"
+
+#: src/ui/view/component.rs:897
+msgid "Cancel all transfers"
+msgstr "すべての転送をキャンセル"
+
+# ============================================================
+# src/ui/view/init.rs
+# ============================================================
+#: src/ui/view/init.rs:42
+msgid "Git Status"
+msgstr "Git ステータス"
+
+#: src/ui/view/init.rs:43
+msgid "Open Remote in Browser"
+msgstr "リモートをブラウザーで開く"
+
+#: src/ui/view/init.rs:44
+msgid "Show Log…"
+msgstr "ログを表示…"
+
+#: src/ui/view/init.rs:48
+msgid "Staged Only"
+msgstr "ステージ済みのみ"
+
+#: src/ui/view/init.rs:49
+msgid "Unstaged Only"
+msgstr "未ステージのみ"
+
+#: src/ui/view/init.rs:53
+msgid "Switch Branch…"
+msgstr "ブランチを切り替え…"
+
+#: src/ui/view/init.rs:59
+msgid "Discard Selected Changes"
+msgstr "選択した変更を破棄"
+
+#: src/ui/view/init.rs:63
+msgid "Restore Last Discard"
+msgstr "最後の破棄を復元"
+
+#: src/ui/view/init.rs:409
+msgid "Add Actions"
+msgstr "アクションを追加"
+
+#: src/ui/view/init.rs:413
+msgid "Add Search"
+msgstr "検索を追加"
+
+#: src/ui/view/init.rs:416
+msgid "Add Tags"
+msgstr "タグを追加"
+
+# ============================================================
+# src/utils/config/defaults.rs
+# ============================================================
+#: src/utils/config/defaults.rs:329
+msgid "Actions"
+msgstr "アクション"
+
+# ============================================================
+# src/utils/config/menu.rs
+# ============================================================
+#: src/utils/config/menu.rs:184
+msgid "Compress"
+msgstr "圧縮"
+
+#: src/utils/config/menu.rs:185
+msgid "Media Edit"
+msgstr "メディア編集"
+
+#: src/utils/config/menu.rs:186
+msgid "Media Convert"
+msgstr "メディア変換"
+
+#: src/utils/config/menu.rs:187
+msgid "Media Extract"
+msgstr "メディア抽出"
+
+#: src/utils/config/menu.rs:188
+msgid "Media Optimize"
+msgstr "メディア最適化"
+
+#: src/utils/config/menu.rs:189
+msgid "Image Wallpaper"
+msgstr "壁紙に設定"
+
+#: src/utils/config/menu.rs:190
+msgid "Image Convert"
+msgstr "画像変換"
+
+#: src/utils/config/menu.rs:191
+msgid "Flux Background"
+msgstr "Flux の背景"
+
+#: src/utils/config/menu.rs:192
+msgid "Tools"
+msgstr "ツール"
+
+#: src/utils/config/menu.rs:205
+msgid "Set File Icon"
+msgstr "ファイルアイコンを設定"
+
+#: src/utils/config/menu.rs:206
+msgid "Reset File Icon"
+msgstr "ファイルアイコンをリセット"
+
+#: src/utils/config/menu.rs:207
+msgid "Set Extension Icon"
+msgstr "拡張子アイコンを設定"
+
+#: src/utils/config/menu.rs:208
+msgid "Reset Extension Icon"
+msgstr "拡張子アイコンをリセット"
+
+#: src/utils/config/menu.rs:209
+msgid "To ZIP"
+msgstr "ZIP へ"
+
+#: src/utils/config/menu.rs:210
+msgid "To 7Z"
+msgstr "7Z へ"
+
+#: src/utils/config/menu.rs:211
+msgid "To TAR.GZ"
+msgstr "TAR.GZ へ"
+
+#: src/utils/config/menu.rs:212
+msgid "Join Videos"
+msgstr "動画を結合"
+
+#: src/utils/config/menu.rs:213
+msgid "Cut Video"
+msgstr "動画を切り取り"
+
+#: src/utils/config/menu.rs:214
+msgid "Mix Audio"
+msgstr "オーディオをミックス"
+
+#: src/utils/config/menu.rs:215
+msgid "Merge Video + Audio"
+msgstr "動画 + オーディオを結合"
+
+#: src/utils/config/menu.rs:216
+msgid "To MP4"
+msgstr "MP4 へ"
+
+#: src/utils/config/menu.rs:217
+msgid "To MKV"
+msgstr "MKV へ"
+
+#: src/utils/config/menu.rs:218
+msgid "To WebM"
+msgstr "WebM へ"
+
+#: src/utils/config/menu.rs:219
+msgid "To MOV"
+msgstr "MOV へ"
+
+#: src/utils/config/menu.rs:220
+msgid "Audio to MP3"
+msgstr "オーディオを MP3 へ"
+
+#: src/utils/config/menu.rs:221
+msgid "MP3 from Video"
+msgstr "動画から MP3"
+
+#: src/utils/config/menu.rs:222
+msgid "Reduce Video Size"
+msgstr "動画サイズを縮小"
+
+#: src/utils/config/menu.rs:223
+msgid "Set (swww)"
+msgstr "設定 (swww)"
+
+#: src/utils/config/menu.rs:224
+msgid "Set (wbg)"
+msgstr "設定 (wbg)"
+
+#: src/utils/config/menu.rs:225
+msgid "To PNG"
+msgstr "PNG へ"
+
+#: src/utils/config/menu.rs:226
+msgid "To AVIF"
+msgstr "AVIF へ"
+
+#: src/utils/config/menu.rs:227
+msgid "To JPG"
+msgstr "JPG へ"
+
+#: src/utils/config/menu.rs:228
+msgid "Window Background"
+msgstr "ウィンドウ背景"
+
+#: src/utils/config/menu.rs:229
+msgid "Left Sidebar Background"
+msgstr "左サイドバー背景"
+
+#: src/utils/config/menu.rs:230
+msgid "Right Sidebar Background"
+msgstr "右サイドバー背景"
+
+#: src/utils/config/menu.rs:231
+msgid "Reset All Backgrounds"
+msgstr "すべての背景をリセット"
+
+#: src/utils/config/menu.rs:232
+msgid "Git Gui"
+msgstr "Git GUI"
+
+#: src/utils/config/menu.rs:233
+msgid "Download Video (1080p)"
+msgstr "動画をダウンロード (1080p)"
+
+#: src/utils/config/menu.rs:235
+msgid "Copy Name"
+msgstr "名前をコピー"
+
+#: src/utils/config/menu.rs:236
+msgid "Advanced Archive Manager"
+msgstr "高度なアーカイブマネージャー"
+
+#: src/utils/config/menu.rs:246
+msgid "Add to Quick List"
+msgstr "クイックリストに追加"
+
+#: src/utils/config/menu.rs:248
+msgid "Other Application..."
+msgstr "その他のアプリケーション..."
+
+#: src/utils/config/menu.rs:249
+msgid "Inspect Directory"
+msgstr "フォルダーを検査"
+
+#: src/utils/config/menu.rs:256
+msgid "Restore File"
+msgstr "ファイルを復元"
+
+#: src/utils/config/menu.rs:257
+msgid "Shred File (Permanent)"
+msgstr "ファイルを完全削除 (復元不可)"
+
+#: src/utils/config/menu.rs:258
+msgid "Open Terminal"
+msgstr "端末を開く"
+
+#: src/utils/config/menu.rs:259
+msgid "Toggle Pin"
+msgstr "ピン留めの切り替え"
+
+#: src/utils/config/menu.rs:260
+msgid "Open in VSCode"
+msgstr "VS Code で開く"
+
+#: src/utils/config/menu.rs:261
+msgid "File Properties"
+msgstr "ファイルのプロパティ"
+
+#: src/utils/config/menu.rs:262
+msgid "Folder Info"
+msgstr "フォルダー情報"
+
+#: src/utils/config/menu.rs:265
+msgid "Extract Here!"
+msgstr "ここに展開! "
+
+#: src/utils/config/menu.rs:266
+msgid "Convert to PDF"
+msgstr "PDF に変換"
+
+#: src/utils/config/menu.rs:267
+msgid "Open Line in Nvim"
+msgstr "Nvim で行を開く"
+
+# ============================================================
+# src/utils/deps.rs
+# ============================================================
+#: src/utils/deps.rs:21
+msgid "optional dependency '{}' not found in PATH ({})"
+msgstr "オプション依存関係 '{}' が PATH に見つかりません ({})"
+
+#: src/utils/deps.rs:27
+msgid "optional dependency '{}' not found in PATH"
+msgstr "オプション依存関係 '{}' が PATH に見つかりません"
+
+#: src/utils/deps.rs:39
+msgid "install raw-thumbnailer for RAW camera thumbnails"
+msgstr "RAW カメラのサムネイルには raw-thumbnailer をインストールしてください"
+
+#: src/utils/deps.rs:45
+msgid "install p7zip-full on Debian/Ubuntu, p7zip elsewhere (AppImage icons)"
+msgstr ""
+"Debian/Ubuntu では p7zip-full、その他では p7zip をインストールしてください "
+"(AppImage アイコン用)"
+
+#: src/utils/deps.rs:51 src/utils/deps.rs:57
+msgid "install icoutils for .exe icon extraction"
+msgstr ".exe アイコン抽出には icoutils をインストールしてください"
+
+# ============================================================
+# src/utils/helpers/format.rs
+# ============================================================
+#: src/utils/helpers/format.rs:21
+msgid "[Folders Only]"
+msgstr "[フォルダーのみ]"
+
+#: src/utils/helpers/format.rs:22
+msgid "[Files Only]"
+msgstr "[ファイルのみ]"
+
+#: src/utils/helpers/format.rs:29
+msgid "mime"
+msgstr "mime"
+
+#: src/utils/helpers/format.rs:51
+msgid "free"
+msgstr "空き"
+
+# ============================================================
+# Git menu (src/ui/view/init.rs)
+# ============================================================
+#: src/ui/view/init.rs
+msgid "Commit…"
+msgstr "コミット…"
+
+#: src/ui/view/init.rs
+msgid "Amend Last Commit…"
+msgstr "最後のコミットを修正…"
+
+#: src/ui/view/init.rs
+msgid "Repository"
+msgstr "リポジトリ"
+
+#: src/ui/view/init.rs
+msgid "Working Tree"
+msgstr "作業ツリー"
+
+#: src/ui/view/init.rs
+msgid "Stage All Changes"
+msgstr "すべての変更をステージ"
+
+#: src/ui/view/init.rs
+msgid "Unstage All Changes"
+msgstr "すべての変更をアンステージ"
+
+#: src/ui/view/init.rs
+msgid "Stash Changes"
+msgstr "変更を stash"
+
+#: src/ui/view/init.rs
+msgid "Stash Pop"
+msgstr "stash を pop"
+
+#: src/ui/view/init.rs
+msgid "Fetch"
+msgstr "フェッチ"
+
+#: src/ui/view/init.rs
+msgid "Pull"
+msgstr "プル"
+
+#: src/ui/view/init.rs
+msgid "Push"
+msgstr "プッシュ"
+
+#: src/ui/view/init.rs
+msgid "Apply Patch…"
+msgstr "パッチを適用…"
+
+#: src/ui/view/init.rs
+msgid "Undo Last Apply"
+msgstr "最後の適用を元に戻す"
+
+#: src/ui/view/init.rs
+msgid "Discard All Changes"
+msgstr "すべての変更を破棄"
+
+#: src/ui/view/component.rs
+msgid "Show Git Changes"
+msgstr "Git の変更を表示"
+
+# ============================================================
+# src/ui/dialog/git_commit.rs
+# ============================================================
+#: src/ui/dialog/git_commit.rs
+msgid "Commit Changes"
+msgstr "変更をコミット"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Amend Last Commit"
+msgstr "最後のコミットを修正"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Commit message"
+msgstr "コミットメッセージ"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Commit"
+msgstr "コミット"
+
+#: src/ui/dialog/git_commit.rs
+msgid "Amend"
+msgstr "修正"
+
+# ============================================================
+# src/ui/dialog/git_apply_patch.rs
+# ============================================================
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Apply Patch"
+msgstr "パッチを適用"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Patch (unified diff)"
+msgstr "パッチ (unified diff)"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "From Clipboard"
+msgstr "クリップボードから"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Patch is empty"
+msgstr "パッチが空です"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Loaded from clipboard"
+msgstr "クリップボードから読み込みました"
+
+#: src/ui/dialog/git_apply_patch.rs
+msgid "Reloaded from clipboard"
+msgstr "クリップボードから再読み込みしました"
+
+# ============================================================
+# src/ui/ops/git.rs
+# ============================================================
+#: src/ui/ops/git.rs
+msgid "Not inside a git repository"
+msgstr "git リポジトリ内ではありません"
+
+#: src/ui/ops/git.rs
+msgid "Nothing selected"
+msgstr "何も選択されていません"
+
+#: src/ui/ops/git.rs
+msgid "Pulling…"
+msgstr "プルしています…"
+
+#: src/ui/ops/git.rs
+msgid "Pushing…"
+msgstr "プッシュしています…"
+
+#: src/ui/ops/git.rs
+msgid "Fetching…"
+msgstr "フェッチしています…"
+
+#: src/ui/ops/git.rs
+msgid "No display for the clipboard"
+msgstr "クリップボード用のディスプレイがありません"
+
+#: src/ui/ops/git.rs
+msgid "Diff copied ({} lines)"
+msgstr "差分をコピーしました ({} 行)"
+
+#: src/ui/ops/git.rs
+msgid "Git"
+msgstr "Git"
+
+#: src/ui/ops/git.rs
+msgid "Git Error"
+msgstr "Git エラー"
+
+#: src/ui/ops/git.rs
+msgid "Git Log"
+msgstr "Git ログ"
+
+#: src/ui/ops/git.rs
+msgid "Git Log: {}"
+msgstr "Git ログ: {}"
+
+#: src/ui/ops/git.rs
+msgid "Failed to query git status"
+msgstr "git ステータスの取得に失敗しました"
+
+#: src/ui/ops/git.rs
+msgid "No staged changes"
+msgstr "ステージ済みの変更はありません"
+
+#: src/ui/ops/git.rs
+msgid "No unstaged changes"
+msgstr "未ステージの変更はありません"
+
+# ============================================================
+# Additional git action messages (src/infra/git/actions.rs)
+# ============================================================
+#: src/infra/git/actions.rs
+msgid "git apply spawn failed"
+msgstr "git apply の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git apply: no stdin"
+msgstr "git apply: stdin がありません"
+
+#: src/infra/git/actions.rs
+msgid "git apply write failed"
+msgstr "git apply への書き込みに失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git apply wait failed"
+msgstr "git apply の待機に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git apply failed: {}"
+msgstr "git apply に失敗しました: {}"
+
+#: src/infra/git/actions.rs
+msgid "git add spawn failed"
+msgstr "git add の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git add failed: {}"
+msgstr "git add に失敗しました: {}"
+
+#: src/infra/git/actions.rs
+msgid "git commit spawn failed"
+msgstr "git commit の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git commit failed: {}"
+msgstr "git commit に失敗しました: {}"
+
+#: src/infra/git/actions.rs
+msgid "git diff spawn failed"
+msgstr "git diff の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git diff --cached spawn failed"
+msgstr "git diff --cached の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git restore spawn failed"
+msgstr "git restore の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "git restore failed: {}"
+msgstr "git restore に失敗しました: {}"
+
+#: src/infra/git/actions.rs
+msgid "git rev-parse spawn failed"
+msgstr "git rev-parse の起動に失敗しました"
+
+#: src/infra/git/actions.rs
+msgid "Clipboard is empty"
+msgstr "クリップボードが空です"
+
+#: src/infra/git/actions.rs
+msgid "Patch applied and staged"
+msgstr "パッチを適用してステージしました"
+
+#: src/infra/git/actions.rs
+msgid "Patch applied (not staged)"
+msgstr "パッチを適用しました (未ステージ)"
+
+#: src/infra/git/actions.rs
+msgid "No applied patch to undo"
+msgstr "元に戻す適用済みパッチはありません"
+
+#: src/infra/git/actions.rs
+msgid "The last patch was applied in another repository: {}"
+msgstr "最後のパッチは別のリポジトリで適用されました: {}"
+
+#: src/infra/git/actions.rs
+msgid "Last patch reverted"
+msgstr "最後のパッチを取り消しました"
+
+#: src/infra/git/actions.rs
+msgid "Staged {} path(s)"
+msgstr "{} 個のパスをステージしました"
+
+#: src/infra/git/actions.rs
+msgid "Staged all changes"
+msgstr "すべての変更をステージしました"
+
+#: src/infra/git/actions.rs
+msgid "Commit message cannot be empty"
+msgstr "コミットメッセージは空にできません"
+
+#: src/infra/git/actions.rs
+msgid "Commit created"
+msgstr "コミットを作成しました"
+
+#: src/infra/git/actions.rs
+msgid "Discarded tracked changes; backup at {}"
+msgstr "追跡対象の変更を破棄しました。バックアップは {} にあります"
+
+#: src/infra/git/actions.rs
+msgid "Nothing to discard"
+msgstr "破棄するものはありません"
+
+#: src/infra/git/actions.rs
+msgid "Unstaged all changes"
+msgstr "すべての変更をアンステージしました"
+
+#: src/infra/git/actions.rs
+msgid "No local changes to stash"
+msgstr "stash するローカル変更はありません"
+
+#: src/infra/git/actions.rs
+msgid "Changes stashed (untracked files included)"
+msgstr "変更を stash しました (未追跡ファイルを含む)"
+
+#: src/infra/git/actions.rs
+msgid "Stash applied and dropped"
+msgstr "stash を適用して削除しました"
+
+#: src/infra/git/actions.rs
+msgid "No upstream for '{}'. Run: git branch --set-upstream-to=origin/{}"
+msgstr ""
+"'{}' の上流がありません。実行してください: git branch --set-upstream-"
+"to=origin/{}"
+
+#: src/infra/git/actions.rs
+msgid "HEAD is detached, switch to a branch before pulling"
+msgstr "HEAD がデタッチされています。プルの前にブランチに切り替えてください"
+
+#: src/infra/git/actions.rs
+msgid "Already up to date"
+msgstr "すでに最新です"
+
+#: src/infra/git/actions.rs
+msgid "Pulled (fast-forward)"
+msgstr "プルしました (fast-forward)"
+
+#: src/infra/git/actions.rs
+msgid "No upstream for '{}'. Run once: git push -u origin {}"
+msgstr "'{}' の上流がありません。一度実行してください: git push -u origin {}"
+
+#: src/infra/git/actions.rs
+msgid "HEAD is detached, switch to a branch before pushing"
+msgstr ""
+"HEAD がデタッチされています。プッシュの前にブランチに切り替えてください"
+
+#: src/infra/git/actions.rs
+msgid "Pushed to {}"
+msgstr "{} にプッシュしました"
+
+#: src/infra/git/actions.rs
+msgid "Fetched all remotes"
+msgstr "すべてのリモートをフェッチしました"
+
+#: src/infra/git/actions.rs
+msgid "Last commit amended"
+msgstr "最後のコミットを修正しました"
+
+# ============================================================
+# Misc. missing entries
+# ============================================================
+msgid "Extract \"{}\"?"
+msgstr "\"{}\" を展開しますか？"
+
+msgid ""
+"\"{}\" is an archive inside \"{}\". It will be extracted next to \"{}\" and "
+"then opened."
+msgstr ""
+"\"{}\" は \"{}\" 内のアーカイブです。\"{}\" の隣に展開してから開きます。"
+
+msgid "Yes"
+msgstr "はい"
+
+msgid "No"
+msgstr "いいえ"
+
+#: src/ui/dialog/conflict/mod.rs:53
+msgid ""
+"A file with this name already exists in the destination. Choose what to do "
+"with it."
+msgstr ""
+"この名前のファイルが保存先にすでに存在します。どのように処理するか選択してく"
+"ださい。"
+
+#: src/ui/help/page/quick_list.rs:9
+msgid "Add selection or current folder to list"
+msgstr "選択項目または現在のフォルダーをリストに追加"
+
+#: src/ui/help/page/search.rs:29
+msgid ""
+"Select a file, then press Space or Ctrl+M to preview it and hide other "
+"files. Pressing Space or Esc again closes the preview and removes the filter."
+msgstr ""
+"ファイルを選択して Space または Ctrl+M を押すと、プレビューを表示して他のファ"
+"イルを隠します。もう一度 Space または Esc を押すと、プレビューを閉じてフィル"
+"ターを解除します。"
+
+#: src/ui/help/page/system_view.rs:18
+msgid "Toggle embedded terminal"
+msgstr "埋め込み端末の切り替え"
+
+#: src/ui/panels/actions.rs
+msgid "No template for this type"
+msgstr "このタイプ用のテンプレートはありません"
+
+#: src/ui/panels/preview.rs:1388
+msgid "Empty"
+msgstr "空"
+
+#: src/ui/ops/view/preview.rs:909
+msgid "Folder"
+msgstr "フォルダー"
+
+#: src/ui/settings/page/appearance.rs:47
+msgid "Terminal Location"
+msgstr "端末の位置"
+
+#: src/ui/settings/page/appearance.rs:48
+msgid ""
+"Open the embedded terminal in the right sidebar instead of the bottom pane"
+msgstr "下部ペインではなく右サイドバーで埋め込み端末を開きます"
+
+#: src/ui/settings/page/appearance.rs:287
+msgid ""
+"Choose which buttons the header bar shows. The main menu is always visible. "
+"If the list/grid toggle is hidden, press Ctrl+Shift+M."
+msgstr ""
+"ヘッダーバーに表示するボタンを選択します。メインメニューは常に表示されます。"
+"一覧/グリッド切り替えが非表示の場合は Ctrl+Shift+M を押してください。"
+
+#: src/ui/settings/page/appearance.rs:383
+msgid "Hex color code for extension badges (e.g., '#1273b2')"
+msgstr "拡張子バッジの 16 進数カラーコード (例: '#1273b2')"
+
+#: src/ui/settings/page/appearance.rs:401
+msgid "Hex color code for icon body (e.g., '#e4e4e4')"
+msgstr "アイコン本体の 16 進数カラーコード (例: '#e4e4e4')"
+
+#: src/ui/settings/page/appearance.rs:419
+msgid "Hex color code for extension text (e.g., '#ffffff')"
+msgstr "拡張子テキストの 16 進数カラーコード (例: '#ffffff')"
+
+#: src/utils/config/menu.rs:88
+msgid "Window background updated!"
+msgstr "ウィンドウ背景を更新しました! "
+
+#: src/utils/config/menu.rs:89
+msgid "Sidebar background updated!"
+msgstr "サイドバー背景を更新しました! "
+
+#: src/utils/config/menu.rs:90
+msgid "Right panel background updated!"
+msgstr "右パネル背景を更新しました! "
+
+#: src/utils/config/menu.rs:91
+msgid "Backgrounds reset to default"
+msgstr "背景を既定に戻しました"
+
+#: src/ui/dialog/icon.rs:15
+msgid "Select Folder Icon"
+msgstr "フォルダーアイコンを選択"
+
+#: src/ui/dialog/icon.rs:207
+msgid "Select Extension Icon"
+msgstr "拡張子アイコンを選択"
+
+#: src/ui/panels/search.rs:401
+msgid "Invalid regex: {}"
+msgstr "無効な正規表現: {}"
+
+#: src/ui/ops/file/command.rs:354
+msgid "Command failed"
+msgstr "コマンドの実行に失敗しました"
+
+#: src/ui/menu/editor/mod.rs:346
+msgid "menu.rs saved"
+msgstr "menu.rs を保存しました"
+
+#: src/ui/menu/editor/mod.rs:347
+msgid "Failed to save menu.rs"
+msgstr "menu.rs の保存に失敗しました"
+
+#: src/ui/menu/editor/entry_dialog.rs:98
+msgid "Line Position in menu.rs"
+msgstr "menu.rs 内の行位置"
+
+# ============================================================
+# Built-in action descriptions (src/ui/menu/editor/builtins.rs)
+# ============================================================
+#: src/ui/menu/editor/builtins.rs:11
+msgid "Copies the selected files or folders to the clipboard."
+msgstr "選択したファイルまたはフォルダーをクリップボードにコピーします。"
+
+#: src/ui/menu/editor/builtins.rs:16
+msgid "Cuts the selected files or folders to the clipboard."
+msgstr "選択したファイルまたはフォルダーを切り取ってクリップボードに置きます。"
+
+#: src/ui/menu/editor/builtins.rs:21
+msgid "Pastes items from the clipboard into the current directory."
+msgstr "クリップボードの項目を現在のディレクトリに貼り付けます。"
+
+#: src/ui/menu/editor/builtins.rs:26
+msgid "Opens the selected folder or current location in a new tab."
+msgstr "選択したフォルダーまたは現在の場所を新しいタブで開きます。"
+
+#: src/ui/menu/editor/builtins.rs:31
+msgid "Triggers inline filename renaming on the selected item."
+msgstr "選択項目のファイル名のインライン名前変更を開始します。"
+
+#: src/ui/menu/editor/builtins.rs:36
+msgid "Moves the selected files or folders to the system trash."
+msgstr "選択したファイルまたはフォルダーをシステムのごみ箱に移動します。"
+
+#: src/ui/menu/editor/builtins.rs:41
+msgid "Opens the new folder creation prompt."
+msgstr "新規フォルダー作成のプロンプトを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:46
+msgid "Opens the new file creation prompt."
+msgstr "新規ファイル作成のプロンプトを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:51
+msgid "Pins or unpins the target folder in the sidebar."
+msgstr "対象のフォルダーをサイドバーにピン留めまたは解除します。"
+
+#: src/ui/menu/editor/builtins.rs:56
+msgid "Adds the selected folder or current directory to the Quick List."
+msgstr ""
+"選択したフォルダーまたは現在のディレクトリをクイックリストに追加します。"
+
+#: src/ui/menu/editor/builtins.rs:61
+msgid "Opens a submenu to move or copy items directly to Quick List slots."
+msgstr ""
+"項目をクイックリストのスロットに直接移動またはコピーするサブメニューを開きま"
+"す。"
+
+#: src/ui/menu/editor/builtins.rs:66
+msgid "Opens the file tag editor popover."
+msgstr "ファイルタグエディターのポップオーバーを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:71
+msgid "Opens the Directory Inspector with disk usage and largest files."
+msgstr "ディスク使用量と最大ファイルを含むフォルダーインスペクターを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:76
+msgid "Installs the selected font files into ~/.local/share/fonts."
+msgstr "選択したフォントファイルを ~/.local/share/fonts にインストールします。"
+
+#: src/ui/menu/editor/builtins.rs:81
+msgid ""
+"Populates a dynamic submenu of registered applications for the MIME type."
+msgstr ""
+"MIME タイプに登録されているアプリケーションの動的サブメニューを生成します。"
+
+#: src/ui/menu/editor/builtins.rs:86
+msgid "Opens the full system application chooser dialog."
+msgstr "システム全体のアプリケーション選択ダイアログを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:91
+msgid "Opens the folder icon picker to assign a theme icon."
+msgstr "テーマアイコンを割り当てるフォルダーアイコンピッカーを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:96
+msgid "Opens a file chooser to assign a custom image as file/folder icon."
+msgstr ""
+"カスタム画像をファイル/フォルダーアイコンとして割り当てるファイル選択ダイアロ"
+"グを開きます。"
+
+#: src/ui/menu/editor/builtins.rs:101
+msgid "Restores the default icon for the selected file or folder."
+msgstr "選択したファイルまたはフォルダーの既定アイコンを復元します。"
+
+#: src/ui/menu/editor/builtins.rs:106
+msgid "Sets a custom image icon for the target file's extension globally."
+msgstr ""
+"対象ファイルの拡張子に対してカスタム画像アイコンをグローバルに設定します。"
+
+#: src/ui/menu/editor/builtins.rs:111
+msgid "Resets the custom icon for the target extension back to theme default."
+msgstr "対象拡張子のカスタムアイコンをテーマの既定に戻します。"
+
+#: src/ui/menu/editor/builtins.rs:116
+msgid "Sets the selected image as the main window background."
+msgstr "選択した画像をメインウィンドウの背景に設定します。"
+
+#: src/ui/menu/editor/builtins.rs:121
+msgid "Sets the selected image as the left sidebar background."
+msgstr "選択した画像を左サイドバーの背景に設定します。"
+
+#: src/ui/menu/editor/builtins.rs:126
+msgid "Sets the selected image as the right panel background."
+msgstr "選択した画像を右パネルの背景に設定します。"
+
+#: src/ui/menu/editor/builtins.rs:131
+msgid "Clears all custom background images and resets styling to default."
+msgstr "すべてのカスタム背景画像を消去し、スタイルを既定に戻します。"
+
+# ============================================================
+# Search-as-tag feature
+# ============================================================
+#: src/ui/panels/search.rs:78
+msgid "Save as tag needs between 1 and {max} search results"
+msgstr "タグとして保存するには 1 ～ {max} 件の検索結果が必要です"
+
+#: src/ui/panels/search.rs:78
+msgid "Save results as tag"
+msgstr "結果をタグとして保存"
+
+#: src/app/update/tag.rs:220
+msgid "No search results to tag"
+msgstr "タグ付けする検索結果がありません"
+
+#: src/app/update/tag.rs:228
+msgid "Too many results to tag ({count}), the limit is {max}"
+msgstr "タグ付けする結果が多すぎます ({count})。上限は {max} です"
+
+#: src/app/update/tag.rs:290
+msgid "Could not tag any files as #{tag}"
+msgstr "ファイルを #{tag} としてタグ付けできませんでした"
+
+#: src/app/update/tag.rs:294
+msgid "Tagged {count} of {total} files as #{tag}"
+msgstr "{total} 個中 {count} 個のファイルを #{tag} としてタグ付けしました"
+
+#: src/ui/dialog/save_search_as_tag.rs:31
+msgid "Save Search as Tag"
+msgstr "検索をタグとして保存"
+
+#: src/ui/dialog/save_search_as_tag.rs:41
+msgid "Tag name"
+msgstr "タグ名"
+
+#: src/ui/dialog/save_search_as_tag.rs:48
+msgid "Pin to sidebar"
+msgstr "サイドバーにピン留め"
+
+#: src/ui/dialog/save_search_as_tag.rs:21
+msgid "{count} files will be tagged."
+msgstr "{count} 個のファイルがタグ付けされます。"
+
+#: src/ui/dialog/save_search_as_tag.rs:25
+msgid "{count} files will be tagged #{tag}."
+msgstr "{count} 個のファイルが #{tag} としてタグ付けされます。"
+
+#: src/ui/dialog/save_search_as_tag.rs:33
+msgid "New files matching this search will not be tagged automatically."
+msgstr "この検索に一致する新しいファイルは自動的にはタグ付けされません。"
