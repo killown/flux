@@ -9,124 +9,34 @@
   --color-card-bg: #ffffff;
   --border-color: rgba(0, 0, 0, 0.1);
 
-  --shadow-3d:
-    0 1px 0 0 rgba(255, 255, 255, 1) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.05) inset, 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-3d: 0 1px 2px rgba(0, 0, 0, 0.06);
 
-  --card-3d-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 1) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.05) inset, 0 3px 8px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.06);
+  --card-3d-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 
-  --sidebar-3d-border:
-    1px 0 0 0 rgba(255, 255, 255, 0.6), 2px 0 0 0 rgba(0, 0, 0, 0.05),
-    4px 0 8px -2px rgba(0, 0, 0, 0.05);
+  --sidebar-3d-border: 1px 0 0 0 rgba(0, 0, 0, 0.06);
 
   --sidebar-hover-3d-border:
-    1px 0 0 0 rgba(142, 142, 147, 0.4), 2px 0 0 0 rgba(0, 0, 0, 0.1),
-    6px 0 12px -2px rgba(0, 0, 0, 0.1);
+    1px 0 0 0 rgba(142, 142, 147, 0.4), 4px 0 8px -2px rgba(0, 0, 0, 0.06);
 }
 
 headerbar,
 toolbarview > .top-bar,
 .top-bar {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.7),
-    rgba(0, 0, 0, 0.02)
-  );
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.9) inset;
+  background-color: trabnsparent;
   color: #1a1a1a;
-}
-
-headerbar .breadcrumb-btn {
-  background-color: rgba(255, 255, 255, 0.6);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.9),
-    rgba(0, 0, 0, 0.03)
-  );
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 6px;
-  min-height: 24px;
-  padding: 3px 8px;
-  box-shadow: var(--shadow-3d);
-  transition:
-    background-image 100ms ease,
-    box-shadow 100ms ease;
-  color: #1a1a1a;
-}
-
-headerbar .breadcrumb-btn label {
-  color: #1a1a1a;
-}
-
-headerbar .breadcrumb-btn:last-child {
-  background-color: #8e8e93;
-  background-image: none;
-  border-color: #8e8e93;
-  color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-}
-
-headerbar .breadcrumb-btn:last-child label {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-headerbar button:hover,
-headerbar .path-bar button:hover,
-headerbar .breadcrumb-btn:hover {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 1),
-    rgba(0, 0, 0, 0.01)
-  );
-}
-
-headerbar .breadcrumb-btn:active {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.05),
-    rgba(0, 0, 0, 0.01)
-  );
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) inset;
-}
-
-headerbar box > button:last-child,
-headerbar > box > button:last-child,
-headerbar windowhandle + button,
-headerbar .end button:last-child {
 }
 
 .selection-status,
 toolbarview > .bottom-bar {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.6),
-    rgba(0, 0, 0, 0.02)
-  );
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.9) inset;
-  color: #1a1a1a;
+  background-color: transparent;
 }
 
 .sidebar,
 .flux-sidebar-root,
 .sidebar-inner {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.5),
-    rgba(0, 0, 0, 0.02)
-  );
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.8) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.02) inset,
-    var(--sidebar-3d-border);
-  transition:
-    box-shadow 150ms ease,
-    border-color 150ms ease;
+  background-color: var(--color-sidebar-bg);
+  box-shadow: var(--sidebar-3d-border);
+  transition: box-shadow 150ms ease;
   color: #1a1a1a;
 }
 
@@ -139,15 +49,8 @@ toolbarview > .bottom-bar {
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
   background-color: rgba(255, 255, 255, 0.6);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.9),
-    rgba(0, 0, 0, 0.03)
-  );
   border-radius: 6px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.1) inset,
-    var(--shadow-3d);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08) inset;
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) label {
@@ -156,15 +59,8 @@ toolbarview > .bottom-bar {
 
 .sidebar-row:not(.sidebar-section):selected {
   background-color: #8e8e93;
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.15),
-    rgba(0, 0, 0, 0.05)
-  );
   border-radius: 6px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.2),
-    0 1px 0 0 rgba(255, 255, 255, 0.2) inset;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   font-weight: 600;
 }
 
@@ -175,11 +71,6 @@ toolbarview > .bottom-bar {
 
 .flux-card {
   background-color: alpha(var(--color-card-bg), 0.75);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.8),
-    rgba(0, 0, 0, 0.02)
-  );
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 10px;
   box-shadow: var(--card-3d-shadow);
@@ -189,45 +80,26 @@ toolbarview > .bottom-bar {
 }
 
 .flux-card:hover {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 1),
-    rgba(0, 0, 0, 0.01)
-  );
   border-color: rgba(142, 142, 147, 0.4);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.1),
-    0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 gridview child:selected .flux-card {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(142, 142, 147, 0.1),
-    rgba(142, 142, 147, 0.05)
-  );
+  background-color: rgba(142, 142, 147, 0.1);
   border-color: #8e8e93;
   box-shadow:
     0 0 0 1px #8e8e93 inset,
-    0 4px 12px rgba(142, 142, 147, 0.15),
-    0 1px 3px rgba(0, 0, 0, 0.05);
+    0 4px 12px rgba(142, 142, 147, 0.15);
 }
 
 tabbar tab {
   background-color: rgba(255, 255, 255, 0.6);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.9),
-    rgba(0, 0, 0, 0.03)
-  );
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   min-height: 24px;
   padding: 3px 8px;
   box-shadow: var(--shadow-3d);
-  transition:
-    background-image 100ms ease,
-    box-shadow 100ms ease;
+  transition: background-color 100ms ease;
   color: #1a1a1a;
 }
 
@@ -236,25 +108,14 @@ tabbar tab label {
 }
 
 tabbar tab:hover {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 1),
-    rgba(0, 0, 0, 0.01)
-  );
+  background-color: rgba(255, 255, 255, 0.85);
 }
 
 tabbar tab:checked,
 tabbar tab:selected {
   background-color: #8e8e93;
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.1),
-    rgba(0, 0, 0, 0.05)
-  );
   border-color: rgba(0, 0, 0, 0.2);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
-    0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 tabbar tab:checked label,
