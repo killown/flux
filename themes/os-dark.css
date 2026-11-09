@@ -1,30 +1,18 @@
-@define-color accent_color        #8E8E93;
-@define-color accent_bg_color     #8E8E93;
+@define-color accent_color        #007AFF;
+@define-color accent_bg_color     #007AFF;
 @define-color accent_fg_color     #ffffff;
 
 :root {
-  --color-window-bg: #161618;
-  --color-sidebar-bg: #212124;
-  --color-headerbar-bg: #212124;
-  --color-card-bg: #2b2b2f;
-  --border-color: rgba(255, 255, 255, 0.08);
+  --color-window-bg: #1e1e1e;
+  --color-sidebar-bg: #252527;
+  --color-headerbar-bg: #2d2d2f;
+  --color-card-bg: #323234;
+  --border-color: rgba(255, 255, 255, 0.1);
 
-  --shadow-3d:
-    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.4) inset, 0 2px 6px rgba(0, 0, 0, 0.3);
-
-  --card-3d-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.5) inset, 0 4px 12px rgba(0, 0, 0, 0.4),
-    0 1px 3px rgba(0, 0, 0, 0.3);
-
-  --sidebar-3d-border:
-    1px 0 0 0 rgba(255, 255, 255, 0.05), 2px 0 0 0 rgba(0, 0, 0, 0.6),
-    4px 0 8px -2px rgba(0, 0, 0, 0.5);
-
-  --sidebar-hover-3d-border:
-    1px 0 0 0 rgba(142, 142, 147, 0.6), 2px 0 0 0 rgba(0, 0, 0, 0.8),
-    6px 0 12px -2px rgba(0, 0, 0, 0.6);
+  --shadow-3d: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --card-3d-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --sidebar-3d-border: none;
+  --sidebar-hover-3d-border: none;
 }
 
 .selection-status,
@@ -34,14 +22,11 @@ toolbarview > .bottom-bar {
 .sidebar,
 .flux-sidebar-root,
 .sidebar-inner {
-  background-image: var(sidebar-gradient);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.4) inset,
-    var(--sidebar-3d-border);
-  transition:
-    box-shadow 150ms ease,
-    border-color 150ms ease;
+  background-image: none;
+  background-color: var(--color-sidebar-bg);
+  box-shadow: none;
+  border-right: 1px solid var(--border-color);
+  transition: none;
 }
 
 .sidebar scrolledwindow,
@@ -52,117 +37,73 @@ toolbarview > .bottom-bar {
 }
 
 .sidebar-row:not(.sidebar-section):hover:not(:selected) {
-  background-color: rgba(255, 255, 255, 0.04);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.06),
-    rgba(0, 0, 0, 0.12)
-  );
+  background-color: rgba(255, 255, 255, 0.05);
+  background-image: none;
   border-radius: 6px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.35) inset,
-    var(--shadow-3d);
+  box-shadow: none;
 }
 
 .sidebar-row:not(.sidebar-section):selected {
-  background-color: rgba(255, 255, 255, 0.08);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.08),
-    rgba(0, 0, 0, 0.12)
-  );
+  background-color: rgba(255, 255, 255, 0.1);
+  background-image: none;
   border-radius: 6px;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.35) inset,
-    0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
-    0 1px 2px rgba(0, 0, 0, 0.2);
-  font-weight: 600;
+  box-shadow: none;
+  font-weight: 500;
 }
 
 .flux-card {
-  background-color: alpha(var(--color-card-bg), 0.75);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.06),
-    rgba(0, 0, 0, 0.12)
-  );
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  border-radius: 10px;
+  background-color: var(--color-card-bg);
+  background-image: none;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
   box-shadow: var(--card-3d-shadow);
   transition:
-    box-shadow 120ms ease,
+    background-color 120ms ease,
     border-color 120ms ease;
 }
 
 .flux-card:hover {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.1),
-    rgba(0, 0, 0, 0.08)
-  );
-  border-color: rgba(142, 142, 147, 0.6);
-  box-shadow:
-    0 -1px 0 0 rgba(0, 0, 0, 0.5) inset,
-    0 6px 16px rgba(142, 142, 147, 0.2),
-    0 2px 4px rgba(0, 0, 0, 0.4);
+  background-image: none;
+  background-color: #3a3a3c;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: var(--card-3d-shadow);
 }
 
 gridview child:selected .flux-card {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(142, 142, 147, 0.25),
-    rgba(142, 142, 147, 0.12)
-  );
-  border-color: #8e8e93;
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
-    0 -1px 0 0 rgba(0, 0, 0, 0.6) inset,
-    0 0 0 1px #8e8e93 inset,
-    0 6px 16px rgba(0, 0, 0, 0.5);
+  background-image: none;
+  background-color: rgba(0, 122, 255, 0.15);
+  border-color: #007aff;
+  box-shadow: none;
 }
 
 tabbar tab {
-  background-color: rgba(255, 255, 255, 0.04);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.06),
-    rgba(0, 0, 0, 0.12)
-  );
-  border: 1px solid rgba(0, 0, 0, 0.35);
+  background-color: transparent;
+  background-image: none;
+  border: none;
   border-radius: 6px;
   min-height: 24px;
-  padding: 3px 8px;
-  box-shadow: var(--shadow-3d);
-  transition:
-    background-image 100ms ease,
-    box-shadow 100ms ease;
+  padding: 3px 10px;
+  box-shadow: none;
+  transition: background-color 100ms ease;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 tabbar tab:hover {
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.1),
-    rgba(0, 0, 0, 0.06)
-  );
+  background-image: none;
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 tabbar tab:checked,
 tabbar tab:selected {
-  background-color: var(--color-accent-bg);
-  background-image: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.1),
-    rgba(0, 0, 0, 0.15)
-  );
-  border-color: rgba(0, 0, 0, 0.5);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.2) inset,
-    0 2px 6px rgba(0, 0, 0, 0.3);
+  background-color: rgba(255, 255, 255, 0.1);
+  background-image: none;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 tabbar tab:checked label,
 tabbar tab:selected label {
-  color: var(--color-accent-fg);
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -172,7 +113,9 @@ tabbar tab button.flat {
   box-shadow: none;
   color: inherit;
   opacity: 0.6;
-  transition: opacity 100ms ease;
+  transition:
+    opacity 100ms ease,
+    background-color 100ms ease;
 }
 
 tabbar tab button.flat:hover {
