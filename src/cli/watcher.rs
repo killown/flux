@@ -44,6 +44,12 @@ pub(super) fn setup_config_watcher() {
                 match event_type {
                     Changed | ChangesDoneHint | Created | MovedIn | Renamed | Moved => {
                         glib::timeout_add_local_once(std::time::Duration::from_millis(50), || {
+                            // This process wrote the file itself and already holds the
+                            // values, so a reload would only repeat work, and the
+                            // refresh below rescans the open folder.
+                            if crate::utils::config::watcher_echo_muted() {
+                                return;
+                            }
                             crate::infra::loader::invalidate_extension_icon_cache();
                             crate::utils::helpers::load_custom_css();
                             crate::utils::helpers::load_custom_background_images();

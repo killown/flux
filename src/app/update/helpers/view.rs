@@ -43,8 +43,13 @@ impl FluxApp {
         };
         for i in 0..self.files.len() {
             if let Some(wrapper) = self.files.get(i) {
-                let mut item = wrapper.borrow().clone();
-                if item.is_list_mode != mode || item.icon_size != size {
+                // Check before cloning: most items are already in sync.
+                let stale = {
+                    let item = wrapper.borrow();
+                    item.is_list_mode != mode || item.icon_size != size
+                };
+                if stale {
+                    let mut item = wrapper.borrow().clone();
                     item.is_list_mode = mode;
                     item.icon_size = size;
                     self.files.remove(i);

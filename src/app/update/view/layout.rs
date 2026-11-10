@@ -1,9 +1,9 @@
 use crate::app::state::FluxApp;
 use crate::domain::model::constants;
-use crate::domain::model::{AppMsg, NavigationMsg, SortBy, ViewMsg};
+use crate::domain::model::{AppMsg, NavigationMsg, SortBy, ThumbnailsMsg, ViewMsg};
 use crate::ui::FileItem;
 use crate::utils;
-use gtk::prelude::{Cast, ObjectExt, WidgetExt};
+use gtk::prelude::{Cast, ObjectExt, SelectionModelExt, WidgetExt};
 use relm4::prelude::*;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -81,6 +81,9 @@ fn bound_cells(view: &gtk::GridView) -> HashMap<PathBuf, BoundCell> {
 
 impl FluxApp {
     /// Toggles between grid card layout and compact list view.
+    ///
+    /// Only the way the loaded items are drawn changes: the folder is not read
+    /// again and the model is not rebuilt, see [`Self::apply_view_mode`].
     pub fn handle_toggle_list_mode(&mut self) {
         crate::hit!("handle_toggle_list_mode");
         // The shortcut can fire from any focus (sidebar, panel, terminal).
@@ -95,14 +98,14 @@ impl FluxApp {
         self.is_list_mode = !self.is_list_mode;
         self.search.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
-        utils::save_config(&self.config);
+        // The write is disk I/O, so it runs on the blocking pool. It is quiet
+        // because the config watcher would otherwise answer it with a CSS reload
+        // and a rescan of the open folder, which freezes a large folder on a
+        // slow disk.
+        let config = self.config.clone();
+        relm4::spawn_blocking(move || utils::save_config_quiet(&config));
 
         let is_list = self.is_list_mode;
-        let new_icon_size = if is_list {
-            self.current_list_icon_size
-        } else {
-            self.current_icon_size
-        };
 
         let active_tab = match self.tabs.get_mut(self.active_tab_index) {
             Some(t) => t,
@@ -114,18 +117,83 @@ impl FluxApp {
         active_tab.files.view.set_max_columns(max_columns);
         self.search.saved_max_columns = max_columns;
 
-        for i in 0..active_tab.files.len() {
-            if let Some(item_wrapper) = active_tab.files.get(i) {
-                let mut item = item_wrapper.borrow().clone();
+        self.apply_view_mode();
+        self.sync_list_mode();
+        self.refresh_wide_preview_layout();
+
+        if self.config.ui.lazy_thumbnails {
+            // The grid shows more cells than the list had rows, and nothing has
+            // asked for their thumbnails. Wait for the new layout so the check
+            // reads the new page size.
+            gtk::glib::timeout_add_local_once(Duration::from_millis(100), || {
+                if let Some(sender) = crate::infra::SENDER.get() {
+                    let _ = sender.send(AppMsg::Thumbnails(ThumbnailsMsg::CheckVisibleThumbnails));
+                }
+            });
+        }
+    }
+
+    /// Switches the active tab's items to the current view mode without
+    /// rebuilding the model.
+    ///
+    /// Every item gets the new mode and icon size in place: a field write per
+    /// item, no clone and no model signal. Only the items that have a live cell
+    /// are replaced in the model, because that is what makes GTK rebind a cell.
+    /// The other items are bound with the new mode when GTK realizes their cell,
+    /// so the cost follows the number of live cells, not the folder size.
+    ///
+    /// Replacing an item drops its selection, so the selection of the replaced
+    /// items is put back afterwards. When no live cell is found the walk is
+    /// assumed to have failed and every item is replaced, as before.
+    fn apply_view_mode(&mut self) {
+        crate::hit!("apply_view_mode");
+        let is_list = self.is_list_mode;
+        let size = if is_list {
+            self.current_list_icon_size
+        } else {
+            self.current_icon_size
+        };
+
+        let Some(tab) = self.tabs.get_mut(self.active_tab_index) else {
+            return;
+        };
+
+        let live: HashSet<PathBuf> = bound_cells(&tab.files.view).into_keys().collect();
+        let replace_all = live.is_empty();
+        let selection = tab
+            .files
+            .view
+            .model()
+            .and_then(|model| model.downcast::<gtk::MultiSelection>().ok());
+        let selected = selection.as_ref().map(|model| model.selection());
+        let replaced = gtk::Bitset::new_empty();
+
+        for i in 0..tab.files.len() {
+            let stale = tab.files.get(i).and_then(|wrapper| {
+                let mut item = wrapper.borrow_mut();
+                if item.is_list_mode == is_list && item.icon_size == size {
+                    return None;
+                }
                 item.is_list_mode = is_list;
-                item.icon_size = new_icon_size;
-                active_tab.files.remove(i);
-                active_tab.files.insert(i, item);
+                item.icon_size = size;
+                if replace_all || live.contains(&item.path) {
+                    Some(item.clone())
+                } else {
+                    None
+                }
+            });
+            if let Some(item) = stale {
+                tab.files.remove(i);
+                tab.files.insert(i, item);
+                let _ = replaced.add(i);
             }
         }
 
-        self.sync_list_mode();
-        self.refresh_wide_preview_layout();
+        if let (Some(selection), Some(selected)) = (selection, selected) {
+            if !replaced.is_empty() {
+                let _ = selection.set_selection(&selected, &replaced);
+            }
+        }
     }
 
     /// Toggles between ascending and descending sort order.
@@ -328,7 +396,11 @@ impl FluxApp {
         FileItem::set_live_grid_icon_size(None);
         if self.is_list_mode {
             let config = self.config.clone();
-            relm4::spawn_blocking(move || utils::save_config(&config));
+            // Quiet, like the list/grid toggle: the config watcher would answer
+            // this write with a sidebar rebuild, which makes the device icons
+            // flicker, and a folder rescan, which drops the thumbnails back to
+            // placeholders. This process already holds the new size.
+            relm4::spawn_blocking(move || utils::save_config_quiet(&config));
         } else {
             let state_db = self.state_db.clone();
             let path = self.current_path.clone();
