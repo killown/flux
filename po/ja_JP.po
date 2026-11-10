@@ -4605,3 +4605,9 @@ msgstr "{count} 個のファイルが #{tag} としてタグ付けされます�
 #: src/ui/dialog/save_search_as_tag.rs:33
 msgid "New files matching this search will not be tagged automatically."
 msgstr "この検索に一致する新しいファイルは自動的にはタグ付けされません。"
+
+msgid "List drives that are not mounted yet, click one to mount it"
+msgstr "まだマウントされていないドライブを一覧表示し、クリックしてマウントします。"
+
+msgid "Unmounted Volumes"
+msgstr "未マウントのボリューム"

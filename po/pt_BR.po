@@ -4764,3 +4764,9 @@ msgstr "{count} arquivos serão tagueados como #{tag}."
 #: src/ui/dialog/save_search_as_tag.rs:33
 msgid "New files matching this search will not be tagged automatically."
 msgstr "Novos arquivos que correspondam a esta busca não serão tagueados automaticamente."
+
+msgid "List drives that are not mounted yet, click one to mount it"
+msgstr "Listar unidades que ainda não estão montadas, clique em uma para montá-la."
+
+msgid "Unmounted Volumes"
+msgstr "Volumes não montados"

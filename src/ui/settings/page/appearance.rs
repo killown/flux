@@ -495,7 +495,7 @@ fn theme_group(config: &Config) -> adw::PreferencesGroup {
             },
             add = &adw::SwitchRow {
                 set_title: &crate::i18n::markup_tr("Unmounted Volumes"),
-                set_subtitle: &crate::i18n::markup_tr("List drives that are not mounted yet; click one to mount it"),
+                set_subtitle: &crate::i18n::markup_tr("List drives that are not mounted yet, click one to mount it"),
                 set_active: config.ui.show_unmounted_volumes,
                 connect_active_notify => move |switch| {
                     if let Some(s) = crate::infra::SENDER.get() {
