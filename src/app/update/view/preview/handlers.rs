@@ -304,6 +304,6 @@ impl FluxApp {
         crate::hit!("handle_set_preview_panel_width");
         let clamped = val.clamp(300, 2400);
         self.config.ui.preview_panel_width = clamped;
-        crate::utils::save_config(&self.config);
+        crate::utils::save_config_quiet(&self.config);
     }
 }

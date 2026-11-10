@@ -41,7 +41,7 @@ impl FluxApp {
     fn set_wide_preview_default(&mut self, on: bool) {
         if self.config.ui.wide_preview != on {
             self.config.ui.wide_preview = on;
-            crate::utils::save_config(&self.config);
+            crate::utils::save_config_quiet(&self.config);
         }
         let _ = registry::with(|h| h.set_wide_default_active(on));
     }

@@ -129,27 +129,27 @@ pub(super) fn handle(
         AppMsg::Settings(SettingsMsg::SetShowCsd(val)) => app.handle_set_show_csd(val),
         AppMsg::Settings(SettingsMsg::SetHeaderShowFilter(val)) => {
             app.config.ui.header_show_filter = val;
-            crate::utils::save_config(&app.config);
+            crate::utils::save_config_quiet(&app.config);
         }
         AppMsg::Settings(SettingsMsg::SetHeaderShowSort(val)) => {
             app.config.ui.header_show_sort = val;
-            crate::utils::save_config(&app.config);
+            crate::utils::save_config_quiet(&app.config);
         }
         AppMsg::Settings(SettingsMsg::SetHeaderShowView(val)) => {
             app.config.ui.header_show_view = val;
-            crate::utils::save_config(&app.config);
+            crate::utils::save_config_quiet(&app.config);
         }
         AppMsg::Settings(SettingsMsg::SetHeaderShowPreview(val)) => {
             app.config.ui.header_show_preview = val;
-            crate::utils::save_config(&app.config);
+            crate::utils::save_config_quiet(&app.config);
         }
         AppMsg::Settings(SettingsMsg::SetSidebarMenuRequiresCtrl(val)) => {
             app.config.ui.sidebar_menu_requires_ctrl = val;
-            crate::utils::save_config(&app.config);
+            crate::utils::save_config_quiet(&app.config);
         }
         AppMsg::Settings(SettingsMsg::SetPanelMenuRequiresCtrl(val)) => {
             app.config.ui.panel_menu_requires_ctrl = val;
-            crate::utils::save_config(&app.config);
+            crate::utils::save_config_quiet(&app.config);
         }
         AppMsg::Window(WindowMsg::SetWindowControlsLeft(val)) => {
             app.handle_set_window_controls_left(val)

@@ -7,12 +7,12 @@ impl FluxApp {
     pub fn handle_set_single_click(&mut self, val: bool) {
         self.config.ui.single_click = val;
         self.apply_single_click();
-        utils::save_config(&self.config);
+        utils::save_config_quiet(&self.config);
     }
 
     pub fn handle_set_auto_list_threshold(&mut self, val: usize) {
         self.config.ui.auto_list_threshold = val;
-        utils::save_config(&self.config);
+        utils::save_config_quiet(&self.config);
     }
 
     /// Toggles drawing browsable archives as folders in the file grid.
@@ -34,7 +34,7 @@ impl FluxApp {
     pub fn handle_toggle_single_click(&mut self) {
         self.config.ui.single_click = !self.config.ui.single_click;
         self.apply_single_click();
-        crate::utils::save_config(&self.config);
+        crate::utils::save_config_quiet(&self.config);
     }
 
     /// Pushes `config.ui.single_click` to every tab's grid, so the setting
@@ -101,6 +101,6 @@ impl FluxApp {
             "toggle_terminal" => self.config.shortcuts.toggle_terminal = val,
             _ => {}
         }
-        utils::save_config(&self.config);
+        utils::save_config_quiet(&self.config);
     }
 }
