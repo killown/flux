@@ -115,6 +115,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `show_recents` | `true` | Show the Recents location in the sidebar. |
 | `show_symlink_emblem` | `true` | Show a badge and target hint on symbolic links. |
 | `show_thumbnails` | `true` | Master switch for thumbnail generation; overrides `thumbnail_types`. |
+| `show_unmounted_volumes` | `false` | List volumes that are not mounted, such as a plugged-in USB drive nothing automounted, in the sidebar. Clicking one mounts it and opens it. |
 | `show_xdg_dirs` | `false` | Show the XDG user directories, such as Documents and Downloads, in the sidebar. |
 | `sidebar_menu_requires_ctrl` | `false` | Open sidebar context menus only on Ctrl+right-click; a plain right-click does nothing. |
 | `sidebar_visible` | `true` | Show the sidebar. Persisted across sessions. |
@@ -239,6 +240,7 @@ default_icon_size = 0
 list_icon_size = 24
 sidebar_width = 0
 show_xdg_dirs = false
+show_unmounted_volumes = false
 single_click = false
 default_sort = "Name"
 folders_first = true

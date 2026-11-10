@@ -35,6 +35,7 @@ impl FluxApp {
             path: std::path::PathBuf::from(constants::RECENT_URI),
             is_mount: false,
             is_section_label: false,
+            unmounted_volume: None,
         };
 
         let get_xdg_name = |p: &PathBuf| {
@@ -51,6 +52,7 @@ impl FluxApp {
                     path: p,
                     is_mount: false,
                     is_section_label: false,
+                    unmounted_volume: None,
                 });
             }
             if let Some(p) = dirs::desktop_dir() {
@@ -60,6 +62,7 @@ impl FluxApp {
                     path: p,
                     is_mount: false,
                     is_section_label: false,
+                    unmounted_volume: None,
                 });
             }
             if let Some(p) = dirs::download_dir() {
@@ -69,6 +72,7 @@ impl FluxApp {
                     path: p,
                     is_mount: false,
                     is_section_label: false,
+                    unmounted_volume: None,
                 });
             }
             if let Some(p) = dirs::document_dir() {
@@ -78,6 +82,7 @@ impl FluxApp {
                     path: p,
                     is_mount: false,
                     is_section_label: false,
+                    unmounted_volume: None,
                 });
             }
             if let Some(p) = dirs::picture_dir() {
@@ -87,6 +92,7 @@ impl FluxApp {
                     path: p,
                     is_mount: false,
                     is_section_label: false,
+                    unmounted_volume: None,
                 });
             }
             if let Some(p) = dirs::video_dir() {
@@ -96,6 +102,7 @@ impl FluxApp {
                     path: p,
                     is_mount: false,
                     is_section_label: false,
+                    unmounted_volume: None,
                 });
             }
         }
@@ -113,6 +120,7 @@ impl FluxApp {
                     path: PathBuf::new(),
                     is_mount: false,
                     is_section_label: true,
+                    unmounted_volume: None,
                 });
                 continue;
             }
@@ -138,6 +146,7 @@ impl FluxApp {
                 path,
                 is_mount: false,
                 is_section_label: false,
+                unmounted_volume: None,
             });
         }
 

@@ -41,6 +41,8 @@ fn cancel_row_dnd_timers() {
 #[derive(Debug)]
 pub enum SidebarMsg {
     Navigate(PathBuf),
+    /// The user clicked an unmounted volume, carries its volume id.
+    MountVolume(String),
     Remove(PathBuf),
     ChangeIcon(PathBuf),
     OpenInNewTab(PathBuf),
@@ -83,6 +85,10 @@ pub struct SidebarPlace {
     pub is_mount: bool,
     /// When true, renders as a non-interactive section header instead of a navigation row.
     pub is_section_label: bool,
+    /// Set for a volume that exists but is not mounted: the volume id.
+    /// Clicking the row mounts it instead of navigating, and it has no
+    /// context menu, drag source or eject button.
+    pub unmounted_volume: Option<String>,
 }
 
 #[relm4::factory(pub)]
@@ -108,13 +114,18 @@ impl FactoryComponent for SidebarPlace {
             #[watch] set_class_active: (constants::SIDEBAR_SECTION_ROW_CLASS, self.is_section_label),
             #[watch] set_class_active: (constants::SIDEBAR_ROW_CLASS, !self.is_section_label),
             #[watch] set_class_active: ("sidebar-mount", self.is_mount),
+            #[watch] set_class_active: ("sidebar-unmounted", self.unmounted_volume.is_some()),
             connect_realize[is_label = self.is_section_label] => move |w| {
                 FluxApp::set_cursor_pointer(w.as_ref(), !is_label);
             },
 
             add_controller = gtk::GestureClick {
-                connect_released[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
+                connect_released[sender, path = self.path.clone(), is_label = self.is_section_label, volume = self.unmounted_volume.clone()] => move |gesture, _, _, _| {
                     if !is_label && gesture.current_button() == 1 {
+                        if let Some(id) = &volume {
+                            let _ = sender.output(SidebarMsg::MountVolume(id.clone()));
+                            return;
+                        }
                         if let Some(row) = gesture.widget().and_downcast::<gtk::ListBoxRow>() {
                             if let Some(lb) = row.parent().and_downcast::<gtk::ListBox>() {
                                 lb.select_row(Some(&row));
@@ -127,8 +138,8 @@ impl FactoryComponent for SidebarPlace {
 
            add_controller = gtk::GestureClick {
                 set_button: 2,
-                connect_pressed[sender, path = self.path.clone(), is_label = self.is_section_label] => move |gesture, _, _, _| {
-                    if is_label { return; }
+                connect_pressed[sender, path = self.path.clone(), is_label = self.is_section_label, volume = self.unmounted_volume.clone()] => move |gesture, _, _, _| {
+                    if is_label || volume.is_some() { return; }
                     gesture.set_state(gtk::EventSequenceState::Claimed);
 
                     let target = path.clone();
@@ -143,7 +154,10 @@ impl FactoryComponent for SidebarPlace {
 
             add_controller = gtk::GestureClick {
                 set_button: MOUSE_RIGHT_CLICK,
-                connect_pressed[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |gesture, _, x, y| {
+                connect_pressed[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label, volume = self.unmounted_volume.clone()] => move |gesture, _, x, y| {
+                    if volume.is_some() {
+                        return;
+                    }
                     let cfg = utils::config_snapshot();
                     let ui_cfg = &cfg.ui;
                     if (ui_cfg.sidebar_menu_requires_ctrl || ui_cfg.panel_menu_requires_ctrl)
@@ -239,8 +253,8 @@ impl FactoryComponent for SidebarPlace {
             // Drag source: carry this row's path or label identifier as a plain string
             add_controller = gtk::DragSource {
                 set_actions: if utils::config_snapshot().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
-                connect_prepare[path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |src, _, _| {
-                    if utils::config_snapshot().ui.disable_drag_and_drop {
+                connect_prepare[path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label, volume = self.unmounted_volume.clone()] => move |src, _, _| {
+                    if volume.is_some() || utils::config_snapshot().ui.disable_drag_and_drop {
                         return None;
                     }
                     if let Some(w) = src.widget() {
@@ -264,8 +278,8 @@ impl FactoryComponent for SidebarPlace {
             add_controller = gtk::DropTarget {
                 set_actions: if utils::config_snapshot().ui.disable_drag_and_drop { gdk::DragAction::empty() } else { gdk::DragAction::MOVE },
                 set_types: &[glib::types::Type::STRING],
-                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label] => move |_, value, _, _| {
-                    if utils::config_snapshot().ui.disable_drag_and_drop {
+                connect_drop[sender, path = self.path.clone(), name = self.name.clone(), is_label = self.is_section_label, volume = self.unmounted_volume.clone()] => move |_, value, _, _| {
+                    if volume.is_some() || utils::config_snapshot().ui.disable_drag_and_drop {
                         return false;
                     }
                     if let Ok(from_str) = value.get::<String>() {

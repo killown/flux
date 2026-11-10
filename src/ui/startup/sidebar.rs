@@ -25,6 +25,9 @@ impl FluxApp {
                 crate::ui::SidebarMsg::Navigate(path) => {
                     AppMsg::Navigation(NavigationMsg::Navigate(path))
                 }
+                crate::ui::SidebarMsg::MountVolume(id) => {
+                    AppMsg::Device(crate::domain::model::DeviceMsg::MountVolume(id))
+                }
                 crate::ui::SidebarMsg::OpenInNewTab(path) => {
                     AppMsg::Tabs(TabsMsg::NewTab(Some(path)))
                 }

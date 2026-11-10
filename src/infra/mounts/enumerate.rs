@@ -1,4 +1,6 @@
 use super::naming::{resolve_luks_loop_name, resolve_mount_name};
+use gtk::gio;
+use gtk::gio::prelude::*;
 use std::fs;
 use std::path::PathBuf;
 
@@ -83,4 +85,61 @@ pub fn get_system_mounts() -> Vec<(String, PathBuf)> {
     }
 
     mounts
+}
+
+/// A volume that is present but not mounted, as the sidebar lists it when
+/// `ui.show_unmounted_volumes` is on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnmountedVolume {
+    /// Lookup key for [`find_unmounted_volume`]: the `unix-device` identifier,
+    /// else the UUID, else the display name.
+    pub id: String,
+    pub name: String,
+    pub icon: String,
+}
+
+fn volume_id(volume: &gio::Volume) -> String {
+    volume
+        .identifier("unix-device")
+        .or_else(|| volume.uuid())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| volume.name().to_string())
+}
+
+/// Lists the volumes the volume monitor knows about that have no mount and can
+/// be mounted. Reads the monitor's cached state, so it does no I/O, call it on
+/// the GTK main thread because `gio::Volume` is not `Send`.
+pub fn unmounted_volumes() -> Vec<UnmountedVolume> {
+    crate::hit!("mounts::unmounted_volumes");
+    gio::VolumeMonitor::get()
+        .volumes()
+        .into_iter()
+        .filter(|v| v.get_mount().is_none() && v.can_mount())
+        .filter_map(|v| {
+            let name = v.name().to_string();
+            if name.is_empty() {
+                return None;
+            }
+            let icon = v
+                .icon()
+                .downcast::<gio::ThemedIcon>()
+                .ok()
+                .and_then(|themed| themed.names().first().map(|s| s.to_string()))
+                .unwrap_or_else(|| "drive-harddisk-symbolic".to_owned());
+            Some(UnmountedVolume {
+                id: volume_id(&v),
+                name,
+                icon,
+            })
+        })
+        .collect()
+}
+
+/// Finds the volume that [`unmounted_volumes`] reported under `id`.
+pub fn find_unmounted_volume(id: &str) -> Option<gio::Volume> {
+    crate::hit!("mounts::find_unmounted_volume");
+    gio::VolumeMonitor::get()
+        .volumes()
+        .into_iter()
+        .find(|v| volume_id(v) == id)
 }

@@ -35,6 +35,7 @@ pub(super) fn handle(
             app.handle_system_mounts_ready(mounts)
         }
         AppMsg::Device(DeviceMsg::UnmountDevice(path)) => app.handle_unmount_device(path, sender),
+        AppMsg::Device(DeviceMsg::MountVolume(id)) => app.handle_mount_volume(id, sender),
         AppMsg::Device(DeviceMsg::UnlockLuksImage { path }) => {
             app.handle_unlock_luks_image(path, sender)
         }

@@ -28,6 +28,17 @@ impl FluxApp {
         sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
     }
 
+    pub fn handle_set_show_unmounted_volumes(
+        &mut self,
+        val: bool,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_set_show_unmounted_volumes");
+        self.config.ui.show_unmounted_volumes = val;
+        utils::save_config(&self.config);
+        sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
+    }
+
     pub fn handle_rename_sidebar_place(
         &mut self,
         path: PathBuf,

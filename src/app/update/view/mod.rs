@@ -157,6 +157,9 @@ pub(super) fn handle(
         AppMsg::Settings(SettingsMsg::SetShowXdgDirs(val)) => {
             app.handle_set_show_xdg_dirs(val, sender)
         }
+        AppMsg::Settings(SettingsMsg::SetShowUnmountedVolumes(val)) => {
+            app.handle_set_show_unmounted_volumes(val, sender)
+        }
         AppMsg::Settings(SettingsMsg::SetShowHidden(val)) => {
             app.handle_set_show_hidden(val, sender)
         }

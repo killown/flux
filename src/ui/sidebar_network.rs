@@ -103,4 +103,21 @@ pub fn connect_volume_monitor_signals(sender: Sender<AppMsg>) {
     monitor.connect_mount_changed(move |_, _| {
         let _ = s.send(AppMsg::Network(NetworkMsg::RefreshNetworkSidebar));
     });
+
+    let s = sender.clone();
+    monitor.connect_volume_added(move |_, _| refresh_if_listing_volumes(&s));
+
+    let s = sender.clone();
+    monitor.connect_volume_removed(move |_, _| refresh_if_listing_volumes(&s));
+
+    let s = sender.clone();
+    monitor.connect_volume_changed(move |_, _| refresh_if_listing_volumes(&s));
+}
+
+/// Volumes appearing, disappearing or changing only matter to the sidebar
+/// while it lists unmounted volumes.
+fn refresh_if_listing_volumes(sender: &Sender<AppMsg>) {
+    if crate::utils::config_snapshot().ui.show_unmounted_volumes {
+        let _ = sender.send(AppMsg::Network(NetworkMsg::RefreshNetworkSidebar));
+    }
 }

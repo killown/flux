@@ -257,6 +257,7 @@ path = "actions://"
                     show_csd: true,
                     sidebar_width: 240,
                     show_xdg_dirs: false,
+                    show_unmounted_volumes: false,
                     current_folders_first: std::collections::HashMap::new(),
                     default_sort: crate::domain::model::SortBy::Name,
                     folder_sort: std::collections::HashMap::new(),

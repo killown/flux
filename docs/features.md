@@ -211,6 +211,9 @@ templates.
   configurable through `ui.recents_row`.
 - **XDG directories.** `ui.show_xdg_dirs` shows the standard XDG folders
   above the custom entries.
+- **Unmounted volumes.** With `ui.show_unmounted_volumes` on, volumes that
+  are plugged in but not mounted are listed after the mounted ones. Clicking
+  one mounts it and opens it. Off by default.
 - **Network mounts.** Active GVFS mounts appear under **Connected
   Servers**, with an eject button.
 

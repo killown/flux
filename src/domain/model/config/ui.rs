@@ -163,6 +163,10 @@ pub struct UIConfig {
     pub sidebar_width: i32,
     /// Whether to display standard XDG user directories like Documents and Downloads.
     pub show_xdg_dirs: bool,
+    /// Whether the sidebar also lists volumes that exist but are not mounted,
+    /// such as a plugged-in USB drive that nothing automounted. Clicking one
+    /// mounts it and opens it.
+    pub show_unmounted_volumes: bool,
     /// Whether a single click activates an item instead of a double click.
     pub single_click: bool,
     /// Optional name of the custom GTK/Libadwaita theme to apply.
@@ -296,6 +300,7 @@ impl Default for UIConfig {
             list_icon_size: 24,
             sidebar_width: 0,
             show_xdg_dirs: false,
+            show_unmounted_volumes: false,
             single_click: false,
             theme: None,
             default_sort: SortBy::default(),

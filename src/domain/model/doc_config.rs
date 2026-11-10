@@ -73,6 +73,10 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.show_recents", "Show the Recents location in the sidebar."),
     ("ui.show_symlink_emblem", "Show a badge and target hint on symbolic links."),
     ("ui.show_thumbnails", "Master switch for thumbnail generation; overrides `thumbnail_types`."),
+    (
+        "ui.show_unmounted_volumes",
+        "List volumes that are not mounted, such as a plugged-in USB drive nothing automounted, in the sidebar. Clicking one mounts it and opens it.",
+    ),
     ("ui.show_xdg_dirs", "Show the XDG user directories, such as Documents and Downloads, in the sidebar."),
     ("ui.sidebar_menu_requires_ctrl", "Open sidebar context menus only on Ctrl+right-click; a plain right-click does nothing."),
     ("ui.sidebar_visible", "Show the sidebar. Persisted across sessions."),

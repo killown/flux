@@ -69,7 +69,11 @@ impl FluxApp {
         let mut idx = guard.len();
         while idx > 0 {
             idx -= 1;
-            if guard.get(idx).map(|p| p.is_mount).unwrap_or(false) {
+            if guard
+                .get(idx)
+                .map(|p| p.is_mount || p.unmounted_volume.is_some())
+                .unwrap_or(false)
+            {
                 guard.remove(idx);
             }
         }
@@ -122,7 +126,23 @@ impl FluxApp {
                 path,
                 is_mount: true,
                 is_section_label: false,
+                unmounted_volume: None,
             });
+        }
+
+        // Unmounted volumes come from the volume monitor's cached state, so
+        // listing them on the main thread does no I/O.
+        if self.config.ui.show_unmounted_volumes {
+            for volume in crate::infra::mounts::unmounted_volumes() {
+                guard.push_back(SidebarPlace {
+                    name: volume.name,
+                    icon: volume.icon,
+                    path: PathBuf::new(),
+                    is_mount: false,
+                    is_section_label: false,
+                    unmounted_volume: Some(volume.id),
+                });
+            }
         }
     }
 
@@ -382,6 +402,40 @@ impl FluxApp {
                 },
             );
         }
+    }
+
+    /// Mounts an unmounted volume picked in the sidebar, then opens its mount point.
+    pub fn handle_mount_volume(&self, id: String, sender: &AsyncComponentSender<Self>) {
+        crate::hit!("handle_mount_volume");
+        let Some(volume) = crate::infra::mounts::find_unmounted_volume(&id) else {
+            // The volume disappeared since the row was built.
+            sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
+            return;
+        };
+        let name = volume.name().to_string();
+        let mounted = volume.clone();
+        let sender = sender.clone();
+        volume.mount(
+            gio::MountMountFlags::NONE,
+            gio::MountOperation::NONE,
+            gio::Cancellable::NONE,
+            move |res| {
+                match res {
+                    Ok(()) => {
+                        if let Some(root) = mounted.get_mount().and_then(|m| m.root().path()) {
+                            sender.input(AppMsg::Navigation(NavigationMsg::Navigate(root)));
+                        }
+                    }
+                    Err(e) => sender.input(AppMsg::Window(WindowMsg::ShowToast(format!(
+                        "{}: {} ({})",
+                        crate::i18n::tr("Mount failed"),
+                        name,
+                        e
+                    )))),
+                }
+                sender.input(AppMsg::Sidebar(AppSidebarMsg::RefreshSidebar));
+            },
+        );
     }
 
     pub fn handle_prompt_sidebar_rename(

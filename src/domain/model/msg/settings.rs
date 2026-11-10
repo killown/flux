@@ -37,6 +37,8 @@ pub enum SettingsMsg {
     SetShowCsd(bool),
     /// Toggles visibility of standard XDG directories in the sidebar.
     SetShowXdgDirs(bool),
+    /// Toggles listing of unmounted volumes in the sidebar.
+    SetShowUnmountedVolumes(bool),
     /// Updates the active UI theme name.
     SetTheme(Option<String>),
     /// Updates a specific keyboard shortcut.

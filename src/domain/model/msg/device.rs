@@ -22,4 +22,6 @@ pub enum DeviceMsg {
     },
     /// Triggers the asynchronous unmounting of a system drive or mounted volume.
     UnmountDevice(std::path::PathBuf),
+    /// Mounts an unmounted volume picked in the sidebar, by its volume id, then opens it.
+    MountVolume(String),
 }
