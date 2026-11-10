@@ -70,6 +70,8 @@ pub(super) fn handle(
             app.handle_set_expand_labels(val, sender)
         }
         AppMsg::View(ViewMsg::Zoom(delta)) => app.handle_zoom(delta),
+        AppMsg::View(ViewMsg::ZoomApply) => app.handle_zoom_apply(),
+        AppMsg::View(ViewMsg::ZoomPersist) => app.handle_zoom_persist(),
         AppMsg::Search(SearchMsg::SwitchHeader(view_name)) => app.handle_switch_header(view_name),
         AppMsg::Preview(PreviewMsg::TogglePreview) => app.handle_toggle_preview(sender),
         AppMsg::Preview(PreviewMsg::PreviewLoad { path, session }) => {

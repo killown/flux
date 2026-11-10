@@ -42,6 +42,12 @@ pub enum ViewMsg {
     CycleFolderPriority,
     /// Adjust the icon size based on scroll delta.
     Zoom(f64),
+    /// Applies the icon size reached by queued `Zoom` steps to the grid cells.
+    ///
+    /// Sent by a one-frame timer so a burst of scroll events rebuilds the grid once.
+    ZoomApply,
+    /// Saves the icon size once zooming has paused.
+    ZoomPersist,
     /// Toggles the directory listing between ascending and descending order.
     ToggleSortOrder,
     /// Sets sort direction: true for Ascending, false for Descending.

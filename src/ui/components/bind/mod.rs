@@ -26,7 +26,7 @@ use super::file_item::FileItem;
 use super::widgets::FileWidgets;
 use adw::prelude::*;
 use gtk::glib;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::path::PathBuf;
 use std::rc::{Rc, Weak};
 
@@ -35,6 +35,14 @@ const CLASS_COPY: &str = "flux-card--copy";
 const CLASS_SYMLINK: &str = "flux-card--symlink";
 const CLASS_BROKEN_SYMLINK: &str = "flux-card--broken-symlink";
 const CLASS_EMPTY: &str = "flux-card--empty";
+
+thread_local! {
+    /// Grid icon size of a Ctrl+scroll zoom burst that is still being applied, or
+    /// `0` when none is. Cells that GTK realizes during the burst bind with this
+    /// size, so they never show the size from before the zoom while the model
+    /// is only partly updated.
+    static LIVE_GRID_ICON_SIZE: Cell<i32> = const { Cell::new(0) };
+}
 
 /// Detaches a per-widget CSS provider.
 ///
@@ -83,6 +91,13 @@ impl FileItem {
     /// `bind::*` totals stay sub-µs.
     pub(super) fn bind_widgets(&mut self, widgets: &mut FileWidgets, root: &mut gtk::Overlay) {
         crate::hit!("bind");
+        // A thumb hook marks a folder grid with its own zoom, which is not part of the burst.
+        if !self.is_list_mode && self.thumb_hook.is_none() {
+            let live = LIVE_GRID_ICON_SIZE.with(Cell::get);
+            if live > 0 {
+                self.icon_size = live;
+            }
+        }
         widgets.label.set_label(&self.display_label);
 
         set_class(root, &widgets.card_box, CLASS_CUT, self.is_cut);
@@ -154,6 +169,62 @@ impl FileItem {
 
         rename_entry::remove(widgets);
         clear_path_data(self, widgets, root);
+    }
+}
+
+impl FileItem {
+    /// Sets, or with `None` clears, the grid icon size that cells bind with while a
+    /// zoom burst is pending. See [`Self::resize_in_place`].
+    pub fn set_live_grid_icon_size(size: Option<i32>) {
+        LIVE_GRID_ICON_SIZE.with(|live| live.set(size.unwrap_or(0).max(0)));
+    }
+
+    /// Applies `self.icon_size` to the live grid cell `root` without rebinding it.
+    ///
+    /// A zoom step changes only the size of the cell, so it needs no unbind, no
+    /// model change and no new cell. The icon, the video frame and the label font
+    /// scale are resized in place, and a theme icon is looked up again at the new
+    /// size. A thumbnail or a custom icon is already a texture and scales by pixel
+    /// size alone.
+    ///
+    /// Returns `false` when the cell cannot be resized this way (list mode, an
+    /// archive drawn as a folder, or a cell without the widgets `build_widgets`
+    /// stores on the root). The caller must then replace the item in the model.
+    ///
+    /// # Contract
+    ///
+    /// Runs on the GTK main thread, once per live cell per zoom frame. Like
+    /// `bind_widgets` it does no syscalls: a custom icon is never looked up here.
+    pub fn resize_in_place(&self, root: &gtk::Overlay) -> bool {
+        crate::hit!("resize_in_place");
+        if self.is_list_mode || self.is_virtual_dir {
+            return false;
+        }
+
+        // SAFETY: `build_widgets` stores these keys with exactly these types and
+        // nothing removes them while the cell is alive.
+        let (icon, stack, label) = unsafe {
+            (
+                root.data::<gtk::Image>("flux_icon_widget")
+                    .map(|w| w.as_ref().clone()),
+                root.data::<gtk::Stack>("preview_stack")
+                    .map(|w| w.as_ref().clone()),
+                root.data::<gtk::Label>("flux_label")
+                    .map(|w| w.as_ref().clone()),
+            )
+        };
+        let (Some(icon), Some(stack), Some(label)) = (icon, stack, label) else {
+            return false;
+        };
+
+        grid_layout::apply_icon_size(self, &icon, &stack, &label);
+
+        let is_file_icon = self.icon.downcast_ref::<gtk::gio::FileIcon>().is_some();
+        if self.thumbnail.is_none() && !is_file_icon {
+            let paintable = gicon::paintable_for_gicon(self, root, &self.icon);
+            icon.set_paintable(Some(&paintable));
+        }
+        true
     }
 }
 

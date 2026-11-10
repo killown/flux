@@ -24,13 +24,15 @@ pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets) {
     widgets.card_box.set_hexpand(false);
     widgets.card_box.set_vexpand(false);
     widgets.card_box.set_spacing(0);
-    widgets.icon_widget.set_pixel_size(item.icon_size);
+    apply_icon_size(
+        item,
+        &widgets.icon_widget,
+        &widgets.preview_stack,
+        &widgets.label,
+    );
     widgets.icon_widget.set_size_request(-1, -1);
     widgets.icon_widget.set_valign(gtk::Align::End);
     widgets.icon_widget.set_halign(gtk::Align::Center);
-    if let Some(frame) = widgets.preview_stack.child_by_name("video") {
-        frame.set_size_request(item.icon_size, item.icon_size);
-    }
     widgets.preview_stack.set_size_request(-1, -1);
     widgets.preview_stack.set_valign(gtk::Align::End);
     widgets.preview_stack.set_halign(gtk::Align::Center);
@@ -40,8 +42,6 @@ pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets) {
     widgets.label.set_justify(gtk::Justification::Center);
     widgets.label.set_max_width_chars(item.max_width_chars);
     widgets.label.set_width_chars(item.grid_spacing);
-
-    apply_font_scale(item, widgets);
 
     if item.expand_labels {
         widgets.label.set_wrap(true);
@@ -76,7 +76,26 @@ pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets) {
     widgets.info_label.set_visible(false);
 }
 
-fn apply_font_scale(item: &FileItem, widgets: &FileWidgets) {
+/// Applies `item.icon_size` to the parts of a grid card whose size follows the icon.
+///
+/// Shared by [`apply`] and [`FileItem::resize_in_place`], so a bound cell and a
+/// zoomed cell end up with the same geometry. It only touches the icon, the video
+/// frame and the label font scale, so it is safe to call on a live cell: no
+/// syscalls, no new GObjects besides the font `AttrList`.
+pub(super) fn apply_icon_size(
+    item: &FileItem,
+    icon: &gtk::Image,
+    preview_stack: &gtk::Stack,
+    label: &gtk::Label,
+) {
+    icon.set_pixel_size(item.icon_size);
+    if let Some(frame) = preview_stack.child_by_name("video") {
+        frame.set_size_request(item.icon_size, item.icon_size);
+    }
+    apply_font_scale(item, label);
+}
+
+fn apply_font_scale(item: &FileItem, label: &gtk::Label) {
     if item.scale_font_with_icons && item.icon_size > 0 {
         let base_size = if item.default_icon_size > 0 {
             item.default_icon_size as f64
@@ -86,8 +105,8 @@ fn apply_font_scale(item: &FileItem, widgets: &FileWidgets) {
         let scale_factor = (item.icon_size as f64 / base_size).clamp(0.8, 1.3);
         let attrs = gtk::pango::AttrList::new();
         attrs.insert(gtk::pango::AttrFloat::new_scale(scale_factor));
-        widgets.label.set_attributes(Some(&attrs));
+        label.set_attributes(Some(&attrs));
     } else {
-        widgets.label.set_attributes(None);
+        label.set_attributes(None);
     }
 }

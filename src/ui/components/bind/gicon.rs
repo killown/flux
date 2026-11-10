@@ -9,6 +9,22 @@
 use crate::ui::components::FileItem;
 use adw::gdk;
 use adw::prelude::*;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+
+/// Theme paintables kept before the cache is reset.
+const THEME_PAINTABLE_CAP: usize = 256;
+
+thread_local! {
+    /// Theme paintables by `(icon names, size, scale)`. They are kept alive across
+    /// rebinds: an unreferenced paintable is rasterised again on its next lookup,
+    /// so without this every zoom step re-renders every visible icon.
+    static THEME_PAINTABLES: RefCell<HashMap<(String, i32, i32), gdk::Paintable>> =
+        RefCell::new(HashMap::new());
+
+    /// Whether the icon-theme `changed` handler that resets the cache is connected.
+    static THEME_WATCHED: Cell<bool> = const { Cell::new(false) };
+}
 
 /// Resolves `icon` to a paintable at this item's icon size.
 ///
@@ -103,7 +119,10 @@ pub(super) fn paintable_for_gicon(
     fallback
 }
 
-/// Plain icon-theme lookup at the item's size and the root's scale factor.
+/// Icon-theme lookup at the item's size and the root's scale factor.
+///
+/// Themed icons are cached by name, size and scale. Other icon kinds are looked
+/// up every time, as before.
 fn lookup_theme_icon(
     item: &FileItem,
     root: &gtk::Overlay,
@@ -112,7 +131,20 @@ fn lookup_theme_icon(
     let display = root.display();
     let icon_theme = gtk::IconTheme::for_display(&display);
     let scale = root.scale_factor().max(1);
-    icon_theme
+
+    let key = icon.downcast_ref::<gtk::gio::ThemedIcon>().map(|themed| {
+        let names = themed.names();
+        let names: Vec<&str> = names.iter().map(|name| name.as_str()).collect();
+        (names.join("\u{1f}"), item.icon_size, scale)
+    });
+    if let Some(key) = &key {
+        if let Some(hit) = THEME_PAINTABLES.with(|cache| cache.borrow().get(key).cloned()) {
+            return hit;
+        }
+    }
+
+    watch_icon_theme(&icon_theme);
+    let paintable = icon_theme
         .lookup_by_gicon(
             icon,
             item.icon_size,
@@ -120,5 +152,23 @@ fn lookup_theme_icon(
             gtk::TextDirection::None,
             gtk::IconLookupFlags::empty(),
         )
-        .upcast::<gdk::Paintable>()
+        .upcast::<gdk::Paintable>();
+
+    if let Some(key) = key {
+        THEME_PAINTABLES.with(|cache| {
+            let mut cache = cache.borrow_mut();
+            if cache.len() >= THEME_PAINTABLE_CAP {
+                cache.clear();
+            }
+            cache.insert(key, paintable.clone());
+        });
+    }
+    paintable
+}
+
+/// Resets [`THEME_PAINTABLES`] whenever the icon theme changes, once per thread.
+fn watch_icon_theme(theme: &gtk::IconTheme) {
+    if !THEME_WATCHED.with(|watched| watched.replace(true)) {
+        theme.connect_changed(|_| THEME_PAINTABLES.with(|cache| cache.borrow_mut().clear()));
+    }
 }

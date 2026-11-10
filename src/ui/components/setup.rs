@@ -660,9 +660,12 @@ impl FileItem {
         // of the horizontal list row. In grid mode it is hidden.
         card_box.append(&info_label);
 
+        // `FileItem::resize_in_place` reads these to resize a live cell without a rebind.
         unsafe {
             root.set_data("preview_stack", preview_stack.clone());
             root.set_data("video_widget", video_widget.clone());
+            root.set_data("flux_icon_widget", icon_widget.clone());
+            root.set_data("flux_label", label.clone());
         }
 
         (
