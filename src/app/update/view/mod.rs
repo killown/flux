@@ -37,7 +37,7 @@ pub(super) fn handle(
         AppMsg::View(ViewMsg::QuerySelection { reply }) => {
             let _ = reply.send(app.get_selection());
         }
-        AppMsg::View(ViewMsg::ToggleListMode) => app.handle_toggle_list_mode(),
+        AppMsg::View(ViewMsg::ToggleListMode) => app.handle_toggle_list_mode(sender),
         AppMsg::Search(SearchMsg::ToggleFilterBar) => {
             if app.header_view == constants::VIEW_FILTER {
                 app.handle_clear_extension_filter(sender);

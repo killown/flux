@@ -49,6 +49,14 @@ fn schedule_zoom_work() {
     });
 }
 
+/// A folder with at least this many items is read again in the new view mode when
+/// the user toggles list/grid, instead of being converted in place. Converting
+/// touches every item and makes GTK lay out the whole model at once, which
+/// freezes the window on a big folder. A reload streams the items in batches
+/// into an empty model that is already in the new mode. Smaller folders convert
+/// in place, which is instant and keeps the selection and the scroll position.
+const RELOAD_ON_TOGGLE_MIN_ITEMS: u32 = 100;
+
 /// A live grid cell: its root widget and the model position `bind` published.
 struct BoundCell {
     root: gtk::Overlay,
@@ -80,11 +88,29 @@ fn bound_cells(view: &gtk::GridView) -> HashMap<PathBuf, BoundCell> {
 }
 
 impl FluxApp {
+    /// Whether toggling the view mode should read the folder again.
+    ///
+    /// Only for a big plain local folder, see [`RELOAD_ON_TOGGLE_MIN_ITEMS`].
+    /// Search results, Recents, Trash, archives and network locations are not
+    /// reloaded: `load_path` would replace them with something else.
+    fn reload_on_view_toggle(&self) -> bool {
+        self.current_path.is_absolute()
+            && !self.search.saved_layout
+            && !self.search.content_searching
+            && self
+                .tabs
+                .get(self.active_tab_index)
+                .is_some_and(|tab| tab.files.len() >= RELOAD_ON_TOGGLE_MIN_ITEMS)
+    }
+
     /// Toggles between grid card layout and compact list view.
     ///
-    /// Only the way the loaded items are drawn changes: the folder is not read
-    /// again and the model is not rebuilt, see [`Self::apply_view_mode`].
-    pub fn handle_toggle_list_mode(&mut self) {
+    /// A small folder is converted in place: the folder is not read again and
+    /// the model is not rebuilt, see [`Self::apply_view_mode`]. A big folder is
+    /// loaded again with the new mode already set, so the items are added in
+    /// batches to an empty model, see [`RELOAD_ON_TOGGLE_MIN_ITEMS`]. That
+    /// reload clears the selection and scrolls back to the top.
+    pub fn handle_toggle_list_mode(&mut self, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_toggle_list_mode");
         // The shortcut can fire from any focus (sidebar, panel, terminal).
         // Pull focus back to the main grid first, then switch. Skipped while
@@ -106,6 +132,22 @@ impl FluxApp {
         relm4::spawn_blocking(move || utils::save_config_quiet(&config));
 
         let is_list = self.is_list_mode;
+
+        if self.reload_on_view_toggle() {
+            crate::hit!("handle_toggle_list_mode:reload");
+            // The loader sets the columns itself, once the old items are gone.
+            // Setting them here would make GTK lay out the whole old model first.
+            self.search.saved_max_columns = if is_list { 1 } else { 20 };
+            // `load_path` switches a folder over `auto_list_threshold` to list
+            // mode, which would undo a switch to grid. It reads the value
+            // before it returns, so it is only lifted for this call.
+            let threshold = std::mem::replace(&mut self.config.ui.auto_list_threshold, 0);
+            self.load_path(self.current_path.clone(), sender);
+            self.config.ui.auto_list_threshold = threshold;
+            // Only the toggle refreshes this, the loader does not.
+            self.refresh_wide_preview_layout();
+            return;
+        }
 
         let active_tab = match self.tabs.get_mut(self.active_tab_index) {
             Some(t) => t,
