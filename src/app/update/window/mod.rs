@@ -55,6 +55,11 @@ pub(super) fn handle(
         AppMsg::Window(WindowMsg::SetWindowHeight(val)) => {
             app.handle_set_window_size(None, Some(val))
         }
+        AppMsg::Window(WindowMsg::SetAutoHidden {
+            sidebar,
+            header,
+            statusbar,
+        }) => app.handle_set_auto_hidden(sidebar, header, statusbar),
         AppMsg::Navigation(NavigationMsg::SetShowRecents(val)) => {
             app.handle_set_show_recents(val, sender)
         }

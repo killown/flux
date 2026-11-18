@@ -118,7 +118,7 @@ impl SimpleAsyncComponent for FluxApp {
                         add_css_class: constants::SIDEBAR_CSS_CLASS,
                         add_css_class: constants::SIDEBAR_ROOT_CSS_CLASS,
                         #[watch]
-                        set_visible: model.sidebar_visible,
+                        set_visible: model.sidebar_visible && !model.auto_hidden_sidebar,
 
                         gtk::WindowControls {
                             #[watch]
@@ -144,7 +144,7 @@ impl SimpleAsyncComponent for FluxApp {
                         set_width_request: 6,
                         add_css_class: "sidebar-resize-handle",
                         #[watch]
-                        set_visible: model.sidebar_visible,
+                        set_visible: model.sidebar_visible && !model.auto_hidden_sidebar,
                     },
                 },
 
@@ -158,7 +158,7 @@ impl SimpleAsyncComponent for FluxApp {
                     #[name = "header_bar"]
                     add_top_bar = &adw::HeaderBar {
                         #[watch]
-                        set_visible: model.header_visible && !model.panels.preview.visible,
+                        set_visible: model.header_visible && !model.panels.preview.visible && !model.auto_hidden_header,
                         #[watch]
                         set_show_start_title_buttons: false,
                         #[watch]
@@ -760,9 +760,10 @@ impl SimpleAsyncComponent for FluxApp {
                     },
 
                     /// Selection status bar at the bottom of the main content view.
+                    #[name = "status_bar"]
                     add_bottom_bar = &gtk::Box {
                         #[watch]
-                        set_visible: model.statusbar_visible && !model.panels.preview.visible,
+                        set_visible: model.statusbar_visible && !model.panels.preview.visible && !model.auto_hidden_statusbar,
                         add_css_class: "selection-status",
 
                         /// Selection information & child count
@@ -967,6 +968,7 @@ impl SimpleAsyncComponent for FluxApp {
             Self::store_widget_refs(&mut model, &widgets, &sender);
             Self::setup_input_controllers(&model, &widgets, &root, &sender);
             Self::setup_window(&model, &widgets, &root);
+            Self::setup_resize_guard(&model, &widgets, &root, &sender);
             Self::schedule_startup_tasks(&model, &sender, open_archive);
         }
 

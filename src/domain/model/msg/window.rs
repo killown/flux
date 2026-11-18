@@ -24,6 +24,12 @@ pub enum WindowMsg {
     ShowHelp,
     /// Updates the configuration to reflect whether the window is currently maximized.
     SetMaximized(bool),
+    /// Reports which of the sidebar, header bar and status bar the resize guard has hidden.
+    SetAutoHidden {
+        sidebar: bool,
+        header: bool,
+        statusbar: bool,
+    },
     /// This variant is used to provide brief, non-blocking feedback to the user
     ShowToast(String),
     /// Opens the About dialog with application metadata and repository link.

@@ -152,6 +152,12 @@ pub struct FluxApp {
     pub sidebar_visible: bool,
     /// Reference to the sidebar widget for toggling visibility.
     pub sidebar_widget: Option<gtk::Widget>,
+    /// True while the resize guard has the sidebar hidden because it blocked shrinking the window.
+    pub auto_hidden_sidebar: bool,
+    /// True while the resize guard has the header bar hidden because it blocked shrinking the window.
+    pub auto_hidden_header: bool,
+    /// True while the resize guard has the status bar hidden because it blocked shrinking the window.
+    pub auto_hidden_statusbar: bool,
     /// Handle to the active file-transfer progress dialog, if open.
     ///
     /// `None` while no dialog is showing, `Some` while at least one transfer

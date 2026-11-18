@@ -28,4 +28,12 @@ impl FluxApp {
         }
         utils::save_config(&self.config);
     }
+
+    /// Records which parts the resize guard has hidden so the view keeps them hidden.
+    pub fn handle_set_auto_hidden(&mut self, sidebar: bool, header: bool, statusbar: bool) {
+        crate::hit!("handle_set_auto_hidden");
+        self.auto_hidden_sidebar = sidebar;
+        self.auto_hidden_header = header;
+        self.auto_hidden_statusbar = statusbar;
+    }
 }
