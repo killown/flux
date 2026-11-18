@@ -4770,3 +4770,9 @@ msgstr "Listar unidades que ainda não estão montadas, clique em uma para mont�
 
 msgid "Unmounted Volumes"
 msgstr "Volumes não montados"
+
+msgid "Not enough space on the destination: {} needed, only {} free"
+msgstr "Espaço insuficiente no destino: {} necessários, apenas {} livres"
+
+msgid "'{}' is too large for the destination filesystem (FAT32 allows files up to {})"
+msgstr "'{}' é grande demais para o sistema de arquivos de destino (o FAT32 permite arquivos de até {})"

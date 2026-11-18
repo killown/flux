@@ -1,8 +1,12 @@
-use super::transfer::{is_cancelled_error, perform_file_op_with_progress, scan_total_bytes};
+use super::transfer::{
+    bytes_needed_at_dest, free_space_bytes, is_cancelled_error, largest_file_bytes, max_file_size,
+    perform_file_op_with_progress, scan_total_bytes,
+};
 use super::{is_same_entry, CONFLICT_MUTEX, DIALOG_DELAY, DIALOG_FILE_THRESHOLD};
 use crate::app::state::FluxApp;
 use crate::domain::model::{AppMsg, FileOpsMsg, NavigationMsg, TasksMsg, TransferMsg, WindowMsg};
 use crate::domain::model::{ConflictChoice, ConflictContext, ConflictPolicy};
+use crate::i18n::tr;
 use crate::infra::tasks::NEXT_TASK_ID;
 use crate::ui::conflict_policy::auto_rename_dest;
 use adw::gio::prelude::*;
@@ -87,6 +91,57 @@ impl FluxApp {
                 .collect();
 
             let total_bytes: u64 = files_with_sizes.iter().map(|(_, _, _, s)| *s).sum();
+
+            // Refuse up front when the destination cannot hold the data (not enough
+            // free space, or a file over the filesystem's per-file limit, e.g. FAT32),
+            // instead of copying until it fails midway.
+            let mut refusal: Option<String> = None;
+
+            if let Some(limit) = max_file_size(&target_dir) {
+                if let Some((_, name, _, _)) = files_with_sizes
+                    .iter()
+                    .find(|(p, _, _, _)| largest_file_bytes(p) > limit)
+                {
+                    refusal = Some(
+                        tr("'{}' is too large for the destination filesystem (FAT32 allows files up to {})")
+                            .replacen("{}", name, 1)
+                            .replacen("{}", gtk::glib::format_size(limit).as_str(), 1),
+                    );
+                }
+            }
+
+            if refusal.is_none() {
+                let needed: u64 = files_with_sizes
+                    .iter()
+                    .map(|(p, name, _, size)| {
+                        bytes_needed_at_dest(p, &target_dir, &target_dir.join(name), is_cut, *size)
+                    })
+                    .sum();
+                if needed > 0 {
+                    let free = free_space_bytes(&target_dir);
+                    if free.is_none() {
+                        eprintln!(
+                            "flux: cannot determine free space on {}, skipping pre-check",
+                            target_dir.display()
+                        );
+                    }
+                    if let Some(free) = free.filter(|f| needed > *f) {
+                        refusal = Some(
+                            tr("Not enough space on the destination: {} needed, only {} free")
+                                .replacen("{}", gtk::glib::format_size(needed).as_str(), 1)
+                                .replacen("{}", gtk::glib::format_size(free).as_str(), 1),
+                        );
+                    }
+                }
+            }
+
+            if let Some(msg) = refusal {
+                s.input(AppMsg::Window(WindowMsg::ShowToast(msg)));
+                t_queue.remove(task_id);
+                s.input(AppMsg::Tasks(TasksMsg::TaskCompleted(task_id)));
+                s.input(AppMsg::Tasks(TasksMsg::TaskQueueTick));
+                return;
+            }
 
             t_queue.update(
                 task_id,

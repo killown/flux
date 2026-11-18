@@ -4611,3 +4611,9 @@ msgstr "まだマウントされていないドライブを一覧表示し、ク
 
 msgid "Unmounted Volumes"
 msgstr "未マウントのボリューム"
+
+msgid "Not enough space on the destination: {} needed, only {} free"
+msgstr "コピー先の空き容量が不足しています: {} 必要、空き {}"
+
+msgid "'{}' is too large for the destination filesystem"
+msgstr "'{}' はコピー先のファイルシステムには大きすぎます (FAT32 で扱えるファイルは最大 {} までです)"

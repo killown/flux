@@ -1,5 +1,8 @@
 use adw::gio::prelude::*;
 use gtk::gio;
+use std::ffi::CString;
+use std::os::unix::ffi::OsStrExt;
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 
 pub(super) fn resolve_gio_files(files: Vec<String>) -> Vec<(PathBuf, String, bool)> {
@@ -269,6 +272,86 @@ pub(super) fn copy_dir_recursive(
     }
 
     Ok(())
+}
+
+/// Bytes a regular user can still write on the filesystem holding `path`.
+///
+/// Tries `statvfs` first, then GIO (`filesystem::free`), which also answers for
+/// gvfs/FUSE mounts where `statvfs` reports nothing useful. `None` when neither
+/// can tell, so callers fall back to the old "just try" behaviour.
+pub(super) fn free_space_bytes(path: &Path) -> Option<u64> {
+    if let Ok(c_path) = CString::new(path.as_os_str().as_bytes()) {
+        let mut stat = std::mem::MaybeUninit::<libc::statvfs>::uninit();
+        if unsafe { libc::statvfs(c_path.as_ptr(), stat.as_mut_ptr()) } == 0 {
+            let stat = unsafe { stat.assume_init() };
+            if stat.f_blocks != 0 {
+                return Some((stat.f_frsize as u64).saturating_mul(stat.f_bavail as u64));
+            }
+        }
+    }
+    let info = gio::File::for_path(path)
+        .query_filesystem_info("filesystem::free", gio::Cancellable::NONE)
+        .ok()?;
+    info.has_attribute("filesystem::free")
+        .then(|| info.attribute_uint64("filesystem::free"))
+}
+
+/// Largest single file the filesystem holding `path` can store, when it has a
+/// hard limit. FAT32 (`vfat`) caps files at 4 GiB - 1 byte, so a bigger file
+/// fails midway with "file too large" even on a drive with plenty of space.
+pub(super) fn max_file_size(path: &Path) -> Option<u64> {
+    const MSDOS_SUPER_MAGIC: u64 = 0x4d44;
+    let c_path = CString::new(path.as_os_str().as_bytes()).ok()?;
+    let mut stat = std::mem::MaybeUninit::<libc::statfs>::uninit();
+    if unsafe { libc::statfs(c_path.as_ptr(), stat.as_mut_ptr()) } != 0 {
+        return None;
+    }
+    let stat = unsafe { stat.assume_init() };
+    (stat.f_type as u64 == MSDOS_SUPER_MAGIC).then_some(u32::MAX as u64)
+}
+
+/// Size of the biggest regular file at or below `path` (symlinks not followed).
+pub(super) fn largest_file_bytes(path: &Path) -> u64 {
+    let Ok(meta) = path.symlink_metadata() else {
+        return 0;
+    };
+    if meta.is_dir() {
+        std::fs::read_dir(path)
+            .map(|rd| {
+                rd.flatten()
+                    .map(|e| largest_file_bytes(&e.path()))
+                    .max()
+                    .unwrap_or(0)
+            })
+            .unwrap_or(0)
+    } else {
+        meta.len()
+    }
+}
+
+/// Bytes this item will consume on the destination filesystem.
+///
+/// - A cut on the same device is a rename and needs no space.
+/// - A folder merged into an existing folder is unknowable up front, so it
+///   is not counted (never produces a false "not enough space").
+pub(super) fn bytes_needed_at_dest(
+    src: &Path,
+    target_dir: &Path,
+    dest: &Path,
+    is_cut: bool,
+    size: u64,
+) -> u64 {
+    if is_cut {
+        if let (Ok(a), Ok(b)) = (src.symlink_metadata(), target_dir.metadata()) {
+            if a.dev() == b.dev() {
+                return 0;
+            }
+        }
+    }
+    if src.is_dir() && dest.is_dir() {
+        return 0;
+    }
+    size
 }
 
 pub(super) fn scan_total_bytes(path: &Path) -> u64 {
