@@ -4776,3 +4776,60 @@ msgstr "Espaço insuficiente no destino: {} necessários, apenas {} livres"
 
 msgid "'{}' is too large for the destination filesystem (FAT32 allows files up to {})"
 msgstr "'{}' é grande demais para o sistema de arquivos de destino (o FAT32 permite arquivos de até {})"
+
+msgid "File"
+msgstr "Arquivo"
+
+msgid "View"
+msgstr "Exibir"
+
+msgid "Go"
+msgstr "Ir"
+
+msgid "Help"
+msgstr "Ajuda"
+
+msgid "Reload"
+msgstr "Recarregar"
+
+msgid "Close Window"
+msgstr "Fechar janela"
+
+msgid "Toggle Hidden Files"
+msgstr "Alternar arquivos ocultos"
+
+msgid "Grid View"
+msgstr "Exibição em grade"
+
+msgid "List View"
+msgstr "Exibição em lista"
+
+msgid "View Mode"
+msgstr "Modo de exibição"
+
+msgid "Show/Hide Sidebar"
+msgstr "Mostrar/ocultar barra lateral"
+
+msgid "Show/Hide Preview"
+msgstr "Mostrar/ocultar pré-visualização"
+
+msgid "Recent Folders"
+msgstr "Pastas recentes"
+
+msgid "No recent folders"
+msgstr "Nenhuma pasta recente"
+
+msgid "About"
+msgstr "Sobre"
+
+msgid "Desktop Integration"
+msgstr "Integração com a área de trabalho"
+
+msgid "Options that connect Flux to the desktop shell"
+msgstr "Opções que conectam o Flux ao ambiente de desktop"
+
+msgid "Global Menu"
+msgstr "Menu global"
+
+msgid "Publish the menu bar to the panel's global menu (applies after restart)"
+msgstr "Publica a barra de menus no menu global do painel (aplica após reiniciar)"

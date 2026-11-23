@@ -4617,3 +4617,60 @@ msgstr "コピー先の空き容量が不足しています: {} 必要、空き 
 
 msgid "'{}' is too large for the destination filesystem"
 msgstr "'{}' はコピー先のファイルシステムには大きすぎます (FAT32 で扱えるファイルは最大 {} までです)"
+
+msgid "File"
+msgstr "ファイル"
+
+msgid "View"
+msgstr "表示"
+
+msgid "Go"
+msgstr "移動"
+
+msgid "Help"
+msgstr "ヘルプ"
+
+msgid "Reload"
+msgstr "再読み込み"
+
+msgid "Close Window"
+msgstr "ウィンドウを閉じる"
+
+msgid "Toggle Hidden Files"
+msgstr "隠しファイルの表示を切り替え"
+
+msgid "Grid View"
+msgstr "グリッド表示"
+
+msgid "List View"
+msgstr "リスト表示"
+
+msgid "View Mode"
+msgstr "表示モード"
+
+msgid "Show/Hide Sidebar"
+msgstr "サイドバーの表示/非表示"
+
+msgid "Show/Hide Preview"
+msgstr "プレビューの表示/非表示"
+
+msgid "Recent Folders"
+msgstr "最近のフォルダー"
+
+msgid "No recent folders"
+msgstr "最近のフォルダーはありません"
+
+msgid "About"
+msgstr "バージョン情報"
+
+msgid "Desktop Integration"
+msgstr "デスクトップ連携"
+
+msgid "Options that connect Flux to the desktop shell"
+msgstr "Flux をデスクトップシェルと連携させるオプション"
+
+msgid "Global Menu"
+msgstr "グローバルメニュー"
+
+msgid "Publish the menu bar to the panel's global menu (applies after restart)"
+msgstr "メニューバーをパネルのグローバルメニューに公開します(再起動後に反映)"
