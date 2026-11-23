@@ -126,6 +126,7 @@ impl FluxApp {
             self.recent_stack.retain(|p| p != &path && p != &old_path);
             self.recent_stack.push_front(old_path.clone());
             self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+            crate::app::menubar::sync_recent_folders(&self.recent_stack);
 
             self.filter.clear();
             if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
@@ -181,6 +182,7 @@ impl FluxApp {
                 self.recent_stack.retain(|p| p != &path && p != &old_path);
                 self.recent_stack.push_front(old_path.clone());
                 self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+                crate::app::menubar::sync_recent_folders(&self.recent_stack);
 
                 self.filter.clear();
                 if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
@@ -261,6 +263,7 @@ impl FluxApp {
             self.recent_stack.retain(|p| p != &path && p != &old_path);
             self.recent_stack.push_front(old_path.clone());
             self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+            crate::app::menubar::sync_recent_folders(&self.recent_stack);
 
             self.filter.clear();
             if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {
@@ -342,6 +345,7 @@ impl FluxApp {
             .retain(|p| p != &self.current_path && p != &old_path);
         self.recent_stack.push_front(old_path.clone());
         self.recent_stack.truncate(constants::MAX_RECENT_ITEMS);
+        crate::app::menubar::sync_recent_folders(&self.recent_stack);
 
         self.filter.clear();
         if let Some(tab) = self.tabs.get_mut(self.active_tab_index) {

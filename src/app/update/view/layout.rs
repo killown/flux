@@ -124,6 +124,7 @@ impl FluxApp {
         self.is_list_mode = !self.is_list_mode;
         self.search.saved_list_mode = self.is_list_mode;
         self.config.default_list_mode = self.is_list_mode;
+        crate::app::menubar::sync_view_mode(self.is_list_mode);
         // The write is disk I/O, so it runs on the blocking pool. It is quiet
         // because the config watcher would otherwise answer it with a CSS reload
         // and a rescan of the open folder, which freezes a large folder on a

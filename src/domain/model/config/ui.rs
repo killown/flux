@@ -37,6 +37,9 @@ pub struct UIConfig {
     /// Enable the FTS5 filename indexer.
     #[serde(default)]
     pub enable_file_indexing: bool,
+    /// Publish a per-selection menu to the compositor's global menu (off by default).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub export_global_menu: bool,
     /// Tint overlay opacity for the main window background image (0.0 to 1.0).
     #[serde(default = "default_bg_alpha")]
     pub bg_alpha_window: f64,
@@ -358,6 +361,7 @@ impl Default for UIConfig {
             diff_panel_width: default_diff_panel_width(),
             auto_show_diff: default_auto_show_diff(),
             enable_file_indexing: false,
+            export_global_menu: false,
             content_search_max_file_mb: default_content_search_max_file_mb(),
             ui_scale: 1.0,
             diff_editor: default_diff_editor(),
@@ -370,4 +374,9 @@ impl Default for UIConfig {
             auto_list_threshold: default_auto_list_threshold(),
         }
     }
+}
+
+/// `skip_serializing_if` helper: a `false` flag is left out of the file.
+fn is_false(v: &bool) -> bool {
+    !*v
 }

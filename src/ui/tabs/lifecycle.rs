@@ -125,6 +125,10 @@ impl FluxApp {
             (tab.current_path.clone(), needs_load, tab.thumbs_ready)
         };
 
+        // Global menubar mirrors the active tab.
+        crate::app::menubar::sync_view_mode(self.is_list_mode);
+        crate::app::menubar::sync_recent_folders(&self.recent_stack);
+
         // Only update the selected page if it's not already active to avoid recursive notification cycles
         if (index as i32) < self.tab_view.n_pages() {
             let page = self.tab_view.nth_page(index as i32);
@@ -216,6 +220,10 @@ impl FluxApp {
 
                     (tab.current_path.clone(), needs_load)
                 };
+
+                // Global menubar mirrors the active tab.
+                crate::app::menubar::sync_view_mode(self.is_list_mode);
+                crate::app::menubar::sync_recent_folders(&self.recent_stack);
 
                 self.update_breadcrumbs();
                 self.sync_sidebar_selection();

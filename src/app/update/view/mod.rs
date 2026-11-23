@@ -151,6 +151,10 @@ pub(super) fn handle(
             app.config.ui.panel_menu_requires_ctrl = val;
             crate::utils::save_config_quiet(&app.config);
         }
+        AppMsg::Settings(SettingsMsg::SetExportGlobalMenu(val)) => {
+            app.config.ui.export_global_menu = val;
+            crate::utils::save_config_quiet(&app.config);
+        }
         AppMsg::Window(WindowMsg::SetWindowControlsLeft(val)) => {
             app.handle_set_window_controls_left(val)
         }

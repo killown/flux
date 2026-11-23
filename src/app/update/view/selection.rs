@@ -48,6 +48,8 @@ impl FluxApp {
         let mut only_dirs = true;
         let mut single_name = String::new();
         let mut single_item: Option<crate::ui::FileItem> = None;
+        let global_menu_bound = crate::app::global_menu::controller::is_bound();
+        let mut menu_selection: Vec<crate::app::global_menu::model::SelectionInfo> = Vec::new();
 
         let active_files = match self.tabs.get(resolved_tab_idx) {
             Some(t) => &t.files,
@@ -124,6 +126,12 @@ impl FluxApp {
             };
 
             for item in &resolved {
+                if global_menu_bound {
+                    menu_selection.push(crate::app::global_menu::controller::selection_info(
+                        &item.path,
+                        item.is_dir,
+                    ));
+                }
                 if item.is_dir {
                     only_files = false;
                     dir_count += 1;
@@ -144,6 +152,12 @@ impl FluxApp {
         }
 
         let total_selected = count + dir_count;
+
+        // Global menubar: Edit entries follow the active tab's selection count.
+        if resolved_tab_idx == self.active_tab_index {
+            crate::app::menubar::sync_menubar_state(total_selected);
+            crate::app::global_menu::controller::on_selection_changed(menu_selection);
+        }
 
         if self.current_path.to_string_lossy() == constants::RECENT_URI {
             self.recents_has_selection = total_selected > 0;

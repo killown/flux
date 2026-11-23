@@ -105,5 +105,13 @@ impl FluxApp {
                 s_settings.input(AppMsg::Navigation(NavigationMsg::Refresh));
             });
         }
+
+        // Seed the global menubar (View Mode radio, Go > Recent Folders).
+        // `menubar::install` ran in `startup`, which precedes this call.
+        crate::app::menubar::sync_view_mode(model.is_list_mode);
+        crate::app::menubar::sync_recent_folders(&model.recent_stack);
+
+        // Global menu (off unless `ui.export_global_menu`): bind after startup.
+        crate::app::global_menu::controller::init(model.menu_actions.clone());
     }
 }

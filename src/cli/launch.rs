@@ -86,6 +86,13 @@ pub(super) fn launch_main_app(
         setup_shortcuts(&base_app);
     }
 
+    // Global menu: `set_menubar` needs a registered application,
+    // so the menubar is installed from `startup`.
+    {
+        crate::hit!("launch_main_app:menubar");
+        base_app.connect_startup(crate::app::menubar::install);
+    }
+
     let app: RelmApp<AppMsg> = RelmApp::from_app(base_app);
     app.allow_multiple_instances(true);
 

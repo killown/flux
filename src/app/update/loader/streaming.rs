@@ -287,6 +287,7 @@ impl FluxApp {
         // in list mode regardless of the current session mode.
         if list_mode != self.is_list_mode {
             self.is_list_mode = list_mode;
+            crate::app::menubar::sync_view_mode(list_mode);
         }
 
         // WARNING: changing this could cause some bugs:

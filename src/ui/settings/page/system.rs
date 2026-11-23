@@ -1,4 +1,6 @@
-use crate::domain::model::{AppMsg, Config, LoadingMsg, NavigationMsg, SearchMsg, ThumbnailsMsg};
+use crate::domain::model::{
+    AppMsg, Config, LoadingMsg, NavigationMsg, SearchMsg, SettingsMsg, ThumbnailsMsg,
+};
 use adw::prelude::*;
 use relm4::prelude::*;
 
@@ -189,6 +191,21 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     connect_active_notify => move |switch| {
                         if let Some(s) = crate::infra::SENDER.get() {
                             let _ = s.send(AppMsg::Thumbnails(ThumbnailsMsg::SetFfmpegAutoRotate(switch.is_active())));
+                        }
+                    }
+                },
+            },
+
+            add = &adw::PreferencesGroup {
+                set_title: &crate::i18n::markup_tr("Desktop Integration"),
+                set_description: Some(&crate::i18n::markup_tr("Options that connect Flux to the desktop shell")),
+                add = &adw::SwitchRow {
+                    set_title: &crate::i18n::markup_tr("Global Menu"),
+                    set_subtitle: &crate::i18n::markup_tr("Publish the per-selection menu to the panel's global menu (applies after restart)"),
+                    set_active: config.ui.export_global_menu,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::infra::SENDER.get() {
+                            let _ = s.send(AppMsg::Settings(SettingsMsg::SetExportGlobalMenu(switch.is_active())));
                         }
                     }
                 },

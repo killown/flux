@@ -68,4 +68,7 @@ pub enum SettingsMsg {
     SetSidebarMenuRequiresCtrl(bool),
     /// Requires Ctrl to be held for preview-panel and quick-list context menus to open.
     SetPanelMenuRequiresCtrl(bool),
+    /// Toggles publishing the per-selection menu to the desktop's global menu.
+    /// Takes effect on the next start.
+    SetExportGlobalMenu(bool),
 }

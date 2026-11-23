@@ -20,7 +20,7 @@ fn legacy_terminal_in_sidebar(raw: &str) -> Option<bool> {
 
 /// One-shot: migrates the legacy `ui.terminal_in_sidebar` bool into
 /// `ui.terminal.position`. `true` becomes `Sidebar` unless the user has already
-/// picked a position; `false` leaves the default `Bottom`.
+/// picked a position, `false` leaves the default `Bottom`.
 ///
 /// Returns `true` when the key was present, i.e. `config.toml` must be rewritten.
 /// The rewrite drops the key, because `Config` no longer has a field for it.
@@ -296,6 +296,7 @@ path = "actions://"
                     autoplay_video_previews: true,
                     enable_file_indexing: false,
                     content_search_max_file_mb: 128,
+                    export_global_menu: false,
                 },
                 sidebar: vec![],
                 shortcuts: crate::domain::model::ShortcutsConfig::default(),
