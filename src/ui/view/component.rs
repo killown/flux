@@ -183,19 +183,43 @@ impl SimpleAsyncComponent for FluxApp {
                         /// Multi-state title stack for Breadcrumbs, Path Entry, and Search modes.
                         #[wrap(Some)]
                         set_title_widget: header_stack = &gtk::Stack {
-                            set_halign: gtk::Align::Center,
-                            set_hexpand: false,
+                            // Take all the room the header bar leaves, so the
+                            // breadcrumbs can show as many segments as fit.
+                            set_halign: gtk::Align::Fill,
+                            set_hexpand: true,
                             set_width_request: constants::LOCATION_ENTRY_WIDTH_REQUEST,
                             set_transition_type: gtk::StackTransitionType::Crossfade,
 
                             /// Interactive breadcrumb container for directory parent navigation.
                             #[name = "path_entry"]
                             add_child = &gtk::ScrolledWindow {
-                                set_propagate_natural_width: false,
+                                // Natural width = the whole path, so the header bar can shift
+                                // the bar off-center to use the free room on either side.
+                                set_propagate_natural_width: true,
                                 set_min_content_width: constants::SCROLLED_WINDOW_MIN_WIDTH,
                                 set_hscrollbar_policy: gtk::PolicyType::External,
                                 set_vscrollbar_policy: gtk::PolicyType::Never,
-                                set_halign: gtk::Align::Center,
+                                set_halign: gtk::Align::Fill,
+                                set_hexpand: true,
+                                // On resize or rebuild, hide the oldest parents that no longer
+                                // fit instead of shortening labels. The guard stops the
+                                // visibility changes from re-entering the handlers.
+                                connect_realize => |sw| {
+                                    let adj = sw.hadjustment();
+                                    let busy = std::rc::Rc::new(std::cell::Cell::new(false));
+                                    let weak = sw.downgrade();
+                                    let refit = move |a: &gtk::Adjustment| {
+                                        let Some(sw) = weak.upgrade() else { return };
+                                        if busy.replace(true) {
+                                            return;
+                                        }
+                                        crate::ui::components::fit_to_width(&sw);
+                                        a.set_value(a.upper() - a.page_size());
+                                        busy.set(false);
+                                    };
+                                    adj.connect_upper_notify(refit.clone());
+                                    adj.connect_page_size_notify(refit);
+                                },
 
                                 #[local_ref]
                                 breadcrumb_box -> gtk::Box {

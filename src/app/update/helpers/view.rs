@@ -171,8 +171,14 @@ impl FluxApp {
             });
         }
 
-        let max_visible = self.config.ui.breadcrumb_count.max(1);
-        let skip = segments.len().saturating_sub(max_visible);
+        // 0 builds every segment: the header then shows as many as fit its width
+        // (`ui::components::fit_to_width`), oldest parents dropped first.
+        let max_visible = self.config.ui.breadcrumb_count;
+        let skip = if max_visible == 0 {
+            0
+        } else {
+            segments.len().saturating_sub(max_visible)
+        };
 
         for segment in segments.into_iter().skip(skip) {
             guard.push_back(segment);

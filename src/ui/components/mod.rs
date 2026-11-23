@@ -9,5 +9,6 @@ mod setup;
 mod sidebar;
 mod widgets;
 
+pub use breadcrumb::fit_to_width;
 pub use file_item::{FileItem, ThumbEvent, ThumbHook};
 pub use sidebar::{SidebarMsg, SidebarPlace};

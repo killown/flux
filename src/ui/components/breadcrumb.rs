@@ -28,8 +28,13 @@ impl FactoryComponent for PathSegment {
             set_child = &gtk::Label {
                 #[watch]
                 set_label: &self.name,
-                set_ellipsize: gtk::pango::EllipsizeMode::End,
-                set_max_width_chars: self.max_chars,
+                // `max_chars` <= 0 means unlimited: show the whole name.
+                set_ellipsize: if self.max_chars > 0 {
+                    gtk::pango::EllipsizeMode::End
+                } else {
+                    gtk::pango::EllipsizeMode::None
+                },
+                set_max_width_chars: if self.max_chars > 0 { self.max_chars } else { -1 },
                 set_wrap: false,
             },
 
@@ -49,4 +54,58 @@ impl FactoryComponent for PathSegment {
             }
         }
     }
+}
+
+/// Shows as many breadcrumb buttons as fit in `scroller`, dropping the oldest
+/// parents first. Labels are never shortened here, and the last button (the
+/// current folder) always stays visible. Run it whenever the bar is resized
+/// or the segments are rebuilt.
+///
+/// The hidden buttons are replaced by a start margin of the same width, so the
+/// bar keeps asking for the width of the whole path. That lets the header bar
+/// move the bar off-center and use the free room on either side, and bring the
+/// parents back when the window grows.
+pub fn fit_to_width(scroller: &gtk::ScrolledWindow) {
+    let available = scroller.hadjustment().page_size() as i32;
+    if available <= 0 {
+        return;
+    }
+    let Some(bar) = scroller
+        .child()
+        .and_then(|c| c.downcast::<gtk::Viewport>().ok())
+        .and_then(|v| v.child())
+    else {
+        return;
+    };
+    let mut buttons = Vec::new();
+    let mut child = bar.first_child();
+    while let Some(w) = child {
+        child = w.next_sibling();
+        buttons.push(w);
+    }
+    let Some(last) = buttons.len().checked_sub(1) else {
+        return;
+    };
+    // A hidden widget measures as 0, so show everything before measuring.
+    bar.set_margin_start(0);
+    for b in &buttons {
+        b.set_visible(true);
+    }
+    let widths: Vec<i32> = buttons
+        .iter()
+        .map(|w| w.measure(gtk::Orientation::Horizontal, -1).1)
+        .collect();
+    let mut used = widths[last];
+    let mut first = last;
+    for i in (0..last).rev() {
+        if used + widths[i] > available {
+            break;
+        }
+        used += widths[i];
+        first = i;
+    }
+    for (i, b) in buttons.iter().enumerate() {
+        b.set_visible(i >= first);
+    }
+    bar.set_margin_start(widths[..first].iter().sum());
 }

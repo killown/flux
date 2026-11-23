@@ -175,8 +175,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
             },
             add = &adw::SpinRow {
                 set_title: &crate::i18n::markup_tr("Breadcrumbs Shown"),
-                set_subtitle: &crate::i18n::markup_tr("Number of path segments shown in the header bar"),
-                set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 1.0, 20.0, 1.0, 0.0, 0.0)),
+                set_subtitle: &crate::i18n::markup_tr("Number of path segments shown in the header bar (0 = as many as fit)"),
+                set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_count as f64, 0.0, 20.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::infra::SENDER.get() {
@@ -186,8 +186,8 @@ fn layout_group(config: &Config) -> adw::PreferencesGroup {
             },
             add = &adw::SpinRow {
                 set_title: &crate::i18n::markup_tr("Breadcrumb Label Length"),
-                set_subtitle: &crate::i18n::markup_tr("Characters before truncating breadcrumb names"),
-                set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 4.0, 64.0, 1.0, 0.0, 0.0)),
+                set_subtitle: &crate::i18n::markup_tr("Characters before truncating breadcrumb names (0 = unlimited)"),
+                set_adjustment: Some(&gtk::Adjustment::new(config.ui.breadcrumb_max_chars as f64, 0.0, 64.0, 1.0, 0.0, 0.0)),
                 set_numeric: true,
                 connect_value_notify => move |spin| {
                     if let Some(s) = crate::infra::SENDER.get() {
