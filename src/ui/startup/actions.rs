@@ -112,6 +112,6 @@ impl FluxApp {
         crate::app::menubar::sync_recent_folders(&model.recent_stack);
 
         // Global menu (off unless `ui.export_global_menu`): bind after startup.
-        crate::app::global_menu::controller::init(model.menu_actions.clone());
+        crate::app::global_menu::controller::init();
     }
 }
