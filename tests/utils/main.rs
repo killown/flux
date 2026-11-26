@@ -11,6 +11,7 @@ mod glob;
 mod helpers;
 mod hwga;
 mod media;
+mod xdg_user_dirs;
 mod search_parser;
 mod thumbnail_tiers;
 mod xattr;
