@@ -11,6 +11,7 @@ theme = "os-dark"
 default_sort = "Date"
 folders_first = true
 show_hidden_by_default = false
+restore_tabs = true
 show_csd = true
 start_maximized = false
 startup_window_width = 980

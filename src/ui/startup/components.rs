@@ -36,6 +36,10 @@ impl FluxApp {
         // Resource Loading (config and menu awaited, the DB opens in the background)
         let (pending_db, config, menu_actions_list) = Self::load_resources().await;
 
+        // Saved tabs are restored only for a plain launch, which starts in the home folder.
+        let restore_tabs =
+            config.ui.restore_tabs && dirs::home_dir().as_deref() == Some(start_path.as_path());
+
         let context_menu_popover = gtk::PopoverMenu::builder().has_arrow(false).build();
 
         crate::utils::helpers::apply_ui_scale(config.ui.ui_scale);
@@ -148,6 +152,8 @@ impl FluxApp {
             tabs: vec![initial_tab],
             active_tab_index: 0,
             next_tab_id: 1,
+            open_tabs_persist: false,
+            saved_open_tabs: None,
             files,
             sidebar,
             breadcrumbs,
@@ -261,7 +267,7 @@ impl FluxApp {
         Self::register_app_actions(&model, &sender);
 
         // Defer background maintenance and initial data fetching to unblock window presentation
-        Self::schedule_deferred_startup(&state_db, initial_tag_search, &sender);
+        Self::schedule_deferred_startup(&state_db, initial_tag_search, restore_tabs, &sender);
 
         (model, breadcrumb_box)
     }

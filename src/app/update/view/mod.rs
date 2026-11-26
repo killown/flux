@@ -167,6 +167,7 @@ pub(super) fn handle(
         AppMsg::Settings(SettingsMsg::SetShowHidden(val)) => {
             app.handle_set_show_hidden(val, sender)
         }
+        AppMsg::Settings(SettingsMsg::SetRestoreTabs(val)) => app.handle_set_restore_tabs(val),
         AppMsg::View(ViewMsg::ToggleHidden) => app.handle_set_show_hidden(!app.show_hidden, sender),
         AppMsg::View(ViewMsg::ToggleStatusBar) => app.statusbar_visible = !app.statusbar_visible,
         AppMsg::View(ViewMsg::ToggleCurrentFoldersFirst) => {

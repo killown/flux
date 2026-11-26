@@ -5,6 +5,7 @@ mod core;
 mod history;
 mod icons;
 mod maintenance;
+mod open_tabs;
 mod quick_groups;
 mod quick_list;
 mod tags;

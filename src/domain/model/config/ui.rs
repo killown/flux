@@ -186,6 +186,9 @@ pub struct UIConfig {
     /// Whether to show dotfiles and hidden items on application startup.
     #[serde(default)]
     pub show_hidden_by_default: bool,
+    /// Reopen the tabs from the last session when Flux starts in the home folder.
+    #[serde(default = "default_true")]
+    pub restore_tabs: bool,
     /// Directory-specific overrides for the sorting method.
     #[serde(default)]
     pub folder_sort: HashMap<String, SortBy>,
@@ -310,6 +313,7 @@ impl Default for UIConfig {
             folders_first: true,
             current_folders_first: HashMap::new(),
             show_hidden_by_default: false,
+            restore_tabs: true,
             folder_sort: HashMap::new(),
             folder_icon_size: HashMap::new(),
             device_renames: HashMap::new(),

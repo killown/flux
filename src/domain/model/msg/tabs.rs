@@ -17,6 +17,9 @@ pub enum TabsMsg {
     /// `TabState.id` of the moved tab, `new_position` is its new visual
     /// position in the `adw::TabView`.
     TabReordered { moved_id: u64, new_position: usize },
+    /// Startup: opens the tabs saved last session. `paths[0]` becomes the first tab and
+    /// `active` selects the tab that was active. Empty `paths` only starts saving tabs.
+    RestoreSession { paths: Vec<PathBuf>, active: usize },
     /// Cycles to the next tab in sequential order.
     NextTab,
     /// Cycles to the previous tab in reverse sequential order.

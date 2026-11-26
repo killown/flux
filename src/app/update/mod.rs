@@ -13,6 +13,7 @@ mod loading;
 pub mod navigation;
 pub mod network;
 pub mod search;
+pub mod session;
 pub mod settings;
 pub mod sidebar;
 pub mod tag;
