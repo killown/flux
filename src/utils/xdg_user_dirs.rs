@@ -60,6 +60,8 @@ pub fn user_dirs(home: &Path) -> Vec<UserDir> {
         ("MUSIC", dirs::audio_dir()),
         ("PICTURES", dirs::picture_dir()),
         ("VIDEOS", dirs::video_dir()),
+        // `dirs` has no projects directory; use the xdg-user-dirs default.
+        ("PROJECTS", Some(home.join("Projects"))),
     ]
     .into_iter()
     .filter_map(|(key, path)| {
