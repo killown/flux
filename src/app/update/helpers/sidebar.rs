@@ -10,6 +10,19 @@ use adw::prelude::*;
 use relm4::prelude::*;
 use std::path::PathBuf;
 
+/// Theme icon for a user directory, by its `user-dirs.dirs` key.
+fn xdg_user_dir_icon(key: &str) -> &'static str {
+    match key {
+        "DESKTOP" => "user-desktop-symbolic",
+        "DOWNLOAD" => "folder-download-symbolic",
+        "DOCUMENTS" => "folder-documents-symbolic",
+        "MUSIC" => "folder-music-symbolic",
+        "PICTURES" => "folder-pictures-symbolic",
+        "VIDEOS" => "folder-videos-symbolic",
+        _ => "folder-symbolic",
+    }
+}
+
 fn terminal_default_width(anchor: &gtk::Revealer) -> i32 {
     let monitor_w = anchor
         .native()
@@ -45,65 +58,31 @@ impl FluxApp {
         };
 
         if self.config.ui.show_xdg_dirs {
-            if let Some(p) = dirs::home_dir() {
+            if let Some(home) = dirs::home_dir() {
                 guard.push_back(SidebarPlace {
-                    name: get_xdg_name(&p),
+                    name: get_xdg_name(&home),
                     icon: "user-home-symbolic".to_string(),
-                    path: p,
+                    path: home.clone(),
                     is_mount: false,
                     is_section_label: false,
                     unmounted_volume: None,
                 });
-            }
-            if let Some(p) = dirs::desktop_dir() {
-                guard.push_back(SidebarPlace {
-                    name: get_xdg_name(&p),
-                    icon: "user-desktop-symbolic".to_string(),
-                    path: p,
-                    is_mount: false,
-                    is_section_label: false,
-                    unmounted_volume: None,
-                });
-            }
-            if let Some(p) = dirs::download_dir() {
-                guard.push_back(SidebarPlace {
-                    name: get_xdg_name(&p),
-                    icon: "folder-download-symbolic".to_string(),
-                    path: p,
-                    is_mount: false,
-                    is_section_label: false,
-                    unmounted_volume: None,
-                });
-            }
-            if let Some(p) = dirs::document_dir() {
-                guard.push_back(SidebarPlace {
-                    name: get_xdg_name(&p),
-                    icon: "folder-documents-symbolic".to_string(),
-                    path: p,
-                    is_mount: false,
-                    is_section_label: false,
-                    unmounted_volume: None,
-                });
-            }
-            if let Some(p) = dirs::picture_dir() {
-                guard.push_back(SidebarPlace {
-                    name: get_xdg_name(&p),
-                    icon: "folder-pictures-symbolic".to_string(),
-                    path: p,
-                    is_mount: false,
-                    is_section_label: false,
-                    unmounted_volume: None,
-                });
-            }
-            if let Some(p) = dirs::video_dir() {
-                guard.push_back(SidebarPlace {
-                    name: get_xdg_name(&p),
-                    icon: "folder-videos-symbolic".to_string(),
-                    path: p,
-                    is_mount: false,
-                    is_section_label: false,
-                    unmounted_volume: None,
-                });
+
+                // Only directories that exist; Home is listed above, so skip a
+                // user directory that points at it.
+                for dir in crate::utils::xdg_user_dirs::user_dirs(&home) {
+                    if dir.path == home || !dir.path.is_dir() {
+                        continue;
+                    }
+                    guard.push_back(SidebarPlace {
+                        name: get_xdg_name(&dir.path),
+                        icon: xdg_user_dir_icon(&dir.key).to_string(),
+                        path: dir.path,
+                        is_mount: false,
+                        is_section_label: false,
+                        unmounted_volume: None,
+                    });
+                }
             }
         }
 

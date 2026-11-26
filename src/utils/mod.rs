@@ -14,6 +14,7 @@ pub mod media;
 pub mod path;
 pub mod search;
 pub mod xattr;
+pub mod xdg_user_dirs;
 pub mod xml;
 
 pub use config::*;
