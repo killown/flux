@@ -85,6 +85,61 @@ impl FluxApp {
         }
     }
 
+    /// Startup: restores the tabs saved last session. `paths[0]` is the startup tab,
+    /// which is already there, and the rest are added as background tabs that load
+    /// when first selected. Selects `active`. Saving is turned on afterwards.
+    pub fn handle_restore_session(
+        &mut self,
+        paths: Vec<PathBuf>,
+        active: usize,
+        sender: &AsyncComponentSender<Self>,
+    ) {
+        crate::hit!("handle_restore_session");
+        let mut paths = paths.into_iter();
+        if let Some(first) = paths.next() {
+            // Tab 0 is the active tab. Its path is kept both in `current_path` and in
+            // its TabState, because a switch away copies `current_path` into the tab.
+            self.current_path = first.clone();
+            self.tabs[0].current_path = first.clone();
+            // The startup tab was labelled after the home folder. Relabel it now, so the
+            // tab does not show the wrong name until its folder finishes loading.
+            let title = first
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| first.to_string_lossy().to_string());
+            self.tabs[0].title = title.clone();
+            self.tab_view.nth_page(0).set_title(&title);
+            if active == 0 {
+                self.load_path(first, sender);
+            } else {
+                self.tabs[0].is_initialized = false;
+            }
+
+            for path in paths {
+                self.next_tab_id += 1;
+                let tab_id = self.next_tab_id;
+                let mut new_tab =
+                    TabState::new(tab_id, path, self.is_list_mode, self.config.ui.default_sort);
+                new_tab.is_initialized = false;
+                self.wire_tab_signals(&mut new_tab, sender);
+
+                let title = new_tab.title.clone();
+                let page = self.tab_view.append(&new_tab.scroller);
+                page.set_title(&title);
+                unsafe {
+                    page.set_data("flux_tab_id", tab_id);
+                }
+                self.tabs.push(new_tab);
+            }
+
+            if active != 0 && active < self.tabs.len() {
+                self.handle_switch_tab(active, sender);
+            }
+        }
+        self.open_tabs_persist = true;
+        self.saved_open_tabs = None;
+    }
+
     pub fn handle_switch_tab(&mut self, index: usize, sender: &AsyncComponentSender<Self>) {
         crate::hit!("handle_switch_tab");
         if index >= self.tabs.len() || index == self.active_tab_index {

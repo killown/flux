@@ -70,6 +70,10 @@ const FIELD_NOTES: &[(&str, &str)] = &[
     ("ui.show_csd", "Draw client-side window decorations."),
     ("ui.show_empty_dir_emblem", "Show an emblem on folders that contain no visible items."),
     ("ui.show_hidden_by_default", "Show hidden files at startup."),
+    (
+        "ui.restore_tabs",
+        "Reopen the tabs from the last session on a plain launch. Not applied when a path or `--tag` is given.",
+    ),
     ("ui.show_recents", "Show the Recents location in the sidebar."),
     ("ui.show_symlink_emblem", "Show a badge and target hint on symbolic links."),
     ("ui.show_thumbnails", "Master switch for thumbnail generation; overrides `thumbnail_types`."),

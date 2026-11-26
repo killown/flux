@@ -186,6 +186,16 @@ pub fn build(config: &Config) -> adw::PreferencesPage {
                     }
                 },
                 add = &adw::SwitchRow {
+                    set_title: &crate::i18n::markup_tr("Restore Tabs on Startup"),
+                    set_subtitle: &crate::i18n::markup_tr("Reopen the tabs from your last session when Flux starts"),
+                    set_active: config.ui.restore_tabs,
+                    connect_active_notify => move |switch| {
+                        if let Some(s) = crate::infra::SENDER.get() {
+                            let _ = s.send(AppMsg::Settings(SettingsMsg::SetRestoreTabs(switch.is_active())));
+                        }
+                    }
+                },
+                add = &adw::SwitchRow {
                     set_title: &crate::i18n::markup_tr("Show Hidden Files"),
                     set_subtitle: &crate::i18n::markup_tr("Display files and folders starting with a dot"),
                     set_active: config.ui.show_hidden_by_default,

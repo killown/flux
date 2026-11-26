@@ -57,6 +57,7 @@ single_click = false
 show_xdg_dirs = false
 default_sort = "Name"
 show_hidden_by_default = false
+restore_tabs = true
 folders_first = true
 theme = "default"
 show_csd = true
@@ -263,6 +264,7 @@ path = "actions://"
                     folder_sort: std::collections::HashMap::new(),
                     folder_icon_size: std::collections::HashMap::new(),
                     show_hidden_by_default: false,
+                    restore_tabs: true,
                     device_renames: std::collections::HashMap::new(),
                     folders_first: true,
                     theme: Some("default".to_string()),

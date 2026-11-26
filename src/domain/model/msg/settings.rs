@@ -28,6 +28,8 @@ pub enum SettingsMsg {
     SetSingleClick(bool),
     /// Updates the global hidden files visibility.
     SetShowHidden(bool),
+    /// Turns restoring the last session's tabs at startup on or off.
+    SetRestoreTabs(bool),
     /// Updates the folders-first sorting priority.
     SetFoldersFirst(bool),
     /// Sets the item-count threshold above which folders open in list mode.

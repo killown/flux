@@ -51,6 +51,11 @@ pub struct FluxApp {
     pub active_tab_index: usize,
     /// Monotonically increasing identifier generator for assigning unique IDs to new tabs.
     pub next_tab_id: u64,
+    /// False until startup has restored (or skipped restoring) the saved tabs, so a
+    /// partly built tab list never overwrites them.
+    pub open_tabs_persist: bool,
+    /// The tab paths and active index last written to the state DB, to skip repeat writes.
+    pub saved_open_tabs: Option<(Vec<PathBuf>, usize)>,
     /// Manages bounded concurrency and viewport-based cancellation tokens for lazy thumbnail generation tasks.
     pub thumbnail_manager: Arc<crate::infra::thumbnails::ThumbnailTaskManager>,
     /// Line number of the item targeted by the last context menu. 0 when not a content-search hit.

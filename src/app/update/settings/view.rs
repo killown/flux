@@ -34,6 +34,12 @@ impl FluxApp {
         sender.input(AppMsg::Navigation(NavigationMsg::Refresh));
     }
 
+    pub fn handle_set_restore_tabs(&mut self, val: bool) {
+        crate::hit!("handle_set_restore_tabs");
+        self.config.ui.restore_tabs = val;
+        utils::save_config(&self.config);
+    }
+
     pub fn handle_set_grid_spacing(&mut self, val: i32, sender: &AsyncComponentSender<Self>) {
         self.config.ui.grid_spacing = val;
         utils::save_config(&self.config);

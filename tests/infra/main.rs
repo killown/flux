@@ -12,6 +12,7 @@ mod archive {
 
 mod db {
     mod advanced;
+    mod open_tabs;
     mod quick_groups;
     mod quick_list;
     mod state_manager;

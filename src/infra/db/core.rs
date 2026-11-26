@@ -55,6 +55,15 @@ const SCHEMA: &str = "
             id INTEGER PRIMARY KEY CHECK (id = 1),
             selected INTEGER NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS open_tabs (
+            pos INTEGER PRIMARY KEY,
+            path BLOB NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS open_tabs_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            active INTEGER NOT NULL
+        );
 ";
 
 impl StateManager {

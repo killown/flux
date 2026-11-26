@@ -107,6 +107,7 @@ Every key is optional. **Default** below is the value used when a key is missing
 | `preview_panel_width` | `400` | Width in pixels of the right-side preview panel. |
 | `preview_syntax_highlighting` | `true` | Syntax-highlight source files in the preview panel. |
 | `recents_row` | `0` | Zero-based position of the Recents row among the `[[sidebar]]` entries. No effect when `show_recents` is `false`. |
+| `restore_tabs` | `true` | Reopen the tabs from the last session on a plain launch. Not applied when a path or `--tag` is given. |
 | `scale_font_with_icons` | `false` | Scale label font size together with the grid icons. |
 | `search_panel_width` | `350` | Width in pixels of the right-side search panel. |
 | `show_csd` | `false` | Draw client-side window decorations. |
@@ -245,6 +246,7 @@ single_click = false
 default_sort = "Name"
 folders_first = true
 show_hidden_by_default = false
+restore_tabs = true
 show_csd = false
 start_maximized = false
 startup_window_width = 0

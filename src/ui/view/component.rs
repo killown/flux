@@ -939,6 +939,7 @@ impl SimpleAsyncComponent for FluxApp {
 
     async fn update(&mut self, message: Self::Input, sender: AsyncComponentSender<Self>) {
         self.handle_update(message, sender);
+        self.persist_open_tabs();
     }
 
     /// Initializes the Flux application component, setting up state, UI widgets, and system monitors.

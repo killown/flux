@@ -67,6 +67,9 @@ pub(super) fn handle(
         }
         AppMsg::Tabs(TabsMsg::NewTab(target_path)) => app.handle_new_tab(target_path, sender),
         AppMsg::Tabs(TabsMsg::OpenTabs(targets)) => app.handle_open_tabs(targets, sender),
+        AppMsg::Tabs(TabsMsg::RestoreSession { paths, active }) => {
+            app.handle_restore_session(paths, active, sender)
+        }
         AppMsg::Navigation(NavigationMsg::Open { position, tab_id }) => {
             app.handle_open(position, tab_id, sender)
         }
