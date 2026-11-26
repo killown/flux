@@ -22,6 +22,7 @@ fn test_sidebar_place_regular_item() {
         path: PathBuf::from("/home/user/Documents"),
         is_mount: false,
         is_section_label: false,
+        unmounted_volume: None,
     };
 
     assert_eq!(place.name, "Documents");
@@ -38,6 +39,7 @@ fn test_sidebar_place_mount_item() {
         path: PathBuf::from("/run/media/user/backup"),
         is_mount: true,
         is_section_label: false,
+        unmounted_volume: None,
     };
 
     assert!(place.is_mount);
@@ -53,6 +55,7 @@ fn test_sidebar_place_section_label() {
         path: PathBuf::new(),
         is_mount: false,
         is_section_label: true,
+        unmounted_volume: None,
     };
 
     assert!(place.is_section_label);
