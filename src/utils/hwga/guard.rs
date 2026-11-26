@@ -1,6 +1,8 @@
+#[cfg(debug_assertions)]
 use super::globals::to_ns;
 use super::probe::Probe;
 use std::cell::Cell;
+#[cfg(debug_assertions)]
 use std::time::{Duration, Instant};
 
 thread_local! {
