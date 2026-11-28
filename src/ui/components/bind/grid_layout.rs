@@ -10,6 +10,7 @@
 //! because cells are recycled between modes. If you add a property to the
 //! list layout, add its grid default here.
 
+use super::remove_style_provider;
 use crate::ui::components::widgets::FileWidgets;
 use crate::ui::components::FileItem;
 use crate::ui::constants;
@@ -18,6 +19,11 @@ use adw::prelude::*;
 /// Lays out `widgets` as a grid card for `item`.
 pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets) {
     crate::hit!("bind_layout_grid");
+    if let Some(provider) = widgets.scale_css_provider.take() {
+        remove_style_provider(&widgets.label, &provider);
+        remove_style_provider(&widgets.info_label, &provider);
+    }
+    widgets.info_label.set_attributes(None);
     widgets.card_box.set_orientation(gtk::Orientation::Vertical);
     widgets.card_box.set_halign(gtk::Align::Fill);
     widgets.card_box.set_valign(gtk::Align::Fill);
@@ -73,7 +79,28 @@ pub(super) fn apply(item: &FileItem, widgets: &mut FileWidgets) {
         }
     }
 
-    widgets.info_label.set_visible(false);
+    if item.is_dir && item.labels.has_info() {
+        widgets.info_label.set_halign(gtk::Align::Center);
+        widgets.info_label.set_xalign(0.5);
+        widgets
+            .info_label
+            .set_max_width_chars(item.max_width_chars.max(10));
+        widgets
+            .info_label
+            .set_ellipsize(gtk::pango::EllipsizeMode::End);
+        widgets.info_label.set_label(&item.labels.info_combined);
+        if item.labels.info_tooltip.is_empty() {
+            widgets.info_label.set_tooltip_text(None::<&str>);
+        } else {
+            widgets
+                .info_label
+                .set_tooltip_text(Some(&item.labels.info_tooltip));
+        }
+        widgets.info_label.set_visible(true);
+    } else {
+        widgets.info_label.set_tooltip_text(None::<&str>);
+        widgets.info_label.set_visible(false);
+    }
 }
 
 /// Applies `item.icon_size` to the parts of a grid card whose size follows the icon.

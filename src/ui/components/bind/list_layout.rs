@@ -145,10 +145,10 @@ fn bind_info_label(item: &FileItem, widgets: &FileWidgets) {
         widgets.info_label.set_tooltip_text(None::<&str>);
     } else if item.labels.has_info() {
         widgets.info_label.set_label(&item.labels.info_combined);
-        if !item.labels.mtime_tooltip.is_empty() {
+        if !item.labels.info_tooltip.is_empty() {
             widgets
                 .info_label
-                .set_tooltip_text(Some(&item.labels.mtime_tooltip));
+                .set_tooltip_text(Some(&item.labels.info_tooltip));
         } else {
             widgets.info_label.set_tooltip_text(None::<&str>);
         }

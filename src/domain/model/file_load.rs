@@ -37,7 +37,7 @@ pub fn set_now_unix(unix: i64) {
 /// of `bind_widgets` forbids formatting or I/O on the GTK thread.
 #[derive(Debug, Clone, Default)]
 pub struct CellLabels {
-    /// Human-readable size: `"1.4 MB"`, `"12 items"`, `""` for empty.
+    /// Human-readable size: `"1.4 MB · 12 items"`, `"12 items"`, or `""`.
     #[allow(dead_code)]
     pub size: String,
     /// Short date/time: `"14:32"`, `"Yesterday"`, `"Mar 3"`, `"2023"`.
@@ -45,6 +45,8 @@ pub struct CellLabels {
     pub mtime_short: String,
     /// Full timestamp for tooltip: `"03/15/24 14:32:11"`.
     pub mtime_tooltip: String,
+    /// Combined exact-size and timestamp details for the info label tooltip.
+    pub info_tooltip: String,
     /// Combined `size · mtime_short` string for `.flux-list-info`.
     pub info_combined: String,
 }
@@ -97,6 +99,8 @@ pub struct FileLoadContext {
     is_empty: OnceLock<bool>,
     metadata: OnceLock<Option<Metadata>>,
     size: OnceLock<u64>,
+    /// Recursive logical byte size for real directories; `None` means not scanned.
+    folder_size: Option<Result<u64, ()>>,
     mtime: OnceLock<i64>,
     is_foreign_owner: OnceLock<bool>,
     /// Pre-formatted cell labels, resolved lazily from `size()` + `mtime()`.
@@ -134,6 +138,7 @@ impl FileLoadContext {
             is_empty: OnceLock::new(),
             metadata: OnceLock::new(),
             size: OnceLock::new(),
+            folder_size: None,
             mtime: OnceLock::new(),
             is_foreign_owner: OnceLock::new(),
             labels: OnceLock::new(),
@@ -187,6 +192,7 @@ impl FileLoadContext {
             is_empty: OnceLock::from(size == 0),
             metadata: OnceLock::new(),
             size: OnceLock::from(size),
+            folder_size: None,
             mtime: OnceLock::from(mtime),
             is_foreign_owner: OnceLock::from(false),
             labels: OnceLock::new(),
@@ -248,6 +254,20 @@ impl FileLoadContext {
         })
     }
 
+    /// Returns recursive folder bytes for size sorting when available.
+    #[inline]
+    pub fn size_for_sort(&self) -> u64 {
+        self.folder_size
+            .and_then(Result::ok)
+            .unwrap_or_else(|| self.size())
+    }
+
+    /// Stores the background-computed recursive size and invalidates labels.
+    pub fn set_folder_size(&mut self, size: Option<Result<u64, ()>>) {
+        self.folder_size = size;
+        self.labels.take();
+    }
+
     /// Resolves modification time lazily on first access.
     #[inline]
     pub fn mtime(&self) -> i64 {
@@ -307,10 +327,15 @@ impl FileLoadContext {
         let mtime = self.mtime();
 
         let size_label = if self.is_dir {
-            if size == 1 {
+            let item_count_label = if size == 1 {
                 "1 item".to_string()
             } else {
                 format!("{} {}", size, tr("items"))
+            };
+            match self.folder_size {
+                Some(Ok(bytes)) => format!("{} · {}", format_size(bytes), item_count_label),
+                Some(Err(())) => format!("{} · {}", tr("Size unavailable"), item_count_label),
+                None => item_count_label,
             }
         } else if size > 0 {
             format_size(size)
@@ -370,11 +395,24 @@ impl FileLoadContext {
             (true, false) => mtime_short.clone(),
             (true, true) => String::new(),
         };
+        let info_tooltip = match self.folder_size {
+            Some(Ok(bytes)) => {
+                let exact_size = format!("{} ({} bytes)", format_size(bytes), bytes);
+                if mtime_tooltip.is_empty() {
+                    exact_size
+                } else {
+                    format!("{}\n{}", exact_size, mtime_tooltip)
+                }
+            }
+            Some(Err(())) => tr("Unable to calculate recursive folder size"),
+            None => mtime_tooltip.clone(),
+        };
 
         CellLabels {
             size: size_label,
             mtime_short,
             mtime_tooltip,
+            info_tooltip,
             info_combined,
         }
     }
@@ -561,6 +599,23 @@ mod tests {
         let zip = item("a.zip", false, true);
         assert!(!zip.is_dir);
         assert!(zip.is_virtual_dir);
+    }
+
+    #[test]
+    fn folder_labels_show_recursive_size_and_exact_bytes_in_tooltip() {
+        let mut folder = item("folder", true, false);
+        folder.set_folder_size(Some(Ok(1_234)));
+
+        assert!(folder.labels().size.contains("1 KB"));
+        assert!(folder.labels().info_tooltip.contains("1234 bytes"));
+    }
+
+    #[test]
+    fn size_sort_uses_recursive_folder_bytes() {
+        let mut folder = item("folder", true, false);
+        folder.set_folder_size(Some(Ok(1_234)));
+
+        assert_eq!(folder.size_for_sort(), 1_234);
     }
 
     #[test]

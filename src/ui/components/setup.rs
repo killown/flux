@@ -302,7 +302,7 @@ impl FileItem {
             false
         });
 
-        // Right-aligned info label for list mode (extension).
+        // Info label: right-aligned in list mode, centered under folders in grid mode.
         // Created imperatively so it can be appended after the Stack.
         let info_label = gtk::Label::builder()
             .halign(gtk::Align::End)
@@ -656,8 +656,8 @@ impl FileItem {
             root.add_controller(drop_target.clone());
         }
 
-        // Append the info label after the scroller so it sits on the far right
-        // of the horizontal list row. In grid mode it is hidden.
+        // Appended after the scroller; list mode uses it at the row's right edge,
+        // while grid mode uses it below folder names.
         card_box.append(&info_label);
 
         // `FileItem::resize_in_place` reads these to resize a live cell without a rebind.

@@ -11,7 +11,8 @@ use gtk::gio;
 use ignore::{ParallelVisitor, ParallelVisitorBuilder, WalkBuilder, WalkState};
 use rayon::prelude::*;
 use relm4::prelude::*;
-use std::path::PathBuf;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 
@@ -232,6 +233,20 @@ impl FluxApp {
                             })
                             .collect()
                     });
+                    let size_entries: Vec<_> = cached_items
+                        .iter()
+                        .filter_map(|item| {
+                            Some((
+                                item.target_path.file_name()?.to_string_lossy().into_owned(),
+                                item.is_dir,
+                                item.is_symlink,
+                            ))
+                        })
+                        .collect();
+                    let folder_sizes = scan_child_directory_sizes(&path_clone, &size_entries);
+                    for item in &mut cached_items {
+                        item.set_folder_size(folder_sizes.get(&item.target_path).copied());
+                    }
 
                     // Keep cached items sorted to the currently active sort configuration
                     loader_pool().install(|| {
@@ -244,7 +259,7 @@ impl FluxApp {
 
                             let primary_order = match sort_strategy {
                                 SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                                SortBy::Size => a.size().cmp(&b.size()),
+                                SortBy::Size => a.size_for_sort().cmp(&b.size_for_sort()),
                                 SortBy::Date => a.mtime().cmp(&b.mtime()),
                                 SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                             };
@@ -399,6 +414,16 @@ impl FluxApp {
 
                 rx.into_iter().collect()
             };
+            let folder_sizes = if is_trash
+                || filter_mode == crate::domain::model::FilterMode::OnlyFiles
+                || mime_filter
+                    .as_ref()
+                    .is_some_and(|want| want != crate::domain::model::constants::MIME_DIR)
+            {
+                HashMap::new()
+            } else {
+                scan_child_directory_sizes(&path_clone, &raw_entries)
+            };
             let is_inside_thumb_cache = dirs::cache_dir()
                 .map(|c| path_clone.starts_with(c.join("thumbnails")))
                 .unwrap_or(false);
@@ -519,6 +544,7 @@ impl FluxApp {
                             is_broken_symlink,
                         );
                         item.is_virtual_dir = is_virtual_dir;
+                        item.set_folder_size(folder_sizes.get(&item.target_path).copied());
 
                         // WARNING: do not remove these four lines.
                         //
@@ -570,7 +596,7 @@ impl FluxApp {
 
                     let primary_order = match sort_strategy {
                         SortBy::Name => a.sort_name.cmp(&b.sort_name),
-                        SortBy::Size => a.size().cmp(&b.size()),
+                        SortBy::Size => a.size_for_sort().cmp(&b.size_for_sort()),
                         SortBy::Date => a.mtime().cmp(&b.mtime()),
                         SortBy::Type => a.sort_ext.cmp(&b.sort_ext),
                     };
@@ -651,4 +677,130 @@ fn spawn_zip_lock_probe(
             }));
         }
     });
+}
+
+/// Calculates logical byte totals for each immediate child directory in one
+/// tree walk. Symlinks and special files are excluded, matching folder traversal.
+fn scan_child_directory_sizes(
+    root: &Path,
+    entries: &[(String, bool, bool)],
+) -> HashMap<PathBuf, Result<u64, ()>> {
+    let mut sizes = HashMap::new();
+    let mut pending = Vec::new();
+
+    for (name, is_dir, is_symlink) in entries {
+        if *is_dir {
+            let path = root.join(name);
+            if *is_symlink {
+                sizes.insert(path, Err(()));
+            } else {
+                sizes.insert(path.clone(), Ok(0));
+                pending.push((path.clone(), path));
+            }
+        }
+    }
+
+    while let Some((directory, top_level)) = pending.pop() {
+        let entries = match std::fs::read_dir(&directory) {
+            Ok(entries) => entries,
+            Err(_) => {
+                mark_folder_size_unavailable(&mut sizes, &top_level);
+                continue;
+            }
+        };
+
+        for entry in entries {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(_) => {
+                    mark_folder_size_unavailable(&mut sizes, &top_level);
+                    continue;
+                }
+            };
+            let path = entry.path();
+            let file_type = match entry.file_type() {
+                Ok(file_type) => file_type,
+                Err(_) => {
+                    mark_folder_size_unavailable(&mut sizes, &top_level);
+                    continue;
+                }
+            };
+
+            if file_type.is_symlink() {
+                continue;
+            }
+            if file_type.is_dir() {
+                pending.push((path, top_level.clone()));
+            } else if file_type.is_file() {
+                let bytes = match std::fs::symlink_metadata(&path) {
+                    Ok(metadata) if metadata.is_file() => metadata.len(),
+                    Ok(_) => continue,
+                    Err(_) => {
+                        mark_folder_size_unavailable(&mut sizes, &top_level);
+                        continue;
+                    }
+                };
+                if let Some(size) = sizes.get_mut(&top_level) {
+                    *size = size
+                        .as_ref()
+                        .ok()
+                        .and_then(|total| total.checked_add(bytes))
+                        .ok_or(());
+                }
+            }
+        }
+    }
+
+    sizes
+}
+
+fn mark_folder_size_unavailable(sizes: &mut HashMap<PathBuf, Result<u64, ()>>, path: &Path) {
+    if let Some(size) = sizes.get_mut(path) {
+        *size = Err(());
+    }
+}
+
+#[cfg(test)]
+mod folder_size_tests {
+    use super::*;
+    use std::io::Write;
+
+    #[test]
+    fn recursive_folder_sizes_include_nested_files_and_empty_folders() {
+        let root = tempfile::tempdir().unwrap();
+        let folder = root.path().join("folder");
+        std::fs::create_dir_all(folder.join("nested")).unwrap();
+        std::fs::create_dir(root.path().join("empty")).unwrap();
+        std::fs::write(folder.join("first"), [0; 7]).unwrap();
+        std::fs::File::create(folder.join("nested/second"))
+            .unwrap()
+            .write_all(&[0; 11])
+            .unwrap();
+
+        let entries = vec![
+            ("folder".to_string(), true, false),
+            ("empty".to_string(), true, false),
+            ("direct-file".to_string(), false, false),
+        ];
+        let sizes = scan_child_directory_sizes(root.path(), &entries);
+
+        assert_eq!(sizes.get(&folder), Some(&Ok(18)));
+        assert_eq!(sizes.get(&root.path().join("empty")), Some(&Ok(0)));
+        assert!(!sizes.contains_key(&root.path().join("direct-file")));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn recursive_folder_sizes_do_not_follow_symlinks() {
+        let root = tempfile::tempdir().unwrap();
+        let folder = root.path().join("folder");
+        let outside = root.path().join("outside");
+        std::fs::create_dir(&folder).unwrap();
+        std::fs::write(&outside, [0; 23]).unwrap();
+        std::os::unix::fs::symlink(&outside, folder.join("linked-file")).unwrap();
+
+        let sizes = scan_child_directory_sizes(root.path(), &[("folder".to_string(), true, false)]);
+
+        assert_eq!(sizes.get(&folder), Some(&Ok(0)));
+    }
 }
